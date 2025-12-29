@@ -346,11 +346,29 @@ export abstract class FhirRepository<TClient = unknown> {
 export class MemoryRepository extends FhirRepository<undefined> {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
+  private seeding: boolean;
 
   constructor() {
     super();
     this.resources = new Map();
     this.history = new Map();
+    this.seeding = false;
+  }
+
+  // Puts this repository into "seeding" mode, during which time
+  // you can specify meta information that normally would not be
+  // permissible.
+  async withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
+    if (this.seeding) {
+      // We're nested inside another seeding block, just run the callback
+      // without changing state
+      return fn();
+    }
+
+    this.seeding = true;
+    const result = await fn();
+    this.seeding = false;
+    return result;
   }
 
   clear(): void {
@@ -362,29 +380,43 @@ export class MemoryRepository extends FhirRepository<undefined> {
     // MockRepository ignores reader/writer mode
   }
 
-  async createResource<T extends Resource>(resource: T): Promise<WithId<T>> {
-    const result = JSON.parse(stringify(resource));
+  async createResource<T extends Resource>(
+    resource: T,
+    options?: CreateResourceOptions,
+    update: boolean = false
+  ): Promise<WithId<T>> {
+    //simulate round-tripping through a JSON serialized format
+    const parsed = JSON.parse(stringify(resource)) as T;
+    const result = {
+      ...parsed,
+      id: parsed.id ?? this.generateId(),
+      meta: parsed.meta ?? {},
+    };
 
-    if (!result.id) {
-      result.id = this.generateId();
-    }
-    if (!result.meta) {
-      result.meta = {};
-    }
-    if (!result.meta.versionId) {
-      result.meta.versionId = generateId();
-    }
-    if (!result.meta.lastUpdated) {
-      result.meta.lastUpdated = new Date().toISOString();
+    if (!this.seeding) {
+      if (result.meta.versionId) {
+        delete result.meta.versionId;
+      }
+      if (result.meta.lastUpdated) {
+        delete result.meta.lastUpdated;
+      }
     }
 
-    const { resourceType, id } = result as { resourceType: string; id: string };
+    result.meta.versionId ??= generateId();
+    result.meta.lastUpdated ??= new Date().toISOString();
+
+    const { resourceType, id } = result;
 
     let resources = this.resources.get(resourceType);
     if (!resources) {
       resources = new Map();
       this.resources.set(resourceType, resources);
     }
+
+    if (!update && resources.has(id)) {
+      throw new Error('Assigned ID is already in use');
+    }
+
     resources.set(id, result);
 
     let resourceTypeHistory = this.history.get(resourceType);
@@ -423,16 +455,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
       }
     }
 
-    const result = deepClone(resource);
-    if (result.meta) {
-      if (result.meta.versionId) {
-        delete result.meta.versionId;
-      }
-      if (result.meta.lastUpdated) {
-        delete result.meta.lastUpdated;
-      }
-    }
-    return this.createResource(result);
+    return this.createResource(resource, undefined, true);
   }
 
   async patchResource<T extends Resource>(
@@ -449,6 +472,14 @@ export class MemoryRepository extends FhirRepository<undefined> {
       }
     } catch (err) {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
+    }
+
+    // ensure that even when in "seeding" mode calls to patchResource
+    // generate new version numbers and timestamps instead of recycling
+    // the previous version's
+    if (resource.meta) {
+      delete resource.meta.versionId;
+      delete resource.meta.lastUpdated;
     }
 
     return this.updateResource<T>(resource);
