@@ -70,7 +70,7 @@ For patients under 18 years of age, you **must** also sync Height and Weight as 
     {
       "system": "phone",
       "use": "home",
-      "value": "6175672093"//Required: cannot have a +1 prefix and must be 9 digits
+      "value": "6175672093"//Required: cannot have a +1 prefix or start with 555, and must be 10 digits
     }
   ],
   "address": [//Required
