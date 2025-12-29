@@ -56,9 +56,15 @@ describe('HL7', () => {
     });
   });
 
-  test('Send and receive', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+  let mockServer: Server;
+  beforeEach(() => {
+    mockServer = new Server('wss://example.com/ws/agent');
+  });
+  afterEach(() => {
+    mockServer.stop();
+  });
 
+  test('Send and receive', async () => {
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -137,14 +143,11 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Send and receive -- error', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -225,15 +228,12 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Send and receive -- no callback in response', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -313,13 +313,10 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Send and receive -- enhanced mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
-
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -407,12 +404,9 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Send and receive -- enhanced mode + messagesPerMin', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
-
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -514,13 +508,11 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Invalid messagesPerMin logs warning', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -566,12 +558,10 @@ describe('HL7', () => {
     );
 
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Push', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -651,7 +641,6 @@ describe('HL7', () => {
     // Shutdown everything
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Push -- keepAlive Enabled', async () => {
@@ -659,7 +648,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -938,7 +926,6 @@ describe('HL7', () => {
     // Shutdown everything
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
 
     // Make sure all clients are closed after stopping app
     expect(app.hl7Clients.size).toStrictEqual(0);
@@ -952,7 +939,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1050,7 +1036,6 @@ describe('HL7', () => {
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     await app.stop();
-    mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining("Persistent connection to remote 'mllp://localhost:57001' closed")
@@ -1067,7 +1052,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1218,13 +1202,11 @@ describe('HL7', () => {
 
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
 
     console.log = originalConsoleLog;
   });
 
   test('Default maxClientsPerRemote of 5 in non-keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1357,11 +1339,9 @@ describe('HL7', () => {
 
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Default maxClientsPerRemote of 1 in keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1473,11 +1453,9 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Setting maxClientsPerRemote in non-keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1590,11 +1568,9 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Setting maxClientsPerRemote in keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1709,7 +1685,6 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Updating maxClientsPerRemote without changing keepAlive updates pool limit', async () => {
@@ -1717,7 +1692,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1855,12 +1829,10 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   describe('assignSeqNo functionality', () => {
     test('Messages sent on websocket should have sequence numbers in order', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
       };
@@ -1962,11 +1934,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When channel is reloaded but name does not change, sequence number remains the same', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -2119,11 +2089,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When channel name changes, sequence number resets', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -2291,13 +2259,11 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
   });
 
   describe('Channel stats tracking', () => {
     test('When logStatsFreqSecs is set, channel should track stats', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         shouldSendAck: true,
@@ -2487,12 +2453,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is not set, channel should not track stats', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-
       mockServer.on('connection', (socket) => {
         socket.on('message', (data) => {
           const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -2568,11 +2531,9 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is set via reload, channel should start tracking', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2663,11 +2624,9 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeDefined();
 
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is removed via reload, channel should stop tracking', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2759,7 +2718,6 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
       await app.stop();
-      mockServer.stop();
     });
   });
 });
