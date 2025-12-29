@@ -361,6 +361,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: endpoint.address + '?enhanced=true',
     });
 
@@ -451,6 +452,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=60',
     });
 
@@ -531,6 +533,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=twenty',
     });
 
