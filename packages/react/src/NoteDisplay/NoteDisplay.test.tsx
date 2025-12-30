@@ -51,15 +51,9 @@ describe('NoteDisplay', () => {
 
   test('Returns null if value is undefined', async () => {
     await act(async () => {
-      const { container } = render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <NoteDisplay value={undefined} />
-          </MedplumProvider>
-        </MemoryRouter>
-      );
-
-      expect(container.firstElementChild).toBeNull();
+      setup({ value: undefined });
     });
+
+    expect(screen.queryByRole('blockquote')).toBeNull();
   });
 });
