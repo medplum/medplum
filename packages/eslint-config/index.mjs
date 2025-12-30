@@ -119,6 +119,13 @@ export const coreConfig = {
       ],
     ],
   },
+  settings: {
+    jsdoc: {
+      tagNamePreference: {
+        default: 'defaultValue',
+      },
+    },
+  },
 };
 
 /**
