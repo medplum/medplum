@@ -202,8 +202,6 @@ export function ColumnStatistics(): JSX.Element {
             <Table.Tbody>
               {columnStats?.map((column) => {
                 const part = column.part ?? [];
-                console.log(JSON.stringify(part, null, 2));
-
                 const columnName = part.find((p) => p.name === 'name')?.valueString;
                 const statisticsTarget = part.find((p) => p.name === 'statisticsTarget')?.valueInteger;
                 if (statisticsTarget === -1) {
