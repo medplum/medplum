@@ -156,34 +156,69 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
     }
 
     let logResult = '';
+    let buffer = '';
 
-    // Process streaming response
-    for await (const event of response.EventStream) {
-      if (event.PayloadChunk?.Payload) {
-        const chunk = new TextDecoder().decode(event.PayloadChunk.Payload);
+    // Create a ReadableStream from the EventStream and pipe through TextDecoderStream
+    const readableStream = new ReadableStream({
+      async start(controller) {
         try {
-          const parsed = JSON.parse(chunk);
-          // Check if this is a chunk marker from our wrapper
-          if (parsed.__medplum_chunk__) {
-            if (streamingCallback) {
-              await streamingCallback(parsed.__medplum_chunk__);
+          for await (const event of response.EventStream!) {
+            if (event.PayloadChunk?.Payload) {
+              controller.enqueue(event.PayloadChunk.Payload);
             }
-          } else if (streamingCallback) {
-            // Regular payload chunk
-            await streamingCallback(parsed);
+            if (event.InvokeComplete) {
+              if (event.InvokeComplete.ErrorCode) {
+                controller.error(new Error(event.InvokeComplete.ErrorDetails || 'Lambda execution failed'));
+              } else {
+                logResult = event.InvokeComplete.LogResult ? parseLambdaLog(event.InvokeComplete.LogResult) : '';
+              }
+              controller.close();
+              break;
+            }
           }
         } catch (err) {
-          // Skip malformed chunks
+          controller.error(err);
         }
-      }
+      },
+    });
 
-      if (event.InvokeComplete) {
-        if (event.InvokeComplete.ErrorCode) {
-          throw new Error(event.InvokeComplete.ErrorDetails || 'Lambda execution failed');
+    const reader = readableStream.pipeThrough(new TextDecoderStream()).getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
         }
-        logResult = event.InvokeComplete.LogResult ? parseLambdaLog(event.InvokeComplete.LogResult) : '';
-        break;
+
+        buffer += value;
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(line);
+            // Check if this is a chunk marker from our wrapper
+            if (parsed.__medplum_chunk__) {
+              if (streamingCallback) {
+                await streamingCallback(parsed.__medplum_chunk__);
+              }
+            } else if (streamingCallback) {
+              // Regular payload chunk
+              await streamingCallback(parsed);
+            }
+          } catch (err) {
+            // Skip malformed chunks
+          }
+        }
       }
+    } finally {
+      reader.releaseLock();
     }
 
     return {
