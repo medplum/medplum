@@ -16,7 +16,6 @@ describe('ExportTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
     patientExportFormSpy = vi.spyOn(medplumReact, 'PatientExportForm');
   });
 

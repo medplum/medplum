@@ -5,7 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
@@ -33,7 +33,6 @@ describe('VisitDetailsPanel', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(DrAliceSmith);
   });
 
   const setup = (props: Partial<Parameters<typeof VisitDetailsPanel>[0]> = {}): ReturnType<typeof render> => {

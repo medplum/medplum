@@ -40,7 +40,6 @@ describe('ChatListItem', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {

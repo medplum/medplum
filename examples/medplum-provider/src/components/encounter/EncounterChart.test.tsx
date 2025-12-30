@@ -5,7 +5,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { ClinicalImpression, Encounter, Practitioner, Provenance, Task } from '@medplum/fhirtypes';
-import { HomerSimpson, DrAliceSmith, MockClient } from '@medplum/mock';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { EncounterChart } from './EncounterChart';
@@ -56,8 +56,6 @@ describe('EncounterChart', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(HomerSimpson);
-    await medplum.createResource(DrAliceSmith);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockClinicalImpression);
