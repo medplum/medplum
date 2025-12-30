@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { InvokeCommand, InvokeWithResponseStreamCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
-import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import type { BotExecutionContext, BotExecutionResult, BotStreamingResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
 
 let client: LambdaClient;
@@ -113,4 +113,89 @@ function parseLambdaLog(logResult: string): string {
     result.push(line);
   }
   return result.join('\n').trim();
+}
+
+/**
+ * Executes a Bot in an AWS Lambda with streaming support.
+ * @param request - The bot request with streaming callback.
+ * @returns The bot streaming execution result.
+ */
+export async function runInLambdaStreaming(request: BotExecutionContext): Promise<BotStreamingResult> {
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers, streamingCallback } = request;
+  const config = getConfig();
+  if (!client) {
+    client = new LambdaClient({ region: config.awsRegion });
+  }
+  const name = getLambdaFunctionName(bot);
+  const payload = {
+    bot: createReference(bot),
+    baseUrl: config.baseUrl,
+    requester,
+    accessToken,
+    input: input instanceof Hl7Message ? input.toString() : input,
+    contentType,
+    secrets,
+    traceId,
+    headers,
+    streaming: true, // Indicate streaming mode
+  };
+
+  // Build the streaming command
+  const encoder = new TextEncoder();
+  const command = new InvokeWithResponseStreamCommand({
+    FunctionName: name,
+    Payload: encoder.encode(JSON.stringify(payload)),
+  });
+
+  // Execute the command
+  try {
+    const response = await client.send(command);
+
+    if (!response.EventStream) {
+      throw new Error('No event stream in response');
+    }
+
+    let logResult = '';
+
+    // Process streaming response
+    for await (const event of response.EventStream) {
+      if (event.PayloadChunk?.Payload) {
+        const chunk = new TextDecoder().decode(event.PayloadChunk.Payload);
+        try {
+          const parsed = JSON.parse(chunk);
+          // Check if this is a chunk marker from our wrapper
+          if (parsed.__medplum_chunk__) {
+            if (streamingCallback) {
+              await streamingCallback(parsed.__medplum_chunk__);
+            }
+          } else if (streamingCallback) {
+            // Regular payload chunk
+            await streamingCallback(parsed);
+          }
+        } catch (err) {
+          // Skip malformed chunks
+        }
+      }
+
+      if (event.InvokeComplete) {
+        if (event.InvokeComplete.ErrorCode) {
+          throw new Error(event.InvokeComplete.ErrorDetails || 'Lambda execution failed');
+        }
+        logResult = event.InvokeComplete.LogResult ? parseLambdaLog(event.InvokeComplete.LogResult) : '';
+        break;
+      }
+    }
+
+    return {
+      streaming: true,
+      success: true,
+      logResult,
+    };
+  } catch (err) {
+    return {
+      streaming: true,
+      success: false,
+      logResult: normalizeErrorString(err),
+    };
+  }
 }

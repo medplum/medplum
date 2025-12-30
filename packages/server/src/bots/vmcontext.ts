@@ -17,7 +17,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
-import type { BotExecutionContext, BotExecutionResult } from './types';
+import type { BotExecutionContext, BotExecutionResult, BotStreamingResult } from './types';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
@@ -136,6 +136,131 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       success: false,
       logResult: botConsole.toString(),
       returnValue: normalizeOperationOutcome(err),
+    };
+  }
+}
+
+/**
+ * Executes a Bot on the server in a separate Node.js VM with streaming support.
+ * @param request - The bot request with streaming callback.
+ * @returns The bot streaming execution result.
+ */
+export async function runInVmContextStreaming(request: BotExecutionContext): Promise<BotStreamingResult> {
+  const { bot, input, contentType, traceId, headers, streamingCallback } = request;
+
+  const config = getConfig();
+  if (!config.vmContextBotsEnabled) {
+    return { streaming: true, success: false, logResult: 'VM Context bots not enabled on this server' };
+  }
+
+  const codeUrl = bot.executableCode?.url;
+  if (!codeUrl) {
+    return { streaming: true, success: false, logResult: 'No executable code' };
+  }
+  if (!codeUrl.startsWith('Binary/')) {
+    return { streaming: true, success: false, logResult: 'Executable code is not a Binary' };
+  }
+
+  const systemRepo = getSystemRepo();
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const stream = await getBinaryStorage().readBinary(binary);
+  const code = await readStreamToString(stream);
+  const botConsole = new MockConsole();
+
+  const sandbox = {
+    console: botConsole,
+    fetch,
+    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
+    ContentType,
+    Hl7Message,
+    MedplumClient,
+    TextDecoder,
+    TextEncoder,
+    URL,
+    URLSearchParams,
+    event: {
+      bot: createReference(bot),
+      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
+      accessToken: request.accessToken,
+      requester: request.requester,
+      input: input instanceof Hl7Message ? input.toString() : input,
+      contentType,
+      secrets: request.secrets,
+      traceId,
+      headers,
+      defaultHeaders: request.defaultHeaders,
+      // Add streaming callback
+      onChunk: async (chunk: any) => {
+        if (streamingCallback) {
+          await streamingCallback(chunk);
+        }
+      },
+    },
+  };
+
+  const options: vm.RunningScriptOptions = {
+    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
+  };
+
+  // Wrap code in an async block for top-level await support
+  const wrappedCode = `
+  const exports = {};
+  const module = {exports};
+
+  // Start user code
+  ${code}
+  // End user code
+
+  (async () => {
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, onChunk } = event;
+    const medplum = new MedplumClient({
+      baseUrl,
+      defaultHeaders,
+      fetch: function(url, options = {}) {
+        options.headers ||= {};
+        options.headers['X-Trace-Id'] = traceId;
+        options.headers['traceparent'] = traceId;
+        return fetch(url, options);
+      },
+    });
+    medplum.setAccessToken(accessToken);
+    try {
+      let input = event.input;
+      if (contentType === ContentType.HL7_V2 && input) {
+        input = Hl7Message.parse(input);
+      }
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, onChunk });
+      if (contentType === ContentType.HL7_V2 && result) {
+        result = result.toString();
+      }
+      return result;
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      } else if (typeof err === "object") {
+        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      } else {
+        console.log("Unhandled error: " + err);
+      }
+      throw err;
+    }
+  })();
+  `;
+
+  // Return the result of the code execution
+  try {
+    await vm.runInNewContext(wrappedCode, sandbox, options);
+    return {
+      streaming: true,
+      success: true,
+      logResult: botConsole.toString(),
+    };
+  } catch (err) {
+    botConsole.log('Error', normalizeErrorString(err));
+    return {
+      streaming: true,
+      success: false,
+      logResult: botConsole.toString(),
     };
   }
 }

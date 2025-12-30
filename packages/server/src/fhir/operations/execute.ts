@@ -8,14 +8,15 @@ import {
   isOk,
   isOperationOutcome,
   isResource,
+  normalizeErrorString,
   notFound,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { executeBot } from '../../bots/execute';
-import type { BotExecutionResult } from '../../bots/types';
+import { executeBot, executeBotStreaming } from '../../bots/execute';
+import type { BotExecutionResult, StreamingCallback } from '../../bots/types';
 import {
   getBotDefaultHeaders,
   getBotProjectMembership,
@@ -41,6 +42,21 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
  * @param res - The response object
  */
 export const executeHandler = async (req: Request, res: Response): Promise<void> => {
+  // Check if client accepts streaming
+  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+
+  if (acceptsStreaming) {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    await executeOperationStreaming(req, res);
+    res.end();
+    return;
+  }
+
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
       const result = await executeOperation(req);
@@ -132,4 +148,65 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
 
   // If no bot ID or identifier, return undefined
   return undefined;
+}
+
+/**
+ * Handles streaming execution of a bot operation.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ */
+async function executeOperationStreaming(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
+
+  // First read the bot as the user to verify access
+  const userBot = await getBotForRequest(req);
+  if (!userBot) {
+    res.write('data: {"error": true, "message": "Must specify bot ID or identifier"}\n\n');
+    return;
+  }
+
+  // Then read the bot as system user to load extended metadata
+  const systemRepo = getSystemRepo();
+  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+
+  // Create streaming callback
+  const streamingCallback: StreamingCallback = async (chunk: any) => {
+    try {
+      res.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      if (typeof (res as any).flush === 'function') {
+        (res as any).flush();
+      }
+    } catch (err) {
+      ctx.logger.error('Error writing stream chunk', { error: err });
+    }
+  };
+
+  try {
+    // Execute the bot with streaming
+    await executeBotStreaming(
+      {
+        bot,
+        runAs: await getBotProjectMembership(ctx, bot),
+        requester: ctx.membership.profile,
+        input: req.method === 'POST' ? req.body : req.query,
+        contentType: req.header('content-type') as string,
+        headers: req.headers,
+        traceId: ctx.traceId,
+        defaultHeaders: getBotDefaultHeaders(req, bot),
+      },
+      streamingCallback
+    );
+
+    // Send completion event
+    res.write('data: [DONE]\n\n');
+  } catch (err) {
+    // Send error event
+    res.write(
+      `data: ${JSON.stringify({
+        error: true,
+        message: normalizeErrorString(err),
+      })}\n\n`
+    );
+    res.write('data: [DONE]\n\n');
+  }
 }
