@@ -88,13 +88,13 @@ export function App(): JSX.Element | null {
                     icon: (
                       <NotificationIcon
                         resourceType="Communication"
-                        countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
+                        countCriteria={`status=in-progress&_summary=count`}
+                        subscriptionCriteria={`status=in-progress`}
                         iconComponent={<IconMail />}
                       />
                     ),
                     label: 'Messages',
-                    href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                    href: `/Communication?status=in-progress`,
                   },
                   {
                     icon: (
