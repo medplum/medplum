@@ -10,4 +10,3 @@ describe('Loading', () => {
     expect(container.querySelector('[class*="Loader"]')).toBeDefined();
   });
 });
-
