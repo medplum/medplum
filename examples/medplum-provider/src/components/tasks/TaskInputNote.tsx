@@ -13,17 +13,17 @@ import {
   Text,
   Textarea,
 } from '@mantine/core';
-import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
-import type { Annotation, QuestionnaireResponse, Task, Reference } from '@medplum/fhirtypes';
+import { useDebouncedCallback } from '@mantine/hooks';
+import { createReference, formatDate, getDisplayString } from '@medplum/core';
+import type { Annotation, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
 import React, { useState } from 'react';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskQuestionnaireForm } from './encounter/TaskQuestionnaireForm';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { TaskNoteItem } from './TaskNoteItem';
-import { useDebouncedCallback } from '@mantine/hooks';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 interface TaskInputNoteProps {
   task: Task | Reference<Task>;
@@ -107,7 +107,7 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
             output: [
               {
                 type: { text: 'QuestionnaireResponse' },
-                valueReference: { reference: getReferenceString(updatedResponse) },
+                valueReference: createReference(updatedResponse),
               },
             ],
           });

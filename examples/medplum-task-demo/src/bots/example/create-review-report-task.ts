@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { DiagnosticReport, Task } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<boolean> {
@@ -19,10 +19,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     status: 'ready',
     intent: 'order',
     priority: 'asap',
-    focus: {
-      // The focus of the resource will be the DiagnosticReport
-      reference: getReferenceString(report),
-    },
+    // The focus of the resource will be the DiagnosticReport
+    focus: createReference(report),
     for: report.subject,
     // The performer type is a medical practitioner. This will ensure it is assigned to the correct queue so a doctor can review it.
     performerType: [
