@@ -541,7 +541,7 @@ describe('SpacesInbox', () => {
           parameter: [{ name: 'content', valueString: 'Success' }],
         });
 
-      (medplum as any)[clientMethod] = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
+      (medplum)[clientMethod] = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
 
       await act(async () => {
         setup();
@@ -554,7 +554,7 @@ describe('SpacesInbox', () => {
       await user.click(sendButton);
 
       await waitFor(() => {
-        expect((medplum as any)[clientMethod]).toHaveBeenCalled();
+        expect((medplum)[clientMethod]).toHaveBeenCalled();
       });
     });
   });

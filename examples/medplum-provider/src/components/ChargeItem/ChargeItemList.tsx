@@ -2,26 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Flex, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import type { WithId } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
-import { CodeableConceptInput, AsyncAutocomplete, useMedplum } from '@medplum/react';
+import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { applyChargeItemDefinition, calculateTotalPrice } from '../../utils/chargeitems';
 import { showErrorNotification } from '../../utils/notifications';
 import ChargeItemPanel from './ChargeItemPanel';
 
-interface ChargeItemListProps {
-  chargeItems: ChargeItem[];
-  updateChargeItems: (chargeItems: ChargeItem[]) => void;
-  patient: Patient;
-  encounter: Encounter;
+export interface ChargeItemListProps {
+  chargeItems: WithId<ChargeItem>[];
+  updateChargeItems: (chargeItems: WithId<ChargeItem>[]) => void;
+  patient: WithId<Patient>;
+  encounter: WithId<Encounter>;
 }
 
 export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   const { chargeItems, updateChargeItems, patient, encounter } = props;
-  const [chargeItemsState, setChargeItemsState] = useState<ChargeItem[]>(chargeItems);
+  const [chargeItemsState, setChargeItemsState] = useState<WithId<ChargeItem>[]>(chargeItems);
   const [opened, { open, close }] = useDisclosure(false);
   const medplum = useMedplum();
 
@@ -30,7 +31,7 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   }, [chargeItems]);
 
   const updateChargeItemList = useCallback(
-    async (updatedChargeItem: ChargeItem): Promise<void> => {
+    async (updatedChargeItem: WithId<ChargeItem>): Promise<void> => {
       const updatedChargeItems = chargeItemsState.map((item) =>
         item.id === updatedChargeItem.id ? updatedChargeItem : item
       );
@@ -106,7 +107,7 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
 
       {chargeItems.length > 0 ? (
         <Stack gap="md">
-          {chargeItems.map((chargeItem: ChargeItem) => (
+          {chargeItems.map((chargeItem) => (
             <ChargeItemPanel
               key={chargeItem.id}
               chargeItem={chargeItem}

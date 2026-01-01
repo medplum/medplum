@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MantineProvider } from '@mantine/core';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type { ChargeItem } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { MedplumProvider } from '@medplum/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import ChargeItemPanel from './ChargeItemPanel';
 
-const mockChargeItem: ChargeItem = {
+const mockChargeItem: WithId<ChargeItem> = {
   resourceType: 'ChargeItem',
   id: 'charge-123',
   status: 'billable',
@@ -87,7 +88,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays updated price', () => {
-    const itemWithPrice: ChargeItem = {
+    const itemWithPrice: WithId<ChargeItem> = {
       ...mockChargeItem,
       priceOverride: { value: 150.5, currency: 'USD' },
     };
@@ -97,7 +98,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays price as N/A when no price override', () => {
-    const itemWithoutPrice: ChargeItem = {
+    const itemWithoutPrice: WithId<ChargeItem> = {
       ...mockChargeItem,
       priceOverride: undefined,
     };
@@ -107,7 +108,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays modifier when present', () => {
-    const itemWithModifier: ChargeItem = {
+    const itemWithModifier: WithId<ChargeItem> = {
       ...mockChargeItem,
       extension: [
         {

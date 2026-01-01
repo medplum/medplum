@@ -79,7 +79,7 @@ export const TaskDetailsModal = (): JSX.Element => {
     }
 
     if (practitioner) {
-      updatedTask.owner = { reference: getReferenceString(practitioner) } as Reference<Practitioner>;
+      updatedTask.owner = createReference(practitioner) as Reference<Practitioner>;
     }
 
     try {

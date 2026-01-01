@@ -107,7 +107,7 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
             output: [
               {
                 type: { text: 'QuestionnaireResponse' },
-                valueReference: { reference: getReferenceString(updatedResponse) },
+                valueReference: createReference(updatedResponse),
               },
             ],
           });
