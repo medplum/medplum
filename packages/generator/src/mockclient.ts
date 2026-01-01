@@ -135,8 +135,7 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 function removeBaseFromElements(sd: StructureDefinition): void {
   for (const element of sd.snapshot?.element ?? []) {
     if (
-      element.base &&
-      element.path === element.base.path &&
+      element.path === element.base?.path &&
       element.min === element.base.min &&
       element.max === element.base.max
     ) {

@@ -84,8 +84,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     // Compare by checking if arrays have different lengths or different test codes
     const testsChanged =
       tests &&
-      (prevTestsRef.current === undefined ||
-        prevTestsRef.current.length !== tests.length ||
+      (prevTestsRef.current?.length !== tests.length ||
         prevTestsRef.current.some((prevTest, index) => prevTest.code !== tests[index]?.code));
 
     if (testsChanged) {
