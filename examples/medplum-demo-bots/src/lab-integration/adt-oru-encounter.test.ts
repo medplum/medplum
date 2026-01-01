@@ -725,6 +725,139 @@ describe('ADT-ORU Encounter Bot', () => {
     expect(clinicalImpressions).toHaveLength(1);
     expect(clinicalImpressions[0]?.encounter?.reference).toBe(getReferenceString(encounter));
   });
+
+  test('Encounter with blank dates defaults to time received', async (ctx: any) => {
+    const medplum = ctx.medplum as MedplumClient;
+    const beforeTime = new Date();
+
+    const msg = Hl7Message.parse(BLANK_DATES_MESSAGE);
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: msg,
+      contentType: 'x-application/hl7-v2+er7',
+      secrets: {},
+    } as BotEvent<Hl7Message>);
+
+    const afterTime = new Date();
+
+    // Check patient was created
+    const patients = await medplum.searchResources('Patient', {
+      identifier: 'https://example.org/facility/patient-id|1095',
+    });
+    expect(patients).toHaveLength(1);
+
+    // Check encounter was created with start date defaulting to time received
+    const encounters = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patients[0]),
+    });
+    expect(encounters).toHaveLength(1);
+    expect(encounters[0]?.period?.start).toBeDefined();
+
+    // Verify the start date is within the time window of when the message was processed
+    const startDate = new Date(encounters[0]?.period?.start as string);
+    expect(startDate.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime() - 1000); // Allow 1s tolerance
+    expect(startDate.getTime()).toBeLessThanOrEqual(afterTime.getTime() + 1000);
+
+    // End date should equal start date when both are blank
+    expect(encounters[0]?.period?.end).toBe(encounters[0]?.period?.start);
+  });
+
+  test('ADT A03 with blank end date defaults to time received', async (ctx: any) => {
+    const medplum = ctx.medplum as MedplumClient;
+
+    // First, create an encounter with ADT A01
+    const admitMsg = Hl7Message.parse(ADT_A01_MESSAGE);
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: admitMsg,
+      contentType: 'x-application/hl7-v2+er7',
+      secrets: {},
+    } as BotEvent<Hl7Message>);
+
+    // Verify encounter was created
+    const patients = await medplum.searchResources('Patient', {
+      identifier: 'https://example.org/facility/patient-id|1093',
+    });
+    expect(patients).toHaveLength(1);
+
+    const encountersBefore = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patients[0]),
+    });
+    expect(encountersBefore).toHaveLength(1);
+    const originalEndDate = encountersBefore[0]?.period?.end;
+
+    // Now send A03 discharge with blank end date
+    const beforeTime = new Date();
+    const dischargeMsg = Hl7Message.parse(ADT_A03_BLANK_END_DATE_MESSAGE);
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: dischargeMsg,
+      contentType: 'x-application/hl7-v2+er7',
+      secrets: {},
+    } as BotEvent<Hl7Message>);
+    const afterTime = new Date();
+
+    // Check encounter was updated
+    const encountersAfter = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patients[0]),
+    });
+    expect(encountersAfter).toHaveLength(1);
+    expect(encountersAfter[0]?.status).toBe('finished');
+
+    // End date should be updated to time received (not the original end date)
+    expect(encountersAfter[0]?.period?.end).toBeDefined();
+    expect(encountersAfter[0]?.period?.end).not.toBe(originalEndDate);
+
+    // Verify end date is within the time window of processing
+    const endDate = new Date(encountersAfter[0]?.period?.end as string);
+    expect(endDate.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime() - 1000);
+    expect(endDate.getTime()).toBeLessThanOrEqual(afterTime.getTime() + 1000);
+
+    // Start date should be preserved
+    expect(encountersAfter[0]?.period?.start).toBe(encountersBefore[0]?.period?.start);
+  });
+
+  test('ADT A03 uses time-window matching when no visit number', async (ctx: any) => {
+    const medplum = ctx.medplum as MedplumClient;
+
+    // First, create an encounter with ADT A01 (no visit number)
+    const admitMsg = Hl7Message.parse(ADT_A01_NO_VISIT_NUMBER_MESSAGE);
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: admitMsg,
+      contentType: 'x-application/hl7-v2+er7',
+      secrets: {},
+    } as BotEvent<Hl7Message>);
+
+    // Verify encounter was created
+    const patients = await medplum.searchResources('Patient', {
+      identifier: 'https://example.org/facility/patient-id|1096',
+    });
+    expect(patients).toHaveLength(1);
+
+    const encountersBefore = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patients[0]),
+    });
+    expect(encountersBefore).toHaveLength(1);
+    expect(encountersBefore[0]?.status).toBe('in-progress');
+
+    // Now send A03 discharge (no visit number - should match by time window)
+    const dischargeMsg = Hl7Message.parse(ADT_A03_NO_VISIT_NUMBER_MESSAGE);
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: dischargeMsg,
+      contentType: 'x-application/hl7-v2+er7',
+      secrets: {},
+    } as BotEvent<Hl7Message>);
+
+    // Should still have only 1 encounter (updated, not created new)
+    const encountersAfter = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patients[0]),
+    });
+    expect(encountersAfter).toHaveLength(1);
+    expect(encountersAfter[0]?.status).toBe('finished');
+    expect(encountersAfter[0]?.id).toBe(encountersBefore[0]?.id);
+  });
 });
 
 // Test message samples with fake data
@@ -863,4 +996,31 @@ PV1|1|Sample Hospital|^^^[OUT]||||||||||||||||VISIT001|||||||||||||||||||||||||2
 ORC|RE|5534||||||||||1467501098^Jekyll^Henry
 OBR|1|707196e4-4aee-4fb1-bb28-7c1b6d1004d0||^5534|||20250826132029|20250826132029|||||||||||||||||F
 NTE|1|A|Lab results linked to ADT encounter.`;
+
+// ORU message with blank dates in PV1-44 and PV1-45 (should default to time received)
+const BLANK_DATES_MESSAGE = `MSH|^~\\&|||||20250826132029||ORU^R01|MSG021|T|2.3|1
+PID|1|1095|aut1095||Doe^Jane^^^^^||20011008|M|||^^^^^USA|||||||||
+PV1|1|Sample Hospital|^^^[OUT]
+ORC|RE|5535||||||||||1467501098^Jekyll^Henry
+OBR|1|707196e4-4aee-4fb1-bb28-7c1b6d1004d0||^5535|||20250826132029|20250826132029|||||||||||||||||F
+NTE|1|A|Message with blank encounter dates.`;
+
+// ADT A03 message with blank end date (PV1-45) - should default to time received
+// Has visit number in F19 for matching, start date in F44, but no end date in F45
+const ADT_A03_BLANK_END_DATE_MESSAGE = `MSH|^~\\&|||||20250826132029||ADT^A03|MSG022|T|2.3|1
+PID|1|1093|aut1093||Doe^Jane^^^^^||20011008|M|||^^^^^USA|||||||||
+PV1|1|Sample Hospital|^^^[OUT]||||||||||||||||VISIT001|||||||||||||||||||||||||20250826132029|
+ORC|RE|5536||||||||||1467501098^Jekyll^Henry`;
+
+// ADT A01 message without visit number (for time-window matching test)
+const ADT_A01_NO_VISIT_NUMBER_MESSAGE = `MSH|^~\\&|||||20250826132029||ADT^A01|MSG023|T|2.3|1
+PID|1|1096|aut1096||Doe^Jane^^^^^||20011008|M|||^^^^^USA|||||||||
+PV1|1|Sample Hospital|^^^[OUT]|||||||||||||||||||||||||||||||||||||||||20250826132029|20250826132029
+ORC|RE|5537||||||||||1467501098^Jekyll^Henry`;
+
+// ADT A03 message without visit number (for time-window matching test)
+const ADT_A03_NO_VISIT_NUMBER_MESSAGE = `MSH|^~\\&|||||20250826132029||ADT^A03|MSG024|T|2.3|1
+PID|1|1096|aut1096||Doe^Jane^^^^^||20011008|M|||^^^^^USA|||||||||
+PV1|1|Sample Hospital|^^^[OUT]|||||||||||||||||||||||||||||||||||||||||20250826132029|
+ORC|RE|5538||||||||||1467501098^Jekyll^Henry`;
 

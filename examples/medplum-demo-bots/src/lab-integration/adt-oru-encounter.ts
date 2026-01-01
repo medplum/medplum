@@ -414,11 +414,14 @@ async function findOrCreateEncounter(
   }
 
   // Extract encounter dates from PV1-44 (admit date) and PV1-45 (discharge date)
-  const startDate = parseHl7DateTime(pv1Segment.getComponent(44, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
+  // Default to current time if admit date is not provided (enables time-window matching for messages without dates)
+  const parsedStartDate = parseHl7DateTime(pv1Segment.getComponent(44, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
+  const startDate = parsedStartDate || new Date().toISOString();
   const endDate = parseHl7DateTime(pv1Segment.getComponent(45, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
 
-  // Time-window matching: If no visit number, search for encounters within ±24 hours
-  // This handles out-of-order message arrival and systems without visit numbers
+  // ORU Time-Window Matching: If no visit number, search for encounters within ±24 hours
+  // This links ORU messages to existing ADT encounters when visit numbers are not available
+  // Handles out-of-order message arrival and systems without visit numbers
   if (!visitNumber && startDate) {
     // Create a 48-hour window (±24 hours around the encounter start date)
     const searchStart = new Date(startDate);
@@ -543,7 +546,16 @@ async function processAdtEncounter(
   // Extract encounter identifier from PV1-19 (visit number)
   const visitNumber = pv1Segment.getComponent(19, 1);
 
-  // Try to find existing encounter by visit number
+  // Extract encounter dates
+  // For A08 updates, keep parsed values (may be undefined) to preserve existing encounter dates
+  // For A01/A03, default to current time if not provided
+  const parsedStartDate = parseHl7DateTime(pv1Segment.getComponent(44, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
+  const parsedEndDate = parseHl7DateTime(pv1Segment.getComponent(45, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
+  const defaultTime = new Date().toISOString();
+  const startDate = eventType === 'A08' ? parsedStartDate : (parsedStartDate || defaultTime);
+  const endDate = eventType === 'A08' ? parsedEndDate : (parsedEndDate || defaultTime);
+
+  // Try to find existing encounter by visit number first (most reliable if available)
   let existingEncounter: Encounter | undefined;
   if (visitNumber) {
     existingEncounter = await medplum.searchOne('Encounter', {
@@ -552,9 +564,33 @@ async function processAdtEncounter(
     });
   }
 
-  // Extract encounter dates
-  const startDate = parseHl7DateTime(pv1Segment.getComponent(44, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
-  const endDate = parseHl7DateTime(pv1Segment.getComponent(45, 1), { tzOffset: FACILITY_TIMEZONE_OFFSET });
+  // ADT A08/A03 Time-Window Matching: If no visit number, search for encounters within ±24 hours
+  // This links ADT update/discharge messages to existing encounters when visit numbers are not available
+  // Handles out-of-order message arrival and systems without visit numbers
+  if (!existingEncounter && !visitNumber && (eventType === 'A08' || eventType === 'A03')) {
+    const searchDate = parsedStartDate || parsedEndDate || defaultTime;
+    const searchStart = new Date(searchDate);
+    searchStart.setHours(searchStart.getHours() - 24);
+    const searchEnd = new Date(searchDate);
+    searchEnd.setHours(searchEnd.getHours() + 24);
+
+    const existingEncounters = await medplum.searchResources('Encounter', {
+      subject: getReferenceString(patient),
+      date: `ge${searchStart.toISOString()}`,
+      _sort: '-date',
+      _count: '1',
+    });
+
+    // Filter to only include encounters within the window
+    const matchingEncounters = existingEncounters.filter((enc) => {
+      const encDate = enc.period?.start ? new Date(enc.period.start) : null;
+      return encDate && encDate <= searchEnd;
+    });
+
+    if (matchingEncounters.length > 0) {
+      existingEncounter = matchingEncounters[0];
+    }
+  }
 
   // Extract practitioner from PV1
   const practitionerId = pv1Segment.getComponent(7, 1);
@@ -690,13 +726,11 @@ async function processAdtEncounter(
     // Discharge a patient - update encounter status to finished
     if (existingEncounter) {
       existingEncounter.status = 'finished';
-      if (endDate) {
-        // Preserve existing start date, update end date
-        existingEncounter.period = {
-          start: existingEncounter.period?.start,
-          end: endDate,
-        };
-      }
+      // Preserve existing start date, update end date (defaults to current time if not provided)
+      existingEncounter.period = {
+        start: existingEncounter.period?.start,
+        end: endDate,
+      };
       await medplum.updateResource(existingEncounter);
     } else {
       // If no existing encounter, create a finished encounter
