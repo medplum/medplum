@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { Communication } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Communication } from '@medplum/fhirtypes';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SpacesInbox } from './SpacesInbox';
 
 const mockTopic: Communication = {
@@ -541,7 +541,7 @@ describe('SpacesInbox', () => {
           parameter: [{ name: 'content', valueString: 'Success' }],
         });
 
-      (medplum)[clientMethod] = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
+      (medplum as any)[clientMethod] = vi.fn().mockResolvedValue({ resourceType: 'Patient', id: 'patient-123' });
 
       await act(async () => {
         setup();
@@ -554,7 +554,7 @@ describe('SpacesInbox', () => {
       await user.click(sendButton);
 
       await waitFor(() => {
-        expect((medplum)[clientMethod]).toHaveBeenCalled();
+        expect((medplum as any)[clientMethod]).toHaveBeenCalled();
       });
     });
   });
