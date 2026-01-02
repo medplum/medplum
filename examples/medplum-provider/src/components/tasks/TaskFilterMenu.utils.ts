@@ -19,7 +19,6 @@ export const TASK_STATUSES: Task['status'][] = [
   'accepted',
   'rejected',
   'ready',
-  'cancelled',
   'in-progress',
   'on-hold',
   'failed',

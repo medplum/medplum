@@ -162,6 +162,19 @@ export function TaskBoard({
       .finally(() => setLoading(false));
   }, [fetchTasks]);
 
+  // Auto-select first task when list loads and no task is selected, or when selected task is not in list
+  useEffect(() => {
+    if (!loading && tasks.length > 0) {
+      const selectedTaskInList = selectedTaskId && tasks.some((task) => task.id === selectedTaskId);
+      if (!selectedTaskInList) {
+        const firstTask = tasks[0];
+        if (firstTask?.id) {
+          navigate(getTaskUri(firstTask))?.catch(console.error);
+        }
+      }
+    }
+  }, [loading, tasks, selectedTaskId, navigate, getTaskUri]);
+
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
       if (selectedTaskId) {

@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
@@ -23,8 +23,9 @@ describe('ResourceCreatePage', () => {
     await medplum.createResource(HomerSimpson);
   });
 
-  const setup = (url: string): ReturnType<typeof render> => {
-    return render(
+  const setup = async (url: string): Promise<void> => {
+    await act(async () => {
+   render(
       <MemoryRouter initialEntries={[url]}>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
@@ -37,10 +38,11 @@ describe('ResourceCreatePage', () => {
         </MedplumProvider>
       </MemoryRouter>
     );
+    });
   };
 
   test('Renders new Practitioner form page', async () => {
-    setup('/Practitioner/new');
+    await setup('/Practitioner/new');
 
     await waitFor(() => {
       expect(screen.getByText('New Practitioner')).toBeInTheDocument();
@@ -48,7 +50,7 @@ describe('ResourceCreatePage', () => {
   });
 
   test('Renders new Task form page', async () => {
-    setup('/Task/new');
+    await setup('/Task/new');
 
     await waitFor(() => {
       expect(screen.getByText('New Task')).toBeInTheDocument();
@@ -57,7 +59,7 @@ describe('ResourceCreatePage', () => {
 
   test('Form submit creates new Practitioner', async () => {
     const user = userEvent.setup();
-    setup('/Practitioner/new');
+    await setup('/Practitioner/new');
 
     await waitFor(() => {
       expect(screen.getByText('New Practitioner')).toBeInTheDocument();
@@ -83,7 +85,7 @@ describe('ResourceCreatePage', () => {
 
   test('Form submit creates new Task and navigates', async () => {
     const user = userEvent.setup();
-    setup('/Task/new');
+    await setup('/Task/new');
 
     await waitFor(() => {
       expect(screen.getByText('New Task')).toBeInTheDocument();
@@ -111,7 +113,7 @@ describe('ResourceCreatePage', () => {
 
   test('Form submit creates new Task with patient context and navigates', async () => {
     const user = userEvent.setup();
-    setup(`/Patient/${HomerSimpson.id}/Task/new`);
+    await setup(`/Patient/${HomerSimpson.id}/Task/new`);
 
     await waitFor(() => {
       expect(screen.getByText('New Task')).toBeInTheDocument();
@@ -146,7 +148,7 @@ describe('ResourceCreatePage', () => {
 
   test('Handles form submission error', async () => {
     const user = userEvent.setup();
-    setup('/Practitioner/new');
+    await setup('/Practitioner/new');
 
     await waitFor(() => {
       expect(screen.getByText('New Practitioner')).toBeInTheDocument();

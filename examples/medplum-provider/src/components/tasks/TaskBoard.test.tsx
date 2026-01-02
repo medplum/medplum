@@ -5,6 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { Task, Practitioner, Bundle } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
@@ -553,5 +554,62 @@ describe('TaskBoard', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  test('auto-selects first task when tasks are available and no task is selected', async () => {
+    const task1: Task = {
+      ...mockTask,
+      id: 'task-1',
+      code: { text: 'First Task' },
+      description: 'First task description',
+    };
+    const task2: Task = {
+      ...mockTask,
+      id: 'task-2',
+      code: { text: 'Second Task' },
+    };
+
+    await medplum.createResource(task1);
+    await medplum.createResource(task2);
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [{ resource: task1 }, { resource: task2 }],
+    } as Bundle<WithId<Task>>);
+
+    const getTaskUri = vi.fn((task: Task) => `/Task/${task.id}`);
+
+    setup('', { getTaskUri });
+
+    // Wait for tasks to load
+    await waitFor(() => {
+      expect(screen.getByText('First Task')).toBeInTheDocument();
+      expect(screen.getByText('Second Task')).toBeInTheDocument();
+    });
+
+    // Verify getTaskUri was called with the first task to navigate to it
+    await waitFor(() => {
+      expect(getTaskUri).toHaveBeenCalledWith(task1);
+    });
+  });
+
+  test('does not auto-select when no tasks are available', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 0,
+      entry: [],
+    } as any);
+
+    const getTaskUri = vi.fn((task: Task) => `/Task/${task.id}`);
+
+    setup('', { getTaskUri });
+    await waitFor(() => {
+      expect(screen.getByText('No tasks available.')).toBeInTheDocument();
+    });
+    expect(screen.getByText('No task selected')).toBeInTheDocument();
+    expect(getTaskUri).not.toHaveBeenCalled();
   });
 });
