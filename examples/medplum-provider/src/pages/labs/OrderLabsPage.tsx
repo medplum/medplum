@@ -24,8 +24,8 @@ import {
 } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { PerformingLabInput } from '../../components/PerformingLabInput';
-import { TestMetadataCardInput } from '../../components/TestMetadataCardInput';
-import { CoverageInput } from '../../components/CoverageInput';
+import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { CoverageInput } from '../../components/labs/CoverageInput';
 import { useState, useEffect, useRef } from 'react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
