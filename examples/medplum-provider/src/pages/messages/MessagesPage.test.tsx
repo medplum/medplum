@@ -24,7 +24,6 @@ describe('MessagesPage', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (messageId?: string): void => {

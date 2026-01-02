@@ -36,7 +36,6 @@ describe('ThreadInbox', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
     vi.mocked(reactHooks.useSubscription).mockClear();
-    await medplum.createResource(HomerSimpson);
 
     // Mock search and graphql to return empty results by default
     medplum.search = vi.fn().mockResolvedValue({

@@ -29,12 +29,8 @@ async function setup(url: string, medplum = new MockClient()): Promise<void> {
 }
 
 describe('PatientSearchPage', () => {
-  let medplum: MockClient;
-
   beforeEach(async () => {
-    medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   test('Renders default page with Patient resource type', async () => {

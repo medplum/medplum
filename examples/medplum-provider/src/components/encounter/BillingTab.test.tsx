@@ -15,7 +15,7 @@ import type {
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
-import { HomerSimpson, DrAliceSmith, MockClient } from '@medplum/mock';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { BillingTab } from './BillingTab';
@@ -106,8 +106,6 @@ describe('BillingTab', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(HomerSimpson);
-    await medplum.createResource(DrAliceSmith);
     vi.clearAllMocks();
     // Mock useDebouncedUpdateResource to return a function that resolves immediately
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(

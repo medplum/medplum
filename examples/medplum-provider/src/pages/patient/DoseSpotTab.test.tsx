@@ -20,7 +20,6 @@ describe('DoseSpotTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (url: string): ReturnType<typeof render> => {

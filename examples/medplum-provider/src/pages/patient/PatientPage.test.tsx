@@ -19,7 +19,6 @@ describe('PatientPage', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (initialPath = '/Patient/patient-123'): ReturnType<typeof render> => {
