@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Flex, Group, Menu, Stack } from '@mantine/core';
+import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
+import type { WithId } from '@medplum/core';
+import { createReference, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   ChargeItem,
   Claim,
@@ -13,32 +16,30 @@ import type {
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
-import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
-import type { JSX } from 'react';
-import { VisitDetailsPanel } from './VisitDetailsPanel';
-import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
-import { showErrorNotification } from '../../utils/notifications';
 import { useMedplum } from '@medplum/react';
-import { createSelfPayCoverage } from '../../utils/coverage';
-import { ConditionList } from '../Conditions/ConditionList';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
-import { ChargeItemList } from '../ChargeItem/ChargeItemList';
-import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
+import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { calculateTotalPrice } from '../../utils/chargeitems';
-import { useDebouncedCallback } from '@mantine/hooks';
+import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
+import { createSelfPayCoverage } from '../../utils/coverage';
+import { showErrorNotification } from '../../utils/notifications';
+import { ChargeItemList } from '../ChargeItem/ChargeItemList';
+import { ConditionList } from '../Conditions/ConditionList';
+import { VisitDetailsPanel } from './VisitDetailsPanel';
 
-interface BillingTabProps {
-  patient: Patient;
-  encounter: Encounter;
-  setEncounter: (encounter: Encounter) => void;
-  practitioner: Practitioner | undefined;
-  setPractitioner: (practitioner: Practitioner) => void;
-  chargeItems: ChargeItem[] | undefined;
-  setChargeItems: (chargeItems: ChargeItem[]) => void;
-  claim: Claim | undefined;
-  setClaim: (claim: Claim) => void;
+export interface BillingTabProps {
+  patient: WithId<Patient>;
+  encounter: WithId<Encounter>;
+  setEncounter: (encounter: WithId<Encounter>) => void;
+  practitioner: WithId<Practitioner> | undefined;
+  setPractitioner: (practitioner: WithId<Practitioner>) => void;
+  chargeItems: WithId<ChargeItem>[] | undefined;
+  setChargeItems: (chargeItems: WithId<ChargeItem>[]) => void;
+  claim: WithId<Claim> | undefined;
+  setClaim: (claim: WithId<Claim>) => void;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
@@ -91,7 +92,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (coverageResults.length > 0) {
         coverageForClaim = coverageResults[0];
       } else {
-        coverageForClaim = await createSelfPayCoverage(medplum, patient.id);
+        coverageForClaim = await createSelfPayCoverage(medplum, patient);
       }
     }
 
@@ -102,7 +103,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         {
           sequence: 1,
           focal: true,
-          coverage: { reference: getReferenceString(coverageForClaim) },
+          coverage: createReference(coverageForClaim),
         },
       ],
       diagnosis: diagnosisArray,
@@ -137,7 +138,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
       if (savedEncounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
-        setPractitioner(practitionerResult as Practitioner);
+        setPractitioner(practitionerResult as WithId<Practitioner>);
       }
 
       if (!patient?.id || !encounter?.id || !practitioner?.id || !chargeItems?.length) {
@@ -145,22 +146,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       }
 
       if (!claim) {
-        const newClaim = await createClaimFromEncounter(
-          medplum,
-          patient.id,
-          encounter.id,
-          practitioner.id,
-          chargeItems
-        );
+        const newClaim = await createClaimFromEncounter(medplum, patient, encounter, practitioner, chargeItems);
         if (newClaim) {
           setClaim(newClaim);
         }
       } else {
         const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
         if (providerRefNeedsUpdate) {
-          const updatedClaim: Claim = await medplum.updateResource({
+          const updatedClaim = await medplum.updateResource({
             ...claim,
-            provider: { reference: getReferenceString(practitioner) },
+            provider: createReference(practitioner),
           });
           setClaim(updatedClaim);
         }
@@ -171,12 +166,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, SAVE_TIMEOUT_MS);
 
   const updateChargeItems = useCallback(
-    async (updatedChargeItems: ChargeItem[]): Promise<void> => {
+    async (updatedChargeItems: WithId<ChargeItem>[]): Promise<void> => {
       setChargeItems(updatedChargeItems);
       if (claim?.id && updatedChargeItems.length > 0 && encounter) {
-        const updatedClaim: Claim = {
+        const updatedClaim = {
           ...claim,
-          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
+          item: getCptChargeItems(updatedChargeItems, createReference(encounter)),
           total: { value: calculateTotalPrice(updatedChargeItems) },
         };
         setClaim(updatedClaim);

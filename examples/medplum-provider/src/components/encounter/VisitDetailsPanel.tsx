@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Card, Stack, Text } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
@@ -24,9 +24,7 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
       ...encounter,
       participant: [
         {
-          individual: {
-            reference: getReferenceString(practitioner),
-          },
+          individual: createReference(practitioner),
         },
       ],
     };

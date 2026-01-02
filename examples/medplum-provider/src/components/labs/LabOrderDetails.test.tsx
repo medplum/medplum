@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type {
-  Patient,
-  ServiceRequest,
-  Practitioner,
   DiagnosticReport,
   DocumentReference,
-  QuestionnaireResponse,
   Observation,
+  Patient,
+  Practitioner,
+  QuestionnaireResponse,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { LabOrderDetails } from './LabOrderDetails';
 
 // Mock the documentReference utility
@@ -24,7 +25,7 @@ vi.mock('../../utils/documentReference', () => ({
   getHealthGorillaRequisitionId: vi.fn(),
 }));
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],

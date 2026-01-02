@@ -1,15 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
-import type { Coverage } from '@medplum/fhirtypes';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { Coverage, Patient } from '@medplum/fhirtypes';
 
 /**
  * Creates a self-pay coverage for a patient
  * @param medplum - Medplum client instance
- * @param patientId - ID of the patient
+ * @param patient - The patient resource
  * @returns Promise with the created Coverage resource
  */
-export async function createSelfPayCoverage(medplum: MedplumClient, patientId: string): Promise<Coverage> {
+export async function createSelfPayCoverage(medplum: MedplumClient, patient: WithId<Patient>): Promise<Coverage> {
   return medplum.createResource({
     resourceType: 'Coverage',
     status: 'active',
@@ -23,9 +24,9 @@ export async function createSelfPayCoverage(medplum: MedplumClient, patientId: s
       ],
       text: 'Self Pay',
     },
-    subscriber: { reference: `Patient/${patientId}` },
-    beneficiary: { reference: `Patient/${patientId}` },
-    payor: [{ reference: `Patient/${patientId}` }],
+    subscriber: createReference(patient),
+    beneficiary: createReference(patient),
+    payor: [createReference(patient)],
     period: {
       start: new Date().toISOString(),
     },

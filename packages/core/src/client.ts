@@ -1804,19 +1804,19 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param reference - The FHIR reference.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
-  getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
+  getCachedReference<T extends Resource>(reference: Reference<T>): WithId<T> | undefined {
     const refString = reference.reference as string;
     if (!refString) {
       return undefined;
     }
     if (refString === 'system') {
-      return system as T;
+      return system as WithId<T>;
     }
     const [resourceType, id] = refString.split('/');
     if (!resourceType || !id) {
       return undefined;
     }
-    return this.getCached(resourceType as ResourceType, id) as T | undefined;
+    return this.getCached(resourceType as ResourceType, id) as WithId<T> | undefined;
   }
 
   /**

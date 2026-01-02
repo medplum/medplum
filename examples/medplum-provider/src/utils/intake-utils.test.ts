@@ -163,7 +163,7 @@ describe('intake utils', () => {
     test('upserts codeable concept observation', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
       await upsertObservation(
-        medplum as any,
+        medplum,
         patient,
         observationCodeMapping.smokingStatus,
         observationCategoryMapping.socialHistory,
@@ -176,7 +176,7 @@ describe('intake utils', () => {
     test('skips when no value provided', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
       await upsertObservation(
-        medplum as any,
+        medplum,
         patient,
         observationCodeMapping.smokingStatus,
         observationCategoryMapping.socialHistory,
@@ -190,13 +190,13 @@ describe('intake utils', () => {
   describe('resource helpers', () => {
     test('addAllergy returns early without substance', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource');
-      await addAllergy(medplum as any, patient, {});
+      await addAllergy(medplum, patient, {});
       expect(upsertSpy).not.toHaveBeenCalled();
     });
 
     test('addAllergy upserts when code present', async () => {
       const upsertSpy = vi.spyOn(medplum, 'upsertResource').mockResolvedValue({} as any);
-      await addAllergy(medplum as any, patient, {
+      await addAllergy(medplum, patient, {
         'allergy-substance': { valueCoding: { system: 'http://example.com', code: 'peanut' } },
       });
       expect(upsertSpy).toHaveBeenCalledWith(
@@ -217,7 +217,7 @@ describe('intake utils', () => {
         'relationship-to-subscriber': { valueCoding: { code: 'self' } },
       };
 
-      await addCoverage(medplum as any, patient, answers);
+      await addCoverage(medplum, patient, answers);
 
       expect(upsertSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -233,7 +233,7 @@ describe('intake utils', () => {
     test('addConsent creates resource with provided scope', async () => {
       const createSpy = vi.spyOn(medplum, 'createResource').mockResolvedValue({} as any);
       await addConsent(
-        medplum as any,
+        medplum,
         patient,
         true,
         observationCategoryMapping.socialHistory,

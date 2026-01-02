@@ -123,7 +123,7 @@ describe('onboardPatient', () => {
     const questionnaire = { resourceType: 'Questionnaire' } as Questionnaire;
     const response = buildResponseFromAnswers(mockAnswers);
 
-    const patient = await onboardPatient(medplum as any, questionnaire, response);
+    const patient = await onboardPatient(medplum, questionnaire, response);
 
     expect(patient.id).toBe('patient-1');
     expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Patient' }));

@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import type { ServiceRequest, Task } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskPanel } from './TaskPanel';
-import type { ServiceRequest, Task } from '@medplum/fhirtypes';
 
 describe('TaskPanel', () => {
   let medplum: MockClient;
@@ -18,7 +19,7 @@ describe('TaskPanel', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (task: Task, onUpdateTask: (task: Task) => void): void => {
+  const setup = (task: WithId<Task>, onUpdateTask: (task: WithId<Task>) => void): void => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -30,7 +31,7 @@ describe('TaskPanel', () => {
     );
   };
 
-  const mockTask: Task = {
+  const mockTask: WithId<Task> = {
     resourceType: 'Task',
     id: 'task-123',
     status: 'in-progress',
@@ -40,7 +41,7 @@ describe('TaskPanel', () => {
   };
 
   test('renders TaskQuestionnaireForm when focus is Questionnaire', async () => {
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       focus: { reference: 'Questionnaire/123' },
       input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: 'Questionnaire/123' } }],
@@ -55,7 +56,7 @@ describe('TaskPanel', () => {
   });
 
   test('renders TaskServiceRequest when focus is ServiceRequest', async () => {
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       focus: { reference: 'ServiceRequest/123' },
       for: { reference: 'Patient/123' },

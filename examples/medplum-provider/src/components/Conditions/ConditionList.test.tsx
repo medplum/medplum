@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { MedplumProvider } from '@medplum/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ConditionList } from './ConditionList';
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],
 };
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',

@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { renderHook, waitFor } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
-import type { JSX } from 'react';
+import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { MedplumProvider } from '@medplum/react';
+import { renderHook, waitFor } from '@testing-library/react';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { usePatient } from './usePatient';
 
 vi.mock('react-router', async () => {
@@ -15,8 +17,6 @@ vi.mock('react-router', async () => {
     useParams: vi.fn(),
   };
 });
-
-import { useParams } from 'react-router';
 
 describe('usePatient', () => {
   let medplum: MockClient;
@@ -48,7 +48,7 @@ describe('usePatient', () => {
   });
 
   test('loads patient resource by ID from URL params', async () => {
-    const mockPatient: Patient = {
+    const mockPatient: WithId<Patient> = {
       resourceType: 'Patient',
       id: 'patient-123',
       name: [{ given: ['John'], family: 'Doe' }],
@@ -81,7 +81,7 @@ describe('usePatient', () => {
   });
 
   test('handles patient reference correctly', async () => {
-    const mockPatient: Patient = {
+    const mockPatient: WithId<Patient> = {
       resourceType: 'Patient',
       id: 'patient-456',
       name: [{ given: ['Jane'], family: 'Smith' }],
