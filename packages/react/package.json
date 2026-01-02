@@ -58,7 +58,7 @@
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "chromatic": "chromatic --exit-zero-on-changes --build-script-name=storybook --exit-once-uploaded",
     "clean": "rimraf dist storybook-static",
