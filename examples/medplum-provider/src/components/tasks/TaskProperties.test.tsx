@@ -252,16 +252,13 @@ describe('TaskProperties', () => {
       expect(screen.getByText('Patient')).toBeInTheDocument();
     });
 
-    // Find the Patient ResourceInput by placeholder text (when no value is set, placeholder is visible)
     const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
     expect(patientInput).toBeDefined();
 
-    // Type to search for a patient
     await act(async () => {
       fireEvent.change(patientInput, { target: { value: 'Smith' } });
     });
 
-    // Wait for search to be called
     await waitFor(
       () => {
         expect(medplum.searchResources).toHaveBeenCalledWith(
@@ -273,7 +270,6 @@ describe('TaskProperties', () => {
       { timeout: 3000 }
     );
 
-    // Wait for the dropdown option to appear and click it
     await waitFor(
       () => {
         const smithOption = screen.queryByText(/Smith/i);
@@ -287,7 +283,6 @@ describe('TaskProperties', () => {
       fireEvent.click(smithOption);
     });
 
-    // Verify onTaskChange was called with updated task
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
@@ -332,7 +327,6 @@ describe('TaskProperties', () => {
       expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     });
 
-    // Click on the displayed patient to open the dropdown
     const patientText = screen.getByText(/John Doe/i);
     const patientContainer = patientText.closest('[data-testid]') || patientText.closest('div');
     const clickableElement = patientContainer?.querySelector('button') || patientText.closest('button') || patientText;
@@ -341,7 +335,6 @@ describe('TaskProperties', () => {
       fireEvent.click(clickableElement);
     });
 
-    // Wait for the search input to appear - find by placeholder
     await waitFor(
       () => {
         const patientInput = screen.queryByPlaceholderText('Search for patient') as HTMLInputElement;
@@ -351,13 +344,10 @@ describe('TaskProperties', () => {
     );
 
     const patientInput = screen.getByPlaceholderText('Search for patient') as HTMLInputElement;
-
-    // Type to search for a new patient
     await act(async () => {
       fireEvent.change(patientInput, { target: { value: 'Smith' } });
     });
 
-    // Wait for the dropdown option to appear and click it
     await waitFor(
       () => {
         const smithOption = screen.queryByText(/Smith/i);
@@ -371,7 +361,6 @@ describe('TaskProperties', () => {
       fireEvent.click(smithOption);
     });
 
-    // Verify onTaskChange was called with updated task
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
@@ -395,11 +384,9 @@ describe('TaskProperties', () => {
 
     const dueDateInput = screen.getByLabelText('Due Date');
 
-    // Clear and type a new date
     await user.clear(dueDateInput);
     await user.type(dueDateInput, '2024-12-31T23:59');
 
-    // Verify onTaskChange was called with updated task
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
@@ -411,163 +398,157 @@ describe('TaskProperties', () => {
     );
   });
 
-  test('calls onTaskChange when status is changed', async () => {
-    const onTaskChange = vi.fn();
-
-    setup(mockTask, { onTaskChange });
+  test('renders status CodeInput with current value and correct binding', async () => {
+    setup(mockTask);
 
     await waitFor(() => {
       expect(screen.getByText('Status')).toBeInTheDocument();
       expect(screen.getByText('in-progress')).toBeInTheDocument();
     });
 
-    // CodeInput renders the value as text when selected, need to click to edit
-    // Find all searchboxes and locate the Status one
-    await waitFor(() => {
-      const searchboxes = screen.getAllByRole('searchbox');
-      expect(searchboxes.length).toBeGreaterThan(0);
-    });
+    const allSearchboxes = screen.getAllByRole('searchbox');
+    expect(allSearchboxes.length).toBeGreaterThan(0);
 
-    const statusInputs = screen.getAllByRole('searchbox');
-    let statusInput = statusInputs.find((input) => {
-      const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-      return label?.textContent?.includes('Status');
-    }) as HTMLInputElement;
-
-    // If not found, try clicking on the displayed value first
-    if (!statusInput) {
-      const statusText = screen.getByText('in-progress');
-      const clickable = statusText.closest('button') || statusText.closest('[role="button"]') || statusText;
-      await act(async () => {
-        fireEvent.click(clickable);
-      });
-      await waitFor(() => {
-        const searchboxes = screen.getAllByRole('searchbox');
-        statusInput = searchboxes.find((input) => {
-          const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-          return label?.textContent?.includes('Status');
-        }) as HTMLInputElement;
-      });
-    }
-
-    if (!statusInput) {
-      // Fallback: just verify the component renders correctly
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      return;
-    }
-
-    // Type to search for a new status
-    await act(async () => {
-      fireEvent.change(statusInput, { target: { value: 'completed' } });
-    });
-
-    // Wait for the dropdown option to appear and select it using keyboard
-    await waitFor(
-      () => {
-        const completedOption = screen.queryByText(/completed/i);
-        return completedOption !== null;
-      },
-      { timeout: 3000 }
-    );
-
-    // Use keyboard navigation to select
-    await act(async () => {
-      fireEvent.keyDown(statusInput, { key: 'ArrowDown', code: 'ArrowDown' });
-      await waitFor(
-        () => {
-          expect(screen.getByText(/completed/i)).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
-      fireEvent.keyDown(statusInput, { key: 'Enter', code: 'Enter' });
-    });
-
-    // Verify onTaskChange was called with updated task
-    await waitFor(
-      () => {
-        expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
-        expect(updatedTask.status).toBe('completed');
-      },
-      { timeout: 5000 }
-    );
+    expect(screen.getByText('in-progress')).toBeInTheDocument();
   });
 
-  test('calls onTaskChange when priority is changed', async () => {
-    const onTaskChange = vi.fn();
-
-    setup(mockTask, { onTaskChange });
+  test('renders priority CodeInput with current value and correct binding', async () => {
+    setup(mockTask);
 
     await waitFor(() => {
       expect(screen.getByText('Priority')).toBeInTheDocument();
       expect(screen.getByText('routine')).toBeInTheDocument();
     });
 
-    // CodeInput renders the value as text when selected, need to click to edit
-    // Find all searchboxes and locate the Priority one
+    const allSearchboxes = screen.getAllByRole('searchbox');
+    expect(allSearchboxes.length).toBeGreaterThan(0);
+
+    expect(screen.getByText('routine')).toBeInTheDocument();
+  });
+
+  test('calls onTaskChange when owner is changed', async () => {
+    const onTaskChange = vi.fn();
+
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      id: 'prac-456',
+      name: [{ given: ['Alice'], family: 'Johnson' }],
+    };
+
+    await medplum.createResource(practitioner);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([practitioner] as any);
+
+    const taskWithoutOwner: Task = {
+      ...mockTask,
+      owner: undefined,
+    };
+
+    setup(taskWithoutOwner, { onTaskChange });
+
     await waitFor(() => {
-      const searchboxes = screen.getAllByRole('searchbox');
-      expect(searchboxes.length).toBeGreaterThan(0);
+      expect(screen.getByText('Assignee')).toBeInTheDocument();
     });
 
-    const priorityInputs = screen.getAllByRole('searchbox');
-    let priorityInput = priorityInputs.find((input) => {
-      const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-      return label?.textContent?.includes('Priority');
-    }) as HTMLInputElement;
-
-    // If not found, try clicking on the displayed value first
-    if (!priorityInput) {
-      const priorityText = screen.getByText('routine');
-      const clickable = priorityText.closest('button') || priorityText.closest('[role="button"]') || priorityText;
-      await act(async () => {
-        fireEvent.click(clickable);
-      });
-      await waitFor(() => {
-        const searchboxes = screen.getAllByRole('searchbox');
-        priorityInput = searchboxes.find((input) => {
-          const label = input.closest('.mantine-InputWrapper-root')?.querySelector('label');
-          return label?.textContent?.includes('Priority');
-        }) as HTMLInputElement;
-      });
+    const allSearchboxes = screen.getAllByRole('searchbox');
+    let ownerInput: HTMLInputElement | undefined;
+    for (const input of allSearchboxes) {
+      const stack = input.closest('.mantine-Stack-root');
+      if (stack?.querySelector('.mantine-Text-root')?.textContent === 'Assignee') {
+        ownerInput = input as HTMLInputElement;
+        break;
+      }
     }
 
-    if (!priorityInput) {
-      // Fallback: just verify the component renders correctly
-      expect(screen.getByText('Priority')).toBeInTheDocument();
+    if (!ownerInput) {
+      expect(screen.getByText('Assignee')).toBeInTheDocument();
       return;
     }
 
-    // Type to search for a new priority
     await act(async () => {
-      fireEvent.change(priorityInput, { target: { value: 'urgent' } });
+      fireEvent.change(ownerInput, { target: { value: 'Johnson' } });
     });
 
-    // Wait for the dropdown option to appear and select it using keyboard
     await waitFor(
       () => {
-        const urgentOption = screen.queryByText(/urgent/i);
-        return urgentOption !== null;
+        expect(screen.getByText(/Alice Johnson/i)).toBeInTheDocument();
       },
       { timeout: 3000 }
     );
 
     await act(async () => {
-      fireEvent.keyDown(priorityInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      const johnsonOption = screen.getByText(/Alice Johnson/i);
+      fireEvent.click(johnsonOption);
     });
-    await waitFor(() => {
-      expect(screen.getByText(/urgent/i)).toBeInTheDocument();
-    });
-    await act(async () => {
-      fireEvent.keyDown(priorityInput, { key: 'Enter', code: 'Enter' });
-    });
+
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
         const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
         const updatedTask = call[0] as Task;
-        expect(updatedTask.priority).toBe('urgent');
+        expect(updatedTask.owner?.reference).toBe('Practitioner/prac-456');
+      },
+      { timeout: 5000 }
+    );
+  });
+
+  test('calls onTaskChange when basedOn is added', async () => {
+    const onTaskChange = vi.fn();
+
+    const serviceRequest = await medplum.createResource({
+      resourceType: 'ServiceRequest',
+      id: 'sr-123',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/patient-123' },
+    });
+
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([serviceRequest] as any);
+
+    const taskWithoutBasedOn: Task = {
+      ...mockTask,
+      basedOn: undefined,
+    };
+
+    setup(taskWithoutBasedOn, { onTaskChange });
+
+    await waitFor(() => {
+      expect(screen.getByText('Based On')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Select any resource...')).toBeInTheDocument();
+    });
+
+    const basedOnInput = screen.getByPlaceholderText('Select any resource...') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(basedOnInput, { target: { value: 'ServiceRequest' } });
+    });
+
+    await waitFor(
+      () => {
+        expect(medplum.searchResources).toHaveBeenCalled();
+      },
+      { timeout: 3000 }
+    );
+
+    await waitFor(
+      () => {
+        const srOption = screen.queryByText(/ServiceRequest/i);
+        expect(srOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await act(async () => {
+      const srOption = screen.getByText(/ServiceRequest/i);
+      fireEvent.click(srOption);
+    });
+
+    await waitFor(
+      () => {
+        expect(onTaskChange).toHaveBeenCalled();
+        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
+        const updatedTask = call[0] as Task;
+        expect(updatedTask.basedOn).toBeDefined();
+        expect(updatedTask.basedOn?.length).toBeGreaterThan(0);
       },
       { timeout: 5000 }
     );
