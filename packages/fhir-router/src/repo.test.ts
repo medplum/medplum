@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { OperationOutcomeError, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
@@ -8,6 +8,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
+  OperationOutcomeError,
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
@@ -84,6 +85,15 @@ describe('MemoryRepository', () => {
 
     // Other properties are passed through
     expect(patient.meta?.accounts).toEqual([{ reference: `Account/${account.id}` }]);
+  });
+
+  test('Create resource with duplicate ID throws error', async () => {
+    const id = randomUUID();
+    await repo.createResource({ resourceType: 'Patient', id });
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(OperationOutcomeError);
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(
+      'Assigned ID is already in use'
+    );
   });
 
   test('Read invalid reference', async () => {
