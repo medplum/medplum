@@ -414,7 +414,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
     }
 
     if (!update && resources.has(id)) {
-      throw new Error('Assigned ID is already in use');
+      throw new OperationOutcomeError(badRequest('Assigned ID is already in use'));
     }
 
     resources.set(id, result);
