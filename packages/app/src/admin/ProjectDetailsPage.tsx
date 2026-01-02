@@ -6,9 +6,9 @@ import { notifications, showNotification } from '@mantine/notifications';
 import { getResourceTypes, normalizeErrorString } from '@medplum/core';
 import type { Bundle, BundleEntry, ResourceType } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, useMedplum } from '@medplum/react';
+import { IconCheck, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { IconCheck, IconX } from '@tabler/icons-react';
 import { getProjectId } from '../utils';
 
 interface ResourceCount {
@@ -40,7 +40,7 @@ export function ProjectDetailsPage(): JSX.Element {
 
     try {
       const resourceTypes = getResourceTypes();
-      
+
       // Build a batch bundle with count queries for each resource type
       const request: Bundle = {
         resourceType: 'Bundle',
@@ -118,13 +118,7 @@ export function ProjectDetailsPage(): JSX.Element {
         Calculate Resource Counts
       </Button>
 
-      <Modal
-        opened={modalOpened}
-        onClose={closeModal}
-        title="Resource Counts"
-        size="xl"
-        centered
-      >
+      <Modal opened={modalOpened} onClose={closeModal} title="Resource Counts" size="xl" centered>
         <Stack>
           {totalCount !== undefined && (
             <Text size="lg" fw={500}>
