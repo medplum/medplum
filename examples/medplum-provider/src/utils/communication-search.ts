@@ -45,4 +45,3 @@ export function normalizeCommunicationSearch({
     parsedSearch: parseSearchRequest(`Communication?${normalizedSearch}`),
   };
 }
-

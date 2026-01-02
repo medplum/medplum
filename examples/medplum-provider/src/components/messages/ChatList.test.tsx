@@ -67,11 +67,7 @@ describe('ChatList', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <ChatList
-              threads={threads}
-              selectedCommunication={selectedCommunication}
-              getThreadUri={mockGetThreadUri}
-            />
+            <ChatList threads={threads} selectedCommunication={selectedCommunication} getThreadUri={mockGetThreadUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>

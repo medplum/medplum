@@ -47,8 +47,9 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
     const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
     const parents =
-      bundle.entry?.map((entry) => entry.resource as Communication).filter((r): r is Communication => r !== undefined) ||
-      [];
+      bundle.entry
+        ?.map((entry) => entry.resource as Communication)
+        .filter((r): r is Communication => r !== undefined) || [];
 
     if (bundle.total !== undefined) {
       setTotal(bundle.total);
