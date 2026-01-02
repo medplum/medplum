@@ -25,19 +25,19 @@ describe('ResourceCreatePage', () => {
 
   const setup = async (url: string): Promise<void> => {
     await act(async () => {
-   render(
-      <MemoryRouter initialEntries={[url]}>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
-              <Route path="/Patient/:patientId/:resourceType/new" element={<ResourceCreatePage />} />
-            </Routes>
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+      render(
+        <MemoryRouter initialEntries={[url]}>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
+                <Route path="/Patient/:patientId/:resourceType/new" element={<ResourceCreatePage />} />
+              </Routes>
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
     });
   };
 
