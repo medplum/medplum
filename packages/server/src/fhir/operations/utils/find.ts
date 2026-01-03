@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Slot } from '@medplum/fhirtypes';
+import type { Coding, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import { flatMapMax } from '../../../util/array';
 import type { Interval } from '../../../util/date';
@@ -29,6 +29,31 @@ function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.Zoned
     t = t.add({ days: 1 });
   }
   return results;
+}
+
+function hasMatchingServiceType(slot: Slot, inputCoding: Coding | undefined): boolean {
+  const serviceType = slot.serviceType ?? [];
+  // Slots without any service type are considered as "wildcard" slots that support
+  // any service type codes
+  if (serviceType.length === 0) {
+    return true;
+  }
+
+  // If we didn't get a specific code to test for, we should only match wildcard slots,
+  // which we ruled out above.
+  if (!inputCoding) {
+    return false;
+  }
+
+  // Check if there any of the Slot's service type codes match the input code
+  for (const codeableConcept of serviceType) {
+    for (const coding of codeableConcept.coding ?? []) {
+      if (coding.system === inputCoding.system && coding.code === inputCoding.code) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -203,23 +228,31 @@ export function removeAvailability(availableIntervals: Interval[], blockedInterv
 /**
  * Applies overrides from existing Slots to an availability window
  *
- * @param availability - Ranges of available time
- * @param slots - Slot resources to consider
- * @param range - Interval of time to restrict availability to
+ * @param params - input object
+ * @param params.availability - Ranges of available time
+ * @param params.slots - Slot resources to consider
+ * @param params.range - Interval of time to restrict availability to
+ * @param params.serviceType - Service type to check for "free" slots
  * @returns Updated availability information
  */
-export function applyExistingSlots(availability: Interval[], slots: Slot[], range: Interval): Interval[] {
-  const freeSlotIntervals = slots
+export function applyExistingSlots(params: {
+  availability: Interval[];
+  slots: Slot[];
+  range: Interval;
+  serviceType?: Coding;
+}): Interval[] {
+  const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')
-    .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, range))
+    .filter((slot) => hasMatchingServiceType(slot, params.serviceType))
+    .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, params.range))
     .filter(isDefined);
 
   const busySlotIntervals = normalizeIntervals(
-    slots
+    params.slots
       .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
       .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
   );
-  const allAvailability = normalizeIntervals(availability.concat(freeSlotIntervals));
+  const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));
   return removeAvailability(allAvailability, busySlotIntervals);
 }
 

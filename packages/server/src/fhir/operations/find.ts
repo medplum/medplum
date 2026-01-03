@@ -164,8 +164,8 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const resultSlots: Slot[] = flatMapMax(
     filterByServiceTypes(allSchedulingParameters, serviceTypes),
     ([schedulingParameters, serviceType], _idx, maxCount) => {
-      const scheduleAvailability = resolveAvailability(schedulingParameters, range, timeZone);
-      const availability = applyExistingSlots(scheduleAvailability, slots, range);
+      let availability = resolveAvailability(schedulingParameters, range, timeZone);
+      availability = applyExistingSlots({ availability, slots, range, serviceType });
       return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
         resourceType: 'Slot',
         start: start.toISOString(),
