@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import { JSX, useEffect } from 'react';
+import clsx from 'clsx';
+import type { JSX } from 'react';
+import { useEffect } from 'react';
 import { Card } from '../Card';
 import { CardButton } from '../CardButton';
 import { CardContainer } from '../CardContainer';
 import { Container } from '../Container';
 import { AnimatedCircle } from './AnimatedCircle';
 import { Feature, FeatureGrid } from './FeatureGrid';
-import { HeroSection } from './HeroSection';
 import { Jumbotron } from './Jumbotron';
 import styles from './LandingPage.module.css';
 import { LogoScroller } from './LogoScroller';
@@ -38,7 +39,31 @@ export function LandingPage(): JSX.Element {
         title="Medplum"
         description="Medplum is the open source healthcare developer platform that helps you build, test, and deliver any healthcare product or service."
       >
-        <HeroSection />
+        <div className={styles.heroSection}>
+          <Container>
+            <div className={styles.heroContent}>
+              <h1 className={styles.heroTitle}>Build and run modern healthcare systems</h1>
+              <p className={styles.heroText}>
+                Start with a production-ready provider experience. Extend with APIs, workflows, and integrations as you
+                grow—without rebuilding the foundation.
+              </p>
+              <p className={styles.heroButtons}>
+                <Link href="/docs/provider" className={clsx(styles.getStartedButton, styles.purpleButton)}>
+                  Explore the Provider App
+                </Link>
+                <Link href="/docs" className={clsx(styles.getStartedButton, styles.defaultButton)}>
+                  Build on the Platform
+                </Link>
+              </p>
+              <p className={styles.heroSubText}>
+                Built for teams shipping clinical software in production. Hosted or self-managed.
+              </p>
+            </div>
+          </Container>
+          <Container>
+            <img src="/img/provider/medplum-provider-app-cover-image.webp" alt="Medplum Provider App screenshot" />
+          </Container>
+        </div>
         <Container>
           <Section>
             <CardContainer>
@@ -70,6 +95,78 @@ export function LandingPage(): JSX.Element {
                 </p>
               </Card>
             </CardContainer>
+          </Section>
+          <SectionHeader>
+            <h2>Trusted by</h2>
+          </SectionHeader>
+          <Section>
+            <LogoScroller />
+          </Section>
+          <SectionHeader>
+            <h2>Connect to the healthcare ecosystem</h2>
+            <p>
+              Healthcare teams rely on a complex network of external systems.
+              <br />
+              Medplum supports integrations across common surfaces, and can be extended through plugins and custom
+              modules.
+            </p>
+          </SectionHeader>
+          <Section>
+            <FeatureGrid columns={3}>
+              <Feature title="Labs" imgSrc="/img/icons/api.svg">
+                Orders, results, and workflows that fit real operations.
+              </Feature>
+              <Feature title="Medications" imgSrc="/img/icons/code.svg">
+                Medication workflows and integrations designed for clinical safety.
+              </Feature>
+              <Feature title="Billing & RCM" imgSrc="/img/icons/automation.svg">
+                Integrate financial workflows without duct-taping your system.
+              </Feature>
+              <Feature title="HIE & exchange" imgSrc="/img/icons/locker.svg">
+                Support data exchange patterns used in real-world interoperability.
+              </Feature>
+              <Feature title="Third-party tools" imgSrc="/img/icons/shield.svg">
+                Connect CRMs, scheduling, imaging, and specialty systems.
+              </Feature>
+              <Feature title="Plugins & modules" imgSrc="/img/icons/scalable.svg">
+                Extend Medplum with reusable integration components.
+              </Feature>
+            </FeatureGrid>
+          </Section>
+          <SectionHeader>
+            <h2>A platform built for healthcare complexity</h2>
+            <p>
+              Build what you need—without rebuilding the foundation.
+              <br />
+              Medplum provides the core primitives required to ship and operate healthcare software in production.
+            </p>
+          </SectionHeader>
+          <Section>
+            <FeatureGrid columns={3}>
+              <Feature title="API-first" imgSrc="/img/icons/api.svg">
+                Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
+              </Feature>
+              <Feature title="FHIR-native" imgSrc="/img/icons/code.svg">
+                Anticipate nuances and avoid costly re-writes down the line with default FHIR-standard formatted data
+                storage.
+              </Feature>
+              <Feature title="Automation" imgSrc="/img/icons/automation.svg">
+                Streamline your operations and automate any workflow to activate, track, manage, and measure tasks of
+                any level of complexity.
+              </Feature>
+              <Feature title="Open source" imgSrc="/img/icons/locker.svg">
+                Medplum's core technology is open source (Apache 2.0 license) and freely available in GitHub, so there’s
+                never a risk of vendor lock-in.
+              </Feature>
+              <Feature title="Secure &amp; Compliant" imgSrc="/img/icons/shield.svg">
+                Comes with HIPAA and SOC2 compliance out of the box, follows all OWASP security guidelines, and is
+                verified by multiple penetration tests.
+              </Feature>
+              <Feature title="Scalable" imgSrc="/img/icons/scalable.svg">
+                From MVP to IPO - and every major milestone in between - Medplum’s technology backs you up and grows
+                with you.
+              </Feature>
+            </FeatureGrid>
           </Section>
           <SectionHeader>
             <h2>What will you build?</h2>
@@ -109,43 +206,6 @@ export function LandingPage(): JSX.Element {
             <pre>
               <code className={styles.initCode}>$ npm init medplum</code>
             </pre>
-          </Section>
-          <SectionHeader>
-            <h2>Focus on building apps, not infra</h2>
-            <p>The future-ready, medical-grade backend that tames the complexity of healthcare development.</p>
-          </SectionHeader>
-          <Section>
-            <FeatureGrid columns={3}>
-              <Feature title="API-first" imgSrc="/img/icons/api.svg">
-                Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
-              </Feature>
-              <Feature title="FHIR-native" imgSrc="/img/icons/code.svg">
-                Anticipate nuances and avoid costly re-writes down the line with default FHIR-standard formatted data
-                storage.
-              </Feature>
-              <Feature title="Automation" imgSrc="/img/icons/automation.svg">
-                Streamline your operations and automate any workflow to activate, track, manage, and measure tasks of
-                any level of complexity.
-              </Feature>
-              <Feature title="Open source" imgSrc="/img/icons/locker.svg">
-                Medplum's core technology is open source (Apache 2.0 license) and freely available in GitHub, so there’s
-                never a risk of vendor lock-in.
-              </Feature>
-              <Feature title="Secure &amp; Compliant" imgSrc="/img/icons/shield.svg">
-                Comes with HIPAA and SOC2 compliance out of the box, follows all OWASP security guidelines, and is
-                verified by multiple penetration tests.
-              </Feature>
-              <Feature title="Scalable" imgSrc="/img/icons/scalable.svg">
-                From MVP to IPO - and every major milestone in between - Medplum’s technology backs you up and grows
-                with you.
-              </Feature>
-            </FeatureGrid>
-          </Section>
-          <SectionHeader>
-            <h2>Trusted by</h2>
-          </SectionHeader>
-          <Section>
-            <LogoScroller />
           </Section>
           <SectionHeader>
             <h2>Solutions</h2>
