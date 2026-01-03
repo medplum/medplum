@@ -119,3 +119,28 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Medplum provider container (your fork) - using prebuilt image (Option B)
+  medplum-provider:
+    image: gabriel-virtualizehealth/medplum-provider:latest
+    restart: always
+    depends_on:
+      medplum-server:
+        condition: service_healthy
+    ports:
+      - '3010:3010'
+
+    # Example env vars — update to whatever medplum-provider expects.
+    environment:
+      # Point provider to the server service (container network name)
+      MEDPLUM_BASE_URL: 'http://medplum-server:8103/'
+      # Examples — adjust/remove to match your provider app's configuration
+      PROVIDER_PORT: 3010
+      NODE_ENV: development
+
+    healthcheck:
+      # Adjust the healthcheck path if your provider app exposes a different endpoint
+      test: ['CMD', 'curl', '-f', 'http://localhost:3010']
+      interval: 10s
+      timeout: 5s
+      retries: 5
