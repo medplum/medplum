@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal, ActionIcon } from '@mantine/core';
+import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { Encounter, HumanName, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconChevronDown, IconLock, IconLockOpen } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
-import { useDisclosure } from '@mantine/hooks';
-import { SignLockDialog } from './SignLockDialog';
+import { useState } from 'react';
 import { ChartNoteStatus } from '../../types/encounter';
+import { SignLockDialog } from './SignLockDialog';
 
 interface EncounterHeaderProps {
   encounter: Encounter;
@@ -176,22 +176,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             ]}
             fullWidth
             radius="md"
-            color="gray"
             size="md"
-            styles={(theme) => ({
-              root: {
-                backgroundColor: theme.colors.gray[1],
-                borderRadius: theme.radius.md,
-              },
-              indicator: {
-                backgroundColor: theme.white,
-              },
-              label: {
-                fontWeight: 500,
-                color: theme.colors.dark[9],
-                padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-              },
-            })}
           />
         </Box>
       </Paper>
