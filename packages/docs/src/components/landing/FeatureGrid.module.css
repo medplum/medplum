@@ -56,6 +56,12 @@
   background: var(--oc-gray-9);
 }
 
+.featureIcon svg {
+  /* #9C36B5 */
+  color: var(--oc-grape-8);
+  currentcolor: var(--oc-grape-8);
+}
+
 .featureCell h3 {
   margin: 0 0 0.5rem 0;
   font-size: 1.375rem;

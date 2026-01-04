@@ -1,6 +1,23 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
+import {
+  IconChartBarPopular,
+  IconCode,
+  IconDeviceIpadHorizontalCode,
+  IconExchange,
+  IconFlask,
+  IconHeart,
+  IconHeartRateMonitor,
+  IconMicrophone,
+  IconPillFilled,
+  IconPlugConnected,
+  IconReceipt2,
+  IconSettings,
+  IconShieldCheckFilled,
+  IconTools,
+  IconUsers,
+} from '@tabler/icons-react';
 import Layout from '@theme/Layout';
 import { clsx } from 'clsx';
 import type { JSX } from 'react';
@@ -35,10 +52,7 @@ export function LandingPage(): JSX.Element {
 
   return (
     <div className="page">
-      <Layout
-        title="Medplum"
-        description="Medplum is the open source healthcare developer platform that helps you build, test, and deliver any healthcare product or service."
-      >
+      <Layout>
         <div className={styles.heroSection}>
           <Container>
             <div className={styles.heroContent}>
@@ -114,22 +128,22 @@ export function LandingPage(): JSX.Element {
           </SectionHeader>
           <Section>
             <FeatureGrid columns={3}>
-              <Feature title="Labs" imgSrc="/img/icons/api.svg">
+              <Feature title="Labs" icon={<IconFlask />}>
                 Orders, results, and workflows that fit real operations.
               </Feature>
-              <Feature title="Medications" imgSrc="/img/icons/code.svg">
+              <Feature title="Medications" icon={<IconPillFilled />}>
                 Medication workflows and integrations designed for clinical safety.
               </Feature>
-              <Feature title="Billing & RCM" imgSrc="/img/icons/automation.svg">
+              <Feature title="Billing & RCM" icon={<IconReceipt2 />}>
                 Integrate financial workflows without duct-taping your system.
               </Feature>
-              <Feature title="Health exchange" imgSrc="/img/icons/locker.svg">
+              <Feature title="Health exchange" icon={<IconExchange />}>
                 Support data exchange patterns used in real-world interoperability.
               </Feature>
-              <Feature title="Third-party tools" imgSrc="/img/icons/shield.svg">
+              <Feature title="Third-party tools" icon={<IconTools />}>
                 Connect CRMs, scheduling, imaging, and specialty systems.
               </Feature>
-              <Feature title="Plugins & modules" imgSrc="/img/icons/scalable.svg">
+              <Feature title="Plugins & modules" icon={<IconPlugConnected />}>
                 Extend Medplum with reusable integration components.
               </Feature>
             </FeatureGrid>
@@ -144,26 +158,26 @@ export function LandingPage(): JSX.Element {
           </SectionHeader>
           <Section>
             <FeatureGrid columns={3}>
-              <Feature title="API-first" imgSrc="/img/icons/api.svg">
+              <Feature title="API-first" icon={<IconCode />}>
                 Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
               </Feature>
-              <Feature title="FHIR-native" imgSrc="/img/icons/code.svg">
+              <Feature title="FHIR-native" icon={<IconHeartRateMonitor />}>
                 Anticipate nuances and avoid costly re-writes down the line with default FHIR-standard formatted data
                 storage.
               </Feature>
-              <Feature title="Automation" imgSrc="/img/icons/automation.svg">
+              <Feature title="Automation" icon={<IconSettings />}>
                 Streamline your operations and automate any workflow to activate, track, manage, and measure tasks of
                 any level of complexity.
               </Feature>
-              <Feature title="Open source" imgSrc="/img/icons/locker.svg">
+              <Feature title="Open source" icon={<IconDeviceIpadHorizontalCode />}>
                 Medplum's core technology is open source (Apache 2.0 license) and freely available in GitHub, so there’s
                 never a risk of vendor lock-in.
               </Feature>
-              <Feature title="Secure &amp; Compliant" imgSrc="/img/icons/shield.svg">
+              <Feature title="Secure &amp; Compliant" icon={<IconShieldCheckFilled />}>
                 Comes with HIPAA and SOC2 compliance out of the box, follows all OWASP security guidelines, and is
                 verified by multiple penetration tests.
               </Feature>
-              <Feature title="Scalable" imgSrc="/img/icons/scalable.svg">
+              <Feature title="Scalable" icon={<IconChartBarPopular />}>
                 From MVP to IPO - and every major milestone in between - Medplum’s technology backs you up and grows
                 with you.
               </Feature>
@@ -174,27 +188,27 @@ export function LandingPage(): JSX.Element {
           </SectionHeader>
           <Section>
             <FeatureGrid columns={3}>
-              <Feature title="Custom EHR" imgSrc="/img/icons/api.svg">
+              <Feature title="Custom EHR" icon={<IconHeartRateMonitor />}>
                 Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and
                 specifications. Gain complete control over your clinical data and operations.
               </Feature>
-              <Feature title="Patient Engagement" imgSrc="/img/icons/automation.svg">
+              <Feature title="Patient Engagement" icon={<IconUsers />}>
                 Deepen your connection with patients by creating custom, modern experiences that truly resonate. Drive
                 better health outcomes through seamless and engaging interactions.
               </Feature>
-              <Feature title="Scribe &amp; Agents" imgSrc="/img/icons/code.svg">
+              <Feature title="Scribe &amp; Agents" icon={<IconMicrophone />}>
                 Go beyond simple transcription with agentic scribes that take action, not just notes. Elevate your AI
                 capabilities to streamline operations and enhance decision-making.
               </Feature>
-              <Feature title="Population Health" imgSrc="/img/icons/locker.svg">
+              <Feature title="Population Health" icon={<IconChartBarPopular />}>
                 Transform fragmented patient data into powerful insights for coordinated care delivery. Our platform
                 empowers population health teams to improve outcomes and maximize shared savings.
               </Feature>
-              <Feature title="Care Management" imgSrc="/img/icons/shield.svg">
+              <Feature title="Care Management" icon={<IconHeart />}>
                 Free your care managers to focus on providing truly compassionate and personalized support. Streamline
                 administrative tasks so they can dedicate more time to what matters most: patient well-being.
               </Feature>
-              <Feature title="Revenue Cycle Management" imgSrc="/img/icons/scalable.svg">
+              <Feature title="Revenue Cycle Management" icon={<IconReceipt2 />}>
                 Design and automate custom routing and business rules that perfectly fit your financial operations.
                 Optimize your revenue cycle for efficiency and maximum returns.
               </Feature>
