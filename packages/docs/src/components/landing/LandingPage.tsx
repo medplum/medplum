@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
 import { Card } from '../Card';
@@ -42,10 +42,11 @@ export function LandingPage(): JSX.Element {
         <div className={styles.heroSection}>
           <Container>
             <div className={styles.heroContent}>
-              <h1 className={styles.heroTitle}>Build and run modern healthcare systems</h1>
+              <h1 className={styles.heroTitle}>Build and run modern healthcare apps</h1>
+              <p className={styles.heroText}>Medplum is the open source healthcare developer platform.</p>
               <p className={styles.heroText}>
-                Start with a production-ready provider experience. Extend with APIs, workflows, and integrations as you
-                grow—without rebuilding the foundation.
+                Start with production-ready apps. Customize, extend, and integrate without rebuilding an EHR from
+                scratch.
               </p>
               <p className={styles.heroButtons}>
                 <Link href="/docs/provider" className={clsx(styles.getStartedButton, styles.purpleButton)}>
@@ -86,9 +87,9 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={132} />
+                  <AnimatedCircle value={158} />
                 </div>
-                <h3>Elite contributors</h3>
+                <h3>Contributors</h3>
                 <p>
                   Our robust ecosystem of community and documentation keeps you in the company of today's best
                   developers.
@@ -122,7 +123,7 @@ export function LandingPage(): JSX.Element {
               <Feature title="Billing & RCM" imgSrc="/img/icons/automation.svg">
                 Integrate financial workflows without duct-taping your system.
               </Feature>
-              <Feature title="HIE & exchange" imgSrc="/img/icons/locker.svg">
+              <Feature title="Health exchange" imgSrc="/img/icons/locker.svg">
                 Support data exchange patterns used in real-world interoperability.
               </Feature>
               <Feature title="Third-party tools" imgSrc="/img/icons/shield.svg">
