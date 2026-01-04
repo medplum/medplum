@@ -864,6 +864,143 @@ describe('QuestionnaireResponse/$extract', () => {
     expect(patient.gender).toBe('unknown');
   });
 
+  test('Extracts vital signs observations', async () => {
+    const vitalSignsQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      url: 'https://www.medplum.com/questionnaire/vital-signs-assessment',
+      name: 'Vital Signs Assessment',
+      status: 'active',
+      title: 'Vital Signs Assessment',
+      contained: [
+        {
+          resourceType: 'Observation',
+          id: 'heart-rate-template',
+          status: 'final',
+          category: [
+            {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                  code: 'vital-signs',
+                  display: 'Vital Signs',
+                },
+              ],
+            },
+          ],
+          code: {
+            coding: [{ system: 'http://loinc.org', code: '8867-4', display: 'Heart rate' }],
+          },
+          _valueString: {
+            extension: [{ url: valueExtension, valueString: 'answer.value.first()' }],
+          },
+        },
+        {
+          resourceType: 'Observation',
+          id: 'weight-template',
+          status: 'final',
+          category: [
+            {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                  code: 'vital-signs',
+                  display: 'Vital Signs',
+                },
+              ],
+            },
+          ],
+          code: {
+            coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Body weight' }],
+          },
+          _valueString: {
+            extension: [{ url: valueExtension, valueString: 'answer.value.first()' }],
+          },
+        },
+      ],
+      item: [
+        {
+          linkId: 'heart-rate',
+          type: 'string',
+          text: 'Heart Rate',
+          extension: [
+            {
+              url: extractExtension,
+              extension: [{ url: 'template', valueReference: { reference: '#heart-rate-template' } }],
+            },
+          ],
+        },
+        {
+          linkId: 'weight',
+          type: 'string',
+          text: 'Weight',
+          extension: [
+            {
+              url: extractExtension,
+              extension: [{ url: 'template', valueReference: { reference: '#weight-template' } }],
+            },
+          ],
+        },
+      ],
+    } as unknown as Questionnaire;
+
+    const vitalSignsResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        { linkId: 'heart-rate', answer: [{ valueString: '72 bpm' }] },
+        { linkId: 'weight', answer: [{ valueString: '150 lbs' }] },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: vitalSignsQuestionnaire },
+          { name: 'questionnaire-response', resource: vitalSignsResponse },
+        ],
+      } satisfies Parameters);
+
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(2);
+
+    const [heartRateEntry, weightEntry] = batch.entry as BundleEntry[];
+
+    expect(heartRateEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'Observation' },
+      resource: {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { coding: [{ system: 'http://loinc.org', code: '8867-4', display: 'Heart rate' }] },
+        valueString: '72 bpm',
+      },
+    });
+
+    expect(weightEntry).toMatchObject<BundleEntry>({
+      fullUrl: expect.stringMatching(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/),
+      request: { method: 'POST', url: 'Observation' },
+      resource: {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { coding: [{ system: 'http://loinc.org', code: '29463-7', display: 'Body weight' }] },
+        valueString: '150 lbs',
+      },
+    });
+  });
+
   test('Keeps default value for primitive field', async () => {
     const q: Questionnaire = {
       resourceType: 'Questionnaire',

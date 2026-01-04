@@ -376,6 +376,247 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
         "url": "https://www.medplum.com/questionnaire/vital-signs-assessment",
         "name": "Vital Signs Assessment",
         "status": "active",
+        "title": "Vital Signs Assessment",
+        "contained": [
+          {
+            "resourceType": "Observation",
+            "id": "blood-pressure-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "85354-9",
+                  "display": "Blood pressure panel with all children optional"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "heart-rate-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8867-4",
+                  "display": "Heart rate"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "temperature-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8310-5",
+                  "display": "Body temperature"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "respiratory-rate-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "9279-1",
+                  "display": "Respiratory rate"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "oxygen-saturation-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "2708-6",
+                  "display": "Oxygen saturation in Arterial blood"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "weight-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "29463-7",
+                  "display": "Body weight"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "height-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8302-2",
+                  "display": "Body height"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          }
+        ],
         "item": [
           {
             "id": "id-8",
@@ -385,48 +626,138 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
           },
           {
             "id": "id-2",
-            "linkId": "q2",
-            "type": "text",
-            "text": "Blood Pressure (Systolic/Diastolic)"
+            "linkId": "blood-pressure",
+            "type": "string",
+            "text": "Blood Pressure (Systolic/Diastolic)",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#blood-pressure-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-3",
-            "linkId": "q3",
-            "type": "text",
-            "text": "Heart Rate"
+            "linkId": "heart-rate",
+            "type": "string",
+            "text": "Heart Rate",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#heart-rate-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-4",
-            "linkId": "q4",
-            "type": "text",
-            "text": "Temperature"
+            "linkId": "temperature",
+            "type": "string",
+            "text": "Temperature",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#temperature-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-1",
-            "linkId": "q1",
-            "type": "text",
-            "text": "Respiratory Rate"
+            "linkId": "respiratory-rate",
+            "type": "string",
+            "text": "Respiratory Rate",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#respiratory-rate-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-5",
-            "linkId": "q5",
-            "type": "text",
-            "text": "Oxygen Saturation"
+            "linkId": "oxygen-saturation",
+            "type": "string",
+            "text": "Oxygen Saturation",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#oxygen-saturation-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-6",
-            "linkId": "q6",
-            "type": "text",
-            "text": "Weight"
+            "linkId": "weight",
+            "type": "string",
+            "text": "Weight",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#weight-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-7",
-            "linkId": "q7",
-            "type": "text",
-            "text": "Height"
+            "linkId": "height",
+            "type": "string",
+            "text": "Height",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#height-template"
+                    }
+                  }
+                ]
+              }
+            ]
           }
-        ],
-        "title": "Vital Signs Assessment"
+        ]
       },
       "request": {
         "method": "POST",
@@ -438,6 +769,18 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 ```
 
 </details>
+
+:::tip SDC Extraction
+
+The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
+
+- A **contained template** (`Observation` resource with LOINC codes) defining the structure of the extracted resource
+- A **`templateExtract` extension** on each item linking it to its template
+- A **`templateExtractValue` extension** in the template specifying how to extract the answer value
+
+When a `QuestionnaireResponse` is submitted, you can use the [`$extract` operation](/docs/api/fhir/operations/extract) to automatically generate properly-coded `Observation` resources for each vital sign.
+
+:::
 
 1. **Navigate to the PlanDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “PlanDefinition”
