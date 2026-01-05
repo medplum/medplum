@@ -656,9 +656,9 @@ describe('QuestionnaireResponse/$extract', () => {
 
   test.each<[Expression | undefined, string]>([
     // Non-FHIRPath expression is rejected
-    [{ expression: 'Patient?status=active', language: 'application/x-fhir-query' }, 'requires FHIRPath'],
+    [{ expression: '[Numerator]: true', language: 'text/cql' }, 'unsupported language: text/cql'],
     // Expression must be present
-    [{ language: 'text/fhirpath' }, 'requires FHIRPath'],
+    [{ language: 'text/fhirpath' }, 'extraction context missing expression'],
     // Invalid type should be rejected
     [undefined, 'Invalid extraction context'],
   ])('Context extensions must contain valid FHIRPath expressions', async (valueExpression, errorMsg) => {
@@ -968,5 +968,58 @@ describe('QuestionnaireResponse/$extract', () => {
     expect(res2.status).toBe(200);
     const result = res2.body as Bundle;
     expect(result.entry?.map((e) => e.response?.status)).toStrictEqual(['201']);
+  });
+
+  test('X-FHIR-Query results stored in context', async () => {
+    const code = randomUUID();
+    await repo.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ code }] },
+      valueString: 'acute',
+    });
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'unknown',
+      extension: [
+        {
+          url: contextExtension,
+          valueExpression: {
+            language: 'application/x-fhir-query',
+            expression: `Observation?code=${code}&_count=1`,
+            name: 'Obs',
+          },
+        },
+        { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#org' } }] },
+      ],
+      contained: [
+        {
+          resourceType: 'Organization',
+          id: 'org',
+          _name: { extension: [{ url: valueExtension, valueString: `%Obs.entry.resource.first().value + ' care'` }] },
+        } as unknown as Organization,
+      ],
+    };
+    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+
+    const res = await request(app)
+      .post(`/fhir/R4/QuestionnaireResponse/$extract`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'questionnaire', resource: questionnaire },
+          { name: 'questionnaire-response', resource: response },
+        ],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toBe('Bundle');
+    const batch = res.body as Bundle;
+
+    expect(batch.type).toBe('transaction');
+    expect(batch.entry).toHaveLength(1);
+    const entry = batch.entry?.[0] as BundleEntry;
+
+    expect(entry.resource).toMatchObject<Organization>({ resourceType: 'Organization', name: 'acute care' });
   });
 });

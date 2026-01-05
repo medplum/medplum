@@ -13,6 +13,7 @@ import {
   getExtension,
   OperationOutcomeError,
   Operator,
+  parseXFhirQuery,
   singleton,
   toTypedValue,
 } from '@medplum/core';
@@ -326,13 +327,29 @@ class TemplateExtractor implements AsyncCrawlerVisitor {
       results = this.evaluateExpression(parent.path, valueString);
     } else if (valueExpression) {
       const { expression, language, name } = valueExpression;
-      if (!expression || language !== 'text/fhirpath') {
+      if (!expression) {
         throw new OperationOutcomeError(
-          badRequest('Questionnaire extraction context requires FHIRPath expression', extension.path)
+          badRequest('Questionnaire extraction context missing expression', extension.path)
         );
       }
-
-      results = this.evaluateExpression(parent.path, expression);
+      switch (language) {
+        case 'text/fhirpath':
+          results = this.evaluateExpression(parent.path, expression);
+          break;
+        case 'application/x-fhir-query': {
+          const searchReq = parseXFhirQuery(expression ?? '', this.variables);
+          const bundle = await this.repo.search(searchReq);
+          results = [toTypedValue(bundle)];
+          break;
+        }
+        default:
+          throw new OperationOutcomeError(
+            badRequest(
+              `Questionnaire extraction context expression uses unsupported language: ${language}`,
+              extension.path
+            )
+          );
+      }
 
       // Assign named expressions as FHIRPath variables for evaluation of expressions on or underneath this element
       if (name) {
@@ -518,7 +535,7 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
 function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
   const result = '/' + path.slice(pathStart).replaceAll(/[.[\]]+/g, '/');
-  return result.endsWith('/') ? result.slice(0, result.length - 1) : result;
+  return result.endsWith('/') ? result.slice(0, -1) : result;
 }
 
 function replacePathIndex(path: string, offset: number, before?: number): string {
