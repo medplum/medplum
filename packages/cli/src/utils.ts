@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient, WithId } from '@medplum/core';
-import { ContentType, encodeBase64 } from '@medplum/core';
+import { ContentType, encodeBase64, OAuthSigningAlgorithm } from '@medplum/core';
 import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
@@ -121,7 +121,7 @@ export async function createBot(
 }
 
 export function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replaceAll(String.raw`\*`, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
     return [];
@@ -196,7 +196,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 /**
@@ -277,7 +277,7 @@ export function profileExists(storage: FileSystemStorage, profile: string): bool
 export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const header = {
     typ: 'JWT',
-    alg: 'HS256',
+    alg: OAuthSigningAlgorithm.HS256,
   };
 
   const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -302,7 +302,7 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
 export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const privateKey = createPrivateKey(readFileSync(resolve(profile.privateKeyPath as string)));
   const jwt = await new SignJWT({})
-    .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
+    .setProtectedHeader({ typ: 'JWT', alg: OAuthSigningAlgorithm.RS384 })
     .setIssuer(profile.clientId as string)
     .setSubject(profile.clientId as string)
     .setAudience(`${profile.baseUrl}${profile.audience}`)

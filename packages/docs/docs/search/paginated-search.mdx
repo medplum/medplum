@@ -71,16 +71,18 @@ Example:
 GET /Patient?_cursor=abc123xyz
 ```
 
+:::caution Limitations
+- Currently only supported for searches that are sorted on `_lastUpdated` in ascending order.
+- The cursor values are opaque and should be treated as black boxes by clients.
+- Requires a minimum `_count` value of 20 
+:::
+
 #### Advantages:
 
 - Supports pagination through very large datasets (millions of resources)
 - More performant than offset-based pagination for large offsets
 - Provides consistent results even if the underlying data changes between requests
 
-#### Limitations:
-
-- Currently only supported for searches that are sorted on `_lastUpdated` in ascending order.
-- The cursor values are opaque and should be treated as black boxes by clients.
 
 #### Implementation Details:
 
@@ -153,7 +155,13 @@ Because computing counts is an expensive operation, Medplum **only produces esti
 
 For customers on the Medplum hosted service, this threshold is set to 1 million entries
 
-For self-hosted customers, this threshold is server-level configuration called `accurateCountThreshold` ([learn more](http://localhost:3001/docs/self-hosting/config-settings#server-config)).
+For self-hosted customers, this threshold is server-level configuration called `accurateCountThreshold` ([learn more](/docs/self-hosting/server-config)).
+
+When `_total=accurate` is used, the server will attempt to provide an exact count of the total number of matching resources. For performance reasons, the server may be configured to reject this request if the number of matching resources exceeds a predefined threshold.
+
+For self-hosted customers, this threshold is server-level configuration called `accurateCountThreshold` ([learn more](/docs/self-hosting/server-config)).
+
+When returning an accurate count, the `meta.total` property will be present in the search result bundle, and `relation` will be set to `eq`.
 
 :::
 
@@ -235,27 +243,4 @@ The [`searchResourcePages()`](/docs/sdk/core.medplumclient.searchresourcepages) 
 
 The array returned by `searchResourcePages` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
 
-The `searchResourcePages` method uses `Bundle.link` to navigate between pages, ensuring that you are following the correct pagination method for the search query. The URLs in the `Bundle.link` will opportunistically use `_cursor` pagination if compatible with the search query (see [Cursor-based pagination limitations](#cursor-based-pagination)). If `_cursor` is not compatible, the URLs will use `_offset` pagination.
-
-## Setting the page offset with the `_offset` parameter
-
-To set the page offset, or the starting point of the search results, use the `_offset` query parameter. This allows you to skip a certain number of items before starting to return results.
-
-Here's an example query that sets the page offset to 30:
-
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="searchOffset">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="searchOffsetCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
-
-In this example, the search will return up to 50 Patient resources per page, starting from the 31st item in the result set.
-
-Using `_offset` pagination is discouraged for large datasets, as it can lead to performance issues. For large datasets, consider using `_cursor` pagination instead.
+The `searchResourcePages` method uses `Bundle.link` to navigate between pages, ensuring that you are following the correct pagination method for the search query. The URLs in the `Bundle.link` will opportunistically use `_cursor` pagination if compatible with the search query (see [Cursor-based pagination limitations](#cursor-based-pagination)). If `_cursor` is not compatible, the URLs will use `_offset`

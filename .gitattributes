@@ -23,3 +23,6 @@
 package-lock.json -diff
 package-lock.json linguist-generated=true
 
+packages/server/src/fhir/operations/utils/cms1500.png.ts -diff
+packages/server/src/fhir/operations/utils/cms1500.png.ts linguist-generated=true
+

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/dosespot-react",
-  "version": "4.5.1",
+  "version": "5.0.10",
   "description": "Medplum DoseSpot React SDK",
   "keywords": [
     "medplum",
@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint src/",
@@ -60,28 +60,28 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "4.5.1",
-    "@medplum/fhirtypes": "4.5.1",
-    "@medplum/mock": "4.5.1",
-    "@medplum/react": "4.5.1",
+    "@medplum/core": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/mock": "5.0.10",
+    "@medplum/react": "5.0.10",
     "@testing-library/jest-dom": "6.9.1",
-    "@testing-library/react": "16.3.0",
-    "@types/node": "20.19.23",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
-    "@vitejs/plugin-react": "5.1.0",
-    "jsdom": "27.0.1",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "vitest": "4.0.3"
+    "@testing-library/react": "16.3.1",
+    "@types/node": "22.19.3",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.2",
+    "jsdom": "27.4.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "vitest": "4.0.16"
   },
   "peerDependencies": {
-    "@medplum/core": "4.5.1",
-    "@medplum/fhirtypes": "4.5.1",
-    "@medplum/react-hooks": "4.5.1",
+    "@medplum/core": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/react-hooks": "5.0.10",
     "react": "^18.0.0 || ^19.0.0"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

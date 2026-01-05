@@ -7,6 +7,7 @@ import {
   CloseButton,
   Flex,
   Group,
+  Loader,
   NativeSelect,
   Paper,
   Stack,
@@ -14,7 +15,13 @@ import {
   TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  PlanDefinition,
+  PlanDefinitionAction,
+  Questionnaire,
+  Reference,
+} from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import type { JSX, MouseEvent, SyntheticEvent } from 'react';
@@ -169,7 +176,6 @@ interface ActionBuilderProps {
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const { action } = props;
-  const actionType = getInitialActionType(action);
 
   function onClick(e: SyntheticEvent): void {
     e.stopPropagation();
@@ -185,7 +191,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     <div onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <ActionEditor
         action={action}
-        actionType={actionType}
         onChange={props.onChange}
         selectedKey={props.selectedKey}
         hoverKey={props.hoverKey}
@@ -197,7 +202,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
 
 interface ActionEditorProps {
   readonly action: PlanDefinitionAction;
-  readonly actionType: string | undefined;
   readonly selectedKey: string | undefined;
   readonly hoverKey: string | undefined;
   readonly onChange: (action: PlanDefinitionAction) => void;
@@ -206,7 +210,10 @@ interface ActionEditorProps {
 
 function ActionEditor(props: ActionEditorProps): JSX.Element {
   const { action } = props;
-  const [actionType, setActionType] = useState<string | undefined>(props.actionType);
+  const [actionType, setActionType] = useState<string | undefined>();
+  const medplum = useMedplum();
+  const [loading, setLoading] = useState(false);
+  const [resource, setResource] = useState<Questionnaire | ActivityDefinition | undefined>();
   const editing = props.selectedKey === props.action.id;
   const hovering = props.hoverKey === props.action.id;
 
@@ -220,6 +227,24 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   const className = cx(classes.section, {
     [classes.hovering]: hovering && !editing,
   });
+
+  useEffect(() => {
+    const readResource = async (): Promise<void> => {
+      if (!action.definitionCanonical) {
+        return;
+      }
+      setLoading(true);
+      const resource = await medplum.readCanonical(['Questionnaire', 'ActivityDefinition'], action.definitionCanonical);
+      setActionType(getInitialActionType(resource));
+      setResource(resource);
+      setLoading(false);
+    };
+    readResource().catch(console.error);
+  }, [action.definitionCanonical, medplum]);
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <Paper data-testid={action.id} className={className} p={0} radius="sm" withBorder>
@@ -278,7 +303,13 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   questionnaires list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder
+                resource={resource}
+                resourceType="Questionnaire"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for questionnaire"
+              />
             </Stack>
           )}
 
@@ -294,7 +325,13 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   activity definitions list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+              <ActionResourceTypeBuilder
+                resource={resource}
+                resourceType="ActivityDefinition"
+                action={action}
+                onChange={props.onChange}
+                placeholder="Search for activity definition"
+              />
             </Stack>
           )}
         </Stack>
@@ -305,23 +342,29 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
-  readonly resourceType: ResourceType;
+  readonly resource: Questionnaire | ActivityDefinition | undefined;
+  readonly resourceType: 'Questionnaire' | 'ActivityDefinition';
+  readonly placeholder?: string;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.Element {
-  const { id, definitionCanonical } = props.action;
-  const reference = definitionCanonical?.startsWith(props.resourceType + '/')
-    ? { reference: definitionCanonical }
-    : undefined;
+  const { id } = props.action;
+  const { resource } = props as { resource: Questionnaire | ActivityDefinition };
+
   return (
     <ResourceInput
       name={id as string}
+      placeholder={props.placeholder}
       resourceType={props.resourceType}
-      defaultValue={reference}
+      defaultValue={resource}
       onChange={(newValue) => {
         if (newValue) {
-          props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+          props.onChange({
+            ...props.action,
+            definitionCanonical: 'url' in newValue ? newValue.url : undefined,
+            definitionUri: !('url' in newValue) ? getReferenceString(newValue) : undefined,
+          });
         } else {
           props.onChange({ ...props.action, definitionCanonical: undefined });
         }
@@ -330,16 +373,8 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   );
 }
 
-function getInitialActionType(action: PlanDefinitionAction): string | undefined {
-  if (action.definitionCanonical?.startsWith('Questionnaire')) {
-    return 'questionnaire';
-  }
-
-  if (action.definitionCanonical?.startsWith('ActivityDefinition')) {
-    return 'activitydefinition';
-  }
-
-  return 'standard';
+function getInitialActionType(resource: Questionnaire | ActivityDefinition | undefined): string | undefined {
+  return resource === undefined ? 'standard' : resource.resourceType.toLowerCase();
 }
 
 let nextId = 1;
@@ -355,8 +390,8 @@ let nextId = 1;
 function generateId(existing?: string): string {
   if (existing) {
     if (existing.startsWith('id-')) {
-      const existingNum = parseInt(existing.substring(3), 10);
-      if (!isNaN(existingNum)) {
+      const existingNum = Number.parseInt(existing.substring(3), 10);
+      if (!Number.isNaN(existingNum)) {
         nextId = Math.max(nextId, existingNum + 1);
       }
     }

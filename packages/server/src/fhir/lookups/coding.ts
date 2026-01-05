@@ -11,7 +11,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
-import type { ImportedProperty } from '../operations/codesystemimport';
+import type { Designation, ImportedProperty } from '../operations/codesystemimport';
 import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
 import { Column, Condition, Conjunction } from '../sql';
@@ -57,7 +57,7 @@ export class CodingTable extends LookupTable {
         }
 
         const elements = this.getCodeSystemElements(resource);
-        await importCodeSystem(client, resource, elements.concepts, elements.properties);
+        await importCodeSystem(client, resource, elements.concepts, elements.properties, elements.designations);
       }
     }
   }
@@ -145,8 +145,12 @@ export class CodingTable extends LookupTable {
     });
   }
 
-  private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
-    const result = { concepts: [], properties: [] };
+  private getCodeSystemElements(codeSystem: CodeSystem): {
+    concepts: Coding[];
+    properties: ImportedProperty[];
+    designations: Designation[];
+  } {
+    const result = Object.create(null);
     if (codeSystem.concept) {
       for (const concept of codeSystem.concept) {
         this.addCodeSystemConcepts(codeSystem, concept, result);
@@ -163,11 +167,12 @@ export class CodingTable extends LookupTable {
    * @param result - The results.
    * @param result.concepts - Concepts defined by the CodeSystem.
    * @param result.properties - Coding properties specified by the CodeSystem.
+   * @param result.designations - Coding synonyms specified by the CodeSystem.
    */
   private addCodeSystemConcepts(
     codeSystem: CodeSystem,
     concept: CodeSystemConcept,
-    result: { concepts: Coding[]; properties: ImportedProperty[] }
+    result: { concepts: Coding[]; properties: ImportedProperty[]; designations: Designation[] }
   ): void {
     const { code, display } = concept;
     result.concepts = append(result.concepts, { code, display });
@@ -186,6 +191,16 @@ export class CodingTable extends LookupTable {
           property:
             codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
           value: code,
+        });
+      }
+    }
+
+    if (concept.designation) {
+      for (const designation of concept.designation) {
+        result.designations = append(result.designations, {
+          code: concept.code,
+          language: designation.language,
+          value: designation.value,
         });
       }
     }

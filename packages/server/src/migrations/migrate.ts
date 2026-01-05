@@ -1,20 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
-  FileBuilder,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  isPopulated,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { Client, escapeIdentifier } from 'pg';
+import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { SearchParameterImplementation } from '../fhir/searchparameter';
@@ -45,8 +42,6 @@ import type {
 } from './types';
 import { SerialColumnTypes } from './types';
 
-const SCHEMA_DIR = resolve(__dirname, 'schema');
-
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
 const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn];
@@ -59,59 +54,6 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
     const bundle = readJson(filename) as Bundle<SearchParameter>;
     indexSearchParameterBundle(bundle);
-
-    if (!isPopulated(bundle.entry)) {
-      throw new Error('Empty search parameter bundle: ' + filename);
-    }
-  }
-}
-
-export async function main(): Promise<void> {
-  const dryRun = process.argv.includes('--dryRun');
-
-  indexStructureDefinitionsAndSearchParameters();
-
-  const dbClient = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'medplum',
-    user: 'medplum',
-    password: 'medplum',
-  });
-  const options: BuildMigrationOptions = {
-    dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
-    dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
-    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
-    writeSchema: process.argv.includes('--writeSchema'),
-    skipMigration: process.argv.includes('--skipMigration'),
-  };
-
-  if (!options.skipMigration) {
-    await dbClient.connect();
-
-    const b = new FileBuilder();
-    await buildMigration(b, options);
-
-    await dbClient.end();
-
-    if (dryRun) {
-      console.log(b.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-      rewriteMigrationExports();
-    }
-  }
-
-  if (options.writeSchema) {
-    const schemaBuilder = new FileBuilder();
-    buildSchema(schemaBuilder);
-    if (dryRun) {
-      console.log(schemaBuilder.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
-    }
   }
 }
 
@@ -196,7 +138,12 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+      ctx.postDeployAction(
+        () => {
+          actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+        },
+        `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
+      );
     }
   }
 
@@ -724,6 +671,7 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'display', type: 'TEXT' },
       { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
       { name: 'synonymOf', type: 'BIGINT' },
+      { name: 'language', type: 'TEXT' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
@@ -988,7 +936,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
   }
 }
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
-  b.append("import { PoolClient } from 'pg';");
+  b.append("import type { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
@@ -1454,40 +1402,6 @@ function buildIndexSql(
   return result;
 }
 
-function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
-}
-
-function getVersionFromFilename(filename: string): number {
-  return Number.parseInt(filename.replace('v', '').replace('.ts', ''), 10);
-}
-
-function getNextSchemaVersion(): number {
-  const [lastSchemaVersion] = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => b - a);
-
-  return lastSchemaVersion + 1;
-}
-
-function rewriteMigrationExports(): void {
-  const b = new FileBuilder();
-  const filenamesWithoutExt = getMigrationFilenames()
-    .map(getVersionFromFilename)
-    .sort((a, b) => a - b)
-    .map((version) => `v${version}`);
-  for (const filename of filenamesWithoutExt) {
-    b.append(`export * as ${filename} from './${filename}';`);
-    if (filename === 'v9') {
-      b.append('/* CAUTION: LOAD-BEARING COMMENT */');
-      b.append(
-        '/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */'
-      );
-    }
-  }
-  writeFileSync(`${SCHEMA_DIR}/index.ts`, b.toString(), { flag: 'w' });
-}
-
 export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
@@ -1570,11 +1484,4 @@ function ensureEndsWithSemicolon(query: string): string {
     return query;
   }
   return query + ';';
-}
-
-if (require.main === module) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }

@@ -3,9 +3,11 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
-import { TextDecoder, TextEncoder } from 'util';
+import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+
+let client: LambdaClient;
 
 /**
  * Executes a Bot in an AWS Lambda.
@@ -15,7 +17,9 @@ import { getConfig } from '../../config/loader';
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
   const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
-  const client = new LambdaClient({ region: config.awsRegion });
+  if (!client) {
+    client = new LambdaClient({ region: config.awsRegion });
+  }
   const name = getLambdaFunctionName(bot);
   const payload = {
     bot: createReference(bot),

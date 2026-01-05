@@ -1,13 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import type { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
+import type { Attachment, Bundle, Coding, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { LOINC } from '../constants';
 import { toTypedValue } from '../fhirpath/utils';
-import type { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
-import { crawlTypedValue, crawlTypedValueAsync } from './crawler';
-import { indexStructureDefinitionBundle } from './types';
+import { crawlTypedValue, crawlTypedValueAsync, pathToJSONPointer } from './crawler';
+import type { InternalTypeSchema } from './types';
+import { indexStructureDefinitionBundle, parseStructureDefinition } from './types';
 
 describe('ResourceCrawler', () => {
   beforeAll(() => {
@@ -51,14 +53,14 @@ describe('ResourceCrawler', () => {
     };
 
     const attachments: Attachment[] = [];
+    const paths: string[] = [];
     crawlTypedValue(toTypedValue(patient), {
       visitProperty: (_parent, _key, _path, propertyValues) => {
         for (const propertyValue of propertyValues) {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Attachment') {
-                attachments.push(value.value as Attachment);
-              }
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Attachment') {
+              attachments.push(value.value as Attachment);
+              paths.push(value.path);
             }
           }
         }
@@ -66,6 +68,7 @@ describe('ResourceCrawler', () => {
     });
 
     expect(attachments).toHaveLength(2);
+    expect(paths).toEqual(['Patient.photo[0]', 'Patient.photo[1]']);
   });
 
   test('Async crawler over only existing properties', async () => {
@@ -128,11 +131,9 @@ describe('ResourceCrawler', () => {
       {
         visitProperty: (_parent, _key, _path, propertyValues) => {
           for (const propertyValue of propertyValues) {
-            if (propertyValue) {
-              for (const value of arrayify(propertyValue) as TypedValue[]) {
-                if (value.type === 'Coding') {
-                  resultCodes.push(value.value);
-                }
+            for (const value of arrayify(propertyValue)) {
+              if (value.type === 'Coding') {
+                resultCodes.push(value.value);
               }
             }
           }
@@ -177,12 +178,10 @@ describe('ResourceCrawler', () => {
       toTypedValue(obs),
       {
         visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
-          if (propertyValue) {
-            for (const value of arrayify(propertyValue) as TypedValue[]) {
-              if (value.type === 'Coding') {
-                await sleep(1); // Simulate validating the coding
-                resultCodes.push(value.value);
-              }
+          for (const value of arrayify(propertyValue)) {
+            if (value.type === 'Coding') {
+              await sleep(1); // Simulate validating the coding
+              resultCodes.push(value.value);
             }
           }
         },
@@ -195,6 +194,143 @@ describe('ResourceCrawler', () => {
         { system: LOINC, code: '8480-6' },
         { system: LOINC, code: '8462-4' },
       ])
+    );
+  });
+
+  // An important aspect of US Core Patient profile is that it changes a nested property (Patient.communication.language)
+  // to use a different ValueSet than the base FHIR definition. Nested properties are more complex to handle in the crawler,
+  // since they must fetch an intermediate type schema. if this is done in a way that forgets to consider the profile,
+  // then the base FHIR definition will be used instead of the profile definition.
+  describe('crawling patient profile', () => {
+    let usCorePatientSD: StructureDefinition;
+    let usCorePatientProfile: InternalTypeSchema;
+
+    beforeAll(() => {
+      usCorePatientSD = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+      usCorePatientProfile = parseStructureDefinition(usCorePatientSD);
+    });
+
+    test.each([
+      ['no profile', () => undefined, 'http://hl7.org/fhir/ValueSet/languages'],
+      ['US Core patient profile', () => usCorePatientProfile, 'http://hl7.org/fhir/us/core/ValueSet/simple-language'],
+    ])('with %s', async (_, getProfile, expectedValueSet) => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'en' }] } }],
+      };
+
+      let visitedSync = false;
+      function checker(key: string, path: string, schema: InternalTypeSchema): boolean {
+        let visitedLang = false;
+        if (path === 'Patient.communication.language') {
+          visitedLang = true;
+          expect(schema.elements[key].binding?.valueSet).toBe(expectedValueSet);
+        }
+        return visitedLang;
+      }
+
+      crawlTypedValue(
+        toTypedValue(patient),
+        {
+          visitProperty: (_parent, key, path, _propertyValues, schema) => {
+            visitedSync ||= checker(key, path, schema);
+          },
+        },
+        { schema: getProfile() }
+      );
+      expect(visitedSync).toBe(true);
+
+      let visitedAsync = false;
+      await crawlTypedValueAsync(
+        toTypedValue(patient),
+        {
+          visitPropertyAsync: async (_parent, key, path, _propertyValues, schema) => {
+            visitedAsync ||= checker(key, path, schema);
+          },
+        },
+        { schema: getProfile() }
+      );
+      expect(visitedAsync).toBe(true);
+    });
+  });
+
+  describe('crawling Observation profile', () => {
+    let smokingStatusSD: StructureDefinition;
+    let smokingStatusProfile: InternalTypeSchema;
+
+    beforeAll(() => {
+      smokingStatusSD = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8'));
+      smokingStatusProfile = parseStructureDefinition(smokingStatusSD);
+    });
+
+    test.each([
+      ['no profile', () => undefined, 'http://hl7.org/fhir/ValueSet/observation-status|4.0.1'],
+      [
+        'US Core Smoking Status profile',
+        () => smokingStatusProfile,
+        'http://hl7.org/fhir/us/core/ValueSet/us-core-observation-smoking-status-status',
+      ],
+    ])('with %s', async (_, getProfile, expectedValueSet) => {
+      const obs: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        code: {
+          coding: [{ system: LOINC, code: '72166-2' }],
+        },
+        valueCodeableConcept: {
+          coding: [{ system: 'http://snomed.info/sct', code: '266919005' }],
+        },
+      };
+
+      function checker(key: string, path: string, schema: InternalTypeSchema): boolean {
+        let visitedLang = false;
+        if (path === 'Observation.status') {
+          visitedLang = true;
+          expect(schema.elements[key].binding?.valueSet).toBe(expectedValueSet);
+        }
+        return visitedLang;
+      }
+
+      let visitedSync = false;
+      crawlTypedValue(
+        toTypedValue(obs),
+        {
+          visitProperty: (_parent, key, path, _propertyValues, schema) => {
+            visitedSync ||= checker(key, path, schema);
+          },
+        },
+        { schema: getProfile() }
+      );
+      expect(visitedSync).toBe(true);
+
+      let visitedAsync = false;
+      await crawlTypedValueAsync(
+        toTypedValue(obs),
+        {
+          visitPropertyAsync: async (_parent, key, path, _propertyValues, schema) => {
+            visitedAsync ||= checker(key, path, schema);
+          },
+        },
+        { schema: getProfile() }
+      );
+      expect(visitedAsync).toBe(true);
+    });
+  });
+});
+
+describe('pathToJSONPointer', () => {
+  test('simple path', () => {
+    expect(pathToJSONPointer('Patient.name')).toEqual('/Patient/name');
+  });
+
+  test('array indexing', () => {
+    expect(pathToJSONPointer('Patient.identifier[0]')).toEqual('/Patient/identifier/0');
+    expect(pathToJSONPointer('Patient.identifier[1]')).toEqual('/Patient/identifier/1');
+  });
+
+  test('deep nesting', () => {
+    expect(pathToJSONPointer('Patient.contact[2].additionalName[0].given')).toEqual(
+      '/Patient/contact/2/additionalName/0/given'
     );
   });
 });

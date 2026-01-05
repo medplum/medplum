@@ -1,6 +1,15 @@
-# This is the main production Dockerfile.
-# It depends on medplum-server.tar.gz which is created by scripts/build-docker-server.sh.
-# This is a production ready image.
+# Medplum production Dockerfile
+
+# This Dockerfile depends on files created by scripts/build-docker-server.sh:
+#  1. `medplum-server-metadata.tar.gz` - contains package.json and package-lock.json files
+#  2. `medplum-server-runtime.tar.gz` - contains the compiled JavaScript files and other runtime assets
+
+# The archive files are decompressed and extracted into the specified destinations.
+# We do this to preserve the folder structure in a single layer.
+# See: https://docs.docker.com/reference/dockerfile/#adding-local-tar-archives
+
+# Uses Docker "Hardened Images":
+# https://hub.docker.com/hardened-images/catalog/dhi/node/guides
 # It does not include any development dependencies.
 
 # Builds multiarch docker images
@@ -8,27 +17,24 @@
 # https://www.docker.com/blog/multi-arch-build-and-images-the-simple-way/
 
 # Supported architectures:
-# linux/amd64, linux/arm64, linux/arm/v7
+# linux/amd64, linux/arm64
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
-FROM node:20-slim
-
+# Stage 1: Build the application and install production dependencies
+FROM dhi.io/node:24-dev AS build-stage
 ENV NODE_ENV=production
-
 WORKDIR /usr/src/medplum
+ADD ./medplum-server-metadata.tar.gz ./
+RUN npm ci --omit=dev && \
+  rm package-lock.json
 
-# Add the application files
-ADD ./medplum-server.tar.gz ./
-
-# Install dependencies, create non-root user, and set permissions in one layer
-RUN npm ci && \
-  groupadd -r medplum && \
-  useradd -r -g medplum medplum && \
-  chown -R medplum:medplum /usr/src/medplum
+# Stage 2: Create the runtime image
+FROM dhi.io/node:24 AS runtime-stage
+ENV NODE_ENV=production
+WORKDIR /usr/src/medplum
+COPY --from=build-stage /usr/src/medplum/ ./
+ADD ./medplum-server-runtime.tar.gz ./
 
 EXPOSE 5000 8103
-
-# Switch to the non-root user
-USER medplum
 
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]

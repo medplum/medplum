@@ -6,17 +6,40 @@ import type { Agent, Bot, Reference } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
-import type ws from 'ws';
+import os from 'node:os';
+import type { RawData, WebSocket } from 'ws';
 import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { heartbeat } from '../heartbeat';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
+import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
 import type { AgentInfo } from './utils';
 import { AgentConnectionState } from './utils';
 
 const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
+const agentWebSockets = new Set<WebSocket>();
+let agentHeartbeatHandler: (() => void) | undefined;
+let agentMessagesSent = 0;
+let agentMessagesReceived = 0;
+
+function initAgentHeartbeat(): void {
+  if (!agentHeartbeatHandler) {
+    agentHeartbeatHandler = (): void => {
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
+      setGauge('medplum.agent.websocketCount', agentWebSockets.size, METRIC_OPTIONS);
+      setGauge('medplum.agent.messagesSentPerSec', agentMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge('medplum.agent.messagesReceivedPerSec', agentMessagesReceived / heartbeatSeconds, METRIC_OPTIONS);
+      agentMessagesSent = 0;
+      agentMessagesReceived = 0;
+    };
+    heartbeat.addEventListener('heartbeat', agentHeartbeatHandler);
+  }
+}
 
 /**
  * Handles a new WebSocket connection to the agent service.
@@ -24,7 +47,10 @@ const INFO_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */
-export async function handleAgentConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
+export async function handleAgentConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
+  agentWebSockets.add(socket);
+  initAgentHeartbeat();
+
   const remoteAddress = request.socket.remoteAddress;
   let agentId: string | undefined = undefined;
 
@@ -38,7 +64,8 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   socket.on(
     'message',
-    AsyncLocalStorage.bind(async (data: ws.RawData) => {
+    AsyncLocalStorage.bind(async (data: RawData) => {
+      agentMessagesReceived++;
       try {
         const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
         switch (command.type) {
@@ -92,6 +119,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
   socket.on(
     'close',
     AsyncLocalStorage.bind(async () => {
+      agentWebSockets.delete(socket);
       await updateAgentStatus(AgentConnectionState.DISCONNECTED);
       heartbeat.removeEventListener('heartbeat', heartbeatHandler);
       redisSubscriber?.disconnect();
@@ -134,6 +162,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
       socket.send(message, { binary: false });
+      agentMessagesSent++;
     });
 
     // Subscribe to heartbeat events
@@ -228,6 +257,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
   function sendMessage(message: AgentMessage): void {
     socket.send(JSON.stringify(message), { binary: false });
+    agentMessagesSent++;
   }
 
   function sendError(body: string): void {

@@ -43,6 +43,10 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 - date of birth
 - name (first and last)
 
+:::warning Pediatric Patients (Under 18)
+For patients under 18 years of age, you **must** also sync Height and Weight as [Observations](/docs/api/fhir/resources/observation) using the correct LOINC codes. The sync will fail without these required vital signs. See the [Height and Weight for Pediatric Patients](#height-and-weight-for-pediatric-patients) section for more details.
+:::
+
 <details>
   <summary>See this example of a valid Patient that will be synced to DoseSpot</summary>
 
@@ -66,7 +70,7 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     {
       "system": "phone",
       "use": "home",
-      "value": "6175672093"//Required: cannot have a +1 prefix and must be 9 digits
+      "value": "6175672093"//Required: cannot have a +1 prefix or start with 555, and must be 10 digits
     }
   ],
   "address": [//Required
@@ -89,6 +93,101 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
 }
 ```
 </details>
+
+### Height and Weight for Pediatric Patients
+
+For patients under 18 years of age, DoseSpot requires Height and Weight observations to be synced. These must be recorded as [Observation](/docs/api/fhir/resources/observation) resources with the correct LOINC codes.
+
+<details>
+  <summary>Example of a valid Height Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "8302-2",
+        "display": "Body height"
+      }
+    ],
+    "text": "Body height"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 59,
+    "unit": "cm",
+    "system": "http://unitsofmeasure.org",
+    "code": "cm"
+  }
+}
+```
+</details>
+
+<details>
+  <summary>Example of a valid Weight Observation for a pediatric patient</summary>
+
+```typescript
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "category": [
+    {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+          "code": "vital-signs",
+          "display": "Vital Signs"
+        }
+      ]
+    }
+  ],
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "29463-7",
+        "display": "Body weight"
+      }
+    ],
+    "text": "Body weight"
+  },
+  "subject": {
+    "reference": "Patient/123"
+  },
+  "effectiveDateTime": "2024-11-20T10:30:00Z",
+  "valueQuantity": {
+    "value": 99,
+    "unit": "kg",
+    "system": "http://unitsofmeasure.org",
+    "code": "kg"
+  }
+}
+```
+</details>
+
+:::tip Required LOINC Codes
+- **Height**: `8302-2` (Body height)
+- **Weight**: `29463-7` (Body weight)
+
+These specific LOINC codes are required for successful sync to DoseSpot.
+:::
 
 
 **2. Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set. **[RxNorm](/docs/medications/medication-codes#rxnorm)** is recommended for best results with DoseSpot.
@@ -119,7 +218,6 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     }
   ]
   //...
-}
 }
 ```
 </details>
@@ -544,8 +642,100 @@ When working with DoseSpot integration, it's important to understand the differe
 
 - **`MedicationRequest?intent=original-order`** - Medication histories from SureScripts and other providers. These represent historical medication data that has been retrieved from external sources. The DoseSpot Medication History Bot creates these.
 
+## Add a Default Pharmacy
+
+### Summary
+
+To set a default pharmacy for patients in a clinic, we expose a bot that can add a default for all patients or a specific subset, with dry-run support.
+
+### Usage
+
+#### Basic Example
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345
+  }'
+```
+
+#### With Specific Patients
+```bash
+curl -X POST 'https://api.medplum.com/fhir/r4/Bot/YOUR_BOT_ID/$execute' \
+  -H 'Authorization: Bearer YOUR_ACCESS_TOKEN' \
+  -H 'Content-Type: application/json' \
+  -d '{
+      "pharmacyId": 12345,
+      "patientIds": ["patient-id-1", "patient-id-2"],
+      "dryRun": false
+  }'
+```
+
+### Request Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyRequest {
+  pharmacyId: number;              // Required: DoseSpot pharmacy ID
+  patientIds?: string[];           // Optional: Specific patient IDs to process
+  dryRun?: boolean;                 // Optional: Preview mode (default: false)
+  maxPatients?: number;             // Optional: Max patients to process (default: 100)
+}
+```
+
+### Response Interface
+
+```typescript
+interface DoseSpotClinicDefaultPharmacyResponse {
+  success: boolean;
+  processedCount: number;
+  successCount: number;
+  errorCount: number;
+  errors: Array<{
+    patientId: string;
+    doseSpotPatientId?: number;
+    error: string;
+  }>;
+  message: string;
+}
+```
+
 ## Processing DoseSpot Notifications
 
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
 
 See an example implementation in the Provider App's [DoseSpotIcon](https://github.com/medplum/medplum/blob/main/examples/medplum-provider/src/components/DoseSpotIcon.tsx). When clicked, it routes the user to the DoseSpot notifications page, which uses [useDoseSpotIFrame](#usedosespotiframe) with no specified `patientId`. 
+
+## Practitioner AccessPolicy 
+
+The following AccessPolicy can be used to ensure that practitioners have the correct permissions view and interact with the Dosespot iFrame. Please note that write access to `MedicationKnowledge` is only needed when a practitioner should be given permission to edit the [Dosespot clinic's favorite medications](./clinic-favorite-medications.md)
+
+```
+{
+  "resourceType": "AccessPolicy",
+  "name": "Dosespot Practitioner Example Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+    },
+    {
+      "resourceType": "MedicationRequest"
+    },
+    {
+      "resourceType": "AllergyIntolerance"
+    },
+    {
+      "resourceType": "Consent"
+    },
+    {
+      "resourceType": "ProjectMembership",
+      "readonly": true
+    },
+    {
+      "resourceType": "MedicationKnowledge",
+      "readonly": true
+    }
+    //...
+  ]
+}
+```

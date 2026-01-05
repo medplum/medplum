@@ -2,11 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
+import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
-import { env } from 'process';
 import { getLogger } from '../logger';
 
-const DEBUG = env['SQL_DEBUG'];
+let DEBUG: string | undefined = env['SQL_DEBUG'];
+
+export function setSqlDebug(value: string | undefined): void {
+  DEBUG = value;
+}
+
+export function resetSqlDebug(): void {
+  DEBUG = env['SQL_DEBUG'];
+}
 
 export const ColumnType = {
   UUID: 'uuid',
@@ -56,6 +64,7 @@ export const Operator = {
   '>': simpleBinaryOperator('>'),
   '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
+  IS_DISTINCT_FROM: simpleBinaryOperator('IS DISTINCT FROM'),
   /*
     Why do both of these exist? Mainly for consideration when negating the condition:
     Negating ARRAY_OVERLAPS_AND_IS_NOT_NULL includes records where the column is NULL.
@@ -197,12 +206,12 @@ function formatTsquery(filter: string | undefined): string | undefined {
     return undefined;
   }
 
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  const noPunctuation = filter.replaceAll(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
   if (!noPunctuation) {
     return undefined;
   }
 
-  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
+  return noPunctuation.replaceAll(/\s+/g, ':* & ') + ':*';
 }
 
 export interface Expression {
@@ -214,7 +223,7 @@ abstract class Executable implements Expression {
     throw new Error('Method not implemented');
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute<T = any>(conn: Pool | PoolClient): Promise<T[]> {
     const sql = new SqlBuilder();
     sql.appendExpression(this);
     return (await sql.execute(conn)).rows;
@@ -1257,6 +1266,10 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
 
 export function isValidTableName(tableName: string): boolean {
   return /^\w+$/.test(tableName);
+}
+
+export function isValidColumnName(columnName: string): boolean {
+  return /^\w+$/.test(columnName);
 }
 
 export function replaceNullWithUndefinedInRows(rows: any[]): void {

@@ -1,18 +1,25 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
+import {
+  badRequest,
+  ContentType,
+  parseLogLevel,
+  unsupportedMediaType,
+  warnIfNewerVersionAvailable,
+} from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import { json, Router, text, urlencoded } from 'express';
-import { rmSync } from 'fs';
-import http from 'http';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { rmSync } from 'node:fs';
+import http from 'node:http';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { adminRouter } from './admin/routes';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
+import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
@@ -39,7 +46,6 @@ import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
-import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
@@ -141,6 +147,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('Stream not readable'));
     return;
   }
+  if (err.name === 'UnsupportedMediaTypeError') {
+    sendOutcome(res, unsupportedMediaType);
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
@@ -196,6 +206,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/.well-known/', wellKnownRouter);
   apiRouter.use('/admin/', adminRouter);
   apiRouter.use('/auth/', authRouter);
+  apiRouter.use('/cds-services/', cdsRouter);
   apiRouter.use('/dicom/PS3/', dicomRouter);
   apiRouter.use('/email/v1/', emailRouter);
   apiRouter.use('/fhir/R4/', fhirRouter);
@@ -217,21 +228,18 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export function initAppServices(config: MedplumServerConfig): Promise<void> {
+export async function initAppServices(config: MedplumServerConfig): Promise<void> {
   loadStructureDefinitions();
   initRedis(config.redis);
-
-  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    await initDatabase(config);
-    await seedDatabase();
-    await initKeys(config);
-    initBinaryStorage(config.binaryStorage);
-    initWorkers(config);
-    initHeartbeat(config);
-    initOtelHeartbeat();
-    initServerRegistryHeartbeatListener();
-    await maybeAutoRunPendingPostDeployMigration();
-  });
+  await initDatabase(config);
+  await seedDatabase(config);
+  await initKeys(config);
+  initBinaryStorage(config.binaryStorage);
+  initWorkers(config);
+  initHeartbeat(config);
+  initOtelHeartbeat();
+  initServerRegistryHeartbeatListener();
+  await maybeAutoRunPendingPostDeployMigration();
 }
 
 export async function shutdownApp(): Promise<void> {

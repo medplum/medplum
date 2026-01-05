@@ -56,6 +56,7 @@ export function ChatInput({
             }}
           />
           <Button
+            aria-label="Send message"
             radius="xl"
             size="sm"
             onClick={onSend}

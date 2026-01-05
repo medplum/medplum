@@ -79,11 +79,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
 
-| Name          | Type                                                                        | Description                                                                         |
-| ------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](../sdk/core.medplumclient)                                  | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
-| `event`       | [BotEvent](../sdk/core.botevent)                                            | The event that object that triggered the Bot                                        |
-| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
+| Name                | Type                                                                                         | Description                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `medplum`           | [MedplumClient](/docs/sdk/core.medplumclient)                                                | An instance of the medplum JS SDK ([documentation](/docs/sdk))                                           |
+| `event`             | [BotEvent](/docs/sdk/core.botevent)                                                          | The event object that triggered the Bot                                                                  |
+| `event.bot`         | `Reference<Bot>`                                                                             | Reference to the Bot resource that is executing                                                          |
+| `event.contentType` | `string`                                                                                     | The content type of the input (e.g., `application/fhir+json`, `text/plain`)                              |
+| `event.input`       | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>`                  | The bot input, usually a FHIR resource or content that was posted to a bot endpoint                      |
+| `event.secrets`     | `Record<string, ProjectSetting>`                                                             | Map of project secrets accessible to the bot. See [Bot Secrets](/docs/bots/bot-secrets) for more details |
+| `event.traceId`     | `string` (optional)                                                                          | Trace ID for request correlation and debugging                                                           |
+| `event.requester`   | `Reference<Bot \| ClientApplication \| Patient \| Practitioner \| RelatedPerson>` (optional) | Reference to the resource that requested the bot execution                                               |
+| `event.headers`     | `Record<string, string \| string[] \| undefined>` (optional)                                 | Headers from the original HTTP request, when invoked by HTTP request                                     |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
@@ -285,7 +291,6 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 ## Software Development Lifecycle
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
-
 
 ## Medplum Lambda Bots Size Limits
 

@@ -5,6 +5,7 @@ import {
   ContentType,
   OAuthClientAssertionType,
   OAuthGrantType,
+  OAuthSigningAlgorithm,
   OAuthTokenType,
   Operator,
   createReference,
@@ -16,10 +17,10 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -351,7 +352,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
-  return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);
+  return exchangeExternalAuthToken(
+    req,
+    res,
+    req.body.client_id,
+    req.body.subject_token,
+    req.body.subject_token_type,
+    req.body.membership_id
+  );
 }
 
 /**
@@ -362,13 +370,15 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
  * @param clientId - The client application ID.
  * @param subjectToken - The subject token. Only access tokens are currently supported.
  * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ * @param membershipId - Optional membership ID to restrict the exchange to.
  */
 export async function exchangeExternalAuthToken(
   req: Request,
   res: Response,
   clientId: string,
   subjectToken: string,
-  subjectTokenType: OAuthTokenType
+  subjectTokenType: OAuthTokenType,
+  membershipId?: string
 ): Promise<void> {
   if (!clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -421,6 +431,8 @@ export async function exchangeExternalAuthToken(
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    forceUseFirstMembership: true,
+    membershipId,
   });
 
   await sendTokenResponse(res, login, client);
@@ -513,7 +525,14 @@ async function parseClientAssertion(
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: clientId,
-    algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+    algorithms: [
+      OAuthSigningAlgorithm.RS256,
+      OAuthSigningAlgorithm.RS384,
+      OAuthSigningAlgorithm.RS512,
+      OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.ES384,
+      OAuthSigningAlgorithm.ES512,
+    ],
     audience: tokenUrl,
   };
 

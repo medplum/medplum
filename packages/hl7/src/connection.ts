@@ -37,13 +37,21 @@ export interface Hl7ConnectionOptions {
   messagesPerMin?: number;
 }
 
+/**
+ * Enhanced mode for HL7 connections.
+ * - `'standard'`: Standard enhanced mode behavior
+ * - `'aaMode'`: AA mode - special enhanced mode that only accepts AA acknowledgements
+ * - `undefined`: Enhanced mode is not enabled (standard behavior)
+ */
+export type EnhancedMode = 'standard' | 'aaMode' | undefined;
+
 export const DEFAULT_ENCODING = 'utf-8';
 const ONE_MINUTE = 60 * 1000;
 
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   encoding: string;
-  enhancedMode: boolean;
+  enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
   private chunks: Buffer[] = [];
   private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
@@ -54,7 +62,7 @@ export class Hl7Connection extends Hl7Base {
   constructor(
     socket: net.Socket,
     encoding: string = DEFAULT_ENCODING,
-    enhancedMode = false,
+    enhancedMode?: EnhancedMode,
     options: Hl7ConnectionOptions = {}
   ) {
     super();
@@ -67,17 +75,13 @@ export class Hl7Connection extends Hl7Base {
     socket.on('data', (data: Buffer) => {
       try {
         this.appendData(data);
-        if (data.at(-2) === FS && data.at(-1) === CR) {
-          const buffer = Buffer.concat(this.chunks);
-          const contentBuffer = buffer.subarray(1, buffer.length - 2);
-          const contentString = iconv.decode(contentBuffer, this.encoding);
-          const message = Hl7Message.parse(contentString);
+        const messages = this.parseMessages();
+        for (const message of messages) {
           this.responseQueue.push(new Hl7MessageEvent(this, message));
-          this.resetBuffer();
-          this.processResponseQueue().catch((err) => {
-            this.dispatchEvent(new Hl7ErrorEvent(err));
-          });
         }
+        this.processResponseQueue().catch((err) => {
+          this.dispatchEvent(new Hl7ErrorEvent(err));
+        });
       } catch (err) {
         this.dispatchEvent(new Hl7ErrorEvent(err as Error));
       }
@@ -96,8 +100,12 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
-      if (this.enhancedMode) {
+      // In standard enhanced mode, send commit ACK (CA) immediately, then later forward app-level ACKs
+      // In aaMode, send application ACK (AA) immediately, then ignore any later app-level ACKs
+      if (this.enhancedMode === 'standard') {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
+      } else if (this.enhancedMode === 'aaMode') {
+        this.send(event.message.buildAck({ ackCode: 'AA' }));
       }
       const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
       // If there is no message control ID, just return
@@ -186,6 +194,65 @@ export class Hl7Connection extends Hl7Base {
     this.responseQueueProcessing = false;
   }
 
+  /**
+   * Parses complete HL7 messages from the accumulated buffer.
+   * Continues parsing while the buffer starts with VT and contains FS+CR.
+   * Keeps any incomplete message data in the buffer for the next chunk.
+   * @returns An array of parsed HL7 messages.
+   */
+  private parseMessages(): Hl7Message[] {
+    const messages: Hl7Message[] = [];
+    const buffer = Buffer.concat(this.chunks);
+    this.resetBuffer();
+
+    // Check if buffer starts with VT (Vertical Tab)
+    if (buffer.length === 0) {
+      return messages;
+    }
+
+    let bufferIdx = 0;
+
+    // Keep parsing while we have complete messages
+    while (bufferIdx < buffer.length) {
+      // Ignore bytes between message frames
+      while (buffer[bufferIdx] !== VT && bufferIdx < buffer.length) {
+        bufferIdx++;
+      }
+
+      // Look for FS+CR sequence to mark end of message
+      let messageEndIndex = -1;
+
+      for (let i = bufferIdx + 1; i < buffer.length - 1; i++) {
+        if (buffer[i] === FS && buffer[i + 1] === CR) {
+          messageEndIndex = i + 1; // Index of CR (end of message)
+          break;
+        }
+      }
+
+      // If we don't have a complete message yet, wait for more data
+      if (messageEndIndex === -1) {
+        break;
+      }
+
+      // Extract the complete message (including VT, FS, and CR)
+      const messageBuffer = buffer.subarray(bufferIdx, messageEndIndex + 1);
+      // Extract the content (without VT at start and FS+CR at end)
+      const contentBuffer = messageBuffer.subarray(1, -2);
+      const contentString = iconv.decode(contentBuffer, this.encoding);
+      const message = Hl7Message.parse(contentString);
+
+      messages.push(message);
+
+      // Move past this message
+      bufferIdx = messageEndIndex + 1;
+    }
+
+    // Keep any remaining unfinished chunk in this.chunks
+    this.chunks = bufferIdx < buffer.length ? [buffer.subarray(bufferIdx)] : [];
+
+    return messages;
+  }
+
   send(reply: Hl7Message): void {
     this.sendImpl(reply);
   }
@@ -225,7 +292,7 @@ export class Hl7Connection extends Hl7Base {
         message: msg,
         resolve,
         reject,
-        returnAck: options?.returnAck ?? ReturnAckCategory.FIRST,
+        returnAck: options?.returnAck ?? ReturnAckCategory.APPLICATION,
         timer,
       });
       this.sendImpl(msg);
@@ -235,7 +302,7 @@ export class Hl7Connection extends Hl7Base {
   async close(): Promise<void> {
     // If we have already received the close event, then we can just return immediately
     if (this.isClosed()) {
-      return Promise.resolve();
+      return;
     }
     this.socket.end();
     this.socket.destroy();
@@ -280,7 +347,7 @@ export class Hl7Connection extends Hl7Base {
       // Clear out any pending messages
       this.pendingMessages.clear();
     }
-    return new Promise((resolve) => {
+    await new Promise((resolve) => {
       // Register a temporary listener to help resolve the promise once close has been emitted
       this.socket.once('close', resolve);
     });
@@ -302,11 +369,11 @@ export class Hl7Connection extends Hl7Base {
     return this.encoding;
   }
 
-  setEnhancedMode(enhancedMode: boolean): void {
+  setEnhancedMode(enhancedMode: EnhancedMode): void {
     this.enhancedMode = enhancedMode;
   }
 
-  getEnhancedMode(): boolean {
+  getEnhancedMode(): EnhancedMode {
     return this.enhancedMode;
   }
 
@@ -316,5 +383,9 @@ export class Hl7Connection extends Hl7Base {
 
   getMessagesPerMin(): number | undefined {
     return this.messagesPerMin;
+  }
+
+  getPendingMessageCount(): number {
+    return this.pendingMessages.size;
   }
 }

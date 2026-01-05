@@ -9,7 +9,8 @@ import type { JSX, ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { ConfigureGINIndexesForm } from './ConfigureGINIndexesForm';
 import { SearchableSelect } from './SearchableSelect';
-import { formatValue, getAvailableTables } from './utils';
+import { useAvailableTables } from './useAvailableTables';
+import { formatValue } from './utils';
 
 export function GINIndexes(): JSX.Element {
   const medplum = useMedplum();
@@ -25,20 +26,7 @@ export function GINIndexes(): JSX.Element {
   const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [refreshTable, setRefreshTable] = useState(0);
 
-  useEffect(() => {
-    async function loadResourceTypes(): Promise<string[]> {
-      const valueSet = await medplum.valueSetExpand({
-        url: 'https://medplum.com/fhir/ValueSet/resource-types',
-        count: 200,
-      });
-      return valueSet.expansion?.contains?.map((c) => c.code).filter((c) => c !== undefined) ?? [];
-    }
-    loadResourceTypes()
-      .then((resourceTypes) => {
-        setAvailableTables(getAvailableTables(resourceTypes));
-      })
-      .catch(console.error);
-  }, [medplum]);
+  useAvailableTables({ medplum, onChange: setAvailableTables });
 
   useEffect(() => {
     setLoadingStats(true);

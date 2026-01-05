@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "4.5.1",
+  "version": "5.0.10",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
@@ -22,26 +22,27 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "dependencies": {
-    "@medplum/ccda": "4.5.1",
-    "@medplum/core": "4.5.1",
-    "@medplum/definitions": "4.5.1",
-    "fast-xml-parser": "5.3.0",
-    "form-data": "4.0.4",
+    "@medplum/ccda": "5.0.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/definitions": "5.0.10",
+    "fast-xml-parser": "5.3.3",
+    "form-data": "4.0.5",
     "jose": "5.10.0",
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.20",
+    "pdfmake": "0.2.21",
     "ssh2": "1.17.0",
     "ssh2-sftp-client": "12.0.1",
-    "twilio": "5.10.3"
+    "twilio": "5.11.1",
+    "undici": "7.16.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.13"
   },
   "peerDependencies": {
-    "@medplum/ccda": "4.5.1",
-    "@medplum/core": "4.5.1",
-    "@medplum/definitions": "4.5.1",
+    "@medplum/ccda": "5.0.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/definitions": "5.0.10",
     "fast-xml-parser": "^5.0.9",
     "form-data": "^4.0.0",
     "jose": "^5.10.0",
@@ -49,10 +50,11 @@
     "node-fetch": "^2.7.0",
     "pdfmake": "^0.2.7",
     "ssh2": "^1.11.0",
-    "ssh2-sftp-client": "^9.0.4",
-    "twilio": "5.9.0"
+    "ssh2-sftp-client": "^12.0.0",
+    "twilio": "^5.9.0",
+    "undici": "^7.0.0"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

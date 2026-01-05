@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Operator } from '@medplum/core';
+import { OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { JsonWebKey } from '@medplum/fhirtypes';
-import { randomBytes } from 'crypto';
 import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } from 'jose';
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
+import { randomBytes } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -49,6 +49,12 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
    * For example, "Patient/123" or "Practitioner/456".
    */
   profile: string;
+
+  /**
+   * User email address.
+   * Included when the 'email' scope is requested and the user is a User resource.
+   */
+  email?: string;
 }
 
 export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
@@ -80,10 +86,8 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
  * Note: AWS Cognito uses RS256. Auth0 supports RS256, HS256, and PS256 options.
  */
 
-const ALG_ES256 = 'ES256';
-const ALG_RS256 = 'RS256';
-const PREFERRED_ALG = ALG_ES256;
-const LEGACY_DEFAULT_ALG = ALG_RS256;
+const PREFERRED_ALG = OAuthSigningAlgorithm.ES256;
+const LEGACY_DEFAULT_ALG = OAuthSigningAlgorithm.RS256;
 const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
 
@@ -144,7 +148,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
       kty: jwk.kty,
       use: 'sig',
     };
-    if (jwk.alg === ALG_ES256) {
+    if (jwk.alg === OAuthSigningAlgorithm.ES256) {
       publicKey.x = jwk.x;
       publicKey.y = jwk.y;
       publicKey.crv = jwk.crv as string;
@@ -255,6 +259,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
       typ: 'JWT',
     })
     .setIssuedAt()
+    .setNotBefore(new Date())
     .setIssuer(issuer)
     .setAudience(claims.client_id as string)
     .setExpirationTime(exp)
@@ -273,7 +278,7 @@ export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; p
 
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    algorithms: [ALG_ES256, ALG_RS256],
+    algorithms: [OAuthSigningAlgorithm.ES256, OAuthSigningAlgorithm.RS256],
   };
 
   return jwtVerify(token, getKeyForHeader, verifyOptions);

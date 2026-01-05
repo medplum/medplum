@@ -31,6 +31,7 @@ interface UserSession {
 interface UserSecurity {
   mfaEnrolled: boolean;
   sessions: UserSession[];
+  memberships: Partial<ProjectMembership>[];
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
@@ -47,9 +48,33 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   if (membership.user?.reference?.startsWith('User/')) {
     user = await systemRepo.readReference<User>(membership.user as Reference<User>);
     const sessions = await getSessions(systemRepo, user);
+    const memberships = await systemRepo.searchResources<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'user',
+          operator: Operator.EQUALS,
+          value: getReferenceString(user),
+        },
+        {
+          code: 'project',
+          operator: Operator.EQUALS,
+          value: getReferenceString(project),
+        },
+      ],
+    });
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       sessions,
+      memberships: memberships
+        .filter((m) => m.active !== false)
+        .map((membership) => ({
+          resourceType: 'ProjectMembership',
+          id: membership.id,
+          identifier: membership.identifier,
+          profile: membership.profile,
+          admin: membership.admin,
+        })),
     };
   }
 

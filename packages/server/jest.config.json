@@ -15,6 +15,7 @@
   "collectCoverageFrom": [
     "**/src/**/*",
     "!**/src/__mocks__/**/*.ts",
+    "!**/src/migrations/migrate-main.ts",
     "!**/src/migrations/schema/**/*.ts",
     "!**/src/migrations/data/**/*.ts"
   ]

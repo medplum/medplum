@@ -1,23 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
 async function setup(url: string): Promise<void> {
-  await act(async () => {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <AppRoutes />
-        </MemoryRouter>
-      </MedplumProvider>
-    );
-  });
+  renderAppRoutes(medplum, url);
 }
 
 describe('ProjectPage', () => {

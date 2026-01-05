@@ -16,6 +16,10 @@
   &:hover {
     background-color: var(--mantine-primary-color-light-hover);
   }
+
+  &[data-active] {
+    background-color: var(--mantine-primary-color-light-hover);
+  }
 }
 
 .userName {
@@ -26,8 +30,4 @@
   @media (max-width: $mantine-breakpoint-xs) {
     display: none;
   }
-}
-
-.userActive {
-  background-color: var(--mantine-primary-color-light-hover);
 }

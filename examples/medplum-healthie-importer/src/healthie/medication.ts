@@ -158,7 +158,7 @@ export function parseDosage(dosageString?: string): Quantity | undefined {
   }
 
   const [, valueStr, unit] = match;
-  const value = parseFloat(valueStr);
+  const value = Number.parseFloat(valueStr);
 
   return {
     value,

@@ -3,7 +3,7 @@
 import { getDateProperty, Operator } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
-import { URL } from 'url';
+import { URL } from 'node:url';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
@@ -202,7 +202,7 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 
   const authTime = getDateProperty(login.authTime) as Date;
   const age = (Date.now() - authTime.getTime()) / 1000;
-  const maxAge = req.query.max_age ? parseInt(req.query.max_age as string, 10) : 3600;
+  const maxAge = req.query.max_age ? Number.parseInt(req.query.max_age as string, 10) : 3600;
   if (age > maxAge) {
     return undefined;
   }

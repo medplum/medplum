@@ -13,10 +13,10 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { assert } from 'console';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
+import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import type { AuthenticatedRequestContext } from '../context';
@@ -264,7 +264,7 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
   requireSuperAdmin();
 
   const postDeployMigrations = getPostDeployMigrationVersions();
-  const conn = await getDatabasePool(DatabaseMode.WRITER);
+  const conn = getDatabasePool(DatabaseMode.WRITER);
   const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
   res.json({
@@ -274,9 +274,7 @@ superAdminRouter.get('/migrations', async (req: Request, res: Response) => {
 });
 
 // POST to /admin/super/migrate
-// to run pending data migrations.
-// This is intended to replace all of the above endpoints,
-// because it will be run automatically by the server upgrade process.
+// to run the pending post-deploy migration, if any.
 superAdminRouter.post(
   '/migrate',
   [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],

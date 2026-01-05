@@ -13,6 +13,7 @@ const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const PRECONDITION_FAILED_ID = 'precondition-failed';
+const UNSUPPORTED_MEDIA_TYPE_ID = 'unsupported-media-type';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
@@ -154,6 +155,20 @@ export const preconditionFailed: OperationOutcome = {
       code: 'processing',
       details: {
         text: 'Precondition Failed',
+      },
+    },
+  ],
+};
+
+export const unsupportedMediaType: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: UNSUPPORTED_MEDIA_TYPE_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'not-supported',
+      details: {
+        text: 'Unsupported media type',
       },
     },
   ],
@@ -406,6 +421,8 @@ export function getStatus(outcome: OperationOutcome): number {
     case PRECONDITION_FAILED_ID:
     case MULTIPLE_MATCHES_ID:
       return 412;
+    case UNSUPPORTED_MEDIA_TYPE_ID:
+      return 415;
     case BUSINESS_RULE:
       return 422;
     case TOO_MANY_REQUESTS_ID:
@@ -431,10 +448,10 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome, cause?: unknown) {
-    super(operationOutcomeToString(outcome));
+  constructor(outcome: OperationOutcome, options?: ErrorOptions) {
+    super(operationOutcomeToString(outcome), options);
+    this.name = 'OperationOutcomeError';
     this.outcome = outcome;
-    this.cause = cause;
   }
 }
 

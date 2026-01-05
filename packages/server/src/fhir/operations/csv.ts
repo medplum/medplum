@@ -97,7 +97,7 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
   try {
     return evalFhirPath(expression, resource);
   } catch (err) {
-    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), err);
+    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), { cause: err });
   }
 }
 
@@ -166,7 +166,7 @@ function csvEscape(input: unknown): string {
 const CSV_INJECTION_CHARS = ['=', '+', '-', '@'];
 
 function csvEscapeString(input: string): string {
-  let result = input.trim().replace(/"/g, '""');
+  let result = input.trim().replaceAll('"', '""');
   if (result.length > 0 && CSV_INJECTION_CHARS.includes(result[0])) {
     result = "'" + result;
   }

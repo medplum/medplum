@@ -230,8 +230,8 @@ Reconfigure Medplum:
 
 :::caution
 
-During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file. 
-If you've missed these configuration you can reconfigure with the following command line 
+During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file.
+If you've missed these configuration you can reconfigure with the following command line
 
 :::
 
@@ -249,4 +249,8 @@ The Medplum server configuration is located at `/etc/medplum/medplum.config.json
 sudo systemctl restart medplum
 ```
 
-See [Config Settings](/docs/self-hosting/config-settings) for full details on Medplum configuration settings.
+See [Config Settings](/docs/self-hosting/server-config) for full details on Medplum configuration settings.
+
+### Step 5 - Run the server
+
+Now we are ready to run the server.

@@ -17,6 +17,7 @@ import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
+import type { Repository } from '../repo';
 import {
   Column,
   Condition,
@@ -47,6 +48,8 @@ type ValueSetExpandParameters = {
   offset?: number;
   count?: number;
   excludeNotForUI?: boolean;
+  includeDesignations?: boolean;
+  displayLanguage?: boolean;
   valueSet?: ValueSet;
 };
 
@@ -63,6 +66,7 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  const repo = getAuthenticatedContext().repo;
   let valueSet = params.valueSet;
   if (!valueSet) {
     let url = params.url;
@@ -75,13 +79,13 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
       url = url.substring(0, pipeIndex);
     }
 
-    valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+    valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
   }
 
   if (params.filter && !params.count) {
     params.count = 10; // Default to small page size for typeahead queries
   }
-  const result = await expandValueSet(valueSet, params);
+  const result = await expandValueSet(repo, valueSet, params);
 
   return [allOk, buildOutputParameters(operation, result)];
 }
@@ -130,8 +134,12 @@ function flattenConcepts(
   return result;
 }
 
-export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
-  const expandedSet = await computeExpansion(valueSet, params);
+export async function expandValueSet(
+  repo: Repository,
+  valueSet: ValueSet,
+  params: ValueSetExpandParameters
+): Promise<ValueSet> {
+  const expandedSet = await computeExpansion(repo, valueSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: MAX_EXPANSION_SIZE + 1,
@@ -149,6 +157,7 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
 }
 
 async function computeExpansion(
+  repo: Repository,
   valueSet: ValueSet,
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
@@ -172,10 +181,11 @@ async function computeExpansion(
   for (const include of valueSet.compose.include) {
     if (include.valueSet) {
       for (const url of include.valueSet) {
-        const includedValueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+        const includedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
         terminologyResources[includedValueSet.url as string] = includedValueSet;
 
         const nestedExpansion = await computeExpansion(
+          repo,
           includedValueSet,
           {
             ...params,
@@ -205,7 +215,7 @@ async function computeExpansion(
 
     const codeSystem =
       (terminologyResources[include.system] as WithId<CodeSystem>) ??
-      (await findTerminologyResource('CodeSystem', include.system));
+      (await findTerminologyResource(repo, 'CodeSystem', include.system));
     terminologyResources[include.system] = codeSystem;
 
     if (include.concept) {
@@ -284,6 +294,7 @@ export function expansionQuery(
     .column('code')
     .column('display')
     .column('synonymOf')
+    .column('language')
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
@@ -347,6 +358,7 @@ export function addParentFilter(
       .column('code')
       .column('display')
       .column('synonymOf')
+      .column('language')
       .where(new Column('origin', 'system'), '=', codeSystem.id)
       .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
     const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
@@ -382,6 +394,14 @@ function addExpansionFilters(
         true
       );
   }
+
+  if (params.displayLanguage) {
+    query.where('language', '=', params.displayLanguage);
+  } else if (!params.includeDesignations) {
+    // Include translations of codes only by request
+    query.where('language', '=', null);
+  }
+
   if (params.excludeNotForUI) {
     query = addAbstractFilter(query, codeSystem);
   }

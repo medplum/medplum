@@ -40,6 +40,7 @@ import type {
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
+import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
 import { ContentType } from './contenttype';
 import { encryptSHA256, getRandomString } from './crypto';
 import { isBrowserEnvironment, locationUtils } from './environment';
@@ -96,6 +97,14 @@ import {
   sleep,
   sortStringArray,
 } from './utils';
+
+/**
+ * Log level for MedplumClient requests and responses.
+ * - 'none': No logging
+ * - 'basic': Log method, URL, and status code only (no sensitive headers)
+ * - 'verbose': Log all details including headers (may include sensitive data)
+ */
+export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
 export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
@@ -331,8 +340,19 @@ export interface MedplumClientOptions {
 
   /**
    * When the verbose flag is set, the client will log all requests and responses to the console.
+   * @deprecated Use logLevel instead. Will be removed in a future version.
    */
   verbose?: boolean;
+
+  /**
+   * Log level for requests and responses.
+   * - 'none': No logging (default)
+   * - 'basic': Log method, URL, and status code only (no sensitive headers)
+   * - 'verbose': Log all details including headers (may include sensitive data like tokens)
+   *
+   * @defaultValue 'none'
+   */
+  logLevel?: ClientLogLevel;
 
   /**
    * Optional flag to enable or disable Medplum extended mode.
@@ -348,6 +368,13 @@ export interface MedplumClientOptions {
    * This can be used to set custom headers such as Cookies or Authorization headers.
    */
   defaultHeaders?: Record<string, string>;
+
+  /**
+   * Prefix to add to all keys when using `localStorage` as the backing store for `ClientStorage` (the default option in the browser).
+   *
+   * Default is `''` (no prefix).
+   */
+  storagePrefix?: string;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
@@ -535,9 +562,14 @@ export interface InviteRequest {
 }
 
 export type RateLimitInfo = {
+  /** Name of the rate limiter. */
   name: string;
+  /** Remaining rate limit quota units. */
   remainingUnits: number;
+  /** Number of seconds until the rate limit resets to its full quota. */
   secondsUntilReset: number;
+  /** Timestamp (seconds from 1970-01-01T00:00:00Z) after which the rate limiter resets to its full quota. */
+  resetsAfter: number;
 };
 
 /**
@@ -761,6 +793,21 @@ export const OAuthClientAssertionType = {
 } as const;
 export type OAuthClientAssertionType = (typeof OAuthClientAssertionType)[keyof typeof OAuthClientAssertionType];
 
+/**
+ * OAuth Signing Algorithms
+ * See {@link https://datatracker.ietf.org/doc/html/rfc7519 | RFC 7519} for full details.
+ */
+export const OAuthSigningAlgorithm = {
+  ES256: 'ES256',
+  ES384: 'ES384',
+  ES512: 'ES512',
+  HS256: 'HS256',
+  RS256: 'RS256',
+  RS384: 'RS384',
+  RS512: 'RS512',
+} as const;
+export type OAuthSigningAlgorithm = (typeof OAuthSigningAlgorithm)[keyof typeof OAuthSigningAlgorithm];
+
 interface SessionDetails {
   project: Project;
   membership: ProjectMembership;
@@ -890,6 +937,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private initPromise: Promise<void>;
   private initComplete = true;
   private keyValueClient?: MedplumKeyValueClient;
+  private logLevel: ClientLogLevel;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -902,7 +950,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.options = options ?? {};
     this.fetch = options?.fetch ?? getDefaultFetch();
-    this.storage = options?.storage ?? new ClientStorage();
+    this.storage = options?.storage ?? new ClientStorage(undefined, options?.storagePrefix);
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl ?? DEFAULT_BASE_URL);
     this.fhirBaseUrl = concatUrls(this.baseUrl, options?.fhirUrlPath ?? 'fhir/R4');
@@ -916,6 +964,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.defaultHeaders = options?.defaultHeaders ?? {};
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
+    this.logLevel = this.initializeLogLevel(options);
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -977,6 +1026,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   getInitPromise(): Promise<void> {
     return this.initPromise;
+  }
+
+  /**
+   * Initializes the log level with backward compatibility for the verbose option.
+   * @param options - The client options.
+   * @returns The initialized log level.
+   */
+  private initializeLogLevel(options?: MedplumClientOptions): ClientLogLevel {
+    if (options?.logLevel) {
+      return options.logLevel;
+    }
+    if (options?.verbose !== undefined) {
+      return options.verbose ? 'verbose' : 'none';
+    }
+    return 'none';
   }
 
   private async attemptResumeActiveLogin(): Promise<void> {
@@ -1822,6 +1886,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<WithId<T>>;
   }
 
+  readCanonical<RT extends ResourceType>(
+    resourceType: RT | RT[],
+    url: string,
+    options?: MedplumRequestOptions
+  ): ReadablePromise<WithId<ExtractResource<RT>> | undefined> {
+    if (Array.isArray(resourceType)) {
+      return this.searchOne('' as RT, { _type: resourceType.join(','), url }, options);
+    } else {
+      return this.searchOne(resourceType, 'url=' + url, options);
+    }
+  }
+
   /**
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
@@ -1882,7 +1958,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         expression,
         target
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
@@ -2130,20 +2206,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async createResourceIfNoneExist<T extends Resource>(
     resource: T,
     query: string,
-    options?: MedplumRequestOptions
+    options: MedplumRequestOptions = {}
   ): Promise<WithId<T>> {
     const url = this.fhirUrl(resource.resourceType);
-    if (!options) {
-      options = { headers: { 'If-None-Exist': query } };
-    } else if (!options.headers) {
-      options.headers = { 'If-None-Exist': query };
-    } else if (Array.isArray(options.headers)) {
-      options.headers.push(['If-None-Exist', query]);
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('If-None-Exist', query);
-    } else {
-      options.headers['If-None-Exist'] = query;
-    }
+    this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post(url, resource, undefined, options);
     this.cacheResource(result);
@@ -2875,6 +2941,26 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Reads the list of available CDS services.
+   * @param options - Optional fetch options.
+   * @returns The list of CDS services.
+   */
+  getCdsServices(options?: MedplumRequestOptions): Promise<CdsDiscoveryResponse> {
+    return this.get<CdsDiscoveryResponse>('/cds-services', options);
+  }
+
+  /**
+   * Calls a CDS service by ID.
+   * @param id - The CDS service ID.
+   * @param body - The CDS request body.
+   * @param options - Optional fetch options.
+   * @returns The CDS response.
+   */
+  callCdsService(id: string, body: CdsRequest, options?: MedplumRequestOptions): Promise<CdsResponse> {
+    return this.post(`/cds-services/${id}`, body, ContentType.JSON, options);
+  }
+
+  /**
    * @category Authentication
    * @returns The Login State
    */
@@ -2951,7 +3037,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private async refreshProfile(): Promise<WithId<ProfileResource> | undefined> {
     if (!this.medplumServer) {
-      return Promise.resolve(undefined);
+      return undefined;
     }
 
     this.profilePromise = new Promise((resolve, reject) => {
@@ -3210,7 +3296,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Bulk Data Response containing links to Bulk Data files. See the {@link https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status | "Response - Complete Status"} for full details.
    */
   async bulkExport(
-    //eslint-disable-next-line default-param-last
     exportLevel = '',
     resourceTypes?: string,
     since?: string,
@@ -3442,11 +3527,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
       try {
-        if (this.options.verbose) {
+        if (this.logLevel !== 'none') {
           this.logRequest(url, options);
         }
         const response = (await this.fetch(url, options)) as Response;
-        if (this.options.verbose) {
+        if (this.logLevel !== 'none') {
           this.logResponse(response);
         }
 
@@ -3484,7 +3569,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private logRequest(url: string, options: MedplumRequestOptions): void {
     console.log(`> ${options.method} ${url}`);
-    if (options.headers) {
+    if (this.logLevel === 'verbose' && options.headers) {
       const headers = options.headers as Record<string, string>;
       for (const key of sortStringArray(Object.keys(headers))) {
         console.log(`> ${key}: ${headers[key]}`);
@@ -3494,7 +3579,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private logResponse(response: Response): void {
     console.log(`< ${response.status} ${response.statusText}`);
-    if (response.headers) {
+    if (this.logLevel === 'verbose' && response.headers) {
       response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
   }
@@ -3519,22 +3604,27 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return [];
     }
     const header = this.currentRateLimits;
-    return header.split(/\s*;\s*/g).map((str) => {
-      const parts = str.split(/\s*,\s*/g);
+    return header.split(',').map((str) => {
+      const parts = str.split(';').map((s) => s.trim());
       if (parts.length !== 3) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
 
       const name = parts[0].substring(1, parts[0].length - 1);
-      const remainingPart = parts.find((p) => p.startsWith('r='));
-      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
-      const timePart = parts.find((p) => p.startsWith('t='));
-      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+      const remainingPart = parts.find((p) => p.startsWith('r='))?.substring(2);
+      const remainingUnits = remainingPart ? Number.parseInt(remainingPart, 10) : Number.NaN;
+      const timePart = parts.find((p) => p.startsWith('t='))?.substring(2);
+      const secondsUntilReset = timePart ? Number.parseInt(timePart, 10) : Number.NaN;
       if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }
 
-      return { name, remainingUnits, secondsUntilReset };
+      return {
+        name,
+        remainingUnits,
+        secondsUntilReset,
+        resetsAfter: Math.ceil((Date.now() + 1000 * secondsUntilReset) / 1000),
+      };
     });
   }
 
@@ -3678,14 +3768,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param ifNoneExist - Optional flag to only set the header if it doesn't already exist.
    */
   private setRequestHeader(options: MedplumRequestOptions, key: string, value: string, ifNoneExist = false): void {
-    if (!options.headers) {
-      options.headers = {};
+    const headers = options.headers;
+    if (!headers) {
+      options.headers = { [key]: value };
+    } else if (Array.isArray(headers)) {
+      if (!ifNoneExist || !headers.some(([k]) => k.toLowerCase() === key.toLowerCase())) {
+        headers.push([key, value]);
+      }
+    } else if (headers instanceof Headers) {
+      if (!ifNoneExist || !headers.has(key)) {
+        headers.set(key, value);
+      }
+    } else if (isObject(headers)) {
+      if (!ifNoneExist || !headers[key]) {
+        headers[key] = value;
+      }
     }
-    const headers = options.headers as Record<string, string>;
-    if (ifNoneExist && headers[key]) {
-      return;
-    }
-    headers[key] = value;
   }
 
   /**
@@ -3715,15 +3813,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch request init options.
    * @returns The result of the retry.
    */
-  private handleUnauthenticated(method: string, url: string, options: MedplumRequestOptions): Promise<any> {
+  private async handleUnauthenticated(method: string, url: string, options: MedplumRequestOptions): Promise<any> {
     if (this.refresh()) {
       return this.request(method, url, options);
     }
     this.clear();
-    if (this.onUnauthenticated) {
-      this.onUnauthenticated();
-    }
-    return Promise.reject(new OperationOutcomeError(unauthorized));
+    this.onUnauthenticated?.();
+    throw new OperationOutcomeError(unauthorized);
   }
 
   /**
@@ -3936,6 +4032,69 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Sets the log level for the client.
+   * - 'none': No logging
+   * - 'basic': Log method, URL, and status code only (no sensitive headers)
+   * - 'verbose': Log all details including headers (may include sensitive data)
+   *
+   * @example
+   * ```typescript
+   * // Basic logging for production
+   * medplum.setLogLevel('basic');
+   * await medplum.searchResources('Patient');
+   * // Output:
+   * // > GET https://api.medplum.com/fhir/R4/Patient
+   * // < 200 OK
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Verbose logging for debugging
+   * medplum.setLogLevel('verbose');
+   * await medplum.searchResources('Patient');
+   * // Output includes all headers
+   * ```
+   *
+   * @category HTTP
+   * @param level - The log level to set.
+   */
+  setLogLevel(level: ClientLogLevel): void {
+    this.logLevel = level;
+    // Update deprecated verbose option for backward compatibility
+    this.options.verbose = level === 'verbose';
+  }
+
+  /**
+   * Gets the current log level.
+   * @category HTTP
+   * @returns The current log level.
+   */
+  getLogLevel(): ClientLogLevel {
+    return this.logLevel;
+  }
+
+  /**
+   * Sets the verbose mode for the client.
+   * When verbose is enabled, the client will log all requests and responses to the console.
+   *
+   * @deprecated Use setLogLevel instead. This method will be removed in a future version.
+   *
+   * @example
+   * ```typescript
+   * medplum.setVerbose(true);
+   * // Now all requests and responses will be logged
+   * await medplum.searchResources('Patient');
+   * ```
+   *
+   * @category HTTP
+   * @param verbose - Whether to enable verbose logging.
+   */
+  setVerbose(verbose: boolean): void {
+    this.logLevel = verbose ? 'verbose' : 'none';
+    this.options.verbose = verbose;
+  }
+
+  /**
    * Subscribes to a specified topic, listening for a list of specified events.
    *
    * Once you have the `SubscriptionRequest` returned from this method, you can call `fhircastConnect(subscriptionRequest)` to connect to the subscription stream.
@@ -4124,11 +4283,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     if (!response.ok) {
       this.clearActiveLogin();
+      this.onUnauthenticated?.();
       try {
         const error = await response.json();
         throw new OperationOutcomeError(badRequest(error.error_description));
       } catch (err) {
-        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), err);
+        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
       }
     }
     const tokens = await response.json();
@@ -4197,7 +4357,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         // Refresh the page to ensure the active login is up to date.
         if (e.key === null) {
           locationUtils.reload();
-        } else if (e.key === 'activeLogin') {
+        } else if (e.key === this.storage.makeKey('activeLogin')) {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
           if (

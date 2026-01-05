@@ -7,13 +7,13 @@ import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import os from 'node:os';
-import type ws from 'ws';
+import type { RawData, WebSocket } from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { heartbeat } from '../heartbeat';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
@@ -42,16 +42,20 @@ export interface WebSocketSubMetadata {
   rawToken: string;
 }
 
-export type WebSocketSubToken = JWTPayload & MedplumBaseClaims & AdditionalWsBindingClaims;
+export type WebSocketSubToken = MedplumBaseClaims & AdditionalWsBindingClaims;
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 
-const wsToSubLookup = new Map<ws.WebSocket, Map<string, WebSocketSubMetadata>>();
-const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
+const wsToSubLookup = new Map<WebSocket, Map<string, WebSocketSubMetadata>>();
+const subToWsLookup = new Map<string, Set<WebSocket>>();
 
 let redisSubscriber: Redis | undefined;
 let heartbeatHandler: (() => void) | undefined;
+
+let subscriptionEventsFired = 0;
+let subscriptionMessagesSent = 0;
+let subscriptionMessagesReceived = 0;
 
 async function setupSubscriptionHandler(): Promise<void> {
   redisSubscriber = getRedisSubscriber();
@@ -94,7 +98,9 @@ async function setupSubscriptionHandler(): Promise<void> {
         }
 
         socket.send(JSON.stringify(rewrittenBundle), { binary: false });
+        subscriptionMessagesSent++;
       }
+      subscriptionEventsFired++;
     }
   });
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
@@ -105,15 +111,27 @@ function ensureHeartbeatHandler(): void {
     heartbeatHandler = (): void => {
       for (const [ws, metadata] of wsToSubLookup.entries()) {
         ws.send(JSON.stringify(createSubHeartbeatEvent(metadata)));
+        subscriptionMessagesSent++;
       }
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
       setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
       setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.eventsFiredPerSec', subscriptionEventsFired / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge('medplum.subscription.messagesSentPerSec', subscriptionMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge(
+        'medplum.subscription.messagesReceivedPerSec',
+        subscriptionMessagesReceived / heartbeatSeconds,
+        METRIC_OPTIONS
+      );
+      subscriptionEventsFired = 0;
+      subscriptionMessagesSent = 0;
+      subscriptionMessagesReceived = 0;
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
 }
 
-function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, rawToken: string): void {
+function subscribeWsToSubscription(ws: WebSocket, subscriptionId: string, rawToken: string): void {
   let wsSet = subToWsLookup.get(subscriptionId);
   let subEntryMap = wsToSubLookup.get(ws);
   if (!wsSet) {
@@ -128,7 +146,7 @@ function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, raw
   subEntryMap.set(subscriptionId, { rawToken });
 }
 
-function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+function unsubscribeWsFromSubscription(ws: WebSocket, subscriptionId: string): void {
   // Check for WebSocket in map for this subscription ID
   const wsSet = subToWsLookup.get(subscriptionId);
   if (wsSet) {
@@ -150,7 +168,7 @@ function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string)
   }
 }
 
-function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
+function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
   const subEntries = wsToSubLookup.get(ws);
   if (!subEntries) {
     globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
@@ -161,7 +179,7 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
       globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
       continue;
     }
-    const wsSet = subToWsLookup.get(subscriptionId) as Set<ws.WebSocket>;
+    const wsSet = subToWsLookup.get(subscriptionId) as Set<WebSocket>;
     wsSet.delete(ws);
     if (wsSet.size === 0) {
       subToWsLookup.delete(subscriptionId);
@@ -178,7 +196,7 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
 // Each project entry becomes a map of subscriptions to their current ref count (how many subscribers each has)
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
-export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
+export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
   const redis = getRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
@@ -224,6 +242,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     ensureHeartbeatHandler();
     // Send a handshake to notify client that this subscription is active for this connection
     socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
+    subscriptionMessagesSent++;
 
     onDisconnect = async (): Promise<void> => {
       const subEntries = wsToSubLookup.get(socket);
@@ -261,12 +280,14 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set([verifiedToken.subscription_id]));
   };
 
-  socket.on('message', async (data: ws.RawData) => {
+  socket.on('message', async (data: RawData) => {
+    subscriptionMessagesReceived++;
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
     if (msg.type === 'ping') {
       socket.send(JSON.stringify({ type: 'pong' }));
+      subscriptionMessagesSent++;
     } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
       if (!token) {

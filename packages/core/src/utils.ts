@@ -650,13 +650,15 @@ export function isEmpty(v: unknown): boolean {
   return false;
 }
 
-export type CanBePopulated = { length: number } | object;
+export type CanBePopulated = { length: number } | Record<string, any>;
 /**
  * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  * @param arg - Any value
  * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  */
-export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+export function isPopulated<T extends { length: number } | Record<string, any>>(
+  arg: CanBePopulated | undefined | null
+): arg is T {
   if (arg === null || arg === undefined) {
     return false;
   }
@@ -932,7 +934,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCharCode(bytes[i]);
+    result[i] = String.fromCodePoint(bytes[i]);
   }
   return window.btoa(result.join(''));
 }
@@ -1133,7 +1135,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return parseFloat(a.toFixed(precision));
+  return Number.parseFloat(a.toFixed(precision));
 }
 
 /**
@@ -1224,6 +1226,8 @@ export function findResourceByCode(
   );
 }
 
+export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (value === undefined) {
     return undefined;
@@ -1478,13 +1482,13 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
  */
 export function escapeHtml(unsafe: string): string {
   return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/“/g, '&ldquo;')
-    .replace(/”/g, '&rdquo;')
-    .replace(/‘/g, '&lsquo;')
-    .replace(/’/g, '&rsquo;')
-    .replace(/…/g, '&hellip;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('“', '&ldquo;')
+    .replaceAll('”', '&rdquo;')
+    .replaceAll('‘', '&lsquo;')
+    .replaceAll('’', '&rsquo;')
+    .replaceAll('…', '&hellip;');
 }

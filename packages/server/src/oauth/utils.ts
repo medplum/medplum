@@ -31,14 +31,13 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { createHash } from 'crypto';
 import type { Request } from 'express';
 import type { IncomingMessage } from 'http';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
@@ -72,6 +71,7 @@ export interface LoginRequest {
   readonly nonce: string;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
+  readonly membershipId?: string;
   readonly clientId?: string;
   readonly launchId?: string;
   readonly codeChallenge?: string;
@@ -82,6 +82,7 @@ export interface LoginRequest {
   readonly allowNoMembership?: boolean;
   readonly origin?: string;
   readonly pictureUrl?: string;
+  readonly forceUseFirstMembership?: boolean;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -200,13 +201,17 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getMembershipsForLogin(login);
+  let memberships = await getMembershipsForLogin(login);
+
+  if (request.membershipId) {
+    memberships = memberships.filter((m) => m.id === request.membershipId);
+  }
 
   if (memberships.length === 0 && !request.allowNoMembership) {
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 
-  if (memberships.length === 1) {
+  if (memberships.length === 1 || request.forceUseFirstMembership) {
     return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
@@ -307,7 +312,8 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  if (!authenticator.check(token, secret)) {
+  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+  if (!authenticator.verify({ token, secret })) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
@@ -611,6 +617,7 @@ export async function getAuthTokens(
       username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
     { lifetime: options?.accessLifetime }
   );

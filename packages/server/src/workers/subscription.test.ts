@@ -21,6 +21,7 @@ import type {
   ProjectMembership,
   Resource,
   Subscription,
+  SubscriptionChannel,
 } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -32,13 +33,16 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+import { tryGetRequestContext } from '../context';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
+import type { SubscriptionJobData } from './subscription';
 import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 
 jest.mock('node-fetch');
@@ -522,7 +526,7 @@ describe('Subscription Worker', () => {
         status: 'active',
         criteria: 'Patient',
         channel: {
-          type: 'email',
+          type: 'email', // this is what causes the subscription to be ignored
         },
       });
       expect(subscription).toBeDefined();
@@ -733,6 +737,62 @@ describe('Subscription Worker', () => {
       });
       expect(patient).toBeDefined();
       expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Retries in preamble errors', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 3,
+          },
+        ],
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // causes an error to be thrown
+      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+        throw new Error('Logger not available for some weird reason');
+      });
+
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 0,
+        changePriority: jest.fn(),
+      } as unknown as Job;
+
+      // On the first attempt, throws
+      await expect(execSubscriptionJob(job)).rejects.toThrow('Logger not available for some weird reason');
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      // On a later attempt, should not throw
+      job.attemptsMade = 100000;
+      await execSubscriptionJob(job);
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      getLoggerSpy.mockRestore();
     }));
 
   test('Retry on 429', () =>
@@ -1765,7 +1825,7 @@ describe('Subscription Worker', () => {
       return args;
     }
 
-    test('WebSocket Subscription -- Enabled', () =>
+    test('Enabled', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
@@ -1826,7 +1886,121 @@ describe('Subscription Worker', () => {
         ]);
       }));
 
-    test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    test.each([
+      [{ type: 'websocket' }, false], // websocket subscriptions should not trigger subscriptions since they have a different persistence story
+      [{ type: 'rest-hook' }, true], // even though endpoint is missing, this is still valid as a trigger of (valid) subscriptions
+      [{ type: 'rest-hook', endpoint: 'https://example.com/subscription' }, true],
+      [{ type: 'message' }, true],
+    ] as [SubscriptionChannel, boolean][])(
+      'Ignore subscriptions on subscriptions with channel %j',
+      (subChannel, expectedToFire) =>
+        withTestContext(async () => {
+          const { repo: wsSubRepo } = await createTestProject({
+            project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
+            withRepo: true,
+          });
+
+          const subscription = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            reason: 'test',
+            status: 'active',
+            criteria: 'Subscription',
+            channel: {
+              type: 'rest-hook',
+              endpoint: 'https://example.com/subscription',
+            },
+          });
+          expect(subscription).toBeDefined();
+          expect(subscription.id).toBeDefined();
+
+          const queue = getSubscriptionQueue() as any;
+          queue.add.mockClear();
+
+          const sub = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            status: 'active',
+            reason: "raison d'être",
+            criteria: 'Patient?name=somethingrandom',
+            channel: subChannel,
+          });
+
+          expect(sub).toBeDefined();
+          if (expectedToFire) {
+            expect(queue.add).toHaveBeenCalledTimes(1);
+          } else {
+            expect(queue.add).not.toHaveBeenCalled();
+          }
+        })
+    );
+
+    test('execSubscriptionJob ignores resource versions that cannot be found', () =>
+      withTestContext(async () => {
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Subscription',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        const resource = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          status: 'active',
+          reason: "raison d'être",
+          criteria: 'Patient?name=somethingrandom',
+          channel: { type: 'websocket' },
+        });
+
+        expect(queue.add).not.toHaveBeenCalled();
+
+        // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
+        // if the job had made its way to the queue previously under different logic
+
+        const ctx = tryGetRequestContext();
+        const jobData: SubscriptionJobData = {
+          subscriptionId: subscription.id,
+          resourceType: resource.resourceType,
+          channelType: subscription.channel.type,
+          id: resource.id,
+          versionId: resource.meta?.versionId as string,
+          interaction: 'create',
+          requestTime: new Date().toISOString(),
+          requestId: ctx?.requestId,
+          traceId: ctx?.traceId,
+          authState: ctx?.authState,
+        };
+
+        // For a websocket subscription, this results in "not found" instead of "gone"
+        await repo.deleteResource(resource.resourceType, resource.id);
+
+        // Should not throw
+        await execSubscriptionJob({ id: '1', data: jobData } as Job);
+
+        // Fetch should not have been called
+        expect(fetch).not.toHaveBeenCalled();
+
+        // No AuditEvent resources should have been created
+        const bundle = await repo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+        expect(bundle.entry?.length).toStrictEqual(0);
+      }));
+
+    test('Feature Flag Not Enabled', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
@@ -1865,7 +2039,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Access Policy Not Satisfied', () =>
+    test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1922,7 +2096,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Subscription Author Has No Membership', () =>
+    test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1979,7 +2153,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Error Occurred During Check', () =>
+    test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -2038,7 +2212,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Supported Interaction Extension', () =>
+    test('Supported Interaction Extension', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           withClient: true,
@@ -2099,20 +2273,32 @@ describe('Subscription Worker', () => {
 });
 
 describe('Subscription Worker Event Handling', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.resetModules();
+  });
+
   test('Worker event handlers work correctly', async () => {
     // Set up mocks for the bullmq module
-    const handlers = new Map<string, (job?: Job, error?: Error) => void>();
+    const handlers = new Map<string, ((job?: Job, error?: Error) => void)[] | undefined>();
     const mockWorker = {
+      name: 'MockSubscriptionWorker',
       on: jest.fn().mockImplementation((event: string, handler: () => void) => {
-        handlers.set(event, handler);
+        const handlerList = handlers.get(event);
+        if (handlerList) {
+          handlerList.push(handler);
+        } else {
+          handlers.set(event, [handler]);
+        }
         return mockWorker;
       }),
     };
     mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
     // Now import the subscription worker init function
 
+    jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+
     // Mock the logger and metrics functions
-    const infoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
     const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
 
     // Initialize the subscription worker with mock config
@@ -2138,10 +2324,10 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test the 'active' event handler with a first attempt job
     const firstAttemptJob = createTestJob('job-123', 0);
-    const activeHandler = handlers.get('active');
-    expect(activeHandler).toBeDefined();
-    if (activeHandler) {
-      activeHandler(firstAttemptJob);
+    const activeHandlers = handlers.get('active');
+    expect(activeHandlers).toBeDefined();
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(firstAttemptJob));
 
       // Verify recordHistogramValue was called for queuedDuration on first attempt
       expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.queuedDuration', expect.any(Number));
@@ -2150,8 +2336,8 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test 'active' handler with a subsequent attempt job
     const subsequentAttemptJob = createTestJob('job-123', 1);
-    if (activeHandler) {
-      activeHandler(subsequentAttemptJob);
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(subsequentAttemptJob));
 
       // Verify recordHistogramValue was NOT called for subsequent attempts
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
@@ -2160,50 +2346,40 @@ describe('Subscription Worker Event Handling', () => {
 
     // Test the 'completed' event handler
     const completedJob = createTestJob('job-456');
-    const completedHandler = handlers.get('completed');
-    expect(completedHandler).toBeDefined();
-    if (completedHandler) {
-      completedHandler(completedJob);
+    const completedHandlers = handlers.get('completed');
+    expect(completedHandlers).toBeDefined();
+    if (completedHandlers) {
+      completedHandlers.forEach((handler) => handler(completedJob));
 
       // Verify completed job logging and metrics
-      expect(infoSpy).toHaveBeenCalledWith(`Completed job ${completedJob.id} successfully`);
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
         'medplum.subscription.executionDuration',
         expect.any(Number)
       );
       expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.totalDuration', expect.any(Number));
-      infoSpy.mockClear();
       recordHistogramValueSpy.mockClear();
     }
 
     // Test the 'failed' event handler with a job
     const failedJob = createTestJob('job-789');
     const error = new Error('Test error');
-    const failedHandler = handlers.get('failed');
-    expect(failedHandler).toBeDefined();
-    if (failedHandler) {
-      failedHandler(failedJob, error);
+    const failedHandlers = handlers.get('failed');
+    expect(failedHandlers).toBeDefined();
+    if (failedHandlers) {
+      failedHandlers.forEach((handler) => handler(failedJob, error));
 
       // Verify failed job logging and metrics
-      expect(infoSpy).toHaveBeenCalledWith(`Failed job ${failedJob.id} with ${error}`);
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
         'medplum.subscription.failedExecutionDuration',
         expect.any(Number)
       );
-      infoSpy.mockClear();
       recordHistogramValueSpy.mockClear();
 
       // Test 'failed' handler with undefined job
-      failedHandler(undefined, error);
+      failedHandlers.forEach((handler) => handler(undefined, error));
 
       // Verify logging for undefined job (no metrics)
-      expect(infoSpy).toHaveBeenCalledWith(`Failed job undefined with ${error}`);
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
     }
-
-    // Clean up
-    infoSpy.mockRestore();
-    recordHistogramValueSpy.mockRestore();
-    jest.resetModules();
   });
 });

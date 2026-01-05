@@ -24,7 +24,7 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
 
   const { resourceType, id } = req.params;
   const { everything } = req.query;
-  if (everything === 'true') {
+  if (resourceType === 'Project' || everything === 'true') {
     const { baseUrl } = getConfig();
     const exec = new AsyncJobExecutor(ctx.repo);
     await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.pathname));

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -15,7 +15,6 @@ import {
 } from '@medplum/core';
 import type { FhirRequest } from '@medplum/fhir-router';
 import type {
-  AuditEvent,
   Bot,
   Login,
   OperationOutcome,
@@ -27,19 +26,15 @@ import type {
 } from '@medplum/fhirtypes';
 import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
-import { getConfig } from '../config/loader';
+import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
-import { buildTracingExtension } from '../context';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
-import { AuditEventOutcome, logAuditEvent } from '../util/auditevent';
-import { createAuditEventEntities, findProjectMembership } from '../workers/utils';
+import { findProjectMembership } from '../workers/utils';
 import type { BotExecutionRequest, BotExecutionResult } from './types';
-
-const defaultOutputLength = 10 * 1024; // 10 KiB
 
 /**
  * Returns the bot's project membership.
@@ -290,76 +285,27 @@ export function getResponseContentType(req: Request): string {
 }
 
 /**
- * Creates an AuditEvent for a subscription attempt.
- * @param request - The bot request.
- * @param startTime - The time the execution attempt started.
- * @param outcome - The outcome code.
- * @param outcomeDesc - The outcome description text.
+ * Determines the recommended JavaScript file extension for the bot code.
+ * @param bot - The bot.
+ * @param code - The bot code.
+ * @returns The recommended file extension.
  */
-export async function createAuditEvent(
-  request: BotExecutionRequest,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc: string
-): Promise<void> {
-  const { bot, runAs, requester, input, subscription, agent, device } = request;
-  const trigger = bot.auditEventTrigger ?? 'always';
-  if (
-    trigger === 'never' ||
-    (trigger === 'on-error' && outcome === AuditEventOutcome.Success) ||
-    (trigger === 'on-output' && outcomeDesc.length === 0)
-  ) {
-    return;
+export function getJsFileExtension(bot: Bot, code: string): string {
+  // Need to determine if the bot code is CJS or ESM
+  // 1. If the code filename uses .cjs or .mjs, then that determines the module type
+  const allowedExtensions = ['.cjs', '.mjs'];
+  const fileExtension = bot.executableCode?.title ? extname(bot.executableCode?.title) : undefined;
+  if (fileExtension && allowedExtensions.includes(fileExtension)) {
+    return fileExtension;
   }
 
-  const auditEvent: AuditEvent = {
-    resourceType: 'AuditEvent',
-    meta: {
-      project: resolveId(runAs.project) as string,
-      account: bot.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: { system: 'https://medplum.com/CodeSystem/audit-event', code: 'execute' },
-    agent: [
-      {
-        who: requester as Reference<ProfileResource>,
-        requestor: true,
-      },
-      {
-        who: runAs.profile as Reference<ProfileResource>,
-        requestor: false,
-      },
-    ],
-    source: { observer: createReference(bot) },
-    entity: createAuditEventEntities(bot, input, subscription, agent, device),
-    outcome,
-    outcomeDesc,
-    extension: buildTracingExtension(),
-  };
-
-  const config = getConfig();
-  for (const destination of bot.auditEventDestination ?? ['resource']) {
-    switch (destination) {
-      case 'resource':
-        await getSystemRepo().createResource<AuditEvent>({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultOutputLength),
-        });
-        break;
-      case 'log':
-        logAuditEvent({
-          ...auditEvent,
-          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultOutputLength),
-        });
-        break;
-    }
+  // 2. If the code exclusively uses `export` or `module.exports`, then that determines the module type
+  const codeContainsExport = /\bexport\b/.test(code);
+  const codeContainsModuleExports = /\bmodule\.exports\b/.test(code);
+  if (codeContainsExport && !codeContainsModuleExports) {
+    return '.mjs';
   }
-}
 
-function tail(str: string, n: number): string {
-  return str.substring(str.length - n);
+  // 3. Default to CJS
+  return '.cjs';
 }

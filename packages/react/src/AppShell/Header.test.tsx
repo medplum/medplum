@@ -130,14 +130,14 @@ describe('Header', () => {
     expect(reloadSpy).toHaveBeenCalled();
   });
 
-  test('Add another account', async () => {
+  test('Switch to another project', async () => {
     await setup();
     await openMenu();
 
-    expect(screen.getByText('Add another account')).toBeInTheDocument();
+    expect(screen.getByText('Switch to another project')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add another account'));
+      fireEvent.click(screen.getByText('Switch to another project'));
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/signin');
@@ -192,7 +192,7 @@ function isMenuOpen(): boolean {
 async function openMenu(): Promise<void> {
   if (!isMenuOpen()) {
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+      fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
     });
 
     await screen.findByText('Sign out');

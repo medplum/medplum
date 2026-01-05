@@ -6,13 +6,9 @@ sidebar_position: 6
 
 This document is intended to guide Medplum through the deployment of a comprehensive infrastructure on Google Cloud Platform (GCP) using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Private Cloud (VPC), Google Kubernetes Engine (GKE) cluster, Cloud SQL database, Cloud Storage buckets, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Medplum’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
 
-:::danger
-
-Medplum on GCP is in beta.
-
-:::
-
 :::caution
+
+This deployment option has been validated for production use and offers a robust foundation for your implementation. However, it provides a less-automated setup and requires significant operational expertise.
 
 This is a complex multi-step process, and requires high proficiency with GCP, Terraform, Node.js, and command line tools.
 
@@ -84,7 +80,7 @@ cd terraform/gcp/
 
 If you want to use a [remote backend](https://developer.hashicorp.com/terraform/language/backend) for storing the Terraform state, uncomment and configure the backend.tf file.
 
-#### **Initialize Terraform** {#initialize-terraform}
+#### Initialize Terraform {#initialize-terraform}
 
 Modify the `terraform.tfvars` file to enter your project-specific values:
 
@@ -238,7 +234,7 @@ The helm chart can be found in the `helm` directory.
   - The ingress is optional. Users can choose to expose the API with other methods
 - Service Account
 
-#### **Deploy your backend API to the GKE cluster using Helm:**
+#### Deploy your backend API to the GKE cluster using Helm:
 
 #### Configure kubectl {#configure-kubectl}
 

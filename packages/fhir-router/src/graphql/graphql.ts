@@ -47,7 +47,7 @@ import {
 import type { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import type { FhirRepository } from '../repo';
 import { RepositoryMode } from '../repo';
-import { getGraphQLInputType } from './input-types';
+import { getGraphQLInputType, getPatchOperationInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import type { GraphQLContext } from './utils';
 import {
@@ -239,6 +239,12 @@ function buildRootSchema(): GraphQLSchema {
       resolve: resolveByUpdate,
     };
 
+    mutationFields[resourceType + 'Patch'] = {
+      type: graphQLOutputType,
+      args: buildPatchArgs(resourceType),
+      resolve: resolveByPatch,
+    };
+
     mutationFields[resourceType + 'Delete'] = {
       type: graphQLOutputType,
       args: {
@@ -373,7 +379,7 @@ async function resolveById(
   try {
     return await ctx.dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
   } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), { cause: err });
   }
 }
 
@@ -456,6 +462,33 @@ async function resolveByDelete(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
   await ctx.repo.deleteResource(resourceType, args.id);
+}
+
+/**
+ * GraphQL resolver function for patch requests.
+ * The field name should end with "Patch" (i.e., "PatientPatch" for patching a Patient).
+ * The args should include the id and patch array for the specified resource type.
+ * @param _source - The source/root object. In the case of patch, this is typically not used and is thus ignored.
+ * @param args - The GraphQL arguments, containing the id and patch array.
+ * @param ctx - The GraphQL context. This includes the repository where resources are stored.
+ * @param info - The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the patched resource, or undefined if the resource could not be found or updated.
+ */
+async function resolveByPatch(
+  _source: any,
+  args: Record<string, any>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<any> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Patch'.length) as ResourceType;
+  const resourceId = args.id;
+  const patch = args.patch;
+  if (!resourceType || !resourceId || !Array.isArray(patch)) {
+    throw new OperationOutcomeError(badRequest('Invalid patch arguments'));
+  }
+  // Patch operation expects an array of operations
+  return ctx.repo.patchResource(resourceType, resourceId, patch);
 }
 
 const DEFAULT_MAX_DEPTH = 12;
@@ -652,7 +685,7 @@ class QueryCostVisitor {
   getCount(args?: readonly ArgumentNode[]): number | undefined {
     const countArg = args?.find((arg) => arg.name.value === '_count');
     if (countArg?.value.kind === Kind.INT) {
-      return parseInt(countArg.value.value, 10);
+      return Number.parseInt(countArg.value.value, 10);
     }
     return undefined;
   }
@@ -678,4 +711,17 @@ function getNextCursor(bundle: Bundle): string | undefined {
     return undefined;
   }
   return new URL(link).searchParams.get('_cursor') || undefined;
+}
+
+function buildPatchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
+  return {
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+      description: resourceType + ' ID',
+    },
+    patch: {
+      type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(getPatchOperationInputType()))),
+      description: 'Array of patch operations',
+    },
+  };
 }

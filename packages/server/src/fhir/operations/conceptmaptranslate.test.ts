@@ -97,7 +97,9 @@ describe('ConceptMap $translate', () => {
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
-    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+    const loincMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://loinc.org');
+    const cptMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://www.ama-assn.org/go/cpt');
+    expect(loincMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {
@@ -114,7 +116,7 @@ describe('ConceptMap $translate', () => {
         },
       ],
     });
-    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+    expect(cptMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {
@@ -150,7 +152,9 @@ describe('ConceptMap $translate', () => {
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
-    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+    const loincMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://loinc.org');
+    const cptMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://www.ama-assn.org/go/cpt');
+    expect(loincMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {
@@ -167,7 +171,7 @@ describe('ConceptMap $translate', () => {
         },
       ],
     });
-    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+    expect(cptMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {
@@ -217,7 +221,9 @@ describe('ConceptMap $translate', () => {
     expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
-    expect(matches?.[0]).toMatchObject<ParametersParameter>({
+    const loincMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://loinc.org');
+    const cptMatch = matches?.find((m) => m.part?.[1]?.valueCoding?.system === 'http://www.ama-assn.org/go/cpt');
+    expect(loincMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {
@@ -234,7 +240,7 @@ describe('ConceptMap $translate', () => {
         },
       ],
     });
-    expect(matches?.[1]).toMatchObject<ParametersParameter>({
+    expect(cptMatch).toMatchObject<ParametersParameter>({
       name: 'match',
       part: [
         {

@@ -5,10 +5,6 @@ tags: [integration]
 
 # Connecting to External FHIR Servers
 
-:::caution
-CLI connections to external FHIR servers is in Beta. Please join us on [Discord](https://discord.gg/medplum) with questions or email [hello@medplum.com](mailto:hello@medplum.com).
-:::
-
 When building an application, you many need to query or write data to an external FHIR server as part of your application's workflow. For example:
 
 - When a new patient is created, see if that patient already exists in another server

@@ -28,6 +28,8 @@ Notice of Intent to Implement HL7 FHIR US Core Implementation Guide STU 5.0.1 fo
 
 Please be advised that Medplum has opted to leverage ONC's SVAP process for the certification criteria at 170.315(g)(10) to adopt the HL7 FHIR US Core Implementation Guide STU 5.0.1 in its Patient and Population API Services. The adoption of the updated version will provide better forward compatibility and longevity for the APIs certified to this criterion. Because Medplum is adopting this version in its initial certification of to the (g)(10) criterion, it is expected that the adoption of the updated version will have no impact on the interoperability of the affected module.
 
+All certified criteria have been updated to the current HTI-1 certification requirements.
+
 ## Criteria Certified
 
 This is the list of certified criteria. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
@@ -39,6 +41,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [a14](/docs/charting/implantable-devices) | Implantable Device List  |
 | [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
+| c1                                                  | Clinical Quality Measures Record and Export          |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d2](/docs/api/fhir/resources/auditevent) | Auditable Events and Tamper Resistance  |
 | d3 | Audit report  |

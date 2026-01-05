@@ -59,7 +59,7 @@ describe('App', () => {
     const user = await setup();
     await openMenu(user);
 
-    await user.click(screen.getByText('Add another account'));
+    await user.click(screen.getByText('Switch to another project'));
   });
 
   test('Click sign out', async () => {
@@ -74,8 +74,10 @@ describe('App', () => {
     await openNav(user);
 
     const activeLink = screen.getByText('Active Orders');
+    expect(activeLink.parentElement?.dataset?.['active']).toEqual('true');
+
     const completedLink = screen.getByText('Completed Orders');
-    expect(activeLink.parentElement?.className).not.toEqual(completedLink.parentElement?.className);
+    expect(completedLink.parentElement?.dataset?.['active']).toBeUndefined();
   });
 
   test('Resource Type Search', async () => {
@@ -105,7 +107,7 @@ describe('App', () => {
 });
 
 function isNavOpen(): boolean {
-  return !!screen.queryByRole('navigation');
+  return screen.getByTitle('Medplum Logo').closest('button')?.getAttribute('aria-expanded') === 'true';
 }
 
 async function openNav(user: UserEvent): Promise<void> {
@@ -120,8 +122,7 @@ function isMenuOpen(): boolean {
 
 async function openMenu(user: UserEvent): Promise<void> {
   if (!isMenuOpen()) {
-    await user.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-
+    await user.click(screen.getByRole('button', { name: 'User menu' }));
     await screen.findByText('Sign out');
   }
 }

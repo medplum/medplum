@@ -149,7 +149,7 @@ function PostDeployMigrations(): JSX.Element {
   }
 
   function runPendingDataMigration(version: number): void {
-    startAsyncJobAsync(medplum, 'Run Pending Data Migration', 'admin/super/migrate', { dataVersion: version })
+    startAsyncJobAsync(medplum, 'Run pending post-deploy migration', 'admin/super/migrate', { dataVersion: version })
       .finally(() => {
         triggerRefresh();
       })

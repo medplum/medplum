@@ -4,7 +4,6 @@ import type { WithId } from '@medplum/core';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import type {
   Bundle,
-  BundleEntry,
   BundleEntryResponse,
   CareTeam,
   Observation,
@@ -596,6 +595,152 @@ describe('Batch and Transaction processing', () => {
     expect(updateResult.status).toStrictEqual('200');
   });
 
+  test('Transaction bundle with ifMatch version checking', async () => {
+    // Create two patients
+    const patient1Res = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ family: 'Doe', given: ['Jane'] }] });
+    expect(patient1Res.status).toStrictEqual(201);
+    const patient1 = patient1Res.body as WithId<Patient>;
+
+    const patient2Res = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ family: 'Johnson', given: ['Bob'] }], active: true });
+    expect(patient2Res.status).toStrictEqual(201);
+    const patient2 = patient2Res.body as WithId<Patient>;
+
+    // Read the current version of resources to get versionIds
+    const readPatient1Res = await request(app)
+      .get(`/fhir/R4/Patient/${patient1.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const readPatient1 = readPatient1Res.body as WithId<Patient>;
+
+    const readPatient2Res = await request(app)
+      .get(`/fhir/R4/Patient/${patient2.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const readPatient2 = readPatient2Res.body as WithId<Patient>;
+
+    // Create a transaction bundle with version checking using ETag format W/"versionId"
+    const transactionBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'PUT',
+            url: `Patient/${patient1.id}`,
+            // Bundle entries use ETag format: W/"versionId"
+            ifMatch: readPatient1.meta?.versionId ? `W/"${readPatient1.meta.versionId}"` : undefined,
+          },
+          resource: {
+            ...readPatient1,
+            name: [{ family: 'Smith', given: ['John'] }],
+          },
+        },
+        {
+          request: {
+            method: 'PUT',
+            url: `Patient/${patient2.id}`,
+            ifMatch: readPatient2.meta?.versionId ? `W/"${readPatient2.meta.versionId}"` : undefined,
+          },
+          resource: {
+            ...readPatient2,
+            active: false,
+          },
+        },
+      ],
+    };
+
+    // Execute the transaction bundle
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transactionBundle);
+
+    expect(res.status).toStrictEqual(200);
+    const resultBundle = res.body as Bundle;
+    expect(resultBundle.entry).toHaveLength(2);
+
+    const result1 = resultBundle.entry?.[0]?.response as BundleEntryResponse;
+    const result2 = resultBundle.entry?.[1]?.response as BundleEntryResponse;
+
+    expect(result1?.status).toStrictEqual('200');
+    expect(result2?.status).toStrictEqual('200');
+
+    // Verify the updates were successful
+    const updatedPatient1Res = await request(app)
+      .get(`/fhir/R4/Patient/${patient1.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const updatedPatient1 = updatedPatient1Res.body as WithId<Patient>;
+    expect(updatedPatient1.name?.[0]?.family).toStrictEqual('Smith');
+    expect(updatedPatient1.name?.[0]?.given?.[0]).toStrictEqual('John');
+
+    const updatedPatient2Res = await request(app)
+      .get(`/fhir/R4/Patient/${patient2.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const updatedPatient2 = updatedPatient2Res.body as WithId<Patient>;
+    expect(updatedPatient2.active).toStrictEqual(false);
+  });
+
+  test('Transaction bundle with ifMatch fails on version mismatch', async () => {
+    // Create a patient
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', name: [{ family: 'Doe', given: ['Jane'] }] });
+    expect(patientRes.status).toStrictEqual(201);
+    const patient = patientRes.body as WithId<Patient>;
+
+    // Read the current version
+    const readPatientRes = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    const readPatient = readPatientRes.body as WithId<Patient>;
+    const originalVersionId = readPatient.meta?.versionId;
+
+    // Update the patient to change its version
+    await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ ...readPatient, name: [{ family: 'Changed', given: ['Other'] }] });
+
+    // Create a transaction bundle with the old versionId - should fail
+    const transactionBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'PUT',
+            url: `Patient/${patient.id}`,
+            // Use the old versionId - should fail with 412
+            ifMatch: originalVersionId ? `W/"${originalVersionId}"` : undefined,
+          },
+          resource: {
+            ...readPatient,
+            name: [{ family: 'Smith', given: ['John'] }],
+          },
+        },
+      ],
+    };
+
+    // Execute the transaction bundle - should fail
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transactionBundle);
+
+    expect(res.status).toStrictEqual(412);
+  });
+
   test('Conditional update (create-as-update) in transaction', async () => {
     const careTeamIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
@@ -732,7 +877,7 @@ describe('Batch and Transaction processing', () => {
 
     // Ensure that ID replacement was performed correctly
     const createdCareTeam = res.body.entry[0].resource as CareTeam;
-    const createdTask = res.body.entry[(tx.entry as BundleEntry[]).length - 1].resource as Task;
+    const createdTask = res.body.entry.at(-1).resource as Task;
     expect(createdTask.owner?.reference).toStrictEqual(getReferenceString(createdCareTeam));
   });
 
@@ -1019,7 +1164,7 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -1070,7 +1215,7 @@ describe('Batch and Transaction processing', () => {
       type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
     };
 
-    const res = await await request(app)
+    const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -1322,7 +1467,9 @@ describe('Batch and Transaction processing', () => {
     const results = res.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
+      201, 429, 429, 429,
+    ]);
   });
 
   test('Async batch sleeps over rate limit', async () => {
@@ -1436,6 +1583,8 @@ describe('Batch and Transaction processing', () => {
     const results = res2.body as Bundle;
     expect(results.entry).toHaveLength(4);
     expect(results.type).toStrictEqual('batch-response');
-    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 201, 201, 201]);
+    expect(results.entry?.map((e) => Number.parseInt(e.response?.status ?? '', 10))).toStrictEqual([
+      201, 201, 201, 201,
+    ]);
   });
 });

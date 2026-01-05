@@ -706,6 +706,7 @@ export const Covid19PCRObservationDefinition: WithId<ObservationDefinition> = {
 export const Covid19PCRTest: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
   id: 'covid19-pcr-test',
+  url: 'http://example.com/ActivityDefinition/covid-pcr',
   status: 'active',
   kind: 'ServiceRequest',
   title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
@@ -728,6 +729,7 @@ export const Covid19PCRTest: WithId<ActivityDefinition> = {
 
 export const Covid19ReviewReport: WithId<ActivityDefinition> = {
   resourceType: 'ActivityDefinition',
+  url: 'http://example.com/ActivityDefinition/review-covid-report',
   title: 'Review COVID-19 Report',
   name: 'Review COVID-19 Report',
   description: 'Review COVID-19 PCR diagnostic results',
@@ -743,6 +745,7 @@ export const Covid19ReviewReport: WithId<ActivityDefinition> = {
 
 export const Covid19CarePlanDefinition: WithId<PlanDefinition> = {
   resourceType: 'PlanDefinition',
+  url: 'http://example.com/PlanDefinition/covid19',
   title: 'COVID-19 Evaluation Pre-Admission to Inpatient Oncology Department',
   identifier: [
     {
@@ -756,37 +759,23 @@ export const Covid19CarePlanDefinition: WithId<PlanDefinition> = {
       id: '0',
       title: 'Request COVID-19 Symptoms Assessment',
       description: 'Request patient to complete "Request COVID-19 Symptoms Assessment" questionnaire',
-      definitionCanonical: getReferenceString(Covid19AssessmentQuestionnaire),
+      definitionCanonical: Covid19AssessmentQuestionnaire.url,
       timingDateTime: '2022-01-01',
-    },
-    {
-      id: '1',
-      title: 'Initial Patient Consultation',
-      description: 'Schedule initial patient consultation',
-      definitionCanonical: getReferenceString(DrAliceSmithSchedule),
-      timingDateTime: '2022-01-02',
     },
     {
       id: '2',
       title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
       description:
         'Order SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
-      definitionCanonical: getReferenceString(Covid19PCRTest),
+      definitionCanonical: Covid19PCRTest.url,
       timingDateTime: '2022-01-04',
     },
     {
       id: '3',
       title: 'Review COVID-19 Report',
       description: 'Review COVID-19 PCR diagnostic results',
-      definitionCanonical: getReferenceString(Covid19ReviewReport),
+      definitionCanonical: Covid19ReviewReport.url,
       timingDateTime: '2022-01-05',
-    },
-    {
-      id: '4',
-      title: 'Patient Follow Up: Patient admission appointment with specialist',
-      description: 'Schedule patient follow-up call to review diagnostic results',
-      definitionCanonical: getReferenceString(DrAliceSmithSchedule),
-      timingDateTime: '2022-01-06',
     },
   ],
   id: 'covid19-care-plan-definition',
@@ -835,7 +824,7 @@ export const Covid19PCRLabService: WithId<PlanDefinition> = {
       title: 'SARS-CoV-2 (COVID-19) RNA panel',
       description:
         'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
-      definitionCanonical: getReferenceString(Covid19PCRTest),
+      definitionCanonical: Covid19PCRTest.url,
       timingDateTime: '2022-01-04',
 
       code: [
@@ -857,7 +846,6 @@ export const Covid19PCRLabService: WithId<PlanDefinition> = {
 export const Covid19AssessmentTask: WithId<Task> = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
-
   focus: {
     reference: getReferenceString(Covid19AssessmentQuestionnaire),
     display: 'Covid19 Assessment Questionnaire',
@@ -945,7 +933,7 @@ export const Covid19RequestGroup: WithId<RequestGroup> = {
   resourceType: 'RequestGroup',
   status: 'active',
   intent: 'order',
-  instantiatesCanonical: [getReferenceString(Covid19CarePlanDefinition)],
+  instantiatesCanonical: [Covid19CarePlanDefinition.url as string],
   identifier: [
     {
       system: 'foomedical.com',

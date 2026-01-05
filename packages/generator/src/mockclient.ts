@@ -104,8 +104,8 @@ export function main(): void {
     // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
     buildUSCoreStructureDefinitions('/absolute/path/to/expanded/package-file', [
-      resolve(__dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
-      resolve(__dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
     ]);
   }
 }
@@ -115,7 +115,7 @@ function writeStructureDefinitions(): void {
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   writeFileSync(
-    resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
@@ -134,12 +134,7 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 
 function removeBaseFromElements(sd: StructureDefinition): void {
   for (const element of sd.snapshot?.element ?? []) {
-    if (
-      element.base &&
-      element.path === element.base.path &&
-      element.min === element.base.min &&
-      element.max === element.base.max
-    ) {
+    if (element.path === element.base?.path && element.min === element.base.min && element.max === element.base.max) {
       element.base = undefined;
     }
   }
@@ -160,7 +155,7 @@ function writeSearchParameters(): void {
     }
   }
   writeFileSync(
-    resolve(__dirname, '../../mock/src/mocks/searchparameters.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/searchparameters.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );

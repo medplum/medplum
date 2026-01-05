@@ -8,6 +8,7 @@ import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumContext } from '@medplum/react-hooks';
 import { IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { getAppName } from '../utils/app';
@@ -21,6 +22,12 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const { medplum, profile, navigate } = context;
   const logins = medplum.getLogins();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
+
+  function setAppShellVersion(version: 'v1' | 'v2'): void {
+    localStorage['appShellLayoutVersion'] = version;
+    locationUtils.reload();
+  }
 
   return (
     <>
@@ -59,6 +66,10 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
           )
       )}
       <Menu.Divider />
+      <Menu.Item leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
+        Switch to another project
+      </Menu.Item>
+      <Menu.Divider />
       <Group justify="center">
         <SegmentedControl
           size="xs"
@@ -70,11 +81,17 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
             { label: 'Auto', value: 'auto' },
           ]}
         />
+        <SegmentedControl
+          size="xs"
+          value={layoutVersion}
+          onChange={(newValue) => setAppShellVersion(newValue as 'v1' | 'v2')}
+          data={[
+            { label: 'v1', value: 'v1' },
+            { label: 'v2', value: 'v2' },
+          ]}
+        />
       </Group>
       <Menu.Divider />
-      <Menu.Item leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
-        Add another account
-      </Menu.Item>
       <Menu.Item
         leftSection={<IconSettings size={14} stroke={1.5} />}
         onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}

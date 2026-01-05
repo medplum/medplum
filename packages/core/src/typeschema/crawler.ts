@@ -125,18 +125,16 @@ class Crawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue)) {
+        this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }
@@ -206,18 +204,16 @@ class AsyncCrawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          await this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue)) {
+        await this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private async crawlPropertyValue(value: TypedValueWithPath, path: string): Promise<void> {
+  private async crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): Promise<void> {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       await this.crawlObject(value, type, path);
     }
   }
@@ -298,4 +294,16 @@ function withPath(
   }
 
   return { ...tv, path: `${parentPrefix}${key}` };
+}
+
+/**
+ * Translates a path emitted by this crawler into an RFC6902 JSON Patch pointer
+ *
+ * @param path - A path emitted from a Crawler
+ * @returns pointer -An RFC6902 pointer describing the path
+ */
+export function pathToJSONPointer(path: string): string {
+  return `.${path}` // Prepend a delimiter to match RFC6902
+    .replaceAll('.', '/') // convert dot delimiters to slash delimiters
+    .replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert array syntax: `arr[0]` => `arr/0`
 }

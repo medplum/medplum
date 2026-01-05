@@ -21,14 +21,10 @@ export function main(): void {
   }
 
   writeFileSync(
-    resolve(__dirname, '../../core/src/base-schema.json'),
+    resolve(import.meta.dirname, '../../core/src/base-schema.json'),
     JSON.stringify(outputTypes, undefined, 2),
     'utf8'
   );
-}
-
-if (require.main === module) {
-  main();
 }
 
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
@@ -47,4 +43,8 @@ function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: In
       addOutputType(outputTypes, innerType.name, innerType);
     }
   }
+}
+
+if (import.meta.main) {
+  main();
 }

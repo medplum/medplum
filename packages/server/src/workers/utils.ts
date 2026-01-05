@@ -1,29 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, flatMapFilter, getExtension, isResourceWithId, Operator } from '@medplum/core';
-import type {
-  AsyncJob,
-  AuditEvent,
-  AuditEventEntity,
-  Bot,
-  Coding,
-  Parameters,
-  Practitioner,
-  ProjectMembership,
-  Reference,
-  Resource,
-  Subscription,
-} from '@medplum/fhirtypes';
+import { getExtension, Operator } from '@medplum/core';
+import type { AsyncJob, Parameters, ProjectMembership, Reference, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue, Worker } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumServerConfig } from '../config/types';
-import { buildTracingExtension } from '../context';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import type { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(
@@ -48,80 +34,6 @@ export function findProjectMembership(
   });
 }
 
-/**
- * Creates an AuditEvent for a subscription attempt.
- * @param resource - The resource that triggered the subscription.
- * @param startTime - The time the subscription attempt started.
- * @param outcome - The outcome code.
- * @param outcomeDesc - The outcome description text.
- * @param subscription - Optional rest-hook subscription.
- * @param bot - Optional bot that was executed.
- */
-export async function createAuditEvent(
-  resource: Resource,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  subscription?: Subscription,
-  bot?: Bot
-): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const auditedEvent = subscription ?? resource;
-
-  await systemRepo.createResource<AuditEvent>({
-    resourceType: 'AuditEvent',
-    meta: {
-      project: auditedEvent.meta?.project,
-      account: auditedEvent.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: {
-      code: 'transmit',
-    },
-    agent: [
-      {
-        type: {
-          text: auditedEvent.resourceType,
-        },
-        requestor: false,
-      },
-    ],
-    source: {
-      observer: createReference(auditedEvent) as Reference as Reference<Practitioner>,
-    },
-    entity: createAuditEventEntities(resource, subscription, bot),
-    outcome,
-    outcomeDesc,
-    extension: buildTracingExtension(),
-  });
-}
-
-export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
-  return flatMapFilter(resources, (v) => (isResourceWithId(v) ? createAuditEventEntity(v) : undefined));
-}
-
-export function createAuditEventEntity(resource: Resource): AuditEventEntity {
-  return {
-    what: createReference(resource),
-    role: getAuditEventEntityRole(resource),
-  };
-}
-
-export function getAuditEventEntityRole(resource: Resource): Coding {
-  switch (resource.resourceType) {
-    case 'Patient':
-      return { code: '1', display: 'Patient' };
-    case 'Subscription':
-      return { code: '9', display: 'Subscriber' };
-    default:
-      return { code: '4', display: 'Domain' };
-  }
-}
-
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,
@@ -133,7 +45,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
   }
 
   // Removing any white space
-  const codesTrimSpace = successCodes.valueString.replace(/ /g, '');
+  const codesTrimSpace = successCodes.valueString.replaceAll(' ', '');
   const listOfSuccessCodes = codesTrimSpace.split(',');
 
   for (const code of listOfSuccessCodes) {

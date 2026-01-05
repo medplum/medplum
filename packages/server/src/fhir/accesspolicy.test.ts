@@ -1538,6 +1538,51 @@ describe('AccessPolicy', () => {
       expect(readResource2.valueString).toBeDefined();
     }));
 
+  test('Hidden meta field', () =>
+    withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['meta'],
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
+      });
+
+      const readResource = await repo2.readResource<Patient>('Patient', patient.id);
+      expect(readResource).toMatchObject({
+        resourceType: 'Patient',
+        birthDate: '1970-01-01',
+      });
+      expect(readResource.meta).toBeUndefined();
+
+      const historyBundle = await repo2.readHistory<Patient>('Patient', patient.id);
+      expect(historyBundle).toMatchObject({
+        resourceType: 'Bundle',
+        type: 'history',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Patient',
+              birthDate: '1970-01-01',
+            },
+          },
+        ],
+      });
+      expect(historyBundle.entry?.[0]?.resource?.meta).toBeUndefined();
+    }));
+
   test('Identifier criteria', () =>
     withTestContext(async () => {
       const identifier = randomUUID();
@@ -2765,6 +2810,20 @@ describe('AccessPolicy', () => {
       },
       'axp-3',
     ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?patient.name=Dave',
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Observation',
+        criteria: 'Observation?_has:DiagnosticReport:result:identifier=foo',
+      },
+      'axp-3',
+    ],
   ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
@@ -2772,6 +2831,21 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  it('Server accepts criteria that starts with escape code', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Device',
+              criteria: 'Device?identifier=foo', // Since \D is a character class, it could cause confusion
+            },
+          ],
+        })
+      ).resolves.toBeDefined();
+    }));
 
   test('Wildcard policy with criteria', async () =>
     withTestContext(async () => {
@@ -2833,5 +2907,21 @@ describe('AccessPolicy', () => {
       );
       await expect(repo.updateResource({ ...condition, onsetString: 'yesterday' })).rejects.toThrow('Forbidden');
       await expect(repo.deleteResource('Condition', condition.id)).rejects.toThrow('Forbidden');
+    }));
+
+  test('Build access policy with invalid access policy reference', async () =>
+    withTestContext(async () => {
+      const fakeAccessPolicyId = randomUUID();
+      const membership: ProjectMembership = {
+        resourceType: 'ProjectMembership',
+        project: createReference(testProject),
+        user: { reference: 'User/123' },
+        profile: { reference: 'Practitioner/123' },
+        accessPolicy: { reference: 'AccessPolicy/' + fakeAccessPolicyId },
+      };
+
+      await expect(buildAccessPolicy(membership)).rejects.toThrow();
+      await expect(buildAccessPolicy(membership)).rejects.toThrow(/Invalid access policy configuration/);
+      await expect(buildAccessPolicy(membership)).rejects.toThrow(/contact your administrator/);
     }));
 });

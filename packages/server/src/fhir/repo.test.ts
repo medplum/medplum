@@ -37,16 +37,18 @@ import type {
   StructureDefinition,
   User,
   UserConfiguration,
+  ValueSet,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
+import assert from 'node:assert';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -60,6 +62,10 @@ describe('FHIR Repo', () => {
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
+
+  const usCorePatientProfile = JSON.parse(
+    readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+  ) as StructureDefinition;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -164,6 +170,33 @@ describe('FHIR Repo', () => {
     } catch (err) {
       expect((err as OperationOutcome).id).not.toBe('ok');
     }
+  });
+
+  test('Read references with various reference shapes', async () => {
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['ReadReferences'], family: 'ReadReferences' }],
+    });
+    const references = [
+      { reference: undefined },
+      { reference: '' },
+      { reference: 'Patient/' + patient.id },
+      { display: 'test' },
+      { reference: 'Patient/' + patient.id },
+      { resource: patient },
+    ];
+    const results = await systemRepo.readReferences(references);
+    if (!Array.isArray(results)) {
+      throw new Error('Should have returned an array');
+    }
+
+    expect(results).toHaveLength(6);
+    expect((results[0] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[1] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[2] as WithId<Patient>).id).toBe(patient.id);
+    expect((results[3] as OperationOutcomeError).outcome.id).toBe('not-found');
+    expect((results[4] as WithId<Patient>).id).toBe(patient.id);
+    expect((results[5] as OperationOutcomeError).outcome.id).toBe('not-found');
   });
 
   describe('Read history', () => {
@@ -909,10 +942,7 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const profile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-      profile.url = (profile.url ?? '') + Math.random();
+      const profile = { ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() };
       const patient: Patient = {
         resourceType: 'Patient',
         meta: {
@@ -944,13 +974,9 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
-      const originalProfile = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-
       const profile = await repo.createResource<StructureDefinition>({
-        ...originalProfile,
-        url: randomUUID(),
+        ...usCorePatientProfile,
+        url: 'urn:uuid:' + randomUUID(),
       });
 
       const patient: Patient = {
@@ -988,6 +1014,106 @@ describe('FHIR Repo', () => {
         new Error('Missing required property (Patient.address)')
       );
     }));
+
+  describe('Update resource with terminology validation', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ use: 'usual', system: 'urn:oid:1.2.36.146.595.217.0.1', value: '12345' }],
+      active: true,
+      name: [
+        { use: 'official', family: 'Chalmers', given: ['Peter', 'James'] },
+        { use: 'usual', given: ['Jim'] },
+        { use: 'maiden', family: 'Windsor', given: ['Peter', 'James'] },
+      ],
+      telecom: [
+        { use: 'home', system: 'url', value: 'http://example.com' },
+        { system: 'phone', value: '(03) 5555 6473', use: 'work', rank: 1 },
+        { system: 'phone', value: '(03) 3410 5613', use: 'mobile', rank: 2 },
+        { system: 'phone', value: '(03) 5555 8834', use: 'old' },
+      ],
+      gender: 'male',
+      birthDate: '1974-12-25',
+      address: [{ use: 'home', type: 'both', text: '534 Erewhon St PeasantVille, Rainbow, Vic  3999' }],
+      contact: [
+        {
+          name: { use: 'usual', family: 'du Marché', given: ['Bénédicte'] },
+          telecom: [{ system: 'phone', value: '+33 (237) 998327', use: 'home' }],
+          address: { use: 'home', type: 'both', line: ['534 Erewhon St'], city: 'PleasantVille', postalCode: '3999' },
+          gender: 'female',
+        },
+      ],
+      communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'en' }] } }],
+    };
+
+    let repo: Repository;
+    let profile: StructureDefinition;
+    beforeAll(async () => {
+      const result = await createTestProject({ withRepo: { validateTerminology: true } });
+      repo = result.repo;
+
+      // Create modified US Core Patient profile to have 'required' binding for communication.language
+      const modifiedPatientProfile = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+
+      const commLang = modifiedPatientProfile.snapshot?.element.find((e) => e.id === 'Patient.communication.language');
+      assert(commLang?.binding?.valueSet === 'http://hl7.org/fhir/us/core/ValueSet/simple-language');
+      assert(commLang.binding.strength === 'extensible');
+      commLang.binding.strength = 'required';
+
+      profile = await repo.createResource<StructureDefinition>({
+        ...modifiedPatientProfile,
+        url: 'urn:uuid:' + randomUUID(),
+      });
+
+      // Create a ValueSet for the US Core Patient profile that includes only 'en' as a valid language
+      await repo.createResource<ValueSet>({
+        resourceType: 'ValueSet',
+        url: 'http://hl7.org/fhir/us/core/ValueSet/simple-language',
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [
+            {
+              system: 'urn:ietf:bcp:47',
+              code: 'en',
+            },
+          ],
+        },
+        status: 'active',
+      });
+    });
+    test('Valid patient without any profiles', async () =>
+      withTestContext(async () => {
+        await expect(repo.createResource(patient)).resolves.toBeDefined();
+      }));
+
+    test('Invalid gender', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.createResource({ ...patient, gender: 'enby' as unknown as Patient['gender'] })
+        ).rejects.toThrow(
+          `Value "enby" did not satisfy terminology binding http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1 (Patient.gender)`
+        );
+      }));
+
+    test('Valid patient with US Core Patient profile', async () =>
+      withTestContext(async () => {
+        await expect(repo.createResource({ ...patient, meta: { profile: [profile.url] } })).resolves.toBeDefined();
+      }));
+
+    test('Invalid patient with US Core Patient profile (communication.language not in ValueSet)', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.createResource({
+            ...patient,
+            meta: { profile: [profile.url] },
+            communication: [{ language: { coding: [{ system: 'urn:ietf:bcp:47', code: 'fr' }] } }],
+          })
+        ).rejects.toThrow(
+          `Value {"coding":[{"system":"urn:ietf:bcp:47","code":"fr"}]} did not satisfy terminology binding http://hl7.org/fhir/us/core/ValueSet/simple-language (Patient.communication[0].language)`
+        );
+      }));
+  });
 
   test('Conditional update', () =>
     withTestContext(async () => {
@@ -1063,6 +1189,92 @@ describe('FHIR Repo', () => {
       await systemRepo.deleteResource(patient.resourceType, patient.id);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
+
+  describe('Array column padding', () => {
+    let prevConfig: string | undefined;
+    beforeEach(() => {
+      const config = getConfig();
+      prevConfig = config.arrayColumnPadding && JSON.stringify(config.arrayColumnPadding);
+    });
+
+    afterEach(() => {
+      if (prevConfig) {
+        const config = getConfig();
+        config.arrayColumnPadding = JSON.parse(prevConfig);
+      }
+    });
+
+    test.each([
+      ['no config', undefined, false], // off by default
+      [
+        'no resourceType array',
+        {
+          config: {
+            // ensure a padding element is chosen
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        true,
+      ],
+      [
+        'resourceType in the resourceType array',
+        {
+          resourceType: ['Patient', 'Observation'],
+          config: {
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        true,
+      ],
+      [
+        'resourceType NOT in the resourceType array',
+        {
+          resourceType: ['Patient'],
+          config: {
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        false,
+      ],
+    ])('with %s', async (desc, identifierArrayColumnPadding, shouldPad) =>
+      withTestContext(async () => {
+        const config = getConfig();
+        if (identifierArrayColumnPadding) {
+          config.arrayColumnPadding = {
+            identifier: identifierArrayColumnPadding,
+          };
+        }
+        const res = await systemRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'unknown',
+          code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
+        });
+
+        const db = getDatabasePool(DatabaseMode.READER);
+        const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
+
+        // deleted rows also get padded
+        await systemRepo.deleteResource(res.resourceType, res.id);
+
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
+      })
+    );
+  });
 
   test('Conditional reference resolution', async () =>
     withTestContext(async () => {
@@ -1299,10 +1511,7 @@ describe('FHIR Repo', () => {
         project: project2,
         userConfig: {} as UserConfiguration,
       });
-      const profileJson = JSON.parse(
-        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
-      ) as StructureDefinition;
-      const profile = await repo2.createResource(profileJson);
+      const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
 
       const patientJson: Patient = {
         resourceType: 'Patient',

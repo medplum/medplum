@@ -20,7 +20,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
-import { aiOperation } from './operations/ai';
+import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
@@ -32,6 +32,8 @@ import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
+import { getColumnStatisticsHandler } from './operations/db-column-statistics';
+import { configureColumnStatisticsHandler } from './operations/db-configure-column-statistics';
 import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
 import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
@@ -157,6 +159,9 @@ fhirRouter.use(protectedRoutes);
 // CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
 
+// AI $ai operation - handled directly in Express routes to support streaming
+protectedRoutes.post(['/$ai', '/%24ai'], aiOperationHandler);
+
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
 protectedRoutes.post(['/Agent/:id/$push', '/Agent/:id/%24push'], agentPushHandler);
@@ -259,9 +264,6 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
 
-  // AI $ai operation
-  router.add('POST', '/$ai', aiOperation);
-
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
@@ -293,9 +295,11 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
+  router.add('POST', '/Group/:id/$export', groupExportHandler);
 
   // Patient $export operation
   router.add('GET', '/Patient/$export', patientExportHandler);
+  router.add('POST', '/Patient/$export', patientExportHandler);
 
   // Measure $evaluate-measure operation
   router.add('POST', '/Measure/:id/$evaluate-measure', evaluateMeasureHandler);
@@ -377,6 +381,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
+  router.add('GET', '/$db-column-statistics', getColumnStatisticsHandler);
+  router.add('POST', '/$db-configure-column-statistics', configureColumnStatisticsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

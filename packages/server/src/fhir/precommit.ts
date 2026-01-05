@@ -1,21 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobInteraction, WithId } from '@medplum/core';
+import type { BackgroundJobInteraction, InternalSchemaElement, WithId } from '@medplum/core';
 import {
+  badRequest,
   ContentType,
   createReference,
+  flatMapFilter,
+  getDataType,
   getExtension,
+  getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
   resourceMatchesSubscriptionCriteria,
 } from '@medplum/core';
-import type { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
+import type { Repository } from './repo';
 import { getSystemRepo } from './repo';
+import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
 
@@ -26,18 +33,32 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 /**
  * Performs pre-commit validation for a resource by executing any associated pre-commit bots.
  * Throws an error if the bot execution fails.
- * @param author - The author of the resource, used to check against blacklisted authors for pre-commit
- * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
+ * @param repo - The user's FHIR repository.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
  * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation<T extends Resource>(
-  author: Reference,
-  project: WithId<Project> | undefined,
-  resource: T,
+  repo: Repository,
+  resource: WithId<T>,
   interaction: BackgroundJobInteraction
 ): Promise<T | boolean | undefined> {
+  const logger = getLogger();
+
+  if (
+    interaction === 'delete' &&
+    !repo.isSuperAdmin() &&
+    getCriticalReferenceTargets().includes(resource.resourceType)
+  ) {
+    try {
+      await checkReferencesForDelete(resource);
+    } catch (err) {
+      logger.warn('Deleting resource referenced by ProjectMembership', err as Error);
+    }
+  }
+
+  const project = repo.currentProject();
+
   // reject if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
@@ -47,9 +68,8 @@ export async function preCommitValidation<T extends Resource>(
     return undefined;
   }
 
-  resource.meta = { ...resource.meta, author };
+  resource.meta = { ...resource.meta, author: repo.getAuthor() };
   const systemRepo = getSystemRepo();
-  const logger = getLogger();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -123,4 +143,50 @@ export async function preCommitValidation<T extends Resource>(
   }
 
   return undefined;
+}
+
+const criticalProjectMembershipReferences = ['profile', 'user', 'access-policy', 'accessPolicy'];
+const targetPrefix = '/StructureDefinition/';
+
+function getCriticalReferenceTargets(): ResourceType[] {
+  const schema = getDataType('ProjectMembership');
+  const targets = criticalProjectMembershipReferences.map((ref) => schema.elements[ref]);
+  return flatMapFilter(targets, getTargetResourceTypes);
+}
+
+function getTargetResourceTypes(element: InternalSchemaElement | undefined): ResourceType[] {
+  const types = element?.type ?? [];
+  const targetTypes: ResourceType[] = [];
+  for (const type of types) {
+    const resourceTypes = type.targetProfile?.map((url) => url.slice(url.indexOf(targetPrefix) + targetPrefix.length));
+    if (resourceTypes) {
+      targetTypes.push(...(resourceTypes as ResourceType[]));
+    }
+  }
+  return targetTypes;
+}
+
+/**
+ * Ensures that critical references are not left dangling when a resource is deleted.
+ * Specifically, resources referenced by a ProjectMembership should not be deleted until all memberships
+ * that refer to them are deleted.
+ * @param resource - The resource to be deleted.
+ * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
+ */
+async function checkReferencesForDelete(resource: WithId<Resource>): Promise<void> {
+  const db = getDatabasePool(DatabaseMode.WRITER);
+  const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
+    .column('resourceId')
+    .where('targetId', '=', resource.id)
+    .where('code', 'IN', criticalProjectMembershipReferences)
+    .limit(1);
+
+  const results = await checkForCriticalRefs.execute(db);
+  if (results.length) {
+    throw new OperationOutcomeError(
+      badRequest(
+        `Cannot delete ${getReferenceString(resource)}: referenced by ProjectMembership/${results[0].resourceId}`
+      )
+    );
+  }
 }

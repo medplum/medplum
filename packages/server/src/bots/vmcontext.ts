@@ -10,6 +10,7 @@ import {
 } from '@medplum/core';
 import type { Binary, Reference } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
+import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
@@ -50,10 +51,11 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require,
+    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
+    TextDecoder,
     TextEncoder,
     URL,
     URLSearchParams,
@@ -85,7 +87,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -102,7 +104,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }

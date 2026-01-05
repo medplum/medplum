@@ -8,12 +8,13 @@ import {
   createReference,
   getReferenceString,
   isCreated,
+  isNotFound,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
   resolveId,
 } from '@medplum/core';
-import type { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
@@ -85,21 +86,51 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   const userResource = await makeUserResource(request);
   let user: WithId<User>;
   if (email) {
-    const searchRequest: SearchRequest<User> = {
-      resourceType: 'User',
-      filters: [
-        {
-          code: 'email',
-          operator: Operator.EXACT,
-          value: email,
-        },
-        request.resourceType === 'Patient' || request.scope === 'project'
-          ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
-          : { code: 'project', operator: Operator.MISSING, value: 'true' },
-      ],
-    };
+    const { resource: result, outcome } = await systemRepo.withTransaction(
+      async () => {
+        // If inviting with an email address, check for existing memberships
+        // tied to this project/email combination that are at a different scope
+        // than the one we would create. This avoids confusion of someone
+        // having separate server-scoped and project-scoped user records.
+        //
+        // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
+        if (!request.forceNewMembership) {
+          const projectFilter = userResource.project
+            ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
+            : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
 
-    const { resource: result, outcome } = await systemRepo.conditionalCreate(userResource, searchRequest);
+          const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
+            resourceType: 'ProjectMembership',
+            filters: [
+              { code: 'user:User.email', operator: Operator.EXACT, value: email },
+              { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
+              projectFilter,
+            ],
+          });
+
+          if (existingMemberships.length > 0) {
+            throw new OperationOutcomeError(conflict('User is already a member of this project'));
+          }
+        }
+
+        const searchRequest: SearchRequest<User> = {
+          resourceType: 'User',
+          filters: [
+            {
+              code: 'email',
+              operator: Operator.EXACT,
+              value: email,
+            },
+            request.resourceType === 'Patient' || request.scope === 'project'
+              ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
+              : { code: 'project', operator: Operator.MISSING, value: 'true' },
+          ],
+        };
+
+        return systemRepo.conditionalCreate(userResource, searchRequest);
+      },
+      { serializable: true }
+    );
     user = result;
     existingUser = !isCreated(outcome);
   } else {
@@ -223,6 +254,72 @@ async function upsertProfileResource(
   }
 }
 
+/**
+ * Validates that all access policy references exist and belong to the project.
+ * Uses batch reading to validate all policies in a single database query.
+ * @param systemRepo - The system repository.
+ * @param request - The invite request containing access policy references.
+ * @param project - The project to validate against.
+ * @throws OperationOutcomeError if any access policy is invalid.
+ */
+async function validateAccessPolicies(
+  systemRepo: Repository,
+  request: ServerInviteRequest,
+  project: WithId<Project>
+): Promise<void> {
+  // Collect all access policy references
+  const references: Reference<AccessPolicy>[] = [];
+
+  if (request.accessPolicy) {
+    references.push(request.accessPolicy);
+  }
+
+  if (request.access && Array.isArray(request.access)) {
+    for (const access of request.access) {
+      if (access.policy) {
+        references.push(access.policy);
+      }
+    }
+  }
+
+  if (request.membership?.access && Array.isArray(request.membership.access)) {
+    for (const access of request.membership.access) {
+      if (access.policy) {
+        references.push(access.policy);
+      }
+    }
+  }
+
+  // If no references to validate, return early
+  if (references.length === 0) {
+    return;
+  }
+
+  // Batch read all access policies at once
+  const results = await systemRepo.readReferences<AccessPolicy>(references);
+
+  // Validate each result
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const reference = references[i];
+    const policyRefString = getReferenceString(reference);
+
+    if (result instanceof Error) {
+      // Convert notFound errors to badRequest with specific message
+      if (result instanceof OperationOutcomeError && isNotFound(result.outcome)) {
+        throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not exist`));
+      }
+      // For other errors, rethrow
+      throw result;
+    }
+
+    // Check if the access policy belongs to the project
+    if (result.meta?.project && result.meta.project !== project.id) {
+      throw new OperationOutcomeError(badRequest(`Access policy ${policyRefString} does not belong to this project`));
+    }
+  }
+}
+
 async function upsertProjectMembership(
   systemRepo: Repository,
   request: ServerInviteRequest,
@@ -230,6 +327,9 @@ async function upsertProjectMembership(
   user: WithId<User>,
   profile: WithId<ProfileResource>
 ): Promise<WithId<ProjectMembership>> {
+  // Validate access policies before creating/updating membership
+  await validateAccessPolicies(systemRepo, request, project);
+
   const partialMembership: Partial<ProjectMembership> = {
     externalId: request.externalId,
     accessPolicy: request.accessPolicy,

@@ -182,7 +182,7 @@ export function formatFamilyName(name: HumanName): string {
  * @returns Returns true if the date is a valid date.
  */
 export function isValidDate(date: Date): boolean {
-  return date instanceof Date && !isNaN(date.getTime());
+  return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 /**
@@ -230,6 +230,41 @@ export function formatTime(
     return '';
   }
   return d.toLocaleTimeString(locales, options);
+}
+
+/**
+ * Formats a FHIR time string as a human readable string.
+ * The viewer's timezone does not affect the display.
+ * @param time - The time to format, a string like `HH:mm` or `HH:mm:ss`
+ * @param locales - Optional locales.
+ * @param options - Optional time format options.
+ * @returns The formatted time string.
+ */
+export function formatWallTime(
+  time: string | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!time) {
+    return '';
+  }
+  const [hours = 0, minutes = 0, seconds = 0] = time.split(':').map(Number);
+
+  // Create a UTC date with the given time, and format the result with respect
+  // to the UTC timezone so that the time is displayed correctly regardless of
+  // the viewer's timezone.
+  const date = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
+  if (!isValidDate(date)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat(locales, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: seconds === 0 ? undefined : 'numeric',
+    ...options,
+    timeZone: 'UTC',
+  }).format(date);
 }
 
 /**
@@ -359,7 +394,7 @@ function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined)
   }
 
   if (repeat.timeOfDay) {
-    builder.push('at ' + repeat.timeOfDay.map((t) => formatTime(t)).join(', '));
+    builder.push('at ' + repeat.timeOfDay.map((t) => formatWallTime(t)).join(', '));
   }
 }
 
@@ -433,7 +468,7 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   if (quantity.unit) {
-    if (quantity.unit !== '%' && result[result.length - 1] !== ' ') {
+    if (quantity.unit !== '%' && result.at(-1) !== ' ') {
       result.push(' ');
     }
     result.push(quantity.unit);

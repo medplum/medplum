@@ -1,34 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
 import type { OperationOutcomeError } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
-import type { Bot, Practitioner, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import type { Bot, Practitioner, Questionnaire, Subscription, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen, userEvent } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <AppRoutes />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
-          </MemoryRouter>
-        </MedplumProvider>
-      );
+      renderAppRoutes(medplum, url);
     });
   }
 
@@ -103,17 +84,21 @@ describe('ResourcePage', () => {
     expect(await screen.findByText('Timeline')).toBeInTheDocument();
   });
 
-  test('Questionnaire preview', async () => {
-    await setup('/Questionnaire/123/preview');
+  test('Questionnaire preview tab appears', async () => {
+    await setup('/Questionnaire/123');
     expect(await screen.findByText('Preview')).toBeInTheDocument();
+  });
 
-    window.alert = jest.fn();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
+  test('ValueSet preview tab appears', async () => {
+    const medplum = new MockClient();
+    const valueSet = await medplum.createResource<ValueSet>({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/valueset/test',
     });
 
-    expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
+    await setup(`/ValueSet/${valueSet.id}`, medplum);
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
   });
 
   test('Questionnaire bots -- create only (default)', async () => {
@@ -336,7 +321,7 @@ describe('ResourcePage', () => {
     await setup('/Practitioner/123/details');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('History'));
+      fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     });
 
     // Change the tab

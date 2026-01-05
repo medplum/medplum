@@ -9,11 +9,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
-import { requestContextStore } from '../request-context-store';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
@@ -41,11 +39,12 @@ jest.mock('../migrations/data/index', () => {
 });
 
 describe('Super Admin routes', () => {
+  let processStdoutWriteSpy: jest.SpyInstance;
   beforeAll(async () => {
+    processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
     ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
     const normalProject = await createTestProject();
@@ -123,6 +122,7 @@ describe('Super Admin routes', () => {
 
   afterAll(async () => {
     await shutdownApp();
+    processStdoutWriteSpy.mockRestore();
   });
 
   test('Rebuild ValueSetElements require respond-async', async () => {

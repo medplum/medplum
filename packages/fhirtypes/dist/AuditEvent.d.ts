@@ -225,7 +225,7 @@ export interface AuditEventAgent {
   /**
    * Reference to who this agent is that was involved in the event.
    */
-  who?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
+  who?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson | Bot | ClientApplication>;
 
   /**
    * Alternative agent Identifier. For a human, this should be a user

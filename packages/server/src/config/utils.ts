@@ -112,6 +112,7 @@ const integerKeys = new Set([
   'maxBotLogLengthForLogs',
   'maxBotLogLengthForResource',
   'maxSearchOffset',
+  'mfaAuthenticatorWindow',
   'port',
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
@@ -160,14 +161,46 @@ const booleanKeys = new Set([
   'require',
   'rejectUnauthorized',
   'fhirSearchDiscourageSeqScan',
+  'redactAuditEvents',
 ]);
 
 export function isBooleanConfig(key: string): boolean {
   return booleanKeys.has(key);
 }
 
-const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaultOAuthClients', 'smtp']);
+const objectKeys = new Set([
+  'tls',
+  'ssl',
+  'defaultProjectSystemSetting',
+  'defaultOAuthClients',
+  'smtp',
+  'arrayColumnPadding',
+]);
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
+}
+
+export function setValue(config: Record<string, unknown>, key: string, value: string): void {
+  const keySegments = key.split('.');
+  let obj = config;
+
+  while (keySegments.length > 1) {
+    const segment = keySegments.shift() as string;
+    if (!obj[segment]) {
+      obj[segment] = {};
+    }
+    obj = obj[segment] as Record<string, unknown>;
+  }
+
+  let parsedValue: any = value;
+  if (isIntegerConfig(key)) {
+    parsedValue = Number.parseInt(value, 10);
+  } else if (isBooleanConfig(key)) {
+    parsedValue = value === 'true';
+  } else if (isObjectConfig(key)) {
+    parsedValue = JSON.parse(value);
+  }
+
+  obj[keySegments[0]] = parsedValue;
 }

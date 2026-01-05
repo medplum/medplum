@@ -1,7 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { createReference, isResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  getReferenceString,
+  isResource,
+  isString,
+  OperationOutcomeError,
+  projectAdminResourceTypes,
+  resolveId,
+} from '@medplum/core';
 import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -13,7 +22,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -68,6 +77,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
+    validateTerminology: project.features?.some((f) => f === 'validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
   });
 }
@@ -114,8 +124,13 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
+  const accessPolicyMap = new Map<string, AccessPolicy>();
   for (const entry of access) {
-    const replaced = await buildAccessPolicyResources(entry, membership.profile as Reference<ProfileResource>);
+    const replaced = await buildAccessPolicyResources(
+      entry,
+      membership.profile as Reference<ProfileResource>,
+      accessPolicyMap
+    );
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
@@ -153,14 +168,37 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
  * Reads an access policy and replaces all variables.
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
+ * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
   access: ProjectMembershipAccess,
-  profile: Reference<ProfileResource>
+  profile: Reference<ProfileResource>,
+  accessPolicyMap: Map<string, AccessPolicy>
 ): Promise<AccessPolicy> {
   const systemRepo = getSystemRepo();
-  const original = await systemRepo.readReference(access.policy as Reference<AccessPolicy>);
+  const accessPolicyReference = access.policy;
+  const policyReferenceString = getReferenceString(accessPolicyReference);
+  if (!isString(policyReferenceString)) {
+    throw new Error('Access policy reference is required');
+  }
+
+  let original = accessPolicyMap.get(policyReferenceString);
+  if (!original) {
+    try {
+      original = await systemRepo.readReference(accessPolicyReference);
+      accessPolicyMap.set(policyReferenceString, original);
+    } catch (_error) {
+      // Intentionally catch and rethrow with a generic error message for security
+      // (don't expose access policy details during login)
+      throw new OperationOutcomeError(
+        badRequest(
+          'Cannot authenticate: Invalid access policy configuration. Please contact your administrator to update your project membership.'
+        )
+      );
+    }
+  }
+
   const params = access.parameter || [];
   params.push({ name: 'profile', valueReference: profile });
   if (!params.find((p) => p.name === 'patient')) {
@@ -242,11 +280,6 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
       readonlyFields: ['project', 'user'],
-    });
-
-    accessPolicy.resource.push({
-      resourceType: 'PasswordChangeRequest',
-      readonly: true,
     });
 
     accessPolicy.resource.push({

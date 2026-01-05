@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
-import type { KeyObject } from 'crypto';
-import { createPrivateKey, createPublicKey, createVerify } from 'crypto';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { pipeline } from 'stream';
-import { promisify } from 'util';
+import type { KeyObject } from 'node:crypto';
+import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
+import { pipeline } from 'node:stream';
+import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from './loader';
@@ -26,7 +26,7 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const expires = req.query['Expires'];
-  if (!expires || Math.floor(Date.now() / 1000) > parseInt(expires as string, 10)) {
+  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
     res.status(410).send('URL has expired');
     return;
   }

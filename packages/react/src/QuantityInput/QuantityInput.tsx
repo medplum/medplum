@@ -87,5 +87,5 @@ function tryParseNumber(str: string): number | undefined {
   if (!str) {
     return undefined;
   }
-  return parseFloat(str);
+  return Number.parseFloat(str);
 }

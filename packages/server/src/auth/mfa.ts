@@ -7,16 +7,13 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
-
-authenticator.options = {
-  window: 1,
-};
 
 export const mfaRouter = Router();
 
@@ -98,7 +95,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret as string;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret)) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -118,18 +116,19 @@ mfaRouter.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
-      return Promise.resolve();
+      return;
     }
 
     const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
     const result = await verifyMfaToken(login, req.body.token);
-    return sendLoginResult(res, result);
+    await sendLoginResult(res, result);
   }
 );
 
 mfaRouter.post(
   '/disable',
+  authenticateRequest,
   [body('token').notEmpty().withMessage('Missing token')],
   async (req: Request, res: Response) => {
     const systemRepo = getSystemRepo();
@@ -154,7 +153,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret as string;
     const token = req.body.token as string;
-    if (!authenticator.check(token, secret)) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, Flex, Stack, Text, TextInput, Title } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
@@ -10,7 +10,8 @@ import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
-import { getErrorsForInput } from '../utils/outcomes';
+import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
+import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
   readonly login: string;
@@ -20,6 +21,8 @@ export interface NewProjectFormProps {
 export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const issues = getIssuesForExpression(outcome, undefined);
+
   return (
     <Form
       onSubmit={async (formData: Record<string, string>) => {
@@ -35,11 +38,14 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         }
       }}
     >
-      <Center style={{ flexDirection: 'column' }}>
+      <Flex direction="column" align="center" justify="center">
         <Logo size={32} />
-        <Title>Create project</Title>
-      </Center>
-      <Stack gap="xl">
+        <Title order={3} py="lg">
+          Create a new project
+        </Title>
+      </Flex>
+      <OperationOutcomeAlert issues={issues} mb="lg" />
+      <Stack gap="sm">
         <TextInput
           name="projectName"
           label="Project Name"
@@ -48,16 +54,16 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
           autoFocus={true}
           error={getErrorsForInput(outcome, 'projectName')}
         />
-        <Text c="dimmed" size="xs">
-          By clicking submit you agree to the Medplum{' '}
+      </Stack>
+      <Stack gap="xs" mt="md">
+        <SubmitButton fullWidth>Create Project</SubmitButton>
+        <Text c="dimmed" size="xs" pt="lg" ta="center">
+          By clicking "Create Project" you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
       </Stack>
-      <Group justify="flex-end" mt="xl" wrap="nowrap">
-        <SubmitButton>Create project</SubmitButton>
-      </Group>
     </Form>
   );
 }

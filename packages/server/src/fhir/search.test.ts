@@ -1441,6 +1441,27 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle1, serviceRequest2)).toBeDefined();
     }));
 
+  test('Token not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      const patient1 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        gender: 'male',
+      });
+
+      const patient2 = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const bundle1 = await repo.search(parseSearchRequest('Patient', { name: family, 'gender:not': 'male' }));
+      expect(bundle1.entry?.length).toStrictEqual(1);
+      expect(bundleContains(bundle1, patient1)).toBeUndefined();
+      expect(bundleContains(bundle1, patient2)).toBeDefined();
+    }));
+
   test('Token array not equals', () =>
     withTestContext(async () => {
       const category1 = randomUUID();
@@ -1735,6 +1756,53 @@ describe('project-scoped Repository', () => {
       });
       expect(searchResult.entry).toHaveLength(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+    }));
+
+  test('Boolean not equals matches missing value', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      // Create patient with active=true
+      const activeTrue = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: true,
+      });
+
+      // Create patient with active=false
+      const activeFalse = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        active: false,
+      });
+
+      // Create patient without active field (undefined/null)
+      const activeUndefined = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      // Search for active:not=false should return activeTrue and activeUndefined
+      const searchResult = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: family,
+          },
+          {
+            code: 'active',
+            operator: Operator.NOT,
+            value: 'false',
+          },
+        ],
+      });
+
+      expect(searchResult.entry?.length).toStrictEqual(2);
+      expect(bundleContains(searchResult, activeTrue)).toBeDefined();
+      expect(bundleContains(searchResult, activeUndefined)).toBeDefined();
+      expect(bundleContains(searchResult, activeFalse)).toBeUndefined();
     }));
 
   test('Not equals with comma separated values', () =>
@@ -5225,4 +5293,39 @@ describe('systemRepo', () => {
       );
       expect(result2.entry?.length).toStrictEqual(0);
     }));
+
+  describe('invalid operators and modifiers', () => {
+    test.each([
+      // special search params
+      ['Patient?_id:in=123', 'Invalid modifier'],
+      ['Patient?_id:not-in=123', 'Invalid modifier'],
+      ['Patient?_lastUpdated:in=2025-10-15', 'Invalid modifier'],
+      ['Patient?_lastUpdated:not-in=2025-10-15', 'Invalid modifier'],
+      ['Patient?_deleted:in=true', 'Invalid modifier'],
+      ['Patient?_deleted:not-in=true', 'Invalid modifier'],
+      ['Patient?_project:in=123', 'Invalid modifier'],
+      ['Patient?_project:not-in=123', 'Invalid modifier'],
+      ['Patient?_compartment:in=123', 'Invalid modifier'],
+      ['Patient?_compartment:not-in=123', 'Invalid modifier'],
+      // boolean
+      ['Patient?active:in=true', 'Invalid modifier'],
+      ['Patient?active:not-in=true', 'Invalid modifier'],
+      // reference
+      ['Patient?general-practitioner:in=123', 'Invalid modifier'],
+      ['Patient?general-practitioner:not-in=123', 'Invalid modifier'],
+      // token column
+      ['Patient?identifier:in=123', 'Invalid modifier'],
+      ['Patient?identifier:not-in=123', 'Invalid modifier'],
+      // lookup table
+      ['Patient?name:in=123', 'Invalid modifier'],
+      ['Patient?name:not-in=123', 'Invalid modifier'],
+    ])(':in and :not-in for %s', (searchString, expectedError) =>
+      withTestContext(async () => {
+        await expect(async () => {
+          const searchRequest = parseSearchRequest(searchString);
+          await systemRepo.search(searchRequest);
+        }).rejects.toThrow(expectedError);
+      })
+    );
+  });
 });

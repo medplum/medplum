@@ -103,6 +103,14 @@ We also want to thank everyone who donated demos and demo videos to this event -
 
 The following demos were provided by the community. Thank you so much to all teams who contributed videos.
 
+### Seen Health
+
+[PACE](https://www.dhcs.ca.gov/services/ltc/Pages/programofall-inclusivecarefortheelderly.aspx) specific EHR with realtime collaboration features and multi-player chart editing and workflow.
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/M9bw4l1-RN8?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
 ### Summer Health
 
 24/7 Pediatric care via SMS, built their CareOS on Medplum. Read the [case study](/blog/summer-case-study).  A live demo was showcased in the Fireside Chat.

@@ -14,7 +14,7 @@ import { getBuffer, isBrowserEnvironment } from './environment';
 export function decodeBase64(data: string): string {
   if (isBrowserEnvironment()) {
     const binaryString = window.atob(data);
-    const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+    const bytes = Uint8Array.from(binaryString, (c) => c.codePointAt(0) as number);
     return new window.TextDecoder().decode(bytes);
   }
   const BufferConstructor = getBuffer();
@@ -34,8 +34,8 @@ export function decodeBase64(data: string): string {
 export function encodeBase64(data: string): string {
   if (isBrowserEnvironment()) {
     const utf8Bytes = new window.TextEncoder().encode(data);
-    // utf8Bytes is a Uint8Array, but String.fromCharCode expects a sequence of numbers.
-    const binaryString = String.fromCharCode.apply(null, utf8Bytes as unknown as number[]);
+    // utf8Bytes is a Uint8Array, but String.fromCodePoint expects a sequence of numbers.
+    const binaryString = String.fromCodePoint.apply(null, utf8Bytes as unknown as number[]);
     return window.btoa(binaryString);
   }
   const BufferConstructor = getBuffer();
@@ -53,8 +53,8 @@ export function encodeBase64(data: string): string {
  */
 export function encodeBase64Url(data: string): string {
   return encodeBase64(data)
-    .replace(/\+/g, '-') // Replace + with -
-    .replace(/\//g, '_') // Replace / with _
+    .replaceAll('+', '-') // Replace + with -
+    .replaceAll('/', '_') // Replace / with _
     .replace(/[=]{1,2}$/, ''); // Remove trailing =
 }
 
@@ -65,6 +65,6 @@ export function encodeBase64Url(data: string): string {
  */
 export function decodeBase64Url(data: string): string {
   data = data.padEnd(data.length + ((4 - (data.length % 4)) % 4), '=');
-  const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+  const base64 = data.replaceAll('-', '+').replaceAll('_', '/');
   return decodeBase64(base64);
 }

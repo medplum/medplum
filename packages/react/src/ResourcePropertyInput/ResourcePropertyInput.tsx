@@ -166,8 +166,10 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export interface ElementDefinitionTypeInputProps
-  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'> {
+export interface ElementDefinitionTypeInputProps extends Pick<
+  ResourcePropertyInputProps,
+  'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'
+> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;
@@ -237,7 +239,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.string:
-    case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
       if (props.path === 'Project.secret.value[x]') {
@@ -268,6 +269,19 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <TextInput
           {...getPrimitiveInputProps()}
           type="date"
+          onChange={(e) => {
+            if (onChange) {
+              onChange(e.currentTarget.value);
+            }
+          }}
+        />
+      );
+    case PropertyType.time:
+      return (
+        <TextInput
+          {...getPrimitiveInputProps()}
+          type="time"
+          step={1}
           onChange={(e) => {
             if (onChange) {
               onChange(e.currentTarget.value);
@@ -321,6 +335,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.base64Binary:
     case PropertyType.markdown:
+    case PropertyType.xhtml:
       return (
         <Textarea
           {...getPrimitiveInputProps()}

@@ -610,9 +610,9 @@ function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
   const discriminators = element.slicing?.discriminator;
   return Boolean(
     element.type?.some((t) => t.code === 'Extension') &&
-      discriminators?.length === 1 &&
-      discriminators[0].type === 'value' &&
-      discriminators[0].path === 'url'
+    discriminators?.length === 1 &&
+    discriminators[0].type === 'value' &&
+    discriminators[0].path === 'url'
   );
 }
 

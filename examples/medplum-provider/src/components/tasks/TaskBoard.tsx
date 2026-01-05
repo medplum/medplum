@@ -12,92 +12,155 @@ import {
   Skeleton,
   Text,
   Box,
-  SegmentedControl,
+  Pagination,
+  Center,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { JSX } from 'react';
 import cx from 'clsx';
 import classes from './TaskBoard.module.css';
-import type { CodeableConcept, ResourceType, Task } from '@medplum/fhirtypes';
-import { createReference, getReferenceString } from '@medplum/core';
-import type { MedplumClient, ProfileResource } from '@medplum/core';
-import { useNavigate } from 'react-router';
-import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import type { CodeableConcept, Task } from '@medplum/fhirtypes';
+import { Operator, parseSearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import { Link, useNavigate } from 'react-router';
+import { useMedplum } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskFilterType } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 import { TaskFilterMenu } from './TaskFilterMenu';
-import { IconClipboardList, IconPlus } from '@tabler/icons-react';
+import { IconPlus } from '@tabler/icons-react';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { TasksInputNote } from './TaskInputNote';
-import { TaskProperties } from './TaskProperties';
 import { NewTaskModal } from './NewTaskModal';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
+import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
-  showMyTasks: boolean;
-  status: Task['status'] | undefined;
   performerType: CodeableConcept | undefined;
 }
 
+/**
+ * TaskBoardProps is the props for the TaskBoard component.
+ * @property query - The query string for the search request.
+ * @property selectedTaskId - The ID of the selected task.
+ * @property onDelete - The function to call when a task is deleted.
+ * @property onNew - The function to call when a new task is created.
+ * @property onChange - The function to call when the search request changes.
+ * @property getTaskUri - The function to call to get the URI of a task.
+ * @property myTasksUri - The URI for the my tasks search request.
+ * @property allTasksUri - The URI for the all tasks search request.
+ * @returns The TaskBoard component.
+ */
 interface TaskBoardProps {
   query: string;
   selectedTaskId: string | undefined;
-  onTaskChange: (task: Task) => void;
-  onDeleteTask: (task: Task) => void;
+  onDelete: (task: Task) => void;
+  onNew: (task: Task) => void;
+  onChange: (search: SearchRequest) => void;
+  getTaskUri: (task: Task) => string;
+  myTasksUri: string;
+  allTasksUri: string;
 }
 
-export function TaskBoard(props: TaskBoardProps): JSX.Element {
-  const { query, selectedTaskId, onTaskChange, onDeleteTask } = props;
+export function TaskBoard({
+  query,
+  selectedTaskId,
+  onDelete,
+  onNew,
+  onChange,
+  getTaskUri,
+  myTasksUri,
+  allTasksUri,
+}: TaskBoardProps): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
-  const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
   const [performerTypes, setPerformerTypes] = useState<CodeableConcept[]>([]);
-  const selectedPatient = useResource(selectedTask?.for);
-  const [activeTab, setActiveTab] = useState<string>('properties');
   const [newTaskModalOpened, setNewTaskModalOpened] = useState<boolean>(false);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
+  const [total, setTotal] = useState<number | undefined>(undefined);
+  const requestIdRef = useRef<number>(0);
+  const fetchingRef = useRef<boolean>(false);
 
   const [filters, setFilters] = useState<FilterState>({
-    showMyTasks: true,
-    status: undefined,
     performerType: undefined,
   });
 
+  // Parse pagination and status filters from query
+  const searchParams = useMemo(() => new URLSearchParams(query), [query]);
+  const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
+  const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
+  const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
+  const isMyTasks = searchParams.has('owner');
+
+  // Parse current search from query string
+  const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
+
+  // Parse status filters from query string
+  const selectedStatuses = useMemo(() => {
+    const statusFilters = currentSearch.filters?.filter((f) => f.code === 'status') || [];
+    const statuses: Task['status'][] = [];
+    statusFilters.forEach((filter) => {
+      const values = filter.value.split(',');
+      values.forEach((value) => {
+        const trimmedValue = value.trim();
+        if (trimmedValue && !statuses.includes(trimmedValue as Task['status'])) {
+          statuses.push(trimmedValue as Task['status']);
+        }
+      });
+    });
+    return statuses;
+  }, [currentSearch]);
+
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const searchParams = new URLSearchParams(query);
-
-    if (profileRef && filters.showMyTasks) {
-      searchParams.append('owner', getReferenceString(profileRef));
+    if (fetchingRef.current) {
+      return;
     }
-    if (filters.status) {
-      searchParams.append('status', filters.status);
+    fetchingRef.current = true;
+    const currentRequestId = ++requestIdRef.current;
+
+    try {
+      const bundle = await medplum.search('Task', query, { cache: 'no-cache' });
+
+      if (currentRequestId !== requestIdRef.current) {
+        return;
+      }
+
+      let results: Task[] = [];
+
+      if (bundle.entry) {
+        results = bundle.entry.map((entry) => entry.resource as Task).filter((r): r is Task => r !== undefined);
+      }
+
+      if (bundle.total !== undefined) {
+        setTotal(bundle.total);
+      }
+
+      const allPerformerTypes = results.flatMap((task) => task.performerType || []);
+
+      if (filters.performerType) {
+        results = results.filter(
+          (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
+        );
+      }
+
+      setPerformerTypes(allPerformerTypes);
+      setTasks(results);
+    } catch (error) {
+      if (currentRequestId === requestIdRef.current) {
+        throw error;
+      }
+    } finally {
+      fetchingRef.current = false;
     }
-
-    let results: Task[] = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-    const performerTypes = results.flatMap((task) => task.performerType || []);
-
-    if (filters.performerType) {
-      results = results.filter(
-        (task) => task.performerType?.[0]?.coding?.[0]?.code === filters.performerType?.coding?.[0]?.code
-      );
-    }
-
-    setPerformerTypes(performerTypes);
-    setTasks(results);
-  }, [medplum, profileRef, filters, query]);
+  }, [medplum, filters.performerType, query]);
 
   useEffect(() => {
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef, filters, query, fetchTasks]);
+  }, [fetchTasks]);
 
   useEffect(() => {
     const handleTaskSelection = async (): Promise<void> => {
@@ -121,34 +184,44 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
   const handleNewTaskCreated = (task: Task): void => {
     fetchTasks().catch(showErrorNotification);
-    handleTaskChange(task).catch(showErrorNotification);
+    onNew(task);
   };
 
-  const handleTaskChange = async (task: Task): Promise<void> => {
-    setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
-    onTaskChange(task);
-    setSelectedTask(task);
-    await debouncedUpdateResource(task);
+  const handleTaskChange = async (_task: Task): Promise<void> => {
+    await fetchTasks().catch(showErrorNotification);
   };
 
   const handleDeleteTask = async (task: Task): Promise<void> => {
-    try {
-      await medplum.deleteResource('Task', task.id as string);
-      setTasks(tasks.filter((t) => t.id !== task.id));
-      onDeleteTask(task);
-    } catch (error) {
-      showErrorNotification(error);
-    }
+    await fetchTasks().catch(showErrorNotification);
+    onDelete(task);
   };
 
   const handleFilterChange = (filterType: TaskFilterType, value: TaskFilterValue): void => {
     switch (filterType) {
-      case TaskFilterType.STATUS:
-        setFilters((prev) => ({
-          ...prev,
-          status: prev.status !== value ? (value as Task['status']) : undefined,
-        }));
+      case TaskFilterType.STATUS: {
+        const statusValue = value as Task['status'];
+        const newStatuses = selectedStatuses.includes(statusValue)
+          ? selectedStatuses.filter((s) => s !== statusValue)
+          : [...selectedStatuses, statusValue];
+
+        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'status') || [];
+        const newFilters = [...otherFilters];
+
+        if (newStatuses.length > 0) {
+          newFilters.push({
+            code: 'status',
+            operator: Operator.EQUALS,
+            value: newStatuses.join(','),
+          });
+        }
+
+        onChange({
+          ...currentSearch,
+          filters: newFilters,
+          offset: 0,
+        });
         break;
+      }
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
@@ -163,37 +236,6 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
     }
   };
 
-  const handleTabChange = (value: string): void => {
-    setActiveTab(value);
-  };
-
-  const handleShowMyTasksChange = (flag: boolean): void => {
-    setFilters({
-      showMyTasks: flag,
-      status: undefined,
-      performerType: undefined,
-    });
-  };
-
-  const getTabData = (): { label: string; value: string }[] => {
-    const baseTabs = [
-      { label: 'Properties', value: 'properties' },
-      { label: 'Activity Log', value: 'activity-log' },
-    ];
-
-    if (selectedPatient?.resourceType === 'Patient') {
-      baseTabs.push({ label: 'Patient Summary', value: 'patient-summary' });
-    }
-
-    return baseTabs;
-  };
-
-  useEffect(() => {
-    if (activeTab === 'patient-summary' && selectedPatient?.resourceType !== 'Patient') {
-      setActiveTab('properties');
-    }
-  }, [selectedPatient, activeTab]);
-
   return (
     <Box w="100%" h="100%">
       <Flex h="100%">
@@ -203,25 +245,27 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
                   <Button
-                    className={cx(classes.button, { [classes.selected]: filters.showMyTasks })}
+                    component={Link}
+                    to={myTasksUri}
+                    className={cx(classes.button, { [classes.selected]: isMyTasks })}
                     h={32}
                     radius="xl"
-                    onClick={() => handleShowMyTasksChange(true)}
                   >
                     My Tasks
                   </Button>
 
                   <Button
-                    className={cx(classes.button, { [classes.selected]: !filters.showMyTasks })}
+                    component={Link}
+                    to={allTasksUri}
+                    className={cx(classes.button, { [classes.selected]: !isMyTasks })}
                     h={32}
                     radius="xl"
-                    onClick={() => handleShowMyTasksChange(false)}
                   >
                     All Tasks
                   </Button>
 
                   <TaskFilterMenu
-                    status={filters.status}
+                    statuses={selectedStatuses}
                     performerType={filters.performerType}
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
@@ -235,92 +279,45 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
             </Paper>
 
             <Divider />
-            <Paper style={{ flex: 1, overflow: 'hidden' }}>
-              <ScrollArea h="100%" id="task-list-scrollarea">
+            <Paper style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <ScrollArea style={{ flex: 1 }} id="task-list-scrollarea">
                 {loading && <TaskListSkeleton />}
                 {!loading && tasks.length === 0 && <EmptyTasksState />}
                 {!loading &&
                   tasks.length > 0 &&
                   tasks.map((task, index) => (
                     <React.Fragment key={task.id}>
-                      <TaskListItem task={task} selectedTask={selectedTask} />
+                      <TaskListItem task={task} selectedTask={selectedTask} getTaskUri={getTaskUri} />
                       {index < tasks.length - 1 && <Divider />}
                     </React.Fragment>
                   ))}
               </ScrollArea>
+              {!loading && total !== undefined && total > itemsPerPage && (
+                <Box p="md">
+                  <Center>
+                    <Pagination
+                      value={currentPage}
+                      total={Math.ceil(total / itemsPerPage)}
+                      onChange={(page) => {
+                        const offset = (page - 1) * itemsPerPage;
+                        onChange({
+                          ...currentSearch,
+                          offset,
+                        });
+                      }}
+                      size="sm"
+                      siblings={1}
+                      boundaries={1}
+                    />
+                  </Center>
+                </Box>
+              )}
             </Paper>
           </Flex>
         </Box>
 
         {selectedTask ? (
-          <>
-            <Box
-              h="100%"
-              style={{
-                flex: 1,
-              }}
-              className={classes.borderRight}
-            >
-              {selectedTask && (
-                <TasksInputNote task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
-              )}
-            </Box>
-
-            {selectedTask && (
-              <Box h="100%" w="400px">
-                <Paper h="100%" style={{ overflow: 'hidden' }}>
-                  <Box px="md" pb="md" pt="md">
-                    <SegmentedControl
-                      value={activeTab}
-                      onChange={(value: string) => handleTabChange(value)}
-                      data={getTabData()}
-                      fullWidth
-                      radius="md"
-                      color="gray"
-                      size="sm"
-                      className={classes.segmentedControl}
-                    />
-                  </Box>
-
-                  <Box>
-                    {selectedTask && (
-                      <>
-                        {activeTab === 'properties' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <TaskProperties
-                              key={selectedTask.id}
-                              p="md"
-                              task={selectedTask}
-                              onTaskChange={handleTaskChange}
-                            />
-                          </ScrollArea>
-                        )}
-                        {activeTab === 'activity-log' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <ResourceTimeline
-                              value={selectedTask}
-                              loadTimelineResources={async (
-                                medplum: MedplumClient,
-                                _resourceType: ResourceType,
-                                id: string
-                              ) => {
-                                return Promise.allSettled([medplum.readHistory('Task', id)]);
-                              }}
-                            />
-                          </ScrollArea>
-                        )}
-                        {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
-                          <ScrollArea h="calc(100vh - 120px)">
-                            <PatientSummary patient={selectedPatient} />
-                          </ScrollArea>
-                        )}
-                      </>
-                    )}
-                  </Box>
-                </Paper>
-              </Box>
-            )}
-          </>
+          <TaskDetailPanel task={selectedTask} onTaskChange={handleTaskChange} onDeleteTask={handleDeleteTask} />
         ) : (
           <Flex direction="column" h="100%" style={{ flex: 1 }}>
             <TaskSelectEmpty />
@@ -339,13 +336,10 @@ export function TaskBoard(props: TaskBoardProps): JSX.Element {
 
 function EmptyTasksState(): JSX.Element {
   return (
-    <Flex direction="column" h="100%" justify="center" align="center">
-      <Stack align="center" gap="md" pt="xl">
-        <IconClipboardList size={64} color="var(--mantine-color-gray-4)" />
-        <Text size="lg" c="dimmed" fw={500}>
-          No tasks found
-        </Text>
-      </Stack>
+    <Flex direction="column" h="100%" justify="center" align="center" pt="xl">
+      <Text c="dimmed" fw={500}>
+        No tasks available.
+      </Text>
     </Flex>
   );
 }
