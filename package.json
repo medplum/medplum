@@ -68,7 +68,7 @@
     "prettier": "3.7.4",
     "prettier-plugin-organize-imports": "4.3.0",
     "rimraf": "6.1.2",
-    "shx": "0.3.4",
+    "shx": "0.4.0",
     "sort-package-json": "3.6.0",
     "source-map-explorer": "2.5.3",
     "tslib": "2.8.1",
