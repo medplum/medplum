@@ -5,6 +5,8 @@
  * Do not edit manually.
  */
 
+// organize-imports-ignore - https://github.com/simonhaenisch/prettier-plugin-organize-imports?tab=readme-ov-file#skip-files
+
 export * as v1 from './v1';
 export * as v2 from './v2';
 export * as v3 from './v3';
@@ -17,7 +19,6 @@ export * as v9 from './v9';
 /* CAUTION: LOAD-BEARING COMMENT */
 /* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */
 export * as v10 from './v10';
-export * as v100 from './v100';
 export * as v11 from './v11';
 export * as v12 from './v12';
 export * as v13 from './v13';
@@ -107,3 +108,4 @@ export * as v96 from './v96';
 export * as v97 from './v97';
 export * as v98 from './v98';
 export * as v99 from './v99';
+export * as v100 from './v100';
