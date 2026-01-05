@@ -90,7 +90,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
               {TASK_PRIORITIES.map((taskPriority) => (
                 <Menu.Item
                   key={taskPriority}
-                  onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority!)}
+                  onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority ?? '')}
                   rightSection={priorities.includes(taskPriority) ? <IconCheck size={16} /> : null}
                 >
                   <Text size="sm">{taskPriority}</Text>
