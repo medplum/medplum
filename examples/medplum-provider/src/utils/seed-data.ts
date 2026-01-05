@@ -5,7 +5,7 @@ import type { Bundle, Patient, ResourceType } from '@medplum/fhirtypes';
 
 /**
  * Check if there are any resources of a given type in the database
- * 
+ *
  * @param medplum - The Medplum client
  * @param resourceType - The resource type to check
  * @returns True if there are any resources of the given type, false otherwise
@@ -17,7 +17,7 @@ export async function hasResources(medplum: MedplumClient, resourceType: Resourc
 
 /**
  * Check if the database has any patients
- * 
+ *
  * @param medplum - The Medplum client
  * @returns True if there are any patients, false otherwise
  */
@@ -27,7 +27,7 @@ export async function hasPatients(medplum: MedplumClient): Promise<boolean> {
 
 /**
  * Create sample patients
- * 
+ *
  * @param medplum - The Medplum client
  * @returns The created patients
  */
@@ -107,7 +107,6 @@ export async function seedPlanDefinition(medplum: MedplumClient): Promise<void> 
   await medplum.executeBatch(PLAN_DEFINITION_BUNDLE);
 }
 
-
 const PLAN_DEFINITION_BUNDLE: Bundle = {
   resourceType: 'Bundle',
   type: 'transaction',
@@ -157,7 +156,7 @@ const PLAN_DEFINITION_BUNDLE: Bundle = {
       resource: {
         resourceType: 'Questionnaire',
         status: 'active',
-        url:'urn:uuid:d4e5f6a7-b8c9-0123-defg-456789abcdef',
+        url: 'urn:uuid:d4e5f6a7-b8c9-0123-defg-456789abcdef',
         item: [
           {
             id: 'id-5',
@@ -256,7 +255,7 @@ const PLAN_DEFINITION_BUNDLE: Bundle = {
         resourceType: 'Questionnaire',
         name: 'Health Maintenance Screening',
         status: 'active',
-        url:'urn:uuid:e5f6a7b8-c9d0-1234-efgh-56789abcdef0',
+        url: 'urn:uuid:e5f6a7b8-c9d0-1234-efgh-56789abcdef0',
         item: [
           {
             id: 'id-1',
@@ -296,7 +295,7 @@ const PLAN_DEFINITION_BUNDLE: Bundle = {
         resourceType: 'Questionnaire',
         name: 'Vital Signs Assessment',
         status: 'active',
-        url:'urn:uuid:f6a7b8c9-d0e1-2345-fghi-6789abcdef01',
+        url: 'urn:uuid:f6a7b8c9-d0e1-2345-fghi-6789abcdef01',
         item: [
           {
             id: 'id-8',

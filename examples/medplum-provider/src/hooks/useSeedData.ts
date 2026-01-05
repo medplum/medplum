@@ -28,13 +28,11 @@ export function useSeedData(): void {
     console.log('Seed data running');
     hasRun.current = true;
 
-    seedPatientData(medplum)
-    .catch((error) => {
+    seedPatientData(medplum).catch((error) => {
       console.error('Failed to seed patient data:', error);
     });
 
-    seedPlanDefinition(medplum)
-    .catch((error) => {
+    seedPlanDefinition(medplum).catch((error) => {
       console.error('Failed to seed plan definition:', error);
     });
   }, [medplum, isLoading, activeLogin]);
