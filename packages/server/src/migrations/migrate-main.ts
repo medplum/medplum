@@ -68,6 +68,10 @@ function getNextSchemaVersion(): number {
 
 function rewriteMigrationExports(): void {
   const b = new FileBuilder();
+  b.append(
+    '// organize-imports-ignore - https://github.com/simonhaenisch/prettier-plugin-organize-imports?tab=readme-ov-file#skip-files'
+  );
+  b.newLine();
   const filenamesWithoutExt = getMigrationFilenames()
     .map(getVersionFromFilename)
     .sort((a, b) => a - b)
