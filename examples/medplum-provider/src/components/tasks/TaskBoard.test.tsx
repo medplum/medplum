@@ -655,7 +655,7 @@ describe('TaskBoard', () => {
       operator: 'eq',
       value: 'urgent',
     });
-    expect(call[0].offset).toBe(0); 
+    expect(call[0].offset).toBe(0);
   });
 
   test('toggles priority filter when same priority is selected twice', async () => {

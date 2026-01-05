@@ -1,7 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(npm test:*)"
-    ]
+    "allow": ["Bash(npm test:*)"]
   }
 }
