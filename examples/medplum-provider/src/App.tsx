@@ -26,6 +26,7 @@ import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-rou
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
+import { useSeedData } from './hooks/useSeedData';
 import './index.css';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
@@ -59,6 +60,8 @@ export function App(): JSX.Element | null {
   const navigate = useMedplumNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+
+  useSeedData();
 
   if (medplum.isLoading()) {
     return null;
