@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { CrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
+import type { AsyncCrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
 import {
   allOk,
+  arrayify,
   badRequest,
-  crawlTypedValue,
+  crawlTypedValueAsync,
   deepClone,
   evalFhirPathTyped,
   flatMapFilter,
@@ -31,6 +32,7 @@ import { randomUUID } from 'node:crypto';
 import type { Operation } from 'rfc6902';
 import { applyPatch } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
+import type { Repository } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -160,8 +162,10 @@ export async function extractHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 
   // Scan Questionnaire for SDC extensions, excluding contained resource templates (which are scanned upon use)
-  const extractor = new TemplateExtractor(questionnaire, response);
-  crawlTypedValue(toTypedValue({ ...questionnaire, contained: undefined }), extractor, { skipMissingProperties: true });
+  const extractor = new TemplateExtractor(repo, questionnaire, response);
+  await crawlTypedValueAsync(toTypedValue({ ...questionnaire, contained: undefined }), extractor, {
+    skipMissingProperties: true,
+  });
 
   return [allOk, extractor.getTransactionBundle()];
 }
@@ -172,9 +176,10 @@ type TemplateExtractionContext = {
   values: TypedValue[];
 };
 
-type ExtensionHandlerFn = (extension: TypedValueWithPath, parent: TypedValueWithPath) => void;
+type ExtensionHandlerFn = (extension: TypedValueWithPath, parent: TypedValueWithPath) => Promise<void>;
 
-class TemplateExtractor implements CrawlerVisitor {
+class TemplateExtractor implements AsyncCrawlerVisitor {
+  private readonly repo: Repository;
   private response: QuestionnaireResponse;
   private templates: Record<string, TypedValue>;
   private context: TemplateExtractionContext[]; // Context stack
@@ -182,7 +187,13 @@ class TemplateExtractor implements CrawlerVisitor {
   private patch: Operation[];
   private bundle: Bundle;
 
-  constructor(questionnaire: Questionnaire, response: QuestionnaireResponse, variables?: Record<string, TypedValue>) {
+  constructor(
+    repo: Repository,
+    questionnaire: Questionnaire,
+    response: QuestionnaireResponse,
+    variables?: Record<string, TypedValue>
+  ) {
+    this.repo = repo;
     this.response = response;
 
     // Gather template resources from Questionnaire by internal reference ID
@@ -254,29 +265,22 @@ class TemplateExtractor implements CrawlerVisitor {
     return type ? singleton(results, type) : results;
   }
 
-  onExitObject(_path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): void {
+  async onExitObject(_path: string, value: TypedValueWithPath, _schema: InternalTypeSchema): Promise<void> {
     this.exitContext(value.path);
   }
 
-  onExitResource(path: string, _value: TypedValueWithPath, _schema: InternalTypeSchema): void {
+  async onExitResource(path: string, _value: TypedValueWithPath, _schema: InternalTypeSchema): Promise<void> {
     this.exitContext(path);
   }
 
   private getTopLevelExtensions(
     path: string,
-    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[]
+    propertyValues: TypedValueWithPath | TypedValueWithPath[]
   ): TypedValueWithPath[] | undefined {
     if (!path.endsWith('.extension') || path.endsWith('.extension.extension')) {
       return undefined;
     }
-
-    let results: TypedValueWithPath[];
-    if (Array.isArray(propertyValues[0])) {
-      results = propertyValues[0];
-    } else {
-      results = propertyValues as TypedValueWithPath[];
-    }
-    return results.sort(sortExtractExtensions);
+    return arrayify(propertyValues).sort(sortExtractExtensions);
   }
 
   private extensionHandler(extension: Extension): ExtensionHandlerFn | undefined {
@@ -293,29 +297,29 @@ class TemplateExtractor implements CrawlerVisitor {
     return undefined;
   }
 
-  visitProperty(
+  async visitPropertyAsync(
     parent: TypedValueWithPath,
     _key: string,
     path: string,
-    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
+    propertyValues: TypedValueWithPath | TypedValueWithPath[],
     _schema: InternalTypeSchema
-  ): void {
+  ): Promise<void> {
     // Scan for extensions throughout the resource that could contain SDC annotations
     const extensions = this.getTopLevelExtensions(path, propertyValues);
     if (extensions?.length) {
       for (const extension of extensions) {
         this.checkCurrentContext(parent.path);
-        this.extensionHandler(extension.value as Extension)?.(extension, parent);
+        await this.extensionHandler(extension.value as Extension)?.(extension, parent);
       }
     }
   }
 
-  private allocateId(extension: TypedValueWithPath, _parent: TypedValueWithPath): void {
+  private async allocateId(extension: TypedValueWithPath, _parent: TypedValueWithPath): Promise<void> {
     const name = (extension.value as Extension).valueString;
     this.variables['%' + name] = { type: 'string', value: `urn:uuid:${randomUUID()}` };
   }
 
-  private processContext(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
+  private async processContext(extension: TypedValueWithPath, parent: TypedValueWithPath): Promise<void> {
     let results: TypedValue[];
     const { valueString, valueExpression } = extension.value as Extension;
     if (valueString) {
@@ -342,7 +346,7 @@ class TemplateExtractor implements CrawlerVisitor {
     this.makePatch(results, parent.path, parent.value, extension);
   }
 
-  private processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
+  private async processValue(extension: TypedValueWithPath, parent: TypedValueWithPath): Promise<void> {
     const { valueString: expression } = extension.value as Extension;
     const path = parent.path;
     const context = this.currentContext();
@@ -421,7 +425,7 @@ class TemplateExtractor implements CrawlerVisitor {
    * @param extension - The templateExtract extension.
    * @param parent - The element containing the extension.
    */
-  private extractIntoTemplate(extension: TypedValueWithPath, parent: TypedValueWithPath): void {
+  private async extractIntoTemplate(extension: TypedValueWithPath, parent: TypedValueWithPath): Promise<void> {
     // Clone the template resource specified in the extension
     const templateRef = getExtension(extension.value, 'template')?.valueReference?.reference ?? '';
     const template = this.templates[templateRef];
@@ -433,7 +437,7 @@ class TemplateExtractor implements CrawlerVisitor {
     for (const value of contextValues) {
       // Scan template resource and evaluate expressions to compute inserted values
       this.enterContext(template.type, [value]);
-      crawlTypedValue(template, this, { skipMissingProperties: true });
+      await crawlTypedValueAsync(template, this, { skipMissingProperties: true });
 
       // Insert values into template resource and add to transaction Bundle
       const resource = deepClone(template.value);
