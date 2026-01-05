@@ -41,6 +41,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Send the report via email
   await medplum.sendEmail({
     to: REPORT_EMAILS,
+    bcc: "accounting@medplum.com",
     subject: `Resource Usage Report - ${project?.name || projectId || 'Unknown'}`,
     text: `Please find attached the resource usage report for project "${project?.name || projectId || 'Unknown'}".\n\nGenerated: ${new Date().toISOString()}\n\n`,
     attachments: [
