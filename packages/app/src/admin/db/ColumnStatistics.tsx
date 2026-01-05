@@ -90,7 +90,7 @@ export function ColumnStatistics(): JSX.Element {
   }
 
   const statTdProps = {
-    onClick: (value: string | number | undefined) => {
+    onClick: (value: StatValue) => {
       setModalTitle('Details');
       setModalContent(<pre>{value}</pre>);
       openModal();
@@ -281,13 +281,14 @@ export function ColumnStatistics(): JSX.Element {
   );
 }
 
-function StatTd({
-  value,
-  onClick,
-}: {
-  value: string | number | undefined;
-  onClick?: (value: string | number | undefined) => void;
-}): JSX.Element {
+type StatValue = string | number | undefined;
+
+interface StatTdProps {
+  readonly value: StatValue;
+  readonly onClick?: (value: StatValue) => void;
+}
+
+function StatTd({ value, onClick }: StatTdProps): JSX.Element {
   return (
     <Table.Td style={{ cursor: 'pointer' }} onClick={() => onClick?.(value)}>
       {formatValue(value)}
@@ -295,7 +296,7 @@ function StatTd({
   );
 }
 
-function formatValue(val: string | number | undefined): string | number | undefined {
+function formatValue(val: StatValue): StatValue {
   if (typeof val === 'string') {
     return val.length > 30 ? val.substring(0, 30) + '...' : val;
   }
