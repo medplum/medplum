@@ -42,7 +42,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   await medplum.sendEmail({
     to: REPORT_EMAILS,
     subject: `Resource Usage Report - ${project?.name || projectId || 'Unknown'}`,
-    text: `Please find attached the resource usage report for project "${project?.name || projectId || 'Unknown'}".\n\nGenerated: ${new Date().toISOString()}`,
+    text: `Please find attached the resource usage report for project "${project?.name || projectId || 'Unknown'}".\n\nGenerated: ${new Date().toISOString()}\n\n`,
     attachments: [
       {
         filename: `resource-usage-${projectId}-${new Date().toISOString().split('T')[0]}.csv`,
