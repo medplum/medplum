@@ -427,6 +427,14 @@
         {
           "datatype": "RelatedPerson",
           "documentLocation": "resource"
+        },
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
         }
       ],
       "path": "AuditEvent.agent.who",
@@ -1205,7 +1213,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Identifier of who",
-      "expression": "AuditEvent.agent.who.where(resolve() is Patient) | AuditEvent.entity.what.where(resolve() is Patient)"
+      "expression": "AuditEvent.agent.who.where((resolve() is Patient)) | AuditEvent.entity.what.where((resolve() is Patient))"
     },
     {
       "name": "policy",

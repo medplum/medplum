@@ -1526,7 +1526,7 @@
       "name": "patient",
       "type": "reference",
       "description": "Search by patient",
-      "expression": "Task.for.where(resolve() is Patient)"
+      "expression": "Task.for.where((resolve() is Patient))"
     },
     {
       "name": "performer",
