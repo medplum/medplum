@@ -447,8 +447,8 @@ Here is an example of a Schedule with multiple service types, each with its own 
 ```
 
 In this example:
-- Cardiac surgery availability is defined in `America/Los_Angeles` timezone (Mon-Wed 11am-3pm Pacific)
-- Follow-up visit availability is defined in `America/New_York` timezone (Mon-Wed 9am-5pm Eastern)
+- Cardiac surgery availability is defined in `America/Los_Angeles` timezone (Mon-Wed 11am-3pm America/Los Angeles)
+- Call Center availability is defined in `America/New_York` timezone (Mon-Wed 9am-5pm Eastern)
 - Each service type's availability times are interpreted independently based on their respective timezones
 
 
