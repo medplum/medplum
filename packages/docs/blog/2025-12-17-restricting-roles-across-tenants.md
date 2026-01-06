@@ -10,343 +10,46 @@ import TabItem from '@theme/TabItem';
 
 # Tenant Isolation Approaches in Medplum
 
-In Medplum, you can build your tenancy model around any FHIR resource. Common examples include using `Organization`, `HealthcareService`, or `CareTeam` as tenants. 
+In healthcare applications, practitioners often work across multiple organizational boundaries. A doctor might work at multiple clinics, a nurse might be part of several care teams, or a care coordinator might manage patients across different healthcare services. Each of these—clinics, care teams, and healthcare services—represents a distinct **tenant** in your system: a collection of resources (patients, observations, encounters, etc.) that should be logically grouped together.
 
-But what happens when a user belongs to multiple tenants? This is a common scenario when a user works for multiple organizations, services or teams. 
+In Medplum, you can build your tenancy model around any FHIR resource type. Common examples include:
+- **`Organization`**: Different clinics, practices, or healthcare organizations
+- **`HealthcareService`**: Different departments or services (e.g., Cardiology Department, Oncology Department)
+- **`CareTeam`**: Different care teams (e.g., Diabetes Care Team, Hypertension Care Team)
 
-And in that case, how can you make sure the user can only access the data for the tenant they are currently logged in to?
+For a comprehensive guide on how to set up multi-tenancy in Medplum—including data modeling, compartments, propagation, and user enrollment—see our [Multi-Tenant Access Control documentation](/docs/access/multi-tenant-access-policy).
 
-In this post, we'll explore two main concepts:
-* **Concept 1: How to Design a Model to Represent Your Tenants as Different Resource Types**
-* **Concept 2: How to Ensure Your Application Can Be Contained to Just One Tenant at a Time When a User Belongs to Multiple Tenants**
+This blog post focuses on a specific challenge: **What happens when a user belongs to multiple tenants?** And more importantly, **how can you ensure your application restricts access to only one tenant at a time?**
 
 <!-- truncate -->
 
-## Concept 1: How to Design a Model to Represent Your Tenants as Different Resource Types {#concept-1-how-to-design-a-model-to-represent-your-tenants-as-different-resource-types}
+## Understanding API-Level Security and Isolation
 
-The foundation of Medplum's [standard multi tenancy model](/blog/multi-tenant-mso) is built on two key patterns:
+Before diving into the solutions, it's important to understand what **API-level security and isolation** means, especially for non-technical readers.
 
-1. **Tenant references stored on resources**: You add tenant references to Patient resources (and propagate them to that Patient's related resources) using the [`$set-accounts`](/docs/api/fhir/operations/patient-set-accounts) operation. This stores references in both `meta.accounts` and `meta.compartment`, which can then be queried using the `_compartment` search parameter.
+When a user logs into your application, they receive an **authentication token** (think of it as a digital key). This token is used to make requests to the Medplum API server to read or modify patient data, medical records, and other healthcare information.
 
-   _Note: for resources that are not related to the Patient (as defined by the Patient's [compartment definition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)), you can use the `$set-accounts` operation directly on the resource itself to add the tenant reference to that resource._
+**API-level isolation** refers to security controls that are enforced by the Medplum server itself—not just by your application's user interface. When properly configured, the server checks every request against the user's permissions and only allows access to data the user is authorized to see.
 
-2. **AccessPolicy parameters**: [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources reference the affiliated User's enrolled tenants via AccessPolicy parameters, which are then used in the AccessPolicy to restrict access.
+### Why This Matters: The Security Risk
 
-   _The most common pattern is using `Organization` resources as tenants (standard for Managed Service Organizations), but the following examples show how to use `HealthcareService` (for service-based access) or `CareTeam` (for care coordination scenarios). The same patterns can be applied to other resource types._
+Here's the critical security concern: **If a bad actor obtains a user's authentication token and knows how to construct FHIR API requests, they could potentially access data from all tenants that user has access to—even if your application's UI only shows one tenant at a time.**
 
+**The risks include:**
 
-Here is how you the [standard MSO multi tenancy model](/blog/multi-tenant-mso) could be used to organize your resources into tenants as either `Organization`, `HealthcareService`, or `CareTeam` resources:
+1. **Unauthorized Data Access**: An attacker with a stolen token could bypass your application's UI restrictions entirely and directly query the API to retrieve patient data from multiple tenants simultaneously.
 
-<Tabs groupId="tenant-type">
-  <TabItem value="organization" label="Organization">
+2. **Data Exfiltration**: They could systematically extract sensitive health information (PHI) from all tenants the user belongs to, not just the one currently displayed in your application.
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-graph TB
-    subgraph OrgSection[" "]
-        PracOrg[Practitioner/practitioner-1]
-        UserOrg[User/user-1]
-        PMOrg[ProjectMembership/membership-1]
-        Org1[Organization/clinic-a]
-        Org2[Organization/clinic-b]
-        PatOrg1[Patient/patient-1]
-        PatOrg2[Patient/patient-2]
-        PatOrgShared[Patient/patient-3<br/>Shared]
-        PracOrg --> UserOrg
-        UserOrg --> PMOrg
-        PMOrg --> Org1
-        PMOrg --> Org2
-        Org1 --> PatOrg1
-        Org1 --> PatOrgShared
-        Org2 --> PatOrg2
-        Org2 --> PatOrgShared
-    end
-    
-    style PracOrg fill:#e8f5e9
-    style UserOrg fill:#e8f5e9
-    style PMOrg fill:#fff4e1
-    style Org1 fill:#e1f5ff
-    style Org2 fill:#e1f5ff
-    style PatOrg1 fill:#e8f5e9
-    style PatOrg2 fill:#e8f5e9
-    style PatOrgShared fill:#fff4e1
-```
+3. **Compliance Violations**: Accessing data across tenant boundaries could violate HIPAA, state privacy laws, or organizational policies that require strict data isolation between different clinics, departments, or care teams.
 
-  </TabItem>
-  <TabItem value="healthcare-service" label="HealthcareService">
+4. **Cross-Tenant Data Leakage**: Even if your UI correctly filters data, an attacker making direct API calls could discover relationships, patient overlaps, or other sensitive information that should remain isolated between tenants.
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-graph TB
-    subgraph HSSection[" "]
-        PracHS[Practitioner/practitioner-1]
-        UserHS[User/user-1]
-        PMHS[ProjectMembership/membership-1]
-        HS1[HealthcareService/cardiology-service]
-        HS2[HealthcareService/oncology-service]
-        PatHS1[Patient/patient-1]
-        PatHS2[Patient/patient-2]
-        PatHSShared[Patient/patient-3<br/>Shared]
-        PracHS --> UserHS
-        UserHS --> PMHS
-        PMHS --> HS1
-        PMHS --> HS2
-        HS1 --> PatHS1
-        HS1 --> PatHSShared
-        HS2 --> PatHS2
-        HS2 --> PatHSShared
-    end
-    
-    style PracHS fill:#e8f5e9
-    style UserHS fill:#e8f5e9
-    style PMHS fill:#fff4e1
-    style HS1 fill:#e1f5ff
-    style HS2 fill:#e1f5ff
-    style PatHS1 fill:#e8f5e9
-    style PatHS2 fill:#e8f5e9
-    style PatHSShared fill:#fff4e1
-```
+**The key question**: Does your security model rely solely on your application's UI to restrict access, or does the API server itself enforce single-tenant isolation?
 
-  </TabItem>
-  <TabItem value="careteam" label="CareTeam">
+This blog post explores different approaches to ensure that even if someone gets hold of an authentication token, the API server itself will restrict access to only one tenant's data at a time—providing true API-level security.
 
-```mermaid
-%%{init: {'theme': 'neutral' }}%%
-graph TB
-    subgraph CTSection[" "]
-        PracCT[Practitioner/practitioner-1]
-        UserCT[User/user-1]
-        PMCT[ProjectMembership/membership-1]
-        CT1[CareTeam/diabetes-care-team]
-        CT2[CareTeam/hypertension-care-team]
-        PatCT1[Patient/patient-1]
-        PatCT2[Patient/patient-2]
-        PatCTShared[Patient/patient-3<br/>Shared]
-        PracCT --> UserCT
-        UserCT --> PMCT
-        PMCT --> CT1
-        PMCT --> CT2
-        CT1 --> PatCT1
-        CT1 --> PatCTShared
-        CT2 --> PatCT2
-        CT2 --> PatCTShared
-    end
-    
-    style PracCT fill:#e8f5e9
-    style UserCT fill:#e8f5e9
-    style PMCT fill:#fff4e1
-    style CT1 fill:#e1f5ff
-    style CT2 fill:#e1f5ff
-    style PatCT1 fill:#e8f5e9
-    style PatCT2 fill:#e8f5e9
-    style PatCTShared fill:#fff4e1
-```
-
-  </TabItem>
-</Tabs>
-
-### Enrolling Patients in Tenants with `$set-accounts`
-
-Use the `$set-accounts` operation to enroll Patients in tenants. The `propagate` parameter ensures all resources in the Patient compartment inherit the tenant reference:
-
-<Tabs groupId="tenant-type">
-  <TabItem value="organization" label="Organization">
-
-```typescript
-//Enrolling a Patient into clinic-a
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true  // Propagates to all resources in Patient compartment
-    }
-  ]
-});
-```
-
-  </TabItem>
-  <TabItem value="healthcare-service" label="HealthcareService">
-
-```typescript
-//Enrolling a Patient into cardiology-service
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
-
-  </TabItem>
-  <TabItem value="careteam" label="CareTeam">
-
-```typescript
-//Enrolling a Patient into diabetes-care-team
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
-
-  </TabItem>
-</Tabs>
-
-### Configuring AccessPolicy with Tenant Parameters
-
-Your AccessPolicy uses parameterized variables (like `%organization`, `%healthcare_service`, or `%care_team`) that get replaced at runtime with the tenant references from the user's ProjectMembership:
-
-<Tabs groupId="tenant-type">
-  <TabItem value="organization" label="Organization">
-
-```json
-{
-  "resourceType": "AccessPolicy",
-  "name": "MSO Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%organization"
-    },
-    {
-      "resourceType": "Observation",
-      "criteria": "Observation?_compartment=%organization"
-    }
-  ]
-}
-```
-
-  </TabItem>
-  <TabItem value="healthcare-service" label="HealthcareService">
-
-```json
-{
-  "resourceType": "AccessPolicy",
-  "name": "Service-Based Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%healthcare_service"
-    },
-    {
-      "resourceType": "Encounter",
-      "criteria": "Encounter?_compartment=%healthcare_service"
-    }
-  ]
-}
-```
-
-  </TabItem>
-  <TabItem value="careteam" label="CareTeam">
-
-```json
-{
-  "resourceType": "AccessPolicy",
-  "name": "Care Team Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%care_team"
-    },
-    {
-      "resourceType": "CarePlan",
-      "criteria": "CarePlan?_compartment=%care_team"
-    }
-  ]
-}
-```
-
-  </TabItem>
-</Tabs>
-
-### Setting Tenant Parameters on ProjectMembership
-
-The user's ProjectMembership references their enrolled tenants via the `access.parameter` array. Each parameter name must match the variable name used in the AccessPolicy:
-
-<Tabs groupId="tenant-type">
-  <TabItem value="organization" label="Organization">
-
-```json
-{
-  "resourceType": "ProjectMembership",
-  "access": [
-    {
-      "policy": { "reference": "AccessPolicy/mso-policy" },
-      "parameter": [
-        {
-          "name": "organization",
-          "valueReference": { "reference": "Organization/clinic-a" }
-        }
-      ]
-    }
-  ]
-}
-```
-
-  </TabItem>
-  <TabItem value="healthcare-service" label="HealthcareService">
-
-```json
-{
-  "resourceType": "ProjectMembership",
-  "access": [
-    {
-      "policy": { "reference": "AccessPolicy/service-policy" },
-      "parameter": [
-        {
-          "name": "healthcare_service",
-          "valueReference": { "reference": "HealthcareService/cardiology-service" }
-        }
-      ]
-    }
-  ]
-}
-```
-
-  </TabItem>
-  <TabItem value="careteam" label="CareTeam">
-
-```json
-{
-  "resourceType": "ProjectMembership",
-  "access": [
-    {
-      "policy": { "reference": "AccessPolicy/careteam-policy" },
-      "parameter": [
-        {
-          "name": "care_team",
-          "valueReference": { "reference": "CareTeam/diabetes-care-team" }
-        }
-      ]
-    }
-  ]
-}
-```
-
-  </TabItem>
-</Tabs>
-
-## Concept 2: How to Ensure Your Application Can Be Contained to Just One Tenant at a Time When a User Belongs to Multiple Tenants {#concept-2-how-to-ensure-your-application-can-be-contained-to-just-one-tenant-at-a-time-when-a-user-belongs-to-multiple-tenants}
+## How to Ensure Your Application Can Be Contained to Just One Tenant at a Time When a User Belongs to Multiple Tenants
 
 ### The Challenge: Multiple Tenant Memberships
 
