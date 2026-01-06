@@ -20,7 +20,6 @@ describe('ResourceCreatePage', () => {
     vi.clearAllMocks();
     navigateSpy = vi.fn();
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy as any);
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = async (url: string): Promise<void> => {

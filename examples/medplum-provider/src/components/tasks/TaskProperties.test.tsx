@@ -5,7 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Organization, Patient, Practitioner, Task } from '@medplum/fhirtypes';
-import { MockClient, HomerSimpson } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskProperties } from './TaskProperties';
 
@@ -15,7 +15,6 @@ describe('TaskProperties', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (

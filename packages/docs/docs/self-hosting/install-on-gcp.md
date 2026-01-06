@@ -80,7 +80,7 @@ cd terraform/gcp/
 
 If you want to use a [remote backend](https://developer.hashicorp.com/terraform/language/backend) for storing the Terraform state, uncomment and configure the backend.tf file.
 
-#### **Initialize Terraform** {#initialize-terraform}
+#### Initialize Terraform {#initialize-terraform}
 
 Modify the `terraform.tfvars` file to enter your project-specific values:
 
@@ -234,7 +234,7 @@ The helm chart can be found in the `helm` directory.
   - The ingress is optional. Users can choose to expose the API with other methods
 - Service Account
 
-#### **Deploy your backend API to the GKE cluster using Helm:**
+#### Deploy your backend API to the GKE cluster using Helm:
 
 #### Configure kubectl {#configure-kubectl}
 

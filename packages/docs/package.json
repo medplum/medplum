@@ -52,6 +52,7 @@
     "@medplum/fhirtypes": "5.0.10",
     "@medplum/mock": "5.0.10",
     "@svgr/webpack": "8.1.0",
+    "@tabler/icons-react": "3.36.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
     "open-color": "1.9.1",

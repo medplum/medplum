@@ -24,3 +24,5 @@ export const TASK_STATUSES: Task['status'][] = [
   'failed',
   'completed',
 ];
+
+export const TASK_PRIORITIES: Task['priority'][] = ['routine', 'urgent', 'asap', 'stat'];

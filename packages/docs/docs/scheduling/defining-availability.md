@@ -32,6 +32,12 @@ The diagram below illustrates how these resources work together. The key takeawa
 - Multiple Practitioners can reference the same ActivityDefinition through their `Schedule.serviceType`, allowing shared defaults across providers
 - [Slot](/docs/api/fhir/resources/slot) resources **only** represent time that is explicitly blocked (either by booked appointments or unavailability)
 
+:::note One-to-One Actor-Schedule Relationship
+
+This model expects a **one-to-one relationship** between actors and Schedules. While FHIR's `Schedule.actor` field allows multiple actor references (min: 1, max: *), Medplum's scheduling system is designed around the pattern where each Schedule has a single actor reference. This simplifies availability management and aligns with common scheduling workflows where each Practitioner, Location, or Device maintains its own independent schedule.
+
+:::
+
 The system supports two levels of configuration:
 - **[Actor-level defined availability](#actor-level-availability)**: Defined directly on a Practitioner's or Location's [`Schedule`](/docs/api/fhir/resources/schedule) using the `scheduling-parameters` extension
 - **[Service type-level defined availability](#service-level-availability)**: Defined on [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) and referenced by matching `Schedule.serviceType` codes
@@ -75,6 +81,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 |-------|------|------------|----------|----------------------|---------------------------|
 | `serviceType` | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only | Optional | Applies configuration only to the specified service type, overriding defaults for that service | Values apply as the default for all services |
 | `availability` | [Timing](/docs/api/fhir/datatypes/timing) | Schedule only | Optional | Bookings must fully fit within the recurring windows | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `timezone` | Code | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
 | `bufferBefore` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires prep time before start to also be free | No prep time required |
 | `bufferAfter` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires cleanup time after end to also be free | No cleanup time required |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Start times must align to the interval (e.g., every 15 minutes) | Start times are not constrained by an interval grid |
@@ -96,13 +103,20 @@ All scheduling constraints are managed through a single consolidated extension: 
       }
     },
     
+    // Optional: specify timezone for availability interpretation (Schedule only)
+    // Falls back to Schedule's actor timezone if not specified
+    {
+      "url": "timezone",
+      "valueCode": "America/Los_Angeles"
+    },
+    
     // Recurring availability (Schedule only)
     {
       "url": "availability",
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "wed", "fri"],
-          "timeOfDay": ["09:00:00"],
+          "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles timezone
           "duration": 8,
           "durationUnit": "h"
         }
@@ -339,6 +353,103 @@ Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that bloc
 
 - **With serviceType**: Blocks only that specific service
 - **Without serviceType**: Blocks all services
+
+### Timezone per Scheduling Parameters Entry
+
+The `timezone` parameter allows you to specify different timezones for different service types within the same Schedule. This is useful when a provider needs to define availability in different timezones for different services (e.g., a doctor who provides cardiac surgery where they might travel to in one timezone and call center availability in another timezone).
+
+**Fallback Logic:** If no timezone is specified in the `scheduling-parameters` extension, then the availability will be interpreted in the timezone defined on the Schedule's actor reference (Practitioner, Location, or Device). It looks for the FHIR sanctioned timezone extension:
+
+```tsx
+{
+  "resourceType": "Practitioner",
+  "id": "dr-smith",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/StructureDefinition/timezone",
+      "valueCode": "America/Los_Angeles"
+    }
+  ]
+}
+```
+
+**Timezone Resolution Order:**
+1. If `timezone` is specified in the `scheduling-parameters` extension, use that timezone
+2. Otherwise, fall back to the timezone defined on the Schedule's actor reference (Practitioner, Location, or Device)
+
+**Important Notes:**
+- `timezone` is only available on Schedule resources, not ActivityDefinition
+- The timezone value should be an IANA timezone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
+- When `timezone` is specified, all `timeOfDay` values in the `availability` timing are interpreted in that timezone
+
+Here is an example of a Schedule with multiple service types, each with its own timezone:
+
+```tsx
+{
+  "resourceType": "Schedule",
+  "id": "dr-smith-schedule",
+  "actor": [{"reference": "Practitioner/dr-smith"}],
+  "extension": [
+    {
+      "url": "http://medplum.com/fhir/StructureDefinition/scheduling-parameters",
+      "extension": [
+        {
+          "url": "serviceType",
+          "valueCodeableConcept": {
+            "coding": [{"code": "cardiac-surgery"}]
+          }
+        },
+        {
+          "url": "timezone",
+          "valueCode": "America/Los_Angeles"
+        },
+        {
+          "url": "availability",
+          "valueTiming": {
+            "repeat": {
+              "dayOfWeek": ["mon", "tue", "wed"],
+              "timeOfDay": ["11:00:00"],  // Interpreted in America/Los_Angeles
+              "duration": 4,
+              "durationUnit": "h"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "url": "http://medplum.com/fhir/StructureDefinition/scheduling-parameters",
+      "extension": [
+        {
+          "url": "timezone",
+          "valueCode": "America/New_York"
+        },
+        {
+          "url": "serviceType",
+          "valueCodeableConcept": {
+            "coding": [{"code": "call-center-availability"}]
+          }
+        },
+        {
+          "url": "availability",
+          "valueTiming": {
+            "repeat": {
+              "dayOfWeek": ["mon", "tue", "wed"],
+              "timeOfDay": ["09:00:00"],  // Interpreted in America/New_York
+              "duration": 8,
+              "durationUnit": "h"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+In this example:
+- Cardiac surgery availability is defined in `America/Los_Angeles` timezone (Mon-Wed 11am-3pm America/Los Angeles)
+- Call Center availability is defined in `America/New_York` timezone (Mon-Wed 9am-5pm Eastern)
+- Each service type's availability times are interpreted independently based on their respective timezones
 
 
 ## Examples
