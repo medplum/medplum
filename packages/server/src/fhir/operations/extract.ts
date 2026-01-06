@@ -337,7 +337,7 @@ class TemplateExtractor implements AsyncCrawlerVisitor {
           results = this.evaluateExpression(parent.path, expression);
           break;
         case 'application/x-fhir-query': {
-          const searchReq = parseXFhirQuery(expression ?? '', this.variables);
+          const searchReq = parseXFhirQuery(expression ?? '', this.variables, this.currentContext()?.values);
           const bundle = await this.repo.search(searchReq);
           results = [toTypedValue(bundle)];
           break;

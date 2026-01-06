@@ -6,13 +6,16 @@ import type {
   BundleEntry,
   ContactPoint,
   Expression,
+  Medication,
   OperationOutcome,
   OperationOutcomeIssue,
   Organization,
   Parameters,
   Patient,
+  Procedure,
   Questionnaire,
   QuestionnaireResponse,
+  Reference,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -971,36 +974,102 @@ describe('QuestionnaireResponse/$extract', () => {
   });
 
   test('X-FHIR-Query results stored in context', async () => {
-    const code = randomUUID();
-    await repo.createResource({
-      resourceType: 'Observation',
-      status: 'final',
-      code: { coding: [{ code }] },
-      valueString: 'acute',
+    const medication = await repo.createResource<Medication>({
+      resourceType: 'Medication',
+      status: 'active',
+      code: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '197877',
+            display: 'lidocaine 2.5 % / prilocaine 2.5 % Topical Cream',
+          },
+        ],
+      },
     });
     const questionnaire: Questionnaire = {
       resourceType: 'Questionnaire',
-      status: 'unknown',
+      status: 'draft',
       extension: [
         {
-          url: contextExtension,
-          valueExpression: {
-            language: 'application/x-fhir-query',
-            expression: `Observation?code=${code}&_count=1`,
-            name: 'Obs',
-          },
+          url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract',
+          extension: [{ url: 'template', valueReference: { reference: '#procedureTmpl' } }],
         },
-        { url: extractExtension, extension: [{ url: 'template', valueReference: { reference: '#org' } }] },
       ],
       contained: [
         {
-          resourceType: 'Organization',
-          id: 'org',
-          _name: { extension: [{ url: valueExtension, valueString: `%Obs.entry.resource.first().value + ' care'` }] },
-        } as unknown as Organization,
+          resourceType: 'Procedure',
+          id: 'procedureTmpl',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
+              valueExpression: {
+                language: 'application/x-fhir-query',
+                expression: "Medication?_count=1&code={{ item.where(linkId = 'topical-anesthetic').answer.value }}",
+                name: 'AnestheticBundle',
+              },
+            },
+          ],
+          status: 'in-progress',
+          code: {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '708803008',
+                display: 'Wedge resection of ingrowing toenail',
+              },
+            ],
+          },
+          subject: { display: 'John Doe' },
+          usedReference: [
+            {
+              extension: [
+                {
+                  url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext',
+                  valueString: '%AnestheticBundle.entry.resource.first()',
+                },
+              ],
+              _reference: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: "'Medication/' + id",
+                  },
+                ],
+              },
+              _display: {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue',
+                    valueString: 'code.coding.first().display',
+                  },
+                ],
+              },
+            } as unknown as Reference<Medication>,
+          ],
+        },
+      ],
+      item: [
+        {
+          linkId: 'topical-anesthetic',
+          type: 'choice',
+          answerValueSet: 'http://example.com/ValueSet/topical-anesthetic',
+          // Coding required, with initial value populated as an example
+          required: true,
+          initial: [{ valueCoding: { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197877' } }],
+        },
       ],
     };
-    const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'completed' };
+    const response: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      item: [
+        {
+          linkId: 'topical-anesthetic',
+          answer: [{ valueCoding: { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197877' } }],
+        },
+      ],
+    };
 
     const res = await request(app)
       .post(`/fhir/R4/QuestionnaireResponse/$extract`)
@@ -1020,6 +1089,10 @@ describe('QuestionnaireResponse/$extract', () => {
     expect(batch.entry).toHaveLength(1);
     const entry = batch.entry?.[0] as BundleEntry;
 
-    expect(entry.resource).toMatchObject<Organization>({ resourceType: 'Organization', name: 'acute care' });
+    expect(entry.resource).toMatchObject<Partial<Procedure>>({
+      resourceType: 'Procedure',
+      status: 'in-progress',
+      usedReference: [createReference(medication)],
+    });
   });
 });

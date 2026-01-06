@@ -344,6 +344,87 @@ The response to this questionnaire shown below yields the following `Patient` re
 [context-ext]: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-templateExtractContext.html
 [fhirpath]: https://hl7.org/fhir/fhirpath.html
 
+### Gathering Additional Data
+
+If data from additional resources is required to populate the templates, search queries can be executed as part of the
+extraction process and their results stored in context to be operated on by later expressions. Queries are attached in
+context extensions using the [`application/x-fhir-query` language][x-fhir-query] to describe the search request, with
+the option to embed FHIRPath expressions as needed to construct the query string:
+
+```json
+{
+  "resourceType": "Questionnaire",
+  "status": "draft",
+  "extension": [
+    {
+      "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+      "extension": [{ "url": "template", "valueReference": { "reference": "#procedureTmpl" } }]
+    }
+  ],
+  "contained": [
+    {
+      "resourceType": "Procedure",
+      "id": "procedureTmpl",
+      "extension": [
+        {
+          "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext",
+          "valueExpression": {
+            "language": "application/x-fhir-query",
+            // Search string constructed using embedded FHIRPath expression in curly braces
+            "expression": "Medication?_count=1&code={{ item.where(linkId = 'topical-anesthetic').answer.value }}",
+            // Search request is executed, with results Bundle placed into named context variable
+            // See https://hl7.org/fhir/R4/bundle.html#searchset
+            "name": "AnestheticBundle"
+          }
+        }
+      ],
+      "status": "in-progress",
+      "code": {
+        "coding": [
+          {
+            "system": "http://snomed.info/sct",
+            "code": "708803008",
+            "display": "Wedge resection of ingrowing toenail"
+          }
+        ]
+      },
+      "usedReference": [
+        {
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractContext",
+              // Extract resource from search results, if one exists
+              "valueString": "%AnestheticBundle.entry.resource.first()"
+            }
+          ],
+          "_reference": {
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                // Populate reference to existing resource on the server
+                "valueString": "'Medication/' + id"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "item": [
+    {
+      "linkId": "topical-anesthetic",
+      "type": "choice",
+      "answerValueSet": "http://example.com/ValueSet/topical-anesthetic",
+      // Coding required, with initial value populated as an example
+      "required": true,
+      "initial": [{ "valueCoding": { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197877" } }]
+    }
+  ]
+}
+```
+
+[x-fhir-query]: https://hl7.org/fhir/fhir-xquery.html
+
 ## Extraction API
 
 When responses to the annotated Questionnaire are received, they can be passed to the [`$extract` API][extract] to be
