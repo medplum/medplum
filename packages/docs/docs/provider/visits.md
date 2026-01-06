@@ -1,10 +1,12 @@
+---
+sidebar_position: 400
+---
+
 # Visits
 
 Visit management is at the heart of clinical documentation and patient care delivery. The Medplum Provider app provides comprehensive tools for documenting patient Visits, streamlining clinical workflows through Care Templates, and customizing documentation to meet specific practice needs. This section covers the essential Visit management functions.
 
----
-
-## **Understanding Visits**
+## Understanding Visits
 
 While "Visit" isn't a defined FHIR resource, we've combined the Appointment and Encounter resources into this single, simplified concept to improve the provider experience. Each Visit also automatically generates related FHIR resources:
 
@@ -15,13 +17,11 @@ While "Visit" isn't a defined FHIR resource, we've combined the Appointment and 
 3. **Billing Integration**
    - To simplify and automate billing, [ChargeItems](../api/fhir/resources/chargeitem) and [Claims](../api/fhir/resources/claim) are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
 
----
-
-## **Documenting Visits**
+## Documenting Visits
 
 Proper Visit documentation ensures continuity of care, supports clinical decision-making, meets regulatory requirements, and facilitates billing and coding accuracy. The visit documentation system captures all aspects of patient encounters in a structured, searchable format.
 
-## **How to Start a New Visit**
+## How to Start a New Visit
 
 1. **Navigate to a Patient’s Visits Page**
    - Navigate to a Patient Profile page by using the global search field or through the “Patients” section in the left navigation menu
@@ -51,7 +51,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 
 ---
 
-## **Setting Up Care Templates (via Medplum App)**
+## Setting Up Care Templates (via Medplum App)
 
 Before setting up your Care Templates, it’s important to understand the separate but connected resources they incorporate. In the Medplum App, Care Templates are represented by the PlanDefinition FHIR resource which can include other, linked resources:
 
@@ -63,7 +63,7 @@ Before setting up your Care Templates, it’s important to understand the separa
 - **ChargeItemDefinition**
   - For defining the cost of the Visit and related Task/ActivityDefinition/etc., which will be passed through to the billing process
 
-### **How to Set up a Care Template**
+### How to Set up a Care Template
 
 There are two main approaches for setting up Care Templates. The first is by creating an initial Care Template (as a **PlanDefinition**) to create an outline of the Visit requirements, which can then be linked to other resources as they are created subsequently. The second approach is to create the linked resources first and then create the PlanDefinition, linking the other resources where appropriate (**Questionnaire**s, **ActivityDefinition**s, **ServiceRequest**s, etc.).
 
@@ -463,7 +463,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
    - Select this Care Template, complete the other required fields, and then click “Create” to create a new Visit
    - On the “Note & Tasks” tab you should see the Tasks that were added in the Medplum App along with content for any associated Questionnaires and/or ActivityDefinitions.
 
-### **How to Add Questionnaires**
+### How to Add Questionnaires
 
 1. **Navigate to the Questionnaire Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “Questionnaire”
@@ -488,7 +488,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 4. **Test & Verify**
    - After saving, click the “Preview” tab on the Questionnaire page to preview how your Questionnaire will appear in the Provider App.
 
-### **How to Set Up ChargeItems**
+### How to Set Up ChargeItems
 
 1. **Navigate to the ChargeItemDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “ChargeItemDefinition”
@@ -504,7 +504,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
        - Amount (the dollar amount to be billed to payors)
    - After adding these definition types, scroll to the bottom of the page and click “Create” to create your ChargeItemDefinition
 
-### **How to Add ActivityDefinitions**
+### How to Add ActivityDefinitions
 
 1. **Navigate to the ActivityDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “ActivityDefinition”

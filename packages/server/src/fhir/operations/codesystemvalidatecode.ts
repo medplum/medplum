@@ -31,13 +31,14 @@ type CodeSystemValidateCodeParameters = {
  */
 export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
   let codeSystem: WithId<CodeSystem> | undefined;
   const url = params.url ?? params.coding?.system;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (url) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', url, { version: params.version }).catch(
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', url, { version: params.version }).catch(
       () => undefined
     );
   }

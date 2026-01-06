@@ -4,8 +4,8 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Bundle, BundleEntry, Project } from '@medplum/fhirtypes';
 
-// Email address to receive the resource usage report
-const REPORT_EMAIL = 'admin@example.com';
+// Email addresses to receive the resource usage report
+const REPORT_EMAILS = ['admin@example.com', 'admin2@example.com'];
 
 /**
  * Bot handler to generate and email a resource usage report for the current project.
@@ -40,9 +40,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   // Send the report via email
   await medplum.sendEmail({
-    to: REPORT_EMAIL,
+    to: REPORT_EMAILS,
+    bcc: 'accounting@medplum.com',
     subject: `Resource Usage Report - ${project?.name || projectId || 'Unknown'}`,
-    text: `Please find attached the resource usage report for project "${project?.name || projectId || 'Unknown'}".\n\nGenerated: ${new Date().toISOString()}`,
+    text: `Please find attached the resource usage report for project "${project?.name || projectId || 'Unknown'}".\n\nGenerated: ${new Date().toISOString()}\n\n`,
     attachments: [
       {
         filename: `resource-usage-${projectId}-${new Date().toISOString().split('T')[0]}.csv`,
@@ -51,7 +52,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     ],
   });
 
-  console.log(`Resource usage report emailed to ${REPORT_EMAIL}`);
+  console.log(`Resource usage report emailed to ${REPORT_EMAILS.join(', ')}`);
 
   return { success: true };
 }
@@ -64,10 +65,19 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  * @returns CSV string content with BOM for Excel compatibility
  */
 function generateCsvReport(project: Project | undefined, counts: Record<string, number>): string {
+  // Calculate totals
+  const totalResources = Object.values(counts).reduce((sum, count) => sum + (count || 0), 0);
+  const auditEventCount = counts['AuditEvent'] || 0;
+  const totalResourcesMinusAuditEvent = totalResources - auditEventCount;
+
   // Build CSV rows
   const output: string[][] = [
     ['Project', project?.name || project?.id || 'Unknown'],
     ['Generated', new Date().toISOString()],
+    [], // Empty row for spacing
+    ['Summary', ''],
+    ['Total Resources', totalResources.toString()],
+    ['Counted Resources (total excluding AuditEvent)', totalResourcesMinusAuditEvent.toString()],
     [], // Empty row for spacing
     ['Resource Type', 'Count'],
   ];

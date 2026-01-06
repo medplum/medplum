@@ -7,7 +7,7 @@ import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
-import { getRequestContext, tryRunInRequestContext } from '../context';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
@@ -240,12 +240,12 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
 }
 
 export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
-  const { requestId, traceId } = getRequestContext();
+  const ctx = tryGetRequestContext();
   return {
     type: 'custom',
     asyncJobId: asyncJob.id,
-    requestId,
-    traceId,
+    requestId: ctx?.requestId,
+    traceId: ctx?.traceId,
   };
 }
 
@@ -253,13 +253,13 @@ export function prepareDynamicMigrationJobData(
   asyncJob: WithId<AsyncJob>,
   migrationActions: MigrationAction[]
 ): DynamicPostDeployJobData {
-  const { requestId, traceId } = getRequestContext();
+  const ctx = tryGetRequestContext();
   return {
     type: 'dynamic',
     migrationActions,
     asyncJobId: asyncJob.id,
-    requestId,
-    traceId,
+    requestId: ctx?.requestId,
+    traceId: ctx?.traceId,
   };
 }
 

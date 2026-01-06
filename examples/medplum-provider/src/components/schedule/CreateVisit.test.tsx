@@ -95,10 +95,8 @@ describe('CreateVisit', () => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
       });
 
-      await act(async () => {
-        const submitButton = screen.getByRole('button', { name: /Create Visit/i });
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByRole('button', { name: /Create Visit/i });
+      await user.click(submitButton);
 
       await waitFor(() => {
         expect(screen.getByText(/Please fill out required fields/i)).toBeInTheDocument();
@@ -115,10 +113,8 @@ describe('CreateVisit', () => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
       });
 
-      await act(async () => {
-        const submitButton = screen.getByRole('button', { name: /Create Visit/i });
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByRole('button', { name: /Create Visit/i });
+      await user.click(submitButton);
 
       // Verify error notification is shown instead of proceeding
       // Use getAllByText since notifications may persist from previous tests

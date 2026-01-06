@@ -101,6 +101,28 @@ describe('Reindex Worker', () => {
 
   const idSystem = 'http://example.com/mrn';
 
+  test('prepare job', async () => {
+    // without request context
+    const jobData1 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+    expect(jobData1).toMatchObject<Partial<ReindexJobData>>({
+      resourceTypes: ['Patient'],
+      asyncJobId: 'asyncJobId1',
+      requestId: undefined,
+      traceId: undefined,
+    });
+
+    // with request context
+    await withTestContext(() => {
+      const jobData2 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+      expect(jobData2).toMatchObject<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        asyncJobId: 'asyncJobId1',
+        requestId: expect.any(String),
+        traceId: expect.any(String),
+      });
+    });
+  });
+
   test('Multiple iterations when more than one batchSize exist', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({

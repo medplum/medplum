@@ -52,6 +52,7 @@
     "@medplum/fhirtypes": "5.0.10",
     "@medplum/mock": "5.0.10",
     "@svgr/webpack": "8.1.0",
+    "@tabler/icons-react": "3.36.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
     "open-color": "1.9.1",
@@ -60,8 +61,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-intersection-observer": "10.0.0",
-    "react-router": "7.10.1",
-    "react-router-dom": "7.10.1",
+    "react-router": "7.11.0",
+    "react-router-dom": "7.11.0",
     "typescript": "5.9.3",
     "url-loader": "4.1.1"
   },

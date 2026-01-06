@@ -4,8 +4,8 @@ import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
-import type { ClinicalImpression, Encounter, Practitioner, Task } from '@medplum/fhirtypes';
-import { HomerSimpson, DrAliceSmith, MockClient } from '@medplum/mock';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Task } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { EncounterChart } from './EncounterChart';
@@ -56,8 +56,6 @@ describe('EncounterChart', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(HomerSimpson);
-    await medplum.createResource(DrAliceSmith);
     await medplum.createResource(mockPractitioner);
     await medplum.createResource(mockEncounter);
     await medplum.createResource(mockClinicalImpression);
@@ -145,6 +143,65 @@ describe('EncounterChart', () => {
     // The notes tab should be active by default
     await waitFor(() => {
       expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+    });
+  });
+
+  test('switches to details tab when clicked', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Visit')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+    });
+
+    const detailsTab = screen.getByText('Details & Billing');
+    await user.click(detailsTab);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
+    });
+  });
+
+  test('switches back to notes tab when clicked', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Visit')).toBeInTheDocument();
+    });
+
+    const detailsTab = screen.getByText('Details & Billing');
+    await user.click(detailsTab);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
+    });
+
+    const notesTab = screen.getByText('Note & Tasks');
+    await user.click(notesTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+    });
+  });
+
+  test('displays billing tab content when details tab is active', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await waitFor(() => {
+      expect(screen.getByText('Visit')).toBeInTheDocument();
+    });
+
+    const detailsTab = screen.getByText('Details & Billing');
+    await user.click(detailsTab);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Fill chart note')).not.toBeInTheDocument();
     });
   });
 
@@ -241,6 +298,435 @@ describe('EncounterChart', () => {
         'ClinicalImpression',
         expect.stringContaining('encounter=Encounter/encounter-123')
       );
+    });
+  });
+
+  describe('signing functionality', () => {
+    const finishedEncounter: Encounter = {
+      ...mockEncounter,
+      status: 'finished',
+    };
+
+    const getSignButton = (): HTMLElement | null => {
+      const buttons = screen.getAllByRole('button');
+      return buttons.find((btn) => btn.querySelector('svg')) || null;
+    };
+
+    test('signs without locking - textarea remains enabled', async () => {
+      const user = userEvent.setup();
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      // Mock searchResources to return empty initially, then return provenance after signing
+      let provenanceReturned = false;
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return Promise.resolve(provenanceReturned ? [mockProvenance] : []) as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return Promise.resolve([mockClinicalImpression]) as any;
+        }
+        if (resourceType === 'Task') {
+          return Promise.resolve([]) as any;
+        }
+        return Promise.resolve([]) as any;
+      });
+
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        if (resource.resourceType === 'Provenance') {
+          provenanceReturned = true;
+          return mockProvenance as any;
+        }
+        return resource;
+      });
+
+      await medplum.createResource(finishedEncounter);
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const signButton = getSignButton();
+        expect(signButton).toBeInTheDocument();
+      });
+
+      const signButton = getSignButton();
+      if (signButton) {
+        await user.click(signButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Just Sign')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Just Sign'));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Provenance',
+            target: [createReference(finishedEncounter)],
+          })
+        );
+      });
+
+      // Wait for modal to close and component to update
+      // Textarea should still be enabled after signing without locking
+      await waitFor(
+        () => {
+          const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+          const textarea = chartNoteCard?.querySelector('textarea');
+          expect(textarea).not.toBeDisabled();
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    test('signs with locking - textarea becomes disabled', async () => {
+      const user = userEvent.setup();
+      const completedClinicalImpression: ClinicalImpression = {
+        ...mockClinicalImpression,
+        status: 'completed',
+      };
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      // Mock searchResources to return empty initially, then return provenance after signing
+      let provenanceReturned = false;
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return Promise.resolve(provenanceReturned ? [mockProvenance] : []) as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return Promise.resolve([completedClinicalImpression]) as any;
+        }
+        if (resourceType === 'Task') {
+          return Promise.resolve([]) as any;
+        }
+        return Promise.resolve([]) as any;
+      });
+
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        if (resource.resourceType === 'Provenance') {
+          provenanceReturned = true;
+          return mockProvenance as any;
+        }
+        return resource;
+      });
+
+      await medplum.createResource(finishedEncounter);
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const signButton = getSignButton();
+        expect(signButton).toBeInTheDocument();
+      });
+
+      const signButton = getSignButton();
+      if (signButton) {
+        await user.click(signButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Sign & Lock Note')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Sign & Lock Note'));
+
+      await waitFor(() => {
+        expect(medplum.createResource).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Provenance',
+            target: [createReference(finishedEncounter)],
+          })
+        );
+      });
+
+      // Wait for modal to close and component to update
+      // Textarea should be disabled after signing with locking
+      await waitFor(
+        () => {
+          const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+          const textarea = chartNoteCard?.querySelector('textarea');
+          expect(textarea).toBeDisabled();
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    test('signs with locking - completes incomplete tasks', async () => {
+      const user = userEvent.setup();
+      const incompleteTask: Task = {
+        ...mockTask,
+        id: 'task-incomplete',
+        status: 'in-progress',
+      };
+      const completedTask: Task = {
+        ...incompleteTask,
+        status: 'completed',
+      };
+
+      const completedClinicalImpression: ClinicalImpression = {
+        ...mockClinicalImpression,
+        status: 'completed',
+      };
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      await medplum.createResource(incompleteTask);
+      let provenanceReturned = false;
+      vi.spyOn(medplum, 'updateResource').mockResolvedValue(completedTask as any);
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        if (resource.resourceType === 'Provenance') {
+          provenanceReturned = true;
+          return mockProvenance as any;
+        }
+        return resource;
+      });
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return Promise.resolve(provenanceReturned ? [mockProvenance] : []) as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return Promise.resolve([completedClinicalImpression]) as any;
+        }
+        if (resourceType === 'Task') {
+          return Promise.resolve([incompleteTask]) as any;
+        }
+        return Promise.resolve([]) as any;
+      });
+
+      await medplum.createResource(finishedEncounter);
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const signButton = getSignButton();
+        expect(signButton).toBeInTheDocument();
+      });
+
+      const signButton = getSignButton();
+      if (signButton) {
+        await user.click(signButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Sign & Lock Note')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Sign & Lock Note'));
+
+      // Verify that incomplete tasks are updated to completed
+      await waitFor(
+        () => {
+          expect(medplum.updateResource).toHaveBeenCalledWith(
+            expect.objectContaining({
+              resourceType: 'Task',
+              id: 'task-incomplete',
+              status: 'completed',
+            })
+          );
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    test('signs with locking - does not update already completed tasks', async () => {
+      const user = userEvent.setup();
+      const completedTask: Task = {
+        ...mockTask,
+        id: 'task-completed',
+        status: 'completed',
+      };
+
+      const completedClinicalImpression: ClinicalImpression = {
+        ...mockClinicalImpression,
+        status: 'completed',
+      };
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      await medplum.createResource(completedTask);
+      let provenanceReturned = false;
+      vi.spyOn(medplum, 'updateResource');
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        if (resource.resourceType === 'Provenance') {
+          provenanceReturned = true;
+          return mockProvenance as any;
+        }
+        return resource;
+      });
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return Promise.resolve(provenanceReturned ? [mockProvenance] : []) as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return Promise.resolve([completedClinicalImpression]) as any;
+        }
+        if (resourceType === 'Task') {
+          return Promise.resolve([completedTask]) as any;
+        }
+        return Promise.resolve([]) as any;
+      });
+
+      await medplum.createResource(finishedEncounter);
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      await waitFor(() => {
+        const signButton = getSignButton();
+        expect(signButton).toBeInTheDocument();
+      });
+
+      const signButton = getSignButton();
+      if (signButton) {
+        await user.click(signButton);
+      }
+
+      await waitFor(() => {
+        expect(screen.getByText('Sign & Lock Note')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('Sign & Lock Note'));
+
+      await waitFor(
+        () => {
+          expect(medplum.createResource).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
+
+      // Verify that completed tasks are not updated
+      const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+      const taskUpdateCalls = updateCalls.filter((call) => call[0]?.resourceType === 'Task');
+      expect(taskUpdateCalls).toHaveLength(0);
+    });
+
+    test('chart note is disabled when signed and locked', async () => {
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      const completedClinicalImpression: ClinicalImpression = {
+        ...mockClinicalImpression,
+        status: 'completed',
+      };
+
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return [mockProvenance] as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return [completedClinicalImpression] as any;
+        }
+        return [] as any;
+      });
+
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      // Textarea should be disabled when signed and locked
+      await waitFor(() => {
+        const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+        const textarea = chartNoteCard?.querySelector('textarea');
+        expect(textarea).toBeDisabled();
+      });
+    });
+
+    test('chart note is enabled when signed but not locked', async () => {
+      const mockProvenance: Provenance = {
+        resourceType: 'Provenance',
+        id: 'provenance-1',
+        target: [createReference(finishedEncounter)],
+        recorded: new Date().toISOString(),
+        agent: [
+          {
+            who: createReference(mockPractitioner),
+          },
+        ],
+      };
+
+      vi.spyOn(medplum, 'searchResources').mockImplementation((resourceType: string) => {
+        if (resourceType === 'Provenance') {
+          return [mockProvenance] as any;
+        }
+        if (resourceType === 'ClinicalImpression') {
+          return [mockClinicalImpression] as any;
+        }
+        return [] as any;
+      });
+
+      setup({ encounter: finishedEncounter });
+
+      await waitFor(() => {
+        expect(screen.getByText('Fill chart note')).toBeInTheDocument();
+      });
+
+      // Textarea should be enabled when signed but not locked
+      await waitFor(() => {
+        const chartNoteCard = screen.getByText('Fill chart note').closest('.mantine-Card-root');
+        const textarea = chartNoteCard?.querySelector('textarea');
+        expect(textarea).not.toBeDisabled();
+      });
     });
   });
 });

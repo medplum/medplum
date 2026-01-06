@@ -51,7 +51,7 @@
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
@@ -60,14 +60,14 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.948.0",
-    "@aws-sdk/client-cloudformation": "3.948.0",
-    "@aws-sdk/client-cloudfront": "3.948.0",
-    "@aws-sdk/client-ecs": "3.948.0",
-    "@aws-sdk/client-s3": "3.948.0",
-    "@aws-sdk/client-ssm": "3.948.0",
-    "@aws-sdk/client-sts": "3.948.0",
-    "@aws-sdk/types": "3.936.0",
+    "@aws-sdk/client-acm": "3.958.0",
+    "@aws-sdk/client-cloudformation": "3.958.0",
+    "@aws-sdk/client-cloudfront": "3.958.0",
+    "@aws-sdk/client-ecs": "3.958.0",
+    "@aws-sdk/client-s3": "3.958.0",
+    "@aws-sdk/client-ssm": "3.958.0",
+    "@aws-sdk/client-sts": "3.958.0",
+    "@aws-sdk/types": "3.957.0",
     "@medplum/core": "5.0.10",
     "@medplum/hl7": "5.0.10",
     "commander": "12.1.0",
