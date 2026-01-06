@@ -22,7 +22,6 @@ export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatab
   return (
     <FormSection
       key={props.item.linkId}
-      htmlFor={props.item.linkId}
       title={props.item.text}
       withAsterisk={props.item.required}
     >
