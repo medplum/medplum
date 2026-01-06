@@ -75,7 +75,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 |-------|------|------------|----------|----------------------|---------------------------|
 | `serviceType` | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only | Optional | Applies configuration only to the specified service type, overriding defaults for that service | Values apply as the default for all services |
 | `availability` | [Timing](/docs/api/fhir/datatypes/timing) | Schedule only | Optional | Bookings must fully fit within the recurring windows | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `timezone` | [String](/docs/api/fhir/datatypes/string) | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
+| `timezone` | Code | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
 | `bufferBefore` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires prep time before start to also be free | No prep time required |
 | `bufferAfter` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires cleanup time after end to also be free | No cleanup time required |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Start times must align to the interval (e.g., every 15 minutes) | Start times are not constrained by an interval grid |
@@ -101,7 +101,7 @@ All scheduling constraints are managed through a single consolidated extension: 
     // Falls back to Schedule's actor timezone if not specified
     {
       "url": "timezone",
-      "valueString": "America/Los_Angeles"
+      "valueCode": "America/Los_Angeles"
     },
     
     // Recurring availability (Schedule only)
@@ -395,7 +395,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
         },
         {
           "url": "timezone",
-          "valueString": "America/Los_Angeles"
+          "valueCode": "America/Los_Angeles"
         },
         {
           "url": "availability",
@@ -415,7 +415,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
       "extension": [
         {
           "url": "timezone",
-          "valueString": "America/New_York"
+          "valueCode": "America/New_York"
         },
         {
           "url": "serviceType",
