@@ -310,3 +310,21 @@ function getParameterType(param: OperationDefinitionParameter): string[] | undef
 export function clamp(min: number, n: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
+
+export function makeOperationDefinitionParameter(
+  use: 'in' | 'out',
+  name: string,
+  type: string | undefined,
+  min: number,
+  max: string,
+  part?: OperationDefinitionParameter[]
+): OperationDefinitionParameter {
+  return {
+    use,
+    name,
+    type,
+    min,
+    max,
+    part,
+  };
+}

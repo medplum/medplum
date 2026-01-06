@@ -57,16 +57,18 @@ describe('DoseSpotFavoritesPage', () => {
     });
   });
 
-  function setup(): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <DoseSpotFavoritesPage />
-      </MedplumProvider>
-    );
+  async function setup(): Promise<void> {
+    return act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <DoseSpotFavoritesPage />
+        </MedplumProvider>
+      );
+    });
   }
 
-  test('Renders page title and add button', () => {
-    setup();
+  test('Renders page title and add button', async () => {
+    await setup();
 
     expect(screen.getByText('DoseSpot Medication Favorites')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Favorite Medication' })).toBeInTheDocument();
@@ -99,7 +101,7 @@ describe('DoseSpotFavoritesPage', () => {
       total: 1,
     });
 
-    setup();
+    await setup();
 
     await waitFor(() => {
       expect(medplum.search).toHaveBeenCalledWith('MedicationKnowledge', expect.stringContaining('code='));
@@ -110,7 +112,7 @@ describe('DoseSpotFavoritesPage', () => {
     const error = new Error('Failed to load favorites');
     vi.spyOn(medplum, 'search').mockRejectedValue(error);
 
-    setup();
+    await setup();
 
     await waitFor(() => {
       expect(notifications.showErrorNotification).toHaveBeenCalledWith(error);
@@ -118,7 +120,7 @@ describe('DoseSpotFavoritesPage', () => {
   });
 
   test('Opens modal when Add Favorite Medication button is clicked', async () => {
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -134,7 +136,7 @@ describe('DoseSpotFavoritesPage', () => {
   });
 
   test('Closes modal when close button is clicked', async () => {
-    setup();
+    await setup();
 
     // Wait for initial load to complete
     await waitFor(() => {
@@ -197,7 +199,7 @@ describe('DoseSpotFavoritesPage', () => {
     };
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(formularyReturnWithMedication);
 
-    setup();
+    await setup();
 
     // Wait for initial load to complete
     await waitFor(() => {
@@ -241,7 +243,7 @@ describe('DoseSpotFavoritesPage', () => {
     };
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(formularyReturnWithMedication);
 
-    setup();
+    await setup();
 
     // Wait for initial load to complete
     await waitFor(() => {
@@ -271,7 +273,7 @@ describe('DoseSpotFavoritesPage', () => {
   });
 
   test('Add Favorite button is disabled when medication or directions are missing', async () => {
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -300,7 +302,7 @@ describe('DoseSpotFavoritesPage', () => {
     mockFormularyReturn.state.directions = 'Take 1 tablet daily';
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(mockFormularyReturn);
 
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -337,7 +339,7 @@ describe('DoseSpotFavoritesPage', () => {
     (mockFormularyReturn as any).saveFavoriteMedication = vi.fn().mockResolvedValue(mockCreatedMedication);
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(mockFormularyReturn);
 
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -388,7 +390,7 @@ describe('DoseSpotFavoritesPage', () => {
     (mockFormularyReturn as any).saveFavoriteMedication = vi.fn().mockRejectedValue(error);
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(mockFormularyReturn);
 
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -445,7 +447,7 @@ describe('DoseSpotFavoritesPage', () => {
     (mockFormularyReturn as any).saveFavoriteMedication = vi.fn().mockReturnValue(savePromise);
     vi.mocked(useDoseSpotClinicFormulary).mockReturnValue(mockFormularyReturn);
 
-    setup();
+    await setup();
 
     const addButton = screen.getByRole('button', { name: 'Add Favorite Medication' });
 
@@ -469,7 +471,9 @@ describe('DoseSpotFavoritesPage', () => {
     });
 
     // Resolve the promise
-    resolveSave?.(mockCreatedMedication);
+    await act(async () => {
+      resolveSave?.(mockCreatedMedication);
+    });
     await savePromise;
 
     await waitFor(() => {
@@ -478,7 +482,7 @@ describe('DoseSpotFavoritesPage', () => {
   });
 
   test('Clears form when modal is closed', async () => {
-    setup();
+    await setup();
 
     // Wait for initial load to complete
     await waitFor(() => {

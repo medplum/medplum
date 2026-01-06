@@ -66,6 +66,10 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
           )
       )}
       <Menu.Divider />
+      <Menu.Item leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
+        Switch to another project
+      </Menu.Item>
+      <Menu.Divider />
       <Group justify="center">
         <SegmentedControl
           size="xs"
@@ -88,9 +92,6 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
         />
       </Group>
       <Menu.Divider />
-      <Menu.Item leftSection={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
-        Add another account
-      </Menu.Item>
       <Menu.Item
         leftSection={<IconSettings size={14} stroke={1.5} />}
         onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}

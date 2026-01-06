@@ -8,6 +8,8 @@ import { getReferenceString } from '@medplum/core';
 export interface UseThreadInboxOptions {
   query: string;
   threadId: string | undefined;
+  offset?: number;
+  count?: number;
 }
 
 export interface UseThreadInboxReturn {
@@ -16,6 +18,7 @@ export interface UseThreadInboxReturn {
   // Tuple: [Parent Thread, Last Message in Thread (optional)]
   threadMessages: [Communication, Communication | undefined][];
   selectedThread: Communication | undefined;
+  total: number | undefined;
   addThreadMessage: (message: Communication) => void;
   handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
 }
@@ -30,12 +33,13 @@ It also provides a function to update the status of the selected thread.
 @returns The thread messages and selected thread.
 @returns A function to update the status of the selected thread.
 */
-export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseThreadInboxReturn {
+export function useThreadInbox({ query, threadId, offset, count }: UseThreadInboxOptions): UseThreadInboxReturn {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [threadMessages, setThreadMessages] = useState<[Communication, Communication | undefined][]>([]);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
   const [error, setError] = useState<Error | null>(null);
+  const [total, setTotal] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const fetchAllCommunications = async (): Promise<void> => {
@@ -43,7 +47,23 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       searchParams.append('identifier:not', 'ai-message-topic');
       searchParams.append('part-of:missing', 'true');
 
-      const parents = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+      if (offset !== undefined) {
+        searchParams.append('_offset', offset.toString());
+      }
+      if (count !== undefined) {
+        searchParams.append('_count', count.toString());
+      }
+      searchParams.append('_total', 'accurate');
+
+      const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
+      const parents =
+        bundle.entry
+          ?.map((entry) => entry.resource as Communication)
+          .filter((r): r is Communication => r !== undefined) || [];
+
+      if (bundle.total !== undefined) {
+        setTotal(bundle.total);
+      }
 
       if (parents.length === 0) {
         setThreadMessages([]);
@@ -111,7 +131,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       .finally(() => {
         setLoading(false);
       });
-  }, [medplum, query]);
+  }, [medplum, query, offset, count]);
 
   useEffect(() => {
     const fetchThread = async (): Promise<void> => {
@@ -175,6 +195,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     error,
     threadMessages,
     selectedThread,
+    total,
     addThreadMessage,
     handleThreadStatusChange,
   };

@@ -14,6 +14,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
+import type { Repository } from '../repo';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { hydrateCodeSystemProperties } from './expand';
@@ -43,12 +44,13 @@ type ValueSetValidateCodeParameters = {
 
 export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetValidateCodeParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
   let valueSet: ValueSet;
   if (req.params.id) {
-    valueSet = await getAuthenticatedContext().repo.readResource<ValueSet>('ValueSet', req.params.id);
+    valueSet = await repo.readResource<ValueSet>('ValueSet', req.params.id);
   } else if (params.url) {
-    valueSet = await findTerminologyResource<ValueSet>('ValueSet', params.url);
+    valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', params.url);
   } else {
     return [badRequest('No ValueSet specified')];
   }
@@ -64,7 +66,7 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
     return [badRequest('No coding specified')];
   }
 
-  const found = await validateCodingInValueSet(valueSet, codings);
+  const found = await validateCodingInValueSet(repo, valueSet, codings);
 
   const output = {
     result: Boolean(found) && (!params.display || found?.display === params.display),
@@ -74,13 +76,17 @@ export async function valueSetValidateOperation(req: FhirRequest): Promise<FhirR
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCodingInValueSet(valueSet: ValueSet, codings: Coding[]): Promise<Coding | undefined> {
+export async function validateCodingInValueSet(
+  repo: Repository,
+  valueSet: ValueSet,
+  codings: Coding[]
+): Promise<Coding | undefined> {
   let found: Coding | undefined;
   if (valueSet.expansion && !valueSet.expansion.parameter) {
     found = valueSet.expansion.contains?.find((e) => codings.some((c) => e.system === c.system && e.code === c.code));
   } else if (valueSet.compose) {
     for (const include of valueSet.compose.include) {
-      found = await findIncludedCode(include, ...codings);
+      found = await findIncludedCode(repo, include, ...codings);
       if (found) {
         break;
       }
@@ -89,13 +95,17 @@ export async function validateCodingInValueSet(valueSet: ValueSet, codings: Codi
 
   const systemUrl = found?.system ?? valueSet.compose?.include?.[0]?.system;
   if (found && systemUrl) {
-    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', systemUrl).catch(() => undefined);
+    const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', systemUrl).catch(() => undefined);
     return validateCoding(codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
   }
   return undefined;
 }
 
-async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Coding[]): Promise<Coding | undefined> {
+async function findIncludedCode(
+  repo: Repository,
+  include: ValueSetComposeInclude,
+  ...codings: Coding[]
+): Promise<Coding | undefined> {
   if (!include.system) {
     throw new OperationOutcomeError(
       badRequest('Missing system URL for ValueSet include', 'ValueSet.compose.include.system')
@@ -112,8 +122,7 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
   if (include.concept) {
     return candidates.find((c) => include.concept?.some((i) => i.code === c.code));
   } else if (include.filter) {
-    const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
-    const { repo } = getAuthenticatedContext();
+    const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', include.system);
     const db = repo.getDatabaseClient(DatabaseMode.READER);
     await hydrateCodeSystemProperties(db, codeSystem);
 

@@ -214,4 +214,76 @@ describe('Keys', () => {
     expect(generateSecret(16)).toHaveLength(32);
     expect(generateSecret(32)).toHaveLength(64);
   });
+
+  test('Generate access token with email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const userEmail = 'test@example.com';
+    const token = await generateAccessToken({
+      iss: config.issuer,
+      login_id: '123',
+      username: 'username',
+      scope: 'openid profile email',
+      profile: 'Patient/123',
+      email: userEmail,
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toStrictEqual(userEmail);
+  });
+
+  test('Generate access token without email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const token = await generateAccessToken({
+      iss: config.issuer,
+      login_id: '123',
+      username: 'username',
+      scope: 'openid profile',
+      profile: 'Patient/123',
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toBeUndefined();
+  });
+
+  test('Generate ID token with email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const userEmail = 'test@example.com';
+    const token = await generateIdToken({
+      iss: config.issuer,
+      login_id: '123',
+      nonce: randomUUID(),
+      email: userEmail,
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toStrictEqual(userEmail);
+  });
+
+  test('Generate ID token without email', async () => {
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    const token = await generateIdToken({
+      iss: config.issuer,
+      login_id: '123',
+      nonce: randomUUID(),
+    });
+    expect(token).toBeDefined();
+
+    const result = await verifyJwt(token);
+    expect(result.payload.login_id).toStrictEqual('123');
+    expect(result.payload.email).toBeUndefined();
+  });
 });

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { IconCode, IconPlayerPlay, IconSettings, IconStar } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { Card } from '../components/Card';
@@ -42,19 +43,19 @@ export default function AboutPage(): JSX.Element {
         </SectionHeader>
         <Section>
           <FeatureGrid columns={2}>
-            <Feature title="Act. Deliberately and purposefully." imgSrc="/img/icons/api.svg">
+            <Feature title="Act. Deliberately and purposefully." icon={<IconPlayerPlay />}>
               We move decisively but with intention, seeking to understand the nature of actions before we take them and
               going slow enough to move forward with speed.
             </Feature>
-            <Feature title="Practice uncompromising consistency." imgSrc="/img/icons/code.svg">
+            <Feature title="Practice uncompromising consistency." icon={<IconSettings />}>
               We're reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
               taken for granted.
             </Feature>
-            <Feature title="Convene a catalytic force." imgSrc="/img/icons/automation.svg">
+            <Feature title="Convene a catalytic force." icon={<IconStar />}>
               We believe collaborative innovation will unlock capabilities, advancements, and ideas that will ultimately
               transform healthcare, so we continually strive to elevate and unify the entire field of players.
             </Feature>
-            <Feature title="Pursue technical excellence." imgSrc="/img/icons/shield.svg">
+            <Feature title="Pursue technical excellence." icon={<IconCode />}>
               We are fueled by solving hard problems, both technical and human, and are deeply devoted to pushing the
               boundaries of our craft.
             </Feature>

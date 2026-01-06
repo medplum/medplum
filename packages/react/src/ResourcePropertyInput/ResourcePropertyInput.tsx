@@ -239,7 +239,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.string:
-    case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
       if (props.path === 'Project.secret.value[x]') {
@@ -270,6 +269,19 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <TextInput
           {...getPrimitiveInputProps()}
           type="date"
+          onChange={(e) => {
+            if (onChange) {
+              onChange(e.currentTarget.value);
+            }
+          }}
+        />
+      );
+    case PropertyType.time:
+      return (
+        <TextInput
+          {...getPrimitiveInputProps()}
+          type="time"
+          step={1}
           onChange={(e) => {
             if (onChange) {
               onChange(e.currentTarget.value);

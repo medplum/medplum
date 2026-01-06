@@ -30,7 +30,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
       case 'DiagnosticReport':
         return <LabResultDetails result={displayResource as DiagnosticReport} />;
       case 'ServiceRequest':
-        return <LabOrderDetails order={displayResource as ServiceRequest} onOrderChange={() => {}} />;
+        return <LabOrderDetails order={displayResource as ServiceRequest} />;
       case 'Encounter':
         return <EncounterChart encounter={displayResource as Encounter} />;
       default:

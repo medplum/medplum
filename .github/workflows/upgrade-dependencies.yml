@@ -32,6 +32,12 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+      # npm 11.6.2 is currently bundled with Node v24 and has an irksome bug affecting
+      # `peer` attributes in the lockfile (https://github.com/npm/cli/issues/8690).
+      # Upgrade to a patched version; this should be removed after Node has a tagged
+      # release incorporating npm@11.6.3 or later.
+      - name: Upgrade NPM
+        run: npm install --global npm@11.7.0
       - name: Setup git
         run: |
           git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"

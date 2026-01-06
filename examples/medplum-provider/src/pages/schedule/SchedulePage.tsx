@@ -84,7 +84,7 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       // Only update state if the range has changed
-      if (!range || newStart.getTime() !== range.start.getTime() || newEnd.getTime() !== range.end.getTime()) {
+      if (newStart.getTime() !== range?.start.getTime() || newEnd.getTime() !== range.end.getTime()) {
         setRange({ start: newStart, end: newEnd });
       }
     },
