@@ -826,6 +826,7 @@ export interface ValueSetExpandParams {
   date?: string;
   offset?: number;
   count?: number;
+  displayLanguage?: string;
 }
 
 export interface RequestProfileSchemaOptions {
