@@ -371,7 +371,7 @@ the option to embed FHIRPath expressions as needed to construct the query string
           "valueExpression": {
             "language": "application/x-fhir-query",
             // Search string constructed using embedded FHIRPath expression in curly braces
-            "expression": "Medication?_count=1&code={{ item.where(linkId = 'topical-anesthetic').answer.value }}",
+            "expression": "Medication?_count=1&code={{ item.where(linkId='anesthetic').answer.value }}",
             // Search request is executed, with results Bundle placed into named context variable
             // See https://hl7.org/fhir/R4/bundle.html#searchset
             "name": "AnestheticBundle"
@@ -412,12 +412,19 @@ the option to embed FHIRPath expressions as needed to construct the query string
   ],
   "item": [
     {
-      "linkId": "topical-anesthetic",
+      "linkId": "anesthetic",
       "type": "choice",
       "answerValueSet": "http://example.com/ValueSet/topical-anesthetic",
       // Coding required, with initial value populated as an example
       "required": true,
-      "initial": [{ "valueCoding": { "system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "197877" } }]
+      "initial": [
+        {
+          "valueCoding": {
+            "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+            "code": "197877"
+          }
+        }
+      ]
     }
   ]
 }
