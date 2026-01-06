@@ -1305,7 +1305,7 @@ describe('Expand', () => {
         },
       ],
     };
-    const valueSet: ValueSet = {
+    const valueSet = {
       resourceType: 'ValueSet',
       status: 'draft',
       url: 'https://example.com/ValueSet/' + randomUUID(),
@@ -1326,7 +1326,7 @@ describe('Expand', () => {
           },
         ],
       },
-    };
+    } satisfies ValueSet;
     const csRes = await request(app)
       .post('/fhir/R4/CodeSystem')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -1339,9 +1339,7 @@ describe('Expand', () => {
     expect(vsRes.status).toStrictEqual(201);
 
     const res = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=invalid&displayLanguage=fr`
-      )
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url)}&filter=invalid&displayLanguage=fr`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
