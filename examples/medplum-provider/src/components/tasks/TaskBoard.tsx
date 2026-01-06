@@ -112,6 +112,22 @@ export function TaskBoard({
     return statuses;
   }, [currentSearch]);
 
+  // Parse priority filters from query string
+  const selectedPriorities = useMemo(() => {
+    const priorityFilters = currentSearch.filters?.filter((f) => f.code === 'priority') || [];
+    const priorities: Task['priority'][] = [];
+    priorityFilters.forEach((filter) => {
+      const values = filter.value.split(',');
+      values.forEach((value) => {
+        const trimmedValue = value.trim();
+        if (trimmedValue && !priorities.includes(trimmedValue as Task['priority'])) {
+          priorities.push(trimmedValue as Task['priority']);
+        }
+      });
+    });
+    return priorities;
+  }, [currentSearch]);
+
   const fetchTasks = useCallback(async (): Promise<void> => {
     if (fetchingRef.current) {
       return;
@@ -222,6 +238,30 @@ export function TaskBoard({
         });
         break;
       }
+      case TaskFilterType.PRIORITY: {
+        const priorityValue = value as Task['priority'];
+        const newPriorities = selectedPriorities.includes(priorityValue)
+          ? selectedPriorities.filter((p) => p !== priorityValue)
+          : [...selectedPriorities, priorityValue];
+
+        const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'priority') || [];
+        const newFilters = [...otherFilters];
+
+        if (newPriorities.length > 0) {
+          newFilters.push({
+            code: 'priority',
+            operator: Operator.EQUALS,
+            value: newPriorities.join(','),
+          });
+        }
+
+        onChange({
+          ...currentSearch,
+          filters: newFilters,
+          offset: 0,
+        });
+        break;
+      }
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
@@ -266,6 +306,7 @@ export function TaskBoard({
 
                   <TaskFilterMenu
                     statuses={selectedStatuses}
+                    priorities={selectedPriorities}
                     performerType={filters.performerType}
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
