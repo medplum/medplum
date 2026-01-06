@@ -9,6 +9,7 @@ import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskBoard } from './TaskBoard';
+import type { WithId } from '@medplum/core';
 
 describe('TaskBoard', () => {
   let medplum: MockClient;
@@ -513,7 +514,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup();
 
@@ -542,7 +543,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 1,
       entry: [{ resource: newTask }],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     const createButton = screen.getByRole('button', { name: 'Create Task' });
     await user.click(createButton);
@@ -568,7 +569,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 1,
       entry: [{ resource: urgentTask }],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup('priority=urgent');
 
@@ -599,7 +600,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 2,
       entry: [{ resource: urgentTask }, { resource: statTask }],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup('priority=urgent,stat');
 
@@ -624,7 +625,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup('', { onChange });
 
@@ -667,7 +668,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup('priority=urgent', { onChange });
 
@@ -707,7 +708,7 @@ describe('TaskBoard', () => {
       type: 'searchset',
       total: 0,
       entry: [],
-    } as any);
+    } as Bundle<WithId<Task>>);
 
     setup('status=in-progress', { onChange });
 
