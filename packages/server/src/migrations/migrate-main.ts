@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { FileBuilder } from '@medplum/core';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Client } from 'pg';
+import * as semver from 'semver';
 import type { BuildMigrationOptions } from './migrate';
 import {
   generateMigrationActions,
@@ -12,6 +13,7 @@ import {
   writePreDeployActionsToBuilder,
   writePostDeployActionsToBuilder,
 } from './migrate';
+import packageJson from '../../package.json';
 
 export const SCHEMA_DIR = resolve('./src/migrations/schema');
 export const DATA_DIR = resolve('./src/migrations/data');
@@ -60,8 +62,10 @@ export async function main(): Promise<void> {
       if (dryRun) {
         console.log(postDeployBuilder.toString());
       } else {
-        writeFileSync(`${DATA_DIR}/v${getNextVersion(DATA_DIR)}.ts`, postDeployBuilder.toString(), 'utf8');
+        const id = `v${getNextVersion(DATA_DIR)}`;
+        writeFileSync(`${DATA_DIR}/${id}.ts`, postDeployBuilder.toString(), 'utf8');
         rewriteMigrationExports(DATA_DIR);
+        addDataMigrationToManifest(id);
       }
     }
   }
@@ -105,6 +109,13 @@ function rewriteMigrationExports(dir: string): void {
     }
   }
   writeFileSync(`${dir}/index.ts`, b.toString(), { flag: 'w' });
+}
+
+export function addDataMigrationToManifest(version: string): void {
+  const path = join(DATA_DIR, 'data-version-manifest.json');
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  manifest[version] = { serverVersion: semver.inc(packageJson.version, 'patch') };
+  writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n');
 }
 
 function getMigrationFilenames(dir: string = SCHEMA_DIR): string[] {
