@@ -1904,6 +1904,64 @@ describe('AccessPolicy', () => {
       }
     }));
 
+  test('Project admin cannot modify user.reference but can modify user.display', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({
+        resourceType: 'Project',
+        name: 'Test Project',
+      });
+
+      const originalUserRef = 'User/' + randomUUID();
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: originalUserRef, display: 'original@example.com' },
+        project: { reference: 'Project/' + project.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+
+      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project }, true);
+
+      const check1 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+      expect(check1.id).toEqual(membership.id);
+      expect(check1.user?.reference).toEqual(originalUserRef);
+      expect(check1.user?.display).toEqual('original@example.com');
+
+      // Try to change user.display
+      // This should succeed
+      const check2 = await repo2.updateResource<ProjectMembership>({
+        ...check1,
+        user: { ...check1.user, display: 'updated@example.com' },
+      });
+      expect(check2.id).toEqual(check1.id);
+      expect(check2.meta?.versionId).not.toEqual(check1.meta?.versionId);
+      expect(check2.user?.display).toEqual('updated@example.com');
+      expect(check2.user?.reference).toEqual(originalUserRef);
+
+      // Try to change user.reference
+      // This should be a no-op (readonly field)
+      const newUserRef = 'User/' + randomUUID();
+      const check3 = await repo2.updateResource<ProjectMembership>({
+        ...check2,
+        user: { ...check2.user, reference: newUserRef },
+      });
+      expect(check3.id).toEqual(check2.id);
+      expect(check3.meta?.versionId).toEqual(check2.meta?.versionId);
+      expect(check3.user?.reference).toEqual(originalUserRef);
+      expect(check3.user?.display).toEqual('updated@example.com');
+
+      // Try to change both user.reference and user.display
+      // user.reference should be ignored, but user.display should be updated
+      const check4 = await repo2.updateResource<ProjectMembership>({
+        ...check3,
+        user: { reference: newUserRef, display: 'newdisplay@example.com' },
+      });
+      expect(check4.id).toEqual(check3.id);
+      expect(check4.meta?.versionId).not.toEqual(check3.meta?.versionId);
+      expect(check4.user?.reference).toEqual(originalUserRef);
+      expect(check4.user?.display).toEqual('newdisplay@example.com');
+    }));
+
   test('Project admin can modify meta.account', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
