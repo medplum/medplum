@@ -9,7 +9,7 @@ import {
   buildSchema,
   columnDefinitionsEqual,
   executeMigrationActions,
-  generateMigrationActions,
+  generateSeparatedMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
@@ -47,26 +47,27 @@ describe('Generator', () => {
     });
   });
 
-  describe('generateMigrationActions', () => {
+  describe('generateSeparatedMigrationActions', () => {
     test('generates migration without errors', async () => {
       await expect(() =>
-        generateMigrationActions({
+        generateSeparatedMigrationActions({
           dbClient: getDatabasePool(DatabaseMode.WRITER),
-          skipPostDeployActions: false,
-          allowPostDeployActions: true,
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
         })
       ).resolves.not.toThrow();
     });
 
-    test('with skipPostDeployActions', async () => {
-      await expect(() =>
-        generateMigrationActions({
-          dbClient: getDatabasePool(DatabaseMode.WRITER),
-          skipPostDeployActions: true,
-        })
-      ).resolves.not.toThrow();
+    test('returns separated pre and post deploy actions', async () => {
+      const result = await generateSeparatedMigrationActions({
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+      });
+      expect(result).toHaveProperty('preDeployActions');
+      expect(result).toHaveProperty('postDeployActions');
+      expect(result).toHaveProperty('postDeployDescriptions');
+      expect(Array.isArray(result.preDeployActions)).toBe(true);
+      expect(Array.isArray(result.postDeployActions)).toBe(true);
+      expect(Array.isArray(result.postDeployDescriptions)).toBe(true);
     });
   });
 

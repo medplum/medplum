@@ -718,18 +718,24 @@ describe('Database migrations', () => {
     });
 
     describe('Reconcile schema drift', () => {
-      let generateMigrationActionsSpy: jest.SpyInstance<ReturnType<typeof migrateModule.generateMigrationActions>>;
+      let generateSeparatedMigrationActionsSpy: jest.SpyInstance<
+        ReturnType<typeof migrateModule.generateSeparatedMigrationActions>
+      >;
 
       beforeEach(() => {
-        generateMigrationActionsSpy = jest.spyOn(migrateModule, 'generateMigrationActions');
+        generateSeparatedMigrationActionsSpy = jest.spyOn(migrateModule, 'generateSeparatedMigrationActions');
       });
 
       afterEach(() => {
-        generateMigrationActionsSpy.mockRestore();
+        generateSeparatedMigrationActionsSpy.mockRestore();
       });
 
       test('Nothing to do', async () => {
-        generateMigrationActionsSpy.mockResolvedValueOnce([]);
+        generateSeparatedMigrationActionsSpy.mockResolvedValueOnce({
+          preDeployActions: [],
+          postDeployActions: [],
+          postDeployDescriptions: [],
+        });
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         const res1 = await request(app)
@@ -750,7 +756,11 @@ describe('Database migrations', () => {
             tableName: 'AsyncJob',
           },
         ];
-        generateMigrationActionsSpy.mockResolvedValueOnce(pendingActions);
+        generateSeparatedMigrationActionsSpy.mockResolvedValueOnce({
+          preDeployActions: pendingActions,
+          postDeployActions: [],
+          postDeployDescriptions: [],
+        });
 
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);

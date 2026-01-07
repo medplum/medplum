@@ -28,7 +28,7 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
-import { generateMigrationActions } from '../migrations/migrate';
+import { generateSeparatedMigrationActions } from '../migrations/migrate';
 import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
 import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
@@ -304,11 +304,11 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
   const ctx = requireSuperAdmin();
   requireAsync(req);
 
-  const migrationActions = await generateMigrationActions({
+  const result = await generateSeparatedMigrationActions({
     dbClient: getDatabasePool(DatabaseMode.WRITER),
     dropUnmatchedIndexes: true,
-    allowPostDeployActions: true,
   });
+  const migrationActions = [...result.preDeployActions, ...result.postDeployActions];
 
   if (migrationActions.length === 0) {
     // Nothing to do
