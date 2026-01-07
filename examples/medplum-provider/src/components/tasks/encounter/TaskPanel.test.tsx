@@ -10,7 +10,7 @@ import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { TaskPanel } from './TaskPanel';
-import type { DiagnosticReport, Questionnaire, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type { Questionnaire, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
 
 describe('TaskPanel', () => {
   let medplum: MockClient;
@@ -23,24 +23,28 @@ describe('TaskPanel', () => {
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy as any);
   });
 
-  const setup = (task: Task, onUpdateTask: (task: Task) => void, enabled = true): void => {
-    render(
-      <MemoryRouter initialEntries={['/Patient/123/Encounter/456']}>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <Routes>
-              <Route path="/Patient/:patientId/Encounter/:encounterId" element={
-                <TaskPanel task={task} onUpdateTask={onUpdateTask} enabled={enabled} />
-              } />
-              <Route path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId" element={
-                <div>Task Detail Page</div>
-              } />
-            </Routes>
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  const setup = async (task: Task, onUpdateTask: (task: Task) => void, enabled = true): Promise<void> => {
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/Patient/123/Encounter/456']}>
+          <MedplumProvider medplum={medplum}>
+            <MantineProvider>
+              <Notifications />
+              <Routes>
+                <Route
+                  path="/Patient/:patientId/Encounter/:encounterId"
+                  element={<TaskPanel task={task} onUpdateTask={onUpdateTask} enabled={enabled} />}
+                />
+                <Route
+                  path="/Patient/:patientId/Encounter/:encounterId/Task/:taskId"
+                  element={<div>Task Detail Page</div>}
+                />
+              </Routes>
+            </MantineProvider>
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   };
 
   const mockTask: Task = {
@@ -68,7 +72,7 @@ describe('TaskPanel', () => {
       input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: `Questionnaire/${questionnaireId}` } }],
     };
     const onUpdateTask = vi.fn();
-    setup(task, onUpdateTask);
+    await setup(task, onUpdateTask);
 
     // Wait for the task status panel to render
     await waitFor(() => {
@@ -95,7 +99,7 @@ describe('TaskPanel', () => {
     };
     await medplum.createResource(serviceRequest);
     medplum.readReference = vi.fn().mockResolvedValue(serviceRequest);
-    setup(task, onUpdateTask);
+    await setup(task, onUpdateTask);
 
     await waitFor(() => {
       expect(screen.getByText('Test Task Code')).toBeInTheDocument();
@@ -103,16 +107,16 @@ describe('TaskPanel', () => {
     });
   });
 
-  test('renders SimpleTask when focus is neither Questionnaire nor ServiceRequest', () => {
+  test('renders SimpleTask when focus is neither Questionnaire nor ServiceRequest', async () => {
     const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
+    await setup(mockTask, onUpdateTask);
     expect(screen.getByText('Test Task Code')).toBeInTheDocument();
     expect(screen.getByText('Test Task Description')).toBeInTheDocument();
   });
 
-  test('renders TaskStatusPanel', () => {
+  test('renders TaskStatusPanel', async () => {
     const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
+    await setup(mockTask, onUpdateTask);
     expect(screen.getByText('Task Status:')).toBeInTheDocument();
   });
 
@@ -120,7 +124,7 @@ describe('TaskPanel', () => {
     const user = userEvent.setup();
     const onUpdateTask = vi.fn();
     medplum.updateResource = vi.fn().mockResolvedValue({ ...mockTask, status: 'completed' });
-    setup(mockTask, onUpdateTask);
+    await setup(mockTask, onUpdateTask);
 
     const statusBadge = screen.getByText('In Progress');
     await user.click(statusBadge);
@@ -145,7 +149,7 @@ describe('TaskPanel', () => {
 
   test('renders with edit action button', async () => {
     const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask);
+    await setup(mockTask, onUpdateTask);
 
     // Wait for the component to render
     await waitFor(() => {
@@ -177,11 +181,13 @@ describe('TaskPanel', () => {
     const task: Task = {
       ...mockTask,
       focus: { reference: 'Questionnaire/q-123' },
-      output: [{ type: { text: 'QuestionnaireResponse' }, valueReference: { reference: 'QuestionnaireResponse/qr-456' } }],
+      output: [
+        { type: { text: 'QuestionnaireResponse' }, valueReference: { reference: 'QuestionnaireResponse/qr-456' } },
+      ],
     };
 
     const onUpdateTask = vi.fn();
-    setup(task, onUpdateTask);
+    await setup(task, onUpdateTask);
 
     // Wait for the component to render with task status
     await waitFor(() => {
@@ -205,7 +211,7 @@ describe('TaskPanel', () => {
     };
 
     const onUpdateTask = vi.fn();
-    setup(task, onUpdateTask);
+    await setup(task, onUpdateTask);
 
     // Wait for the component to render with task status
     await waitFor(() => {
@@ -213,49 +219,11 @@ describe('TaskPanel', () => {
     });
   });
 
-  test('saves diagnostic report and updates task output', async () => {
-    const serviceRequest: ServiceRequest = {
-      resourceType: 'ServiceRequest',
-      id: 'sr-dr',
-      status: 'active',
-      intent: 'order',
-      subject: { reference: 'Patient/123' },
-    };
-    await medplum.createResource(serviceRequest);
-
-    const task: Task = {
-      ...mockTask,
-      id: 'task-dr',
-      focus: { reference: 'ServiceRequest/sr-dr' },
-      for: { reference: 'Patient/123' },
-    };
-
-    const diagnosticReport: DiagnosticReport = {
-      resourceType: 'DiagnosticReport',
-      id: 'dr-123',
-      status: 'final',
-      code: { text: 'Lab Result' },
-    };
-
-    const onUpdateTask = vi.fn();
-    medplum.readReference = vi.fn().mockResolvedValue(serviceRequest);
-    medplum.updateResource = vi.fn().mockResolvedValue({
-      ...task,
-      output: [{ type: { text: 'DiagnosticReport' }, valueReference: { reference: 'DiagnosticReport/dr-123' } }],
-    });
-
-    setup(task, onUpdateTask);
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Task Code')).toBeInTheDocument();
-    });
-  });
-
   test('shows error notification when status update fails', async () => {
     const user = userEvent.setup();
     const onUpdateTask = vi.fn();
     medplum.updateResource = vi.fn().mockRejectedValue(new Error('Update failed'));
-    setup(mockTask, onUpdateTask);
+    await setup(mockTask, onUpdateTask);
 
     const statusBadge = screen.getByText('In Progress');
     await user.click(statusBadge);
@@ -271,23 +239,20 @@ describe('TaskPanel', () => {
       expect(medplum.updateResource).toHaveBeenCalled();
     });
 
-    // Error notification should be shown
     await waitFor(() => {
-      const notification = screen.queryByText(/error/i);
-      // The error is handled internally, so we just verify the update was attempted
       expect(medplum.updateResource).toHaveBeenCalled();
     });
   });
 
-  test('renders with enabled=false disables status changes', () => {
+  test('renders with enabled=false disables status changes', async () => {
     const onUpdateTask = vi.fn();
-    setup(mockTask, onUpdateTask, false);
+    await setup(mockTask, onUpdateTask, false);
 
     expect(screen.getByText('Test Task Code')).toBeInTheDocument();
     expect(screen.getByText('Task Status:')).toBeInTheDocument();
   });
 
-  test('handles task without focus reference', () => {
+  test('handles task without focus reference', async () => {
     const taskWithoutFocus: Task = {
       resourceType: 'Task',
       id: 'task-no-focus',
@@ -297,12 +262,12 @@ describe('TaskPanel', () => {
     };
 
     const onUpdateTask = vi.fn();
-    setup(taskWithoutFocus, onUpdateTask);
+    await setup(taskWithoutFocus, onUpdateTask);
 
     expect(screen.getByText('Simple Task')).toBeInTheDocument();
   });
 
-  test('handles task with undefined focus reference', () => {
+  test('handles task with undefined focus reference', async () => {
     const taskWithUndefinedFocus: Task = {
       resourceType: 'Task',
       id: 'task-undefined-focus',
@@ -313,7 +278,7 @@ describe('TaskPanel', () => {
     };
 
     const onUpdateTask = vi.fn();
-    setup(taskWithUndefinedFocus, onUpdateTask);
+    await setup(taskWithUndefinedFocus, onUpdateTask);
 
     expect(screen.getByText('Task with undefined focus')).toBeInTheDocument();
   });
