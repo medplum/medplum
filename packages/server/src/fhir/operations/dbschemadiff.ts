@@ -6,7 +6,7 @@ import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import {
-  generateSeparatedMigrationActions,
+  generateMigrationActions,
   writeActionsToBuilder,
   writePostDeployActionsToBuilder,
 } from '../../migrations/migrate';
@@ -37,7 +37,7 @@ export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirRespon
   requireSuperAdmin();
 
   const dbClient = getDatabasePool(DatabaseMode.READER);
-  const result = await generateSeparatedMigrationActions({
+  const result = await generateMigrationActions({
     dbClient,
     dropUnmatchedIndexes: true,
   });

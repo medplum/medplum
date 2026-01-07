@@ -718,20 +718,20 @@ describe('Database migrations', () => {
     });
 
     describe('Reconcile schema drift', () => {
-      let generateSeparatedMigrationActionsSpy: jest.SpyInstance<
-        ReturnType<typeof migrateModule.generateSeparatedMigrationActions>
+      let generateMigrationActionsSpy: jest.SpyInstance<
+        ReturnType<typeof migrateModule.generateMigrationActions>
       >;
 
       beforeEach(() => {
-        generateSeparatedMigrationActionsSpy = jest.spyOn(migrateModule, 'generateSeparatedMigrationActions');
+        generateMigrationActionsSpy = jest.spyOn(migrateModule, 'generateMigrationActions');
       });
 
       afterEach(() => {
-        generateSeparatedMigrationActionsSpy.mockRestore();
+        generateMigrationActionsSpy.mockRestore();
       });
 
       test('Nothing to do', async () => {
-        generateSeparatedMigrationActionsSpy.mockResolvedValueOnce({
+        generateMigrationActionsSpy.mockResolvedValueOnce({
           preDeployActions: [],
           postDeployActions: [],
           postDeployDescriptions: [],
@@ -756,7 +756,7 @@ describe('Database migrations', () => {
             tableName: 'AsyncJob',
           },
         ];
-        generateSeparatedMigrationActionsSpy.mockResolvedValueOnce({
+        generateMigrationActionsSpy.mockResolvedValueOnce({
           preDeployActions: pendingActions,
           postDeployActions: [],
           postDeployDescriptions: [],

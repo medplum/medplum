@@ -83,7 +83,7 @@ export function buildSchema(builder: FileBuilder): void {
   writeSchema(builder, actions);
 }
 
-export type GenerateSeparatedMigrationOptions = {
+export type GenerateMigrationOptions = {
   dbClient: DbClient;
   dropUnmatchedIndexes?: boolean;
   analyzeResourceTables?: boolean;
@@ -96,14 +96,14 @@ export type GenerateSeparatedMigrationOptions = {
  * @param options - Options for generating the migration actions.
  * @returns A result containing pre-deploy actions, post-deploy actions, and descriptions.
  */
-export async function generateSeparatedMigrationActions(
-  options: GenerateSeparatedMigrationOptions
+export async function generateMigrationActions(
+  options: GenerateMigrationOptions
 ): Promise<GenerateMigrationResult> {
   const preDeployActions: MigrationAction[] = [];
   const postDeployActions: MigrationAction[] = [];
   const postDeployDescriptions: string[] = [];
 
-  const ctx: CollectActionsContext = {
+  const ctx: GenerateActionsContext = {
     collectPostDeployAction: (actionFn, description) => {
       postDeployActions.push(actionFn());
       postDeployDescriptions.push(description);
@@ -129,11 +129,11 @@ export async function generateSeparatedMigrationActions(
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (startTable) {
       matchedStartTables.add(startTable);
-      const columnResult = generateColumnsActionsWithSeparation(ctx, startTable, targetTable);
+      const columnResult = generateColumnsActions(ctx, startTable, targetTable);
       preDeployActions.push(...columnResult.preDeploy);
-      const indexResult = generateIndexesActionsWithSeparation(ctx, startTable, targetTable, options);
+      const indexResult = generateIndexesActions(ctx, startTable, targetTable, options);
       preDeployActions.push(...indexResult.preDeploy);
-      const constraintResult = generateConstraintsActionsWithSeparation(ctx, startTable, targetTable);
+      const constraintResult = generateConstraintsActions(ctx, startTable, targetTable);
       preDeployActions.push(...constraintResult.preDeploy);
     } else {
       preDeployActions.push({ type: 'CREATE_TABLE', definition: targetTable });
@@ -1101,31 +1101,27 @@ export function writePostDeployActionsToBuilder(b: FileBuilder, actions: Migrati
   b.append('}');
 }
 
-type CollectActionsContext = {
+type GenerateActionsContext = {
   /**
-   * Collects post-deploy actions and their descriptions separately from pre-deploy actions.
+   * Collects post-deploy actions and their descriptions.
    * @param actionFn - A function that returns the action to add to post-deploy
    * @param description - A human-readable description of the action
    */
   collectPostDeployAction: (actionFn: () => MigrationAction, description: string) => void;
 };
 
-interface SeparatedActions {
-  preDeploy: MigrationAction[];
-}
-
-function generateColumnsActionsWithSeparation(
-  ctx: CollectActionsContext,
+function generateColumnsActions(
+  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition
-): SeparatedActions {
+): { preDeploy: MigrationAction[] } {
   const preDeploy: MigrationAction[] = [];
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
       preDeploy.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
-      const alterResult = generateAlterColumnActionsWithSeparation(ctx, targetTable, startColumn, targetColumn);
+      const alterResult = generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn);
       preDeploy.push(...alterResult.preDeploy);
     }
   }
@@ -1140,12 +1136,12 @@ function generateColumnsActionsWithSeparation(
   return { preDeploy };
 }
 
-function generateAlterColumnActionsWithSeparation(
-  ctx: CollectActionsContext,
+function generateAlterColumnActions(
+  ctx: GenerateActionsContext,
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
-): SeparatedActions {
+): { preDeploy: MigrationAction[] } {
   const preDeploy: MigrationAction[] = [];
   if (startDef.defaultValue !== targetDef.defaultValue) {
     const newDefaultValue = targetDef.defaultValue;
@@ -1197,12 +1193,12 @@ function generateAlterColumnActionsWithSeparation(
   return { preDeploy };
 }
 
-function generateIndexesActionsWithSeparation(
-  ctx: CollectActionsContext,
+function generateIndexesActions(
+  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: { dropUnmatchedIndexes?: boolean }
-): SeparatedActions {
+): { preDeploy: MigrationAction[] } {
   const preDeploy: MigrationAction[] = [];
 
   const matchedIndexes = new Set<IndexDefinition>();
@@ -1269,11 +1265,11 @@ function generateIndexesActionsWithSeparation(
   return { preDeploy };
 }
 
-function generateConstraintsActionsWithSeparation(
-  ctx: CollectActionsContext,
+function generateConstraintsActions(
+  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition
-): SeparatedActions {
+): { preDeploy: MigrationAction[] } {
   const preDeploy: MigrationAction[] = [];
 
   const matchedConstraints = new Set<CheckConstraintDefinition>();

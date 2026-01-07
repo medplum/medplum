@@ -8,7 +8,7 @@ import { Client } from 'pg';
 import type { GenerateMigrationResult } from './migrate';
 import {
   buildSchema,
-  generateSeparatedMigrationActions,
+  generateMigrationActions,
   indexStructureDefinitionsAndSearchParameters,
   writeActionsToBuilder,
   writePostDeployActionsToBuilder,
@@ -83,7 +83,7 @@ export async function main(): Promise<void> {
 
   await dbClient.connect();
 
-  const result = await generateSeparatedMigrationActions({
+  const result = await generateMigrationActions({
     dbClient,
     dropUnmatchedIndexes: options.dropUnmatchedIndexes,
     analyzeResourceTables: options.analyzeResourceTables,

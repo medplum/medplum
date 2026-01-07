@@ -9,7 +9,7 @@ import {
   buildSchema,
   columnDefinitionsEqual,
   executeMigrationActions,
-  generateSeparatedMigrationActions,
+  generateMigrationActions,
   getCreateTableQueries,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
@@ -47,10 +47,10 @@ describe('Generator', () => {
     });
   });
 
-  describe('generateSeparatedMigrationActions', () => {
+  describe('generateMigrationActions', () => {
     test('generates migration without errors', async () => {
       await expect(() =>
-        generateSeparatedMigrationActions({
+        generateMigrationActions({
           dbClient: getDatabasePool(DatabaseMode.WRITER),
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
@@ -59,7 +59,7 @@ describe('Generator', () => {
     });
 
     test('returns separated pre and post deploy actions', async () => {
-      const result = await generateSeparatedMigrationActions({
+      const result = await generateMigrationActions({
         dbClient: getDatabasePool(DatabaseMode.WRITER),
       });
       expect(result).toHaveProperty('preDeployActions');
