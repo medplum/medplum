@@ -32,7 +32,7 @@ import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
-import { healthcheckHandler } from './healthcheck';
+import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
@@ -245,6 +245,7 @@ export async function initAppServices(config: MedplumServerConfig): Promise<void
 export async function shutdownApp(): Promise<void> {
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
+  cleanupReservedDatabaseConnections();
   await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {

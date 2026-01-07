@@ -50,9 +50,7 @@ export type RecordMetricOptions = {
 };
 
 function getMeter(): Meter {
-  if (!meter) {
-    meter = metrics.getMeter('medplum');
-  }
+  meter ??= metrics.getMeter('medplum');
   return meter;
 }
 
