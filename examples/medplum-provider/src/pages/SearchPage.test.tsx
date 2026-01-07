@@ -9,6 +9,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
 import { SearchPage } from './SearchPage';
+import type { WithId } from '@medplum/core';
 
 describe('SearchPage', () => {
   let medplum: MockClient;
@@ -29,7 +30,7 @@ describe('SearchPage', () => {
     userConfig?: UserConfiguration
   ): Promise<void> {
     if (userConfig) {
-      vi.spyOn(client, 'getUserConfiguration').mockReturnValue(userConfig);
+      vi.spyOn(client, 'getUserConfiguration').mockReturnValue(userConfig as unknown as   WithId<UserConfiguration>);
     }
     await act(async () => {
       render(
