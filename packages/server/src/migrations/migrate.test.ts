@@ -54,19 +54,8 @@ describe('Generator', () => {
       await expect(() =>
         generateMigrationActions({
           dbClient: getDatabasePool(DatabaseMode.WRITER),
-          skipPostDeployActions: false,
-          allowPostDeployActions: true,
           dropUnmatchedIndexes: false,
           analyzeResourceTables: true,
-        })
-      ).resolves.not.toThrow();
-    });
-
-    test('with skipPostDeployActions', async () => {
-      await expect(() =>
-        generateMigrationActions({
-          dbClient: getDatabasePool(DatabaseMode.WRITER),
-          skipPostDeployActions: true,
         })
       ).resolves.not.toThrow();
     });

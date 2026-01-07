@@ -40,7 +40,6 @@ export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirRespon
   const actions = await generateMigrationActions({
     dbClient,
     dropUnmatchedIndexes: true,
-    allowPostDeployActions: true,
   });
 
   writePreDeployActionsToBuilder(b, [...actions.preDeploy, ...actions.postDeploy]);

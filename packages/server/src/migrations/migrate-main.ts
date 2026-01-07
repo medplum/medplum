@@ -30,8 +30,6 @@ export async function main(): Promise<void> {
   });
   const options: BuildMigrationOptions = {
     dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
     analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
     writeSchema: process.argv.includes('--writeSchema'),

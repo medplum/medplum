@@ -62,8 +62,6 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 export type BuildMigrationOptions = {
   dbClient: DbClient;
   dropUnmatchedIndexes?: boolean;
-  skipPostDeployActions?: boolean;
-  allowPostDeployActions?: boolean;
   analyzeResourceTables?: boolean;
   writeSchema?: boolean;
   skipMigration?: boolean;
@@ -100,18 +98,6 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     preDeploy: [],
     postDeploy: [],
   };
-  const ctx: GenerateActionsContext = {
-    postDeployAction: (action, description) => {
-      if (options.skipPostDeployActions) {
-        console.log(`Skipping post-deploy migration for: ${description}`);
-        return;
-      }
-
-      assert(options.allowPostDeployActions, `Post-deploy migration required for: ${description}`);
-
-      action();
-    },
-  };
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
 
@@ -133,9 +119,9 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
       matchedStartTables.add(startTable);
       actions = combine([
         actions,
-        generateColumnsActions(ctx, startTable, targetTable),
-        generateIndexesActions(ctx, startTable, targetTable, options),
-        generateConstraintsActions(ctx, startTable, targetTable),
+        generateColumnsActions(startTable, targetTable),
+        generateIndexesActions(startTable, targetTable, options),
+        generateConstraintsActions(startTable, targetTable),
       ]);
     } else {
       actions.preDeploy.push({ type: 'CREATE_TABLE', definition: targetTable });
@@ -144,12 +130,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   for (const startTable of startDefinition.tables) {
     if (!matchedStartTables.has(startTable)) {
-      ctx.postDeployAction(
-        () => {
-          actions.postDeploy.push({ type: 'DROP_TABLE', tableName: startTable.name });
-        },
-        `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
-      );
+      actions.postDeploy.push({ type: 'DROP_TABLE', tableName: startTable.name });
     }
   }
 
@@ -1040,11 +1021,7 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
   }
 }
 
-function generateColumnsActions(
-  ctx: GenerateActionsContext,
-  startTable: TableDefinition,
-  targetTable: TableDefinition
-): PhasalMigration {
+function generateColumnsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
   let actions: PhasalMigration = {
     preDeploy: [],
     postDeploy: [],
@@ -1054,33 +1031,18 @@ function generateColumnsActions(
     if (!startColumn) {
       actions.preDeploy.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
-      actions = combine([actions, generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn)]);
+      actions = combine([actions, generateAlterColumnActions(targetTable, startColumn, targetColumn)]);
     }
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      ctx.postDeployAction(() => {
-        actions.postDeploy.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
-      }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
+      actions.postDeploy.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
     }
   }
   return actions;
 }
 
-type GenerateActionsContext = {
-  /**
-   * Guard function that should be called before writes of post-deploy actions.
-   * If `--skipPostDeploy` is provided, the action is skipped.
-   * If `--allowPostDeploy` is not provided, the action is performed.
-   * Otherwise, an error is thrown to halt the migration generation process.
-   * @param action - The post-deploy action to perform if the guard passes.
-   * @param description - A human-readable description of the action that is being checked
-   */
-  postDeployAction: (action: () => void, description: string) => void;
-};
-
 function generateAlterColumnActions(
-  ctx: GenerateActionsContext,
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
@@ -1090,44 +1052,38 @@ function generateAlterColumnActions(
     postDeploy: [],
   };
   if (startDef.defaultValue !== targetDef.defaultValue) {
-    ctx.postDeployAction(() => {
-      if (targetDef.defaultValue) {
-        actions.postDeploy.push({
-          type: 'ALTER_COLUMN_SET_DEFAULT',
-          tableName: tableDefinition.name,
-          columnName: targetDef.name,
-          defaultValue: targetDef.defaultValue,
-        });
-      } else {
-        actions.postDeploy.push({
-          type: 'ALTER_COLUMN_DROP_DEFAULT',
-          tableName: tableDefinition.name,
-          columnName: targetDef.name,
-        });
-      }
-    }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
+    if (targetDef.defaultValue) {
+      actions.postDeploy.push({
+        type: 'ALTER_COLUMN_SET_DEFAULT',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        defaultValue: targetDef.defaultValue,
+      });
+    } else {
+      actions.postDeploy.push({
+        type: 'ALTER_COLUMN_DROP_DEFAULT',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+      });
+    }
   }
 
   if (startDef.notNull !== targetDef.notNull) {
-    ctx.postDeployAction(() => {
-      actions.postDeploy.push({
-        type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
-        tableName: tableDefinition.name,
-        columnName: targetDef.name,
-        notNull: targetDef.notNull ?? false,
-      });
-    }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
+    actions.postDeploy.push({
+      type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
+      tableName: tableDefinition.name,
+      columnName: targetDef.name,
+      notNull: targetDef.notNull ?? false,
+    });
   }
 
   if (startDef.type !== targetDef.type) {
-    ctx.postDeployAction(() => {
-      actions.postDeploy.push({
-        type: 'ALTER_COLUMN_TYPE',
-        tableName: tableDefinition.name,
-        columnName: targetDef.name,
-        columnType: targetDef.type,
-      });
-    }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
+    actions.postDeploy.push({
+      type: 'ALTER_COLUMN_TYPE',
+      tableName: tableDefinition.name,
+      columnName: targetDef.name,
+      columnType: targetDef.type,
+    });
   }
   return actions;
 }
@@ -1222,7 +1178,6 @@ function getDropIndexQuery(indexName: string): string {
 }
 
 function generateIndexesActions(
-  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
@@ -1267,16 +1222,11 @@ function generateIndexesActions(
     if (startIndex) {
       matchedIndexes.add(startIndex);
     } else {
-      ctx.postDeployAction(
-        () => {
-          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
-            concurrent: true,
-            ifNotExists: true,
-          });
-          actions.postDeploy.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
-        },
-        `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
-      );
+      const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
+        concurrent: true,
+        ifNotExists: true,
+      });
+      actions.postDeploy.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
     }
   }
 
@@ -1296,11 +1246,7 @@ function generateIndexesActions(
   return actions;
 }
 
-function generateConstraintsActions(
-  ctx: GenerateActionsContext,
-  startTable: TableDefinition,
-  targetTable: TableDefinition
-): PhasalMigration {
+function generateConstraintsActions(startTable: TableDefinition, targetTable: TableDefinition): PhasalMigration {
   const actions: PhasalMigration = {
     preDeploy: [],
     postDeploy: [],
@@ -1320,17 +1266,12 @@ function generateConstraintsActions(
     if (startConstraint) {
       matchedConstraints.add(startConstraint);
     } else {
-      ctx.postDeployAction(
-        () => {
-          actions.postDeploy.push({
-            type: 'ADD_CONSTRAINT',
-            tableName: targetTable.name,
-            constraintName: targetConstraint.name,
-            constraintExpression: targetConstraint.expression,
-          });
-        },
-        `ADD CONSTRAINT ${escapeIdentifier(targetConstraint.name)} ON ${escapeIdentifier(targetTable.name)} ...`
-      );
+      actions.postDeploy.push({
+        type: 'ADD_CONSTRAINT',
+        tableName: targetTable.name,
+        constraintName: targetConstraint.name,
+        constraintExpression: targetConstraint.expression,
+      });
     }
   }
 
