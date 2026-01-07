@@ -310,7 +310,9 @@ superAdminRouter.post('/reconcile-db-schema-drift', async (req: Request, res: Re
     allowPostDeployActions: true,
   });
 
-  if (migrationActions.length === 0) {
+  const allActions = [...migrationActions.preDeploy, ...migrationActions.postDeploy];
+
+  if (allActions.length === 0) {
     // Nothing to do
     sendOutcome(res, allOk);
     return;

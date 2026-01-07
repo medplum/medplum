@@ -16,7 +16,7 @@ import type {
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
-import type { MigrationAction } from '../migrations/types';
+import type { PhasalMigration } from '../migrations/types';
 import type { ServerRegistryInfo } from '../server-registry';
 import { getRegisteredServers } from '../server-registry';
 import { withTestContext } from '../test.setup';
@@ -213,18 +213,21 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/reconcile-schema-drift',
     });
 
-    const migrationActions: MigrationAction[] = [
-      {
-        type: 'CREATE_INDEX',
-        indexName: 'some_necessary_test_index',
-        createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
-      },
-    ];
+    const migration: PhasalMigration = {
+      preDeploy: [],
+      postDeploy: [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'some_necessary_test_index',
+          createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
+        },
+      ],
+    };
 
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migrationActions);
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migration);
       job = {
         id: '1',
         data: jobData,
@@ -237,7 +240,11 @@ describe('Post-Deploy Migration Worker', () => {
 
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
     expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(1);
-    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), expect.any(Array), migrationActions);
+    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Array),
+      migration.postDeploy
+    );
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');

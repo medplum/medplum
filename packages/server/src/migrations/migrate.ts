@@ -38,6 +38,7 @@ import type {
   IndexType,
   MigrationAction,
   MigrationActionResult,
+  PhasalMigration,
   SchemaDefinition,
   TableDefinition,
 } from './types';
@@ -68,9 +69,11 @@ export type BuildMigrationOptions = {
   skipMigration?: boolean;
 };
 
-export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
-  const actions = await generateMigrationActions(options);
-  writeActionsToBuilder(b, actions);
+function combine(migrations: PhasalMigration[]): PhasalMigration {
+  return {
+    preDeploy: migrations.flatMap((m) => m.preDeploy),
+    postDeploy: migrations.flatMap((m) => m.postDeploy),
+  };
 }
 
 export function buildSchema(builder: FileBuilder): void {
@@ -92,7 +95,11 @@ export function buildSchema(builder: FileBuilder): void {
   writeSchema(builder, actions);
 }
 
-export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
+export async function generateMigrationActions(options: BuildMigrationOptions): Promise<PhasalMigration> {
+  let actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
   const ctx: GenerateActionsContext = {
     postDeployAction: (action, description) => {
       if (options.skipPostDeployActions) {
@@ -107,12 +114,11 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
   };
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
-  const actions: MigrationAction[] = [];
 
   for (const targetFunction of targetDefinition.functions) {
     const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
     if (!startFunction) {
-      actions.push({
+      actions.preDeploy.push({
         type: 'CREATE_FUNCTION',
         name: targetFunction.name,
         createQuery: targetFunction.createQuery,
@@ -125,13 +131,14 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (startTable) {
       matchedStartTables.add(startTable);
-      actions.push(
-        ...generateColumnsActions(ctx, startTable, targetTable),
-        ...generateIndexesActions(ctx, startTable, targetTable, options),
-        ...generateConstraintsActions(ctx, startTable, targetTable)
-      );
+      actions = combine([
+        actions,
+        generateColumnsActions(ctx, startTable, targetTable),
+        generateIndexesActions(ctx, startTable, targetTable, options),
+        generateConstraintsActions(ctx, startTable, targetTable),
+      ]);
     } else {
-      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+      actions.preDeploy.push({ type: 'CREATE_TABLE', definition: targetTable });
     }
   }
 
@@ -139,7 +146,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     if (!matchedStartTables.has(startTable)) {
       ctx.postDeployAction(
         () => {
-          actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
+          actions.postDeploy.push({ type: 'DROP_TABLE', tableName: startTable.name });
         },
         `DROP TABLE ${escapeMixedCaseIdentifier(startTable.name)}`
       );
@@ -148,7 +155,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
 
   if (options.analyzeResourceTables) {
     for (const resourceType of getResourceTypes()) {
-      actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
+      actions.preDeploy.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
     }
   }
   return actions;
@@ -915,7 +922,29 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
     }
   }
 }
-export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+
+export function writePostDeployActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+  b.append("import type { PoolClient } from 'pg';");
+  b.append("import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';");
+  b.append("import * as fns from '../migrate-functions';");
+  b.append("import type { MigrationActionResult } from '../types';");
+  b.append("import type { CustomPostDeployMigration } from './types';");
+  b.newLine();
+  b.append('export const migration: CustomPostDeployMigration = {');
+  b.append("  type: 'custom',");
+  b.append('  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),');
+  b.append('  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),');
+  b.append('};');
+  b.newLine();
+  b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
+  b.append('async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {');
+  b.indentCount++;
+  writeActionsToBuilder(b, actions);
+  b.indentCount--;
+  b.append('}');
+}
+
+export function writePreDeployActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import type { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
@@ -923,7 +952,12 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
   b.append('const results: { name: string; durationMs: number }[] = []');
+  writeActionsToBuilder(b, actions);
+  b.indentCount--;
+  b.append('}');
+}
 
+export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
@@ -1004,29 +1038,29 @@ export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]
       }
     }
   }
-
-  b.indentCount--;
-  b.append('}');
 }
 
 function generateColumnsActions(
   ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  let actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
-      actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
+      actions.preDeploy.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startTable, startColumn, targetColumn)) {
-      actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
+      actions = combine([actions, generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn)]);
     }
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
       ctx.postDeployAction(() => {
-        actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+        actions.postDeploy.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
       }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
     }
   }
@@ -1050,19 +1084,22 @@ function generateAlterColumnActions(
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
   if (startDef.defaultValue !== targetDef.defaultValue) {
     ctx.postDeployAction(() => {
       if (targetDef.defaultValue) {
-        actions.push({
+        actions.postDeploy.push({
           type: 'ALTER_COLUMN_SET_DEFAULT',
           tableName: tableDefinition.name,
           columnName: targetDef.name,
           defaultValue: targetDef.defaultValue,
         });
       } else {
-        actions.push({
+        actions.postDeploy.push({
           type: 'ALTER_COLUMN_DROP_DEFAULT',
           tableName: tableDefinition.name,
           columnName: targetDef.name,
@@ -1073,7 +1110,7 @@ function generateAlterColumnActions(
 
   if (startDef.notNull !== targetDef.notNull) {
     ctx.postDeployAction(() => {
-      actions.push({
+      actions.postDeploy.push({
         type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
         tableName: tableDefinition.name,
         columnName: targetDef.name,
@@ -1084,7 +1121,7 @@ function generateAlterColumnActions(
 
   if (startDef.type !== targetDef.type) {
     ctx.postDeployAction(() => {
-      actions.push({
+      actions.postDeploy.push({
         type: 'ALTER_COLUMN_TYPE',
         tableName: tableDefinition.name,
         columnName: targetDef.name,
@@ -1189,8 +1226,11 @@ function generateIndexesActions(
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
 
   const matchedIndexes = new Set<IndexDefinition>();
   const seenIndexNames = new Set<string>();
@@ -1233,7 +1273,7 @@ function generateIndexesActions(
             concurrent: true,
             ifNotExists: true,
           });
-          actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
+          actions.postDeploy.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
         },
         `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
@@ -1249,7 +1289,7 @@ function generateIndexesActions(
       if (options?.dropUnmatchedIndexes) {
         const indexName = parseIndexName(startIndex.indexdef ?? '');
         assert(indexName, new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex }));
-        actions.push({ type: 'DROP_INDEX', indexName });
+        actions.preDeploy.push({ type: 'DROP_INDEX', indexName });
       }
     }
   }
@@ -1260,8 +1300,11 @@ function generateConstraintsActions(
   ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition
-): MigrationAction[] {
-  const actions: MigrationAction[] = [];
+): PhasalMigration {
+  const actions: PhasalMigration = {
+    preDeploy: [],
+    postDeploy: [],
+  };
 
   const matchedConstraints = new Set<CheckConstraintDefinition>();
   const seenNames = new Set<string>();
@@ -1279,7 +1322,7 @@ function generateConstraintsActions(
     } else {
       ctx.postDeployAction(
         () => {
-          actions.push({
+          actions.postDeploy.push({
             type: 'ADD_CONSTRAINT',
             tableName: targetTable.name,
             constraintName: targetConstraint.name,

@@ -14,6 +14,8 @@ import {
   indexStructureDefinitionsAndSearchParameters,
   parseIndexName,
   writeActionsToBuilder,
+  writePostDeployActionsToBuilder,
+  writePreDeployActionsToBuilder,
 } from './migrate';
 import * as fns from './migrate-functions';
 import type {
@@ -568,14 +570,43 @@ describe('writeActionsToBuilder and executeMigrationActions', () => {
     jest.restoreAllMocks();
   });
 
-  test('writeActionsToBuilder generates boilerplate', () => {
+  test('writePreDeployActionsToBuilder generates boilerplate', () => {
     const builder = new FileBuilder();
-    writeActionsToBuilder(builder, []);
+    writePreDeployActionsToBuilder(builder, []);
     const output = builder.toString();
     expect(output).toContain("import type { PoolClient } from 'pg';");
     expect(output).toContain("import * as fns from '../migrate-functions';");
     expect(output).toContain('export async function run(client: PoolClient): Promise<void>');
     expect(output).toContain('const results: { name: string; durationMs: number }[] = []');
+  });
+
+  test('writePostDeployActionsToBuilder generates boilerplate', () => {
+    const builder = new FileBuilder();
+    writePostDeployActionsToBuilder(builder, []);
+    const output = builder.toString();
+    expect(output).toContain(`
+import type { PoolClient } from 'pg';
+import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
+import * as fns from '../migrate-functions';
+import type { MigrationActionResult } from '../types';
+import type { CustomPostDeployMigration } from './types';
+
+export const migration: CustomPostDeployMigration = {
+  type: 'custom',
+  prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+  run: async (repo, job, jobData) => runCustomMigration(repo, job, jobData, callback),
+};
+
+// prettier-ignore
+async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
+`);
+  });
+
+  test('writeActionsToBuilder does not generate boilerplate', () => {
+    const builder = new FileBuilder();
+    writeActionsToBuilder(builder, []);
+    const output = builder.toString();
+    expect(output).not.toContain("import type { PoolClient } from 'pg';");
   });
 
   test.each(migrationActionTestCases)('$name action', async ({ action, builderExpected, executionCheck }) => {
