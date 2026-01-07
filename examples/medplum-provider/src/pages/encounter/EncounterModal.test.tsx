@@ -150,13 +150,16 @@ describe('EncounterModal', () => {
     });
 
     // Wait for autocomplete options and select
-    await waitFor(() => {
-      const option = screen.queryByText(/ambulatory/i);
-      if (option) {
-        return true;
-      }
-      return false;
-    }, { timeout: 2000 }).catch(() => {});
+    await waitFor(
+      () => {
+        const option = screen.queryByText(/ambulatory/i);
+        if (option) {
+          return true;
+        }
+        return false;
+      },
+      { timeout: 2000 }
+    ).catch(() => {});
 
     const ambOption = screen.queryByText(/ambulatory/i);
     if (ambOption) {
@@ -173,13 +176,16 @@ describe('EncounterModal', () => {
     });
 
     // Wait for status option
-    await waitFor(() => {
-      const option = screen.queryByText(/in-progress/i);
-      if (option) {
-        return true;
-      }
-      return false;
-    }, { timeout: 2000 }).catch(() => {});
+    await waitFor(
+      () => {
+        const option = screen.queryByText(/in-progress/i);
+        if (option) {
+          return true;
+        }
+        return false;
+      },
+      { timeout: 2000 }
+    ).catch(() => {});
 
     const statusOption = screen.queryByText(/in-progress/i);
     if (statusOption) {

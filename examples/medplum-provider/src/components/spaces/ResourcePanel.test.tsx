@@ -34,10 +34,7 @@ describe('ResourcePanel', () => {
           <MantineProvider>
             <Notifications />
             <Routes>
-              <Route
-                path="/spaces"
-                element={<ResourcePanel resource={resource as any} />}
-              />
+              <Route path="/spaces" element={<ResourcePanel resource={resource as any} />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>

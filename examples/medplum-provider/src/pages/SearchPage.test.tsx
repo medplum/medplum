@@ -24,13 +24,9 @@ describe('SearchPage', () => {
     localStorage.clear();
   });
 
-  async function setup(
-    url: string,
-    client = medplum,
-    userConfig?: UserConfiguration
-  ): Promise<void> {
+  async function setup(url: string, client = medplum, userConfig?: UserConfiguration): Promise<void> {
     if (userConfig) {
-      vi.spyOn(client, 'getUserConfiguration').mockReturnValue(userConfig as unknown as   WithId<UserConfiguration>);
+      vi.spyOn(client, 'getUserConfiguration').mockReturnValue(userConfig as unknown as WithId<UserConfiguration>);
     }
     await act(async () => {
       render(
