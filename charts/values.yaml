@@ -3,21 +3,21 @@
 # Declare variables to be passed into your templates.
 
 global:
-  cloudProvider: gcp # Supported values: gcp, azure
+  cloudProvider: azure # Supported values: gcp, azure
   configSource:
     # Examples:
     # type: "env"
     # type: "aws:region:parameterName"
     # type: "gcp:projectId:secretId"
     # type: "azure:keyVaultURL:secretName"
-    type: 'env' # Default to env
+    type: 'azure:darren-medplum-dev-kv.vault.azure.net:medplum-config'
 
 serviceAccount:
   annotations:
     # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
     # iam.gke.io/gcp-service-account: ""
     # Set your Azure Managed Identity Client ID for Azure workload identity
-    # azure.workload.identity/client-id: ""
+    azure.workload.identity/client-id: "2ca6ac01-dd38-4512-9d1b-75233d545f87"
 
 namespace: medplum
 
@@ -74,6 +74,6 @@ service: {}
 ingress:
   deploy: true
   # Set your domain name (e.g., medplum.example.com)
-  domain: ''
+  domain: 'api.darren-azure.foomedical.dev'
   # Set your TLS secret name (Azure only)
   tlsSecretName: ''

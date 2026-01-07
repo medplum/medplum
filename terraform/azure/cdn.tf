@@ -86,7 +86,8 @@ resource "azurerm_cdn_frontdoor_custom_domain" "fd_custom_domain" {
   host_name                = var.app_domain
 
   tls {
-    certificate_type    = "CustomerCertificate"
+    # Use Azure-managed certificate (free, auto-renewed)
+    certificate_type    = "ManagedCertificate"
     minimum_tls_version = "TLS12"
   }
 }
