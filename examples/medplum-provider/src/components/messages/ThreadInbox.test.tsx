@@ -26,8 +26,9 @@ const mockCommunication: Communication | undefined = {
   subject: { reference: `Patient/${HomerSimpson.id}` },
 };
 
-const mockHandleNewThread = vi.fn();
-const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockOnNew = vi.fn();
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockOnChange = vi.fn();
 
 describe('ThreadInbox', () => {
   let medplum: MockClient;
@@ -64,8 +65,11 @@ describe('ThreadInbox', () => {
               threadId={props?.threadId}
               showPatientSummary={props?.showPatientSummary ?? false}
               subject={props?.subject}
-              handleNewThread={mockHandleNewThread}
-              onSelectedItem={mockOnSelectedItem}
+              onNew={mockOnNew}
+              getThreadUri={mockGetThreadUri}
+              onChange={mockOnChange}
+              inProgressUri="/Communication?status=in-progress"
+              completedUri="/Communication?status=completed"
             />
           </MedplumProvider>
         </MemoryRouter>
