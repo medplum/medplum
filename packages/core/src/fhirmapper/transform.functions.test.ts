@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
@@ -20,7 +22,7 @@ describe('FHIR Mapper transform functions', () => {
     const input = [toTypedValue({ value: 123 })];
     const expected = [toTypedValue({ value: '123' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('cc with text', () => {

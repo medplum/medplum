@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -7,6 +9,7 @@ import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
 const navigateMock = jest.fn();
+const toggleMock = jest.fn();
 const closeMock = jest.fn();
 
 async function setup(initial = '/'): Promise<void> {
@@ -39,8 +42,10 @@ async function setup(initial = '/'): Promise<void> {
       <MedplumProvider medplum={medplum} navigate={navigateMock}>
         <MantineAppShell>
           <Navbar
+            logo={<div>Logo</div>}
             pathname={initialUrl.pathname}
             searchParams={initialUrl.searchParams}
+            navbarToggle={toggleMock}
             closeNavbar={closeMock}
             menus={[
               {
@@ -99,14 +104,9 @@ describe('Navbar', () => {
     const link3 = screen.getByText('Link 3');
     expect(link3).toBeInTheDocument();
 
-    // Mantine will add a class to the parent element
-    // Mantine uses generated class names, so we can't test for the exact class name
-    const activeClass = link1.parentElement?.className;
-    const inactiveClass = link2.parentElement?.className;
-    expect(activeClass).not.toEqual(inactiveClass);
-    expect(link1.parentElement?.className).toEqual(activeClass);
-    expect(link2.parentElement?.className).toEqual(inactiveClass);
-    expect(link3.parentElement?.className).toEqual(inactiveClass);
+    expect(link1.parentElement?.dataset?.['active']).toEqual('true');
+    expect(link2.parentElement?.dataset?.['active']).toBeUndefined();
+    expect(link3.parentElement?.dataset?.['active']).toBeUndefined();
   });
 
   test('Highlighted by search params', async () => {
@@ -121,14 +121,9 @@ describe('Navbar', () => {
     const link3 = screen.getByText('Link 6');
     expect(link3).toBeInTheDocument();
 
-    // Mantine will add a class to the parent element
-    // Mantine uses generated class names, so we can't test for the exact class name
-    const activeClass = link1.parentElement?.className;
-    const inactiveClass = link2.parentElement?.className;
-    expect(activeClass).not.toEqual(inactiveClass);
-    expect(link1.parentElement?.className).toEqual(activeClass);
-    expect(link2.parentElement?.className).toEqual(inactiveClass);
-    expect(link3.parentElement?.className).toEqual(inactiveClass);
+    expect(link1.parentElement?.dataset?.['active']).toEqual('true');
+    expect(link2.parentElement?.dataset?.['active']).toBeUndefined();
+    expect(link3.parentElement?.dataset?.['active']).toBeUndefined();
   });
 
   test('Highlighted link ignores _offset', async () => {
@@ -143,14 +138,9 @@ describe('Navbar', () => {
     const link3 = screen.getByText('Link 6');
     expect(link3).toBeInTheDocument();
 
-    // Mantine will add a class to the parent element
-    // Mantine uses generated class names, so we can't test for the exact class name
-    const activeClass = link1.parentElement?.className;
-    const inactiveClass = link2.parentElement?.className;
-    expect(activeClass).not.toEqual(inactiveClass);
-    expect(link1.parentElement?.className).toEqual(activeClass);
-    expect(link2.parentElement?.className).toEqual(inactiveClass);
-    expect(link3.parentElement?.className).toEqual(inactiveClass);
+    expect(link1.parentElement?.dataset?.['active']).toEqual('true');
+    expect(link2.parentElement?.dataset?.['active']).toBeUndefined();
+    expect(link3.parentElement?.dataset?.['active']).toBeUndefined();
   });
 
   test('Click link on desktop', async () => {

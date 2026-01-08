@@ -6,21 +6,25 @@ concurrency:
 
 on:
   pull_request:
-  push:
-    branches:
-      - main
-      - medplum/test-actions
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
 
 jobs:
   autofix:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          node-version: 20
+          node-version: '24'
 
-      - run: npm ci --maxsockets 1
+      - run: npm ci
       - run: npm run prettier
+      - run: npm run lint:fix
 
-      - uses: autofix-ci/action@d3e591514b99d0fca6779455ff8338516663f7cc
+      - uses: autofix-ci/action@2891949f3779a1cafafae1523058501de3d4e944

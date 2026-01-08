@@ -1,8 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
-import { ReactNode } from 'react';
-import { InfoBar } from './InfoBar';
+import type { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
+import { InfoBar, MedplumLink, useResource } from '@medplum/react';
+import type { JSX, ReactNode } from 'react';
 
 export interface ResourceHeaderProps {
   readonly resource: Resource | Reference;
@@ -75,8 +76,8 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   return (
     <InfoBar>
-      {entries.map((entry) => (
-        <InfoBar.Entry key={`${entry.key}-${entry.value}`}>
+      {entries.map((entry, index) => (
+        <InfoBar.Entry key={`${entry.key}-${index}`}>
           <InfoBar.Key>{entry.key}</InfoBar.Key>
           <InfoBar.Value>{entry.value}</InfoBar.Value>
         </InfoBar.Entry>

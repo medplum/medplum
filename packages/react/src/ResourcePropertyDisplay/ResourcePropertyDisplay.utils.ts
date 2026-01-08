@@ -1,9 +1,7 @@
-import {
-  getTypedPropertyValue,
-  getTypedPropertyValueWithSchema,
-  InternalSchemaElement,
-  TypedValue,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement, TypedValue } from '@medplum/core';
+import { getTypedPropertyValue, getTypedPropertyValueWithSchema } from '@medplum/core';
 
 /**
  * Returns the value of the property and the property type.

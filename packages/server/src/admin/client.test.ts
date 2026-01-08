@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, resolveId } from '@medplum/core';
 import type { BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -5,7 +7,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
@@ -44,7 +46,6 @@ describe('Client admin', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('ClientApplication');
     expect(res2.body.id).toBeDefined();
-    expect(res2.body.secret).toBeDefined();
     expect(res2.body.secret).toHaveLength(64);
 
     // Read the client

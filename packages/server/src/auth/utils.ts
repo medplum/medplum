@@ -1,20 +1,27 @@
-import {
-  badRequest,
-  createReference,
-  OperationOutcomeError,
-  Operator,
-  ProfileResource,
-  resolveId,
-} from '@medplum/core';
-import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, Operator, resolveId } from '@medplum/core';
+import type {
+  ContactPoint,
+  Login,
+  OperationOutcome,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { Handler, NextFunction, Request, Response } from 'express';
+import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { getConfig } from '../config';
-import { getLogger } from '../context';
+import { authenticator } from 'otplib';
+import { toDataURL } from 'qrcode';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
+import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
@@ -23,7 +30,7 @@ export async function createProfile(
   firstName: string,
   lastName: string,
   email: string | undefined
-): Promise<ProfileResource> {
+): Promise<WithId<ProfileResource>> {
   const logger = getLogger();
   logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
@@ -50,16 +57,16 @@ export async function createProfile(
 }
 
 export async function createProjectMembership(
+  repo: Repository,
   user: User,
   project: Project,
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  const systemRepo = getSystemRepo();
-  const result = await systemRepo.createResource<ProjectMembership>({
+  const result = await repo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),
@@ -80,6 +87,16 @@ export async function createProjectMembership(
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+
+  if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
+    const accountName = `Medplum - ${user.email}`;
+    const issuer = 'medplum.com';
+    const secret = user.mfaSecret as string;
+    const otp = authenticator.keyuri(accountName, issuer, secret);
+    res.json({ login: login.id, mfaEnrollRequired: true, enrollUri: otp, enrollQrCode: await toDataURL(otp) });
+    return;
+  }
+
   if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     res.json({ login: login.id, mfaRequired: true });
     return;
@@ -109,6 +126,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     id: m.id,
     project: m.project,
     profile: m.profile,
+    identifier: m.identifier,
   }));
   res.json(
     await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {

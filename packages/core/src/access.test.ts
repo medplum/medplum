@@ -1,11 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { AccessPolicy, Bundle, Communication, Observation, SearchParameter } from '@medplum/fhirtypes';
+import type { AccessPolicy, Bundle, Communication, Observation, SearchParameter } from '@medplum/fhirtypes';
 import {
   AccessPolicyInteraction,
   canReadResourceType,
   canWriteResource,
   canWriteResourceType,
-  matchesAccessPolicy,
   satisfiedAccessPolicy,
 } from './access';
 import { indexSearchParameterBundle } from './types';
@@ -43,6 +44,10 @@ const restrictedPolicy: AccessPolicy = {
       resourceType: 'Communication',
       readonly: true,
       criteria: 'Communication?status=completed',
+    },
+    {
+      resourceType: 'List',
+      interaction: ['read', 'search', 'create'],
     },
   ],
 };
@@ -99,10 +104,10 @@ describe('Access', () => {
 
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, undefined)?.resourceType
-    ).toEqual('*');
+    ).toStrictEqual('*');
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, wildcardPolicy)?.resourceType
-    ).toEqual('*');
+    ).toStrictEqual('*');
 
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
@@ -113,17 +118,31 @@ describe('Access', () => {
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )?.resourceType
-    ).toEqual('Observation');
+    ).toStrictEqual('Observation');
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'in-progress' },
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )?.criteria
-    ).toEqual('Communication?status=in-progress');
+    ).toStrictEqual('Communication?status=in-progress');
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'completed' },
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )
+    ).toBeUndefined();
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
+        AccessPolicyInteraction.CREATE,
+        restrictedPolicy
+      )
+    ).toStrictEqual(expect.objectContaining({ resourceType: 'List' }));
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )
@@ -143,7 +162,19 @@ describe('Access', () => {
         },
       ],
     };
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } }, true));
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false));
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } },
+        AccessPolicyInteraction.READ,
+        ap
+      )
+    ).toBeDefined();
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } },
+        AccessPolicyInteraction.READ,
+        ap
+      )
+    ).toBeUndefined();
   });
 });

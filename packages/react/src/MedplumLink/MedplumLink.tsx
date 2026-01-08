@@ -1,11 +1,14 @@
-import { Anchor, TextProps } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AnchorProps } from '@mantine/core';
+import { Anchor } from '@mantine/core';
 import { isReference, isResource } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import type { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
-import { MouseEvent, MouseEventHandler, ReactNode } from 'react';
-import { killEvent } from '../utils/dom';
+import type { JSX, MouseEvent, MouseEventHandler, ReactNode } from 'react';
+import { isAuxClick } from '../utils/dom';
 
-export interface MedplumLinkProps extends TextProps {
+export interface MedplumLinkProps extends AnchorProps {
   readonly to?: Resource | Reference | string;
   readonly suffix?: string;
   readonly label?: string;
@@ -26,12 +29,23 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
     <Anchor
       href={href}
       aria-label={label}
+      onAuxClick={(e: MouseEvent) => {
+        // allow default browser behavior for anchor aux clicks
+        e.stopPropagation();
+      }}
       onClick={(e: MouseEvent) => {
-        killEvent(e);
+        e.stopPropagation();
         if (onClick) {
+          // onClick() takes the place of default anchor click behavior
+          e.preventDefault();
           onClick(e);
         } else if (to) {
-          navigate(href);
+          // allow default browser behavior for anchor aux clicks
+          if (!isAuxClick(e)) {
+            // navigate() takes the place of default anchor click behavior
+            e.preventDefault();
+            navigate(href);
+          }
         }
       }}
       {...rest}

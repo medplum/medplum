@@ -1,15 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
-import { Schedule } from '@medplum/fhirtypes';
-import { Document, Loading, useMedplum, useSearchResources } from '@medplum/react';
+import type { Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { Document, Loading, useMedplum, useMedplumProfile, usePrevious } from '@medplum/react';
 import dayjs from 'dayjs';
-import { useCallback, useContext, useState } from 'react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { Calendar, dayjsLocalizer } from 'react-big-calendar';
+import type { Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useParams } from 'react-router-dom';
-import { ScheduleContext } from '../Schedule.context';
-import { Title } from '@mantine/core';
+import { useParams } from 'react-router';
 import { CreateAppointment } from '../components/actions/CreateAppointment';
+import { ScheduleContext } from '../Schedule.context';
 
 /**
  * PatientSchedulePage component that displays the practitioner's schedule as part of the
@@ -22,11 +26,45 @@ export function PatientSchedulePage(): JSX.Element {
 
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event>();
-  const { schedule } = useContext(ScheduleContext);
 
   const medplum = useMedplum();
-  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule), _count: '100' });
   const patient = patientId ? medplum.readResource('Patient', patientId).read() : undefined;
+
+  const { schedule } = useContext(ScheduleContext);
+  const profile = useMedplumProfile() as Practitioner;
+
+  const prevSchedule = usePrevious(schedule);
+  const prevProfile = usePrevious(profile);
+
+  const [shouldRefreshCalender, setShouldRefreshCalender] = useState(true);
+
+  const [slots, setSlots] = useState<Slot[]>();
+
+  useEffect(() => {
+    if ((schedule && prevSchedule?.id !== schedule?.id) || (profile && prevProfile?.id !== profile?.id)) {
+      setShouldRefreshCalender(true);
+    }
+  }, [schedule, profile, prevSchedule?.id, prevProfile?.id]);
+
+  useEffect(() => {
+    async function searchSlots(): Promise<void> {
+      const slots = await medplum.searchResources(
+        'Slot',
+        {
+          schedule: getReferenceString(schedule as Schedule),
+          _count: '100',
+        },
+        { cache: 'no-cache' }
+      );
+      setSlots(slots);
+    }
+
+    if (shouldRefreshCalender) {
+      searchSlots()
+        .then(() => setShouldRefreshCalender(false))
+        .catch(console.error);
+    }
+  }, [medplum, schedule, shouldRefreshCalender]);
 
   // Converts Slot resources to big-calendar Event objects
   // Only show free slots (available for booking)
@@ -76,6 +114,7 @@ export function PatientSchedulePage(): JSX.Element {
         event={selectedEvent}
         opened={createAppointmentOpened}
         handlers={createAppointmentHandlers}
+        onAppointmentsUpdated={() => setShouldRefreshCalender(true)}
       />
     </Document>
   );

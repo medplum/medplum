@@ -1,4 +1,6 @@
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './welcome-patient';
@@ -23,5 +25,5 @@ test('Welcome Patient', async () => {
     contentType: 'text/plain',
   });
   expect(welcomeMessage).toBeDefined();
-  expect(welcomeMessage).toEqual('Welcome Marge Simpson');
+  expect(welcomeMessage).toStrictEqual('Welcome Marge Simpson');
 });

@@ -1,8 +1,10 @@
-import { type MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
@@ -34,7 +36,7 @@ describe('SignInPage', () => {
 
   function expectSigninPageRendered(): void {
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
   }
 
   test('Renders', async () => {
@@ -51,7 +53,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -59,7 +61,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
@@ -73,11 +75,11 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Forgot password'));
+      fireEvent.click(screen.getByText('Reset Password'));
     });
   });
 
@@ -106,7 +108,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -114,7 +116,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     expect(await screen.findByText('Batch Create')).toBeInTheDocument();
@@ -128,7 +130,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
     });
 
     await act(async () => {
@@ -136,7 +138,7 @@ describe('SignInPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
     });
 
     // should redirect to the homepage

@@ -1,4 +1,5 @@
 import { buildTypeName } from '@medplum/core';
+import { JSX } from 'react';
 import styles from './ResourceTables.module.css';
 
 import {

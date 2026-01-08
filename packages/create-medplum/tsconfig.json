@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "module": "esnext",
+    "types": ["jest", "vite/client", "node"],
+    "lib": ["esnext", "dom"],
+    "outDir": "dist/types",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "include": ["src/**/*.ts"]
+}

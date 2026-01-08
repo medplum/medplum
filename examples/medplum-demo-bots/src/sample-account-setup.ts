@@ -1,5 +1,8 @@
-import { BotEvent, createReference, getReferenceString, LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getReferenceString, LOINC, SNOMED, UCUM } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
   AllergyIntolerance,
   BundleEntry,
   CarePlan,
@@ -22,7 +25,7 @@ import {
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
   const patientHistory = await medplum.readHistory('Patient', patient.id as string);
-  if ((patientHistory.entry as BundleEntry[]).length > 1) {
+  if ((patientHistory.entry?.length ?? 0) > 1) {
     console.log('Patient already has history');
     return;
   }
@@ -162,7 +165,7 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
       photo: [
         {
           contentType: 'image/png',
-          url: 'https://docs.medplum.com/img/cdc-femaledoc.png',
+          url: 'https://www.medplum.com/img/cdc-femaledoc.png',
         },
       ],
     },
@@ -206,7 +209,7 @@ async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner
  * @param schedule - The practitioner's schedule.
  * @param slotDate - The day of slots.
  */
-async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate: Date): Promise<void> {
+async function ensureSlots(medplum: MedplumClient, schedule: WithId<Schedule>, slotDate: Date): Promise<void> {
   const existingSlots = await medplum.search(
     'Slot',
     new URLSearchParams([

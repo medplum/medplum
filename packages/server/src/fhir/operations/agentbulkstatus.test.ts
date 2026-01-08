@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import {
+import type {
   Agent,
   Bundle,
   BundleEntry,
@@ -10,10 +12,12 @@ import {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import request, { Response } from 'supertest';
-import { AgentConnectionState, AgentInfo } from '../../agent/utils';
+import type { Response } from 'supertest';
+import request from 'supertest';
+import type { AgentInfo } from '../../agent/utils';
+import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 import { expectBundleToContainOutcome } from './utils/agenttestutils';
@@ -63,7 +67,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Medplum Agent',
         status: 'active',
       } satisfies Agent);
-    expect(agent1Res.status).toEqual(201);
+    expect(agent1Res.status).toStrictEqual(201);
 
     const agent2Res = await request(app)
       .post('/fhir/R4/Agent')
@@ -75,7 +79,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Old Medplum Agent',
         status: 'off',
       } satisfies Agent);
-    expect(agent2Res.status).toEqual(201);
+    expect(agent2Res.status).toStrictEqual(201);
 
     connectedAgent = agent1Res.body;
     disabledAgent = agent2Res.body;
@@ -123,8 +127,8 @@ describe('Agent/$bulk-status', () => {
     for (const entry of bundleEntries) {
       const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {
@@ -160,8 +164,8 @@ describe('Agent/$bulk-status', () => {
     for (let i = 0; i < 2; i++) {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {
@@ -192,8 +196,8 @@ describe('Agent/$bulk-status', () => {
     for (let i = 0; i < 1; i++) {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {
@@ -220,7 +224,7 @@ describe('Agent/$bulk-status', () => {
 
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
     await getRedis().set(
-      `medplum:agent:${agents[1].id as string}:info`,
+      `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         version: '3.1.4',
         lastUpdated: new Date().toISOString(),
@@ -240,11 +244,17 @@ describe('Agent/$bulk-status', () => {
     expect(bundle.entry).toHaveLength(1);
 
     expectBundleToContainOutcome(bundle, agents[1], {
-      issue: [expect.objectContaining({ severity: 'error', code: 'exception' })],
+      issue: [
+        expect.objectContaining({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('Invalid agent info: ') },
+        }),
+      ],
     });
 
     await getRedis().set(
-      `medplum:agent:${agents[1].id as string}:info`,
+      `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,
         version: 'unknown',
@@ -260,13 +270,12 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ 'name:contains': 'Medplum', _count: MAX_AGENTS_PER_PAGE + 1 })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
-      resourceType: 'OperationOutcome',
-      issue: expect.arrayContaining<OperationOutcomeIssue>([
-        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
-      ]),
+    expectBundleToContainStatusEntry(res.body, connectedAgent, {
+      status: AgentConnectionState.CONNECTED,
+      version: '3.1.4',
+      lastUpdated: expect.any(String),
     });
   });
 });

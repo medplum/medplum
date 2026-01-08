@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   createReference,
@@ -6,11 +8,11 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bot, Bundle, ClientApplication, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, ClientApplication, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { randomUUID } from 'crypto';
 import { handler } from './setup-medplum-agent';
 import response from './setup-medplum-agent.questionnaireresponse.json';
-import { randomUUID } from 'crypto';
 
 describe('Setup Medplum Agent', () => {
   beforeAll(() => {

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
 
 export const payorOrganization1: Organization = {
@@ -14,12 +16,18 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
+export const pharmacyOrganization: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-3',
+  name: 'Pharmacy',
+};
+
 export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
-  questionnaire: getReferenceString(intakeQuestionnaire),
+  questionnaire: intakeQuestionnaire.url,
   status: 'completed',
   item: [
     {
@@ -118,6 +126,26 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueString: '555-555-5555',
+            },
+          ],
+        },
+        {
+          id: 'id-44-1',
+          linkId: 'phone-sms',
+          text: 'Phone (SMS)',
+          answer: [
+            {
+              valueString: '555-555-5555',
+            },
+          ],
+        },
+        {
+          id: 'id-44-2',
+          linkId: 'email',
+          text: 'Email',
+          answer: [
+            {
+              valueString: 'marge@simpson.com',
             },
           ],
         },
@@ -556,6 +584,68 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-133',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-134',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '197',
+                display: 'influenza, high-dose seasonal, quadrivalent, 0.7mL dose, preservative free',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-135',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2024-02-01T14:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-136',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-137',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '115',
+                display: 'tetanus toxoid, reduced diphtheria toxoid, and acellular pertussis vaccine, adsorbed',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-138',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2015-08-01T15:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
@@ -809,6 +899,23 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      linkId: 'preferred-pharmacy',
+      text: 'Preferred Pharmacy',
+      item: [
+        {
+          linkId: 'preferred-pharmacy-reference',
+          text: 'Pharmacy',
+          answer: [
+            {
+              valueReference: {
+                reference: getReferenceString(pharmacyOrganization),
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-65',
       linkId: 'consent-for-treatment',
       text: 'Consent for Treatment',
@@ -916,6 +1023,43 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueDate: '2024-07-08',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      linkId: 'patient-contact-preference',
+      text: 'Contact Preferences',
+      item: [
+        {
+          linkId: 'patient-contact-preference-email',
+          text: 'Ok to send email appointment reminders',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'patient-contact-preference-call-or-text',
+          text: 'Ok to call/text',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'patient-contact-preference-preferred-method-for-phone-reminders',
+          text: 'Preferred method for phone reminders',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/contact-point-system',
+                code: 'phone',
+                display: 'Phone Call',
+              },
             },
           ],
         },

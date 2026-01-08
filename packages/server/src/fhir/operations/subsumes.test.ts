@@ -1,9 +1,11 @@
-import { Bundle, Parameters } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
+import type { Bundle, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -38,7 +40,7 @@ describe('CodeSystem subsumes', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumes');
   });
@@ -57,7 +59,7 @@ describe('CodeSystem subsumes', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumed-by');
   });
@@ -76,7 +78,7 @@ describe('CodeSystem subsumes', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('equivalent');
   });
@@ -95,7 +97,7 @@ describe('CodeSystem subsumes', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('not-subsumed');
   });
@@ -113,7 +115,7 @@ describe('CodeSystem subsumes', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(400);
-    expect(res2.body.resourceType).toEqual('OperationOutcome');
+    expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });
 
   test('GET endpoint', async () => {
@@ -122,7 +124,7 @@ describe('CodeSystem subsumes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumes');
   });
@@ -133,7 +135,7 @@ describe('CodeSystem subsumes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
-    expect(res.body.resourceType).toEqual('Bundle');
+    expect(res.body.resourceType).toStrictEqual('Bundle');
     const codeSystem = (res.body as Bundle).entry?.[0]?.resource;
 
     const res2 = await request(app)
@@ -141,7 +143,7 @@ describe('CodeSystem subsumes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'outcome')?.valueCode).toBe('subsumes');
   });

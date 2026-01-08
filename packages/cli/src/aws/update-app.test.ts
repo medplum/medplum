@@ -1,32 +1,35 @@
-import {
-  CloudFormationClient,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   CloudFormationClientResolvedConfig,
   ServiceInputTypes as CloudFormationServiceInputTypes,
   ServiceOutputTypes as CloudFormationServiceOutputTypes,
+} from '@aws-sdk/client-cloudformation';
+import {
+  CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import {
-  CloudFrontClient,
+import type {
   CloudFrontClientResolvedConfig,
   ServiceInputTypes as CloudFrontServiceInputTypes,
   ServiceOutputTypes as CloudFrontServiceOutputTypes,
-  CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
-import {
-  PutObjectCommand,
-  S3Client,
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import type {
   S3ClientResolvedConfig,
   ServiceInputTypes as S3ServiceInputTypes,
   ServiceOutputTypes as S3ServiceOutputTypes,
 } from '@aws-sdk/client-s3';
-import { AwsStub, mockClient } from 'aws-sdk-client-mock';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import type { AwsStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
 import fetch from 'node-fetch';
 import fs from 'node:fs';
 import { Readable, Writable } from 'node:stream';
-import tar from 'tar';
+import * as tar from 'tar';
 import { main } from '../index';
 
 jest.mock('fast-glob', () => ({

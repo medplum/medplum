@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="ce862cfe-6559-411e-92e9-e8d005b1c226" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <!-- conforms to Immunizations section with entries optional -->
+                    <templateId root="2.16.840.1.113883.10.20.22.2.2" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.2" extension="2015-08-01" />
+                    <!-- Immunizations section with entries required -->
+                    <templateId root="2.16.840.1.113883.10.20.22.2.2.1" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.2.1" extension="2015-08-01" />
+                    <code code="11369-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+                        displayName="History of immunizations" />
+                    <title>IMMUNIZATIONS</title>
+                    <text>
+                        <content ID="immunSect" />
+                        <table border="1" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Vaccine</th>
+                                    <th>Lot Number</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="immun1">
+                                    <td ID="ImmunizationProduct_100">Influenza Virus Vaccine</td>
+                                    <td>1</td>
+                                    <td>8/15/2010</td>
+                                    <td>Completed</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <substanceAdministration classCode="SBADM" moodCode="EVN"
+                            negationInd="false">
+                            <!-- ** Immunization activity ** -->
+                            <templateId root="2.16.840.1.113883.10.20.22.4.52" />
+                            <templateId root="2.16.840.1.113883.10.20.22.4.52"
+                                extension="2015-08-01" />
+                            <id root="e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92" />
+                            <text>
+                                <reference value="#immun1" />
+                            </text>
+                            <!-- Indicates the status of the substanceAdministartion -->
+                            <statusCode code="completed" />
+                            <effectiveTime value="20100815" />
+                            <consumable>
+                                <manufacturedProduct classCode="MANU">
+                                    <!-- ** Immunization medication information ** -->
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.54" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.54"
+                                        extension="2014-06-09" />
+                                    <manufacturedMaterial>
+                                        <code code="88" codeSystem="2.16.840.1.113883.12.292"
+                                            displayName="influenza virus vaccine, unspecified formulation"
+                                            codeSystemName="CVX">
+                                        </code>
+                                        <lotNumberText>1</lotNumberText>
+                                    </manufacturedMaterial>
+                                    <manufacturerOrganization>
+                                        <name>Health LS - Immuno Inc.</name>
+                                    </manufacturerOrganization>
+                                </manufacturedProduct>
+                            </consumable>
+                            <!-- Optional Performer -->
+                            <performer>
+                                <assignedEntity>
+                                    <id root="7ae96c77-6b8f-4e5a-9938-2f6392857789" />
+                                    <addr>
+                                        <streetAddressLine>1021 Health Drive</streetAddressLine>
+                                        <city>Ann Arbor</city>
+                                        <state>MI</state>
+                                        <postalCode>99099</postalCode>
+                                        <country>US</country>
+                                    </addr>
+                                    <telecom nullFlavor="UNK" />
+                                    <assignedPerson>
+                                        <id root="7ae96c77-6b8f-4e5a-9938-2f6392857789" />
+                                        <name>
+                                            <given>Amanda</given>
+                                            <family>Assigned</family>
+                                        </name>
+                                    </assignedPerson>
+                                    <representedOrganization>
+                                        <id root="7ae96c77-6b8f-4e5a-9938-2f6392857789" />
+                                        <name>Good Health Clinic</name>
+                                        <telecom nullFlavor="UNK" />
+                                        <addr nullFlavor="UNK" />
+                                    </representedOrganization>
+                                </assignedEntity>
+                            </performer>
+                            <!-- Optional Author -->
+                            <!--
+                            <author>
+                                <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+                                <time value="20100815" />
+                                <assignedAuthor>
+                                    <id extension="99999999" root="2.16.840.1.113883.4.6" />
+                                    <code code="207Q00000X" codeSystem="2.16.840.1.113883.6.101"
+                                        codeSystemName="Health Care Provider Taxonomy"
+                                        displayName="Allopathic &amp; Osteopathic Physicians; Family Medicine" />
+                                    <telecom value="tel:555-555-1002" />
+                                    <assignedPerson>
+                                        <name>
+                                            <given>Henry</given>
+                                            <family>Seven</family>
+                                        </name>
+                                    </assignedPerson>
+                                </assignedAuthor>
+                            </author>
+                            -->
+                        </substanceAdministration>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

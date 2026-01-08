@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType } from '@medplum/core';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { initTestAuth } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -84,5 +86,28 @@ describe('Email API Routes', () => {
     const parsed = await simpleParser(args.Content.Raw.Data);
     expect(parsed.subject).toBe('Subject');
     expect(parsed.text).toBe('Body\n');
+  });
+
+  test('Handle SES error', async () => {
+    (SESv2Client as unknown as jest.Mock).mockImplementation(() => {
+      return {
+        send: () => {
+          throw new Error('BadRequestException: Illegal address');
+        },
+      };
+    });
+
+    const accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        subject: 'Subject',
+        text: 'Body',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Error sending email: BadRequestException: Illegal address');
   });
 });

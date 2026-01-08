@@ -1,12 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference, resolveId } from '@medplum/core';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { addTestUser, createTestProject, withTestContext } from '../test.setup';
-import { Repository, getSystemRepo } from '../fhir/repo';
-import { User, UserSecurityRequest } from '@medplum/fhirtypes';
+import { loadTestConfig } from '../config/loader';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { verifyEmail } from './verifyemail';
 
 const app = express();
 
@@ -14,7 +19,7 @@ export async function createUserSecurityRequest(
   repo: Repository,
   user: User,
   type: UserSecurityRequest['type']
-): Promise<UserSecurityRequest> {
+): Promise<WithId<UserSecurityRequest>> {
   return repo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: {
@@ -26,7 +31,7 @@ export async function createUserSecurityRequest(
   });
 }
 
-describe('Verify email', () => {
+describe('Verify email handler', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -36,7 +41,7 @@ describe('Verify email', () => {
     await shutdownApp();
   });
 
-  let user: User;
+  let user: WithId<User>;
 
   beforeEach(async () => {
     const { project } = await createTestProject({
@@ -46,13 +51,13 @@ describe('Verify email', () => {
     const addUserResult = await addTestUser(project);
     user = addUserResult.user;
 
-    expect(user.emailVerified).not.toEqual(true);
+    expect(user.emailVerified).not.toStrictEqual(true);
   });
 
   test('Success', async () =>
     withTestContext(async () => {
       const systemRepo = getSystemRepo();
-      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email');
+      const usr = await verifyEmail(user);
 
       // Attempt verification with incorrect secret
       const res1 = await request(app)
@@ -72,14 +77,11 @@ describe('Verify email', () => {
       expect(res2.status).toBe(200);
 
       // Check that the security request was marked as used
-      const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>(
-        'UserSecurityRequest',
-        usr.id as string
-      );
+      const afterVerifyResult = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', usr.id);
       expect(afterVerifyResult.used).toBe(true);
 
       // Check that the user was updated
-      const userAfter = await systemRepo.readResource<User>('User', user.id as string);
+      const userAfter = await systemRepo.readResource<User>('User', user.id);
       expect(userAfter.emailVerified).toBe(true);
 
       // Should not be able to verify again with the same UserSecurityRequest

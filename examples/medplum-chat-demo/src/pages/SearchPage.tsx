@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { CreateThread } from '../components/actions/CreateThread';
 import { getPopulatedSearch } from '../utils';
 
@@ -34,7 +38,7 @@ export function SearchPage(): JSX.Element {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     // Navigate to view Communication resources by default
     if (!parsedSearch.resourceType) {
-      navigate('/Communication');
+      navigate('/Communication')?.catch(console.error);
       return;
     }
 
@@ -49,7 +53,7 @@ export function SearchPage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // Otherwise, navigate to the correct url before executing
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -60,7 +64,7 @@ export function SearchPage(): JSX.Element {
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
-    navigate(`/Communication${updatedSearchQuery}`);
+    navigate(`/Communication${updatedSearchQuery}`)?.catch(console.error);
   }
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
@@ -82,24 +86,24 @@ export function SearchPage(): JSX.Element {
           <Tabs.Panel value="active">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideFilters={true}
               hideToolbar={false}
               onNew={handlers.open}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideFilters={true}
               hideToolbar={false}
               onNew={handlers.open}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
@@ -107,7 +111,7 @@ export function SearchPage(): JSX.Element {
       ) : (
         <SearchControl
           search={search}
-          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           hideFilters={true}
           hideToolbar={true}
         />

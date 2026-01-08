@@ -1,54 +1,55 @@
 {
   "name": "medplum-demo-bots",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "build": "npm run clean && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "prettier": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest watch"
   },
   "prettier": {
     "printWidth": 120,
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "extends": [
-      "@medplum/eslint-config"
-    ],
-    "root": true
-  },
   "devDependencies": {
-    "@medplum/bot-layer": "3.2.10",
-    "@medplum/cli": "3.2.10",
-    "@medplum/core": "3.2.10",
-    "@medplum/eslint-config": "3.2.10",
-    "@medplum/fhirtypes": "3.2.10",
-    "@medplum/mock": "3.2.10",
-    "@types/node": "22.5.4",
-    "@types/node-fetch": "2.6.11",
-    "@types/ssh2-sftp-client": "9.0.4",
-    "@vitest/coverage-v8": "2.0.5",
-    "@vitest/ui": "2.0.5",
-    "esbuild": "0.23.1",
-    "fast-glob": "3.3.2",
-    "form-data": "4.0.0",
+    "@medplum/bot-layer": "5.0.10",
+    "@medplum/cli": "5.0.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/eslint-config": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/mock": "5.0.10",
+    "@metriport/api-sdk": "18.5.0",
+    "@types/node": "22.19.3",
+    "@types/node-fetch": "2.6.13",
+    "@types/ssh2-sftp-client": "9.0.6",
+    "@vitest/coverage-v8": "4.0.16",
+    "@vitest/ui": "4.0.16",
+    "dotenv": "17.2.3",
+    "esbuild": "0.27.2",
+    "fast-glob": "3.3.3",
+    "fast-xml-parser": "5.3.3",
+    "form-data": "4.0.5",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.12",
-    "rimraf": "5.0.9",
-    "ssh2-sftp-client": "11.0.0",
-    "stripe": "16.10.0",
-    "typescript": "5.6.2",
-    "vitest": "2.0.5"
+    "pdfmake": "0.2.21",
+    "rimraf": "6.1.2",
+    "ssh2-sftp-client": "12.0.1",
+    "stripe": "20.1.0",
+    "twilio": "^5.11.1",
+    "typescript": "5.9.3",
+    "vitest": "4.0.16"
+  },
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

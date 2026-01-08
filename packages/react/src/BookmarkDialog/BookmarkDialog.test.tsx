@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { UserConfiguration } from '@medplum/fhirtypes';
+import type { WithId } from '@medplum/core';
+import type { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -7,7 +10,7 @@ import { BookmarkDialog } from './BookmarkDialog';
 
 jest.mock('@mantine/notifications');
 
-function getTestUserConfiguration(id: string): UserConfiguration {
+function getTestUserConfiguration(id: string): WithId<UserConfiguration> {
   return {
     id,
     resourceType: 'UserConfiguration',

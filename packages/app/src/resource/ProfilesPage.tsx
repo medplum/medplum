@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Switch, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
@@ -7,10 +9,12 @@ import {
   normalizeOperationOutcome,
   removeProfileFromResource,
 } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceForm, SupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
-import { FC, useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { SupportedProfileStructureDefinition } from '@medplum/react';
+import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import type { FC, JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 import { ProfileTabs } from './ProfileTabs';
 import { cleanResource } from './utils';
 

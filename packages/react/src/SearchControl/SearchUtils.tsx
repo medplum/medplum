@@ -1,17 +1,13 @@
-import {
-  capitalize,
-  DEFAULT_SEARCH_COUNT,
-  evalFhirPathTyped,
-  Filter,
-  formatDateTime,
-  InternalSchemaElement,
-  Operator,
-  SearchRequest,
-} from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, InternalSchemaElement, SearchRequest } from '@medplum/core';
+import { capitalize, DEFAULT_SEARCH_COUNT, evalFhirPathTyped, formatDateTime, Operator } from '@medplum/core';
+import type { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { SearchControlField } from './SearchControlField';
+import type { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -56,6 +52,7 @@ const searchParamToOperators: Record<string, Operator[]> = {
     Operator.ENDS_BEFORE,
     Operator.APPROXIMATELY,
   ],
+  uri: [Operator.EQUALS, Operator.NOT, Operator.ABOVE, Operator.BELOW],
 };
 
 const operatorNames: Record<Operator, string> = {
@@ -68,6 +65,7 @@ const operatorNames: Record<Operator, string> = {
   sa: 'starts after',
   eb: 'ends before',
   ap: 'approximately',
+  sw: 'starts with',
   contains: 'contains',
   exact: 'exact',
   text: 'text',
@@ -241,6 +239,18 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
   endTime.setTime(endTime.getTime() - 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
+}
+
+/**
+ * Adds a filter that constrains the specified field to "next 24 hours".
+ * @param definition - The original search request.
+ * @param field - The field key name.
+ * @returns The updated search request.
+ */
+export function addNext24HoursFilter(definition: SearchRequest, field: string): SearchRequest {
+  const now = new Date();
+  const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  return addDateFilterBetween(definition, field, now, endTime);
 }
 
 /**
@@ -480,13 +490,13 @@ export function buildFieldNameString(key: string): string {
   tmp = tmp.replace('[x]', '');
 
   // Convert camel case to space separated
-  tmp = tmp.replace(/([A-Z])/g, ' $1');
+  tmp = tmp.replaceAll(/([A-Z])/g, ' $1');
 
   // Convert dashes and underscores to spaces
-  tmp = tmp.replace(/[-_]/g, ' ');
+  tmp = tmp.replaceAll(/[-_]/g, ' ');
 
   // Normalize whitespace to single space character
-  tmp = tmp.replace(/\s+/g, ' ');
+  tmp = tmp.replaceAll(/\s+/g, ' ');
 
   // Trim
   tmp = tmp.trim();
@@ -509,7 +519,7 @@ export function buildFieldNameString(key: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return resource.id;
+    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
   }
 
   if (key === 'meta.versionId') {
@@ -521,12 +531,12 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   // Priority 1: InternalSchemaElement by exact match
-  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+  if (`${resource.resourceType}.${field.name}` === field.elementDefinition?.path) {
     return renderPropertyValue(resource, field.elementDefinition);
   }
 
   // Priority 2: SearchParameter by exact match
-  if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
+  if (field.searchParams?.length === 1 && field.name === field.searchParams[0].code) {
     return renderSearchParameterValue(resource, field.searchParams[0]);
   }
 

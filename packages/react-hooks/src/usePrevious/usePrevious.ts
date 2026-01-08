@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { useEffect, useRef } from 'react';
 
 /**
@@ -6,7 +8,7 @@ import { useEffect, useRef } from 'react';
  * @returns The value passed in from the previous render.
  */
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T>(undefined);
   useEffect(() => {
     ref.current = value;
   });

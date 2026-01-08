@@ -1,6 +1,9 @@
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Patient, ProjectMembership } from '@medplum/fhirtypes';
+import { hasDoseSpotIdentifier } from '../../components/utils';
 
-function patientPathPrefix(patientId: string): string {
+export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
 }
 
@@ -31,13 +34,28 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
   return result;
 }
 
+/**
+ * Returns the patient page tabs filtered based on user permissions.
+ * Currently filters out the DoseSpot tab if the user doesn't have DoseSpot access.
+ * @param membership - The current user's project membership.
+ * @returns Filtered array of patient page tabs.
+ */
+export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
+  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  return PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot);
+}
+
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
-  { id: 'encounter', url: 'encounter', label: 'Encounter' },
+  {
+    id: 'encounter',
+    url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Visits',
+  },
   {
     id: 'tasks',
-    url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Task',
     label: 'Tasks',
   },
   {
@@ -47,7 +65,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'labs',
-    url: 'ServiceRequest?_fields=_lastUpdated,code,status,orderDetail,category&_offset=0&_sort=-_lastUpdated&category=108252007&patient=%patient.id',
+    url: 'ServiceRequest',
     label: 'Labs',
   },
   {
@@ -56,24 +74,16 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Devices',
   },
   {
-    id: 'diagnosticreports',
-    url: 'DiagnosticReport?_fields=_lastUpdated,category,code,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Reports',
-  },
-  {
     id: 'documentreference',
     url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Documents',
-  },
-  {
-    id: 'appointments',
-    url: 'Appointment?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Appointments',
   },
   {
     id: 'careplan',
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'communication', url: 'communication', label: 'Communications' },
+  { id: 'message', url: 'Communication', label: 'Messages' },
+  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'export', url: 'export', label: 'Export' },
 ];

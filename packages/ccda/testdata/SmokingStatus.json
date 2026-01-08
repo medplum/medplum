@@ -1,0 +1,269 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Social History",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "29762-2",
+                  "display": "Social History"
+                }
+              ],
+              "text": "Social History"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><list><caption>Smoking Status</caption><item ID=\"SmokingStatus\"><content>Status: Current every day smoker</content><content ID=\"SmokingDetail1\">Detail: Moderate smoker (10-19 cigs/day)</content><content>Started: 1992</content><content>Stopped:</content><content>Recorded June 6, 2014 10:32am</content></item></list></div>"
+            },
+            "entry": [
+              {
+                "reference": "Observation/e65d0b47-974f-431d-8ad0-563fe48a87ec",
+                "display": "Tobacco smoking status NHIS"
+              },
+              {
+                "reference": "Observation/45efb604-7049-4a2e-ad33-d38556c9636c",
+                "display": "History of tobacco use"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "7a349401-850e-4665-99ad-5cbd991eca56",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "99999999"
+          }
+        ],
+        "name": [
+          {
+            "family": "Seven",
+            "given": ["Henry"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1(555)555-1002"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "200000000X",
+                "display": "Allopathic and Osteopathic Physicians"
+              }
+            ],
+            "text": "Allopathic and Osteopathic Physicians"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "7a349401-850e-4665-99ad-5cbd991eca56",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "99999999"
+          }
+        ],
+        "name": [
+          {
+            "family": "Seven",
+            "given": ["Henry"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1(555)555-1002"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "200000000X",
+                "display": "Allopathic and Osteopathic Physicians"
+              }
+            ],
+            "text": "Allopathic and Osteopathic Physicians"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e65d0b47-974f-431d-8ad0-563fe48a87ec",
+        "identifier": [
+          {
+            "system": "urn:oid:2.16.840.1.113883.19",
+            "value": "123456789"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Smoking Status"
+              }
+            ],
+            "text": "Smoking Status"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "72166-2",
+              "display": "Tobacco smoking status NHIS"
+            }
+          ],
+          "text": "Tobacco smoking status NHIS"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "performer": [
+          {
+            "reference": "Practitioner/7a349401-850e-4665-99ad-5cbd991eca56",
+            "display": "Henry Seven"
+          }
+        ],
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "449868002",
+              "display": "Smokes tobacco daily"
+            }
+          ],
+          "text": "Smokes tobacco daily"
+        },
+        "effectiveDateTime": "2014-06-06T10:32:00-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#SmokingStatus"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "45efb604-7049-4a2e-ad33-d38556c9636c",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Tobacco Use"
+              }
+            ],
+            "text": "Tobacco Use"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11367-0",
+              "display": "History of tobacco use"
+            }
+          ],
+          "text": "History of tobacco use"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "performer": [
+          {
+            "reference": "Practitioner/7a349401-850e-4665-99ad-5cbd991eca56",
+            "display": "Henry Seven"
+          }
+        ],
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "160604004",
+              "display": "Moderate cigarette smoker"
+            }
+          ],
+          "text": "Moderate cigarette smoker"
+        },
+        "effectiveDateTime": "2014-06-06T10:32:00-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#SmokingStatus"
+          }
+        ]
+      }
+    }
+  ]
+}

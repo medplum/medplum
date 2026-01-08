@@ -1,13 +1,17 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { getConfig } from './config';
-import { act, fireEvent, render, screen } from './test-utils/render';
+import type { UserEvent } from './test-utils/render';
+import { render, screen, userEvent } from './test-utils/render';
 
 const medplum = new MockClient();
 
-function setup(): void {
+function setup(): UserEvent {
+  const user = userEvent.setup();
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
@@ -15,6 +19,8 @@ function setup(): void {
       </MedplumProvider>
     </MemoryRouter>
   );
+
+  return user;
 }
 
 describe('ResetPasswordPage', () => {
@@ -44,39 +50,26 @@ describe('ResetPasswordPage', () => {
 
   test('Renders', () => {
     setup();
-    expect(screen.getByRole('button', { name: 'Reset password' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reset Password' })).toBeInTheDocument();
   });
 
   test('Submit success with recaptcha site key', async () => {
     getConfig().recaptchaSiteKey = 'recaptchasitekey';
-    setup();
+    const user = setup();
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'admin@example.com' },
-      });
-    });
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Reset Password' }));
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
-    });
     expect(grecaptchaResolved).toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });
 
   test('Submit success without recaptcha site key', async () => {
     getConfig().recaptchaSiteKey = '';
-    setup();
+    const user = setup();
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'admin@example.com' },
-      });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
-    });
+    await user.type(screen.getByLabelText('Email *'), 'admin@example.com');
+    await user.click(screen.getByRole('button', { name: 'Reset Password' }));
     expect(grecaptchaResolved).not.toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });

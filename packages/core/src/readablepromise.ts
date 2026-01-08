@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * The ReadablePromise class wraps a request promise suitable for React Suspense.
  * See: https://blog.logrocket.com/react-suspense-data-fetching/#wrappromise-js
@@ -5,7 +8,7 @@
  */
 export class ReadablePromise<T> implements Promise<T> {
   readonly [Symbol.toStringTag]: string = 'ReadablePromise';
-  private suspender: Promise<T>;
+  private readonly suspender: Promise<T>;
   private status: 'pending' | 'error' | 'success' = 'pending';
   private response: T | undefined;
   private error: Error | undefined;

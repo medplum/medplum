@@ -1,8 +1,13 @@
-import { formatSearchQuery, getReferenceString, Operator, ProfileResource } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import type { ProfileResource } from '@medplum/core';
 import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconClipboardCheck, IconFileImport, IconMail, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { NavigateFunction, Route, Routes, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { Route, Routes, useNavigate } from 'react-router';
+import type { NavigateFunction } from 'react-router';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -49,7 +54,7 @@ export function App(): JSX.Element | null {
         {
           // A section of the sidebar that links to a page to upload example data for the app
           title: 'Upload Data',
-          links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' }],
+          links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' }],
         },
       ]}
       // This adds notification icons for unread messages and active tasks for the current user
@@ -66,10 +71,19 @@ export function App(): JSX.Element | null {
         <Routes>
           <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/Communication/:id/*" element={<CommunicationPage />} />
+          <Route path="/Communication/:id">
+            <Route index element={<CommunicationPage />} />
+            <Route path="*" element={<CommunicationPage />} />
+          </Route>
           <Route path="/:resourceType" element={<SearchPage />} />
-          <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-          <Route path="/Patient/:id/*" element={<PatientPage />} />
+          <Route path="/:resourceType/:id">
+            <Route index element={<ResourcePage />} />
+            <Route path="*" element={<ResourcePage />} />
+          </Route>
+          <Route path="/Patient/:id">
+            <Route index element={<PatientPage />} />
+            <Route path="*" element={<PatientPage />} />
+          </Route>
           <Route path="/:resourceType/:id" element={<ResourcePage />} />
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
           <Route path="/upload/:dataType" element={<UploadDataPage />} />
@@ -95,7 +109,7 @@ function MessageNotification({ profile, navigate }: NotificationProps): JSX.Elem
       onClick={() =>
         navigate(
           `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
-        )
+        )?.catch(console.error)
       }
     />
   );
@@ -112,7 +126,7 @@ function TaskNotification({ profile, navigate }: NotificationProps): JSX.Element
       onClick={() =>
         navigate(
           `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
-        )
+        )?.catch(console.error)
       }
     />
   );

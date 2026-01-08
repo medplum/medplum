@@ -1,10 +1,13 @@
-import { Ratio } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { RatioInput } from './RatioInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
+import type { Ratio } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { Document } from '../Document/Document';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { RatioInput } from './RatioInput';
 
 export default {
   title: 'Medplum/RatioInput',

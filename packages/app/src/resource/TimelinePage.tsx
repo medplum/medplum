@@ -1,17 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Menu } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getReferenceString } from '@medplum/core';
-import { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import { showNotification, updateNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { ResourceTimelineMenuItemContext } from '@medplum/react';
 import {
   DefaultResourceTimeline,
   EncounterTimeline,
   PatientTimeline,
-  ResourceTimelineMenuItemContext,
   ServiceRequestTimeline,
   useMedplum,
   useMedplumNavigate,
 } from '@medplum/react';
 import {
+  IconCheck,
   IconEdit,
   IconListDetails,
   IconPin,
@@ -19,9 +23,11 @@ import {
   IconRepeat,
   IconTextRecognition,
   IconTrash,
+  IconX,
 } from '@tabler/icons-react';
-import { ReactNode, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX, ReactNode } from 'react';
+import { useState } from 'react';
+import { useParams } from 'react-router';
 import { isAwsTextractEnabled } from '../config';
 import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 
@@ -70,10 +76,39 @@ export function TimelinePage(): JSX.Element | null {
   }
 
   function onAwsTextract(resource: Resource, reloadTimeline: () => void): void {
+    const id = 'aws-textract';
+    showNotification({
+      id,
+      title: 'AWS Textract in Progress',
+      message: 'Extracting text... This may take a moment...',
+      loading: true,
+      autoClose: false,
+    });
     medplum
       .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-textract'), {})
-      .then(reloadTimeline)
-      .catch(console.error);
+      .then(() => {
+        reloadTimeline();
+        updateNotification({
+          id,
+          title: 'AWS Textract Successful',
+          message: 'Text successfully extracted.',
+          color: 'green',
+          icon: <IconCheck size="1rem" />,
+          loading: false,
+          withCloseButton: true,
+        });
+      })
+      .catch((err) =>
+        updateNotification({
+          id,
+          title: 'AWS Textract Error',
+          color: 'red',
+          message: normalizeErrorString(err),
+          icon: <IconX size="1rem" />,
+          loading: false,
+          withCloseButton: true,
+        })
+      );
   }
 
   function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { stringify } from './utils';
 
 export interface IClientStorage {
@@ -7,6 +9,7 @@ export interface IClientStorage {
   setString(key: string, value: string | undefined): void;
   getObject<T>(key: string): T | undefined;
   setObject<T>(key: string, value: T): void;
+  makeKey(key: string): string;
 }
 
 /**
@@ -18,24 +21,40 @@ export interface IClientStorage {
  */
 export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
+  private readonly prefix: string = '';
 
-  constructor(storage?: Storage) {
-    this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
+  constructor(storage?: Storage, prefix = '') {
+    this.storage = storage ?? globalThis.localStorage ?? new MemoryStorage();
+    this.prefix = prefix;
+  }
+
+  makeKey(key: string): string {
+    return this.prefix + key;
   }
 
   clear(): void {
-    this.storage.clear();
+    // We only care about checking the keys for localStorage when a prefix is present
+    if (this.storage === globalThis.localStorage && this.prefix) {
+      Object.keys(this.storage)
+        .filter((key) => key.startsWith(this.prefix))
+        .forEach((key) => {
+          this.storage.removeItem(key);
+        });
+    } else {
+      // If not localStorage, then just clear out the whole storage
+      this.storage.clear();
+    }
   }
 
   getString(key: string): string | undefined {
-    return this.storage.getItem(key) ?? undefined;
+    return this.storage.getItem(this.makeKey(key)) ?? undefined;
   }
 
   setString(key: string, value: string | undefined): void {
     if (value) {
-      this.storage.setItem(key, value);
+      this.storage.setItem(this.makeKey(key), value);
     } else {
-      this.storage.removeItem(key);
+      this.storage.removeItem(this.makeKey(key));
     }
   }
 
@@ -53,7 +72,7 @@ export class ClientStorage implements IClientStorage {
  * The MemoryStorage class is a minimal in-memory implementation of the Storage interface.
  */
 export class MemoryStorage implements Storage {
-  private data: Map<string, string>;
+  private readonly data: Map<string, string>;
 
   constructor() {
     this.data = new Map<string, string>();
@@ -120,7 +139,7 @@ export class MemoryStorage implements Storage {
  */
 export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
   private initialized: boolean;
-  private initPromise: Promise<void>;
+  private readonly initPromise: Promise<void>;
   private initResolve: () => void = () => undefined;
 
   constructor() {

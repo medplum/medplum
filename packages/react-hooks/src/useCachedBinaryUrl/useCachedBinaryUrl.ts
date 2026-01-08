@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { useMemo } from 'react';
 
 // Maintain a cache of urls to avoid unnecessary re-download of attachments
@@ -51,7 +53,7 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
 
       // `expires` is in seconds, Date.now() is in ms
       // Add padding to mitigate expiration between time of check and time of use
-      if (expires && parseInt(expires, 10) * 1000 - 5_000 > Date.now()) {
+      if (expires && Number.parseInt(expires, 10) * 1000 - 5_000 > Date.now()) {
         return cachedUrl;
       }
     }

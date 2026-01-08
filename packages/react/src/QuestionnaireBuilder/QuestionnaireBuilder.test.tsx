@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireItemType } from '../utils/questionnaire';
-import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import type { QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import { QuestionnaireBuilder } from './QuestionnaireBuilder';
 
 const medplum = new MockClient();
 
@@ -107,6 +109,45 @@ describe('QuestionnaireBuilder', () => {
             linkId: 'q5',
             type: '' as unknown as 'string', // Silently ignore missing type
             text: 'q5',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Handles submit with required items', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.string,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.integer,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q3',
+            type: QuestionnaireItemType.date,
+            required: true,
+            text: 'q3',
           },
         ],
       },

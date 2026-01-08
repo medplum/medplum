@@ -1,5 +1,13 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { isObject } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
+  ProjectSetting,
+  Questionnaire,
+  QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
+} from '@medplum/fhirtypes';
 
 type GetLabTestEvent = {
   endpoint: 'get_lab_tests';
@@ -38,9 +46,9 @@ type Event = GetLabTestEvent | GetLabEvent | GetMarkersEvent | GetAoEQuestionnai
  */
 export async function handler(
   medplum: MedplumClient,
-  event: BotEvent
+  event: BotEvent<Event>
 ): Promise<LabTest[] | Lab[] | Marker[] | Questionnaire | undefined> {
-  if (typeof event.input !== 'object' || !('endpoint' in event.input)) {
+  if (!isObject(event.input)) {
     return undefined;
   }
 
@@ -68,9 +76,32 @@ export async function handler(
 }
 
 async function getLabs(secrets: Record<string, ProjectSetting>): Promise<Lab[]> {
-  const labTests = await fetchLabTests(secrets);
+  const apiKey = secrets['VITAL_API_KEY'].valueString;
+  const baseURL = secrets['VITAL_BASE_URL']?.valueString || 'https://api.dev.tryvital.io';
 
-  return labTests.map((lt) => lt.lab);
+  if (!apiKey || !baseURL) {
+    throw new Error('VITAL_API_KEY and VITAL_BASE_URL are required');
+  }
+
+  const url = `${baseURL}/v3/lab_tests/labs`;
+
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-vital-api-key': apiKey,
+    },
+  });
+
+  switch (resp.status) {
+    case 200: {
+      return resp.json() as Promise<Lab[]>;
+    }
+    default: {
+      const data = await resp.json();
+      throw new Error('Vital API error: ' + JSON.stringify(data));
+    }
+  }
 }
 
 async function getMarkers(secrets: Record<string, ProjectSetting>, labTestID: string): Promise<Marker[]> {
@@ -90,14 +121,15 @@ async function getAoEQuestionnaire(secrets: Record<string, ProjectSetting>, mark
       linkId: marker.id.toString(),
       text: marker.name,
       type: 'group',
-      item: marker.aoe.questions.map<QuestionnaireItem>((question) => ({
+      item: marker.aoe?.questions.map<QuestionnaireItem>((question) => ({
         linkId: question.id.toString(),
         text: question.value,
         type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
-          valueString: question.type !== 'numeric' ? answer.value : undefined,
-          valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          valueString: answer.code,
+          // valueString: question.type !== 'numeric' ? answer.value : undefined,
+          // valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),
@@ -132,7 +164,15 @@ async function fetchLabTests(secrets: Record<string, ProjectSetting>): Promise<L
     },
   });
 
-  return resp.json() as Promise<LabTest[]>;
+  switch (resp.status) {
+    case 200: {
+      return resp.json() as Promise<LabTest[]>;
+    }
+    default: {
+      const data = await resp.json();
+      throw new Error('Vital API error: ' + JSON.stringify(data));
+    }
+  }
 }
 
 type Lab = {
@@ -156,7 +196,7 @@ export type Marker = {
   type?: string;
   unit: any;
   price: string;
-  aoe: {
+  aoe?: {
     questions: {
       id: number;
       required: boolean;

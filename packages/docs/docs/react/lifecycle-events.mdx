@@ -1,0 +1,56 @@
+---
+sidebar_position: 8
+---
+
+# `MedplumClient` Lifecycle Events
+
+When authenticating to Medplum via `MedplumClient`, there are few things to consider in terms of the `MedplumClient` authentication lifecycle and how you should structure your app around it --
+especially in the context of building a React app.
+
+## Events
+
+The `MedplumClient` extends the `EventTarget` class and emits several events that can be listened to for insight into state changes around auth and other changes in the internals of `MedplumClient`.
+These are usually used for triggering rerenders within the context of React, but may also be useful for debugging purposes.
+
+- `profileRefreshing` - The client is actively attempting to refresh your authentication token.
+- `profileRefreshed` - The client finished refreshing your authentication token or failed to refresh.
+- `storageInitialized` - The client finished initializing your client storage and can now attempt to authenticate.
+- `storageInitFailed` - The client failed to initialize storage for some reason and cannot continue in its current state.
+- `offline` - The client has lost connection to the server and is currently offline.
+- `change` - Generic change occurred in `MedplumClient`, mostly used to force a re-render in React.
+
+## Working with the `MedplumClient` Lifecycle in React
+
+When wrapping your app in a `MedplumProvider`, you should be aware of the lifecycle events of `MedplumClient`. Each of the lifecycle events will trigger a rerender at the root of your app;
+so your root component (what we call by convention in our examples `App.tsx`) should resilient to rerenders. This can be accomplished in most cases with the following pattern:
+
+```tsx
+function App() {
+  const profile = useMedplumProfile();
+  const navigate = useNavigate();
+
+  // Use this to guard against initial load
+  // After initial load, this code path will always be skipped over
+  if (medplum.isLoading()) {
+    return <Loading />;
+  }
+
+  // Use this if you want to unmount the entire app and show a spinner when your profile changes
+  // This will cause remount on switching profiles
+  // Or an unmount whenever token refresh fails and a profile is no longer present
+  if (!profile) {
+    // Redirect users back to signin whenever there is no profile anytime after initial load
+    navigate('/signin');
+    return null;
+  }
+
+  return <RestOfYourApp />;
+}
+```
+
+### `medplum.isLoading()` vs `useMedplumContext().loading`
+
+Historically `medplum.isLoading()` and `useMedplumContext().loading` signalled slightly different things,
+born out of the special-case of using `MedplumClient` with `ExpoClientStorage` for React Native, where there was a separate step of initializing
+the storage asynchronously before authentication could take place. However, both of these values should now always be in sync with each other,
+and they can be used interchangeably as of version `3.1.9`.

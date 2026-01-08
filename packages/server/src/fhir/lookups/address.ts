@@ -1,13 +1,43 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { formatAddress } from '@medplum/core';
-import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import type { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Pool, PoolClient } from 'pg';
+import { DeleteQuery } from '../sql';
+import type { LookupTableRow } from './lookuptable';
 import { LookupTable } from './lookuptable';
+
+export interface AddressTableRow extends LookupTableRow {
+  address: string | undefined;
+  city: string | undefined;
+  country: string | undefined;
+  postalCode: string | undefined;
+  state: string | undefined;
+  use: string | undefined;
+}
 
 /**
  * The AddressTable class is used to index and search Address properties.
  * Each Address is represented as a separate row in the "Address" table.
  */
 export class AddressTable extends LookupTable {
+  private static readonly resourceTypes = [
+    'Patient',
+    'Person',
+    'Practitioner',
+    'RelatedPerson',
+    'InsurancePlan',
+    'Location',
+    'Organization',
+  ] as const;
+
+  private static readonly resourceTypeSet = new Set(this.resourceTypes);
+
+  private static hasAddress(resourceType: ResourceType): resourceType is (typeof AddressTable.resourceTypes)[number] {
+    return AddressTable.resourceTypeSet.has(resourceType as any);
+  }
+
   private static readonly knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
@@ -76,64 +106,114 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource Address values.
-   * Attempts to reuse existing Addresses if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
-
+  extractValues(result: AddressTableRow[], resource: WithId<Resource>): void {
     const addresses = this.getIncomingAddresses(resource);
-    if (!addresses || !Array.isArray(addresses)) {
+    if (!Array.isArray(addresses)) {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
-    const values = addresses.map((address) => ({
-      resourceId,
-      address: formatAddress(address),
-      city: address.city?.trim(),
-      country: address.country?.trim(),
-      postalCode: address.postalCode?.trim(),
-      state: address.state?.trim(),
-      use: address.use?.trim(),
-    }));
+    for (const address of addresses) {
+      const extracted = {
+        resourceId: resource.id,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        address: formatAddress(address) || undefined, // formatAddress can return the empty string
+        city: address.city?.trim() || undefined,
+        country: address.country?.trim() || undefined,
+        postalCode: address.postalCode?.trim() || undefined,
+        state: address.state?.trim() || undefined,
+        use: address.use?.trim() || undefined,
+      };
+      if (
+        (extracted.address ||
+          extracted.city ||
+          extracted.country ||
+          extracted.postalCode ||
+          extracted.state ||
+          extracted.use) &&
+        !result.some(
+          (a) =>
+            a.resourceId === extracted.resourceId &&
+            a.address === extracted.address &&
+            a.city === extracted.city &&
+            a.country === extracted.country &&
+            a.postalCode === extracted.postalCode &&
+            a.state === extracted.state &&
+            a.use === extracted.use
+        )
+      ) {
+        result.push(extracted);
+      }
+    }
+  }
 
-    await this.insertValuesForResource(client, resourceType, values);
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean,
+    resourceBatchSize?: number
+  ): Promise<void> {
+    if (!resources[0] || !AddressTable.hasAddress(resources[0].resourceType)) {
+      return;
+    }
+
+    await super.batchIndexResources(client, resources, create, resourceBatchSize);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
-    if (
-      resource.resourceType === 'Patient' ||
-      resource.resourceType === 'Person' ||
-      resource.resourceType === 'Practitioner' ||
-      resource.resourceType === 'RelatedPerson'
-    ) {
-      return resource.address;
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return undefined;
     }
 
-    if (resource.resourceType === 'InsurancePlan') {
-      return resource.contact?.map((contact) => contact.address).filter((address) => !!address) as
-        | Address[]
-        | undefined;
+    let addresses: (Address | undefined | null)[] | undefined;
+
+    switch (resource.resourceType) {
+      case 'Patient':
+      case 'Person':
+      case 'Practitioner':
+      case 'RelatedPerson':
+      case 'Organization':
+        addresses = resource.address;
+        break;
+      case 'InsurancePlan':
+        addresses = resource.contact?.map((contact) => contact.address);
+        break;
+      case 'Location':
+        addresses = resource.address ? [resource.address] : undefined;
+        break;
+      default:
+        resource.resourceType satisfies never;
+        return undefined;
     }
 
-    if (resource.resourceType === 'Location') {
-      return resource.address ? [resource.address] : undefined;
+    return addresses?.filter((a) => !!a);
+  }
+
+  /**
+   * Deletes the resource from the lookup table.
+   * @param client - The database client.
+   * @param resource - The resource to delete.
+   */
+  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return;
     }
 
-    if (resource.resourceType === 'Organization') {
-      return resource.address;
-    }
+    const tableName = this.getTableName();
+    const resourceId = resource.id;
+    await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
 
-    // This resource does not have any address properties
-    return undefined;
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    if (!AddressTable.hasAddress(resourceType)) {
+      return;
+    }
+    await super.purgeValuesBefore(client, resourceType, before);
   }
 }

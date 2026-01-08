@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import {
+import type {
   Appointment,
   Coding,
   Patient,
@@ -14,8 +16,9 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
-import { Event } from 'react-big-calendar';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import type { Event } from 'react-big-calendar';
+import { useNavigate } from 'react-router';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 
 interface CreateAppointmentProps {
@@ -27,6 +30,7 @@ interface CreateAppointmentProps {
     readonly close: () => void;
     readonly toggle: () => void;
   };
+  readonly onAppointmentsUpdated: () => void;
 }
 
 /**
@@ -35,7 +39,7 @@ interface CreateAppointmentProps {
  * @returns A React component that displays the modal.
  */
 export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | null {
-  const { patient, event, opened, handlers } = props;
+  const { patient, event, opened, handlers, onAppointmentsUpdated } = props;
   const slot: Slot | undefined = event?.resource;
 
   const [updateSlotOpened, updateSlotHandlers] = useDisclosure(false, { onClose: handlers.close });
@@ -51,6 +55,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
+      onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -99,7 +104,8 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
       appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
 
       // Navigate to the appointment detail page
-      navigate(`/Appointment/${appointment.id}`);
+      navigate(`/Appointment/${appointment.id}`)?.catch(console.error);
+      onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -154,7 +160,12 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
         <QuestionnaireForm questionnaire={createAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
       </Modal>
 
-      <CreateUpdateSlot event={event} opened={updateSlotOpened} handlers={updateSlotHandlers} />
+      <CreateUpdateSlot
+        event={event}
+        opened={updateSlotOpened}
+        handlers={updateSlotHandlers}
+        onSlotsUpdated={onAppointmentsUpdated}
+      />
     </>
   );
 }

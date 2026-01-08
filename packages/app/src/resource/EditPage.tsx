@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { createPatch } from 'rfc6902';
 import { cleanResource } from './utils';
 
@@ -34,7 +37,7 @@ export function EditPage(): JSX.Element | null {
       medplum
         .updateResource(cleanResource(newResource))
         .then(() => {
-          navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -48,11 +51,11 @@ export function EditPage(): JSX.Element | null {
   const handlePatch = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-      const patchOperations = createPatch(original, newResource);
+      const patchOperations = createPatch(original, cleanResource(newResource));
       medplum
         .patchResource(resourceType, id, patchOperations)
         .then(() => {
-          navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -63,7 +66,10 @@ export function EditPage(): JSX.Element | null {
     [medplum, resourceType, id, original, navigate]
   );
 
-  const handleDelete = useCallback(() => navigate(`/${resourceType}/${id}/delete`), [navigate, resourceType, id]);
+  const handleDelete = useCallback(
+    () => navigate(`/${resourceType}/${id}/delete`)?.catch(console.error),
+    [navigate, resourceType, id]
+  );
 
   if (!value) {
     return null;

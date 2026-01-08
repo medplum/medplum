@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group } from '@mantine/core';
-import { Slot } from '@medplum/fhirtypes';
+import type { Slot } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import classes from './CalendarInput.module.css';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';

@@ -1,7 +1,10 @@
-import { MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
-import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
+import type { AttachmentDisplayProps } from './AttachmentDisplay';
+import { AttachmentDisplay } from './AttachmentDisplay';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
@@ -111,5 +114,29 @@ describe('AttachmentDisplay', () => {
     });
     expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders XML', async () => {
+    await setup({
+      value: {
+        contentType: ContentType.XML,
+        url: 'https://example.com/note.xml',
+        title: 'note.xml',
+      },
+    });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('note.xml')).toBeInTheDocument();
+  });
+
+  test('Renders C-CDA', async () => {
+    await setup({
+      value: {
+        contentType: ContentType.CDA_XML,
+        url: 'https://example.com/c-cda.xml',
+        title: 'c-cda.xml',
+      },
+    });
+    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(screen.getByText('c-cda.xml')).toBeInTheDocument();
   });
 });

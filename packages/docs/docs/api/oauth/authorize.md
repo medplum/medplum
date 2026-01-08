@@ -58,6 +58,15 @@ Required only when you specify a `code_challenge_method` parameter.
 
 A random value that you can add to the request. The nonce value that you provide is included in the ID token that Medplum issues. You can use a `nonce` value to guard against replay attacks.
 
+#### `prompt` (Optional)
+
+Controls how the authorization server prompts the user for consent. Supported values:
+
+- `none`: The authorization server must not display any authentication or consent user interface pages. If the user is not already authenticated, or consent is required but has not been previously granted, the authorization server will return an error. This is particularly useful in SMART App Launch scenarios where you want to ensure a seamless experience when the user is already authenticated.
+- `login`: The authorization server should prompt the user for reauthentication, even if they're already authenticated.
+
+If this parameter is not specified, the authorization server will prompt the user for authentication if they're not already logged in, and for consent if required.
+
 ## Examples requests with positive responses
 
 ### Authorization code grant
@@ -197,7 +206,7 @@ Found Location: https://client_redirect_uri?error=server_error
 
 When Medplum authenticates through federation to third-party IdPs, Medplum might experience connection issues such as the following:
 
-- If a connection timeout occurs while requesting token from the IdP, the authentication server redirects the error to the client’s `redirect_uri` as follows:
+- If a connection timeout occurs while requesting token from the IdP, the authentication server redirects the error to the client's `redirect_uri` as follows:
 
   ```
   HTTP 1.1 302
@@ -205,7 +214,7 @@ When Medplum authenticates through federation to third-party IdPs, Medplum might
                   error_description=Timeout+occurred+in+calling+IdP+token+endpoint
   ```
 
-- If a connection timeout occurs while calling the `jwks` endpoint for `id_token` validation, the authentication server redirects the error to the client’s `redirect_uri` as follows:
+- If a connection timeout occurs while calling the `jwks` endpoint for `id_token` validation, the authentication server redirects the error to the client's `redirect_uri` as follows:
 
   ```
   HTTP 1.1 302
@@ -217,7 +226,7 @@ When Medplum authenticates through federation to third-party IdPs, Medplum might
 
 - When authenticating by federating to third-party IdPs, the providers may return error responses due to configuration errors or otherwise such as the following:
 
-  - If an error response is received from other providers, the authentication server redirects the error to the client’s `redirect_uri` as follows:
+  - If an error response is received from other providers, the authentication server redirects the error to the client's `redirect_uri` as follows:
 
     ```
     HTTP 1.1 302
@@ -225,7 +234,7 @@ When Medplum authenticates through federation to third-party IdPs, Medplum might
                     error_description=[IdP name]+Error+-+[status code]+error getting token
     ```
 
-  - If an error response is received from Google, the authentication server redirects the error to the client’s `redirect_uri` as follows:
+  - If an error response is received from Google, the authentication server redirects the error to the client's `redirect_uri` as follows:
 
   ```
   HTTP 1.1 302

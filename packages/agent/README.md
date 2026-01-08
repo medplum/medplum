@@ -2,43 +2,50 @@
 
 On-prem agent for device connectivity.
 
-> [!WARNING]
-> The Medplum Agent is currently in "alpha", and not ready for production use.
->
-> Please [contact Medplum](mailto:hello@medplum.com) if you would like to learn more or get involved.
-
 ## Building
 
-Published releases are built using Github Actions. See the [installer build script](../../scripts/build-agent-installer.sh) for details.
+Published releases are built using Github Actions. See the [build-agent workflow](../../.github/workflows/build-agent.yml) for details.
 
 The following tools are used to build the agent:
 
 - [Node.js](https://nodejs.org/en/)
-- [Vercel pkg](https://github.com/vercel/pkg) to build the `.exe` file
+- [Node.js Single Executable Applications](https://nodejs.org/docs/latest/api/single-executable-applications.html) to build the `.exe` file
 - [NSIS](https://nsis.sourceforge.io/) to build the installer
 - [Shawl](https://github.com/mtkennerly/shawl) for the Microsoft Windows service wrapper
-- [JSign](https://ebourg.github.io/jsign/) to sign the executable files
+- [Azure Trusted Signing](https://azure.microsoft.com/en-us/products/trusted-signing) to sign the executable files
 
-The following environment variables are required:
+### Authentication and Signing
 
-- `SM_HOST` - DigiCert Signing Manager host
-- `SM_API_KEY` - DigiCert Signing Manager API key
-- `SM_CLIENT_CERT_FILE_BASE64` - DigiCert Signing Manager client certificate file (base64 encoded)
-- `SM_CLIENT_CERT_PASSWORD` - DigiCert Signing Manager client certificate password
-- `SM_CERT_ALIAS` - DigiCert Signing Manager certificate alias
+The build process uses [OpenID Connect (OIDC)](https://www.microsoft.com/security/business/security-101/what-is-openid-connect-oidc) to authenticate with Azure Trusted Signing. This provides secure, secret-free authentication using federated credentials.
 
-The `SM_CLIENT_CERT_FILE_BASE64` environment variable can be generated from the certificate file:
+#### Required GitHub Secrets
 
-```bash
-base64 Certificate_pkcs12.p12
-```
+**For Azure OIDC Authentication:**
+- `AZURE_TENANT_ID` - Azure Active Directory tenant ID
+- `AZURE_CLIENT_ID` - Azure application client ID (from service principal with federated credentials)
+- `AZURE_SUBSCRIPTION_ID` - Azure subscription ID
 
-References:
+**For GPG Signing:**
+- `MEDPLUM_RELEASE_GPG_KEY` - The private GPG key (imported before signing)
+- `MEDPLUM_RELEASE_GPG_KEY_ID` - GPG key identifier
+- `MEDPLUM_RELEASE_GPG_PASSPHRASE` - GPG key passphrase
 
-- [Sign with SMCTL](https://docs.digicert.com/en/software-trust-manager/sign-with-digicert-signing-tools/sign-with-smctl.html)
-- [GitHub Actions script integration with PKCS11](https://docs.digicert.com/en/software-trust-manager/ci-cd-integrations/script-integrations/github-actions-integration-with-pkcs11.html)
-- [Sign with jSign](https://docs.digicert.com/en/software-trust-manager/signing-tools/jsign.html)
-- [JSign](https://ebourg.github.io/jsign/)
+#### Setup Instructions
+
+To configure OIDC authentication for Azure Trusted Signing:
+
+1. Create a Microsoft Entra application and service principal
+2. Add federated credentials for GitHub Actions
+3. Assign the **Trusted Signing Certificate Profile Signer** role to your service principal
+4. Configure the required GitHub secrets
+
+For detailed setup instructions, see [Authenticating with OpenID Connect](https://github.com/Azure/trusted-signing-action/blob/main/docs/OIDC.md).
+
+#### References
+
+- [Azure Trusted Signing Action](https://github.com/Azure/trusted-signing-action)
+- [Azure Trusted Signing with OIDC](https://github.com/Azure/trusted-signing-action/blob/main/docs/OIDC.md)
+- [Azure Trusted Signing Documentation](https://learn.microsoft.com/azure/trusted-signing/)
 - [Shawl](https://github.com/mtkennerly/shawl)
 - [NSIS](https://nsis.sourceforge.io/)
 
@@ -62,6 +69,7 @@ docker run --rm \
 ```
 
 Optionally set the `MEDPLUM_LOG_LEVEL` environment variable
+
 ```bash
   -e MEDPLUM_LOG_LEVEL="DEBUG"
 ```

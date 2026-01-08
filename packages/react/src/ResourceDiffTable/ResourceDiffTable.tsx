@@ -1,18 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Table } from '@mantine/core';
-import {
-  InternalSchemaElement,
-  TypedValue,
-  arrayify,
-  capitalize,
-  evalFhirPathTyped,
-  getSearchParameterDetails,
-  toTypedValue,
-} from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import type { InternalSchemaElement, TypedValue } from '@medplum/core';
+import { arrayify, capitalize, evalFhirPathTyped, getSearchParameterDetails, toTypedValue } from '@medplum/core';
+import type { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Operation, createPatch } from 'rfc6902';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import type { Operation } from 'rfc6902';
+import { createPatch } from 'rfc6902';
+import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
 import classes from './ResourceDiffTable.module.css';
 
 export interface ResourceDiffTableProps {
@@ -81,33 +78,10 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {diffTable.map((row) => (
-          <Table.Tr key={row.key}>
-            <Table.Td>{row.name}</Table.Td>
-            <Table.Td className={classes.removed}>
-              {row.originalValue && (
-                <ResourcePropertyDisplay
-                  path={row.path}
-                  property={row.property}
-                  propertyType={row.originalValue.type}
-                  value={row.originalValue.value}
-                  ignoreMissingValues={true}
-                />
-              )}
-            </Table.Td>
-            <Table.Td className={classes.added}>
-              {row.revisedValue && (
-                <ResourcePropertyDisplay
-                  path={row.path}
-                  property={row.property}
-                  propertyType={row.revisedValue.type}
-                  value={row.revisedValue.value}
-                  ignoreMissingValues={true}
-                />
-              )}
-            </Table.Td>
-          </Table.Tr>
-        ))}
+        {diffTable.map((row) => {
+          const { key, ...rest } = row;
+          return <ResourceDiffRow key={key} {...rest} />;
+        })}
       </Table.Tbody>
     </Table>
   );
@@ -169,13 +143,18 @@ function jsonPathToFhirPath(path: string): string {
 }
 
 function tryGetElementDefinition(resourceType: string, fhirPath: string): InternalSchemaElement | undefined {
-  const details = getSearchParameterDetails(resourceType, {
-    resourceType: 'SearchParameter',
-    base: [resourceType],
-    code: resourceType + '.' + fhirPath,
-    expression: resourceType + '.' + fhirPath,
-  } as SearchParameter);
-  return details?.elementDefinitions?.[0];
+  try {
+    const details = getSearchParameterDetails(resourceType, {
+      resourceType: 'SearchParameter',
+      base: [resourceType],
+      code: resourceType + '.' + fhirPath,
+      expression: resourceType + '.' + fhirPath,
+    } as SearchParameter);
+    return details?.elementDefinitions?.[0];
+  } catch (err) {
+    console.warn('Failed to get element definition', { resourceType, fhirPath, err });
+    return undefined;
+  }
 }
 
 function touchUpValue(
@@ -192,6 +171,6 @@ function touchUpValue(
 }
 
 function fixArray(input: TypedValue[] | TypedValue, isArray: boolean): any {
-  const inputValue = (arrayify(input) as TypedValue[]).flatMap((v) => v.value);
+  const inputValue = arrayify(input).flatMap((v) => v.value);
   return isArray ? inputValue : inputValue[0];
 }

@@ -1,7 +1,25 @@
-import { OperationOutcomeError, badRequest, capitalize, isEmpty, isResource, validateResource } from '@medplum/core';
-import { FhirRequest } from '@medplum/fhir-router';
-import { OperationDefinition, OperationDefinitionParameter, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { Request } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  OperationOutcomeError,
+  badRequest,
+  capitalize,
+  flatMapFilter,
+  isEmpty,
+  isResource,
+  isResourceType,
+  isTypedValue,
+  validateResource,
+} from '@medplum/core';
+import type { FhirRequest } from '@medplum/fhir-router';
+import type {
+  OperationDefinition,
+  OperationDefinitionParameter,
+  Parameters,
+  ParametersParameter,
+  ResourceType,
+} from '@medplum/fhirtypes';
+import type { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
@@ -22,7 +40,7 @@ export function parseParameters<T>(input: T | Parameters): T {
  */
 export function parseInputParameters<T>(operation: OperationDefinition, req: Request | FhirRequest): T {
   if (!operation.parameter) {
-    return {} as any;
+    return {} as T;
   }
   const inputParameters = operation.parameter.filter((p) => p.use === 'in');
 
@@ -32,22 +50,26 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
 
   if (input.resourceType === 'Parameters') {
     if (!input.parameter) {
-      return {} as any;
+      return {} as T;
     }
     validateResource(input as Parameters);
-    return parseParams(inputParameters, input.parameter) as any;
+    return parseParams(inputParameters, input.parameter) as T;
   } else {
     return Object.fromEntries(
       inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
-    ) as any;
+    ) as T;
   }
 }
 
 function parseQueryString(
-  query: Record<string, any>,
+  query: Record<string, unknown> | undefined,
   inputParams: OperationDefinitionParameter[]
-): Record<string, any> {
+): Record<string, unknown> {
   const parsed = Object.create(null);
+  if (!query) {
+    return parsed;
+  }
+
   for (const param of inputParams) {
     const value = query[param.name];
     if (!value) {
@@ -60,50 +82,66 @@ function parseQueryString(
       );
     }
 
-    switch (param.type) {
-      case 'integer':
-      case 'positiveInt':
-      case 'unsignedInt': {
-        const n = parseInt(value, 10);
-        if (isNaN(n)) {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        parsed[param.name] = n;
-        break;
-      }
-      case 'decimal': {
-        const n = parseFloat(value);
-        if (isNaN(n)) {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        parsed[param.name] = n;
-        break;
-      }
-      case 'boolean':
-        if (value === 'true') {
-          parsed[param.name] = true;
-        } else if (value === 'false') {
-          parsed[param.name] = false;
-        } else {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        break;
-      default:
-        parsed[param.name] = value;
-    }
+    parsed[param.name] = Array.isArray(value)
+      ? value.map((v) => parseStringifiedParameter(v, param))
+      : parseStringifiedParameter(value, param);
   }
   return parsed;
 }
 
-function validateInputParam(param: OperationDefinitionParameter, value: any): any {
+function parseStringifiedParameter(
+  value: unknown,
+  param: OperationDefinitionParameter
+): number | boolean | string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  switch (param.type) {
+    case 'integer':
+    case 'positiveInt':
+    case 'unsignedInt':
+      {
+        const n = Number.parseInt(value, 10);
+        if (!Number.isNaN(n)) {
+          return n;
+        }
+      }
+      break;
+    case 'decimal':
+      {
+        const n = Number.parseFloat(value);
+        if (!Number.isNaN(n)) {
+          return n;
+        }
+      }
+      break;
+    case 'boolean':
+      if (value === 'true') {
+        return true;
+      } else if (value === 'false') {
+        return false;
+      }
+      break;
+    default:
+      return value;
+  }
+
+  throw new OperationOutcomeError(
+    badRequest(`Invalid value '${value}' provided for ${param.type} parameter '${param.name}'`)
+  );
+}
+
+function validateInputParam(param: OperationDefinitionParameter, value: unknown): unknown {
   // Check parameter cardinality (min and max)
   const min = param.min ?? 0;
-  const max = parseInt(param.max ?? '1', 10);
+  const maxStr = param.max ?? '1';
+  const max = maxStr === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(maxStr, 10);
   if (Array.isArray(value)) {
     if (value.length < min || value.length > max) {
       throw new OperationOutcomeError(
         badRequest(
-          `Expected ${min === max ? max : min + '..' + max} value(s) for input parameter ${param.name}, but ${
+          `Expected ${min === max ? maxStr : min + '..' + maxStr} value(s) for input parameter ${param.name}, but ${
             value.length
           } provided`
         )
@@ -121,30 +159,45 @@ function validateInputParam(param: OperationDefinitionParameter, value: any): an
 function parseParams(
   params: OperationDefinitionParameter[],
   inputParameters: ParametersParameter[]
-): Record<string, any> {
-  const parsed: Record<string, any> = Object.create(null);
+): Record<string, unknown> {
+  const parsed: Record<string, unknown> = Object.create(null);
   for (const param of params) {
     // FHIR spec-compliant case: Parameters resource e.g.
     // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
+    // except for Resource parameters, where the value is a whole resource.
     const inParams = inputParameters.filter((p) => p.name === param.name);
-    let value: any;
+    let value: unknown;
     if (param.part?.length) {
       value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
     } else {
-      value = inParams?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
+      value = inParams?.map((v) => {
+        const paramType = param.type ?? 'string';
+        if (paramType === 'Resource' || isResourceType(paramType)) {
+          return v.resource;
+        } else if (paramType === 'Any') {
+          // Parse as TypedValue
+          for (const key of Object.keys(v)) {
+            if (key.startsWith('value')) {
+              return { type: key.substring(5), value: v[key as keyof ParametersParameter] };
+            }
+          }
+          return undefined;
+        } else {
+          return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
+        }
+      });
     }
-
-    parsed[param.name as string] = validateInputParam(param, value);
+    parsed[param.name] = validateInputParam(param, value);
   }
 
   return parsed;
 }
 
-export function buildOutputParameters(operation: OperationDefinition, output: any): Parameters {
+export function buildOutputParameters(operation: OperationDefinition, output: object | undefined): Parameters {
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
-  if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
-    if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
+  if (outputParameters?.length === 1 && param1?.name === 'return') {
+    if (!isResource(output, param1.type as ResourceType | undefined)) {
       throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
     } else {
       // Send Resource as output directly, instead of using Parameters format
@@ -162,14 +215,9 @@ export function buildOutputParameters(operation: OperationDefinition, output: an
   response.parameter = [];
   for (const param of outputParameters) {
     const key = param.name ?? '';
-    const value = output[key];
-    const count = Array.isArray(value) ? value.length : +(value !== undefined);
-
-    if (param.min && param.min > 0 && count < param.min) {
-      throw new Error(`Expected ${param.min} or more values for output parameter '${key}', got ${count}`);
-    } else if (param.max && param.max !== '*' && count > parseInt(param.max, 10)) {
-      throw new Error(`Expected at most ${param.max} values for output parameter '${key}', got ${count}`);
-    } else if (isEmpty(value)) {
+    const value = (output as Record<string, unknown> | undefined)?.[key];
+    checkMinMax(param, value);
+    if (isEmpty(value)) {
       continue;
     }
 
@@ -191,29 +239,46 @@ export function buildOutputParameters(operation: OperationDefinition, output: an
   return response;
 }
 
-function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
-  if (param.part) {
+function checkMinMax(param: OperationDefinitionParameter, value: unknown): void {
+  const count = Array.isArray(value) ? value.length : +(value !== undefined);
+  if (param.min && param.min > 0 && count < param.min) {
+    throw new Error(`Expected ${param.min} or more values for output parameter '${param.name}', got ${count}`);
+  } else if (param.max && param.max !== '*' && count > Number.parseInt(param.max, 10)) {
+    throw new Error(`Expected at most ${param.max} values for output parameter '${param.name}', got ${count}`);
+  }
+}
+
+function makeParameter(param: OperationDefinitionParameter, value: unknown): ParametersParameter | undefined {
+  if (param.part && value && typeof value === 'object') {
+    // Handle nested parameters by flattening dictionary object value
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
-      const nestedValue = value[part.name ?? ''];
-      if (nestedValue !== undefined) {
+      const nestedValue = (value as Record<string, unknown>)[part.name ?? ''];
+      checkMinMax(part, nestedValue);
+      if (nestedValue === undefined) {
+        continue;
+      }
+      if (Array.isArray(nestedValue)) {
+        for (const val of nestedValue.map((v) => makeParameter(part, v))) {
+          if (val) {
+            parts.push(val);
+          }
+        }
+      } else {
         const nestedParam = makeParameter(part, nestedValue);
         if (nestedParam) {
           parts.push(nestedParam);
         }
       }
     }
+
     return { name: param.name, part: parts };
   }
-  const type =
-    param.type && param.type !== 'Element'
-      ? [param.type]
-      : param.extension
-          ?.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type')
-          ?.map((e) => e.valueUri as string);
+
+  const type = getParameterType(param);
   if (type?.length === 1) {
-    return { name: param.name, ['value' + capitalize(type[0] as string)]: value };
-  } else if (typeof value.type === 'string' && value.value && type?.length) {
+    return { name: param.name, ['value' + capitalize(type[0])]: value };
+  } else if (isTypedValue(value) && value.value !== undefined && type?.length) {
     // Handle TypedValue
     for (const t of type) {
       if (value.type === t) {
@@ -224,6 +289,42 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
   return undefined;
 }
 
-export function clamp(n: number, min: number, max: number): number {
+function getParameterType(param: OperationDefinitionParameter): string[] | undefined {
+  if (param.type && param.type !== 'Element') {
+    return [param.type];
+  }
+  return flatMapFilter(param.extension, (e) =>
+    e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type'
+      ? (e.valueUri as string)
+      : undefined
+  );
+}
+
+/**
+ * Clamps a value between minimum and maximum values.
+ * @param min - The minimum value.
+ * @param n - The value to be clamped.
+ * @param max - The maximum value.
+ * @returns - The value, constrained to be at least min and at most max.
+ */
+export function clamp(min: number, n: number, max: number): number {
   return Math.max(min, Math.min(max, n));
+}
+
+export function makeOperationDefinitionParameter(
+  use: 'in' | 'out',
+  name: string,
+  type: string | undefined,
+  min: number,
+  max: string,
+  part?: OperationDefinitionParameter[]
+): OperationDefinitionParameter {
+  return {
+    use,
+    name,
+    type,
+    min,
+    max,
+    part,
+  };
 }

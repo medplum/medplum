@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
-import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import type { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, ReactNode, useCallback, useState } from 'react';
-import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import type { JSX, ReactNode } from 'react';
+import { forwardRef, useCallback, useState } from 'react';
+import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 /**
@@ -63,6 +67,7 @@ const NAME_RESOURCE_TYPES = [
   'RelatedPerson',
   'ResearchDefinition',
   'ResearchElementDefinition',
+  'ResearchStudy',
   'RiskEvidenceSynthesis',
   'SearchParameter',
   'StructureDefinition',
@@ -79,16 +84,17 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
-  readonly loadOnFocus?: boolean;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
+  readonly label?: AsyncAutocompleteProps<T>['label'];
+  readonly error?: AsyncAutocompleteProps<T>['error'];
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };
@@ -137,6 +143,8 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     <AsyncAutocomplete<T>
       disabled={props.disabled}
       name={props.name}
+      label={props.label}
+      error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultValue}

@@ -1,13 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Binary, Bundle, DocumentReference } from '@medplum/fhirtypes';
+import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
-import { Duplex, Readable } from 'stream';
+import type { Duplex } from 'stream';
+import { Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { getBinaryStorage } from '../storage/loader';
 import { initTestAuth, streamToString } from '../test.setup';
-import { getBinaryStorage } from './storage';
 
 const app = express();
 let accessToken: string;
@@ -36,7 +39,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
 
     // Read as FHIR JSON
     const res3 = await request(app)
@@ -74,7 +77,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('Hello world 2');
+    expect(res3.text).toStrictEqual('Hello world 2');
   });
 
   test('Binary CORS', async () => {
@@ -112,7 +115,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
   });
 
   test('GZIP', async () => {
@@ -129,7 +132,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
   });
 
   test('Update with GZIP', async () => {
@@ -153,7 +156,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('Hello world 2');
+    expect(res3.text).toStrictEqual('Hello world 2');
   });
 
   test('Upload binary in batch', async () => {
@@ -167,31 +170,16 @@ describe('Binary', () => {
         entry: [
           {
             fullUrl: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
-            request: {
-              method: 'POST',
-              url: 'Binary',
-            },
-            resource: {
-              resourceType: 'Binary',
-              contentType: 'text/plain',
-              data: 'SGVsbG8gV29ybGQh',
-            },
+            request: { method: 'POST', url: 'Binary' },
+            resource: { resourceType: 'Binary', contentType: 'text/plain', data: 'SGVsbG8gV29ybGQh' },
           },
           {
-            request: {
-              method: 'POST',
-              url: 'DocumentReference',
-            },
+            request: { method: 'POST', url: 'DocumentReference' },
             resource: {
               resourceType: 'DocumentReference',
               status: 'current',
               content: [
-                {
-                  attachment: {
-                    contentType: 'text/plain',
-                    url: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
-                  },
-                },
+                { attachment: { contentType: 'text/plain', url: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8' } },
               ],
             },
           },
@@ -214,7 +202,7 @@ describe('Binary', () => {
 
     // Verify that the file matches the expected contents
     const content = await streamToString(stream);
-    expect(content).toEqual('Hello World!');
+    expect(content).toStrictEqual('Hello World!');
   });
 
   test('Update JSON', async () => {
@@ -230,10 +218,7 @@ describe('Binary', () => {
       .put('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        ...binary,
-        securityContext: { reference: 'Patient/123' },
-      });
+      .send({ ...binary, securityContext: { reference: 'Patient/123' } });
     expect(res2.status).toBe(200);
 
     const res3 = await request(app)
@@ -241,10 +226,10 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toEqual('Patient/123');
+    expect(res3.body.securityContext.reference).toStrictEqual('Patient/123');
   });
 
-  test('Update JSON', async () => {
+  test('Invalid Binary JSON', async () => {
     const res = await request(app)
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -259,23 +244,16 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         ...binary,
-        securityContext: { reference: 'Patient/123' },
+        data: 'Hello, world!', // Invalid: not encoded as base64Binary
       });
-    expect(res2.status).toBe(200);
+    expect(res2.status).toBe(400);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toEqual('Patient/123');
-
-    // Reading binary contents should still work, despite new version
-    const res4 = await request(app)
-      .get('/fhir/R4/Binary/' + binary.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
-    expect(res4.text).toEqual('Hello world');
+    expect(res3.body.data).toBeUndefined();
   });
 
   test('Handle non-binary JSON', async () => {
@@ -300,7 +278,26 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('{"resourceType":"Patient"}');
+    expect(res3.text).toStrictEqual('{"resourceType":"Patient"}');
+  });
+
+  test('Error for disallowed file type', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/x-msdownload')
+      .send('Hello world');
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/octet-stream')
+      .query({ _filename: 'foo.exe' })
+      .send('Hello world');
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
 });
 

@@ -225,6 +225,22 @@
       "inherited": false
     },
     {
+      "name": "timeout",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "integer"
+        }
+      ],
+      "path": "Bot.timeout",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The maximum allowed execution time of the bot in seconds.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "photo",
       "depth": 1,
       "types": [
@@ -279,6 +295,22 @@
       "inherited": false
     },
     {
+      "name": "system",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.system",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "runAsUser",
       "depth": 1,
       "types": [
@@ -291,6 +323,22 @@
       "max": "1",
       "short": "",
       "definition": "Optional flag to indicate that the bot should be run as the user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "publicWebhook",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.publicWebhook",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
       "comment": "",
       "inherited": false
     },

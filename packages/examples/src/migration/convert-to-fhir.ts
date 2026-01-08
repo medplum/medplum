@@ -1,5 +1,7 @@
-import { Condition, Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumClient } from '@medplum/core';
+import type { Condition, Patient } from '@medplum/fhirtypes';
 const medplum = new MedplumClient();
 
 const patientData: Patient =

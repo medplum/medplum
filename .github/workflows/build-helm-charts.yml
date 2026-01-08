@@ -1,0 +1,64 @@
+name: Build Helm Charts
+
+concurrency:
+  group: ci-build-helm-${{ github.sha }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
+        with:
+          version: 'v3.19.2'
+
+      - name: Setup Helm S3
+        run: helm plugin install https://github.com/hypnoglow/helm-s3.git --version 0.17.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
+
+      - name: Add Medplum S3 Helm repository
+        run: helm repo add medplum-s3 s3://charts.medplum.com --force-update
+
+      - name: Get Chart Version and File Name
+        id: get_chart_info
+        run: |
+          CHART_NAME="medplum"
+          CHART_VERSION=$(node -p "require('./package.json').version")
+          CHART_FILE="${CHART_NAME}-${CHART_VERSION}.tgz"
+          echo "CHART_FILE=$CHART_FILE" >> $GITHUB_OUTPUT
+
+      - name: Package the Helm charts
+        run: helm package ./charts
+
+      - name: Push the chart to S3
+        run: helm s3 push ${{ steps.get_chart_info.outputs.CHART_FILE }} medplum-s3 --relative

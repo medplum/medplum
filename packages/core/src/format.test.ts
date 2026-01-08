@@ -1,4 +1,6 @@
-import { Observation } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Observation } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
   formatAddress,
@@ -14,36 +16,64 @@ import {
   formatPeriod,
   formatQuantity,
   formatRange,
+  formatReferenceString,
   formatTime,
   formatTiming,
+  formatWallTime,
+  typedValueToString,
 } from './format';
 
+describe('typedValueToString', () => {
+  expect(typedValueToString(undefined)).toStrictEqual('');
+  expect(typedValueToString({ type: 'Address', value: { city: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'CodeableConcept', value: { text: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'Coding', value: { code: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'ContactPoint', value: { value: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'HumanName', value: { given: ['x'] } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'Quantity', value: { value: 1, unit: 'kg' } })).toStrictEqual('1 kg');
+  expect(typedValueToString({ type: 'Reference', value: { reference: 'Patient/x' } })).toStrictEqual('Patient/x');
+  expect(typedValueToString({ type: 'string', value: 'x' })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'boolean', value: true })).toStrictEqual('true');
+  expect(typedValueToString({ type: 'boolean', value: false })).toStrictEqual('false');
+  expect(typedValueToString({ type: 'boolean', value: undefined })).toStrictEqual('');
+});
+
+test('formatReferenceString', () => {
+  expect(formatReferenceString(undefined)).toStrictEqual('');
+  expect(formatReferenceString({})).toStrictEqual('');
+  expect(formatReferenceString({ reference: 'Patient/123', display: 'Patient 123' })).toStrictEqual('Patient 123');
+  expect(formatReferenceString({ reference: 'Patient/123', display: undefined })).toStrictEqual('Patient/123');
+  expect(formatReferenceString({ reference: undefined, display: undefined, id: '123' })).toStrictEqual('{"id":"123"}');
+});
+
 test('Format Address', () => {
-  expect(formatAddress({})).toEqual('');
+  expect(formatAddress(undefined)).toStrictEqual('');
+  expect(formatAddress(null as unknown as undefined)).toStrictEqual('');
+  expect(formatAddress({})).toStrictEqual('');
 
   expect(
     formatAddress({
       line: ['742 Evergreen Terrace'],
     })
-  ).toEqual('742 Evergreen Terrace');
+  ).toStrictEqual('742 Evergreen Terrace');
 
   expect(
     formatAddress({
       city: 'Springfield',
     })
-  ).toEqual('Springfield');
+  ).toStrictEqual('Springfield');
 
   expect(
     formatAddress({
       state: 'OR',
     })
-  ).toEqual('OR');
+  ).toStrictEqual('OR');
 
   expect(
     formatAddress({
       postalCode: '97403',
     })
-  ).toEqual('97403');
+  ).toStrictEqual('97403');
 
   expect(
     formatAddress({
@@ -52,7 +82,7 @@ test('Format Address', () => {
       state: 'OR',
       postalCode: '97403',
     })
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403');
+  ).toStrictEqual('742 Evergreen Terrace, Springfield, OR, 97403');
 
   expect(
     formatAddress(
@@ -66,7 +96,7 @@ test('Format Address', () => {
         lineSeparator: '\n',
       }
     )
-  ).toEqual('742 Evergreen Terrace\nSpringfield, OR, 97403');
+  ).toStrictEqual('742 Evergreen Terrace\nSpringfield, OR, 97403');
 
   expect(
     formatAddress(
@@ -80,7 +110,7 @@ test('Format Address', () => {
         use: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403');
+  ).toStrictEqual('742 Evergreen Terrace, Springfield, OR, 97403');
 
   expect(
     formatAddress(
@@ -95,7 +125,7 @@ test('Format Address', () => {
         use: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
+  ).toStrictEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 
   expect(
     formatAddress(
@@ -110,11 +140,13 @@ test('Format Address', () => {
         all: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
+  ).toStrictEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 });
 
 test('Format HumanName', () => {
-  expect(formatHumanName({})).toEqual('');
+  expect(formatHumanName(undefined)).toStrictEqual('');
+  expect(formatHumanName(null as unknown as undefined)).toStrictEqual('');
+  expect(formatHumanName({})).toStrictEqual('');
 
   expect(
     formatHumanName({
@@ -122,7 +154,7 @@ test('Format HumanName', () => {
       family: 'Smith',
       use: 'official',
     })
-  ).toEqual('Alice Smith');
+  ).toStrictEqual('Alice Smith');
 
   expect(
     formatHumanName({
@@ -130,7 +162,7 @@ test('Format HumanName', () => {
       given: ['Alice'],
       family: 'Smith',
     })
-  ).toEqual('Ms. Alice Smith');
+  ).toStrictEqual('Ms. Alice Smith');
 
   expect(
     formatHumanName(
@@ -143,7 +175,7 @@ test('Format HumanName', () => {
         all: true,
       }
     )
-  ).toEqual('Ms. Alice Smith');
+  ).toStrictEqual('Ms. Alice Smith');
 
   expect(
     formatHumanName(
@@ -156,7 +188,7 @@ test('Format HumanName', () => {
         prefix: false,
       }
     )
-  ).toEqual('Alice Smith');
+  ).toStrictEqual('Alice Smith');
 
   expect(
     formatHumanName(
@@ -171,7 +203,7 @@ test('Format HumanName', () => {
         suffix: false,
       }
     )
-  ).toEqual('Ms. Alice Gelato Smith');
+  ).toStrictEqual('Ms. Alice Gelato Smith');
 
   expect(
     formatHumanName(
@@ -186,7 +218,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Ms. Alice Gelato Smith III [official]');
+  ).toStrictEqual('Ms. Alice Gelato Smith III [official]');
 
   expect(
     formatHumanName(
@@ -200,7 +232,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Ms. Alice Gelato Smith III');
+  ).toStrictEqual('Ms. Alice Gelato Smith III');
 
   expect(
     formatHumanName(
@@ -215,67 +247,77 @@ test('Format HumanName', () => {
         all: true,
       }
     )
-  ).toEqual('Ms. Alice Gelato Smith III [official]');
+  ).toStrictEqual('Ms. Alice Gelato Smith III [official]');
 
-  expect(formatHumanName({ text: 'foo bar' })).toEqual('foo bar');
+  expect(formatHumanName({ text: 'foo bar' })).toStrictEqual('foo bar');
 });
 
 test('Format given name', () => {
-  expect(formatGivenName({})).toEqual('');
+  expect(formatGivenName({})).toStrictEqual('');
   expect(
     formatGivenName({
       given: ['Alice', 'Gelato'],
       family: 'Smith',
     })
-  ).toEqual('Alice Gelato');
+  ).toStrictEqual('Alice Gelato');
 });
 
 test('Format family name', () => {
-  expect(formatFamilyName({})).toEqual('');
+  expect(formatFamilyName({})).toStrictEqual('');
   expect(
     formatFamilyName({
       given: ['Alice', 'Gelato'],
       family: 'Smith',
     })
-  ).toEqual('Smith');
+  ).toStrictEqual('Smith');
 });
 
 test('Format date', () => {
-  expect(formatDate(undefined)).toEqual('');
-  expect(formatDate('')).toEqual('');
-  expect(formatDate('xyz')).toEqual('');
-  expect(formatDate('2021-06-01')).toEqual('6/1/2021');
+  expect(formatDate(undefined)).toStrictEqual('');
+  expect(formatDate('')).toStrictEqual('');
+  expect(formatDate('xyz')).toStrictEqual('');
+  expect(formatDate('2021-06-01')).toStrictEqual('6/1/2021');
 });
 
 test('Format time', () => {
-  expect(formatTime(undefined)).toEqual('');
-  expect(formatTime('')).toEqual('');
-  expect(formatTime('xyz')).toEqual('');
-  expect(formatTime('12:00')).not.toEqual('');
-  expect(formatTime('12:00:00')).not.toEqual('');
+  expect(formatTime(undefined)).toStrictEqual('');
+  expect(formatTime('')).toStrictEqual('');
+  expect(formatTime('xyz')).toStrictEqual('');
+  expect(formatTime('12:00')).not.toStrictEqual('');
+  expect(formatTime('12:00:00')).not.toStrictEqual('');
+});
+
+test('Format wall time', () => {
+  expect(formatWallTime(undefined)).toStrictEqual('');
+  expect(formatWallTime('')).toStrictEqual('');
+  expect(formatWallTime('xyz')).toStrictEqual('');
+  expect(formatWallTime('12:00')).toStrictEqual('12:00 PM');
+  expect(formatWallTime('12:00:00')).toStrictEqual('12:00 PM');
+  expect(formatWallTime('14:30:11')).toStrictEqual('2:30:11 PM');
+  expect(formatWallTime('08:15')).toStrictEqual('8:15 AM');
 });
 
 test('Format date/time', () => {
-  expect(formatDateTime(undefined)).toEqual('');
-  expect(formatDateTime('')).toEqual('');
-  expect(formatDateTime('xyz')).toEqual('');
+  expect(formatDateTime(undefined)).toStrictEqual('');
+  expect(formatDateTime('')).toStrictEqual('');
+  expect(formatDateTime('xyz')).toStrictEqual('');
   expect(formatDateTime('2021-06-01T12:00:00Z')).toMatch(/2021/);
 });
 
 test('Format period', () => {
-  expect(formatPeriod(undefined)).toEqual('');
-  expect(formatPeriod({})).toEqual('');
+  expect(formatPeriod(undefined)).toStrictEqual('');
+  expect(formatPeriod({})).toStrictEqual('');
   expect(formatPeriod({ start: '2021-06-01T12:00:00Z', end: '2022-06-02T12:00:00Z' })).toMatch(/2021/);
 });
 
 test('Format timing', () => {
-  expect(formatTiming(undefined)).toEqual('');
-  expect(formatTiming({})).toEqual('');
+  expect(formatTiming(undefined)).toStrictEqual('');
+  expect(formatTiming({})).toStrictEqual('');
   expect(formatTiming({ event: ['2021-06-01T12:00:00Z'] })).toMatch(/2021/);
-  expect(formatTiming({ repeat: { periodUnit: 's' } })).toEqual('Every second');
-  expect(formatTiming({ repeat: { periodUnit: 'min' } })).toEqual('Every minute');
-  expect(formatTiming({ repeat: { periodUnit: 'd' } })).toEqual('Daily');
-  expect(formatTiming({ repeat: { periodUnit: 'wk' } })).toEqual('Weekly');
+  expect(formatTiming({ repeat: { periodUnit: 's' } })).toStrictEqual('Every second');
+  expect(formatTiming({ repeat: { periodUnit: 'min' } })).toStrictEqual('Every minute');
+  expect(formatTiming({ repeat: { periodUnit: 'd' } })).toStrictEqual('Daily');
+  expect(formatTiming({ repeat: { periodUnit: 'wk' } })).toStrictEqual('Weekly');
   expect(
     formatTiming({
       repeat: {
@@ -284,7 +326,7 @@ test('Format timing', () => {
         timeOfDay: ['09:00:00', '12:00:00', '03:00:00'],
       },
     })
-  ).toMatch(/Weekly on Mon, Wed, Fri at/);
+  ).toEqual('Weekly on Mon, Wed, Fri at 9:00 AM, 12:00 PM, 3:00 AM');
   expect(
     formatTiming({
       repeat: {
@@ -292,7 +334,7 @@ test('Format timing', () => {
         periodUnit: 'h',
       },
     })
-  ).toEqual('Once per 3 hours');
+  ).toStrictEqual('Once per 3 hours');
   expect(
     formatTiming({
       repeat: {
@@ -300,7 +342,7 @@ test('Format timing', () => {
         periodUnit: 'h',
       },
     })
-  ).toEqual('2 times per hour');
+  ).toStrictEqual('2 times per hour');
   expect(
     formatTiming({
       repeat: {
@@ -309,7 +351,7 @@ test('Format timing', () => {
         periodUnit: 'h',
       },
     })
-  ).toEqual('2 times per 3 hours');
+  ).toStrictEqual('2 times per 3 hours');
 });
 
 test('Format Range', () => {
@@ -386,8 +428,16 @@ test('Format Coding', () => {
   expect(formatCoding(undefined)).toBe('');
   expect(formatCoding({})).toBe('');
   expect(formatCoding({ display: 'foo' })).toBe('foo');
-  expect(formatCoding({ code: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: 'CODE' })).toBe('CODE');
   expect(formatCoding({ code: { foo: 'bar' } as unknown as string })).toBe('');
+
+  // includeCode true
+  expect(formatCoding(undefined, true)).toBe('');
+  expect(formatCoding({}, true)).toBe('');
+  expect(formatCoding({ display: 'foo', code: 'CODE' }, true)).toBe('foo (CODE)');
+  expect(formatCoding({ display: 'foo' }, true)).toBe('foo');
+  expect(formatCoding({ code: 'CODE' }, true)).toBe('CODE');
+  expect(formatCoding({ code: { foo: 'bar' } as unknown as string }, true)).toBe('');
 });
 
 test('Format Observation value', () => {

@@ -1,12 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SubscriptionEmitter, generateId } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import 'jest-websocket-mock';
-import { ReactNode, StrictMode, useCallback, useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import type { JSX, ReactNode } from 'react';
+import { StrictMode, useCallback, useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { UseSubscriptionOptions, useSubscription } from './useSubscription';
+import type { UseSubscriptionOptions } from './useSubscription';
+import { useSubscription } from './useSubscription';
 
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
 
@@ -15,13 +19,13 @@ function TestComponent({
   callback,
   options,
 }: {
-  criteria?: string;
+  criteria: string | undefined;
   callback?: (bundle: Bundle) => void;
   options?: UseSubscriptionOptions;
 }): JSX.Element {
   const [lastReceived, setLastReceived] = useState<Bundle>();
   useSubscription(
-    criteria ?? 'Communication',
+    criteria,
     callback ??
       ((bundle: Bundle) => {
         setLastReceived(bundle);
@@ -36,7 +40,7 @@ function TestComponent({
 }
 
 function RenderToggleComponent({ render }: { render: boolean }): JSX.Element {
-  return <>{render ? <TestComponent /> : null}</>;
+  return <>{render ? <TestComponent criteria="Communication" /> : null}</>;
 }
 
 describe('useSubscription()', () => {
@@ -77,7 +81,7 @@ describe('useSubscription()', () => {
   }
 
   test('Mount and unmount completely', async () => {
-    const { unmount } = setup(<TestComponent />);
+    const { unmount } = setup(<TestComponent criteria="Communication" />);
 
     act(() => {
       medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
@@ -128,7 +132,7 @@ describe('useSubscription()', () => {
     const emitter = medplum.getSubscriptionManager().addCriteria('Communication');
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
 
-    setup(<TestComponent />, true);
+    setup(<TestComponent criteria="Communication" />, true);
     jest.advanceTimersByTime(5000);
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
     expect(medplum.getSubscriptionManager().getEmitter('Communication')).toBe(emitter);
@@ -142,6 +146,7 @@ describe('useSubscription()', () => {
 
     const { rerender } = setup(
       <TestComponent
+        criteria="Communication"
         callback={(bundle: Bundle) => {
           lastFromCb1 = bundle;
         }}
@@ -162,6 +167,7 @@ describe('useSubscription()', () => {
 
     rerender(
       <TestComponent
+        criteria="Communication"
         callback={(bundle: Bundle) => {
           lastFromCb2 = bundle;
         }}
@@ -360,6 +366,120 @@ describe('useSubscription()', () => {
     expect(lastFromCb2?.resourceType).toEqual('Bundle');
     expect(lastFromCb2?.type).toEqual('history');
     expect(lastFromCb2?.id).toEqual(id3);
+  });
+
+  test('Empty criteria should temporarily unsubscribe', async () => {
+    let lastFromCb1: Bundle | undefined;
+    let lastFromCb2: Bundle | undefined;
+    let lastFromCb3: Bundle | undefined;
+    let lastFromCb4: Bundle | undefined;
+
+    const id1 = generateId();
+    const id2 = generateId();
+    const id3 = generateId();
+    const id4 = generateId();
+
+    const { rerender } = setup(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb1 = bundle;
+        }}
+      />
+    );
+
+    // Emit an event that would trigger the current callback to be called based on the criteria
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id1, type: 'history' },
+      });
+    });
+
+    // Make sure it was called
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+    expect(lastFromCb3).not.toBeDefined();
+
+    // Re-render with a new empty string criteria
+    rerender(
+      <TestComponent
+        criteria=""
+        callback={(bundle: Bundle) => {
+          lastFromCb2 = bundle;
+        }}
+      />
+    );
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id2, type: 'history' },
+      });
+    });
+
+    // Make sure it doesn't get called
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+    expect(lastFromCb2).not.toBeDefined();
+    expect(lastFromCb3).not.toBeDefined();
+
+    // Re-render with undefined criteria
+    rerender(
+      <TestComponent
+        criteria={undefined}
+        callback={(bundle: Bundle) => {
+          lastFromCb3 = bundle;
+        }}
+      />
+    );
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id3, type: 'history' },
+      });
+    });
+
+    // Make sure old criteria still has first event as last received message
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+
+    expect(lastFromCb2).toBeUndefined();
+    expect(lastFromCb3).toBeUndefined();
+
+    // Re-render with the old criteria
+    rerender(
+      <TestComponent
+        criteria="Communication"
+        callback={(bundle: Bundle) => {
+          lastFromCb4 = bundle;
+        }}
+      />
+    );
+
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: id4, type: 'history' },
+      });
+    });
+
+    // Make sure old criteria still has first event as last received message
+    expect(lastFromCb1?.resourceType).toEqual('Bundle');
+    expect(lastFromCb1?.type).toEqual('history');
+    expect(lastFromCb1?.id).toEqual(id1);
+
+    expect(lastFromCb2).toBeUndefined();
+    expect(lastFromCb3).toBeUndefined();
+
+    expect(lastFromCb4?.resourceType).toEqual('Bundle');
+    expect(lastFromCb4?.type).toEqual('history');
+    expect(lastFromCb4?.id).toEqual(id4);
   });
 
   test('WebSocket disconnects and reconnects', async () => {

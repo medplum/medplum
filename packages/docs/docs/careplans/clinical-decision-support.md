@@ -26,7 +26,7 @@ The following sections describe best practices to prepare for a predictive clini
 
 ### Training Data
 
-Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/auth/user-management-guide#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
+Demonstrating which training data was used to train an algorithm (and keeping a record of the versioning of said data) is part of the certification process. In the context of a Medplum implementation, be prepared to keep all of your training data in a [Medplum project](/docs/user-management#background-user-model) which will show which dataset was used to train the models and that the data is updated (feedback loops).
 
 ### Code Systems
 
@@ -34,7 +34,8 @@ It is recommended that data is tagged with UMLS code systems, including [LOINC](
 
 ### Insights Reporting
 
-Electronic health records that support predictive clinical decision support will be required to report on the usage of their product. Prepare the following basic statistics as part of certification: 
+Electronic health records that support predictive clinical decision support will be required to report on the usage of their product. Prepare the following basic statistics as part of certification:
+
 - Number of times the decision support was used
 - Number of unique clinicians who used it
 - Number of times it was updated
@@ -61,8 +62,7 @@ To support the linked referential clinical decision support the system should be
 
 Evidence-based clinical decision support systems are largely related to medication administration, drug interactions (with other drugs, foods, OTC medications, etc.) and dosing. Evidence-based clinical decision support systems plug into health record systems via SMART-App-Launch links, iFrames or APIs, all of which are supported by Medplum.
 
-Medplum supports a [Smart-App-Launch react component]([Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) react component.
-) that serves as a launch point for evidence-based implementations.
+Medplum supports a [Smart-App-Launch react component](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) which serves as a launch point for evidence-based implementations.
 
 [DoseSpot](https://www.dosespot.com/) is a common provider for evidence based medication administration and supports recording and retrieving allergies, listing potential interactions for a specific prescription, listing drug interactions on a patient record, checking for known interactions at prescription creation time.
 

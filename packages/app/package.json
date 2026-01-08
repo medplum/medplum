@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -23,6 +23,8 @@
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
     "source-map-explorer": "source-map-explorer dist/**/*.js --gzip",
     "test": "jest"
   },
@@ -30,30 +32,31 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "7.12.2",
-    "@mantine/dropzone": "7.12.2",
-    "@mantine/hooks": "7.12.2",
-    "@mantine/notifications": "7.12.2",
-    "@medplum/core": "3.2.10",
-    "@medplum/definitions": "3.2.10",
-    "@medplum/fhirtypes": "3.2.10",
-    "@medplum/mock": "3.2.10",
-    "@medplum/react": "3.2.10",
-    "@tabler/icons-react": "3.16.0",
-    "@testing-library/jest-dom": "6.5.0",
-    "@testing-library/react": "16.0.1",
-    "@types/react": "18.3.5",
-    "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.1",
-    "postcss": "8.4.45",
-    "postcss-preset-mantine": "1.17.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-router-dom": "6.26.2",
-    "rfc6902": "5.1.1",
-    "vite": "5.4.3"
+    "@mantine/core": "8.3.10",
+    "@mantine/dropzone": "8.3.10",
+    "@mantine/hooks": "8.3.10",
+    "@mantine/notifications": "8.3.10",
+    "@mantine/spotlight": "8.3.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/definitions": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/mock": "5.0.10",
+    "@medplum/react": "5.0.10",
+    "@tabler/icons-react": "3.36.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.2",
+    "postcss": "8.5.6",
+    "postcss-preset-mantine": "1.18.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-router": "7.11.0",
+    "rfc6902": "5.1.2",
+    "vite": "7.3.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

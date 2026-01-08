@@ -1,5 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Span } from '@opentelemetry/api';
+import { SpanStatusCode } from '@opentelemetry/api';
+import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { initOpenTelemetry, shutdownOpenTelemetry } from './instrumentation';
+import type { IncomingMessage, ServerResponse } from 'http';
+import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;
@@ -41,5 +47,41 @@ describe('Instrumentation', () => {
     initOpenTelemetry();
     await shutdownOpenTelemetry();
     expect(sdkSpy).toHaveBeenCalled();
+  });
+
+  test('HTTP response hook', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+      setStatus: jest.fn(),
+    } as unknown as Span;
+
+    httpResponseHook(
+      span,
+      { method: 'PUT' } as unknown as IncomingMessage,
+      { statusCode: 500 } as unknown as ServerResponse
+    );
+
+    expect(span.setAttribute).toHaveBeenCalledWith('http.method', 'PUT');
+    expect(span.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.ERROR });
+  });
+
+  test('Postgres response hook', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+    } as unknown as Span;
+
+    pgResponseHook(span, { data: { rowCount: 21 } } as unknown as PgResponseHookInformation);
+
+    expect(span.setAttribute).toHaveBeenCalledWith('medplum.db.rowCount', 21);
+  });
+
+  test('Postgres response hook -- null rowCount', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+    } as unknown as Span;
+
+    pgResponseHook(span, { data: { rowCount: null } } as unknown as PgResponseHookInformation);
+
+    expect(span.setAttribute).not.toHaveBeenCalled();
   });
 });

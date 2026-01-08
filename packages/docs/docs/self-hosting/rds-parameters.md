@@ -108,9 +108,7 @@ of directly.
 
 ### Redirect connections through the proxy
 
-First, confirm the `databaseProxyEndpoint` setting is created in [AWS Parameter Store](/docs/self-hosting/config-settings#server-config):
-
-![AWS Console screenshot showing the "databaseProxyEndpoint" setting is present in AWS Parameter Store](./rds-proxy-endpoint-param.png)
+First, confirm the `databaseProxyEndpoint` settings is created in [AWS Parameter Store](/docs/self-hosting/server-config).
 
 Additionally, since the RDS Proxy uses a self-signed TLS certificate and requires TLS by default, set the
 `database.ssl.rejectUnauthorized` parameter to `false` in order to ensure connectivity with the proxy:
@@ -158,9 +156,8 @@ Once the database instances have all restarted, they should be using the new con
 If your cluster does not use RDS Proxy during normal service, you can remove it once the database instance restarts are
 complete.
 
-First, manually delete the `databaseProxyEndpoint` server configuration parameter from AWS Parameter Store. Then, force
-another restart of the server ECS instances to connect back to the RDS cluster directly, and wait for it to
-complete.
+First, delete the `databaseProxyEndpoint` server configuration parameter from AWS Parameter Store. Then, force
+another restart of the server ECS instances to connect back to the RDS cluster directly, and wait for it to complete.
 
 After this, RDS Proxy can safely be removed via the CDK by setting `rdsProxyEnabled` to `false` in the CDK
 config file, then running CDK `diff` and `deploy` to apply the change.

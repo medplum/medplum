@@ -1,4 +1,8 @@
-import { Badge, DefaultMantineColor } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BadgeProps, DefaultMantineColor } from '@mantine/core';
+import { Badge } from '@mantine/core';
+import type { JSX } from 'react';
 
 /*
  * Request status: https://hl7.org/fhir/valueset-request-status.html
@@ -60,12 +64,20 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   'not-done': 'red',
   connected: 'green',
   disconnected: 'red',
+  finished: 'green',
+  planned: 'gray',
 };
 
-export interface StatusBadgeProps {
+export interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
   readonly status: string;
 }
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
-  return <Badge color={statusToColor[props.status]}>{props.status}</Badge>;
+  const { status, ...badgeProps } = props;
+
+  return (
+    <Badge color={props.color || statusToColor[status]} {...badgeProps}>
+      {status.replaceAll('-', ' ')}
+    </Badge>
+  );
 }

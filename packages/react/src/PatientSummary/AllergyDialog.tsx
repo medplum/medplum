@@ -1,10 +1,14 @@
-import { Button, Group, Stack, TextInput } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Group, Stack, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import type { AllergyIntolerance, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 
 export interface AllergyDialogProps {
   readonly patient: Patient;
@@ -70,7 +74,7 @@ export function AllergyDialog(props: AllergyDialogProps): JSX.Element {
         />
         <DateTimeInput name="onsetDateTime" label="Onset" defaultValue={allergy?.recordedDate} />
         <Group justify="flex-end" gap={4} mt="md">
-          <Button type="submit">Save</Button>
+          <SubmitButton>Save</SubmitButton>
         </Group>
       </Stack>
     </Form>

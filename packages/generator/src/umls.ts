@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 
@@ -157,7 +159,7 @@ async function processMrconso(): Promise<void> {
   icd10Stream.end();
 }
 
-if (require.main === module) {
+if (import.meta.main) {
   main()
     .then(() => console.log('Done'))
     .catch(console.error);

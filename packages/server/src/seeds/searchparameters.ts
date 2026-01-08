@@ -1,18 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
-import { DatabaseMode, getDatabasePool } from '../database';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import type { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
+import { r4ProjectId } from '../constants';
+import { DatabaseMode } from '../database';
+import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { r4ProjectId } from '../seed';
 
 /**
  * Creates all SearchParameter resources.
+ * @param systemRepo - The system repository to use
  */
-export async function rebuildR4SearchParameters(): Promise<void> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
+export async function rebuildR4SearchParameters(systemRepo: Repository): Promise<void> {
+  const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
   await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
-
-  const systemRepo = getSystemRepo();
 
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
     for (const entry of readJson(filename).entry as BundleEntry[]) {

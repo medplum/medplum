@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { loadDataType } from '@medplum/core';
-import { Patient, StructureDefinition } from '@medplum/fhirtypes';
+import type { Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
@@ -103,6 +105,6 @@ describe('ProfilesPage', () => {
     });
 
     const updatedPatient = await medplum.readResource('Patient', patient.id as string);
-    expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(false);
+    expect(updatedPatient.meta?.profile).toEqual(undefined);
   });
 });

@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Grid, GridCol, Loader } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 import { PatientDetails } from '../components/PatientDetails';
 
 export function PatientPage(): JSX.Element {

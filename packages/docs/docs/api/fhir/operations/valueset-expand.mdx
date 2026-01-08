@@ -19,16 +19,20 @@ Medplum implements the FHIR [`$expand` operation](https://hl7.org/fhir/valueset-
 
 ### Parameters
 
-| Name     | Type     | Description                         | Required |
-| -------- | -------- | ----------------------------------- | -------- |
-| `url`    | `string` | The URL of the value set to expand. | Yes      |
-| `filter` | `string` | A filter to apply to the value set. | No       |
-| `offset` | `number` | The offset to start the expansion.  | No       |
-| `count`  | `number` | The number of results to return.    | No       |
+| Name              | Type     | Description                                        | Required |
+| ----------------- | -------- | -------------------------------------------------- | -------- |
+| `url`             | `string` | The URL of the value set to expand                 | Yes      |
+| `filter`          | `string` | A filter to apply to the value set                 | No       |
+| `offset`          | `number` | The offset to start the expansion                  | No       |
+| `count`           | `number` | The number of results to return                    | No       |
+| `displayLanguage` | `string` | The [language code][bcp47] to search with `filter` | No       |
+
+[bcp47]: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
 
 ### Output
 
-The result of the expansion in `ValueSet` form. The contents of the expansion are in the `ValueSet.expansion` property.
+The result of the expansion as a `ValueSet` resource. The results of the expansion operation are in the
+`ValueSet.expansion` field.
 
 ### Examples
 
@@ -97,7 +101,7 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%
 }
 ```
 
-The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a `searchValueSet` convenience method:
+The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a `valueSetExpand` convenience method:
 
 <MedplumCodeBlock language="ts" selectBlocks="expand" showLineNumbers>
   {ExampleCode}

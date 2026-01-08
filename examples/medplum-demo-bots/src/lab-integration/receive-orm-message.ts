@@ -1,15 +1,8 @@
-import {
-  BotEvent,
-  Hl7Field,
-  Hl7Message,
-  Hl7Segment,
-  MedplumClient,
-  createReference,
-  getIdentifier,
-  parseHl7DateTime,
-  setIdentifier,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, getIdentifier, parseHl7DateTime, setIdentifier } from '@medplum/core';
+import type { BotEvent, Hl7Field, Hl7Message, Hl7Segment, MedplumClient } from '@medplum/core';
+import type {
   Annotation,
   CodeableConcept,
   ContactPoint,
@@ -29,7 +22,7 @@ export const FACILITY_ORDER_CODE_SYSTEM = new URL('orderCode', FACILITY_URL).toS
 export const FACILITY_TIME_ZONE_OFFSET = '-0500';
 
 /**
- * This Bot demonstrates how to send a lab order to an SFTP server in the form of HL7v2 ORM messages
+ * This Bot demonstrates how to receive a lab order from an SFTP server in the form of HL7v2 ORM messages, and convert them into ServiceRequests and associated resources.
  *
  * See: https://hl7-definition.caristix.com/v2/HL7v2.3/TriggerEvents/ORM_O01
  *

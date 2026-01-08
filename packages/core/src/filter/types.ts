@@ -1,6 +1,8 @@
-// See: https://hl7.org/fhir/search_filter.html
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Operator } from '../search/search';
 
-import { Operator } from '../search/search';
+// See: https://hl7.org/fhir/search_filter.html
 
 /**
  * The FhirFilterExpression type is the base type of all filter expressions.
@@ -11,11 +13,15 @@ export type FhirFilterExpression = FhirFilterComparison | FhirFilterNegation | F
  * The FhirFilterComparison class represents a comparison expression.
  */
 export class FhirFilterComparison {
-  constructor(
-    readonly path: string,
-    readonly operator: Operator,
-    readonly value: string
-  ) {}
+  readonly path: string;
+  readonly operator: Operator;
+  readonly value: string;
+
+  constructor(path: string, operator: Operator, value: string) {
+    this.path = path;
+    this.operator = operator;
+    this.value = value;
+  }
 }
 
 /**
@@ -23,7 +29,11 @@ export class FhirFilterComparison {
  * It contains a single child expression.
  */
 export class FhirFilterNegation {
-  constructor(readonly child: FhirFilterExpression) {}
+  readonly child: FhirFilterExpression;
+
+  constructor(child: FhirFilterExpression) {
+    this.child = child;
+  }
 }
 
 /**
@@ -31,9 +41,13 @@ export class FhirFilterNegation {
  * It contains a list of child expressions.
  */
 export class FhirFilterConnective {
-  constructor(
-    readonly keyword: 'and' | 'or',
-    readonly left: FhirFilterExpression,
-    readonly right: FhirFilterExpression
-  ) {}
+  readonly keyword: 'and' | 'or';
+  readonly left: FhirFilterExpression;
+  readonly right: FhirFilterExpression;
+
+  constructor(keyword: 'and' | 'or', left: FhirFilterExpression, right: FhirFilterExpression) {
+    this.keyword = keyword;
+    this.left = left;
+    this.right = right;
+  }
 }

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LogLevel, allOk, createReference } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dimse from 'dcmjs-dimse';
 import { Server } from 'mock-socket';
@@ -13,7 +15,7 @@ let endpoint: Endpoint;
 describe('DICOM', () => {
   beforeAll(async () => {
     console.log = jest.fn();
-    dimse.log.transports.forEach((t) => (t.silent = true));
+    dimse.log.disableAll(false);
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
@@ -56,7 +58,7 @@ describe('DICOM', () => {
       ],
     } as Agent);
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     const client = new dimse.Client();
@@ -77,7 +79,7 @@ describe('DICOM', () => {
     const echoCommandDataset = echoResponse.getCommandDataset();
     expect(echoCommandDataset).toBeDefined();
     expect(echoCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(echoCommandDataset?.getElement('Status')).toEqual(0);
+    expect(echoCommandDataset?.getElement('Status')).toStrictEqual(0);
 
     //
     // C-STORE
@@ -96,7 +98,7 @@ describe('DICOM', () => {
     const storeCommandDataset = storeResponse.getCommandDataset();
     expect(storeCommandDataset).toBeDefined();
     expect(storeCommandDataset?.getTransferSyntaxUid()).toBe('1.2.840.10008.1.2');
-    expect(storeCommandDataset?.getElement('Status')).toEqual(0);
+    expect(storeCommandDataset?.getElement('Status')).toStrictEqual(0);
 
     client.clearRequests();
     await app.stop();

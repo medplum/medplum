@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, MedplumClient } from '@medplum/core';
 import { mkdtempSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -198,8 +200,8 @@ describe('Profiles', () => {
       '--token-url',
       obj2.tokenUrl,
     ]);
-    expect(storage.getObject('options')).not.toEqual(obj);
-    expect(storage.getObject('options')).toEqual(obj2);
+    expect(storage.getObject('options')).not.toStrictEqual(obj);
+    expect(storage.getObject('options')).toStrictEqual(obj2);
 
     // Add another profile
     const profileName2 = 'testProfile2';
@@ -219,7 +221,7 @@ describe('Profiles', () => {
       obj.tokenUrl,
     ]);
     const storage2 = new FileSystemStorage(profileName2);
-    expect(storage2.getObject('options')).toEqual({ ...obj, name: profileName2 });
+    expect(storage2.getObject('options')).toStrictEqual({ ...obj, name: profileName2 });
 
     // List the 2 profiles
     await main(['node', 'index.js', 'profile', 'list']);

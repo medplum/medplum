@@ -1,21 +1,28 @@
-import WS from 'jest-websocket-mock';
-import {
-  FHIRCAST_EVENT_VERSION_REQUIRED,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { WS } from 'jest-websocket-mock';
+import type {
   FhircastConnectEvent,
-  FhircastConnection,
+  FhircastDiagnosticReportOpenContext,
+  FhircastDiagnosticReportUpdateContext,
   FhircastDisconnectEvent,
+  FhircastImagingStudyOpenContext,
   FhircastMessageEvent,
   FhircastMessagePayload,
+  FhircastPatientOpenContext,
   SubscriptionRequest,
+} from '.';
+import {
   assertContextVersionOptional,
   createFhircastMessagePayload,
+  FHIRCAST_EVENT_VERSION_REQUIRED,
+  FhircastConnection,
   isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
 import { generateId } from '../crypto';
 import { OperationOutcomeError } from '../outcomes';
-import { createFhircastMessageContext } from './test-utils';
 
 describe('validateFhircastSubscriptionRequest', () => {
   test('Valid subscription requests', () => {
@@ -162,7 +169,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
         topic: 'abc123',
         events: ['Patient-open'],
       })
-    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open');
+    ).toStrictEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open');
   });
 
   test('Valid subscription request with multiple events', () => {
@@ -173,7 +180,9 @@ describe('serializeFhircastSubscriptionRequest', () => {
         topic: 'abc123',
         events: ['Patient-open', 'Patient-close'],
       })
-    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2CPatient-close');
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2CPatient-close'
+    );
   });
 
   test('Valid subscription request with endpoint', () => {
@@ -185,7 +194,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
         events: ['Patient-open'],
         endpoint: 'wss://abc.com/hub',
       })
-    ).toEqual(
+    ).toStrictEqual(
       'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
     );
   });
@@ -202,7 +211,10 @@ describe('createFhircastMessagePayload', () => {
     const topic = 'abc123';
     const event = 'Patient-open';
     const resourceId = 'patient-123';
-    const context = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId);
+    const context = {
+      key: 'patient',
+      resource: { resourceType: 'Patient', id: resourceId },
+    } satisfies FhircastPatientOpenContext;
 
     const messagePayload = createFhircastMessagePayload(topic, event, context);
 
@@ -212,17 +224,28 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context);
   });
 
   test('Valid message with array of contexts', () => {
     const topic = 'abc123';
     const event = 'ImagingStudy-open';
-    const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId1);
-    const resourceId2 = 'imagingstudy-456';
-    const context2 = createFhircastMessageContext<typeof event>('study', 'ImagingStudy', resourceId2);
+    const resourceId1 = '123';
+    const context1 = {
+      key: 'patient',
+      resource: { resourceType: 'Patient', id: resourceId1 },
+    } satisfies FhircastImagingStudyOpenContext;
+    const resourceId2 = '456';
+    const context2 = {
+      key: 'study',
+      resource: {
+        resourceType: 'ImagingStudy',
+        id: resourceId2,
+        status: 'available',
+        subject: { reference: 'Patient/123' },
+      },
+    } satisfies FhircastImagingStudyOpenContext;
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -232,18 +255,31 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context1);
-    expect(messagePayload.event.context[1]).toEqual(context2);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context1);
+    expect(messagePayload.event.context[1]).toStrictEqual(context2);
   });
 
   test('Valid message with optional context included', () => {
     const topic = 'abc123';
     const event = 'Patient-open';
-    const resourceId1 = 'patient-123';
-    const context1 = createFhircastMessageContext<typeof event>('patient', 'Patient', resourceId1);
-    const resourceId2 = 'encounter-456';
-    const context2 = createFhircastMessageContext<typeof event>('encounter', 'Encounter', resourceId2);
+
+    const resourceId1 = '123';
+    const context1 = {
+      key: 'patient',
+      resource: { resourceType: 'Patient', id: resourceId1 },
+    } satisfies FhircastPatientOpenContext;
+
+    const resourceId2 = '456';
+    const context2 = {
+      key: 'encounter',
+      resource: {
+        resourceType: 'Encounter',
+        id: resourceId2,
+        status: 'in-progress',
+        class: { code: 'Test Encounter' },
+      },
+    } satisfies FhircastPatientOpenContext;
 
     const messagePayload = createFhircastMessagePayload(topic, event, [context1, context2]);
 
@@ -253,9 +289,9 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context1);
-    expect(messagePayload.event.context[1]).toEqual(context2);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context1);
+    expect(messagePayload.event.context[1]).toStrictEqual(context2);
   });
 
   test('Syncerror', () => {
@@ -282,8 +318,16 @@ describe('createFhircastMessagePayload', () => {
         123,
         'ImagingStudy-open',
         [
-          createFhircastMessageContext<'ImagingStudy-open'>('patient', 'Patient', 'patient-123'),
-          createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
+          { key: 'patient', resource: { id: '123', resourceType: 'Patient' } },
+          {
+            key: 'study',
+            resource: {
+              id: '123',
+              resourceType: 'ImagingStudy',
+              status: 'available',
+              subject: { reference: 'Patient/123' },
+            },
+          },
         ]
       )
     ).toThrow(OperationOutcomeError);
@@ -296,8 +340,19 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Invalid event, must be one of the enumerated FHIRcast events
         'imagingstudy-create',
         [
-          createFhircastMessageContext<'ImagingStudy-open'>('patient', 'Patient', 'patient-123'),
-          createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-123'),
+          {
+            key: 'patient',
+            resource: { id: '123', resourceType: 'Patient' },
+          } satisfies FhircastDiagnosticReportOpenContext,
+          {
+            key: 'study',
+            resource: {
+              resourceType: 'ImagingStudy',
+              id: '123',
+              status: 'available',
+              subject: { reference: 'Patient/123' },
+            },
+          } satisfies FhircastDiagnosticReportOpenContext,
         ]
       )
     ).toThrow(OperationOutcomeError);
@@ -329,12 +384,10 @@ describe('createFhircastMessagePayload', () => {
       )
     ).toThrow(OperationOutcomeError);
     expect(() =>
-      createFhircastMessagePayload(
-        'abc-123',
-        'ImagingStudy-open',
-        // @ts-expect-error Invalid context, resource must have an ID
-        { key: 'patient', resource: { resourceType: 'Patient' } }
-      )
+      createFhircastMessagePayload('abc-123', 'ImagingStudy-open', {
+        key: 'patient',
+        resource: { resourceType: 'Patient' },
+      })
     ).toThrow(OperationOutcomeError);
     expect(() =>
       createFhircastMessagePayload(
@@ -455,7 +508,7 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': 'abc-123', 'hub.event': 'DiagnosticReport-open', context: expect.any(Object) },
     });
-    expect(payload.event.context.length).toEqual(5);
+    expect(payload.event.context.length).toStrictEqual(5);
   });
 
   test('Invalid `DiagnosticReport-open` event w/ multiple reports', () => {
@@ -482,11 +535,15 @@ describe('createFhircastMessagePayload', () => {
     const messagePayload = createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
       {
         key: 'report',
-        resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
+        reference: { reference: 'DiagnosticReport/123' },
       },
       {
         key: 'select',
-        resources: [{ resourceType: 'Observation', id: 'observation-123', status: 'final', code: { text: 'test' } }],
+        reference: { reference: 'Observation/123' },
+      },
+      {
+        key: 'select',
+        reference: { reference: 'Observation/456' },
       },
     ]);
 
@@ -496,21 +553,8 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': 'abc-123', 'hub.event': 'DiagnosticReport-select', context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
-  });
-
-  test('Using single resource context for multi-resource context', () => {
-    expect(() =>
-      createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
-        {
-          key: 'report',
-          resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
-        },
-        // @ts-expect-error Should have an array of resources at 'resources'
-        { key: 'select', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
-      ])
-    ).toThrow(OperationOutcomeError);
   });
 
   test('Valid `DiagnosticReport-update` event', () => {
@@ -520,9 +564,9 @@ describe('createFhircastMessagePayload', () => {
       [
         {
           key: 'report',
-          resource: { resourceType: 'DiagnosticReport', id: 'report-123', status: 'final', code: { text: 'test' } },
+          reference: { reference: 'DiagnosticReport/123' },
         },
-        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'searchset' } },
+        { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123', type: 'transaction' } },
       ],
       generateId()
     );
@@ -538,8 +582,23 @@ describe('createFhircastMessagePayload', () => {
         'context.versionId': expect.any(String),
       },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
+  });
+
+  test('Resource context instead of reference for report in `*-update` event', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'DiagnosticReport-update',
+        [
+          // This report should be a reference
+          { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+        ] as FhircastDiagnosticReportUpdateContext[],
+        generateId()
+      )
+    ).toThrow(OperationOutcomeError);
   });
 
   test('Missing `context.versionId` in `*-update` event', () => {
@@ -549,7 +608,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Missing `context.versionId` for test
         'DiagnosticReport-update',
         [
-          { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+          { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
           { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
         ]
       )
@@ -591,16 +650,15 @@ describe('FhircastConnection', () => {
   });
 
   test('.addEventListener("message") - FhircastMessage', (done) => {
-    const message = createFhircastMessagePayload(
-      'abc123',
-      'Patient-open',
-      createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
-    ) satisfies FhircastMessagePayload<'Patient-open'>;
+    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+      key: 'patient',
+      resource: { id: '123', resourceType: 'Patient' },
+    });
 
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -609,16 +667,15 @@ describe('FhircastConnection', () => {
   });
 
   test('.addEventListener("message") - Subscription Confirmation', (done) => {
-    const message = createFhircastMessagePayload(
-      'abc123',
-      'Patient-open',
-      createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
-    ) satisfies FhircastMessagePayload<'Patient-open'>;
+    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+      key: 'patient',
+      resource: { id: '123', resourceType: 'Patient' },
+    });
 
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -638,16 +695,15 @@ describe('FhircastConnection', () => {
       },
     };
 
-    const message = createFhircastMessagePayload(
-      'abc123',
-      'Patient-open',
-      createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
-    ) satisfies FhircastMessagePayload<'Patient-open'>;
+    const message = createFhircastMessagePayload('abc123', 'Patient-open', {
+      key: 'patient',
+      resource: { id: '123', resourceType: 'Patient' },
+    });
 
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -684,22 +740,22 @@ describe('FhircastConnection', () => {
 
 describe('isContextVersionRequired', () => {
   test('Version required: true', () => {
-    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toEqual(true);
-    expect(isContextVersionRequired('DiagnosticReport-update')).toEqual(true);
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toStrictEqual(true);
+    expect(isContextVersionRequired('DiagnosticReport-update')).toStrictEqual(true);
   });
   test('Version required: false', () => {
-    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toEqual(false);
-    expect(isContextVersionRequired('Patient-open')).toEqual(false);
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toStrictEqual(false);
+    expect(isContextVersionRequired('Patient-open')).toStrictEqual(false);
   });
 });
 
 describe('assertContextVersionOptional', () => {
   test('Version optional: true', () => {
-    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toEqual(false);
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toStrictEqual(false);
     expect(() => assertContextVersionOptional('Patient-open')).not.toThrow();
   });
   test('Version optional: false', () => {
-    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toEqual(true);
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toStrictEqual(true);
     expect(() => assertContextVersionOptional('DiagnosticReport-update')).toThrow(OperationOutcomeError);
   });
 });

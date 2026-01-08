@@ -1,18 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+import type { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
+import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
 describe('Auth middleware', () => {
   const app = express();
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -27,9 +31,9 @@ describe('Auth middleware', () => {
   test('Login not found', async () => {
     const accessToken = await generateAccessToken({
       login_id: randomUUID(),
-      sub: client.id as string,
-      username: client.id as string,
-      client_id: client.id as string,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
       profile: client.resourceType + '/' + client.id,
       scope: 'openid',
     });
@@ -56,10 +60,10 @@ describe('Auth middleware', () => {
     );
 
     const accessToken = await generateAccessToken({
-      login_id: login.id as string,
-      sub: client.id as string,
-      username: client.id as string,
-      client_id: client.id as string,
+      login_id: login.id,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
       profile: client.resourceType + '/' + client.id,
       scope,
     });
@@ -72,6 +76,13 @@ describe('Auth middleware', () => {
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
+    expect(res.header['www-authenticate']).toBeUndefined();
+    expect(res.status).toBe(401);
+  });
+
+  test('No auth header with magic param', async () => {
+    const res = await request(app).get(`/fhir/R4/Patient?${PROMPT_BASIC_AUTH_PARAM}=1`);
+    expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);
     expect(res.status).toBe(401);
   });
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TypedEventTarget } from '../eventtarget';
 
 /*!
@@ -38,6 +40,70 @@ export type WebSocketEventMap = {
   message: MessageEvent;
   open: Event;
 };
+
+/**
+ * This map exists separately from `WebSocketEventMap`, which is the actual event map used for the `ReconnectingWebSocket` class itself,
+ * due to slight difference in the type between the events as we use them, and the events as they exist as global interfaces. We need the global interfaces
+ * to be generic enough to satisfy conformant implementations that don't exactly match the events we export and use in `ReconnectingWebSocket` itself.
+ */
+export type IWebSocketEventMap = {
+  close: globalThis.CloseEvent;
+  error: globalThis.ErrorEvent;
+  message: globalThis.MessageEvent;
+  open: Event;
+};
+
+/**
+ * Generic interface that an implementation of `WebSocket` must satisfy to be used with `ReconnectingWebSocket`.
+ * This is a slightly modified fork of the `WebSocket` global type used in Node.
+ *
+ * The main key difference is making all the `onclose`, `onerror`, etc. functions have `any[]` args, making `data` in `send()` of type `any`, and making `binaryType` of type string,
+ * though the particular implementation should narrow each of these implementation-specific types.
+ */
+export interface IWebSocket {
+  binaryType: string;
+
+  readonly bufferedAmount: number;
+  readonly extensions: string;
+
+  onclose: ((...args: any[]) => any) | null;
+  onerror: ((...args: any[]) => any) | null;
+  onmessage: ((...args: any[]) => any) | null;
+  onopen: ((...args: any[]) => any) | null;
+
+  readonly protocol: string;
+  readonly readyState: number;
+  readonly url: string;
+
+  close(code?: number, reason?: string): void;
+  send(data: any): void;
+
+  readonly CLOSED: number;
+  readonly CLOSING: number;
+  readonly CONNECTING: number;
+  readonly OPEN: number;
+
+  addEventListener<K extends keyof WebSocketEventMap>(
+    type: K,
+    listener: (ev: WebSocketEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  removeEventListener<K extends keyof WebSocketEventMap>(
+    type: K,
+    listener: (ev: WebSocketEventMap[K]) => any,
+    options?: boolean | EventListenerOptions
+  ): void;
+  removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | EventListenerOptions
+  ): void;
+}
 
 const Events = {
   Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
@@ -89,8 +155,9 @@ function cloneEvent(e: Event): Event {
   return new (e as any).constructor(e.type, e);
 }
 
-export type Options = {
+export type Options<WS extends IWebSocket = WebSocket> = {
   WebSocket?: any;
+  binaryType?: WS['binaryType'];
   maxReconnectionDelay?: number;
   minReconnectionDelay?: number;
   reconnectionDelayGrowFactor?: number;
@@ -121,24 +188,27 @@ export type Message = string | ArrayBuffer | Blob | ArrayBufferView;
 
 let didWarnAboutMissingWebSocket = false;
 
-export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
-  private _ws: WebSocket | undefined;
+export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
+  extends TypedEventTarget<WebSocketEventMap>
+  implements IReconnectingWebSocket
+{
+  private _ws: IWebSocket | undefined;
   private _retryCount = -1;
   private _uptimeTimeout: ReturnType<typeof setTimeout> | undefined;
   private _connectTimeout: ReturnType<typeof setTimeout> | undefined;
   private _shouldReconnect = true;
   private _connectLock = false;
-  private _binaryType: BinaryType = 'blob';
+  private _binaryType: WS['binaryType'];
   private _closeCalled = false;
   private _messageQueue: Message[] = [];
 
-  private _debugLogger = console.log.bind(console);
+  private readonly _debugLogger = console.log.bind(console);
 
   protected _url: string;
   protected _protocols?: ProtocolsProvider;
-  protected _options: Options;
+  protected _options: Options<WS>;
 
-  constructor(url: string, protocols?: ProtocolsProvider, options: Options = {}) {
+  constructor(url: string, protocols?: ProtocolsProvider, options: Options<WS> = {}) {
     // Initialize all events if they haven't been created yet
     if (!eventsInitialized) {
       lazyInitEvents();
@@ -151,6 +221,11 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._options = options;
     if (this._options.startClosed) {
       this._shouldReconnect = false;
+    }
+    if (this._options.binaryType) {
+      this._binaryType = this._options.binaryType;
+    } else {
+      this._binaryType = 'blob';
     }
     if (this._options.debugLogger) {
       this._debugLogger = this._options.debugLogger;
@@ -184,11 +259,11 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     return ReconnectingWebSocket.CLOSED;
   }
 
-  get binaryType(): 'arraybuffer' | 'blob' {
+  get binaryType(): WS['binaryType'] {
     return this._ws ? this._ws.binaryType : this._binaryType;
   }
 
-  set binaryType(value: BinaryType) {
+  set binaryType(value: WS['binaryType']) {
     this._binaryType = value;
     if (this._ws) {
       this._ws.binaryType = value;
@@ -291,7 +366,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
    * @param code - The code to close with. Default is 1000.
    * @param reason - An optional reason for closing the connection.
    */
-  // eslint-disable-next-line default-param-last
   public close(code = 1000, reason?: string): void {
     this._closeCalled = true;
     this._shouldReconnect = false;
@@ -330,7 +404,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
    * @param data - The data to enqueue.
    */
   public send(data: Message): void {
-    if (this._ws && this._ws.readyState === this.OPEN) {
+    if (this._ws?.readyState === this.OPEN) {
       this._debug('send', data);
       this._ws.send(data);
     } else {
@@ -422,7 +496,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._handleError(new Events.ErrorEvent(Error('TIMEOUT'), this));
   }
 
-  // eslint-disable-next-line default-param-last
   private _disconnect(code = 1000, reason?: string): void {
     this._clearTimeouts();
     if (!this._ws) {
@@ -442,7 +515,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._retryCount = 0;
   }
 
-  private _handleOpen = (event: Event): void => {
+  private readonly _handleOpen = (event: Event): void => {
     this._debug('open event');
     const { minUptime = DEFAULT.minUptime } = this._options;
 
@@ -463,7 +536,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private _handleMessage = (event: MessageEvent): void => {
+  private readonly _handleMessage = (event: MessageEvent): void => {
     this._debug('message event');
 
     if (this.onmessage) {
@@ -472,7 +545,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this.dispatchEvent(cloneEvent(event));
   };
 
-  private _handleError = (event: ErrorEvent): void => {
+  private readonly _handleError = (event: ErrorEvent): void => {
     this._debug('error event', event.message);
     this._disconnect(undefined, event.message === 'TIMEOUT' ? 'timeout' : undefined);
 
@@ -485,7 +558,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._connect();
   };
 
-  private _handleClose = (event: CloseEvent): void => {
+  private readonly _handleClose = (event: CloseEvent): void => {
     this._debug('close event');
     this._clearTimeouts();
 
@@ -507,7 +580,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._ws.removeEventListener('open', this._handleOpen);
     this._ws.removeEventListener('close', this._handleClose);
     this._ws.removeEventListener('message', this._handleMessage);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.removeEventListener('error', this._handleError);
   }
 
@@ -519,7 +591,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._ws.addEventListener('open', this._handleOpen);
     this._ws.addEventListener('close', this._handleClose);
     this._ws.addEventListener('message', this._handleMessage);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.addEventListener('error', this._handleError);
   }
 

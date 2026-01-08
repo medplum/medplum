@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { DiagnosticReport, Patient } from '@medplum/fhirtypes';
+import type { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
-import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
+import type { DefaultResourceTimelineProps } from './DefaultResourceTimeline';
+import { DefaultResourceTimeline } from './DefaultResourceTimeline';
 
 const medplum = new MockClient();
 
@@ -52,25 +55,30 @@ describe('DefaultResourceTimeline', () => {
 
     const p = await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
-    const dr1 = await medplum.createResource<DiagnosticReport>({
-      resourceType: 'DiagnosticReport',
-      meta: {
-        lastUpdated: '2021-01-01T00:00:00Z',
-      },
-      subject: createReference(p),
-      code: { text: 'test' },
-      issued: '2021-01-01T00:00:00Z',
-      status: 'preliminary',
-    });
+    // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
+    const dr1 = await medplum.withSeeding(() =>
+      medplum.createResource<DiagnosticReport>({
+        resourceType: 'DiagnosticReport',
+        meta: {
+          lastUpdated: '2021-01-01T00:00:00Z',
+        },
+        subject: createReference(p),
+        code: { text: 'test' },
+        issued: '2021-01-01T00:00:00Z',
+        status: 'preliminary',
+      })
+    );
 
-    // Take advantage of the fact that MockClient.createResource allows you to set the meta.lastUpdated value.
-    const dr2 = await medplum.createResource<DiagnosticReport>({
-      ...dr1,
-      meta: {
-        lastUpdated: '2021-01-02T00:00:00Z',
-      },
-      status: 'final',
-    });
+    // Use seeding mode so the mock client's DB accepts the `lastUpdated` timestamp
+    const dr2 = await medplum.withSeeding(() =>
+      medplum.updateResource<DiagnosticReport>({
+        ...dr1,
+        meta: {
+          lastUpdated: '2021-01-02T00:00:00Z',
+        },
+        status: 'final',
+      })
+    );
 
     await setup({ resource: dr2 });
 

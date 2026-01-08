@@ -1,13 +1,12 @@
-import {
-  MedplumClient,
-  createReference,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
-} from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, BundleEntry, Observation, Patient, ProjectSetting, SearchParameter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import type { Bundle, BundleEntry, Observation, Patient, ProjectSetting, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { createDiagnoticReport, fetchFhirResults } from './order-result';
 
 global.fetch = vi.fn();
@@ -89,7 +88,7 @@ describe('Create Order Bot', () => {
     const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient') as
       | BundleEntry<Patient>
       | undefined;
-    expect(patient?.resource).toEqual(ctx.patient);
+    expect(patient?.resource).toStrictEqual(ctx.patient);
   });
 
   test<Context>('fetchFhirResultsFails', async (ctx) => {
@@ -119,8 +118,8 @@ describe('Create Order Bot', () => {
       orderID
     );
 
-    expect(diagnosticReport.conclusion).toEqual('Normal');
-    expect(diagnosticReport.conclusionCode).toEqual([
+    expect(diagnosticReport.conclusion).toStrictEqual('Normal');
+    expect(diagnosticReport.conclusionCode).toStrictEqual([
       {
         coding: [
           {
@@ -131,13 +130,13 @@ describe('Create Order Bot', () => {
         ],
       },
     ]);
-    expect(diagnosticReport.identifier).toEqual([
+    expect(diagnosticReport.identifier).toStrictEqual([
       {
         system: 'vital_order_id',
         value: orderID,
       },
     ]);
-    expect(diagnosticReport.subject).toEqual(createReference(patient));
+    expect(diagnosticReport.subject).toStrictEqual(createReference(patient));
     expect(diagnosticReport.result).toHaveLength(1);
   });
 });

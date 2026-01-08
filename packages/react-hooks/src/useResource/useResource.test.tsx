@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import type { OperationOutcome, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ReactNode, useRef, useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import type { JSX, ReactNode } from 'react';
+import { useRef, useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useResource } from './useResource';
 

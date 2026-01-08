@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
+import type { TypedValue } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 import { structureMapTransform } from './transform';
-import { TypedValue } from '../types';
 
 describe('FHIR Mapper transform - dependent', () => {
   beforeAll(() => {

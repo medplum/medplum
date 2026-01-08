@@ -1,0 +1,30 @@
+/* CollapsibleSection.module.css */
+
+.root {
+  position: relative;
+}
+
+.header {
+  width: 100%;
+  cursor: default;
+}
+
+.chevron {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.chevron[data-collapsed] {
+  transform: rotate(-90deg);
+}
+
+.title {
+  cursor: pointer;
+}
+
+.addButton {
+  position: absolute;
+  right: 0;
+  top: 0;
+  stroke-width: 1;
+}

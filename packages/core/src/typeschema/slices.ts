@@ -1,6 +1,8 @@
-import { TypedValue } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '../types';
 import { getNestedProperty } from './crawler';
-import { InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './types';
+import type { InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './types';
 import { matchDiscriminant } from './validation';
 
 export type SliceDefinitionWithTypes = SliceDefinition & {

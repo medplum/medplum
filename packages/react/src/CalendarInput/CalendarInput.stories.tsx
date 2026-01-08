@@ -1,8 +1,11 @@
-import { Slot } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Slot } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
-import { CalendarInput } from './CalendarInput';
 import { withMockedDate } from '../stories/decorators';
+import { CalendarInput } from './CalendarInput';
 
 export default {
   title: 'Medplum/CalendarInput',

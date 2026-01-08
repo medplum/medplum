@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
-import { PasswordChangeRequest, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import type { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { sendOutcome } from '../fhir/outcomes';
@@ -17,14 +19,8 @@ export const setPasswordValidator = makeValidationMiddleware([
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
-  let securityRequest: UserSecurityRequest | PasswordChangeRequest;
 
-  // PasswordChangeRequest is deprecated but still supported. When it is removed, this try/catch can be removed
-  try {
-    securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
-  } catch (_err) {
-    securityRequest = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
-  }
+  const securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));

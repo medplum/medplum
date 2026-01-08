@@ -1,24 +1,25 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentError,
   AgentReloadConfigRequest,
   AgentReloadConfigResponse,
   AgentTransmitResponse,
-  ContentType,
-  allOk,
-  badRequest,
-  serverError,
+  WithId,
 } from '@medplum/core';
-import { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { ContentType, allOk, badRequest, serverError } from '@medplum/core';
+import type { Agent, Bundle, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
-import request, { Response } from 'supertest';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import type { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import type { MockAgentResponseHandle } from './utils/agenttestutils';
 import {
-  MockAgentResponseHandle,
   cleanupMockAgents,
   configMockAgents,
   expectBundleToContainOutcome,
@@ -29,7 +30,7 @@ const NUM_DEFAULT_AGENTS = 2;
 
 describe('Agent/$reload-config', () => {
   const app = express();
-  const agents = [] as Agent[];
+  const agents = [] as WithId<Agent>[];
   let server: Server;
   let port: number;
   let accessToken: string;
@@ -40,7 +41,7 @@ describe('Agent/$reload-config', () => {
     accessToken = await initTestAuth({ membership: { admin: true } });
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, () => {
+      server.listen(0, 'localhost', 8515, () => {
         port = (server.address() as AddressInfo).port;
         resolve();
       });
@@ -113,7 +114,7 @@ describe('Agent/$reload-config', () => {
     );
 
     const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
@@ -155,7 +156,7 @@ describe('Agent/$reload-config', () => {
 
     // Agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(400);
@@ -203,7 +204,7 @@ describe('Agent/$reload-config', () => {
 
     // Single agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(500);

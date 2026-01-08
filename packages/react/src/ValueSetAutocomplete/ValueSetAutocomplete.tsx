@@ -1,17 +1,19 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
-import { ValueSetExpandParams } from '@medplum/core';
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import type { ValueSetExpandParams } from '@medplum/core';
+import type { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { forwardRef, useCallback } from 'react';
-import {
-  AsyncAutocomplete,
-  AsyncAutocompleteOption,
-  AsyncAutocompleteProps,
-} from '../AsyncAutocomplete/AsyncAutocomplete';
 import { IconCheck } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { forwardRef, useCallback } from 'react';
+import type { AsyncAutocompleteOption, AsyncAutocompleteProps } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 
-export interface ValueSetAutocompleteProps
-  extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
+export interface ValueSetAutocompleteProps extends Omit<
+  AsyncAutocompleteProps<ValueSetExpansionContains>,
+  'loadOptions' | 'toKey' | 'toOption'
+> {
   readonly binding: string | undefined;
   readonly creatable?: boolean;
   readonly clearable?: boolean;
@@ -68,10 +70,11 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
           ...expandParams,
           url: binding,
           filter: input,
+          count: 10,
         },
         { signal }
       );
-      const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
+      const valueSetElements = valueSet.expansion?.contains ?? [];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
         if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {

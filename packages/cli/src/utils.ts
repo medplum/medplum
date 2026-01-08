@@ -1,9 +1,14 @@
-import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
-import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient, WithId } from '@medplum/core';
+import { ContentType, encodeBase64, OAuthSigningAlgorithm } from '@medplum/core';
+import type { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
+import { Command } from 'commander';
 import { SignJWT } from 'jose';
 import { createHmac, createPrivateKey, randomBytes } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
+import { isPromise } from 'node:util/types';
 import { extract } from 'tar';
 import { FileSystemStorage } from './storage';
 
@@ -53,7 +58,11 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   }
 
   console.log('Saving source code...');
-  const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+  const sourceCode = await medplum.createAttachment({
+    data: code,
+    filename: basename(codePath),
+    contentType: getCodeContentType(codePath),
+  });
 
   console.log('Updating bot...');
   const updateResult = await medplum.updateResource({
@@ -63,7 +72,7 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   console.log('Success! New bot version: ' + updateResult.meta?.versionId);
 }
 
-export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: WithId<Bot>): Promise<void> {
   const codePath = botConfig.dist ?? botConfig.source;
   const code = readFileContents(codePath);
   if (!code) {
@@ -71,7 +80,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   }
 
   console.log('Deploying bot...');
-  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
     code,
     filename: basename(codePath),
   })) as OperationOutcome;
@@ -112,7 +121,7 @@ export async function createBot(
 }
 
 export function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replaceAll(String.raw`\*`, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
     return [];
@@ -187,7 +196,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 }
 
 function escapeRegex(str: string): string {
-  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
 /**
@@ -221,9 +230,7 @@ export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream 
 
       return true;
     },
-
-    // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
-  }) as ReturnType<typeof extract> & NodeJS.WritableStream;
+  });
 }
 
 export function getUnsupportedExtension(): Extension {
@@ -270,7 +277,7 @@ export function profileExists(storage: FileSystemStorage, profile: string): bool
 export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const header = {
     typ: 'JWT',
-    alg: 'HS256',
+    alg: OAuthSigningAlgorithm.HS256,
   };
 
   const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -295,7 +302,7 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
 export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile): Promise<void> {
   const privateKey = createPrivateKey(readFileSync(resolve(profile.privateKeyPath as string)));
   const jwt = await new SignJWT({})
-    .setProtectedHeader({ alg: 'RS384', typ: 'JWT' })
+    .setProtectedHeader({ typ: 'JWT', alg: OAuthSigningAlgorithm.RS384 })
     .setIssuer(profile.clientId as string)
     .setSubject(profile.clientId as string)
     .setAudience(`${profile.baseUrl}${profile.audience}`)
@@ -304,4 +311,75 @@ export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile
     .setExpirationTime('5m')
     .sign(privateKey);
   await medplum.startJwtAssertionLogin(jwt);
+}
+
+/**
+ * Attaches the provided subcommand to the provided parent command.
+ *
+ * We use this rather than directly calling the `addCommand` method on the parent command because we need
+ * to modify some additional settings on each command before adding them to the parent.
+ *
+ * @param command - The parent command.
+ * @param subcommand - The command to attach to the provided parent command.
+ */
+export function addSubcommand(command: Command, subcommand: Command): void {
+  subcommand.configureHelp({ showGlobalOptions: true });
+  command.addCommand(subcommand);
+}
+
+export class MedplumCommand extends Command {
+  action(fn: (...args: any[]) => void | Promise<void>): this {
+    // This is the only way to get both global and local options propagated to all subcommands automatically
+    // Otherwise you have to call `command.optsWithGlobals()` within every function to get merged global and local options
+    const wrappedFn = withMergedOptions(this, fn);
+    // @ts-expect-error Access to hidden member
+    // This is the function that gets called when a command is executed
+    // We overwrite it with the wrapped version
+    super._actionHandler = wrappedFn;
+    return this;
+  }
+
+  /**
+   * We use this method to reset the option state
+   * Which is not cleared between executions of the main function during tests
+   *
+   * This is because all of our subcommands are declared in the global scope
+   *
+   * Rather than re-architect the entire CLI package, I added this to make sure all options are reset between executions of main
+   */
+  resetOptionDefaults(): void {
+    // @ts-expect-error Overriding private field
+    this._optionValues = {};
+    for (const option of this.options) {
+      // So we also set options that default to false
+      // We explicitly check strict equality to undefined
+      if (option.defaultValue !== undefined) {
+        // We use the attributeName since that's the camelCase'd name that is used to access options
+        // @ts-expect-error Overriding private field
+        this._optionValues[option.attributeName()] = option.defaultValue;
+      }
+    }
+  }
+}
+
+export function withMergedOptions(
+  command: MedplumCommand,
+  fn: ((...args: any[]) => Promise<void>) | ((...args: any[]) => void)
+): (args: any[]) => Promise<void> {
+  // The .action callback takes an extra parameter which is the command or options.
+  return async (args: any[]): Promise<void> => {
+    const expectedArgsCount = command.registeredArguments.length;
+    const actionArgs = args.slice(0, expectedArgsCount);
+    actionArgs[expectedArgsCount] = command.optsWithGlobals();
+    try {
+      const result: Promise<void> | void = fn(...actionArgs);
+      if (isPromise(result)) {
+        await result;
+      }
+    } finally {
+      // We want to always make sure to reset the options to default at the end of each execution,
+      // We do it in a finally block in case the command errors
+      command.resetOptionDefaults();
+    }
+  };
 }

@@ -4,4 +4,6 @@
 **/.next/**/*
 **/.docusaurus/**/*
 **/__test__/**/*.json
+**/ccda/testdata/**/*
 **/mock/src/mocks/**/*.json
+**/packages/definitions/src/fhir/**/*

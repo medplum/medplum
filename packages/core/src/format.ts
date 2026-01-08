@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Address,
   CodeableConcept,
   Coding,
@@ -9,10 +11,12 @@ import {
   Period,
   Quantity,
   Range,
+  Reference,
   Timing,
   TimingRepeat,
 } from '@medplum/fhirtypes';
-import { capitalize } from './utils';
+import type { TypedValue } from './types';
+import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -28,12 +32,57 @@ export interface HumanNameFormatOptions {
 }
 
 /**
+ * Converts a typed value to a string.
+ * @param typedValue - The typed value to convert to a string.
+ * @returns The string representation of the typed value.
+ */
+export function typedValueToString(typedValue: TypedValue | undefined): string {
+  if (!typedValue) {
+    return '';
+  }
+  switch (typedValue.type) {
+    case 'Address':
+      return formatAddress(typedValue.value);
+    case 'CodeableConcept':
+      return formatCodeableConcept(typedValue.value);
+    case 'Coding':
+      return formatCoding(typedValue.value);
+    case 'ContactPoint':
+      return typedValue.value.value;
+    case 'HumanName':
+      return formatHumanName(typedValue.value);
+    case 'Quantity':
+      return formatQuantity(typedValue.value);
+    case 'Reference':
+      return formatReferenceString(typedValue.value);
+    default:
+      return typedValue.value?.toString() ?? '';
+  }
+}
+
+/**
+ * Formats a FHIR Reference as a string.
+ * @param value - The reference to format.
+ * @returns The formatted reference string.
+ */
+export function formatReferenceString(value: Reference | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.display ?? value.reference ?? stringify(value);
+}
+
+/**
  * Formats a FHIR Address as a string.
  * @param address - The address to format.
  * @param options - Optional address format options.
  * @returns The formatted address string.
  */
-export function formatAddress(address: Address, options?: AddressFormatOptions): string {
+export function formatAddress(address: Address | undefined, options?: AddressFormatOptions): string {
+  if (!address) {
+    return '';
+  }
+
   const builder = [];
 
   if (address.line) {
@@ -67,7 +116,11 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
  * @param options - Optional name format options.
  * @returns The formatted name string.
  */
-export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
+export function formatHumanName(name: HumanName | undefined, options?: HumanNameFormatOptions): string {
+  if (!name) {
+    return '';
+  }
+
   const builder = [];
 
   if (name.prefix && options?.prefix !== false) {
@@ -129,7 +182,7 @@ export function formatFamilyName(name: HumanName): string {
  * @returns Returns true if the date is a valid date.
  */
 export function isValidDate(date: Date): boolean {
-  return date instanceof Date && !isNaN(date.getTime());
+  return date instanceof Date && !Number.isNaN(date.getTime());
 }
 
 /**
@@ -177,6 +230,41 @@ export function formatTime(
     return '';
   }
   return d.toLocaleTimeString(locales, options);
+}
+
+/**
+ * Formats a FHIR time string as a human readable string.
+ * The viewer's timezone does not affect the display.
+ * @param time - The time to format, a string like `HH:mm` or `HH:mm:ss`
+ * @param locales - Optional locales.
+ * @param options - Optional time format options.
+ * @returns The formatted time string.
+ */
+export function formatWallTime(
+  time: string | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions
+): string {
+  if (!time) {
+    return '';
+  }
+  const [hours = 0, minutes = 0, seconds = 0] = time.split(':').map(Number);
+
+  // Create a UTC date with the given time, and format the result with respect
+  // to the UTC timezone so that the time is displayed correctly regardless of
+  // the viewer's timezone.
+  const date = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
+  if (!isValidDate(date)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat(locales, {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: seconds === 0 ? undefined : 'numeric',
+    ...options,
+    timeZone: 'UTC',
+  }).format(date);
 }
 
 /**
@@ -306,7 +394,7 @@ function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined)
   }
 
   if (repeat.timeOfDay) {
-    builder.push('at ' + repeat.timeOfDay.map((t) => formatTime(t)).join(', '));
+    builder.push('at ' + repeat.timeOfDay.map((t) => formatWallTime(t)).join(', '));
   }
 }
 
@@ -380,7 +468,7 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   if (quantity.unit) {
-    if (quantity.unit !== '%' && result[result.length - 1] !== ' ') {
+    if (quantity.unit !== '%' && result.at(-1) !== ' ') {
       result.push(' ');
     }
     result.push(quantity.unit);
@@ -423,10 +511,17 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
 /**
  * Formats a Coding element as a string.
  * @param coding - A FHIR Coding element
+ * @param includeCode - If true, includes both the code and display if available
  * @returns The coding as a string.
  */
-export function formatCoding(coding: Coding | undefined): string {
-  return ensureString(coding?.display) ?? ensureString(coding?.code) ?? '';
+export function formatCoding(coding: Coding | undefined, includeCode?: boolean): string {
+  const display = ensureString(coding?.display);
+  if (display) {
+    const code = includeCode ? ensureString(coding?.code) : undefined;
+    return `${display}${code ? ' (' + code + ')' : ''}`;
+  }
+
+  return ensureString(coding?.code) ?? '';
 }
 
 /**

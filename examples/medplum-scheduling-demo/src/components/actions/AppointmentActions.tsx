@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
+import type { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { CreateEncounter } from './CreateEncounter';
 import { RescheduleAppointment } from './RescheduleAppointment';
 
@@ -45,7 +48,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
       // Call bot to cancel the appointment
       await medplum.executeBot({ system: 'http://example.com', value: 'cancel-appointment' }, appointment);
 
-      navigate('/Appointment/upcoming');
+      navigate('/Appointment/upcoming')?.catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

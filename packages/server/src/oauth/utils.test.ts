@@ -1,13 +1,20 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError, WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { createTestClient, withTestContext } from '../test.setup';
+import { loadTestConfig } from '../config/loader';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
+import { createTestClient, createTestProject, withTestContext } from '../test.setup';
+import { verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  normalizeUserInfoUrl,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -40,15 +47,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Not found');
     }
   });
 
   test('Login with missing email', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: '',
         password: 'medplum_admin',
@@ -58,15 +65,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid email');
     }
   });
 
   test('Login with missing password', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: '',
@@ -76,15 +83,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid password');
     }
   });
 
   test('User not found', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'user-not-found@example.com',
         password: 'medplum_admin',
@@ -94,15 +101,15 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User not found');
     }
   });
 
   test('Blank authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: '' as unknown as 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -112,7 +119,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -120,7 +127,7 @@ describe('OAuth utils', () => {
   test('Invalid authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'xyz' as unknown as 'password',
         email: 'admin@example.com',
         scope: 'openid',
@@ -129,7 +136,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -137,7 +144,7 @@ describe('OAuth utils', () => {
   test('Invalid google credentials', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'google',
         email: 'admin@example.com',
         scope: 'openid',
@@ -146,7 +153,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
     }
   });
@@ -154,7 +161,7 @@ describe('OAuth utils', () => {
   test('Invalid scope', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -164,7 +171,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
     }
   });
@@ -180,7 +187,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Project ID is required for external ID');
     }
   });
@@ -197,7 +204,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('User not found');
     }
   });
@@ -205,7 +212,7 @@ describe('OAuth utils', () => {
   test('Login successfully', async () => {
     const login = await withTestContext(() =>
       tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -227,7 +234,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing email or externalId');
     }
   });
 
@@ -242,7 +249,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Project ID is required for external ID');
     }
   });
 
@@ -251,7 +258,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -264,7 +271,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -273,7 +280,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -286,7 +293,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge');
     }
   });
 
@@ -294,7 +301,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -309,7 +316,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -317,7 +324,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -335,7 +342,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -359,7 +366,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -377,7 +384,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login revoked');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login revoked');
     }
   });
 
@@ -387,7 +394,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login granted');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login granted');
     }
   });
 
@@ -397,7 +404,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login already verified');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login already verified');
     }
   });
 
@@ -407,7 +414,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User reference is missing');
     }
   });
 
@@ -415,7 +422,7 @@ describe('OAuth utils', () => {
     try {
       await getAuthTokens(
         { resourceType: 'User', id: '123', firstName: 'John', lastName: 'Doe' },
-        { resourceType: 'Login', user: { reference: 'User/123' } } as Login,
+        { resourceType: 'Login', id: '456', user: { reference: 'User/123' } } as WithId<Login>,
         {
           reference: 'Patient/123',
         }
@@ -423,14 +430,255 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login missing profile');
     }
+  });
+
+  describe('getAuthTokens with email scope', () => {
+    let project: WithId<Project>;
+    let repo: Repository;
+
+    beforeAll(async () => {
+      await withTestContext(async () => {
+        const result = await createTestProject({ withRepo: true });
+        project = result.project;
+        repo = result.repo as Repository;
+      });
+    });
+
+    test('Access token includes email when email scope is requested for User', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User with email
+        const userEmail = `test-${randomUUID()}@example.com`;
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          email: userEmail,
+          firstName: 'Test',
+          lastName: 'User',
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token includes email
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBe(userEmail);
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also includes email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBe(userEmail);
+      });
+    });
+
+    test('Access token does not include email when email scope is not requested', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User with email
+        const userEmail = `test-${randomUUID()}@example.com`;
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          email: userEmail,
+          firstName: 'Test',
+          lastName: 'User',
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login without email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token does not include email
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
+
+    test('Access token does not include email for ClientApplication even with email scope', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a ClientApplication
+        const client = await repo.createResource<ClientApplication>({
+          resourceType: 'ClientApplication',
+          name: 'Test Client',
+          secret: randomUUID(),
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the client
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'client',
+          user: createReference(client),
+          client: createReference(client),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(client, login, createReference(patient));
+
+        // Verify access token does not include email (ClientApplication is not a User)
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
+
+    test('Access token does not include email when user has no email address', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User without email
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Test',
+          lastName: 'User',
+          // email is undefined
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token does not include email (user has no email)
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
   });
 
   test('CLI client', async () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
-    expect(client.id).toEqual('medplum-cli');
+    expect(client.id).toStrictEqual('medplum-cli');
+  });
+
+  describe('normalizeUserInfoUrl', () => {
+    test.each([
+      ['http://example.com/oauth2/userinfo', false],
+      [' http://example.com/oauth2/userinfo ', false],
+      ['https://example.com/oauth2/userinfo', false],
+      [' https://example.com/oauth2/userinfo ', false],
+      ['file://example.com/oauth2/userinfo', true],
+      [' file://example.com/oauth2/userinfo ', true],
+    ])('with URL [%s]', (userInfoUrl, expectError) => {
+      try {
+        normalizeUserInfoUrl(userInfoUrl);
+        if (expectError) {
+          fail('Expected error');
+        }
+      } catch (err) {
+        if (!expectError) {
+          throw err;
+        }
+      }
+    });
   });
 });
 

@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, parseSearchDefinition } from '@medplum/core';
-import { Patient, Resource } from '@medplum/fhirtypes';
+import { getReferenceString, normalizeErrorString, parseSearchRequest } from '@medplum/core';
+import type { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from './utils';
 
 interface PatientDetailsProps {
@@ -25,7 +28,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
 
   // Get all Coverage resources related to the Patient
   const coverageSearchQuery = `Coverage?patient=${getReferenceString(patient)}`;
-  const coverageSearchRequest = parseSearchDefinition(coverageSearchQuery);
+  const coverageSearchRequest = parseSearchRequest(coverageSearchQuery);
   coverageSearchRequest.fields = ['payor', 'relationship', 'period'];
 
   const handlePatientEdit = async (newPatient: Resource): Promise<void> => {
@@ -38,7 +41,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         message: 'Patient updated',
       });
       onChange(updatedPatient);
-      navigate(`/Patient/${id}`);
+      navigate(`/Patient/${id}`)?.catch(console.error);
       window.scrollTo(0, 0);
     } catch (error) {
       showNotification({
@@ -50,7 +53,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   };
 
   return (
@@ -69,7 +72,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         <Tabs.Panel value="coverages">
           <SearchControl
             search={coverageSearchRequest}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />

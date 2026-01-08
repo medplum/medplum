@@ -1,4 +1,7 @@
-import { ContentType, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
 import fs from 'node:fs';
@@ -29,7 +32,10 @@ describe('CLI auth', () => {
   let processError: jest.SpyInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = jest.fn().mockImplementation(function exit(exitCode: number) {
+      if (exitCode === 0) {
+        return;
+      }
       throw new Error(`Process exited with exit code ${exitCode}`);
     }) as unknown as typeof process.exit;
     processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
@@ -51,7 +57,14 @@ describe('CLI auth', () => {
   });
 
   test('Login success', async () => {
-    (cp.exec as unknown as jest.Mock).mockReturnValue(true);
+    (cp.exec as unknown as jest.Mock).mockImplementation(
+      (_, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
     (http.createServer as unknown as jest.Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -149,7 +162,7 @@ describe('CLI auth', () => {
 
     await main(['node', 'index.js', 'whoami']);
 
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([
+    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([
       ['Server:  https://example.com/'],
       ['Profile: Alice Smith (Practitioner/123)'],
       ['Project: My Project (Project/456)'],
@@ -178,7 +191,7 @@ describe('CLI auth', () => {
     );
 
     await main(['node', 'index.js', 'token']);
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([['Access token:'], [], [expect.any(String)]]);
+    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([[expect.any(String)]]);
   });
 
   test('Get access token -- needs auth (expired or not logged in)', async () => {

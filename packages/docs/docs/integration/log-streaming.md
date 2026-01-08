@@ -3,7 +3,7 @@ import TabItem from '@theme/TabItem';
 
 # Log Streaming
 
-:::warning
+:::info
 
 These instructions primarily apply to self-hosted users. To set up log streaming on the Medplum Hosted instance, please reach out to [info@medplum.com](mailto:info@medplum.com)
 
@@ -13,13 +13,18 @@ Medplum can be configured to stream service logs to your existing log management
 
 ## Medplum Logs
 
-Medplum uses AWS CloudWatch to store server logs.
+Medplum server can stream the following to `STDOUT`
 
-The Medplum server logs:
-
-- All RESTful interactions with FHIR resources
 - Login Attempts
 - Other troubleshooting information
+- All RESTful interactions with FHIR resources, which are recorded as [FHIR AuditEvent resources](/docs/api/fhir/resources/auditevent)
+
+:::warning
+To capture [AuditEvent](/docs/api/fhir/resources/auditevent) resources for any RESTful interactions you **_must_** set the server configuration for [`logAuditEvents`](/docs/self-hosting/server-config#logauditevents)
+
+:::
+
+For [batch requests](/docs/fhir-datastore/fhir-batch-requests) and [GraphQL queries](/docs/graphql), each individual read/search operation executed by the query generates its own log line. While these operations are logged separately, they all share the same [request ID / trace ID](/docs/integration/log-streaming#log-correlation) for easy correlation and tracing.
 
 ## Forwarding Logs via AWS Lambda
 

@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, Stack } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { formatPeriod, normalizeErrorString } from '@medplum/core';
-import { Slot } from '@medplum/fhirtypes';
+import type { Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconClock, IconEdit, IconNote, IconTrash } from '@tabler/icons-react';
-import { Event } from 'react-big-calendar';
+import type { JSX } from 'react';
+import type { Event } from 'react-big-calendar';
 import { CreateUpdateSlot } from './actions/CreateUpdateSlot';
 
 interface SlotDetailsProps {
@@ -16,6 +19,7 @@ interface SlotDetailsProps {
     readonly close: () => void;
     readonly toggle: () => void;
   };
+  readonly onSlotsUpdated: () => void;
 }
 
 /**
@@ -25,7 +29,7 @@ interface SlotDetailsProps {
  * @returns A React component that displays the modal.
  */
 export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
-  const { event, opened, handlers } = props;
+  const { event, opened, handlers, onSlotsUpdated } = props;
   const slot: Slot | undefined = event?.resource;
 
   const [updateSlotOpened, updateSlotHandlers] = useDisclosure(false, { onClose: handlers.close });
@@ -35,6 +39,7 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
+      onSlotsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -97,7 +102,12 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
         </Stack>
       </Modal>
 
-      <CreateUpdateSlot event={event} opened={updateSlotOpened} handlers={updateSlotHandlers} />
+      <CreateUpdateSlot
+        event={event}
+        opened={updateSlotOpened}
+        handlers={updateSlotHandlers}
+        onSlotsUpdated={onSlotsUpdated}
+      />
     </>
   );
 }

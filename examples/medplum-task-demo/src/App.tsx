@@ -1,8 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LoadingOverlay } from '@mantine/core';
 import {
-  MedplumClient,
   Operator,
-  SearchRequest,
   capitalize,
   formatCodeableConcept,
   formatSearchQuery,
@@ -10,8 +10,10 @@ import {
   getReferenceString,
   normalizeErrorString,
 } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
-import { AppShell, Loading, Logo, NavbarLink, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { MedplumClient, SearchRequest } from '@medplum/core';
+import type { Practitioner } from '@medplum/fhirtypes';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { NavbarLink } from '@medplum/react';
 import {
   IconCategory,
   IconChecklist,
@@ -25,7 +27,8 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import type { JSX } from 'react';
+import { Navigate, Route, Routes } from 'react-router';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
@@ -102,8 +105,14 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <Navigate to={ALL_TASKS_LINK.href} /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-            <Route path="/Task/:id/*" element={<TaskPage />} />
+            <Route path="/:resourceType/:id">
+              <Route index element={<ResourcePage />} />
+              <Route path="*" element={<ResourcePage />} />
+            </Route>
+            <Route path="/Task/:id">
+              <Route index element={<TaskPage />} />
+              <Route path="*" element={<TaskPage />} />
+            </Route>
             <Route path="/Task" element={<SearchPage />} />
             <Route path="/upload/:dataType" element={<UploadDataPage />} />
           </Routes>

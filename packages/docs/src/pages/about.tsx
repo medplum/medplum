@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { IconCode, IconPlayerPlay, IconSettings, IconStar } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
+import { JSX } from 'react';
 import { Card } from '../components/Card';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
 import { ProfileCard } from '../components/ProfileCard';
 import { Feature, FeatureGrid } from '../components/landing/FeatureGrid';
-import { Jumbotron } from '../components/landing/Jumbotron';
 import { Section } from '../components/landing/Section';
 import { SectionHeader } from '../components/landing/SectionHeader';
 import styles from './about.module.css';
@@ -13,25 +16,21 @@ export default function AboutPage(): JSX.Element {
   return (
     <Layout title="About us">
       <Container>
-        <Jumbotron>
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>About Medplum</h1>
-            <p className={styles.heroText}>
-              Our vision is to accelerate the development of new healthcare products and services by clearing a path for
-              every developer who wants to build in the healthcare ecosystem.
-            </p>
-          </div>
-          <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Robot working in a medical office" width="488" height="384" />
-          </div>
-        </Jumbotron>
+        <div style={{ textAlign: 'center', minHeight: '400px', padding: '120px 20px' }}>
+          <h1 className={styles.heroTitle}>About Medplum</h1>
+          <p className={styles.heroText}>
+            Our vision is to accelerate the development of new healthcare products and services
+            <br />
+            by clearing a path for every developer who wants to build in the healthcare ecosystem.
+          </p>
+        </div>
         <Section>
           <CardContainer>
             <Card>
-              <h3>So that’s what we built.</h3>
+              <h3>So that's what we built.</h3>
               <p>
                 We believe that a clean, secure, and compliant data infrastructure layer will elevate the entire field
-                of healthcare innovation and make it possible for the top technical talent to focus on what’s next. We
+                of healthcare innovation and make it possible for the top technical talent to focus on what's next. We
                 believe that interoperability is vital to the future of healthcare technology. And we believe that
                 starting with a future-ready foundation will propel every healthcare innovator closer to better
                 clinical, operational, and financial outcomes.
@@ -44,19 +43,19 @@ export default function AboutPage(): JSX.Element {
         </SectionHeader>
         <Section>
           <FeatureGrid columns={2}>
-            <Feature title="Act. Deliberately and purposefully." imgSrc="/img/icons/api.svg">
+            <Feature title="Act. Deliberately and purposefully." icon={<IconPlayerPlay />}>
               We move decisively but with intention, seeking to understand the nature of actions before we take them and
               going slow enough to move forward with speed.
             </Feature>
-            <Feature title="Practice uncompromising consistency." imgSrc="/img/icons/code.svg">
-              We’re reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
+            <Feature title="Practice uncompromising consistency." icon={<IconSettings />}>
+              We're reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
               taken for granted.
             </Feature>
-            <Feature title="Convene a catalytic force." imgSrc="/img/icons/automation.svg">
+            <Feature title="Convene a catalytic force." icon={<IconStar />}>
               We believe collaborative innovation will unlock capabilities, advancements, and ideas that will ultimately
               transform healthcare, so we continually strive to elevate and unify the entire field of players.
             </Feature>
-            <Feature title="Pursue technical excellence." imgSrc="/img/icons/shield.svg">
+            <Feature title="Pursue technical excellence." icon={<IconCode />}>
               We are fueled by solving hard problems, both technical and human, and are deeply devoted to pushing the
               boundaries of our craft.
             </Feature>
@@ -114,6 +113,68 @@ export default function AboutPage(): JSX.Element {
               imgUrl="/img/people/mattlong.jpg"
               linkedInUrl="https://www.linkedin.com/in/mateolargo/"
               githubUrl="https://github.com/mattlong"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Ian Plunkett"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/ianplunkett.jpg"
+              linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
+              githubUrl="https://github.com/ianplunkett"
+            />
+            <ProfileCard
+              name="David Yanez"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/david.jpg"
+              linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
+              githubUrl="https://github.com/techdavidy"
+            />
+            <ProfileCard
+              name="Finn Bergquist"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/finnbergquist.jpg"
+              linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
+              githubUrl="https://github.com/finnbergquist"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Maddy Li"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/maddyli.jpg"
+              linkedInUrl="https://www.linkedin.com/in/maddy-li/"
+              githubUrl="https://github.com/maddyli"
+            />
+            <ProfileCard
+              name="Kevin Shaw"
+              title="Product Designer"
+              imgUrl="/img/people/kevinwadeshaw.jpeg"
+              linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
+              githubUrl="https://github.com/kevinwadeshaw"
+            />
+            <ProfileCard
+              name="Karl Pietrzak"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/karlpietrzak.jpg"
+              linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
+              githubUrl="https://github.com/The-Alchemist"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Darren Eam"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/darreneam.jpeg"
+              linkedInUrl="https://www.linkedin.com/in/darren-eam/"
+              githubUrl="https://github.com/deam65"
+            />
+            <ProfileCard
+              name="Noah Silas"
+              title="Staff Software Engineer"
+              imgUrl="/img/people/noahsilas.jpg"
+              linkedInUrl="https://www.linkedin.com/in/noahsilas"
+              githubUrl="https://github.com/noahsilas"
             />
           </CardContainer>
         </Section>

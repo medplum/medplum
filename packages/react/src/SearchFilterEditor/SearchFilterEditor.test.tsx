@@ -1,7 +1,10 @@
-import { Operator, SearchRequest } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
@@ -51,30 +54,30 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    const fieldInput = screen.getByTestId('filter-field');
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Filter'));
+    });
+
+    const fieldInput = screen.getByTestId('filter-0-row-filter-field');
     expect(fieldInput).toBeInTheDocument();
     expect(fieldInput).toHaveValue('');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-field'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-field'), {
         target: { value: 'name' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-operation'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-operation'), {
         target: { value: 'contains' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-value'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-value'), {
         target: { value: 'Alice' },
       });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add'));
     });
 
     await act(async () => {
@@ -118,10 +121,6 @@ describe('SearchFilterEditor', () => {
     // Wait for the resource to load
     expect(screen.getByText('Test Organization')).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
-
     // Clear the existing value
     const clearButton = screen.getByTitle('Clear all');
     await act(async () => {
@@ -148,10 +147,6 @@ describe('SearchFilterEditor', () => {
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Save'));
     });
 
     // Wait for the resource to load
@@ -192,7 +187,7 @@ describe('SearchFilterEditor', () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(screen.getByLabelText('Delete filter'));
     });
 
     await act(async () => {
@@ -224,15 +219,7 @@ describe('SearchFilterEditor', () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
-
-    await act(async () => {
       fireEvent.change(screen.getByDisplayValue('Alice'), { target: { value: 'Bob' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Save'));
     });
 
     await act(async () => {
@@ -241,51 +228,6 @@ describe('SearchFilterEditor', () => {
 
     expect(currSearch.filters?.length).toEqual(1);
     expect(currSearch.filters?.[0]?.value).toEqual('Bob');
-  });
-
-  test('Cancel edit', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.CONTAINS,
-          value: 'Alice',
-        },
-      ],
-    };
-
-    await setup(
-      <SearchFilterEditor
-        search={currSearch}
-        visible={true}
-        onOk={(e) => (currSearch = e)}
-        onCancel={() => console.log('onCancel')}
-      />
-    );
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('Alice'), { target: { value: 'Bob' } });
-    });
-
-    await act(async () => {
-      // There are 2 cancel buttons
-      // First one for the row
-      // Second one for the dialog overall
-      // Click on the first one
-      fireEvent.click(screen.getAllByText('Cancel')[0]);
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
-    });
-
-    expect(currSearch.filters?.length).toEqual(1);
-    expect(currSearch.filters?.[0]?.value).toEqual('Alice');
   });
 
   test('Handle unknown search param type', async () => {
@@ -308,12 +250,6 @@ describe('SearchFilterEditor', () => {
         onCancel={() => console.log('onCancel')}
       />
     );
-
-    expect(screen.getByText('Not A Code')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
 
     expect(screen.queryByDisplayValue('not-a-code')).not.toBeInTheDocument();
   });
@@ -341,15 +277,9 @@ describe('SearchFilterEditor', () => {
     );
 
     // Wait for the resource to load
-    await act(async () => {
-      await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
-    });
+    await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
-
-    const input = screen.getByTestId('filter-value') as HTMLInputElement;
+    const input = screen.getByTestId('filter-0-row-filter-value') as HTMLInputElement;
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
 
@@ -374,20 +304,10 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
-    });
-
     const input = screen.getByDisplayValue('5') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: '6' } });
     });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Save'));
-    });
-
-    expect(await screen.findByText('6')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));

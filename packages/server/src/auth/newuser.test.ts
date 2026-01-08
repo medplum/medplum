@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -340,7 +342,7 @@ describe('New user', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Project does not allow open registration');
+    expect(res.body.issue[0].details.text).toStrictEqual('Project does not allow open registration');
   });
 
   test('Recaptcha site key not found', async () => {

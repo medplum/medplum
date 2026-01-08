@@ -1,5 +1,8 @@
-import { MedplumInfraConfig } from '@medplum/core';
-import { App, Stack, Tags } from 'aws-cdk-lib';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
+import type { App } from 'aws-cdk-lib';
+import { Stack, Tags } from 'aws-cdk-lib';
 import { BackEnd } from './backend';
 import { CloudTrailAlarms } from './cloudtrail';
 import { FrontEnd } from './frontend';

@@ -1,0 +1,124 @@
+{
+  "v1": {
+    "serverVersion": "3.3.0",
+    "requiredBefore": "4.0.0"
+  },
+  "v2": {
+    "serverVersion": "4.1.0",
+    "requiredBefore": "4.2.0"
+  },
+  "v3": {
+    "serverVersion": "4.1.0",
+    "requiredBefore": "4.2.0"
+  },
+  "v4": {
+    "serverVersion": "4.1.0",
+    "requiredBefore": "4.2.0"
+  },
+  "v5": {
+    "serverVersion": "4.1.0",
+    "requiredBefore": "4.2.0"
+  },
+  "v6": {
+    "serverVersion": "4.1.1",
+    "requiredBefore": "4.2.0"
+  },
+  "v7": {
+    "serverVersion": "4.1.3",
+    "requiredBefore": "4.2.0"
+  },
+  "v8": {
+    "serverVersion": "4.1.8",
+    "requiredBefore": "4.2.0"
+  },
+  "v9": {
+    "serverVersion": "4.1.8",
+    "requiredBefore": "4.2.0"
+  },
+  "v10": {
+    "serverVersion": "4.1.9",
+    "requiredBefore": "4.2.0"
+  },
+  "v11": {
+    "serverVersion": "4.1.12",
+    "requiredBefore": "4.2.0"
+  },
+  "v12": {
+    "serverVersion": "4.1.12",
+    "requiredBefore": "4.2.0"
+  },
+  "v13": {
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
+  },
+  "v14": {
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
+  },
+  "v15": {
+    "serverVersion": "4.3.0",
+    "requiredBefore": "4.4.0"
+  },
+  "v16": {
+    "serverVersion": "4.3.2",
+    "requiredBefore": "4.4.0"
+  },
+  "v17": {
+    "serverVersion": "4.3.2",
+    "requiredBefore": "4.4.0"
+  },
+  "v18": {
+    "serverVersion": "4.3.4",
+    "requiredBefore": "4.4.0"
+  },
+  "v19": {
+    "serverVersion": "4.3.6",
+    "requiredBefore": "4.4.0"
+  },
+  "v20": {
+    "serverVersion": "4.3.6",
+    "requiredBefore": "4.4.0"
+  },
+  "v21": {
+    "serverVersion": "4.3.9",
+    "requiredBefore": "4.4.0"
+  },
+  "v22": {
+    "serverVersion": "4.3.11",
+    "requiredBefore": "4.4.0"
+  },
+  "v23": {
+    "serverVersion": "4.3.11",
+    "requiredBefore": "4.4.0"
+  },
+  "v24": {
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
+  },
+  "v25": {
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
+  },
+  "v26": {
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
+  },
+  "v27": {
+    "serverVersion": "4.3.12",
+    "requiredBefore": "4.4.0"
+  },
+  "v28": {
+    "serverVersion": "4.3.14",
+    "requiredBefore": "4.4.0"
+  },
+  "v29": {
+    "serverVersion": "4.5.2",
+    "requiredBefore": "5.0.0"
+  },
+  "v30": {
+    "serverVersion": "5.0.0"
+  },
+  "v31": {
+    "serverVersion": "5.0.0"
+  }
+}

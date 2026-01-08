@@ -1,5 +1,8 @@
-import { MedplumInfraConfig } from '@medplum/core';
-import { readConfig, readServerConfig } from '../utils';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
+import { color } from '../util/color';
+import { getConfigFileName, readConfig, readServerConfig } from '../utils';
 import { closeTerminal, initTerminal, print, yesOrNo } from './terminal';
 import { printConfigNotFound, writeParameters } from './utils';
 
@@ -26,6 +29,16 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
 
     const serverConfig = readServerConfig(tag) ?? {};
 
+    // If the server config is empty, prompt the user to proceed
+    if (!options.yes && Object.keys(serverConfig).length === 0) {
+      const serverConfigFileName = getConfigFileName(tag, { server: true });
+      console.log(color.yellow(`Config file ${serverConfigFileName} not found!`));
+      if (!(await yesOrNo('Do you want to proceed?'))) {
+        console.log(color.red(`Run Aborted, please ensure ${serverConfigFileName} is present and try again.`));
+        return;
+      }
+    }
+
     checkConfigConflicts(infraConfig, serverConfig);
     mergeConfigs(infraConfig, serverConfig);
 
@@ -45,12 +58,10 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
       )
     );
 
-    if (options.yes || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
-      await writeParameters(
-        infraConfig.region,
-        `/medplum/${infraConfig.name}/`,
-        serverConfig as Record<string, string | number>
-      );
+    if (options.dryrun) {
+      console.log(color.yellow('Dry run - skipping updates!'));
+    } else if (options.yes || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
+      await writeParameters(infraConfig.region, `/medplum/${infraConfig.name}/`, serverConfig);
     }
   } finally {
     closeTerminal();

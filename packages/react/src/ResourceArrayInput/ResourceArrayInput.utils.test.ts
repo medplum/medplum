@@ -1,13 +1,9 @@
-import {
-  HTTP_HL7_ORG,
-  InternalTypeSchema,
-  buildElementsContext,
-  isProfileLoaded,
-  loadDataType,
-  tryGetProfile,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalTypeSchema } from '@medplum/core';
+import { HTTP_HL7_ORG, buildElementsContext, isProfileLoaded, loadDataType, tryGetProfile } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { StructureDefinition } from '@medplum/fhirtypes';
+import type { StructureDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 
@@ -113,7 +109,7 @@ describe('assignValuesIntoSlices', () => {
         property.slicing,
         elementsContext.profileUrl
       );
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 1, 1, 1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 1, 1, 0]);
     });
   });
 
@@ -169,7 +165,7 @@ describe('assignValuesIntoSlices', () => {
         property.slicing,
         elementsContext.profileUrl
       );
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 0]);
     });
 
     test('Observation.component (systolic and diastolic)', async () => {
@@ -237,7 +233,7 @@ describe('assignValuesIntoSlices', () => {
       );
 
       expect(slices.length).toBe(2);
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 0]);
     });
   });
 });

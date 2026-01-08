@@ -1,10 +1,13 @@
-import sinon from 'sinon';
-import { ReactNode, useEffect, useMemo, useState, useRef } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type sinon from 'sinon';
 import { MockDateContext, createGlobalTimer } from './MockDateWrapper.utils';
 
 export function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element | null {
   const [ready, setReady] = useState(false);
-  const clockRef = useRef<sinon.SinonFakeTimers>();
+  const clockRef = useRef<sinon.SinonFakeTimers>(undefined);
   useEffect(() => {
     clockRef.current = createGlobalTimer();
     setReady(true);

@@ -25,21 +25,29 @@ Invite a new user to the project. This will perform the following actions:
   lastName: string;
   email?: string;
   externalId?: string;
+  scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
+  upsert?: boolean;
+  forceNewMembership?: boolean;
+  mfaRequired?: boolean;
 }
 ```
 
 | parameter               | description                                                                                                                                                                                                                                                                                        |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `resourceType`          | The [User's](/docs/api/fhir/medplum/user) [profile resourceType](/docs/auth/user-management-guide#profiles)                                                                                                                                                                                        |
-| `firstName`, `lastName` | The first and last names that will be assigned to user's [profile resource](/docs/auth/user-management-guide#profiles). Ignored if a profile resource already exists                                                                                                                               |
+| `resourceType`          | The [User's](/docs/api/fhir/medplum/user) [profile resourceType](/docs/user-management#profiles)                                                                                                                                                                                        |
+| `firstName`, `lastName` | The first and last names that will be assigned to user's [profile resource](/docs/user-management#profiles). Ignored if a profile resource already exists                                                                                                                               |
 | `email`                 | The email address assigned to the [User](/docs/api/fhir/medplum/user). Used to identify users within each project                                                                                                                                                                                  |
-| `externalId`            | The unique id provided by external identity provider (if applicable). See [Using External Ids](/docs/auth/methods/external-ids)                                                                                                                                                                    |
+| `externalId`            | The unique id provided by external identity provider (if applicable). See [Using External Ids](/docs/auth/external-identity-providers)                                                                                                                                                                    |
 | `password`              | The [User's](/docs/api/fhir/medplum/user) password                                                                                                                                                                                                                                                 |
+| `scope`                 | The scope of the user. If `project`, the user will be scoped to the project. If `server`, the user will be a server scoped user. Defaults to `server` for Practitioners and `project` for Patients. See [server vs project scoped user guide](/docs/user-management/project-vs-server-scoped-users)                                                                                                                               |
 | `sendEmail`             | If `true`, send an invite email to the user. If self-hosting, see our [guide on setting up SES](/docs/self-hosting/install-on-aws#setup-ses)                                                                                                                                                       |
 | `membership`            | Used to override any fields of the resulting [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource. Common use cases include: <ul><li>Setting [Access Policies](/docs/access/access-policies) upon invite </li><li>Overriding the default `ProjectMembership.profile`</li></ul> |
+| `upsert`                | If `true`, allows updating existing users and profiles instead of creating new ones. When enabled, the invite will search for existing users and profiles and update them if found, rather than throwing an error message.                                                                                                                                              |
+| `forceNewMembership`    | If `true`, forces creation of a new [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource even if one already exists for the user/profile combination in the project.                                                                                                                                                                          |
+| `mfaRequired`           | If `true`, requires the user to set up Multi-Factor Authentication (MFA) during their first login. A MFA secret will be automatically generated for the user. See [MFA documentation](/docs/auth/mfa) for more details.                                                                                                                                          |
 
 ### Constraints
 
@@ -193,8 +201,59 @@ Returns the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) asso
 }
 ```
 
+#### Inviting a User with MFA Required
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+
+```ts
+await medplum.post('admin/projects/:projectId/invite', {
+  resourceType: 'Practitioner',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  email: 'jane.doe@example.com',
+  mfaRequired: true,
+});
+```
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum post admin/projects/:projectId/invite \
+'{
+  "resourceType": "Practitioner",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "mfaRequired": true
+}'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl https://api.medplum.com/admin/projects/:projectId/invite \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+  "resourceType": "Practitioner",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane.doe@example.com",
+  "mfaRequired": true
+}'
+```
+
+  </TabItem>
+</Tabs>
+
+When `mfaRequired: true` is set, the user will be required to enroll in Multi-Factor Authentication during their first login. See [MFA documentation](/docs/auth/mfa) for more details.
+
 ## See Also
 
-- [User Admin Guide](/docs/auth/user-management-guide)
+- [User Admin Guide](/docs/user-management)
 - [Invite a new user](https://www.medplum.com/docs/app/invite)
-- [Custom Emails](https://www.medplum.com/docs/auth/custom-emails)
+- [Custom Emails](https://www.medplum.com/docs/user-management/custom-emails)
+- [Multi-Factor Authentication (MFA)](/docs/auth/mfa) - For details on MFA enrollment and usage

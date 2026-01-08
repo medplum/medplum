@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
@@ -20,7 +22,7 @@ describe('FHIR Mapper transform - evaluate', () => {
     const input = [toTypedValue({ value: 'foo' })];
     const expected = [toTypedValue({ value: 'foo_test' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('variable concatenation', () => {
@@ -32,6 +34,6 @@ describe('FHIR Mapper transform - evaluate', () => {
     const input = [toTypedValue({ value: { foo: 'bar' } })];
     const expected = [toTypedValue({ value: 'bar_test' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 });

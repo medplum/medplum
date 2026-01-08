@@ -1,8 +1,12 @@
-import { Button, MultiSelect, NativeSelect, Stack } from '@mantine/core';
-import { HumanName } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { MultiSelect, NativeSelect, Stack } from '@mantine/core';
+import type { HumanName } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { FormSection } from './FormSection';
 
@@ -34,9 +38,7 @@ export const Basic = (): JSX.Element => (
           <MultiSelect name="symptoms" data={['Sore Throat', 'Coughing', 'Fever', 'Rash']} />
         </FormSection>
       </Stack>
-      <Button type="submit" mt="sm">
-        Submit
-      </Button>
+      <SubmitButton mt="sm">Submit</SubmitButton>
     </Form>
   </Document>
 );

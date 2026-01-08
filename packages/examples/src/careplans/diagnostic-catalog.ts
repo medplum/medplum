@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
-import { ActivityDefinition, ObservationDefinition, PlanDefinition, SpecimenDefinition } from '@medplum/fhirtypes';
+import type { ActivityDefinition, ObservationDefinition, PlanDefinition, SpecimenDefinition } from '@medplum/fhirtypes';
 
 // end-block imports
 

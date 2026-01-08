@@ -1,12 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
-import { AccessPolicy } from '@medplum/fhirtypes';
+import type { AccessPolicy } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { addTestUser, withTestContext } from '../test.setup';
 
@@ -18,7 +19,6 @@ describe('SCIM Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
 
     // First, Alice creates a project
     const registration = await registerNew({
@@ -113,7 +113,57 @@ describe('SCIM Routes', () => {
     expect(searchCheck2).toBeUndefined();
   });
 
-  test.skip('Create missing medplum user type', async () => {
+  test('Create and patch user', async () => {
+    const res1 = await request(app)
+      .post(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userType: 'Patient',
+        name: {
+          givenName: 'SCIM',
+          familyName: 'User',
+        },
+        emails: [{ value: randomUUID() + '@example.com' }],
+      });
+    expect(res1.status).toBe(201);
+
+    const readResponse = await request(app)
+      .get(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(readResponse.status).toBe(200);
+    expect(readResponse.body.id).toBe(res1.body.id);
+    expect(readResponse.body.active).toBe(true);
+
+    const searchResponse = await request(app)
+      .get(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(searchResponse.status).toBe(200);
+
+    const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
+    expect(searchCheck).toBeDefined();
+
+    const patchResponse = await request(app)
+      .patch(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [
+          {
+            op: 'replace',
+            value: {
+              active: false,
+            },
+          },
+        ],
+      });
+    expect(patchResponse.status).toBe(200);
+    expect(patchResponse.body.active).toBe(false);
+  });
+
+  test('Create, missing medplum user type, creates a Practitioner', async () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -126,8 +176,8 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');
+    expect(res.status).toBe(201);
+    expect(res.body.userType).toBe('Practitioner');
   });
 
   test('Search users as super admin', async () => {

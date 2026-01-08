@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Input } from '@mantine/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { ReactNode, useContext } from 'react';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import cx from 'clsx';
+import type { JSX, ReactNode } from 'react';
+import { useContext } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { getErrorsForInput } from '../utils/outcomes';
 import { READ_ONLY_TOOLTIP_TEXT, maybeWrapWithTooltip } from '../utils/maybeWrapWithTooltip';
+import { getErrorsForInput } from '../utils/outcomes';
 import classes from './FormSection.module.css';
 
 export interface FormSectionProps {
@@ -33,7 +37,9 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     <Input.Wrapper
       id={props.htmlFor}
       label={label}
-      classNames={{ label: props?.readonly ? classes.dimmed : undefined }}
+      classNames={{
+        label: cx({ [classes.dimmed]: props?.readonly }, classes.preserveBreaks),
+      }}
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}

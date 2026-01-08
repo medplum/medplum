@@ -1,0 +1,52 @@
+{
+  "name": "medplum",
+  "version": "5.0.10",
+  "description": "Medplum Command Line Interface",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative"
+  ],
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/cli-wrapper"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
+  "bin": {
+    "medplum": "./dist/cjs/index.cjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc && node esbuild.mjs",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "medplum": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@medplum/cli": "5.0.10",
+    "@medplum/core": "5.0.10"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}

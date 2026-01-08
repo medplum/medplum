@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { normalizeErrorString } from '@medplum/core';
-import { Coverage, Resource } from '@medplum/fhirtypes';
-import { ResourceForm, useMedplum } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
+import type { Coverage, Resource } from '@medplum/fhirtypes';
+import { ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { cleanResource } from '../utils';
 
 interface EditCoverageProps {

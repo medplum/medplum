@@ -1,11 +1,14 @@
-import { normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { Document, QuestionnaireForm, useMedplum, useResource } from '@medplum/react';
-import { useCallback } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { Loading } from '../components/Loading';
-import { useParams, useNavigate } from 'react-router-dom';
+import { normalizeErrorString } from '@medplum/core';
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Document, QuestionnaireForm, useMedplum, useResource } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useCallback } from 'react';
+import type { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { Loading } from '../components/Loading';
 
 export function QuestionnairePage(): JSX.Element {
   const navigate = useNavigate();
@@ -28,7 +31,7 @@ export function QuestionnairePage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate('/health-record/questionnaire-responses/');
+          navigate('/health-record/questionnaire-responses/')?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

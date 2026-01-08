@@ -1,5 +1,8 @@
-import { GoogleCredentialResponse } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box } from '@mantine/core';
+import type { GoogleCredentialResponse } from '@medplum/core';
+import type { JSX } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { createScriptTag } from '../utils/script';
 
@@ -20,12 +23,11 @@ export interface GoogleButtonProps {
 }
 
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
-  const medplum = useMedplum();
   const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
-  const [initialized, setInitialized] = useState(false);
-  const [buttonRendered, setButtonRendered] = useState(false);
+  const initializedRef = useRef(false);
+  const buttonRenderedRef = useRef(false);
 
   useEffect(() => {
     if (typeof google === 'undefined') {
@@ -33,23 +35,27 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
       return;
     }
 
-    if (!initialized) {
+    if (!initializedRef.current) {
       google.accounts.id.initialize({
         client_id: googleClientId,
         callback: handleGoogleCredential,
       });
-      setInitialized(true);
+      initializedRef.current = true;
     }
 
-    if (parentRef.current && !buttonRendered) {
-      google.accounts.id.renderButton(parentRef.current, {});
-      setButtonRendered(true);
+    if (parentRef.current && !buttonRenderedRef.current) {
+      google.accounts.id.renderButton(parentRef.current, {
+        type: 'standard',
+        logo_alignment: 'center',
+        width: parentRef.current.clientWidth,
+      });
+      buttonRenderedRef.current = true;
     }
-  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, handleGoogleCredential]);
+  }, [googleClientId, scriptLoaded, handleGoogleCredential]);
 
   if (!googleClientId) {
     return null;
   }
 
-  return <div ref={parentRef} />;
+  return <Box ref={parentRef} w="100%" h={40} display="flex" style={{ justifyContent: 'center' }} />;
 }

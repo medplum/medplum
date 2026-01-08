@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Loader, Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, Operator, SearchRequest } from '@medplum/core';
-import { Patient, Practitioner, Resource } from '@medplum/fhirtypes';
+import { getReferenceString, normalizeErrorString, Operator } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
+import type { Patient, Practitioner, Resource } from '@medplum/fhirtypes';
 import {
   Document,
+  PatientHeader,
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
@@ -13,8 +17,8 @@ import {
   useResource,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { PatientHeader } from '../pages/PatientHeader';
+import type { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
@@ -24,7 +28,7 @@ interface PatientDetailsProps {
 export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile() as WithId<Practitioner>;
   const { id } = useParams() as { id: string };
   const patient = useResource<Patient>({ reference: `Patient/${id}` });
 
@@ -63,7 +67,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   }
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   if (!patient) {
@@ -89,7 +93,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
             search={threadSearch}
             hideFilters={true}
             hideToolbar={true}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           />
         </Tabs.Panel>
         <Tabs.Panel value="edit">

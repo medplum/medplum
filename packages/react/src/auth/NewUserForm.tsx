@@ -1,9 +1,14 @@
-import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { GoogleCredentialResponse, LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Box, Checkbox, Divider, Flex, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import type { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useEffect, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
@@ -35,6 +40,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
   return (
     <Form
       onSubmit={async (formData: Record<string, string>) => {
+        setOutcome(undefined);
         try {
           let recaptchaToken = '';
           if (recaptchaSiteKey) {
@@ -58,11 +64,13 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         }
       }}
     >
-      <Center style={{ flexDirection: 'column' }}>{props.children}</Center>
-      <OperationOutcomeAlert issues={issues} />
+      <Flex direction="column" align="center" justify="center">
+        {props.children}
+      </Flex>
+      <OperationOutcomeAlert issues={issues} mb="lg" />
       {googleClientId && (
         <>
-          <Group justify="center" p="xl" style={{ height: 70 }}>
+          <Box style={{ minHeight: 40 }}>
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
@@ -80,11 +88,11 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                 }
               }}
             />
-          </Group>
+          </Box>
           <Divider label="or" labelPosition="center" my="lg" />
         </>
       )}
-      <Stack gap="xl">
+      <Stack gap="sm">
         <TextInput
           name="firstName"
           type="text"
@@ -117,23 +125,31 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           required={true}
           error={getErrorsForInput(outcome, 'password')}
         />
-        <Text c="dimmed" size="xs">
-          By clicking submit you agree to the Medplum{' '}
+      </Stack>
+      <Stack gap="xs">
+        <Checkbox
+          id="remember"
+          name="remember"
+          label="Remember me"
+          size="xs"
+          style={{ lineHeight: 1 }}
+          pt="md"
+          pb="xs"
+        />
+        <SubmitButton fullWidth>Register Account</SubmitButton>
+        <Text c="dimmed" size="xs" pt="lg" ta="center">
+          By clicking "Register Account" you agree to the Medplum{' '}
           <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
-        <Text c="dimmed" size="xs">
+        <Text c="dimmed" size="xs" ta="center">
           This site is protected by reCAPTCHA and the Google{' '}
           <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</Anchor> apply.
         </Text>
       </Stack>
-      <Group justify="space-between" mt="xl" wrap="nowrap">
-        <Checkbox name="remember" label="Remember me" size="xs" />
-        <Button type="submit">Create account</Button>
-      </Group>
     </Form>
   );
 }

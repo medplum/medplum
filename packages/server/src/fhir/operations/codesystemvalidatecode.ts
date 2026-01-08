@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource } from './utils/terminology';
+import { findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -28,17 +30,18 @@ type CodeSystemValidateCodeParameters = {
  */
 export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem> | undefined;
+  const url = params.url ?? params.coding?.system;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
-  } else if (params.url) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.url, { version: params.version });
-  } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, {
-      version: params.version,
-    });
-  } else {
+  } else if (url) {
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', url, { version: params.version }).catch(
+      () => undefined
+    );
+  }
+  if (!codeSystem && !url) {
     return [badRequest('No code system specified')];
   }
 
@@ -46,12 +49,12 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   if (params.coding) {
     coding = params.coding;
   } else if (params.code) {
-    coding = { system: params.url ?? codeSystem.url, code: params.code };
+    coding = { system: url ?? codeSystem?.url, code: params.code };
   } else {
     return [badRequest('No coding specified')];
   }
 
-  const result = await validateCoding(codeSystem, coding);
+  const result = await validateCoding((codeSystem ?? url) as WithId<CodeSystem> | string, coding);
 
   const output: Record<string, any> = Object.create(null);
   if (result) {
@@ -63,11 +66,21 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCoding(codeSystem: CodeSystem, coding: Coding): Promise<Coding | undefined> {
-  return validateCodings(codeSystem, [coding]).then((results) => results[0]);
+export async function validateCoding(
+  codeSystem: WithId<CodeSystem> | string,
+  coding: Coding
+): Promise<Coding | undefined> {
+  if (typeof codeSystem === 'string') {
+    // Fallback to validating system URL if full CodeSystem not available
+    return coding.system === codeSystem ? coding : undefined;
+  }
+  return (await validateCodings(codeSystem, [coding]))[0];
 }
 
-export async function validateCodings(codeSystem: CodeSystem, codings: Coding[]): Promise<(Coding | undefined)[]> {
+export async function validateCodings(
+  codeSystem: WithId<CodeSystem>,
+  codings: Coding[]
+): Promise<(Coding | undefined)[]> {
   const eligible: boolean[] = new Array(codings.length);
   const codesToQuery = new Set<string>();
   for (let i = 0; i < codings.length; i++) {
@@ -83,13 +96,7 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
 
   let result: any[] | undefined;
   if (codesToQuery.size > 0) {
-    const query = new SelectQuery('Coding')
-      .column('id')
-      .column('code')
-      .column('display')
-      .where('code', 'IN', codesToQuery)
-      .where('system', '=', codeSystem.id);
-
+    const query = selectCoding(codeSystem.id, ...codesToQuery).where('synonymOf', '=', null);
     const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createContext } from 'react';
-import sinon from 'sinon';
+import type { SinonFakeTimers } from 'sinon';
+import { useFakeTimers } from 'sinon';
 
 export type MockDateContextType = {
   advanceSystemTime: (seconds?: number) => void;
@@ -10,8 +13,9 @@ export const MockDateContext = createContext<MockDateContextType>(undefined as u
 
 export const DEFAULT_MOCKED_DATE = new Date(2020, 4, 4, 12, 5);
 
-export function createGlobalTimer(): sinon.SinonFakeTimers {
-  return sinon.useFakeTimers({
+export function createGlobalTimer(): SinonFakeTimers {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useFakeTimers({
     now: DEFAULT_MOCKED_DATE,
     shouldAdvanceTime: false,
     toFake: ['Date'],

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
-import { ClientApplication, Project } from '@medplum/fhirtypes';
+import type { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -7,7 +10,7 @@ import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -19,15 +22,15 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -85,8 +88,8 @@ describe('Token Exchange', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -168,10 +171,6 @@ describe('Token Exchange', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       headers: { get: () => ContentType.TEXT },
-      json: () => {
-        throw new Error('Invalid JSON');
-      },
-      text: () => 'Unexpected error',
     }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
@@ -180,7 +179,7 @@ describe('Token Exchange', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
 
   test('Subject auth success', async () => {

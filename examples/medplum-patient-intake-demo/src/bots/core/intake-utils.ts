@@ -1,17 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import {
+  addProfileToResource,
   createReference,
-  getExtension,
   getReferenceString,
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  MedplumClient,
+  SNOMED,
 } from '@medplum/core';
-import {
+import type {
   Address,
   CodeableConcept,
   Coding,
   Consent,
+  ConsentProvision,
+  ContactPoint,
   HumanName,
   Observation,
   Organization,
@@ -23,6 +28,17 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
+
+export const PROFILE_URLS: Record<string, string> = {
+  AllergyIntolerance: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-allergyintolerance`,
+  CareTeam: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-careteam`,
+  Coverage: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-coverage`,
+  Immunization: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-immunization`,
+  MedicationRequest: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`,
+  Patient: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`,
+  ObservationSexualOrientation: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-observation-sexual-orientation`,
+  ObservationSmokingStatus: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-smokingstatus`,
+};
 
 export const extensionURLMapping: Record<string, string> = {
   race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
@@ -127,6 +143,15 @@ export const consentCategoryMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  cd: {
+    coding: [
+      {
+        system: LOINC,
+        code: '59284-0',
+        display: 'Consent Document',
+      },
+    ],
+  },
 };
 
 export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
@@ -166,6 +191,74 @@ export const consentPolicyRuleMapping: Record<string, CodeableConcept> = {
       },
     ],
   },
+  communicationPreferences: {
+    coding: [
+      {
+        system: 'http://example.com/fhir/CodeSystem/consent-policy',
+        code: 'communication-preferences',
+        display: 'Communication Preferences Policy',
+      },
+    ],
+  },
+};
+
+export const consentProvisionPurposeMapping: Record<string, Coding> = {
+  patadmin: {
+    system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-ActCode',
+    code: 'PATADMIN',
+    display: 'Patient Administration',
+  },
+};
+
+export const consentProvisionCodeMapping: Record<string, CodeableConcept> = {
+  sms: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'sms',
+        display: 'SMS',
+      },
+    ],
+  },
+  phone: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'phone',
+        display: 'Phone',
+      },
+    ],
+  },
+  email: {
+    coding: [
+      {
+        system: HTTP_HL7_ORG + '/fhir/contact-point-system',
+        code: 'email',
+        display: 'Email',
+      },
+    ],
+  },
+  appointmentReminders: {
+    coding: [
+      {
+        system: LOINC,
+        code: '101134-5',
+        display: 'Appointment reminder',
+      },
+    ],
+  },
+};
+
+export const consentProvisionActionMapping: Record<string, CodeableConcept> = {
+  use: {
+    coding: [
+      {
+        system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/consentaction',
+        code: 'use',
+        display: 'Use',
+      },
+    ],
+  },
 };
 
 type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime';
@@ -180,6 +273,7 @@ type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime'
  * @param category - A category for the observation
  * @param answerType - The value[x] field where the answer should be stored
  * @param value - The value to be stored in the observation
+ * @param profileUrl - An optional profile URL to be added to the resource
  */
 export async function upsertObservation(
   medplum: MedplumClient,
@@ -187,19 +281,25 @@ export async function upsertObservation(
   code: CodeableConcept,
   category: CodeableConcept,
   answerType: ObservationQuestionnaireItemType,
-  value: QuestionnaireResponseItemAnswer | undefined
+  value: QuestionnaireResponseItemAnswer | undefined,
+  profileUrl?: string
 ): Promise<void> {
   if (!value || !code) {
     return;
   }
 
-  const observation: Observation = {
+  let observation: Observation = {
     resourceType: 'Observation',
     status: 'final',
     subject: createReference(patient),
     code: code,
     category: [category],
+    effectiveDateTime: new Date().toISOString(),
   };
+
+  if (profileUrl) {
+    observation = addProfileToResource(observation, profileUrl);
+  }
 
   if (answerType === 'valueCodeableConcept') {
     observation.valueCodeableConcept = {
@@ -219,44 +319,52 @@ export async function upsertObservation(
 type ExtensionQuestionnaireItemType = 'valueCoding' | 'valueBoolean';
 
 /**
- * Sets an extension to a patient
+ * Add an extension to a patient
  *
  * @param patient - A patient resource
  * @param url - An URL that identifies the extension
  * @param answerType - The value[x] field where the answer should be stored
  * @param answer - The value to be stored in the extension
+ * @param subExtensionKey - A key to identify a sub-extension
  */
-export function setExtension(
+export function addExtension(
   patient: Patient,
   url: string,
   answerType: ExtensionQuestionnaireItemType,
-  answer: QuestionnaireResponseItemAnswer | undefined
+  answer: QuestionnaireResponseItemAnswer | undefined,
+  subExtensionKey?: string
 ): void {
   let value = answer?.[answerType];
 
   // Answer to boolean Questionnaire fields will be set as `undefined` if the check mark is not ticked
   // so in this case we should interpret it as `false`.
   if (answerType === 'valueBoolean') {
-    value = !!value;
+    value = Boolean(value);
   }
 
   if (value === undefined) {
     return;
   }
 
-  const extension = getExtension(patient, url);
+  patient.extension ||= [];
 
-  if (extension) {
-    // Update the value if there's already an extension for the URL
-    Object.assign(extension, { [answerType]: value });
-  } else {
-    if (!patient.extension) {
-      patient.extension = [];
+  if (subExtensionKey) {
+    const subExtensions = [
+      {
+        url: subExtensionKey,
+        [answerType]: value,
+      },
+    ];
+    if (answerType === 'valueCoding' && (value as Coding).display) {
+      subExtensions.push({ url: 'text', valueString: (value as Coding).display as string });
     }
-
-    // Add a new extension if there isn't one
     patient.extension.push({
-      url: url,
+      url,
+      extension: subExtensions,
+    });
+  } else {
+    patient.extension.push({
+      url,
       [answerType]: value,
     });
   }
@@ -322,6 +430,9 @@ export async function addAllergy(
   await medplum.upsertResource(
     {
       resourceType: 'AllergyIntolerance',
+      meta: {
+        profile: [PROFILE_URLS.AllergyIntolerance],
+      },
       clinicalStatus: {
         text: 'Active',
         coding: [
@@ -378,6 +489,9 @@ export async function addMedication(
   await medplum.upsertResource(
     {
       resourceType: 'MedicationRequest',
+      meta: {
+        profile: [PROFILE_URLS.MedicationRequest],
+      },
       subject: createReference(patient),
       status: 'active',
       intent: 'order',
@@ -462,8 +576,82 @@ export async function addFamilyMemberHistory(
     },
     {
       patient: getReferenceString(patient),
-      condition: `${condition.system}|${condition.code}`,
+      code: `${condition.system}|${condition.code}`,
       relationship: `${relationship.system}|${relationship.code}`,
+    }
+  );
+}
+
+/**
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the immunization
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ *                  immunization (see getGroupRepeatedAnswers)
+ */
+export async function addImmunization(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['immunization-vaccine']?.valueCoding;
+  const occurrenceDateTime = answers['immunization-date']?.valueDateTime;
+
+  if (!code || !occurrenceDateTime) {
+    return;
+  }
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Immunization',
+      meta: {
+        profile: [PROFILE_URLS.Immunization],
+      },
+      status: 'completed',
+      vaccineCode: { coding: [code] },
+      patient: createReference(patient),
+      occurrenceDateTime: occurrenceDateTime,
+    },
+    {
+      status: 'completed',
+      'vaccine-code': `${code.system}|${code.code}`,
+      patient: getReferenceString(patient),
+      date: occurrenceDateTime,
+    }
+  );
+}
+
+/**
+ * Adds a CareTeam resource associating the patient with a pharmacy
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the care team
+ * @param pharmacy - The pharmacy to be added to the care team
+ */
+export async function addPharmacy(
+  medplum: MedplumClient,
+  patient: Patient,
+  pharmacy: Reference<Organization>
+): Promise<void> {
+  await medplum.upsertResource(
+    {
+      resourceType: 'CareTeam',
+      meta: {
+        profile: [PROFILE_URLS.CareTeam],
+      },
+      status: 'proposed',
+      name: 'Patient Preferred Pharmacy',
+      subject: createReference(patient),
+      participant: [
+        {
+          member: pharmacy,
+          role: [{ coding: [{ system: SNOMED, code: '76166008', display: 'Practical aid (pharmacy) (occupation)' }] }],
+        },
+      ],
+    },
+    {
+      name: 'Patient Preferred Pharmacy',
+      subject: getReferenceString(patient),
     }
   );
 }
@@ -502,13 +690,16 @@ export async function addCoverage(
       name: name ? [name] : undefined,
       birthDate: relatedPersonAnswers['related-person-dob']?.valueDate,
       gender:
-        (relatedPersonAnswers['related-person-gender-identity'].valueCoding?.code as Patient['gender']) ?? undefined,
+        (relatedPersonAnswers['related-person-gender-identity']?.valueCoding?.code as Patient['gender']) ?? undefined,
     });
   }
 
   await medplum.upsertResource(
     {
       resourceType: 'Coverage',
+      meta: {
+        profile: [PROFILE_URLS.Coverage],
+      },
       status: 'active',
       beneficiary: createReference(patient),
       subscriberId: subscriberId,
@@ -529,8 +720,19 @@ export async function addConsent(
   scope: CodeableConcept,
   category: CodeableConcept,
   policyRule: CodeableConcept | undefined,
-  date: Consent['dateTime'] | undefined
+  date: Consent['dateTime'],
+  provision?: CodeableConcept[]
 ): Promise<void> {
+  let consentProvision: ConsentProvision | undefined;
+  if (provision) {
+    consentProvision = {
+      type: consentGiven ? 'permit' : 'deny',
+      action: [consentProvisionActionMapping.use],
+      purpose: [consentProvisionPurposeMapping.patadmin],
+      code: provision,
+    };
+  }
+
   await medplum.createResource({
     resourceType: 'Consent',
     patient: createReference(patient),
@@ -539,6 +741,7 @@ export async function addConsent(
     category: [category],
     policyRule: policyRule,
     dateTime: date,
+    provision: provision ? consentProvision : undefined,
   });
 }
 
@@ -691,6 +894,69 @@ export function getPatientAddress(answers: Record<string, QuestionnaireResponseI
 
   // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+/**
+ * Extracts patient contact information from questionnaire answers.
+ *
+ * @param answers - Questionnaire response answers
+ * @returns Array of ContactPoint resources for phone/email, or undefined if none found
+ */
+export function getPatientTelecom(
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): ContactPoint[] | undefined {
+  const patientTelecom: ContactPoint[] = [];
+
+  if (answers['phone']?.valueString) {
+    patientTelecom.push({
+      system: 'phone',
+      value: answers['phone'].valueString,
+    });
+  }
+
+  if (answers['phone-sms']?.valueString) {
+    patientTelecom.push({
+      system: 'sms',
+      value: answers['phone-sms'].valueString,
+    });
+  }
+
+  if (answers['email']?.valueString) {
+    patientTelecom.push({
+      system: 'email',
+      value: answers['email'].valueString,
+    });
+  }
+
+  return patientTelecom.length > 0 ? patientTelecom : undefined;
+}
+
+/**
+ * Sets rank for phone and SMS contacts based on patient preference.
+ * @param patientTelecom - Array of patient contact points
+ * @param answers - Questionnaire response answers
+ */
+export function setPatientTelecomRank(
+  patientTelecom: ContactPoint[] | undefined,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): void {
+  if (!patientTelecom?.length) {
+    return;
+  }
+
+  const phoneContact = patientTelecom.find((contact) => contact.system === 'phone');
+  const smsContact = patientTelecom.find((contact) => contact.system === 'sms');
+  const preferredPhoneMethod = answers['patient-contact-preference-preferred-method-for-phone-reminders']?.valueCoding;
+
+  if (phoneContact && smsContact) {
+    if (preferredPhoneMethod?.code === 'sms') {
+      phoneContact.rank = 2;
+      smsContact.rank = 1;
+    } else {
+      phoneContact.rank = 1;
+      smsContact.rank = 2;
+    }
+  }
 }
 
 function getRelatedPersonRelationshipFromCoverage(coverageRelationship: Coding): Coding | undefined {

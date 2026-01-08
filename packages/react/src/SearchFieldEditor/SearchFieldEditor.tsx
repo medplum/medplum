@@ -1,13 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Modal, MultiSelect, Stack } from '@mantine/core';
-import {
-  InternalTypeSchema,
-  SearchRequest,
-  getDataType,
-  getSearchParameters,
-  sortStringArray,
-  stringify,
-} from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import type { InternalTypeSchema, SearchRequest } from '@medplum/core';
+import { getDataType, getSearchParameters, sortStringArray, stringify } from '@medplum/core';
+import type { SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
@@ -42,10 +39,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
       return { value: field, label: buildFieldNameString(field) };
     });
   }, [props.visible, props.search.resourceType]);
-
-  if (!props.visible) {
-    return null;
-  }
 
   function handleChange(newFields: string[]): void {
     setState({ search: { ...state.search, fields: newFields } });

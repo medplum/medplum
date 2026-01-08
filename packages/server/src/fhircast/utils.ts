@@ -1,5 +1,66 @@
-import { OperationOutcomeError, generateId, serverError } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
+import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
+import type { Resource } from '@medplum/fhirtypes';
 import { getRedis } from '../redis';
+
+const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
+  patient: 'Patient',
+  imagingstudy: 'ImagingStudy',
+  encounter: 'Encounter',
+  diagnosticreport: 'DiagnosticReport',
+} as Record<string, FhircastAnchorResourceType>;
+
+export function getTopicCurrentContextKey(projectId: string, topic: string): string {
+  return `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
+}
+
+export function getTopicContextStorageKey(projectId: string, topic: string): string {
+  return `medplum:fhircast:project:${projectId}:topic:${topic}:contexts`;
+}
+
+export function extractAnchorResourceType(eventName: string): FhircastAnchorResourceType {
+  const loweredResourceType = eventName.split('-')[0].toLowerCase();
+  const extractedResourceType = RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE[loweredResourceType];
+  if (!extractedResourceType) {
+    throw new OperationOutcomeError(badRequest('Invalid anchor resource type'));
+  }
+  return extractedResourceType;
+}
+
+export async function getCurrentContext<ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType>(
+  projectId: string,
+  topic: string
+): Promise<CurrentContext<ResourceType> | undefined> {
+  const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
+  const currentContextStr = await getRedis().get(topicCurrentContextKey);
+  if (!currentContextStr) {
+    return undefined;
+  }
+  return JSON.parse(currentContextStr);
+}
+
+export async function setTopicCurrentContext<
+  ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType,
+>(projectId: string, topic: string, currentContext: CurrentContext<ResourceType>): Promise<void> {
+  const topicCurrentContextKey = `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
+  await getRedis().set(topicCurrentContextKey, JSON.stringify(currentContext));
+}
+
+export async function cleanupContextForResource(
+  projectId: string,
+  topic: string,
+  anchorResource: Resource
+): Promise<void> {
+  const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
+  await getRedis().hdel(topicContextsStorageKey, anchorResource.id as string);
+}
+
+export async function cleanupAllContextsForTopic(projectId: string, topic: string): Promise<void> {
+  const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
+  await getRedis().del(topicContextsStorageKey);
+}
 
 export async function getTopicForUser(userId: string): Promise<string> {
   const newTopic = generateId();

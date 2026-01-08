@@ -1,9 +1,12 @@
-import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { MoneyInput } from './MoneyInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { Document } from '../Document/Document';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { MoneyInput } from './MoneyInput';
 
 export default {
   title: 'Medplum/MoneyInput',

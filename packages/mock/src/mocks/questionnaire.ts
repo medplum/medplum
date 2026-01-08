@@ -1,8 +1,11 @@
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export const ExampleQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   id: '123',
+  url: 'https://example.com/example-questionnaire',
   status: 'active',
   name: 'Vitals',
   title: 'Vitals',
@@ -20,7 +23,7 @@ export const ExampleQuestionnaireResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   id: '123',
   status: 'completed',
-  questionnaire: 'Questionnaire/123',
+  questionnaire: 'https://example.com/example-questionnaire',
   subject: {
     reference: 'Patient/123',
   },

@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, Operator, resolveId } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
@@ -204,6 +206,6 @@ describe('New patient', () => {
       .set('Authorization', 'Bearer ' + res13.body.access_token);
     expect(res14.status).toBe(200);
     expect(res14.body.entry).toHaveLength(1);
-    expect(res14.body.entry[0].resource.id).toEqual(res11.body.id);
+    expect(res14.body.entry[0].resource.id).toStrictEqual(res11.body.id);
   });
 });

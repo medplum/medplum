@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronRight } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';
 
@@ -22,7 +25,7 @@ export function Responses(): JSX.Element {
       <InfoSection title="Questionnaire Responses">
         <Stack gap={0}>
           {responses.map((resp) => (
-            <InfoButton key={resp.id} onClick={() => navigate(`./${resp.id}`)}>
+            <InfoButton key={resp.id} onClick={() => navigate(`./${resp.id}`)?.catch(console.error)}>
               <div>
                 <Text c={theme.primaryColor} fw={500} mb={4}>
                   {formatDateTime(resp.authored)}

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { arrayify, getAllQuestionnaireAnswers, getExtensionValue, getTypedPropertyValue } from '@medplum/core';
-import {
+import type {
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireResponse,
@@ -35,7 +37,6 @@ export function getMissingRequiredQuestionnaireItems(
   qr: QuestionnaireResponse | undefined,
   includeRequiredWhenSpecimenCollected: boolean
 ): string[] {
-  const required: string[] = [];
   const missing: string[] = [];
   const answersByLinkId: Record<string, QuestionnaireResponseItemAnswer[] | undefined> | undefined =
     qr && getAllQuestionnaireAnswers(qr);
@@ -51,8 +52,6 @@ export function getMissingRequiredQuestionnaireItems(
           'https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen'
         ) === true)
     ) {
-      required.push(item.linkId);
-
       const answers = answersByLinkId?.[item.linkId];
       if (answers && answers.length > 0) {
         let hasValue = false;

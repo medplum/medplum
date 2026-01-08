@@ -1,15 +1,14 @@
-import { ExtendedInternalSchemaElement, buildElementsContext } from './elements-context';
-import { HTTP_HL7_ORG } from './constants';
-import { isPopulated } from './utils';
-import {
-  InternalTypeSchema,
-  getDataType,
-  indexStructureDefinitionBundle,
-  parseStructureDefinition,
-} from './typeschema/types';
-import { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
+import type { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { AccessPolicyInteraction, satisfiedAccessPolicy } from './access';
+import { HTTP_HL7_ORG } from './constants';
+import type { ExtendedInternalSchemaElement } from './elements-context';
+import { buildElementsContext } from './elements-context';
+import type { InternalTypeSchema } from './typeschema/types';
+import { getDataType, indexStructureDefinitionBundle, parseStructureDefinition } from './typeschema/types';
+import { isPopulated } from './utils';
 
 describe('buildElementsContext', () => {
   const DEFAULT_EXTENDED_PROPS = { readonly: false, hidden: false };
@@ -44,7 +43,7 @@ describe('buildElementsContext', () => {
       fail('Expected context to be defined');
     }
 
-    expect(context.profileUrl).toEqual(profileUrl);
+    expect(context.profileUrl).toStrictEqual(profileUrl);
     expect(context.elements['dosageInstruction.method']).toBeDefined();
     expect(context.elementsByPath['MedicationRequest.dosageInstruction.method']).toBeDefined();
     expect(context.elements['dosageInstruction.method']).toBe(
@@ -106,15 +105,15 @@ describe('buildElementsContext', () => {
       fail('Expected extension context to be defined');
     }
 
-    expect(extensionContext.profileUrl).toEqual(extensionUrl);
-    expect(Object.keys(extensionContext.elements)).toEqual(
+    expect(extensionContext.profileUrl).toStrictEqual(extensionUrl);
+    expect(Object.keys(extensionContext.elements)).toStrictEqual(
       expect.arrayContaining(['extension', 'id', 'url', 'value[x]'])
     );
 
     expect(extensionContext.elements['extension'].slicing?.slices.length).toBe(3);
     expect(extensionContext.elements['extension']).toBe(extensionContext.elementsByPath['Patient.extension.extension']);
 
-    expect(extensionContext.elements['url'].fixed).toEqual({
+    expect(extensionContext.elements['url'].fixed).toStrictEqual({
       type: 'uri',
       value: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
     });
@@ -134,7 +133,7 @@ describe('buildElementsContext', () => {
     expect(apr).toBeDefined();
 
     const entriesBefore = Object.values(schema.elements).filter(Boolean).length;
-    expect(entriesBefore).toEqual(24); // sanity check
+    expect(entriesBefore).toStrictEqual(24); // sanity check
 
     const context = buildElementsContext({
       elements: schema.elements,
@@ -148,13 +147,13 @@ describe('buildElementsContext', () => {
 
     const entriesAfter = Object.values(context.elements).filter(Boolean).length;
 
-    expect(entriesBefore - entriesAfter).toEqual(0);
+    expect(entriesBefore - entriesAfter).toStrictEqual(0);
     for (const key of Object.keys(context.elements)) {
-      expect(context.getExtendedProps('Patient.' + key)).toEqual(DEFAULT_EXTENDED_PROPS);
+      expect(context.getExtendedProps('Patient.' + key)).toStrictEqual(DEFAULT_EXTENDED_PROPS);
     }
     expect(context.getExtendedProps('Patient')).toBeUndefined();
     expect(context.getExtendedProps('Patient.')).toBeUndefined();
-    expect(context.getExtendedProps('Patient.badKey')).toEqual(DEFAULT_EXTENDED_PROPS);
+    expect(context.getExtendedProps('Patient.badKey')).toStrictEqual(DEFAULT_EXTENDED_PROPS);
   });
 
   test('some hidden fields', () => {
@@ -187,9 +186,9 @@ describe('buildElementsContext', () => {
     // InternalTypeSchema references elements by their path, i.e. "multipleBirth[x]", so
     // attempting to hide "multipleBirthInteger" is expected to have no effect
     expect(context.elements['gender']).toBeUndefined();
-    expect(entriesBefore - entriesAfter).toEqual(1);
+    expect(entriesBefore - entriesAfter).toStrictEqual(1);
 
-    expect(context.getExtendedProps('Patient.gender')).toEqual(HIDDEN);
+    expect(context.getExtendedProps('Patient.gender')).toStrictEqual(HIDDEN);
   });
 
   test('hidden parent element also removes child elements', () => {
@@ -218,10 +217,10 @@ describe('buildElementsContext', () => {
     const entriesAfter = Object.values(context.elements).filter(Boolean).length;
 
     // includes name, name.id, name.use, name.family, name.given, etc.
-    expect(entriesBefore - entriesAfter).toEqual(10);
-    expect(context.getExtendedProps('Patient.name')).toEqual(HIDDEN);
-    expect(context.getExtendedProps('Patient.name.given')).toEqual(HIDDEN);
-    expect(context.getExtendedProps('Patient.name.family')).toEqual(HIDDEN);
+    expect(entriesBefore - entriesAfter).toStrictEqual(10);
+    expect(context.getExtendedProps('Patient.name')).toStrictEqual(HIDDEN);
+    expect(context.getExtendedProps('Patient.name.given')).toStrictEqual(HIDDEN);
+    expect(context.getExtendedProps('Patient.name.family')).toStrictEqual(HIDDEN);
   });
 
   test('hidden nested field leaves parent and siblings', () => {
@@ -252,7 +251,7 @@ describe('buildElementsContext', () => {
     const entriesAfter = Object.values(context.elements).filter(Boolean).length;
 
     expect(context.elements['name.family']).toBeUndefined();
-    expect(entriesBefore - entriesAfter).toEqual(1);
+    expect(entriesBefore - entriesAfter).toStrictEqual(1);
   });
 
   test('readonly fields are marked as readonly', () => {
@@ -283,31 +282,31 @@ describe('buildElementsContext', () => {
     }
     const entriesAfter = Object.values(context.elements).filter(Boolean).length;
 
-    expect(entriesBefore - entriesAfter).toEqual(0);
+    expect(entriesBefore - entriesAfter).toStrictEqual(0);
 
     expect(context.elements['gender'].readonly).toBe(true);
-    expect(context.getExtendedProps('Patient.gender')).toEqual(READONLY);
+    expect(context.getExtendedProps('Patient.gender')).toStrictEqual(READONLY);
 
     // "multipelBirthInteger" is one of the possible types for "multipleBirth[x]", but
     // InternalTypeSchema references elements by their path, i.e. "multipleBirth[x]", so
     // attempting to hide "multipleBirthInteger" is expected to have no effect
     expect(context.elements['multipleBirth[x]']).toBeDefined();
     expect(context.elements['multipleBirth[x]'].readonly).toBeUndefined();
-    expect(context.getExtendedProps('Patient.multipleBirth[x]')).toEqual(DEFAULT_EXTENDED_PROPS);
+    expect(context.getExtendedProps('Patient.multipleBirth[x]')).toStrictEqual(DEFAULT_EXTENDED_PROPS);
 
     // name.given isn't explicitly an element in the schema, but it should still be marked as readonly via getExtendedProps
     // parent and sibling elements are not marked as readonly
     expect(context.elements['name.given']).toBeUndefined();
-    expect(context.getExtendedProps('Patient.name.given')).toEqual(READONLY);
-    expect(context.getExtendedProps('Patient.name')).toEqual(DEFAULT_EXTENDED_PROPS);
-    expect(context.getExtendedProps('Patient.name.family')).toEqual(DEFAULT_EXTENDED_PROPS);
+    expect(context.getExtendedProps('Patient.name.given')).toStrictEqual(READONLY);
+    expect(context.getExtendedProps('Patient.name')).toStrictEqual(DEFAULT_EXTENDED_PROPS);
+    expect(context.getExtendedProps('Patient.name.family')).toStrictEqual(DEFAULT_EXTENDED_PROPS);
 
     // nested elements are also marked as readonly
     expect(context.elements['identifier'].readonly).toBe(true);
     expect(context.elements['identifier.system']).toBeUndefined();
-    expect(context.getExtendedProps('Patient.identifier')).toEqual(READONLY);
-    expect(context.getExtendedProps('Patient.identifier.system')).toEqual(READONLY);
-    expect(context.getExtendedProps('Patient.identifier.value')).toEqual(READONLY);
+    expect(context.getExtendedProps('Patient.identifier')).toStrictEqual(READONLY);
+    expect(context.getExtendedProps('Patient.identifier.system')).toStrictEqual(READONLY);
+    expect(context.getExtendedProps('Patient.identifier.value')).toStrictEqual(READONLY);
   });
 
   test('setting readonly/hidden does not mutate DATA_TYPES', () => {

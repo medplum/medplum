@@ -1,31 +1,14 @@
-import { Badge, Group, Paper, ScrollArea, Tabs, Text, useMantineTheme } from '@mantine/core';
-import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Paper, ScrollArea, Text } from '@mantine/core';
+import { LinkTabs } from '@medplum/react';
+import type { JSX } from 'react';
+import { Outlet, useParams } from 'react-router';
 
-const tabs = ['Form', 'JSON', 'Profiles'] as const;
-const BETA_TABS: (typeof tabs)[number][] = ['Profiles'];
-const defaultTab = tabs[0].toLowerCase();
+const tabs = ['Form', 'JSON', 'Profiles'];
 
 export function CreateResourcePage(): JSX.Element {
-  const navigate = useNavigate();
-  const theme = useMantineTheme();
   const { resourceType } = useParams();
-  const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = window.location.pathname.split('/').pop();
-    return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : defaultTab;
-  });
-
-  /**
-   * Handles a tab change event.
-   * @param newTabName - The new tab name.
-   */
-  function onTabChange(newTabName: string | null): void {
-    if (!newTabName) {
-      newTabName = defaultTab;
-    }
-    setCurrentTab(newTabName);
-    navigate(`/${resourceType}/new/${newTabName}`);
-  }
 
   return (
     <>
@@ -34,24 +17,7 @@ export function CreateResourcePage(): JSX.Element {
           New&nbsp;{resourceType}
         </Text>
         <ScrollArea>
-          <Tabs defaultValue={defaultTab} value={currentTab} onChange={onTabChange}>
-            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-              {tabs.map((t) => (
-                <Tabs.Tab key={t} value={t.toLowerCase()} px="md">
-                  {BETA_TABS.includes(t) ? (
-                    <Group gap="xs" wrap="nowrap">
-                      {t}
-                      <Badge color={theme.primaryColor} size="sm">
-                        Beta
-                      </Badge>
-                    </Group>
-                  ) : (
-                    t
-                  )}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs>
+          <LinkTabs baseUrl={`/${resourceType}/new`} tabs={tabs} />
         </ScrollArea>
       </Paper>
       <Outlet />

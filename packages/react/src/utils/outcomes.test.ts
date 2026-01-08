@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, gone } from '@medplum/core';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { getErrorsForInput, getIssuesForExpression } from './outcomes';
-import { OperationOutcome } from '@medplum/fhirtypes';
 
 const MISSING_PROP = 'Missing required property';
 function missingProp(expression: string): OperationOutcome {
@@ -36,20 +38,22 @@ describe('Outcome utils', () => {
 
   describe('getErrorsForInput', () => {
     test('match without indexes', () => {
-      expect(getErrorsForInput(missingProp('identifier.system'), 'identifier.system')).toEqual(MISSING_PROP);
+      expect(getErrorsForInput(missingProp('identifier.system'), 'identifier.system')).toStrictEqual(MISSING_PROP);
     });
 
     test('exact match with indexes', () => {
-      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier[1].system')).toEqual(MISSING_PROP);
+      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier[1].system')).toStrictEqual(
+        MISSING_PROP
+      );
     });
     test('mismatched indexes', () => {
-      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier[0].system')).toEqual('');
+      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier[0].system')).toStrictEqual('');
     });
     test('indexes only on outcome', () => {
-      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier.system')).toEqual(MISSING_PROP);
+      expect(getErrorsForInput(missingProp('identifier[1].system'), 'identifier.system')).toStrictEqual(MISSING_PROP);
     });
     test('indexes only on client', () => {
-      expect(getErrorsForInput(missingProp('identifier.system'), 'identifier[1].system')).toEqual(MISSING_PROP);
+      expect(getErrorsForInput(missingProp('identifier.system'), 'identifier[1].system')).toStrictEqual(MISSING_PROP);
     });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -29,6 +29,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -47,25 +48,26 @@
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "3.2.10",
-    "@medplum/definitions": "3.2.10",
-    "@medplum/fhir-router": "3.2.10",
-    "@medplum/fhirtypes": "3.2.10",
-    "dataloader": "2.2.2",
+    "@medplum/core": "5.0.10",
+    "@medplum/definitions": "5.0.10",
+    "@medplum/fhir-router": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "dataloader": "2.2.3",
     "jest-websocket-mock": "2.5.0",
-    "rfc6902": "5.1.1"
+    "rfc6902": "5.1.2"
   },
   "devDependencies": {
-    "@types/pdfmake": "0.2.9"
+    "@types/pdfmake": "0.2.12"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

@@ -1,7 +1,9 @@
-import { MedplumSourceInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { normalizeInfraConfig } from './config';
 import { MedplumStack } from './stack';
 
@@ -12,7 +14,7 @@ export * from './stack';
 export * from './storage';
 export * from './waf';
 
-export function main(context?: Record<string, string>): void {
+export async function main(context?: Record<string, string>): Promise<void> {
   const app = new App({ context });
 
   const configFileName = app.node.tryGetContext('config');
@@ -23,20 +25,15 @@ export function main(context?: Record<string, string>): void {
   }
 
   const config = JSON.parse(readFileSync(resolve(configFileName), 'utf-8')) as MedplumSourceInfraConfig;
-
-  normalizeInfraConfig(config)
-    .then((normalizedConfig) => {
-      const stack = new MedplumStack(app, normalizedConfig);
-      console.log('Stack', stack.primaryStack.stackId);
-
-      app.synth();
-    })
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
+  const normalizedConfig = await normalizeInfraConfig(config);
+  const stack = new MedplumStack(app, normalizedConfig);
+  console.log('Stack', stack.primaryStack.stackId);
+  app.synth();
 }
 
-if (require.main === module) {
-  main();
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 }

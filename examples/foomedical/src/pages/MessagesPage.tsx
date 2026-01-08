@@ -1,12 +1,15 @@
-import { useState, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert } from '@mantine/core';
-import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
-import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BaseChat, Document, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
-import { Loading } from '../components/Loading';
 import { showNotification } from '@mantine/notifications';
+import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
+import { BaseChat, Document, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
+import { useCallback, useMemo, useState } from 'react';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
+import { Loading } from '../components/Loading';
 
 export function Messages(): JSX.Element {
   const medplum = useMedplum();

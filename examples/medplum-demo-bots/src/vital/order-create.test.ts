@@ -1,11 +1,9 @@
-import {
-  MedplumClient,
-  createReference,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
   BundleEntry,
   Coverage,
@@ -19,7 +17,8 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { buildVitalOrder, createVitalOrder, createVitalUser, handler, resourceWithoutMeta } from './order-create';
 
 global.fetch = vi.fn();
@@ -87,8 +86,8 @@ describe('Create Order Bot', () => {
     const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient') as
       | BundleEntry<Patient>
       | undefined;
-    expect(patient?.resource?.name).toEqual(ctx.patient.name);
-    expect(patient?.resource?.address?.[0].country).toEqual('US');
+    expect(patient?.resource?.name).toStrictEqual(ctx.patient.name);
+    expect(patient?.resource?.address?.[0].country).toStrictEqual('US');
 
     // Questionnaire
     const questionnaireResponse = bundle.entry?.find(
@@ -100,24 +99,24 @@ describe('Create Order Bot', () => {
     const practitioner = bundle.entry?.find((e: any) => e.resource.resourceType === 'Practitioner') as
       | BundleEntry<Practitioner>
       | undefined;
-    expect(practitioner?.resource).toEqual(resourceWithoutMeta(ctx.requestingPhysician));
+    expect(practitioner?.resource).toStrictEqual(resourceWithoutMeta(ctx.requestingPhysician));
 
     const performer = bundle.entry?.find((e: any) => e.resource.resourceType === 'Organization') as
       | BundleEntry<Organization>
       | undefined;
-    expect(performer?.resource).toEqual(resourceWithoutMeta(ctx.performer));
+    expect(performer?.resource).toStrictEqual(resourceWithoutMeta(ctx.performer));
 
     // ServiceRequest
     const serviceRequest = bundle.entry?.find((e: any) => e.resource.resourceType === 'ServiceRequest') as
       | BundleEntry<ServiceRequest>
       | undefined;
-    expect(serviceRequest?.resource).toEqual(resourceWithoutMeta(ctx.order));
+    expect(serviceRequest?.resource).toStrictEqual(resourceWithoutMeta(ctx.order));
 
     // Coverage
     const coverage = bundle.entry?.find((e: any) => e.resource.resourceType === 'Coverage') as
       | BundleEntry<Coverage>
       | undefined;
-    expect(coverage?.resource).toEqual(resourceWithoutMeta(ctx.coverage));
+    expect(coverage?.resource).toStrictEqual(resourceWithoutMeta(ctx.coverage));
   });
 
   test<Context>('createOrder', async (ctx) => {
@@ -194,7 +193,9 @@ describe('Create Order Bot', () => {
     const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
     const baseURL = 'https://api.dev.tryvital.io';
 
-    (fetch as any).mockResolvedValue(createFetchResponse({ client_user_id: ctx.patient.id, user_id: userID }, 400));
+    (fetch as any).mockResolvedValue(
+      createFetchResponse({ detail: { client_user_id: ctx.patient.id, user_id: userID } }, 400)
+    );
 
     const secrets = {
       VITAL_BASE_URL: {

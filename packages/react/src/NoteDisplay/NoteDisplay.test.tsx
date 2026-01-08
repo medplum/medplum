@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
-import { NoteDisplay, NoteDisplayProps } from './NoteDisplay';
+import type { NoteDisplayProps } from './NoteDisplay';
+import { NoteDisplay } from './NoteDisplay';
 
 const medplum = new MockClient();
 
@@ -44,5 +47,13 @@ describe('NoteDisplay', () => {
     });
 
     expect(screen.getByText('Medplum Bots')).toBeDefined();
+  });
+
+  test('Returns null if value is undefined', async () => {
+    await act(async () => {
+      setup({ value: undefined });
+    });
+
+    expect(screen.queryByRole('blockquote')).toBeNull();
   });
 });

@@ -1,4 +1,6 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -17,10 +19,11 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
-import { buildWafConfig } from './waf';
-import hashObject from 'object-hash';
+import assert from 'node:assert';
+import { buildWaf } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -42,8 +45,8 @@ export class BackEnd extends Construct {
   taskRolePolicies: iam.PolicyDocument;
   taskRole: iam.Role;
   taskDefinition: ecs.FargateTaskDefinition;
-  logGroup: logs.ILogGroup;
-  logDriver: ecs.AwsLogDriver;
+  logGroup?: logs.ILogGroup;
+  logDriver: ecs.LogDriver;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
@@ -57,6 +60,9 @@ export class BackEnd extends Construct {
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
+  rdsClusterParameterGroup?: rds.ParameterGroup;
+  rdsWriterParameterGroup?: rds.ParameterGroup;
+  rdsReaderParameterGroup?: rds.ParameterGroup;
 
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
@@ -96,6 +102,56 @@ export class BackEnd extends Construct {
     // RDS
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
+      const { engine, majorVersion } = getPostgresEngine(
+        config.rdsInstanceVersion,
+        rds.AuroraPostgresEngineVersion.VER_16_9
+      );
+
+      const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
+        statement_timeout: '60000',
+        default_transaction_isolation: 'REPEATABLE READ',
+        ...config.rdsClusterParameters,
+      };
+
+      if (config.rdsPersistentParameterGroups) {
+        // bindToCluster and bindToInstance to force parameter group existence even when not actively used by a cluster
+
+        const idPrefix = `MedplumPG${majorVersion}`;
+        this.rdsClusterParameterGroup = new ParameterGroup(this, `${idPrefix}ClusterParameterGroup`, {
+          engine,
+          parameters: clusterParameters,
+          removalPolicy: RemovalPolicy.RETAIN,
+        });
+        this.rdsClusterParameterGroup.bindToCluster({});
+
+        this.rdsWriterParameterGroup = new ParameterGroup(this, `${idPrefix}WriterInstanceParameterGroup`, {
+          engine,
+          removalPolicy: RemovalPolicy.RETAIN,
+        });
+        this.rdsWriterParameterGroup.bindToInstance({});
+
+        this.rdsReaderParameterGroup = new ParameterGroup(this, `${idPrefix}ReaderInstanceParameterGroup`, {
+          engine,
+          removalPolicy: RemovalPolicy.RETAIN,
+        });
+        this.rdsReaderParameterGroup.bindToInstance({});
+      }
+
+      if (config.rdsIdsMajorVersionSuffix) {
+        if (
+          !config.rdsPersistentParameterGroups ||
+          !this.rdsClusterParameterGroup ||
+          !this.rdsWriterParameterGroup ||
+          !this.rdsReaderParameterGroup
+        ) {
+          throw new Error('rdsPersistentParameterGroups must be true when rdsIdsMajorVersionSuffix is true');
+        }
+
+        this.rdsClusterParameterGroup satisfies rds.ParameterGroup;
+        this.rdsWriterParameterGroup satisfies rds.ParameterGroup;
+        this.rdsReaderParameterGroup satisfies rds.ParameterGroup;
+      }
+
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
       const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
@@ -103,37 +159,26 @@ export class BackEnd extends Construct {
         caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
 
-      const engine = rds.DatabaseClusterEngine.auroraPostgres({
-        version: config.rdsInstanceVersion
-          ? rds.AuroraPostgresEngineVersion.of(
-              config.rdsInstanceVersion,
-              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-              { s3Import: true, s3Export: true }
-            )
-          : rds.AuroraPostgresEngineVersion.VER_12_9,
+      const legacyClusterParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
+        engine,
+        parameters: clusterParameters,
       });
-      let dbParams: ParameterGroup | undefined;
-      if (config.rdsClusterParameters) {
-        const paramHash = hashObject(config.rdsClusterParameters, { encoding: 'base64' }).slice(0, 8);
-        dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
-          engine,
-          parameters: config.rdsClusterParameters,
-        });
-      }
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+        parameterGroup: config.rdsIdsMajorVersionSuffix ? this.rdsReaderParameterGroup : undefined,
       };
 
       const writerInstanceType = config.rdsInstanceType;
       const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
+        parameterGroup: config.rdsIdsMajorVersionSuffix ? this.rdsWriterParameterGroup : undefined,
       };
 
-      let readers = undefined;
+      let readers: rds.IClusterInstance[] | undefined;
       if (config.rdsInstances > 1) {
         readers = [];
         for (let i = 1; i < config.rdsInstances; i++) {
@@ -141,31 +186,58 @@ export class BackEnd extends Construct {
         }
       }
 
-      this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
-        engine,
-        credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
+      const credentials = rds.Credentials.fromGeneratedSecret('clusteradmin');
+
+      const defaultClusterProps: Partial<rds.DatabaseClusterProps> = {
+        credentials,
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
+        // Instances with attached NVMe SSD (db.*d* instance classes) should utilize I/O optimized storage
+        // to unlock additional performance improvements (e.g. tiered caching between memory and SSD)
+        storageType: writerInstanceType?.match(/^\w+d\w*\./i)
+          ? DBClusterStorageType.AURORA_IOPT1
+          : DBClusterStorageType.AURORA,
         vpc: this.vpc,
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
-        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
-        readers,
         backup: {
           retention: Duration.days(7),
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
-        parameterGroup: dbParams,
+        removalPolicy: RemovalPolicy.RETAIN,
+        autoMinorVersionUpgrade: config.rdsAutoMinorVersionUpgrade,
+      };
+
+      const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
+      this.rdsCluster = new rds.DatabaseCluster(this, rdsClusterId, {
+        ...defaultClusterProps,
+        engine,
+        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
+        readers,
+        parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
       });
 
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      const secretAttachment = this.rdsCluster.secret;
+      assert(secretAttachment !== undefined, 'rdsCluster.secret is undefined');
+
+      secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      // rdsCluster.secret is actually a SecretAttachment; not the secret itself
+      assert(secretAttachment instanceof SecretTargetAttachment, 'rdsCluster.secret is not a SecretTargetAttachment');
+
+      // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+      const secret = secretAttachment.node.scope;
+      assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
+      secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      this.rdsSecretsArn = secretAttachment.secretArn;
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
           proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          secrets: [secretAttachment],
           vpc: this.vpc,
         });
       }
@@ -231,10 +303,11 @@ export class BackEnd extends Construct {
     this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
-    this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
-      vpc: this.vpc,
-      containerInsights: config.containerInsights,
-    });
+    let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
+    if (config.containerInsightsV2) {
+      clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
+    }
+    this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
     // Task Policies
     this.taskRolePolicies = new iam.PolicyDocument({
@@ -388,20 +461,37 @@ export class BackEnd extends Construct {
       taskRole: this.taskRole,
     });
 
-    // Log Groups
-    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: '/ecs/medplum/' + name,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    // Log Drivers
+    if (config.fireLens?.enabled) {
+      this.logDriver = new ecs.FireLensLogDriver({
+        options: {
+          ...config.fireLens.logDriverConfig?.options,
+        },
+      });
+    } else {
+      this.logGroup = new logs.LogGroup(this, 'LogGroup', {
+        logGroupName: '/ecs/medplum/' + name,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
 
-    this.logDriver = new ecs.AwsLogDriver({
-      logGroup: this.logGroup,
-      streamPrefix: 'Medplum',
-    });
+      this.logDriver = new ecs.AwsLogDriver({
+        logGroup: this.logGroup,
+        streamPrefix: 'Medplum',
+      });
+    }
+
+    let containerRegistryCredentials: secretsmanager.ISecret | undefined = undefined;
+    if (config.containerRegistryCredentialsSecretArn) {
+      containerRegistryCredentials = secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'RegistryCredentialsSecret',
+        config.containerRegistryCredentialsSecretArn
+      );
+    }
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -416,12 +506,22 @@ export class BackEnd extends Construct {
       for (const container of config.additionalContainers) {
         this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
           containerName: container.name,
-          image: this.getContainerImage(config, container.image),
+          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
           command: container.command,
           environment: container.environment,
           logging: this.logDriver,
+          essential: container.essential ?? false, // Default to false
         });
       }
+    }
+
+    if (config.fireLens?.enabled) {
+      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
     }
 
     // Security Groups
@@ -442,6 +542,7 @@ export class BackEnd extends Construct {
       desiredCount: config.desiredServerCount,
       securityGroups: [this.fargateSecurityGroup],
       healthCheckGracePeriod: Duration.minutes(5),
+      minHealthyPercent: 50, // 50% is the default; make it explicit
     });
 
     // Add autoscaling
@@ -520,10 +621,14 @@ export class BackEnd extends Construct {
     });
 
     // WAF
-    this.waf = new wafv2.CfnWebACL(
+    this.waf = buildWaf(
       this,
       'BackEndWAF',
-      buildWafConfig(`${config.stackName}-BackEndWAF`, 'REGIONAL', config.apiWafIpSetArn)
+      `${config.stackName}-BackEndWAF`,
+      'REGIONAL',
+      config.apiWafIpSetArn,
+      config.wafLogGroupName,
+      config.wafLogGroupCreate
     );
 
     // Create an association between the load balancer and the WAF
@@ -532,9 +637,19 @@ export class BackEnd extends Construct {
       webAclArn: this.waf.attrArn,
     });
 
-    // Grant RDS access to the fargate group
     if (this.rdsCluster) {
+      // Grant RDS access to the fargate group
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+
+      // Retain RDS cluster security groups and their rules
+      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+        sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        sg.node.children.forEach((child) => {
+          if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
+            child.applyRemovalPolicy(RemovalPolicy.RETAIN);
+          }
+        });
+      });
     }
 
     // Grant RDS Proxy access to the fargate group
@@ -606,9 +721,14 @@ export class BackEnd extends Construct {
    * Otherwise, the image name is assumed to be a Docker Hub image.
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
+   * @param credentials - The credentials for the image repository.
    * @returns The container image.
    */
-  private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {
+  private getContainerImage(
+    config: MedplumInfraConfig,
+    imageName: string,
+    credentials: secretsmanager.ISecret | undefined
+  ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
       `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
@@ -627,6 +747,36 @@ export class BackEnd extends Construct {
     }
 
     // Otherwise, use the standard container image
-    return ecs.ContainerImage.fromRegistry(imageName);
+    return ecs.ContainerImage.fromRegistry(imageName, { credentials });
   }
+}
+
+function getPostgresEngine(
+  version?: string,
+  defaultVersion?: rds.AuroraPostgresEngineVersion
+): { engine: rds.IClusterEngine; majorVersion: string } {
+  if (!version) {
+    if (defaultVersion) {
+      return {
+        engine: rds.DatabaseClusterEngine.auroraPostgres({ version: defaultVersion }),
+        majorVersion: defaultVersion.auroraPostgresMajorVersion,
+      };
+    }
+    throw new Error('Missing or empty RDS version: ' + version);
+  }
+
+  const majorVersion = version.slice(0, version.indexOf('.'));
+  return {
+    engine: rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.of(version, majorVersion, {
+        s3Import: true,
+        s3Export: true,
+      }),
+    }),
+    majorVersion,
+  };
+}
+
+function getDatabaseClusterId(majorVersion?: string): string {
+  return majorVersion ? `DatabaseClusterPG${majorVersion}` : 'DatabaseCluster';
 }

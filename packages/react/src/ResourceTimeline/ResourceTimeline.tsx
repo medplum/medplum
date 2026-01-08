@@ -1,11 +1,13 @@
-import { ActionIcon, Center, Group, Loader, ScrollArea, TextInput } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Button, Center, Group, Loader, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { MedplumClient, ProfileResource, createReference, normalizeErrorString } from '@medplum/core';
-import {
+import type { MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type {
   Attachment,
   AuditEvent,
   Bundle,
-  BundleEntry,
   Communication,
   DiagnosticReport,
   Media,
@@ -16,7 +18,8 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
@@ -25,7 +28,8 @@ import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
-import { Timeline, TimelineItem, TimelineItemProps } from '../Timeline/Timeline';
+import type { TimelineItemProps } from '../Timeline/Timeline';
+import { Timeline, TimelineItem } from '../Timeline/Timeline';
 import { sortByDateAndPriority } from '../utils/date';
 import classes from './ResourceTimeline.module.css';
 
@@ -54,6 +58,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const resource = useResource(props.value);
   const [history, setHistory] = useState<Bundle>();
   const [items, setItems] = useState<Resource[]>([]);
+  const [countToShow, setCountToShow] = useState(10);
   const loadTimelineResources = props.loadTimelineResources;
 
   const itemsRef = useRef<Resource[]>(items);
@@ -230,6 +235,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     );
   }
 
+  // TODO: Handle null history items for deleted versions.
+  const itemsToShow = items.filter((item) => item).slice(0, countToShow);
+
   return (
     <Timeline>
       {props.createCommunication && (
@@ -274,11 +282,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           </Form>
         </Panel>
       )}
-      {items.map((item) => {
-        if (!item) {
-          // TODO: Handle null history items for deleted versions.
-          return null;
-        }
+      {itemsToShow.map((item) => {
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         const menu = props.getMenu
           ? props.getMenu({
@@ -307,6 +311,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
             );
         }
       })}
+      {countToShow < items.length && (
+        <Group justify="center" pb="lg">
+          <Button onClick={() => setCountToShow(countToShow + 10)}>Show More</Button>
+        </Group>
+      )}
     </Timeline>
   );
 }
@@ -335,8 +344,9 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
 }
 
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
-  const entries = history.entry as BundleEntry[];
+  const entries = history.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
+  // If not found index is -1, -1 === 0 - 1 so this returns undefined
   if (index >= entries.length - 1) {
     return undefined;
   }

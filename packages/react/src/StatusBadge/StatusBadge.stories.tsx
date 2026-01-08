@@ -1,4 +1,7 @@
-import { Meta } from '@storybook/react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { StatusBadge } from './StatusBadge';
 
@@ -21,6 +24,9 @@ export const ExampleStatuses = (): JSX.Element => (
       </div>
       <div>
         Status: <StatusBadge status="cancelled" />
+      </div>
+      <div>
+        Status: <StatusBadge status="entered-in-error" />
       </div>
       <div>
         Status: <StatusBadge status="unknown" />

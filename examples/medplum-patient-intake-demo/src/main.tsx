@@ -1,19 +1,23 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+/// <reference lib="DOM" />
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
-import { MedplumClient } from '@medplum/core';
 import '@mantine/notifications/styles.css';
+import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { App } from './App';
+import { getConfig } from './config';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
   cacheTime: 5000,
-  // baseUrl: 'http://localhost:8103/', //Uncomment this to run against the server on your localhost
+  baseUrl: getConfig().baseUrl,
 });
 
 const theme = createTheme({

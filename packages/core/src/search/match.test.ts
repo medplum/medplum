@@ -1,19 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
+  Location,
   Observation,
   Patient,
   Practitioner,
   QuestionnaireResponse,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { matchesSearchRequest } from './match';
-import { Operator, SearchRequest, parseSearchRequest } from './search';
+import type { SearchRequest } from './search';
+import { Operator, parseSearchRequest } from './search';
 
 // Dimensions:
 // 1. Search parameter type
@@ -135,7 +140,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation', subject: { reference: 'Patient/123' } } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: 'Patient/123' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;
@@ -157,7 +162,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation' } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: '' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: '' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;
@@ -783,6 +788,112 @@ describe('Search matching', () => {
     });
   });
 
+  describe('Period', () => {
+    describe('missing', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('invalid', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { start: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('start greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: {
+          period: {
+            start: '2025-05-15T12:00:00.000Z',
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('end greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { end: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+  });
+
   test('Compartments', () => {
     const resource1: Patient = {
       resourceType: 'Patient',
@@ -905,5 +1016,115 @@ describe('Search matching', () => {
       filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
+
+  test('Meta.tag', () => {
+    // This test demonstrates the bug where partial matching is incorrectly allowed
+    // for meta.tag searches when only exact matches should be permitted
+    const resource: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        tag: [
+          {
+            system: 'http://example.com/tags',
+            code: 'SENSITIVE',
+            display: 'Sensitive Patient Data',
+          },
+          {
+            system: 'http://example.com/tags',
+            code: 'VIP',
+            display: 'VIP Patient',
+          },
+          {
+            code: 'EMERGENCY', // tag without system
+          },
+        ],
+      },
+    };
+
+    // Should match exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match exact system|code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match system only (system|)
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|' }],
+      })
+    ).toBe(true);
+
+    // CURRENT BUG: This currently matches due to partial matching (SENS is substring of SENSITIVE)
+    // but should NOT match - only exact matches should be allowed for token searches
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENS' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // CURRENT BUG: This currently matches due to partial matching
+    // but should NOT match - only exact matches should be allowed
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'PATIENT' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // Should NOT match different exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(false);
+
+    // Should NOT match wrong system
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://other.com/tags|SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    // NOT_EQUALS tests
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(true);
+  });
+
+  test('Special not implemented', () => {
+    const resource: Location = {
+      resourceType: 'Location',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Location',
+      filters: [{ code: 'near', operator: Operator.EQUALS, value: 'foo' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
   });
 });

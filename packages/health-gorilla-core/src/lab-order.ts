@@ -1,8 +1,12 @@
-import { createReference, deepClone, generateId, isReference, SNOMED } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, deepClone, formatCoding, generateId, isReference, SNOMED } from '@medplum/core';
+import type {
   Bundle,
   Coverage,
   Extension,
+  Location,
+  Organization,
   Patient,
   Practitioner,
   QuestionnaireResponse,
@@ -14,28 +18,28 @@ import {
 } from '@medplum/fhirtypes';
 import { getMissingRequiredQuestionnaireItems } from './aoe';
 import {
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
-import {
+import type {
   BillingInformation,
-  BillToOptions,
   DiagnosisCodeableConcept,
-  isBillTo,
-  isPriority,
   LabOrderServiceRequest,
   LabOrderTestMetadata,
   LabOrganization,
-  PRIORITY_VALUES,
   TestCoding,
 } from './types';
+import { BillToOptions, isBillTo, isPriority, PRIORITY_VALUES } from './types';
 
 export type LabOrderInputs = {
   /** `Patient` the tests are ordered for. This must be a reference to an existing `Patient` resource. */
   patient: Patient | (Reference<Patient> & { reference: string });
   /** The physician who requests diagnostic procedures for the patient and responsible for the order.  */
   requester: Practitioner | (Reference<Practitioner> & { reference: string });
+  /** For multi-location practices, optionally specify the location from which the order is being placed */
+  requestingLocation?: Location | Organization | (Reference<Location | Organization> & { reference: string });
   /** The desired performer for doing the diagnostic testing - laboratory, radiology imaging center, etc. */
   performingLab: LabOrganization;
   /**
@@ -78,7 +82,7 @@ export type PartialLabOrderInputs = Partial<
   }
 >;
 
-type InputError = { message: string };
+export type InputError = { message: string };
 
 export type LabOrderInputErrors = {
   patient?: InputError;
@@ -135,7 +139,7 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
         errors.testMetadata ??= {};
         errors.testMetadata[test.code] ??= {};
         errors.testMetadata[test.code].priority = {
-          message: `Priority for ${formatTestCoding(test)} must be one of ${PRIORITY_VALUES.join(', ')}`,
+          message: `Priority for ${formatCoding(test, true)} must be one of ${PRIORITY_VALUES.join(', ')}`,
         };
       }
 
@@ -151,7 +155,7 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
           errors.testMetadata ??= {};
           errors.testMetadata[test.code] ??= {};
           errors.testMetadata[test.code].aoeResponses = {
-            message: `Missing required AOE responses for ${formatTestCoding(test)}: ${missing.join(', ')}`,
+            message: `Missing required AOE responses for ${formatCoding(test, true)}: ${missing.join(', ')}`,
           };
         }
       }
@@ -160,7 +164,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 
   if (!isBillTo(args.billingInformation?.billTo)) {
     errors.billingInformation ??= {};
-    errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
+    if (!args.billingInformation?.billTo) {
+      errors.billingInformation.billTo = { message: 'Bill to is required' };
+    } else {
+      errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
+    }
   } else if (args.billingInformation.billTo === 'insurance') {
     const coverageCount = args.billingInformation.patientCoverage?.length ?? 0;
     if (coverageCount < 1 || coverageCount > 3) {
@@ -178,8 +186,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 }
 
 export class LabOrderValidationError extends Error {
-  constructor(readonly errors: LabOrderInputErrors) {
+  readonly errors: LabOrderInputErrors;
+
+  constructor(errors: LabOrderInputErrors) {
     super(`Invalid lab order inputs: ${JSON.stringify(errors)}`);
+    this.errors = errors;
   }
 }
 
@@ -205,6 +216,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   const {
     patient,
     requester,
+    requestingLocation,
     performingLab,
     performingLabAccountNumber,
     selectedTests,
@@ -254,7 +266,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata?.priority || 'routine',
+      priority: metadata?.priority ?? 'routine',
       note: metadata?.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,
@@ -292,6 +304,17 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     labOrderExtension.push({
       url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
       valueString: performingLabAccountNumber,
+    });
+  }
+
+  if (requestingLocation) {
+    const requestingLocationRef = isReference(requestingLocation)
+      ? requestingLocation
+      : createReference(requestingLocation);
+
+    labOrderExtension.push({
+      url: HEALTH_GORILLA_AUTHORIZED_BY_EXT,
+      valueReference: requestingLocationRef,
     });
   }
 
@@ -343,12 +366,4 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   bundle.entry = bundleEntry;
 
   return bundle;
-}
-
-function formatTestCoding(test: TestCoding): string {
-  if (test.display) {
-    return `${test.display}${test.code ? ' (' + test.code + ')' : ''}`;
-  }
-
-  return test.code ?? '';
 }

@@ -1,15 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
-import { Repository, getSystemRepo } from '../fhir/repo';
-import { r4ProjectId } from '../seed';
+import type { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { r4ProjectId } from '../constants';
+import type { Repository } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
+ * @param systemRepo - The system repository to use
  */
-export async function rebuildR4ValueSets(): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
+export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
+  const files = [
+    'v2-tables.json',
+    'v3-codesystems.json',
+    'valuesets.json',
+    'valuesets-medplum.json',
+    'valuesets-medplum-generated.json',
+  ];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
@@ -42,8 +51,8 @@ async function deleteExisting(
   });
   if (bundle.entry && bundle.entry.length > 0) {
     for (const entry of bundle.entry) {
-      const existing = entry.resource as CodeSystem | ValueSet;
-      await systemRepo.deleteResource(existing.resourceType, existing.id as string);
+      const existing = entry.resource as WithId<CodeSystem | ValueSet>;
+      await systemRepo.deleteResource(existing.resourceType, existing.id);
     }
   }
 }

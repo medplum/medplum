@@ -1,19 +1,17 @@
-import { InternalSchemaElement, capitalize, getDataType, isResourceType } from '@medplum/core';
-import { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
-import {
-  GraphQLInputFieldConfig,
-  GraphQLInputFieldConfigMap,
-  GraphQLInputObjectType,
-  GraphQLInputType,
-  GraphQLList,
-  GraphQLNonNull,
-  GraphQLString,
-} from 'graphql';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { capitalize, getDataType, isResourceType } from '@medplum/core';
+import type { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
+import type { GraphQLInputFieldConfig, GraphQLInputFieldConfigMap, GraphQLInputType } from 'graphql';
+import { GraphQLInputObjectType, GraphQLList, GraphQLNonNull, GraphQLString } from 'graphql';
 import { typeCache } from './utils';
 
 const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
   ...typeCache,
 };
+
+let patchOperationInputType: GraphQLInputObjectType | undefined;
 
 export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
   let result = inputTypeCache[inputType];
@@ -93,4 +91,23 @@ function buildInputPropertyField(
     capitalize(elementDefinitionType.code as string)
   );
   fields[propertyName] = fieldConfig;
+}
+
+export function getPatchOperationInputType(): GraphQLInputObjectType {
+  if (!patchOperationInputType) {
+    patchOperationInputType = new GraphQLInputObjectType({
+      name: 'PatchOperationInput',
+      description: 'A JSON Patch operation as per RFC 6902',
+      fields: {
+        op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
+        path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
+        value: {
+          type: GraphQLString,
+          description:
+            'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
+        },
+      },
+    });
+  }
+  return patchOperationInputType;
 }

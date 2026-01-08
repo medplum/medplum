@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumClient } from './client';
 import { mockFetchResponse } from './client-test-utils';
 
@@ -27,25 +29,12 @@ describe('KeyValue', () => {
     };
 
     const medplum = new MedplumClient({ fetch: mockFetch });
-
-    try {
-      await medplum.keyValue.get('test');
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Not found');
-    }
+    await expect(medplum.keyValue.get('test')).rejects.toThrow('Not found');
 
     await medplum.keyValue.set('test', 'value');
-
-    expect(await medplum.keyValue.get('test')).toBe('value');
+    await expect(medplum.keyValue.get('test')).resolves.toBe('value');
 
     await medplum.keyValue.delete('test');
-
-    try {
-      await medplum.keyValue.get('test');
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Not found');
-    }
+    await expect(medplum.keyValue.get('test')).rejects.toThrow('Not found');
   });
 });

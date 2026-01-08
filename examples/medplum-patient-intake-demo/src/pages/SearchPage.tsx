@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
-import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
+import { formatSearchQuery, parseSearchRequest } from '@medplum/core';
+import type { Filter, SearchRequest, SortRule } from '@medplum/core';
+import type { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import classes from './SearchPage.module.css';
 
 export function SearchPage(): JSX.Element {
@@ -17,7 +21,7 @@ export function SearchPage(): JSX.Element {
 
     if (!parsedSearch.resourceType) {
       // If there is no search, go to the Patient search page by default
-      navigate('/Patient');
+      navigate('/Patient')?.catch(console.error);
       return;
     }
 
@@ -32,7 +36,7 @@ export function SearchPage(): JSX.Element {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -45,10 +49,10 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={false}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
         hideFilters={true}
         hideToolbar

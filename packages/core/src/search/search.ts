@@ -1,7 +1,11 @@
-import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
+import type { TypedValue } from '../types';
+import { globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
@@ -48,44 +52,46 @@ export interface IncludeTarget {
  * These operators represent "modifiers" and "prefixes" in FHIR search.
  * See: https://www.hl7.org/fhir/search.html
  */
-export enum Operator {
-  EQUALS = 'eq',
-  NOT_EQUALS = 'ne',
+export const Operator = {
+  EQUALS: 'eq',
+  NOT_EQUALS: 'ne',
 
   // Numbers
-  GREATER_THAN = 'gt',
-  LESS_THAN = 'lt',
-  GREATER_THAN_OR_EQUALS = 'ge',
-  LESS_THAN_OR_EQUALS = 'le',
+  GREATER_THAN: 'gt',
+  LESS_THAN: 'lt',
+  GREATER_THAN_OR_EQUALS: 'ge',
+  LESS_THAN_OR_EQUALS: 'le',
 
   // Dates
-  STARTS_AFTER = 'sa',
-  ENDS_BEFORE = 'eb',
-  APPROXIMATELY = 'ap',
+  STARTS_AFTER: 'sa',
+  ENDS_BEFORE: 'eb',
+  APPROXIMATELY: 'ap',
 
   // String
-  CONTAINS = 'contains',
-  EXACT = 'exact',
+  CONTAINS: 'contains',
+  STARTS_WITH: 'sw',
+  EXACT: 'exact',
 
   // Token
-  TEXT = 'text',
-  NOT = 'not',
-  ABOVE = 'above',
-  BELOW = 'below',
-  IN = 'in',
-  NOT_IN = 'not-in',
-  OF_TYPE = 'of-type',
+  TEXT: 'text',
+  NOT: 'not',
+  ABOVE: 'above',
+  BELOW: 'below',
+  IN: 'in',
+  NOT_IN: 'not-in',
+  OF_TYPE: 'of-type',
 
   // All
-  MISSING = 'missing',
-  PRESENT = 'present',
+  MISSING: 'missing',
+  PRESENT: 'present',
 
   // Reference
-  IDENTIFIER = 'identifier',
+  IDENTIFIER: 'identifier',
 
   // _include and _revinclude
-  ITERATE = 'iterate',
-}
+  ITERATE: 'iterate',
+} as const;
+export type Operator = (typeof Operator)[keyof typeof Operator];
 
 /**
  * Parameter names may specify a modifier as a suffix.
@@ -123,6 +129,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
   sa: Operator.STARTS_AFTER,
   eb: Operator.ENDS_BEFORE,
   ap: Operator.APPROXIMATELY,
+  sw: Operator.STARTS_WITH,
 };
 
 /**
@@ -132,7 +139,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest<T extends Resource = Resource>(
-  url: T['resourceType'] | URL | string,
+  url: URL | string,
   query?: Record<string, string[] | string | undefined>
 ): SearchRequest<T> {
   if (!url) {
@@ -190,37 +197,6 @@ export function parseSearchRequest<T extends Resource = Resource>(
   return parseSearchImpl(resourceType, queryArray);
 }
 
-/**
- * Parses a search URL into a search request.
- * @param url - The search URL.
- * @returns A parsed SearchRequest.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a URL string into a SearchRequest.
- * @param url - The URL to parse.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a FHIR criteria string into a SearchRequest.
- * FHIR criteria strings are found on resources such as Subscription.
- * @param criteria - The FHIR criteria string.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseCriteriaAsSearchRequest<T extends Resource = Resource>(criteria: string): SearchRequest<T> {
-  return parseSearchRequest<T>(criteria);
-}
-
 function parseSearchImpl<T extends Resource = Resource>(
   resourceType: T['resourceType'],
   query: Iterable<[string, string]>
@@ -270,11 +246,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_count':
-      searchRequest.count = parseInt(value, 10);
+      searchRequest.count = Number.parseInt(value, 10);
       break;
 
     case '_offset':
-      searchRequest.offset = parseInt(value, 10);
+      searchRequest.offset = Number.parseInt(value, 10);
       break;
 
     case '_total':
@@ -353,48 +329,49 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
+const presenceOperators: Operator[] = [Operator.MISSING, Operator.PRESENT];
 export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
-  if (modifier === 'missing') {
+  if (presenceOperators.includes(modifier as Operator)) {
     return {
-      code: searchParam.code as string,
-      operator: Operator.MISSING,
+      code: searchParam.code,
+      operator: modifier as Operator,
       value,
     };
   }
+
   switch (searchParam.type) {
+    // Ordered types that can have a prefix modifier on the value
     case 'number':
     case 'date':
-    case 'quantity':
-      return parsePrefixType(searchParam, value);
+    case 'quantity': {
+      const { operator, value: searchValue } = parsePrefix(value, (modifier as Operator) || Operator.EQUALS);
+      if (!isValidSearchValue(searchParam, searchValue)) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid format for ${searchParam.type} search parameter: ${searchValue}`)
+        );
+      }
+      return { code: searchParam.code, operator, value: searchValue };
+    }
+
+    // Lookup types that support a variety of modifiers on the search parameter
     case 'reference':
     case 'string':
     case 'token':
     case 'uri':
-      return parseModifierType(searchParam, modifier, value);
+      if (!isValidSearchValue(searchParam, value)) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid format for ${searchParam.type} search parameter: ${value}`)
+        );
+      }
+      return { code: searchParam.code, operator: parseModifier(modifier), value };
+
     default:
       throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
 }
 
-function parsePrefixType(param: SearchParameter, input: string): Filter {
-  const { operator, value } = parsePrefix(input);
-  return {
-    code: param.code as string,
-    operator,
-    value,
-  };
-}
-
-function parseModifierType(param: SearchParameter, modifier: string, value: string): Filter {
-  return {
-    code: param.code as string,
-    operator: parseModifier(modifier),
-    value,
-  };
-}
-
 function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
-  let operator = Operator.EQUALS;
+  let operator: Operator = Operator.EQUALS;
   if (modifier) {
     operator = modifier as Operator;
   } else if (value.length >= 2) {
@@ -409,13 +386,13 @@ function parseUnknownParameter(code: string, modifier: string, value: string): F
   return { code, operator, value };
 }
 
-function parsePrefix(input: string): { operator: Operator; value: string } {
+function parsePrefix(input: string, defaultOperator: Operator): { operator: Operator; value: string } {
   const prefix = input.substring(0, 2);
   const prefixOperator = PREFIX_OPERATORS[prefix];
   if (prefixOperator) {
     return { operator: prefixOperator, value: input.substring(2) };
   }
-  return { operator: Operator.EQUALS, value: input };
+  return { operator: defaultOperator, value: input };
 }
 
 function parseModifier(modifier: string): Operator {
@@ -447,6 +424,15 @@ function parseIncludeTarget(input: string): IncludeTarget {
     };
   } else {
     throw new OperationOutcomeError(badRequest(`Invalid include value '${input}'`));
+  }
+}
+
+function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
+  switch (searchParam.type) {
+    case 'date':
+      return isDateTimeString(searchValue);
+    default:
+      return true;
   }
 }
 
@@ -515,6 +501,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.total !== undefined) {
     params.push('_total=' + definition.total);
+  }
+
+  if (definition.types && definition.types.length > 0) {
+    params.push('_type=' + definition.types.join(','));
   }
 
   if (definition.include) {
@@ -586,4 +576,15 @@ export function splitSearchOnComma(input: string): string[] {
   // Push the last segment
   result.push(current);
   return result;
+}
+
+function invalidSearchModifier(modifier: string, searchParameterCodeOrId: string): OperationOutcome {
+  return badRequest(`Invalid modifier :${modifier} for ${searchParameterCodeOrId}`);
+}
+
+export function invalidSearchOperator(operator: Operator, searchParameterCodeOrId: string): OperationOutcome {
+  if (operator in MODIFIER_OPERATORS) {
+    return invalidSearchModifier(operator, searchParameterCodeOrId);
+  }
+  return badRequest(`Invalid operator ${operator} for ${searchParameterCodeOrId}`);
 }

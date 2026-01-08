@@ -1,23 +1,23 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { LoginState, NewPatientRequest, NewProjectRequest, NewUserRequest } from '@medplum/core';
 import {
+  allOk,
+  badRequest,
   ClientStorage,
   ContentType,
-  LoginState,
-  MemoryStorage,
-  MockAsyncClientStorage,
-  NewPatientRequest,
-  NewProjectRequest,
-  NewUserRequest,
-  OperationOutcomeError,
-  SubscriptionEmitter,
-  allOk,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  MemoryStorage,
+  MockAsyncClientStorage,
+  OperationOutcomeError,
   sleep,
+  SubscriptionEmitter,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
-import {
+import type {
   Agent,
   Bot,
   Bundle,
@@ -26,6 +26,7 @@ import {
   ProjectMembership,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder } from 'node:util';
@@ -37,7 +38,9 @@ describe('MockClient', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
 
     Object.defineProperty(global, 'TextEncoder', {
       value: TextEncoder,
@@ -202,6 +205,23 @@ describe('MockClient', () => {
     expect(await client.post('auth/mfa/enroll', { token: 'foo' })).toMatchObject(allOk);
   });
 
+  test('MFA verify', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/verify', { token: 'foo' })).toMatchObject({ login: '123', code: 'xyz' });
+  });
+
+  test('MFA disable -- success', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/disable', { token: 'foo' })).toMatchObject(allOk);
+  });
+
+  test('MFA disable -- invalid token', async () => {
+    const client = new MockClient();
+    await expect(client.post('auth/mfa/disable', { token: 'INVALID_TOKEN' })).rejects.toThrow(
+      new OperationOutcomeError(badRequest('Invalid token'))
+    );
+  });
+
   test('Batch request', async () => {
     const client = new MockClient();
     await expect(
@@ -265,10 +285,12 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
+    const originalConsoleLog = console.log;
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalled();
+    console.log = originalConsoleLog;
   });
 
   test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
@@ -354,12 +376,33 @@ describe('MockClient', () => {
     expect(result.entry).toHaveLength(2);
   });
 
+  test('Search returning no results', async () => {
+    const client = new MockClient();
+    const result = await client.search('Patient', 'name=Simperson');
+    expect(result.entry).toBeUndefined();
+  });
+
   test('Create binary success', async () => {
     const client = new MockClient();
     const result = await client.createBinary('test', 'test.txt', ContentType.TEXT);
     expect(result).toMatchObject({
       resourceType: 'Binary',
       contentType: ContentType.TEXT,
+    });
+  });
+
+  test('Create binary with security context', async () => {
+    const client = new MockClient();
+    const result = await client.createBinary({
+      data: 'test',
+      filename: 'test.txt',
+      contentType: ContentType.TEXT,
+      securityContext: { reference: 'Patient/123' },
+    });
+    expect(result).toMatchObject({
+      resourceType: 'Binary',
+      contentType: ContentType.TEXT,
+      securityContext: { reference: 'Patient/123' },
     });
   });
 
@@ -400,9 +443,9 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
-    expect(resource2).toEqual(resource1);
+    expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
   });
 
@@ -413,20 +456,20 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
   test('Read resource after delete', async () => {
     const client = new MockClient();
     const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
-    await client.deleteResource('Patient', patient.id as string);
+    await client.deleteResource('Patient', patient.id);
     try {
       await client.readResource('Patient', randomUUID());
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -434,9 +477,9 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readHistory('Patient', resource1.id as string);
+    const resource2 = await client.readHistory('Patient', resource1.id);
     expect(resource2).toBeDefined();
-    expect(resource2.resourceType).toEqual('Bundle');
+    expect(resource2.resourceType).toStrictEqual('Bundle');
   });
 
   test('Read history not found', async () => {
@@ -446,7 +489,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -454,9 +497,9 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readVersion('Patient', resource1.id as string, resource1.meta?.versionId as string);
+    const resource2 = await client.readVersion('Patient', resource1.id, resource1.meta?.versionId as string);
     expect(resource2).toBeDefined();
-    expect(resource2).toEqual(resource1);
+    expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
   });
 
@@ -465,11 +508,11 @@ describe('MockClient', () => {
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
     try {
-      await client.readVersion('Patient', resource1.id as string, randomUUID());
+      await client.readVersion('Patient', resource1.id, randomUUID());
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -483,8 +526,8 @@ describe('MockClient', () => {
 
     const resource2 = await client.updateResource({ ...resource1, active: true });
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource', async () => {
@@ -495,7 +538,7 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+    const resource2 = await client.patchResource('Patient', resource1.id, [
       {
         op: 'add',
         path: '/active',
@@ -503,8 +546,8 @@ describe('MockClient', () => {
       },
     ]);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource preserves original', async () => {
@@ -516,7 +559,7 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+    const resource2 = await client.patchResource('Patient', resource1.id, [
       {
         op: 'replace',
         path: '/name/0/given/0',
@@ -524,9 +567,9 @@ describe('MockClient', () => {
       },
     ]);
     expect(resource2).toBeDefined();
-    expect(resource2.name?.[0].given?.[0]).toEqual('Marge');
-    expect(resource1.name?.[0].given?.[0]).toEqual('Homer');
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.name?.[0].given?.[0]).toStrictEqual('Marge');
+    expect(resource1.name?.[0].given?.[0]).toStrictEqual('Homer');
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource errors', async () => {
@@ -539,7 +582,7 @@ describe('MockClient', () => {
     expect(resource1).toBeDefined();
 
     try {
-      await client.patchResource('Patient', resource1.id as string, [
+      await client.patchResource('Patient', resource1.id, [
         {
           op: 'test',
           path: '/name/0/given/0',
@@ -554,7 +597,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0].details?.text).toEqual('Test failed: Bart != Homer');
+      expect(outcome.issue?.[0].details?.text).toStrictEqual('Test failed: Bart != Homer');
     }
   });
 
@@ -573,14 +616,14 @@ describe('MockClient', () => {
 
     const resource2 = await client.updateResource(resource1);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
 
-    const history = await client.readHistory('ServiceRequest', resource1.id as string);
+    const history = await client.readHistory('ServiceRequest', resource1.id);
     expect(history).toBeDefined();
     expect(history.entry).toHaveLength(2);
-    expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('bar');
-    expect((history.entry?.[1]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('foo');
+    expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toStrictEqual('bar');
+    expect((history.entry?.[1]?.resource as ServiceRequest).orderDetail?.[0]?.text).toStrictEqual('foo');
   });
 
   test('Delete resource', async () => {
@@ -591,18 +634,18 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.id).toStrictEqual(resource1.id);
 
-    await client.deleteResource('Patient', resource1.id as string);
+    await client.deleteResource('Patient', resource1.id);
 
     try {
-      await client.readResource('Patient', resource1.id as string);
+      await client.readResource('Patient', resource1.id);
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -626,6 +669,28 @@ describe('MockClient', () => {
       ])
     );
     expect(slots.length).toBeGreaterThan(0);
+  });
+
+  test('Task search by due-date', async () => {
+    const now = new Date();
+    const dueDate = new Date(now.getTime() + 1000 * 60 * 60 * 12); // 12 hours from now
+    const endDate = new Date(now.getTime() + 1000 * 60 * 60 * 24); // 24 hours from now
+
+    const client = new MockClient();
+
+    const task = await client.createResource<Task>({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      code: { text: 'test' },
+      restriction: { period: { end: dueDate.toISOString() } },
+    });
+
+    const result = await client.searchResources('Task', [
+      ['due-date', `ge${now.toISOString()}`],
+      ['due-date', `le${endDate.toISOString()}`],
+    ]);
+    expect(result.find((t) => t.id === task.id)).toBeDefined();
   });
 
   test('Identifier search', async () => {
@@ -675,7 +740,7 @@ describe('MockClient', () => {
     expect(patient1).toBeDefined();
 
     const existingPatients = await medplum.search('Patient', 'identifier=999-47-5984');
-    expect(existingPatients.total).toEqual(1);
+    expect(existingPatients.total).toStrictEqual(1);
   });
 
   test('Search one', async () => {
@@ -790,8 +855,8 @@ describe('MockClient', () => {
 
     const homer = result.data.PatientList.find((p: any) => p.id === HomerSimpson.id);
     expect(homer).toBeDefined();
-    expect(homer.name[0].given[0]).toEqual('Homer');
-    expect(homer.name[0].family).toEqual('Simpson');
+    expect(homer.name[0].given[0]).toStrictEqual('Homer');
+    expect(homer.name[0].family).toStrictEqual('Simpson');
   });
 
   test('setProfile()', async () => {
@@ -800,7 +865,7 @@ describe('MockClient', () => {
     const callback = jest.fn();
     medplum.addEventListener('change', callback);
     medplum.setProfile(DrAliceSmith);
-    expect(medplum.getProfile()).toEqual(DrAliceSmith);
+    expect(medplum.getProfile()).toStrictEqual(DrAliceSmith);
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
@@ -859,7 +924,7 @@ describe('MockClient', () => {
     const emitter1 = medplum.subscribeToCriteria('Communication');
     expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
     const emitter2 = medplum.subscribeToCriteria('Communication');
-    expect(emitter1).toEqual(emitter2);
+    expect(emitter1).toStrictEqual(emitter2);
   });
 
   test('unsubscribeFromCriteria()', () => {
@@ -867,11 +932,21 @@ describe('MockClient', () => {
 
     medplum.subscribeToCriteria('Communication');
     medplum.subscribeToCriteria('Communication');
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(1);
 
     medplum.unsubscribeFromCriteria('Communication');
     medplum.unsubscribeFromCriteria('Communication');
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(0);
+  });
+
+  test('createAttachment', async () => {
+    const medplum = new MockClient();
+    const attachment = await medplum.createAttachment({
+      contentType: ContentType.TEXT,
+      data: 'Hello World',
+    });
+    expect(attachment).toBeDefined();
+    expect(attachment.url).toBeDefined();
   });
 });
 
@@ -888,11 +963,11 @@ describe('MockAsyncClientStorage', () => {
   });
 
   test('Calling .setInitialized() resolves initPromise', async () => {
-    expect(clientStorage.isInitialized).toEqual(false);
+    expect(clientStorage.isInitialized).toStrictEqual(false);
     const initPromise = clientStorage.getInitPromise();
     clientStorage.setInitialized();
     await expect(initPromise).resolves.toBeUndefined();
-    expect(clientStorage.isInitialized).toEqual(true);
+    expect(clientStorage.isInitialized).toStrictEqual(true);
   });
 
   test('Not calling .setInitialized() causes promise not to resolve', async () => {

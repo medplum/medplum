@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -28,44 +28,64 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/cjs/index.d.ts",
   "bin": {
     "medplum": "./dist/cjs/index.cjs"
   },
   "files": [
-    "dist"
+    "dist/cjs",
+    "dist/esm"
   ],
   "scripts": {
-    "build": "npm run clean && tsc && node esbuild.mjs",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
-    "medplum": "ts-node src/index.ts",
+    "lint:fix": "eslint . --fix",
+    "medplum": "tsx src/index.ts",
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.649.0",
-    "@aws-sdk/client-cloudformation": "3.649.0",
-    "@aws-sdk/client-cloudfront": "3.649.0",
-    "@aws-sdk/client-ecs": "3.649.0",
-    "@aws-sdk/client-s3": "3.649.0",
-    "@aws-sdk/client-ssm": "3.649.0",
-    "@aws-sdk/client-sts": "3.649.0",
-    "@aws-sdk/types": "3.649.0",
-    "@medplum/core": "3.2.10",
-    "@medplum/hl7": "3.2.10",
-    "aws-sdk-client-mock": "4.0.1",
+    "@aws-sdk/client-acm": "3.958.0",
+    "@aws-sdk/client-cloudformation": "3.958.0",
+    "@aws-sdk/client-cloudfront": "3.958.0",
+    "@aws-sdk/client-ecs": "3.958.0",
+    "@aws-sdk/client-s3": "3.958.0",
+    "@aws-sdk/client-ssm": "3.958.0",
+    "@aws-sdk/client-sts": "3.958.0",
+    "@aws-sdk/types": "3.957.0",
+    "@medplum/core": "5.0.10",
+    "@medplum/hl7": "5.0.10",
     "commander": "12.1.0",
-    "dotenv": "16.4.5",
-    "fast-glob": "3.3.2",
-    "iconv-lite": "0.6.3",
+    "dotenv": "17.2.3",
+    "fast-glob": "3.3.3",
+    "iconv-lite": "0.7.1",
     "node-fetch": "2.7.0",
-    "tar": "7.4.3"
+    "semver": "7.7.3",
+    "tar": "7.5.2"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.2.10",
-    "@medplum/mock": "3.2.10",
-    "@types/node-fetch": "2.6.11"
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/mock": "5.0.10",
+    "@types/node-fetch": "2.6.13",
+    "@types/semver": "7.7.1",
+    "aws-sdk-client-mock": "4.1.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

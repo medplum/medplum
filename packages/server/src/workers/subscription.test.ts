@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import {
   ContentType,
@@ -8,32 +10,43 @@ import {
   getReferenceString,
   stringify,
 } from '@medplum/core';
-import {
+import type {
   AccessPolicy,
   AuditEvent,
+  Binary,
   Bot,
+  DocumentReference,
   Observation,
   Patient,
   ProjectMembership,
   Resource,
   Subscription,
+  SubscriptionChannel,
 } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
-import { Job } from 'bullmq';
-import { Redis } from 'ioredis';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
+import type { Job, Worker } from 'bullmq';
+import * as bullmqModule from 'bullmq';
+import type { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
+import { tryGetRequestContext } from '../context';
 import { Repository, getSystemRepo } from '../fhir/repo';
+import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
-import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
+import type { SubscriptionJobData } from './subscription';
+import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 
 jest.mock('node-fetch');
+const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
   const systemRepo = getSystemRepo();
@@ -49,7 +62,6 @@ describe('Subscription Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
@@ -74,8 +86,9 @@ describe('Subscription Worker', () => {
     const botProjectDetails = await createTestProject({ withClient: true });
     botRepo = new Repository({
       extendedMode: true,
-      projects: [botProjectDetails.project.id as string],
+      projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
+      currentProject: botProjectDetails.project,
     });
 
     mockLambdaClient = mockClient(LambdaClient);
@@ -148,7 +161,7 @@ describe('Subscription Worker', () => {
       queue.add.mockClear();
 
       // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       expect(queue.add).toHaveBeenCalled();
     }));
@@ -304,7 +317,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
 
       // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       expect(queue.add).not.toHaveBeenCalled();
     }));
@@ -313,6 +326,7 @@ describe('Subscription Worker', () => {
     withTestContext(
       async () => {
         const url = 'https://example.com/subscription';
+        const secret = randomUUID();
 
         const subscription = await repo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -327,6 +341,10 @@ describe('Subscription Worker', () => {
             {
               url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
               valueCode: 'delete',
+            },
+            {
+              url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
+              valueString: secret,
             },
           ],
         });
@@ -353,7 +371,7 @@ describe('Subscription Worker', () => {
         expect(queue.add).not.toHaveBeenCalled();
 
         // Delete the patient
-        await repo.deleteResource('Patient', patient.id as string);
+        await repo.deleteResource('Patient', patient.id);
 
         expect(queue.add).toHaveBeenCalled();
         const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
@@ -368,6 +386,7 @@ describe('Subscription Worker', () => {
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'delete',
               'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
+              'X-Signature': createHmac('sha256', secret).update('{}').digest('hex'),
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
             },
@@ -507,7 +526,7 @@ describe('Subscription Worker', () => {
         status: 'active',
         criteria: 'Patient',
         channel: {
-          type: 'email',
+          type: 'email', // this is what causes the subscription to be ignored
         },
       });
       expect(subscription).toBeDefined();
@@ -720,6 +739,62 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
+  test('Retries in preamble errors', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+            valueInteger: 3,
+          },
+        ],
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // causes an error to be thrown
+      const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockImplementation(() => {
+        throw new Error('Logger not available for some weird reason');
+      });
+
+      const job = {
+        id: 1,
+        data: queue.add.mock.calls[0][1],
+        attemptsMade: 0,
+        changePriority: jest.fn(),
+      } as unknown as Job;
+
+      // On the first attempt, throws
+      await expect(execSubscriptionJob(job)).rejects.toThrow('Logger not available for some weird reason');
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      // On a later attempt, should not throw
+      job.attemptsMade = 100000;
+      await execSubscriptionJob(job);
+      expect(job.changePriority).not.toHaveBeenCalledWith();
+
+      getLoggerSpy.mockRestore();
+    }));
+
   test('Retry on 429', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -911,14 +986,14 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.outcomeDesc).toEqual('Bots not enabled');
+      expect(auditEvent.outcomeDesc).toStrictEqual('Bots not enabled');
       expect(auditEvent.period).toBeDefined();
       expect(auditEvent.entity).toHaveLength(3);
     }));
@@ -977,12 +1052,75 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
-      expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
+    }));
+
+  test('Execute bot subscriptions run as user', () =>
+    withTestContext(async () => {
+      const bot = await botRepo.createResource<Bot>({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        description: 'Test Bot',
+        runAsUser: true,
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler(medplum, event) {
+          return event.input;
+        }
+      `,
+      });
+
+      await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + bot.meta?.project },
+        user: createReference(bot),
+        profile: createReference(bot),
+      });
+
+      const subscription = await botRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: getReferenceString(bot as Bot),
+        },
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const patient = await botRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+      expect(patient).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+      expect(fetch).not.toHaveBeenCalled();
+
+      const bundle = await botRepo.search<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'entity',
+            operator: Operator.EQUALS,
+            value: getReferenceString(subscription),
+          },
+        ],
+      });
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
     }));
 
   test('Stop retries if Subscription status not active', () =>
@@ -1012,7 +1150,7 @@ describe('Subscription Worker', () => {
       // At this point the job should be in the queue
       // But let's change the subscription status to something else
       await repo.updateResource<Subscription>({
-        ...(subscription as Subscription),
+        ...subscription,
         status: 'off',
       });
 
@@ -1029,11 +1167,11 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('Stop retries if Subscription deleted', () =>
@@ -1062,7 +1200,7 @@ describe('Subscription Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the subscription
-      await repo.deleteResource('Subscription', subscription.id as string);
+      await repo.deleteResource('Subscription', subscription.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await execSubscriptionJob(job);
@@ -1077,11 +1215,11 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('Stop retries if Resource deleted', () =>
@@ -1110,7 +1248,7 @@ describe('Subscription Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the resource
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
       await execSubscriptionJob(job);
@@ -1125,16 +1263,16 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id as string;
+      const project = (await createTestProject()).project.id;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1180,21 +1318,22 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.meta?.account).toBeDefined();
-      expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
+      expect(auditEvent.meta?.account?.reference).toStrictEqual(account.reference);
+      expect(auditEvent.meta?.accounts).toHaveLength(1);
+      expect(auditEvent.meta?.accounts).toContainEqual({ reference: account.reference });
       expect(auditEvent.entity).toHaveLength(2);
     }));
 
   test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id as string;
+      const project = (await createTestProject()).project.id;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1246,16 +1385,16 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
 
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0].resource as AuditEvent;
       // Should return a successful AuditEventOutcome with a normally failing status
-      expect(auditEvent.outcome).toEqual(AuditEventOutcome.Success);
+      expect(auditEvent.outcome).toStrictEqual(AuditEventOutcome.Success);
     }));
 
   test('FhirPathCriteria extension', () =>
@@ -1353,6 +1492,68 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
+  test('Error during FhirPath evaluation should not result in other Subscriptions not firing', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription1 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+            valueString:
+              '%current.address.postalCode.all(%previous.address.postalCode.contains(%current.address.postalCode)).not()',
+          },
+        ],
+      });
+
+      // We create this subscription second so that if the loop to evaluate the subscription exits early, this subscription won't be evaluated
+      const subscription2 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+
+      expect(subscription1).toBeDefined();
+      expect(subscription2).toBeDefined();
+
+      // Create the patient
+      let patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        // Add address with multiple values, this would cause the FHIRPath expression to throw
+        // since you cannot call contains on an array (must be called on a singleton)
+        address: [{ postalCode: '94134' }, { postalCode: '94135' }],
+      });
+      expect(patient).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+
+      // Clear mock because we only care about updates for this test, when %previous is not empty from the start
+      queue.add.mockClear();
+
+      patient = await repo.updateResource<Patient>({
+        ...patient,
+        address: [{ postalCode: '94134' }, { postalCode: '94136' }],
+      });
+      expect(patient).toBeDefined();
+
+      expect(queue.add).toHaveBeenCalledTimes(1);
+      expect(queue.add.mock.calls[0][1]?.id).toStrictEqual(patient.id);
+    }));
+
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>
     withTestContext(async () => {
       globalLogger.level = LogLevel.WARN;
@@ -1404,7 +1605,7 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
@@ -1480,7 +1681,7 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
@@ -1502,6 +1703,61 @@ describe('Subscription Worker', () => {
 
       globalLogger.level = LogLevel.NONE;
       console.log = originalConsoleLog;
+    }));
+
+  test('Rest Hook Subscription -- Attachments are Rewritten', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const documentRef = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              url: `Binary/${binary.id}`,
+            },
+          },
+        ],
+      });
+      expect(documentRef).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('?Expires='),
+        })
+      );
+
+      // Clear the queue
+      queue.add.mockClear();
     }));
 
   describe('WebSocket Subscriptions', () => {
@@ -1569,7 +1825,7 @@ describe('Subscription Worker', () => {
       return args;
     }
 
-    test('WebSocket Subscription -- Enabled', () =>
+    test('Enabled', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
@@ -1598,8 +1854,8 @@ describe('Subscription Worker', () => {
 
         let notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
-          subscription.id as string,
+          expect.objectContaining(patient),
+          subscription.id,
           { includeResource: true },
         ]);
 
@@ -1613,26 +1869,140 @@ describe('Subscription Worker', () => {
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
-          subscription.id as string,
+          expect.objectContaining(updatedPatient),
+          subscription.id,
           { includeResource: true },
         ]);
 
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
-        await wsSubRepo.deleteResource('Patient', updatedPatient.id as string);
+        await wsSubRepo.deleteResource('Patient', updatedPatient.id);
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
-          subscription.id as string,
+          expect.objectContaining(updatedPatient),
+          subscription.id,
           { includeResource: true },
         ]);
       }));
 
-    test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
+    test.each([
+      [{ type: 'websocket' }, false], // websocket subscriptions should not trigger subscriptions since they have a different persistence story
+      [{ type: 'rest-hook' }, true], // even though endpoint is missing, this is still valid as a trigger of (valid) subscriptions
+      [{ type: 'rest-hook', endpoint: 'https://example.com/subscription' }, true],
+      [{ type: 'message' }, true],
+    ] as [SubscriptionChannel, boolean][])(
+      'Ignore subscriptions on subscriptions with channel %j',
+      (subChannel, expectedToFire) =>
+        withTestContext(async () => {
+          const { repo: wsSubRepo } = await createTestProject({
+            project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
+            withRepo: true,
+          });
+
+          const subscription = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            reason: 'test',
+            status: 'active',
+            criteria: 'Subscription',
+            channel: {
+              type: 'rest-hook',
+              endpoint: 'https://example.com/subscription',
+            },
+          });
+          expect(subscription).toBeDefined();
+          expect(subscription.id).toBeDefined();
+
+          const queue = getSubscriptionQueue() as any;
+          queue.add.mockClear();
+
+          const sub = await wsSubRepo.createResource<Subscription>({
+            resourceType: 'Subscription',
+            status: 'active',
+            reason: "raison d'être",
+            criteria: 'Patient?name=somethingrandom',
+            channel: subChannel,
+          });
+
+          expect(sub).toBeDefined();
+          if (expectedToFire) {
+            expect(queue.add).toHaveBeenCalledTimes(1);
+          } else {
+            expect(queue.add).not.toHaveBeenCalled();
+          }
+        })
+    );
+
+    test('execSubscriptionJob ignores resource versions that cannot be found', () =>
       withTestContext(async () => {
-        globalLogger.level = LogLevel.WARN;
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Subscription',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        const resource = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          status: 'active',
+          reason: "raison d'être",
+          criteria: 'Patient?name=somethingrandom',
+          channel: { type: 'websocket' },
+        });
+
+        expect(queue.add).not.toHaveBeenCalled();
+
+        // No jobs were queued, but we still want to test that execSubscriptionJob handles this gracefully
+        // if the job had made its way to the queue previously under different logic
+
+        const ctx = tryGetRequestContext();
+        const jobData: SubscriptionJobData = {
+          subscriptionId: subscription.id,
+          resourceType: resource.resourceType,
+          channelType: subscription.channel.type,
+          id: resource.id,
+          versionId: resource.meta?.versionId as string,
+          interaction: 'create',
+          requestTime: new Date().toISOString(),
+          requestId: ctx?.requestId,
+          traceId: ctx?.traceId,
+          authState: ctx?.authState,
+        };
+
+        // For a websocket subscription, this results in "not found" instead of "gone"
+        await repo.deleteResource(resource.resourceType, resource.id);
+
+        // Should not throw
+        await execSubscriptionJob({ id: '1', data: jobData } as Job);
+
+        // Fetch should not have been called
+        expect(fetch).not.toHaveBeenCalled();
+
+        // No AuditEvent resources should have been created
+        const bundle = await repo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+        expect(bundle.entry?.length).toStrictEqual(0);
+      }));
+
+    test('Feature Flag Not Enabled', () =>
+      withTestContext(async () => {
+        globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
         console.log = jest.fn();
 
@@ -1669,7 +2039,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Access Policy Not Satisfied', () =>
+    test('Access Policy Not Satisfied', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1726,7 +2096,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Subscription Author Has No Membership', () =>
+    test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1764,7 +2134,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await superAdminRepo.deleteResource('ProjectMembership', membership.id as string);
+        await superAdminRepo.deleteResource('ProjectMembership', membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -1783,7 +2153,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Error Occurred During Check', () =>
+    test('Error Occurred During Check', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
         const originalConsoleLog = console.log;
@@ -1821,7 +2191,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+        await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -1842,7 +2212,7 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('WebSocket Subscription -- Supported Interaction Extension', () =>
+    test('Supported Interaction Extension', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo } = await createTestProject({
           withClient: true,
@@ -1881,8 +2251,8 @@ describe('Subscription Worker', () => {
 
         const notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
-          subscription.id as string,
+          expect.objectContaining(patient),
+          subscription.id,
           { includeResource: true },
         ]);
 
@@ -1899,5 +2269,117 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
       }));
+  });
+});
+
+describe('Subscription Worker Event Handling', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.resetModules();
+  });
+
+  test('Worker event handlers work correctly', async () => {
+    // Set up mocks for the bullmq module
+    const handlers = new Map<string, ((job?: Job, error?: Error) => void)[] | undefined>();
+    const mockWorker = {
+      name: 'MockSubscriptionWorker',
+      on: jest.fn().mockImplementation((event: string, handler: () => void) => {
+        const handlerList = handlers.get(event);
+        if (handlerList) {
+          handlerList.push(handler);
+        } else {
+          handlers.set(event, [handler]);
+        }
+        return mockWorker;
+      }),
+    };
+    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as Worker);
+    // Now import the subscription worker init function
+
+    jest.spyOn(globalLogger, 'info').mockImplementation(() => {});
+
+    // Mock the logger and metrics functions
+    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
+
+    // Initialize the subscription worker with mock config
+    initSubscriptionWorker({} as MedplumServerConfig);
+
+    // Create test job objects with the structure expected by the handlers
+    const createTestJob = (id: string, attemptsMade = 0): Job =>
+      ({
+        id,
+        attemptsMade,
+        timestamp: Date.now() - 5000, // 5 seconds ago
+        processedOn: Date.now() - 2000, // 2 seconds ago
+        finishedOn: Date.now(), // now
+        data: {
+          subscriptionId: 'subscription-456',
+          resourceType: 'Patient',
+          id: 'patient-789',
+          versionId: '1',
+          interaction: 'create',
+          requestTime: new Date().toISOString(),
+        },
+      }) as Job;
+
+    // Test the 'active' event handler with a first attempt job
+    const firstAttemptJob = createTestJob('job-123', 0);
+    const activeHandlers = handlers.get('active');
+    expect(activeHandlers).toBeDefined();
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(firstAttemptJob));
+
+      // Verify recordHistogramValue was called for queuedDuration on first attempt
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.queuedDuration', expect.any(Number));
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test 'active' handler with a subsequent attempt job
+    const subsequentAttemptJob = createTestJob('job-123', 1);
+    if (activeHandlers) {
+      activeHandlers.forEach((handler) => handler(subsequentAttemptJob));
+
+      // Verify recordHistogramValue was NOT called for subsequent attempts
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test the 'completed' event handler
+    const completedJob = createTestJob('job-456');
+    const completedHandlers = handlers.get('completed');
+    expect(completedHandlers).toBeDefined();
+    if (completedHandlers) {
+      completedHandlers.forEach((handler) => handler(completedJob));
+
+      // Verify completed job logging and metrics
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+        'medplum.subscription.executionDuration',
+        expect.any(Number)
+      );
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.totalDuration', expect.any(Number));
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test the 'failed' event handler with a job
+    const failedJob = createTestJob('job-789');
+    const error = new Error('Test error');
+    const failedHandlers = handlers.get('failed');
+    expect(failedHandlers).toBeDefined();
+    if (failedHandlers) {
+      failedHandlers.forEach((handler) => handler(failedJob, error));
+
+      // Verify failed job logging and metrics
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+        'medplum.subscription.failedExecutionDuration',
+        expect.any(Number)
+      );
+      recordHistogramValueSpy.mockClear();
+
+      // Test 'failed' handler with undefined job
+      failedHandlers.forEach((handler) => handler(undefined, error));
+
+      // Verify logging for undefined job (no metrics)
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+    }
   });
 });

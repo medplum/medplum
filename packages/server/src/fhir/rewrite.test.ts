@@ -1,9 +1,13 @@
-import { ContentType, createReference, deepClone, getReferenceString } from '@medplum/core';
-import { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
+import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
+import type { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import type { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -11,7 +15,7 @@ import { RewriteMode, rewriteAttachments } from './rewrite';
 describe('URL rewrite', () => {
   const systemRepo = getSystemRepo();
   let config: MedplumServerConfig;
-  let binary: Binary;
+  let binary: WithId<Binary>;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -202,7 +206,7 @@ describe('URL rewrite', () => {
       photo: [
         {
           contentType: 'image/jpeg',
-          url: `${config.storageBaseUrl}${binary.id}`,
+          url: concatUrls(config.storageBaseUrl, binary.id),
         },
       ],
     };

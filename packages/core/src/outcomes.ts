@@ -1,18 +1,24 @@
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import { Constraint } from './typeschema/types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import type { Constraint } from './typeschema/types';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
+const FOUND_ID = 'found';
 const NOT_FOUND_ID = 'not-found';
 const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const PRECONDITION_FAILED_ID = 'precondition-failed';
+const UNSUPPORTED_MEDIA_TYPE_ID = 'unsupported-media-type';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
+const SERVER_TIMEOUT_ID = 'server-timeout';
+const BUSINESS_RULE = 'business-rule';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -154,6 +160,20 @@ export const preconditionFailed: OperationOutcome = {
   ],
 };
 
+export const unsupportedMediaType: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: UNSUPPORTED_MEDIA_TYPE_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'not-supported',
+      details: {
+        text: 'Unsupported media type',
+      },
+    },
+  ],
+};
+
 export const multipleMatches: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: MULTIPLE_MATCHES_ID,
@@ -215,7 +235,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
-export function conflict(details: string): OperationOutcome {
+export function conflict(details: string, code?: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: CONFLICT_ID,
@@ -224,6 +244,7 @@ export function conflict(details: string): OperationOutcome {
         severity: 'error',
         code: 'conflict',
         details: {
+          coding: code ? [{ code }] : undefined,
           text: details,
         },
       },
@@ -262,6 +283,81 @@ export function serverError(err: Error): OperationOutcome {
   };
 }
 
+export function serverTimeout(msg?: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: SERVER_TIMEOUT_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'timeout',
+        details: {
+          text: msg ?? 'Server timeout',
+        },
+      },
+    ],
+  };
+}
+
+export function redirect(url: URL): OperationOutcome {
+  const urlStr = url.toString();
+  return {
+    resourceType: 'OperationOutcome',
+    id: FOUND_ID,
+    issue: [
+      {
+        severity: 'information',
+        code: 'informational',
+        details: {
+          coding: [{ system: 'urn:ietf:rfc:3986', code: urlStr }],
+          text: 'Redirect to ' + urlStr,
+        },
+      },
+    ],
+  };
+}
+
+export function businessRule(key: string, message: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: BUSINESS_RULE,
+    issue: [
+      {
+        severity: 'error',
+        code: 'business-rule',
+        details: { id: key, text: message },
+      },
+    ],
+  };
+}
+
+/**
+ * Returns true if the input is an Error object.
+ * This should be replaced with `Error.isError` when it is more widely supported.
+ * See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/isError
+ * @param value - The candidate value.
+ * @returns True if the input is an Error object.
+ */
+export function isError(value: unknown): value is Error {
+  // Quick type check
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  // Fast path for same-realm errors using instanceof
+  if (value instanceof Error) {
+    return true;
+  }
+
+  // Handle DOMException case
+  if (typeof DOMException !== 'undefined' && value instanceof DOMException) {
+    return true;
+  }
+
+  // Cross-realm check using toString (most reliable method)
+  return Object.prototype.toString.call(value) === '[object Error]';
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }
@@ -280,8 +376,16 @@ export function isAccepted(outcome: OperationOutcome): boolean {
   return outcome.id === ACCEPTED_ID;
 }
 
+export function isRedirect(outcome: OperationOutcome): boolean {
+  return outcome.id === FOUND_ID;
+}
+
 export function isNotFound(outcome: OperationOutcome): boolean {
   return outcome.id === NOT_FOUND_ID;
+}
+
+export function isConflict(outcome: OperationOutcome): boolean {
+  return outcome.id === CONFLICT_ID;
 }
 
 export function isGone(outcome: OperationOutcome): boolean {
@@ -300,6 +404,8 @@ export function getStatus(outcome: OperationOutcome): number {
       return 201;
     case ACCEPTED_ID:
       return 202;
+    case FOUND_ID:
+      return 302;
     case NOT_MODIFIED_ID:
       return 304;
     case UNAUTHORIZED_ID:
@@ -315,8 +421,14 @@ export function getStatus(outcome: OperationOutcome): number {
     case PRECONDITION_FAILED_ID:
     case MULTIPLE_MATCHES_ID:
       return 412;
+    case UNSUPPORTED_MEDIA_TYPE_ID:
+      return 415;
+    case BUSINESS_RULE:
+      return 422;
     case TOO_MANY_REQUESTS_ID:
       return 429;
+    case SERVER_TIMEOUT_ID:
+      return 504;
     default:
       return outcome.issue?.[0]?.code === 'exception' ? 500 : 400;
   }
@@ -336,10 +448,10 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome, cause?: unknown) {
-    super(operationOutcomeToString(outcome));
+  constructor(outcome: OperationOutcome, options?: ErrorOptions) {
+    super(operationOutcomeToString(outcome), options);
+    this.name = 'OperationOutcomeError';
     this.outcome = outcome;
-    this.cause = cause;
   }
 }
 
@@ -370,7 +482,7 @@ export function normalizeErrorString(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
-  if (error instanceof Error) {
+  if (isError(error)) {
     return error.message;
   }
   if (isOperationOutcome(error)) {

@@ -1,11 +1,14 @@
-import { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
-import { randomUUID } from 'crypto';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
+import type { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { initTestAuth } from '../../test.setup';
 import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
@@ -21,7 +24,7 @@ const testCodeSystem: CodeSystem = {
 };
 
 describe('CodeSystem validate-code', () => {
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -36,8 +39,8 @@ describe('CodeSystem validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testCodeSystem);
-    expect(res.status).toEqual(201);
-    codeSystem = res.body as CodeSystem;
+    expect(res.status).toStrictEqual(201);
+    codeSystem = res.body;
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -70,7 +73,7 @@ describe('CodeSystem validate-code', () => {
           { name: 'code', valueCode: '1' },
         ],
       } as Parameters);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -89,7 +92,7 @@ describe('CodeSystem validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       } as Parameters);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -111,7 +114,7 @@ describe('CodeSystem validate-code', () => {
           { name: 'code', valueCode: 'wrong code' },
         ],
       } as Parameters);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],
@@ -127,7 +130,7 @@ describe('CodeSystem validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'code', valueCode: 'wrong code' }],
       } as Parameters);
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid', details: { text: 'No code system specified' } }],
@@ -137,17 +140,50 @@ describe('CodeSystem validate-code', () => {
   test('Checks project', async () => {
     const otherAccessToken = await initTestAuth();
     const res = await request(app)
-      .post('/fhir/R4/CodeSystem/$validate-code')
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$validate-code`)
       .set('Authorization', 'Bearer ' + otherAccessToken)
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: codeSystem.url, code: '1' } }],
       } as Parameters);
-    expect(res.status).toEqual(400);
-    expect(res.body).toMatchObject<OperationOutcome>({
-      resourceType: 'OperationOutcome',
-      issue: [{ severity: 'error', code: 'invalid', details: { text: `CodeSystem ${codeSystem.url} not found` } }],
+    expect(res.status).toBe(404);
+  });
+
+  test('Falls back to validating system URL', async () => {
+    // System URL doesn't have a corresponding CodeSystem resource
+    const system = 'https://example.com/' + randomUUID();
+    // Test with matching system URL
+    const resY = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'coding', valueCoding: { system, code: '1' } }],
+      } as Parameters);
+    expect(resY.status).toBe(200);
+    expect(resY.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: true }],
+    });
+
+    // Test with system URL that doesn't match
+    const resN = await request(app)
+      .post('/fhir/R4/CodeSystem/$validate-code')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: 'http://example.com/other-system' },
+          { name: 'coding', valueCoding: { system, code: '1' } },
+        ],
+      } as Parameters);
+    expect(resN.status).toBe(200);
+    expect(resN.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'result', valueBoolean: false }],
     });
   });
 
@@ -163,7 +199,7 @@ describe('CodeSystem validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(updatedCodeSystem);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     const codeSystem = res.body as CodeSystem;
 
     const res2 = await request(app)
@@ -177,7 +213,7 @@ describe('CodeSystem validate-code', () => {
           { name: 'version', valueString: '3.1.4' },
         ],
       } as Parameters);
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -193,7 +229,7 @@ describe('CodeSystem validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -209,7 +245,7 @@ describe('CodeSystem validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -225,7 +261,7 @@ describe('CodeSystem validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],
@@ -241,7 +277,7 @@ describe('CodeSystem validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { code: '1' } }],
       } as Parameters);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [
@@ -260,7 +296,7 @@ describe('CodeSystem validate-code', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'coding', valueCoding: { system: 'incorrect', code: '1' } }],
       } as Parameters);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: [{ name: 'result', valueBoolean: false }],

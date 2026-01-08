@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { LRUCache } from './cache';
 
 describe('Cache', () => {
@@ -8,9 +10,9 @@ describe('Cache', () => {
     cache.set('c', 'c');
     cache.set('d', 'd');
     expect(cache.get('a')).toBeUndefined();
-    expect(cache.get('b')).toEqual('b');
-    expect(cache.get('c')).toEqual('c');
-    expect(cache.get('d')).toEqual('d');
+    expect(cache.get('b')).toStrictEqual('b');
+    expect(cache.get('c')).toStrictEqual('c');
+    expect(cache.get('d')).toStrictEqual('d');
   });
 
   test('Reordering', () => {
@@ -20,9 +22,9 @@ describe('Cache', () => {
     cache.set('c', 'c');
     cache.get('a');
     cache.set('d', 'd');
-    expect(cache.get('a')).toEqual('a');
+    expect(cache.get('a')).toStrictEqual('a');
     expect(cache.get('b')).toBeUndefined();
-    expect(cache.get('c')).toEqual('c');
-    expect(cache.get('d')).toEqual('d');
+    expect(cache.get('c')).toStrictEqual('c');
+    expect(cache.get('d')).toStrictEqual('d');
   });
 });

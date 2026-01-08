@@ -1,6 +1,9 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
@@ -42,6 +45,23 @@ describe('Mock Repo', () => {
       },
     });
     expect(result.id).toBe(id);
+    expect(result.meta.versionId).not.toBe(versionId);
+  });
+
+  test('Create resource with version ID when seeding', async () => {
+    const client = new MockClient();
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const result = await client.withSeeding(() =>
+      client.createResource({
+        resourceType: 'Patient',
+        id,
+        meta: {
+          versionId,
+        },
+      })
+    );
+    expect(result.id).toBe(id);
     expect(result.meta.versionId).toBe(versionId);
   });
 
@@ -81,18 +101,18 @@ describe('Mock Repo', () => {
       resourceType: 'Patient',
     });
 
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.id).toStrictEqual(resource1.id);
 
-    await client.deleteResource('Patient', resource1.id as string);
+    await client.deleteResource('Patient', resource1.id);
 
     try {
-      await client.readResource('Patient', resource1.id as string);
+      await client.readResource('Patient', resource1.id);
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 

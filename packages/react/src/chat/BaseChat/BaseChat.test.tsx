@@ -1,20 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
-import {
-  ProfileResource,
-  createReference,
-  generateId,
-  getReferenceString,
-  getWebSocketUrl,
-  sleep,
-} from '@medplum/core';
-import { Bundle, Communication } from '@medplum/fhirtypes';
+import type { ProfileResource } from '@medplum/core';
+import { createReference, generateId, getReferenceString, getWebSocketUrl, sleep } from '@medplum/core';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
-import { BaseChat, BaseChatProps } from './BaseChat';
+import type { BaseChatProps } from './BaseChat';
+import { BaseChat } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
 
@@ -78,11 +76,8 @@ describe('BaseChat', () => {
   let defaultMedplum: MockClient;
   let defaultSubManager: MockSubscriptionManager;
 
-  beforeAll(() => {
-    defaultMedplum = new MockClient({ profile: DrAliceSmith });
-  });
-
   beforeEach(() => {
+    defaultMedplum = new MockClient({ profile: DrAliceSmith });
     defaultSubManager = new MockSubscriptionManager(
       defaultMedplum,
       getWebSocketUrl(defaultMedplum.getBaseUrl(), '/ws/subscriptions-r4'),
@@ -217,6 +212,7 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
     expect(onMessageReceived).toHaveBeenCalledWith(incomingMessage);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('`onMessageReceived` not called on outgoing message', async () => {
@@ -243,6 +239,55 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
     expect(onMessageReceived).not.toHaveBeenCalled();
+  });
+
+  test('`onMessageUpdated` called on incoming message update', async () => {
+    const onMessageReceived = jest.fn();
+    const onMessageUpdated = jest.fn();
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      onMessageReceived,
+      onMessageUpdated,
+    });
+
+    const incomingMessage = await createCommunication(defaultMedplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: "Doc, I can't feel my legs" }],
+    });
+
+    const bundle1 = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle1,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onMessageUpdated).not.toHaveBeenCalled();
+
+    const updatedMessage = await defaultMedplum.updateResource({
+      ...incomingMessage,
+      payload: [{ contentString: "Doc, I can't feel my arms" }],
+    });
+
+    const bundle2 = await createCommunicationSubBundle(defaultMedplum, updatedMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle2,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my arms")).toBeInTheDocument();
+    expect(onMessageUpdated).toHaveBeenCalledWith(updatedMessage);
+    expect(onMessageUpdated).toHaveBeenCalledTimes(1);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('Messages cleared if profile changes', async () => {
@@ -284,6 +329,16 @@ describe('BaseChat', () => {
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
     await rerender({ ...baseProps, inputDisabled: true });
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
+
+  test('excludeHeader', async () => {
+    const baseProps = { title: 'Testing', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
+    const { rerender } = await setup({ ...baseProps });
+    expect(screen.getByRole('heading', { name: /testing/i })).toBeInTheDocument();
+    await rerender({ ...baseProps, excludeHeader: false });
+    expect(screen.getByRole('heading', { name: /testing/i })).toBeInTheDocument();
+    await rerender({ ...baseProps, excludeHeader: true });
+    expect(screen.queryByRole('heading', { name: /testing/i })).not.toBeInTheDocument();
   });
 
   test('Notifies user when disconnected and reconnected, refetches message after reconnect', async () => {
@@ -423,5 +478,269 @@ describe('BaseChat', () => {
 
     await sleep(500);
     expect(baseProps.onError).toHaveBeenCalledWith(new Error('Something is broken'));
+  });
+
+  test('Day sections are displayed when messages span multiple days', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(today.getDate() - 2);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: twoDaysAgo.toISOString(),
+        payload: [{ contentString: 'Message from two days ago' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: yesterday.toISOString(),
+        payload: [{ contentString: 'Message from yesterday' }],
+      }),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: today.toISOString(),
+        payload: [{ contentString: 'Message from today' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Message from two days ago')).toBeInTheDocument();
+    expect(screen.getByText('Message from yesterday')).toBeInTheDocument();
+    expect(screen.getByText('Message from today')).toBeInTheDocument();
+
+    const twoDaysAgoFormatted = twoDaysAgo.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const yesterdayFormatted = yesterday.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    expect(screen.getByText(twoDaysAgoFormatted)).toBeInTheDocument();
+    expect(screen.getByText(yesterdayFormatted)).toBeInTheDocument();
+    expect(screen.getByText(todayFormatted)).toBeInTheDocument();
+  });
+
+  test('Day sections are not duplicated for messages on the same day', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const todayMorning = new Date(today);
+    todayMorning.setHours(9, 0, 0, 0);
+    const todayAfternoon = new Date(today);
+    todayAfternoon.setHours(15, 30, 0, 0);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: todayMorning.toISOString(),
+        payload: [{ contentString: 'Good morning!' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: todayAfternoon.toISOString(),
+        payload: [{ contentString: 'Good afternoon!' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Good morning!')).toBeInTheDocument();
+    expect(screen.getByText('Good afternoon!')).toBeInTheDocument();
+
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const daySections = screen.getAllByText(todayFormatted);
+    expect(daySections).toHaveLength(1);
+  });
+
+  test('Scrolls to bottom when new messages arrive', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const mockScrollTo = jest.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      value: mockScrollTo,
+      writable: true,
+    });
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      value: 1000,
+      configurable: true,
+    });
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Initial message' }],
+    });
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(await screen.findByText('Initial message')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    mockScrollTo.mockClear();
+
+    const newMessage = await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: 'New message triggers scroll!' }],
+    });
+
+    const bundle = await createCommunicationSubBundle(medplum, newMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
+      });
+    });
+
+    expect(await screen.findByText('New message triggers scroll!')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    expect(mockScrollTo).toHaveBeenCalled();
+
+    const lastCall = mockScrollTo.mock.calls[mockScrollTo.mock.calls.length - 1];
+    expect(lastCall[0]).toEqual(
+      expect.objectContaining({
+        top: expect.any(Number),
+      })
+    );
+  });
+
+  test('BaseChat returns null when profile is null', async () => {
+    const medplum = new MockClient({ profile: null });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.queryByRole('heading', { name: /test chat/i })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
+  });
+
+  test('BaseChat handles multiple communications with undefined sent date via subscription', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Normal message' }],
+    });
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(await screen.findByText('Normal message')).toBeInTheDocument();
+
+    const communicationsWithUndefinedSent = [
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'First message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Second message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Third message with no sent date' }],
+      },
+    ] as Communication[];
+
+    for (const communication of communicationsWithUndefinedSent) {
+      const bundle = await createCommunicationSubBundle(medplum, communication);
+      act(() => {
+        defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+          type: 'message',
+          payload: bundle,
+        });
+      });
+    }
+
+    expect(await screen.findByText('First message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Second message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
   });
 });

@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { loadDataType } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
+import type { ReferenceInputProps } from './ReferenceInput';
+import { ReferenceInput } from './ReferenceInput';
 
 const medplum = new MockClient();
 

@@ -1,19 +1,16 @@
-import {
-  buildElementsContext,
-  ElementsContextType,
-  getPathDisplayName,
-  isEmpty,
-  tryGetDataType,
-  TypedValue,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType, TypedValue } from '@medplum/core';
+import { buildElementsContext, getPathDisplayName, isEmpty, tryGetDataType } from '@medplum/core';
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { useContext, useMemo } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { useContext, useMemo } from 'react';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
 
 const EXTENSION_KEYS = ['extension', 'modifierExtension'];
 const IGNORED_PROPERTIES = DEFAULT_IGNORED_PROPERTIES.filter((prop) => !EXTENSION_KEYS.includes(prop));

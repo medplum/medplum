@@ -1,9 +1,12 @@
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CodeableConcept, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
   assertOk,
   badRequest,
+  businessRule,
   conflict,
   created,
   forbidden,
@@ -11,17 +14,23 @@ import {
   gone,
   isAccepted,
   isCreated,
+  isError,
   isGone,
   isNotFound,
   isOk,
   isOperationOutcome,
+  multipleMatches,
   normalizeErrorString,
   notFound,
   notModified,
   operationOutcomeToString,
   preconditionFailed,
+  redirect,
+  serverError,
+  serverTimeout,
   tooManyRequests,
   unauthorized,
+  unsupportedMediaType,
 } from './outcomes';
 
 describe('Outcomes', () => {
@@ -70,7 +79,11 @@ describe('Outcomes', () => {
 
   test('Conflict', () => {
     expect(isOk(conflict('bad'))).toBe(false);
-    expect(conflict('bad').issue?.[0]?.details?.text).toBe('bad');
+    expect(conflict('bad').issue?.[0]?.details).toMatchObject<CodeableConcept>({ text: 'bad', coding: undefined });
+    expect(conflict('bad', 'errcode').issue?.[0]?.details).toMatchObject<CodeableConcept>({
+      coding: [{ code: 'errcode' }],
+      text: 'bad',
+    });
   });
 
   test('Bad Request', () => {
@@ -78,19 +91,27 @@ describe('Outcomes', () => {
     expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
   });
 
-  test('Status', () => {
-    expect(getStatus(allOk)).toBe(200);
-    expect(getStatus(created)).toBe(201);
-    expect(getStatus(accepted('https://example.com'))).toBe(202);
-    expect(getStatus(notModified)).toBe(304);
-    expect(getStatus(unauthorized)).toBe(401);
-    expect(getStatus(forbidden)).toBe(403);
-    expect(getStatus(notFound)).toBe(404);
-    expect(getStatus(conflict('bad'))).toBe(409);
-    expect(getStatus(gone)).toBe(410);
-    expect(getStatus(preconditionFailed)).toBe(412);
-    expect(getStatus(tooManyRequests)).toBe(429);
-    expect(getStatus(badRequest('bad'))).toBe(400);
+  test.each([
+    [allOk, 200],
+    [created, 201],
+    [accepted('https://example.com'), 202],
+    [redirect(new URL('http://example.com')), 302],
+    [notModified, 304],
+    [badRequest('bad'), 400],
+    [unauthorized, 401],
+    [forbidden, 403],
+    [notFound, 404],
+    [conflict('bad'), 409],
+    [gone, 410],
+    [preconditionFailed, 412],
+    [multipleMatches, 412],
+    [unsupportedMediaType, 415],
+    [businessRule('rule-id', 'Message'), 422],
+    [tooManyRequests, 429],
+    [serverError(new Error('bad')), 500],
+    [serverTimeout(), 504],
+  ])('getStatus(%p) == %i', (outcome, expectedStatus) => {
+    expect(getStatus(outcome)).toStrictEqual(expectedStatus);
   });
 
   test('Assert OK', () => {
@@ -110,6 +131,15 @@ describe('Outcomes', () => {
     expect(normalizeErrorString({ code: 'ERR_INVALID_ARG_TYPE' })).toBe('ERR_INVALID_ARG_TYPE');
   });
 
+  test('isError', () => {
+    expect(isError(undefined)).toBe(false);
+    expect(isError(null)).toBe(false);
+    expect(isError('foo')).toBe(false);
+    expect(isError({ resourceType: 'Patient' })).toBe(false);
+    expect(isError(new Error('foo'))).toBe(true);
+    expect(isError(new DOMException('foo'))).toBe(true);
+  });
+
   test('isOperationOutcome', () => {
     expect(isOperationOutcome(undefined)).toBe(false);
     expect(isOperationOutcome(null)).toBe(false);
@@ -119,19 +149,21 @@ describe('Outcomes', () => {
   });
 
   test('operationOutcomeToString', () => {
-    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toEqual('Unknown error');
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toStrictEqual(
+      'Unknown error'
+    );
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' } } as OperationOutcomeIssue],
       })
-    ).toEqual('foo');
+    ).toStrictEqual('foo');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' }, expression: ['bar'] } as OperationOutcomeIssue],
       })
-    ).toEqual('foo (bar)');
+    ).toStrictEqual('foo (bar)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -140,7 +172,7 @@ describe('Outcomes', () => {
           { details: { text: 'error2' }, expression: ['expr2'] } as OperationOutcomeIssue,
         ],
       })
-    ).toEqual('error1 (expr1); error2 (expr2)');
+    ).toStrictEqual('error1 (expr1); error2 (expr2)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -152,6 +184,6 @@ describe('Outcomes', () => {
           },
         ],
       })
-    ).toEqual('Supplied Patient is unknown.');
+    ).toStrictEqual('Supplied Patient is unknown.');
   });
 });

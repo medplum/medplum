@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { Condition } from '@medplum/fhirtypes';
+import type { Condition } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ProblemList } from './ProblemList';
 
@@ -33,7 +35,7 @@ describe('PatientSummary - ProblemList', () => {
 
   test('Renders empty', async () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[]} />);
-    expect(screen.getByText('Problem List')).toBeInTheDocument();
+    expect(screen.getByText('Problems')).toBeInTheDocument();
   });
 
   test('Renders existing', async () => {
@@ -50,7 +52,7 @@ describe('PatientSummary - ProblemList', () => {
         ]}
       />
     );
-    expect(screen.getByText('Problem List')).toBeInTheDocument();
+    expect(screen.getByText('Problems')).toBeInTheDocument();
     expect(screen.getByText('Peanut')).toBeInTheDocument();
   });
 
@@ -58,7 +60,7 @@ describe('PatientSummary - ProblemList', () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     // Enter problem "Dizziness"
@@ -104,7 +106,7 @@ describe('PatientSummary - ProblemList', () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[condition]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Edit Dizziness'));
+      fireEvent.click(screen.getByText('Dizziness'));
     });
 
     // Enter problem "Dizziness"
@@ -137,5 +139,87 @@ describe('PatientSummary - ProblemList', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
+  });
+
+  test('Problem status colors', async () => {
+    await setup(
+      <ProblemList
+        patient={HomerSimpson}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'active',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Active Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'active',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Active',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'inactive',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Inactive Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'inactive',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Inactive',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'remission',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Remission Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'remission',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Remission',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'resolved',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Resolved Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'resolved',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Resolved',
+                },
+              ],
+            },
+          },
+        ]}
+      />
+    );
+
+    const activeBadge = screen.getByText('active').closest('[class*="mantine-Badge-root"]');
+    expect(activeBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-green-light-color)' });
+
+    const inactiveBadge = screen.getByText('inactive').closest('[class*="mantine-Badge-root"]');
+    expect(inactiveBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-orange-light-color)' });
+
+    const remissionBadge = screen.getByText('remission').closest('[class*="mantine-Badge-root"]');
+    expect(remissionBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-blue-light-color)' });
+
+    const resolvedBadge = screen.getByText('resolved').closest('[class*="mantine-Badge-root"]');
+    expect(resolvedBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-teal-light-color)' });
   });
 });

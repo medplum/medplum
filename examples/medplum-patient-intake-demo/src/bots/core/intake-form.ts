@@ -1,24 +1,33 @@
-import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { addProfileToResource, createReference, getQuestionnaireAnswers } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
   addConsent,
   addCoverage,
+  addExtension,
   addFamilyMemberHistory,
+  addImmunization,
   addLanguage,
   addMedication,
+  addPharmacy,
   consentCategoryMapping,
   consentPolicyRuleMapping,
+  consentProvisionCodeMapping,
   consentScopeMapping,
   convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
   getHumanName,
   getPatientAddress,
+  getPatientTelecom,
   observationCategoryMapping,
   observationCodeMapping,
-  setExtension,
+  PROFILE_URLS,
+  setPatientTelecomRank,
   upsertObservation,
 } from './intake-utils';
 
@@ -29,12 +38,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     throw new Error('Missing questionnaire');
   }
 
-  const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
+  const questionnaire = await medplum.searchOne('Questionnaire', {
+    url: response.questionnaire,
+  });
+
+  if (!questionnaire) {
+    throw new Error('Unable to resolve questionnaire canonical reference');
+  }
+
   const answers = getQuestionnaireAnswers(response);
 
   let patient: Patient = {
     resourceType: 'Patient',
   };
+
+  patient = addProfileToResource(patient, PROFILE_URLS.Patient);
 
   // Handle demographic information
 
@@ -56,8 +74,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     patient.gender = answers['gender-identity'].valueCoding.code as Patient['gender'];
   }
 
-  if (answers['phone']?.valueString) {
-    patient.telecom = [{ system: 'phone', value: answers['phone'].valueString }];
+  const patientTelecom = getPatientTelecom(answers);
+  if (patientTelecom) {
+    patient.telecom = patientTelecom;
+  }
+
+  if (answers['patient-contact-preference-call-or-text']?.valueBoolean) {
+    setPatientTelecomRank(patient.telecom, answers);
   }
 
   if (answers['ssn']?.valueString) {
@@ -99,9 +122,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     }
   }
 
-  setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
-  setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
-  setExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
+  addExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race'], 'ombCategory');
+  addExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity'], 'ombCategory');
+  addExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
 
   addLanguage(patient, answers['languages-spoken']?.valueCoding);
   addLanguage(patient, answers['preferred-language']?.valueCoding, true);
@@ -123,7 +146,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
-    answers['sexual-orientation']?.valueCoding
+    answers['sexual-orientation']?.valueCoding,
+    PROFILE_URLS.ObservationSexualOrientation
   );
 
   await upsertObservation(
@@ -150,7 +174,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     observationCodeMapping.smokingStatus,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
-    answers['smoking-status']?.valueCoding
+    answers['smoking-status']?.valueCoding,
+    PROFILE_URLS.ObservationSmokingStatus
   );
 
   await upsertObservation(
@@ -180,6 +205,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Handle medications
+
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
@@ -197,11 +223,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     await addFamilyMemberHistory(medplum, patient, history);
   }
 
+  // Handle vaccination history (immunizations)
+
+  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
+  for (const vaccine of vaccinationHistory) {
+    await addImmunization(medplum, patient, vaccine);
+  }
+
   // Handle coverage
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
+  }
+
+  // Handle preferred pharmacy
+
+  const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
+  if (preferredPharmacyReference) {
+    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
   }
 
   // Handle consents
@@ -244,5 +284,42 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     consentCategoryMapping.acd,
     consentPolicyRuleMapping.adr,
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-email']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-email-date']?.valueDate),
+    [consentProvisionCodeMapping.email, consentProvisionCodeMapping.appointmentReminders]
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-call-or-text']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-call-or-text-date']?.valueDate),
+    [consentProvisionCodeMapping.phone, consentProvisionCodeMapping.sms]
+  );
+
+  await addConsent(
+    medplum,
+    patient,
+    !!answers['patient-contact-preference-voice-text-appointment-reminders']?.valueBoolean,
+    consentScopeMapping.patientPrivacy,
+    consentCategoryMapping.cd,
+    consentPolicyRuleMapping.communicationPreferences,
+    convertDateToDateTime(answers['patient-contact-preference-voice-text-appointment-reminders-date']?.valueDate),
+    [
+      consentProvisionCodeMapping.appointmentReminders,
+      consentProvisionCodeMapping.phone,
+      consentProvisionCodeMapping.sms,
+    ]
   );
 }

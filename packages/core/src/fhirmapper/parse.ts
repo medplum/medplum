@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   ConceptMap,
   StructureMap,
   StructureMapGroup,
@@ -10,7 +12,7 @@ import {
   StructureMapGroupRuleTargetParameter,
   StructureMapStructure,
 } from '@medplum/fhirtypes';
-import { Atom, Parser } from '../fhirlexer/parse';
+import type { Atom, Parser } from '../fhirlexer/parse';
 import { FunctionAtom, LiteralAtom, SymbolAtom } from '../fhirpath/atoms';
 import { OperatorPrecedence, initFhirPathParserBuilder } from '../fhirpath/parse';
 import { tokenize } from './tokenize';
@@ -30,12 +32,15 @@ const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
 };
 
 class StructureMapParser {
+  readonly parser: Parser;
   readonly structureMap: Partial<StructureMap> = {
     resourceType: 'StructureMap',
     status: 'active',
   };
 
-  constructor(readonly parser: Parser) {}
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): StructureMap {
     while (this.parser.hasMore()) {

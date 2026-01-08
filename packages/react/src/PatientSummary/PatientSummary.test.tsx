@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
-import { PatientSummary, PatientSummaryProps } from './PatientSummary';
+import type { PatientSummaryProps } from './PatientSummary';
+import { PatientSummary } from './PatientSummary';
 
 const medplum = new MockClient();
 
@@ -23,8 +26,6 @@ describe('PatientSummary', () => {
     await setup({ patient: HomerSimpson });
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-    expect(screen.getByText('No upcoming appointments')).toBeInTheDocument();
-    expect(screen.getByText('No documented visits')).toBeInTheDocument();
   });
 
   test('Renders with gender missing', async () => {
@@ -36,13 +37,7 @@ describe('PatientSummary', () => {
   test('Renders without appointment and encounter links', async () => {
     await setup({
       patient: { ...HomerSimpson, gender: undefined },
-      appointmentsUrl: undefined,
-      encountersUrl: undefined,
     });
-
-    // const foo = screen.findByText('No upcoming appointments')
     expect(screen.queryByText('Homer Simpson')).toBeInTheDocument();
-    expect(screen.queryByText('No upcoming appointments')).toBeNull();
-    expect(screen.queryByText('No documented visits')).toBeNull();
   });
 });

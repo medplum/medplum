@@ -1,19 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ReleaseManifest } from '@medplum/core';
+import { MEDPLUM_RELEASES_URL, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
-import {
-  GITHUB_RELEASES_URL,
-  ReleaseManifest,
-  assertReleaseManifest,
-  checkIfValidMedplumVersion,
-  clearReleaseCache,
-  downloadRelease,
-  fetchLatestVersionString,
-  fetchVersionManifest,
-  getReleaseBinPath,
-  isValidSemver,
-  parseDownloadUrl,
-} from './upgrader-utils';
+import { downloadRelease, getReleaseBinPath, parseDownloadUrl } from './upgrader-utils';
 
 const ALL_PLATFORMS_LIST = ['win32', 'linux', 'darwin'];
 const VALID_PLATFORMS_LIST = ['win32', 'linux'];
@@ -30,289 +22,35 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
     platformSpy.mockRestore();
   });
 
-  test('isValidSemver', () => {
-    expect(isValidSemver('1.2.3')).toEqual(true);
-    expect(isValidSemver('1.2')).toEqual(false);
-    expect(isValidSemver('1.2.-')).toEqual(false);
-    expect(isValidSemver('.2.3')).toEqual(false);
-    expect(isValidSemver('10.256.121212')).toEqual(true);
-    expect(isValidSemver('10.256.121212-alpha')).toEqual(false);
-    expect(isValidSemver('10.256.121212-1012')).toEqual(false);
-  });
-
-  test('assertReleaseManifest', () => {
-    expect(() =>
-      assertReleaseManifest({
-        tag_name: 'v3.1.6',
-        assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
-      } satisfies ReleaseManifest)
-    ).not.toThrow();
-    expect(() =>
-      assertReleaseManifest({
-        assets: [{ name: 'medplum-agent-3.1.6-linux', browser_download_url: 'https://example.com' }],
-      })
-    ).toThrow('Manifest missing tag_name');
-    expect(() =>
-      assertReleaseManifest({
-        tag_name: 'v3.1.6',
-      })
-    ).toThrow('Manifest missing assets');
-    expect(() =>
-      assertReleaseManifest({
-        tag_name: 'v3.1.6',
-        assets: [],
-      })
-    ).toThrow('Manifest missing assets');
-    expect(() =>
-      assertReleaseManifest({
-        tag_name: 'v3.1.6',
-        assets: [{ name: 'medplum-agent-3.1.6-linux' }],
-      })
-    ).toThrow('Asset missing browser download URL');
-    expect(() =>
-      assertReleaseManifest({
-        tag_name: 'v3.1.6',
-        assets: [{ browser_download_url: 'https://example.com' }],
-      })
-    ).toThrow('Asset missing name');
-  });
-
-  describe('checkIfValidMedplumVersion', () => {
-    beforeEach(() => {
-      clearReleaseCache();
-    });
-
-    test('Invalid version format', async () => {
-      await expect(checkIfValidMedplumVersion('3.1.6-alpha')).resolves.toEqual(false);
-    });
-
-    test('Version not found', async () => {
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 404,
-            json: async () => {
-              return { message: 'Not Found' };
-            },
-          });
-        })
-      );
-
-      await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
-      fetchSpy.mockRestore();
-    });
-
-    test('Version not found', async () => {
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 404,
-            json: async () => {
-              return { message: 'Not Found' };
-            },
-          });
-        })
-      );
-      await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
-      fetchSpy.mockRestore();
-    });
-
-    test('Network error - fetch throws', async () => {
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return Promise.reject(new Error('Network error'));
-        })
-      );
-      await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
-      fetchSpy.mockRestore();
-    });
-  });
-
-  describe('fetchVersionManifest', () => {
-    beforeEach(() => {
-      clearReleaseCache();
-    });
-
-    test('Without version specified', async () => {
-      const manifest = {
-        tag_name: 'v3.1.6',
-        assets: [
-          {
-            name: 'medplum-agent-3.1.6-linux',
-            browser_download_url: 'https://example.com',
-          },
-        ],
-      } as ReleaseManifest;
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 200,
-            json: async () => {
-              return manifest;
-            },
-          });
-        })
-      );
-      await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
-      // Should be called with latest
-      expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/latest`);
-      // Call again to make sure we don't refetch
-      fetchSpy.mockClear();
-      await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
-      expect(fetchSpy).not.toHaveBeenCalled();
-      fetchSpy.mockRestore();
-    });
-
-    test('With version specified', async () => {
-      const manifest = {
-        tag_name: 'v3.1.6',
-        assets: [
-          {
-            name: 'medplum-agent-3.1.6-linux',
-            browser_download_url: 'https://example.com',
-          },
-        ],
-      } as ReleaseManifest;
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 200,
-            json: async () => {
-              return manifest;
-            },
-          });
-        })
-      );
-      await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
-      // Should be called with latest
-      expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/tags/v3.1.6`);
-      // Call again to make sure we don't refetch
-      fetchSpy.mockClear();
-      await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
-      expect(fetchSpy).not.toHaveBeenCalled();
-      fetchSpy.mockRestore();
-    });
-
-    test('Fetch throws -- Network error', async () => {
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        jest.fn(async () => {
-          return Promise.reject(new Error('Network request failed'));
-        })
-      );
-      await expect(fetchVersionManifest('3.1.6')).rejects.toThrow('Network request failed');
-      fetchSpy.mockRestore();
-    });
-
-    test('Version not found', async () => {
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 404,
-            json: async () => {
-              return { message: 'Not Found' };
-            },
-          });
-        })
-      );
-      await expect(fetchVersionManifest('3.1.6')).rejects.toThrow(
-        "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
-      );
-      fetchSpy.mockRestore();
-    });
-  });
-
-  describe('fetchLatestVersionString', () => {
-    beforeEach(() => {
-      clearReleaseCache();
-    });
-
-    test('Successful', async () => {
-      const manifest = {
-        tag_name: 'v3.1.6',
-        assets: [
-          {
-            name: 'medplum-agent-3.1.6-linux',
-            browser_download_url: 'https://example.com',
-          },
-        ],
-      } as ReleaseManifest;
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 200,
-            json: async () => {
-              return manifest;
-            },
-          });
-        })
-      );
-      await expect(fetchLatestVersionString()).resolves.toEqual('3.1.6');
-      fetchSpy.mockRestore();
-    });
-
-    test('Invalid latest release', async () => {
-      const manifest = {
-        tag_name: 'canary',
-        assets: [
-          {
-            name: 'medplum-agent-canary-linux',
-            browser_download_url: 'https://example.com',
-          },
-        ],
-      } as ReleaseManifest;
-      const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-        // @ts-expect-error Not perfect match to fetch
-        jest.fn(async () => {
-          return Promise.resolve({
-            status: 200,
-            json: async () => {
-              return manifest;
-            },
-          });
-        })
-      );
-      await expect(fetchLatestVersionString()).rejects.toThrow(
-        "Invalid release name found. Release tag 'canary' did not start with 'v'"
-      );
-      fetchSpy.mockRestore();
-    });
-  });
-
   test('parseDownloadUrl', () => {
     const manifest = {
-      tag_name: 'v3.1.6',
+      tag_name: 'v4.2.4',
       assets: [
         {
-          name: 'medplum-agent-3.1.6-linux',
+          name: 'medplum-agent-4.2.4-linux',
           browser_download_url: 'https://example.com/linux',
         },
         {
-          name: 'medplum-agent-installer-3.1.6-windows.exe',
+          name: 'medplum-agent-installer-4.2.4-windows.exe',
           browser_download_url: 'https://example.com/win32',
         },
       ],
     } satisfies ReleaseManifest;
-    expect(parseDownloadUrl(manifest, 'win32')).toEqual('https://example.com/win32');
-    expect(parseDownloadUrl(manifest, 'linux')).toEqual('https://example.com/linux');
+    expect(parseDownloadUrl(manifest, 'win32')).toStrictEqual('https://example.com/win32');
+    expect(parseDownloadUrl(manifest, 'linux')).toStrictEqual('https://example.com/linux');
     expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
   });
 
   test('getReleaseBinPath', () => {
     switch (_platform) {
       case 'win32':
-        expect(getReleaseBinPath('3.1.6')).toEqual(resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
+        expect(getReleaseBinPath('4.2.4')).toStrictEqual(resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
         break;
       case 'linux':
-        expect(getReleaseBinPath('3.1.6')).toEqual(resolve(__dirname, 'medplum-agent-3.1.6-linux'));
+        expect(getReleaseBinPath('4.2.4')).toStrictEqual(resolve(__dirname, 'medplum-agent-4.2.4-linux'));
         break;
       default:
-        expect(() => getReleaseBinPath('3.1.6')).toThrow('Unsupported platform: darwin');
+        expect(() => getReleaseBinPath('4.2.4')).toThrow('Unsupported platform: darwin');
     }
   });
 });
@@ -346,14 +84,14 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
     test('Happy path', async () => {
       const manifest = {
-        tag_name: 'v3.1.6',
+        tag_name: 'v4.2.4',
         assets: [
           {
-            name: 'medplum-agent-3.1.6-linux',
+            name: 'medplum-agent-4.2.4-linux',
             browser_download_url: 'https://example.com/linux',
           },
           {
-            name: 'medplum-agent-installer-3.1.6-windows.exe',
+            name: 'medplum-agent-installer-4.2.4-windows.exe',
             browser_download_url: 'https://example.com/win32',
           },
         ],
@@ -417,10 +155,10 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
         })
       );
 
-      await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${GITHUB_RELEASES_URL}/tags/v3.1.6`);
+      await downloadRelease('4.2.4', resolve(__dirname, 'tmp', 'test-release-binary'));
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v4.2.4.json`));
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
-      expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toEqual(
+      expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'
       );
 

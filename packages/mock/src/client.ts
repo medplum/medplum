@@ -1,14 +1,19 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   BinarySource,
-  ContentType,
   CreateBinaryOptions,
   LoginState,
-  MedplumClient,
   MedplumClientOptions,
   MedplumRequestOptions,
-  OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
+  WithId,
+} from '@medplum/core';
+import {
+  ContentType,
+  MedplumClient,
+  OperationOutcomeError,
   allOk,
   badRequest,
   generateId,
@@ -18,8 +23,9 @@ import {
   loadDataType,
   normalizeCreateBinaryOptions,
 } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
+import type {
   Agent,
   Binary,
   Bot,
@@ -85,8 +91,10 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
+export interface MockClientOptions extends Pick<
+  MedplumClientOptions,
+  'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'
+> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -154,9 +162,11 @@ export class MockClient extends MedplumClient {
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
-      fetch: (url: string, options: any) => {
-        return client.mockFetch(url, options);
-      },
+      fetch: clientOptions?.fetch
+        ? clientOptions.fetch
+        : (url: string, options: any) => {
+            return client.mockFetch(url, options);
+          },
     });
 
     this.router = router;
@@ -172,13 +182,18 @@ export class MockClient extends MedplumClient {
     this.activeLoginOverride = undefined;
   }
 
+  withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
+    return this.repo.withSeeding(fn);
+  }
+
   getProfile(): ProfileResource | undefined {
     return this.profile;
   }
 
-  getUserConfiguration(): UserConfiguration | undefined {
+  getUserConfiguration(): WithId<UserConfiguration> | undefined {
     return {
       resourceType: 'UserConfiguration',
+      id: 'mock-user-config',
       menu: [
         {
           title: 'Favorites',
@@ -222,17 +237,64 @@ export class MockClient extends MedplumClient {
     return super.getLogins();
   }
 
+  /**
+   * Creates a FHIR `Binary` resource with the provided data content.
+   *
+   * The return value is the newly created resource, including the ID and meta.
+   *
+   * The `data` parameter can be a string or a `File` object.
+   *
+   * A `File` object often comes from a `<input type="file">` element.
+   *
+   * @example
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createBinary(myFile, 'test.jpg', 'image/jpeg');
+   * console.log(result.id);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   *
+   * @category Create
+   * @param createBinaryOptions -The binary options. See `CreateBinaryOptions` for full details.
+   * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @returns The result of the create operation.
+   */
+  createBinary(
+    createBinaryOptions: CreateBinaryOptions,
+    requestOptions?: MedplumRequestOptions
+  ): Promise<WithId<Binary>>;
+
+  /**
+   * @category Create
+   * @param data - The binary data to upload.
+   * @param filename - Optional filename for the binary.
+   * @param contentType - Content type for the binary.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @returns The result of the create operation.
+   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in a future version.
+   */
+  createBinary(
+    data: BinarySource,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void,
+    options?: MedplumRequestOptions
+  ): Promise<WithId<Binary>>;
+
   async createBinary(
     arg1: BinarySource | CreateBinaryOptions,
     arg2: string | undefined | MedplumRequestOptions,
     arg3?: string,
     arg4?: (e: ProgressEvent) => void
-  ): Promise<Binary> {
+  ): Promise<WithId<Binary>> {
     const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
-    const { filename, contentType, onProgress } = createBinaryOptions;
+    const { filename, contentType, onProgress, securityContext } = createBinaryOptions;
 
     if (filename?.endsWith('.exe')) {
-      return Promise.reject(badRequest('Invalid file type'));
+      throw new OperationOutcomeError(badRequest('Invalid file type'));
     }
 
     if (onProgress) {
@@ -241,10 +303,21 @@ export class MockClient extends MedplumClient {
       onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
     }
 
-    return {
+    let data: string | undefined;
+    if (typeof createBinaryOptions.data === 'string') {
+      data = base64Encode(createBinaryOptions.data);
+    }
+
+    const binary = await this.repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
-      url: 'https://example.com/binary/123',
+      data,
+      securityContext,
+    });
+
+    return {
+      ...binary,
+      url: `https://example.com/binary/${binary.id}`,
     };
   }
 
@@ -318,15 +391,19 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 }
 
 export class MockFetchClient {
+  readonly router: FhirRouter;
+  readonly repo: MemoryRepository;
+  readonly baseUrl: string;
+  readonly debug: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(
-    readonly router: FhirRouter,
-    readonly repo: MemoryRepository,
-    readonly baseUrl: string,
-    readonly debug = false
-  ) {}
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+    this.router = router;
+    this.repo = repo;
+    this.baseUrl = baseUrl;
+    this.debug = debug;
+  }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {
@@ -354,20 +431,16 @@ export class MockFetchClient {
       console.log('MockClient', JSON.stringify(response, null, 2));
     }
 
-    return Promise.resolve({
+    return {
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
-      headers: {
-        get(name: string): string | undefined {
-          return {
-            'content-type': ContentType.FHIR_JSON,
-          }[name];
-        },
-      } as unknown as Headers,
+      headers: new Headers({
+        'content-type': ContentType.FHIR_JSON,
+      }),
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
       text: () => Promise.resolve(response),
-    });
+    };
   }
 
   mockCreatePdf(
@@ -521,6 +594,20 @@ export class MockFetchClient {
       return allOk;
     }
 
+    if (path.startsWith('auth/mfa/verify')) {
+      return {
+        login: '123',
+        code: 'xyz',
+      };
+    }
+
+    if (path.startsWith('auth/mfa/disable')) {
+      if (options.body && JSON.parse(options.body)?.token !== 'INVALID_TOKEN') {
+        return allOk;
+      }
+      return badRequest('Invalid token');
+    }
+
     return null;
   }
 
@@ -647,56 +734,69 @@ export class MockFetchClient {
   }
 
   private async initMockRepo(): Promise<void> {
-    const defaultResources = [
-      HomerSimpsonPreviousVersion,
-      HomerSimpson,
-      ExampleAccessPolicy,
-      ExampleStatusValueSet,
-      ExampleUserConfiguration,
-      ExampleBot,
-      ExampleClient,
-      HomerDiagnosticReport,
-      HomerEncounter,
-      HomerCommunication,
-      HomerMedia,
-      HomerObservation1,
-      HomerObservation2,
-      HomerObservation3,
-      HomerObservation4,
-      HomerObservation5,
-      HomerObservation6,
-      HomerObservation7,
-      HomerObservation8,
-      HomerSimpsonSpecimen,
-      TestOrganization,
-      DifferentOrganization,
-      ExampleQuestionnaire,
-      ExampleQuestionnaireResponse,
-      HomerServiceRequest,
-      ExampleSubscription,
-      BartSimpson,
-      DrAliceSmithPreviousVersion,
-      DrAliceSmith,
-      DrAliceSmithSchedule,
-      ExampleWorkflowQuestionnaire1,
-      ExampleWorkflowQuestionnaire2,
-      ExampleWorkflowQuestionnaire3,
-      ExampleWorkflowPlanDefinition,
-      ExampleWorkflowQuestionnaireResponse1,
-      ExampleWorkflowTask1,
-      ExampleWorkflowTask2,
-      ExampleWorkflowTask3,
-      ExampleWorkflowRequestGroup,
-      ExampleSmartClientApplication,
-      TestProject,
-      TestProjectMembership,
-      ExampleThreadHeader,
-      ...ExampleThreadMessages,
-    ] satisfies Resource[];
+    await this.repo.withSeeding(async () => {
+      const defaultResources = [
+        HomerSimpsonPreviousVersion,
+        ExampleAccessPolicy,
+        ExampleStatusValueSet,
+        ExampleUserConfiguration,
+        ExampleBot,
+        ExampleClient,
+        HomerDiagnosticReport,
+        HomerEncounter,
+        HomerCommunication,
+        HomerMedia,
+        HomerObservation1,
+        HomerObservation2,
+        HomerObservation3,
+        HomerObservation4,
+        HomerObservation5,
+        HomerObservation6,
+        HomerObservation7,
+        HomerObservation8,
+        HomerSimpsonSpecimen,
+        TestOrganization,
+        DifferentOrganization,
+        ExampleQuestionnaire,
+        ExampleQuestionnaireResponse,
+        HomerServiceRequest,
+        ExampleSubscription,
+        BartSimpson,
+        DrAliceSmithPreviousVersion,
+        DrAliceSmithSchedule,
+        ExampleWorkflowQuestionnaire1,
+        ExampleWorkflowQuestionnaire2,
+        ExampleWorkflowQuestionnaire3,
+        ExampleWorkflowPlanDefinition,
+        ExampleWorkflowQuestionnaireResponse1,
+        ExampleWorkflowTask1,
+        ExampleWorkflowTask2,
+        ExampleWorkflowTask3,
+        ExampleWorkflowRequestGroup,
+        ExampleSmartClientApplication,
+        TestProject,
+        TestProjectMembership,
+        ExampleThreadHeader,
+        ...ExampleThreadMessages,
+      ] satisfies Resource[];
 
-    for (const resource of defaultResources) {
-      await this.repo.createResource(resource);
-    }
+      for (const resource of defaultResources) {
+        try {
+          await this.repo.createResource(resource);
+        } catch (err) {
+          console.log({ err, resource });
+          throw err;
+        }
+      }
+
+      // apply updates to existing resources (found in the `defaultResources`
+      // list as "*PreviousVersion")
+      const updateResources = [HomerSimpson, DrAliceSmith] satisfies Resource[];
+
+      for (const resource of updateResources) {
+        await this.repo.updateResource(resource);
+      }
+    });
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
       structureDefinition.kind = 'resource';
@@ -718,11 +818,8 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
-    const parsedUrl = new URL(url, 'https://example.com');
-
-    let pathname = parsedUrl.pathname;
-    if (pathname.includes('fhir/R4')) {
-      pathname = pathname.substring(pathname.indexOf('fhir/R4') + 7);
+    if (url.includes('fhir/R4')) {
+      url = url.substring(url.indexOf('fhir/R4') + 7);
     }
 
     let body = undefined;
@@ -736,10 +833,11 @@ export class MockFetchClient {
 
     const request: FhirRequest = {
       method,
-      pathname,
+      url,
+      pathname: '',
       body,
       params: Object.create(null),
-      query: Object.fromEntries(parsedUrl.searchParams),
+      query: Object.create(null),
       headers: toIncomingHttpHeaders(options.headers),
     };
 

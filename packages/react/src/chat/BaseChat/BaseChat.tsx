@@ -1,22 +1,26 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
   Group,
   LoadingOverlay,
   Paper,
-  PaperProps,
   ScrollArea,
   Skeleton,
   Stack,
+  Text,
   TextInput,
   Title,
 } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import type { ProfileResource, WithId } from '@medplum/core';
+import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
-import cx from 'clsx';
+import type { JSX, LegacyRef } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
@@ -32,9 +36,11 @@ function showError(message: string): void {
 }
 
 function parseSentTime(communication: Communication): string {
-  const sentTime = new Date(communication.sent ?? 0);
-  const sentTimeMins = sentTime.getMinutes().toString();
-  return `${sentTime.getHours()}:${sentTimeMins.length === 1 ? '0' : ''}${sentTimeMins}`;
+  return new Date(communication.sent ?? 0).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function upsertCommunications(
@@ -55,7 +61,18 @@ function upsertCommunications(
   }
 
   if (foundNew) {
-    newCommunications.sort((a, b) => (a.sent as string).localeCompare(b.sent as string));
+    newCommunications.sort((a, b) => {
+      if (!a.sent && !b.sent) {
+        return 0;
+      }
+      if (!a.sent) {
+        return -1;
+      }
+      if (!b.sent) {
+        return 1;
+      }
+      return (a.sent as string).localeCompare(b.sent as string);
+    });
   }
 
   setCommunications(newCommunications);
@@ -68,10 +85,20 @@ export interface BaseChatProps extends PaperProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
+  readonly onMessageUpdated?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
+  readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
 }
 
+/**
+ * BaseChat component for displaying and managing communications.
+ *
+ * **NOTE: The component automatically filters `Communication` resources where the `sent` property is `undefined`.**
+ *
+ * @param props - The BaseChat React props.
+ * @returns The BaseChat React node.
+ */
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const {
     title,
@@ -80,8 +107,10 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     query,
     sendMessage,
     onMessageReceived,
+    onMessageUpdated,
     inputDisabled,
     onError,
+    excludeHeader = false,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -100,7 +129,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   }
 
   const profileRefStr = useMemo<string>(
-    () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
+    () => (profile ? getReferenceString(medplum.getProfile() as WithId<ProfileResource>) : ''),
     [profile, medplum]
   );
 
@@ -108,6 +137,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     setLoading(true);
     const searchParams = new URLSearchParams(query);
     searchParams.append('_sort', '-sent');
+    searchParams.append('sent:missing', 'false');
     const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
     setLoading(false);
@@ -122,9 +152,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     (bundle: Bundle) => {
       const communication = bundle.entry?.[1]?.resource as Communication;
       upsertCommunications(communicationsRef.current, [communication], setCommunications);
-      // Call `onMessageReceived` when we are not the sender of a chat message that came in
-      if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
-        onMessageReceived(communication);
+      // If we are the sender of this message, then we want to skip calling `onMessageUpdated` or `onMessageReceived`
+      if (getReferenceString(communication.sender as Reference) === profileRefStr) {
+        return;
+      }
+      // If this communication already exists, call `onMessageUpdated`
+      if (communicationsRef.current.find((c) => c.id === communication.id)) {
+        onMessageUpdated?.(communication);
+      } else {
+        // Else a new message was created
+        // Call `onMessageReceived` when we are not the sender of a chat message that came in
+        onMessageReceived?.(communication);
       }
     },
     {
@@ -231,10 +269,12 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   return (
     <Paper className={classes.chatPaper} p={0} radius="md" {...paperProps}>
-      <Title order={2} className={classes.chatTitle}>
-        {title}
-      </Title>
-      <div className={classes.chatBody} ref={parentRef}>
+      {!excludeHeader && (
+        <Title order={2} className={classes.chatTitle}>
+          {title}
+        </Title>
+      )}
+      <div className={classes.chatBody} ref={parentRef as LegacyRef<HTMLDivElement>}>
         {initialLoadRef.current ? (
           <Stack key="skeleton-chat-messages" align="stretch" mt="lg">
             <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
@@ -262,23 +302,27 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
+              const showDelivered = !!c.received && c.id === myLastDeliveredId;
               return (
                 <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                   {(!prevCommTime || currCommTime !== prevCommTime) && (
-                    <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                    <Text fz="xs" ta="center">
+                      {currCommTime}
+                    </Text>
                   )}
                   {c.sender?.reference === profileRefStr ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <ChatBubble
-                        alignment="right"
-                        communication={c}
-                        showDelivered={!!c.received && c.id === myLastDeliveredId}
+                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                      <ResourceAvatar
+                        radius="xl"
+                        color="orange"
+                        value={c.sender}
+                        mb={!showDelivered ? 'sm' : undefined}
                       />
-                      <ResourceAvatar radius="xl" color="orange" value={c.sender} />
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
-                      <ResourceAvatar radius="xl" value={c.sender} />
+                      <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
                       <ChatBubble alignment="left" communication={c} />
                     </Group>
                   )}
@@ -327,16 +371,26 @@ interface ChatBubbleProps {
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const { communication, alignment, showDelivered } = props;
   const content = communication.payload?.[0]?.contentString || '';
+  const sentTime = new Date(communication.sent ?? -1);
   const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
   return (
     <div className={classes.chatBubbleOuterWrap}>
-      <div
-        className={cx(classes.chatBubbleName, alignment === 'right' && classes.chatBubbleNameRight)}
+      <Text
+        fz="xs"
+        mb="xs"
+        fw={500}
+        className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
         aria-label="Sender name"
       >
         {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
-      </div>
+        &nbsp;&middot;&nbsp;
+        <Text span c="dimmed" fz="xs">
+          {Number.isNaN(sentTime.getTime())
+            ? ''
+            : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+        </Text>
+      </Text>
       <div
         className={
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap

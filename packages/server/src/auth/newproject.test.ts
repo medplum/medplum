@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('hibp');
@@ -193,7 +195,7 @@ describe('New project', () => {
       .get(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + res6.body.access_token);
     expect(res8.status).toBe(200);
-    expect(res8.body.entry.length).toEqual(0);
+    expect(res8.body.entry).toBeUndefined();
   });
 
   test('GraphQL is restricted to project', async () => {
@@ -289,6 +291,6 @@ describe('New project', () => {
     expect(res5.status).toBe(200);
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
-    expect(res5.body.data.PatientList.length).toEqual(0);
+    expect(res5.body.data.PatientList.length).toStrictEqual(0);
   });
 });

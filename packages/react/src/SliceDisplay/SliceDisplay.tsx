@@ -1,10 +1,8 @@
-import {
-  SliceDefinitionWithTypes,
-  InternalSchemaElement,
-  ElementsContextType,
-  buildElementsContext,
-  isPopulated,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType, InternalSchemaElement, SliceDefinitionWithTypes } from '@medplum/core';
+import { buildElementsContext, isPopulated } from '@medplum/core';
+import type { JSX } from 'react';
 import { useContext, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';

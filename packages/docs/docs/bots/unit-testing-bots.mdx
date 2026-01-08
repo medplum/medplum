@@ -45,7 +45,7 @@ Most bot unit tests follow a common pattern:
 3. Invoke the handler function
 4. Query mock resources and assert test your test criteria
 
-The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-report.ts) are a great example of this pattern.
+The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-report.ts) are a great example of this pattern.
 
 ### Create a `MockClient`
 
@@ -59,12 +59,22 @@ We recommend creating a `MockClient` at the beginning of each test, to avoid any
 
 :::warning Caution
 
-The MockClient does not yet _perfectly_ replicate the functionality of the `MedplumClient` class, as this would require duplicating the entire server codebase. Some advanced functionality does not yet behave the same between `MockClient` and `MedplumClient`, including:
+The MockClient does not yet perfectly replicate all functionality of the `MedplumClient` class. Here are the known differences:
 
-- `medplum.graphql`
-- FHIR $ operations
+- Chained search
+- Search `_include` and `_revinclude` parameters
+- Full compliance for token search parameters
+- More accurate schema validation
+- **Authentication** 
+- **Most FHIR $ operations** 
+- **`$validate`** 
+- **`Bot/$execute`** 
+- **Terminology service** (e.g., `ValueSet/$expand`)
+- **FHIRcast**
+- **Websocket subscriptions**
+- **Project admin calls** (new project, invite user, create client application, etc.)
 
-The Medplum team is working on bringing these features to parity as soon as possible.
+The Medplum team is working on bringing these features to parity as soon as possible. For related discussion, see [related GitHub issue](https://github.com/medplum/medplum/issues/6889). 
 
 :::
 
@@ -72,7 +82,7 @@ The Medplum team is working on bringing these features to parity as soon as poss
 
 Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance.
 
-The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
+The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
   <summary>Example: Create Resources</summary>
@@ -98,7 +108,7 @@ The below example is from the [find matching patients bot tests](https://github.
 
 In this example we create the `MockClient`, then the test data by calling `executeBatch` in the `beforeEach` function. The `beforeEach` function is an optimization that will run before each test, so you do not need to create the data as a part of every test.
 
-Once you have created your data, you can write your tests. The above example uses test contexts, a feature of the [Vitetest framework](https://vitest.dev/guide/test-context.html#test-context). It allows you to pass in the MockClient `medplum` as part of your test context. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
+Once you have created your data, you can write your tests. The above example uses test contexts, a feature of the [Vitest test framework](https://vitest.dev/guide/test-context.html#test-context). It allows you to pass in the MockClient `medplum` as part of your test context. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
 
 #### Using the Medplum CLI
 
@@ -135,7 +145,7 @@ Most of the time, Bots will create or modify resources on the Medplum server. To
 
 To check the bot's response, simply check the return value of your `handler` function.
 
-The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
+The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
 <details>
   <summary>Example: Query the results</summary>

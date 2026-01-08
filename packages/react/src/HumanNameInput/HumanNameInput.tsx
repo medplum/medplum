@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { HumanName } from '@medplum/fhirtypes';
+import type { HumanName } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useState } from 'react';
-import { getErrorsForInput } from '../utils/outcomes';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { getErrorsForInput } from '../utils/outcomes';
 
 export type HumanNameInputProps = ComplexTypeInputProps<HumanName>;
 

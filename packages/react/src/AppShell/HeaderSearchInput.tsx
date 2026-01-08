@@ -1,10 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
-import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { forwardRef, useCallback } from 'react';
-import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import type { AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { AsyncAutocomplete } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import classes from './HeaderSearchInput.module.css';
 
@@ -126,7 +130,7 @@ function buildGraphQLQuery(input: string): string {
           display
         }
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
   }
   return `{
     Patients1: PatientList(name: ${escaped}, _count: 5) {
@@ -166,7 +170,7 @@ function buildGraphQLQuery(input: string): string {
         display
       }
     }
-  }`.replace(/\s+/g, ' ');
+  }`.replaceAll(/\s+/g, ' ');
 }
 
 /**

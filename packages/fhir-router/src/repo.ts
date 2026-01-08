@@ -1,8 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
   OperationOutcomeError,
   Operator,
-  SearchRequest,
-  SortRule,
   allOk,
   badRequest,
   created,
@@ -11,27 +12,46 @@ import {
   generateId,
   globalSchema,
   matchesSearchRequest,
+  multipleMatches,
   normalizeOperationOutcome,
   notFound,
   preconditionFailed,
+  stringify,
 } from '@medplum/core';
-import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
-import { Operation, applyPatch } from 'rfc6902';
+import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { Operation } from 'rfc6902';
+import { applyPatch } from 'rfc6902';
 
-export enum RepositoryMode {
-  READER = 'reader',
-  WRITER = 'writer',
-}
+export type CreateResourceOptions = {
+  assignedId?: boolean;
+};
+
+export type UpdateResourceOptions = {
+  ifMatch?: string;
+};
+
+export type ReadHistoryOptions = {
+  offset?: number;
+  limit?: number;
+};
+
+export const RepositoryMode = {
+  READER: 'reader',
+  WRITER: 'writer',
+} as const;
+export type RepositoryMode = (typeof RepositoryMode)[keyof typeof RepositoryMode];
 
 /**
- * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
+ * The FhirRepository abstract class defines the methods that are required to implement a FHIR repository.
  * A FHIR repository is responsible for storing and retrieving FHIR resources.
  * It is used by the FHIR router to implement the FHIR REST API.
  * The primary implementations at this time are:
  *  1. MemoryRepository - A repository that stores resources in memory.
  *  2. Server Repository - A repository that stores resources in a relational database.
+ * Additionally, several convenience method implementations are provided to offer advanced functionality on top of the
+ * abstract basic operations.
  */
-export interface FhirRepository<TClient = unknown> {
+export abstract class FhirRepository<TClient = unknown> {
   /**
    * Sets the repository mode.
    * In general, it is assumed that repositories will start in "reader" mode,
@@ -40,7 +60,7 @@ export interface FhirRepository<TClient = unknown> {
    * but after using "writer" once it should use "writer" exclusively.
    * @param mode - The repository mode.
    */
-  setMode(mode: RepositoryMode): void;
+  abstract setMode(mode: RepositoryMode): void;
 
   /**
    * Creates a FHIR resource.
@@ -49,7 +69,15 @@ export interface FhirRepository<TClient = unknown> {
    * @param resource - The FHIR resource to create.
    * @returns The created resource.
    */
-  createResource<T extends Resource>(resource: T): Promise<T>;
+  abstract createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>>;
+
+  /**
+   * Generates a new unique ID for a resource.
+   *
+   * See: https://www.hl7.org/fhir/R4/resource.html#id
+   * @returns The ID string.
+   */
+  abstract generateId(): string;
 
   /**
    * Reads a FHIR resource by ID.
@@ -59,7 +87,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param id - The FHIR resource ID.
    * @returns The FHIR resource.
    */
-  readResource<T extends Resource>(resourceType: string, id: string): Promise<T>;
+  abstract readResource<T extends Resource>(resourceType: string, id: string): Promise<WithId<T>>;
 
   /**
    * Reads a FHIR resource by reference.
@@ -68,7 +96,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param reference - The FHIR reference.
    * @returns The FHIR resource.
    */
-  readReference<T extends Resource>(reference: Reference<T>): Promise<T>;
+  abstract readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>>;
 
   /**
    * Reads a collection of FHIR resources by reference.
@@ -77,7 +105,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param references - The FHIR references.
    * @returns The FHIR resources.
    */
-  readReferences(references: readonly Reference[]): Promise<(Resource | Error)[]>;
+  abstract readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(T | Error)[]>;
 
   /**
    * Returns resource history.
@@ -89,7 +117,11 @@ export interface FhirRepository<TClient = unknown> {
    * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>>;
+  abstract readHistory<T extends Resource>(
+    resourceType: string,
+    id: string,
+    options?: ReadHistoryOptions
+  ): Promise<Bundle<WithId<T>>>;
 
   /**
    * Reads a FHIR resource version.
@@ -99,7 +131,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param id - The FHIR resource ID.
    * @param vid - The FHIR resource version ID.
    */
-  readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T>;
+  abstract readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<WithId<T>>;
 
   /**
    * Updates a FHIR resource.
@@ -108,20 +140,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param resource - The FHIR resource to update.
    * @returns The updated resource.
    */
-  updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T>;
-
-  /**
-   * Creates or updates a resource based on a search criteria.
-   *
-   * See: https://www.hl7.org/fhir/http.html#cond-update
-   * @param resource - The FHIR resource to create or update.
-   * @param search - The search criteria to find an existing resource to update.
-   * @returns The updated resource.
-   */
-  conditionalUpdate<T extends Resource>(
-    resource: T,
-    search: SearchRequest
-  ): Promise<{ resource: T; outcome: OperationOutcome }>;
+  abstract updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>>;
 
   /**
    * Deletes a FHIR resource.
@@ -130,7 +149,7 @@ export interface FhirRepository<TClient = unknown> {
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
    */
-  deleteResource(resourceType: string, id: string): Promise<void>;
+  abstract deleteResource(resourceType: string, id: string): Promise<void>;
 
   /**
    * Patches a FHIR resource.
@@ -141,7 +160,11 @@ export interface FhirRepository<TClient = unknown> {
    * @param patch - The JSONPatch operations.
    * @returns The patched resource.
    */
-  patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource>;
+  abstract patchResource<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    patch: Operation[]
+  ): Promise<WithId<T>>;
 
   /**
    * Searches for FHIR resources.
@@ -150,57 +173,23 @@ export interface FhirRepository<TClient = unknown> {
    * @param searchRequest - The FHIR search request.
    * @returns The search results.
    */
-  search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
+  abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>>;
 
-  searchByReference<T extends Resource>(
+  abstract searchByReference<T extends Resource>(
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
-  ): Promise<Record<string, T[]>>;
-
-  /**
-   * Searches for a single FHIR resource.
-   *
-   * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
-   *
-   * The return value is the resource, if available; otherwise, undefined.
-   *
-   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest - The FHIR search request.
-   * @returns Promise to the first search result or undefined.
-   */
-  searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined>;
-
-  /**
-   * Sends a FHIR search request for an array of resources.
-   *
-   * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
-   *
-   * The return value is an array of resources.
-   *
-   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   * @param searchRequest - The FHIR search request.
-   * @returns Promise to the array of search results.
-   */
-  searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]>;
+  ): Promise<Record<string, WithId<T>[]>>;
 
   /**
    * Runs a callback function within a transaction.
    *
    * @param callback - The callback function to be run within a transaction.
    */
-  withTransaction<TResult>(callback: (client: TClient) => Promise<TResult>): Promise<TResult>;
-}
-
-export abstract class BaseRepository {
-  /**
-   * Searches for FHIR resources.
-   *
-   * See: https://www.hl7.org/fhir/http.html#search
-   * @param searchRequest - The FHIR search request.
-   * @returns The search results.
-   */
-  abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
+  abstract withTransaction<TResult>(
+    callback: (client: TClient) => Promise<TResult>,
+    options?: { serializable?: boolean }
+  ): Promise<TResult>;
 
   /**
    * Searches for a single FHIR resource.
@@ -213,9 +202,9 @@ export abstract class BaseRepository {
    * @param searchRequest - The FHIR search request.
    * @returns Promise to the first search result or undefined.
    */
-  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined> {
+  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T> | undefined> {
     const bundle = await this.search({ ...searchRequest, count: 1 });
-    return bundle.entry?.[0]?.resource as T | undefined;
+    return bundle.entry?.[0]?.resource;
   }
 
   /**
@@ -229,20 +218,157 @@ export abstract class BaseRepository {
    * @param searchRequest - The FHIR search request.
    * @returns Promise to the array of search results.
    */
-  async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]> {
+  async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<WithId<T>[]> {
     const bundle = await this.search(searchRequest);
-    return bundle.entry?.map((e) => e.resource as T) ?? [];
+    return bundle.entry?.map((e) => e.resource as WithId<T>) ?? [];
+  }
+
+  async conditionalCreate<T extends Resource>(
+    resource: T,
+    search: SearchRequest<T>,
+    options?: CreateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    if (search.resourceType !== resource.resourceType) {
+      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
+    }
+
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    return this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length === 1) {
+          const existing = matches[0];
+          if (!options?.assignedId && resource.id && resource.id !== existing.id) {
+            throw new OperationOutcomeError(
+              badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+            );
+          }
+          return { resource: matches[0], outcome: allOk };
+        } else if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        }
+
+        const createdResource = await this.createResource(resource, options);
+        return { resource: createdResource, outcome: created };
+      },
+      { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
+    );
+  }
+
+  async conditionalUpdate<T extends Resource>(
+    resource: T,
+    search: SearchRequest,
+    options?: CreateResourceOptions & UpdateResourceOptions
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
+    if (search.resourceType !== resource.resourceType) {
+      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
+    }
+
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    return this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length === 0) {
+          if (resource.id && !options?.assignedId) {
+            throw new OperationOutcomeError(
+              badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
+            );
+          }
+          const createdResource = await this.createResource(resource, options);
+          return { resource: createdResource, outcome: created };
+        } else if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        }
+
+        const existing = matches[0];
+        if (resource.id && resource.id !== existing.id) {
+          throw new OperationOutcomeError(
+            badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
+          );
+        }
+
+        const updated = await this.updateResource({ ...resource, id: existing.id }, options);
+        return { resource: updated, outcome: allOk };
+      },
+      { serializable: true }
+    );
+  }
+
+  async conditionalDelete(search: SearchRequest): Promise<void> {
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    await this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        } else if (!matches.length) {
+          return;
+        }
+
+        const resource = matches[0];
+        await this.deleteResource(resource.resourceType, resource.id);
+      },
+      { serializable: true }
+    );
+  }
+
+  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    return this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        } else if (!matches.length) {
+          throw new OperationOutcomeError(notFound);
+        }
+
+        const resource = matches[0];
+        return this.patchResource(resource.resourceType, resource.id, patch);
+      },
+      { serializable: true }
+    );
   }
 }
 
-export class MemoryRepository extends BaseRepository implements FhirRepository {
+export class MemoryRepository extends FhirRepository<undefined> {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
+  private seeding: boolean;
 
   constructor() {
     super();
     this.resources = new Map();
     this.history = new Map();
+    this.seeding = false;
+  }
+
+  // Puts this repository into "seeding" mode, during which time
+  // you can specify meta information that normally would not be
+  // permissible.
+  async withSeeding<T>(fn: () => T | Promise<T>): Promise<T> {
+    if (this.seeding) {
+      // We're nested inside another seeding block, just run the callback
+      // without changing state
+      return fn();
+    }
+
+    this.seeding = true;
+    const result = await fn();
+    this.seeding = false;
+    return result;
   }
 
   clear(): void {
@@ -254,32 +380,43 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     // MockRepository ignores reader/writer mode
   }
 
-  async createResource<T extends Resource>(resource: T): Promise<T> {
-    const result = deepClone(resource);
+  async createResource<T extends Resource>(
+    resource: T,
+    options?: CreateResourceOptions,
+    update: boolean = false
+  ): Promise<WithId<T>> {
+    //simulate round-tripping through a JSON serialized format
+    const parsed = JSON.parse(stringify(resource)) as T;
+    const result = {
+      ...parsed,
+      id: parsed.id ?? this.generateId(),
+      meta: parsed.meta ?? {},
+    };
 
-    if (!result.id) {
-      result.id = generateId();
+    if (!this.seeding) {
+      if (result.meta.versionId) {
+        delete result.meta.versionId;
+      }
+      if (result.meta.lastUpdated) {
+        delete result.meta.lastUpdated;
+      }
     }
 
-    if (!result.meta) {
-      result.meta = {};
-    }
+    result.meta.versionId ??= generateId();
+    result.meta.lastUpdated ??= new Date().toISOString();
 
-    if (!result.meta.versionId) {
-      result.meta.versionId = generateId();
-    }
-
-    if (!result.meta.lastUpdated) {
-      result.meta.lastUpdated = new Date().toISOString();
-    }
-
-    const { resourceType, id } = result as { resourceType: string; id: string };
+    const { resourceType, id } = result;
 
     let resources = this.resources.get(resourceType);
     if (!resources) {
       resources = new Map();
       this.resources.set(resourceType, resources);
     }
+
+    if (!update && resources.has(id)) {
+      throw new OperationOutcomeError(badRequest('Assigned ID is already in use'));
+    }
+
     resources.set(id, result);
 
     let resourceTypeHistory = this.history.get(resourceType);
@@ -297,12 +434,17 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return deepClone(result);
   }
 
-  updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
+  generateId(): string {
+    return generateId();
+  }
+
+  updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
     if (!resource.id) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
 
-    if (versionId) {
+    if (options?.ifMatch) {
+      const versionId = options.ifMatch;
       const existing = this.resources.get(resource.resourceType)?.get(resource.id) as T | undefined;
       if (!existing) {
         throw new OperationOutcomeError(notFound);
@@ -313,36 +455,15 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       }
     }
 
-    const result = deepClone(resource);
-    if (result.meta) {
-      if (result.meta.versionId) {
-        delete result.meta.versionId;
-      }
-      if (result.meta.lastUpdated) {
-        delete result.meta.lastUpdated;
-      }
-    }
-    return this.createResource(result);
+    return this.createResource(resource, undefined, true);
   }
 
-  async conditionalUpdate<T extends Resource>(
-    resource: T,
-    search: SearchRequest
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
-    const existing = await this.searchResources({ resourceType: search.resourceType, filters: search.filters });
-    if (existing.length === 1) {
-      resource.id = existing[0].id;
-      return { resource: await this.updateResource(resource), outcome: allOk };
-    } else if (existing.length === 0) {
-      delete resource.id;
-      return { resource: await this.createResource(resource), outcome: created };
-    } else {
-      throw new OperationOutcomeError(badRequest('Multiple matches for resource'));
-    }
-  }
-
-  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
-    const resource = await this.readResource(resourceType, id);
+  async patchResource<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    patch: Operation[]
+  ): Promise<WithId<T>> {
+    const resource = await this.readResource<T>(resourceType, id);
 
     try {
       const patchResult = applyPatch(resource, patch).filter(Boolean);
@@ -353,7 +474,15 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
     }
 
-    return this.updateResource(resource);
+    // ensure that even when in "seeding" mode calls to patchResource
+    // generate new version numbers and timestamps instead of recycling
+    // the previous version's
+    if (resource.meta) {
+      delete resource.meta.versionId;
+      delete resource.meta.lastUpdated;
+    }
+
+    return this.updateResource<T>(resource);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
@@ -364,26 +493,29 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return deepClone(resource);
   }
 
-  async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     const parts = reference.reference?.split('/');
-    if (!parts || parts.length !== 2) {
+    if (parts?.length !== 2) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
   }
 
-  async readReferences(references: readonly Reference[]): Promise<(Resource | OperationOutcomeError)[]> {
-    return Promise.all(references.map((r) => this.readReference(r)));
+  async readReferences<T extends Resource>(
+    references: readonly Reference<T>[]
+  ): Promise<(T | OperationOutcomeError)[]> {
+    return Promise.all(references.map((r) => this.readReference<T>(r)));
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     await this.readResource(resourceType, id);
+    const entry = ((this.history.get(resourceType)?.get(id) ?? []) as T[])
+      .reverse()
+      .map((version) => ({ resource: deepClone(version) }));
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.history.get(resourceType)?.get(id) ?? []) as T[])
-        .reverse()
-        .map((version) => ({ resource: deepClone(version) })),
+      ...(entry.length ? { entry } : undefined),
     };
   }
 
@@ -399,7 +531,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return deepClone(version);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
+  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
     const result = [];
@@ -408,7 +540,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
         result.push(resource);
       }
     }
-    let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
+    let entry = result.map((resource) => ({ resource: deepClone(resource) }));
     if (searchRequest.sortRules) {
       for (const sortRule of searchRequest.sortRules) {
         entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
@@ -423,7 +555,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return {
       resourceType: 'Bundle',
       type: 'searchset',
-      entry,
+      entry: entry.length ? entry : undefined,
       total: result.length,
     };
   }
@@ -432,9 +564,9 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
-  ): Promise<Record<string, T[]>> {
+  ): Promise<Record<string, WithId<T>[]>> {
     searchRequest.filters ??= [];
-    const results: Record<string, T[]> = {};
+    const results: Record<string, WithId<T>[]> = {};
     for (const reference of references) {
       searchRequest.filters.push({ code: referenceField, operator: Operator.EQUALS, value: reference });
       const bundle = await this.search(searchRequest);
@@ -456,9 +588,8 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     this.resources.get(resourceType)?.delete(id);
   }
 
-  withTransaction<TResult>(callback: (client: unknown) => Promise<TResult>): Promise<TResult> {
+  withTransaction<TResult>(callback: (client: undefined) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
-    console.debug('WARN: MockRepository does not support transactions');
     return callback(undefined);
   }
 }

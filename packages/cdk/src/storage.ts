@@ -1,19 +1,20 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
+import type { aws_iam as iam, aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import {
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   Duration,
-  aws_iam as iam,
   aws_cloudfront_origins as origins,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_route53_targets as targets,
-  aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Binary storage bucket and CloudFront distribution.
@@ -88,9 +89,18 @@ export class Storage extends Construct {
             },
           ],
         },
+        corsBehavior: {
+          accessControlAllowCredentials: false,
+          accessControlAllowOrigins: [config.appDomainName, 'https://ccda.medplum.com'],
+          accessControlAllowHeaders: ['*'],
+          accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
+          accessControlMaxAge: Duration.seconds(600),
+          originOverride: false,
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
-            contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *;",
+            contentSecurityPolicy:
+              "default-src 'none'; connect-src https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
             override: true,
           },
           contentTypeOptions: { override: true },
@@ -117,10 +127,14 @@ export class Storage extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'StorageWAF',
-        buildWafConfig(`${config.stackName}-StorageWAF`, 'CLOUDFRONT', config.storageWafIpSetArn)
+        `${config.stackName}-StorageWAF`,
+        'CLOUDFRONT',
+        config.storageWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // Origin access identity
@@ -133,7 +147,7 @@ export class Storage extends Construct {
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(this.storageBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.storageBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

@@ -1,31 +1,15 @@
-import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
-import { OperationOutcomeError } from '@medplum/core';
-import { Bot, Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { OperationOutcomeError } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
+import type { Bot, Practitioner, Questionnaire, Subscription, ValueSet } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router-dom';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen, userEvent } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
-      render(
-        <MedplumProvider medplum={medplum}>
-          <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <MantineProvider>
-              <Notifications />
-              <ErrorBoundary>
-                <Suspense fallback={<Loading />}>
-                  <AppRoutes />
-                </Suspense>
-              </ErrorBoundary>
-            </MantineProvider>
-          </MemoryRouter>
-        </MedplumProvider>
-      );
+      renderAppRoutes(medplum, url);
     });
   }
 
@@ -100,20 +84,24 @@ describe('ResourcePage', () => {
     expect(await screen.findByText('Timeline')).toBeInTheDocument();
   });
 
-  test('Questionnaire preview', async () => {
-    await setup('/Questionnaire/123/preview');
+  test('Questionnaire preview tab appears', async () => {
+    await setup('/Questionnaire/123');
     expect(await screen.findByText('Preview')).toBeInTheDocument();
-
-    window.alert = jest.fn();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
-
-    expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
   });
 
-  test('Questionnaire bots', async () => {
+  test('ValueSet preview tab appears', async () => {
+    const medplum = new MockClient();
+    const valueSet = await medplum.createResource<ValueSet>({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'http://example.com/valueset/test',
+    });
+
+    await setup(`/ValueSet/${valueSet.id}`, medplum);
+    expect(await screen.findByText('Preview')).toBeInTheDocument();
+  });
+
+  test('Questionnaire bots -- create only (default)', async () => {
     const medplum = new MockClient();
     const bot = await medplum.createResource<Bot>({
       resourceType: 'Bot',
@@ -121,14 +109,16 @@ describe('ResourcePage', () => {
     });
     expect(bot.id).toBeDefined();
 
-    await setup('/Questionnaire/123/bots');
+    await setup('/Questionnaire/123/bots', medplum);
     expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
+
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
 
     // Select "Test Bot" in the bot input field
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
-    // Enter "Simpson"
+    // Enter "Test"
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Test' } });
     });
@@ -154,7 +144,155 @@ describe('ResourcePage', () => {
     });
 
     // Bot subscription should now be listed
-    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123'
+      )
+    ).toBeInTheDocument();
+
+    // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
+    expect(createResourceSpy).toHaveBeenLastCalledWith({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Connect bot Test Bot to questionnaire responses',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'create',
+        },
+      ],
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+  });
+
+  test('Questionnaire bots -- all interactions', async () => {
+    const user = userEvent.setup();
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    await setup('/Questionnaire/123/bots', medplum);
+    expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
+
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+
+    // Select "Test Bot" in the bot input field
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Now let's create a subscription without any extension (fires for all interactions)
+    // Select "Test Bot" in the bot input field
+
+    // Enter "Test"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    const interactionDropdown = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: /subscription trigger event/i,
+    });
+
+    // We have to disable fake timers for the `selectOptions` to work
+    jest.useRealTimers();
+
+    await act(async () => {
+      // Find the dropdown for interaction trigger
+      await user.selectOptions(interactionDropdown, ['All Interactions']);
+    });
+
+    jest.useFakeTimers();
+
+    // Click on "Connect"
+    await act(async () => {
+      fireEvent.click(screen.getByText('Connect'));
+    });
+
+    // Bot subscription should now be listed, #2 in the list
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123'
+      )
+    ).toBeInTheDocument();
+
+    // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
+    expect(createResourceSpy).toHaveBeenLastCalledWith({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Connect bot Test Bot to questionnaire responses',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+    });
+  });
+
+  test('Questionnaire bots -- Subscription only has canonical URL and no reference', async () => {
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    const questionnaire = await medplum.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      url: 'https://example.com/another-example-questionnaire',
+      status: 'active',
+    });
+
+    const subscription = await medplum.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: `QuestionnaireResponse?questionnaire=${questionnaire.url}`,
+      reason: 'Test Questionnaire subscription without Questionnaire reference in criteria',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot),
+      },
+    });
+    expect(subscription).toBeDefined();
+
+    await setup(`/Questionnaire/${questionnaire.id}/bots`, medplum);
+
+    // Bot subscription should now be listed
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/another-example-questionnaire'
+      )
+    ).toBeInTheDocument();
   });
 
   test('Bot editor', async () => {
@@ -183,7 +321,7 @@ describe('ResourcePage', () => {
     await setup('/Practitioner/123/details');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('History'));
+      fireEvent.click(screen.getByRole('tab', { name: 'History' }));
     });
 
     // Change the tab

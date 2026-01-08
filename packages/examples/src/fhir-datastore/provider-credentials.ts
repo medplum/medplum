@@ -1,4 +1,6 @@
-import { Practitioner } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Practitioner } from '@medplum/fhirtypes';
 
 const joeSmith: Practitioner =
   // start-block practitioner-head

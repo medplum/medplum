@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatRange } from '@medplum/core';
-import { Range } from '@medplum/fhirtypes';
+import type { Range } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 
 export interface RangeDisplayProps {
   readonly value?: Range;

@@ -1,12 +1,8 @@
-import {
-  AgentTransmitRequest,
-  AgentTransmitResponse,
-  allOk,
-  ContentType,
-  getReferenceString,
-  sleep,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitRequest, AgentTransmitResponse, WithId } from '@medplum/core';
+import { allOk, ContentType, getReferenceString, sleep } from '@medplum/core';
+import type {
   Agent,
   AsyncJob,
   Device,
@@ -17,21 +13,21 @@ import {
 } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Server } from 'node:http';
-import { AddressInfo } from 'node:net';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
-import { AgentPushParameters } from './agentpush';
+import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 describe('Agent Push', () => {
   const app = express();
   let accessToken: string;
-  let agent: Agent;
-  let device: Device;
+  let agent: WithId<Agent>;
+  let device: WithId<Device>;
   let server: Server;
   let port: number;
 
@@ -41,7 +37,7 @@ describe('Agent Push', () => {
     accessToken = await initTestAuth();
 
     await new Promise<void>((resolve) => {
-      server.listen(0, 'localhost', 511, () => {
+      server.listen(0, 'localhost', 8514, () => {
         port = (server.address() as AddressInfo).port;
         resolve();
       });
@@ -59,7 +55,7 @@ describe('Agent Push', () => {
         status: 'active',
       });
     expect(res1.status).toBe(201);
-    agent = res1.body as Agent;
+    agent = res1.body as WithId<Agent>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Device`)
@@ -71,7 +67,7 @@ describe('Agent Push', () => {
         url: 'mllp://192.168.50.10:56001',
       });
     expect(res2.status).toBe(201);
-    device = res2.body as Device;
+    device = res2.body as WithId<Device>;
 
     configMockAgents(port);
   });
@@ -173,7 +169,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier');
+    expect(res.body.issue[0].details.text).toStrictEqual('Must specify agent ID or identifier');
   });
 
   test('Missing content type', async () => {
@@ -186,7 +182,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing contentType parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing contentType parameter');
   });
 
   test('Missing body', async () => {
@@ -199,7 +195,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing body parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing body parameter');
   });
 
   test('Missing destination', async () => {
@@ -212,7 +208,7 @@ describe('Agent Push', () => {
         body: 'input',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing destination parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing destination parameter');
   });
 
   test('Unrecognized device string', async () => {
@@ -226,7 +222,7 @@ describe('Agent Push', () => {
         destination: 'foo',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+    expect(res.body.issue[0].details.text).toStrictEqual('Destination device not found');
   });
 
   test('Destination device not found', async () => {
@@ -240,7 +236,7 @@ describe('Agent Push', () => {
         destination: 'Device/' + randomUUID(),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+    expect(res.body.issue[0].details.text).toStrictEqual('Destination device not found');
   });
 
   test('Destination device missing URL', async () => {
@@ -252,7 +248,7 @@ describe('Agent Push', () => {
       .send({ resourceType: 'Device' });
     expect(res1.status).toBe(201);
 
-    const device2 = res1.body as Device;
+    const device2 = res1.body as WithId<Device>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -264,7 +260,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device2),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Destination device missing url');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Destination device missing url');
   });
 
   test('Invalid wait timeout', async () => {
@@ -279,7 +275,7 @@ describe('Agent Push', () => {
         waitTimeout: 60 * 60 * 1000,
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid wait timeout');
+    expect(res.body.issue[0].details.text).toStrictEqual('Invalid wait timeout');
   });
 
   test('Ping -- Successful ping to IP', async () => {
@@ -342,8 +338,8 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     publishSpy.mockRestore();
   });
@@ -408,8 +404,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     publishSpy.mockRestore();
   });
@@ -468,12 +464,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
 
     const body = res.body as OperationOutcome;
     expect(body).toBeDefined();
-    expect(body.issue[0].severity).toEqual('error');
-    expect(body.issue[0]?.details?.text).toEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
+    expect(body.issue[0].severity).toStrictEqual('error');
+    expect(body.issue[0]?.details?.text).toStrictEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
 
     publishSpy.mockRestore();
   });
@@ -540,7 +536,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     const res = await deferredResponse;
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
     expect(asyncJob).toMatchObject<Partial<AsyncJob>>({
@@ -579,7 +575,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       } satisfies Agent);
     expect(res1.status).toBe(201);
 
-    const agent = res1.body as Agent;
+    const agent = res1.body as WithId<Agent>;
 
     const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
       agent,
@@ -593,7 +589,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.HL7_V2,
@@ -633,7 +629,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       } satisfies Agent);
     expect(res1.status).toBe(201);
 
-    const agent = res1.body as Agent;
+    const agent = res1.body as WithId<Agent>;
 
     const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
       agent,
@@ -648,7 +644,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.PING,
@@ -657,8 +653,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
         waitForResponse: true,
       } satisfies AgentPushParameters);
 
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     cleanup();
   });

@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Appointment, Bundle, Schedule, SearchParameter, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Schedule, SearchParameter, Slot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { BlockAvailabilityEvent, handler } from './block-availability';
+import { handler } from './block-availability';
+import type { BlockAvailabilityEvent } from './block-availability';
 
 describe('Block Availability', async () => {
   let medplum: MockClient;
@@ -85,7 +88,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -152,7 +155,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -188,7 +191,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -224,7 +227,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');

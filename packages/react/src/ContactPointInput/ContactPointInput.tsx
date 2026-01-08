@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { ContactPoint } from '@medplum/fhirtypes';
+import type { ContactPoint } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useRef, useState } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export type ContactPointInputProps = ComplexTypeInputProps<ContactPoint> & {
@@ -14,7 +17,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const { elementsByPath, getExtendedProps } = useContext(ElementsContext);
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
-  const ref = useRef<ContactPoint>();
+  const ref = useRef<ContactPoint>(contactPoint);
   ref.current = contactPoint;
 
   const [systemElement, useElement, valueElement] = useMemo(

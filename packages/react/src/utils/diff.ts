@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * Myers Diff algorithm
  * Based on: https://github.com/KengoTODA/java-diff-utils/blob/master/src/main/java/difflib/myers/MyersDiff.java
  * Apache Software License, Version 1.1
  */
-
 export function diff(original: string[], revised: string[]): Delta[] {
   const path = buildPath(original, revised) as PathNode;
   return buildRevisions(path, original, revised);
@@ -32,7 +34,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
   const M = rev.length;
   const MAX = N + M + 1;
   const size = 1 + 2 * MAX;
-  const middle = (size / 2) | 0;
+  const middle = Math.trunc(size / 2);
   const diagonal: (PathNode | undefined)[] = new Array(size);
 
   diagonal[middle + 1] = {
@@ -90,7 +92,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
       diagonal[kmiddle] = node;
 
       if (i >= N && j >= M) {
-        return diagonal[kmiddle] as PathNode;
+        return diagonal[kmiddle];
       }
     }
     diagonal[middle + d - 1] = undefined;

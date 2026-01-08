@@ -1,0 +1,127 @@
+---
+sidebar_position: 7
+tags: [auth]
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/auth/session-management.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Access Token Management
+
+This guide explains how Medplum manages authentication tokens and how to implement secure token handling in your applications.
+
+## Access Tokens vs Refresh Tokens
+
+Medplum uses two types of tokens to manage authentication securely:
+
+**Access Tokens** are short-lived JSON Web Tokens (JWTs) that grant access to Medplum APIs. Each access token contains essential information about the user's permissions and session details. Every API request must include a valid access token.
+
+**Refresh Tokens** are long-lived credentials used to obtain new access tokens without requiring the user to log in again. These tokens are stored securely by client applications and are only transmitted when requesting a new access token.
+
+### Requesting Refresh Tokens
+
+Refresh tokens are not issued by default. To receive a refresh token, you must include one of the following scopes in your authentication request:
+
+- `offline_access`
+- `offline`
+
+For example:
+
+<MedplumCodeBlock language="ts" selectBlocks="emailPasswordLogin" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+<MedplumCodeBlock language="ts" selectBlocks="oauthLogin" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Configuring Token Lifetimes
+
+### Default Token Lifetimes
+
+| Token Type | Default Lifetime          |
+| ---------- | ------------------------- |
+| Access     | 3600 seconds (1 hour)     |
+| Refresh    | 1209600 seconds (2 weeks) |
+
+### Customizing Token Lifetimes
+
+You can adjust token lifetimes by configuring your [`ClientApplication`](/docs/api/fhir/medplum/clientapplication) resource. Custom token lifetimes are useful when your application has specific security requirements or usage patterns.
+
+Here's how to modify token lifetimes:
+
+<MedplumCodeBlock language="ts" selectBlocks="tokenLifetimes" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+:::warning
+
+Consider your security requirements carefully when adjusting these values. Longer access token lifetimes increase convenience but also increase the window of vulnerability if a token is compromised.
+
+:::
+
+## Managing Token Refresh with Grace Periods
+
+The Medplum client includes a token refresh system that helps prevent service interruptions. The system uses a "grace period" to proactively refresh tokens before they expire.
+
+### How Grace Periods Work
+
+The grace period represents how long before expiration the client should attempt to refresh the token. By default, this is set to 5 minutes (300,000 milliseconds). For example, if your access token expires at 2:00 PM, the client will attempt to refresh it starting at 1:55 PM.
+
+The Medplum client automatically handles token refresh in three scenarios:
+
+1. Before making API requests when the token is within the grace period
+2. When receiving a 401 Unauthorized response from the server
+3. When your code explicitly requests a refresh
+
+:::warning Grace Period Limitations
+
+Note that the grace period mechanism only triggers in the above scenarios.
+
+This means that if your application is idle (not making any API calls), tokens can expire even with a configured grace period. The grace period does not create background refresh tasks.
+
+This is particularly important for mobile applications where the user may not interact with the app for extended periods of time.
+
+For example:
+
+1. User logs in at 1:00 PM with a 1-hour access token (expires 2:00 PM)
+2. Application is idle from 1:30 PM to 2:30 PM
+3. At 2:30 PM when activity resumes, the token will have expired
+
+To handle this scenario, you should:
+
+- Check authentication status when resuming activity
+- Refresh the token if needed before making requests
+- Consider increasing the access token lifetime to reduce the frequency of token refreshes
+
+:::
+
+### Customizing the Grace Period
+
+You can adjust the grace period when initializing the Medplum client:
+
+<MedplumCodeBlock language="ts" selectBlocks="graceCustomization" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Best Practices for Token Management
+
+1. **Use Short-Lived Access Tokens**
+
+   Keep access token lifetimes short (1-2 hours maximum) to minimize the impact of token theft. The Medplum client's automatic refresh mechanism means you don't need long-lived access tokens for continuous operation.
+
+2. **Leverage Automatic Token Refresh**
+
+   The Medplum client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
+
+   <MedplumCodeBlock language="ts" selectBlocks="bestPractices" showLineNumbers>
+     {ExampleCode}
+   </MedplumCodeBlock>
+
+3. **Token Revocation**
+
+   If you suspect a token has been compromised, revoke it immediately using the `/auth/logout` endpoint. Monitor your audit logs for suspicious activity that might indicate compromised tokens.
+
+## Conclusion
+
+For more advanced authentication scenarios, refer to our [Authentication reference](/docs/auth).

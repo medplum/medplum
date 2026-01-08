@@ -1,11 +1,14 @@
-import { createReference, normalizeErrorString } from '@medplum/core';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
-import { Document, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useContext, useCallback } from 'react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
-import { Loading } from '../components/Loading';
-import { useNavigate } from 'react-router-dom';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import type { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Document, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useCallback, useContext } from 'react';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
+import { Loading } from '../components/Loading';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 export function IntakeFormPage(): JSX.Element {
@@ -32,7 +35,7 @@ export function IntakeFormPage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate(`/Patient`);
+          navigate(`/Patient`)?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

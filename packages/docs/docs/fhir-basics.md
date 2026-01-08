@@ -27,6 +27,8 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 [reference]: /docs/api/fhir/datatypes/reference
 [codeableconcept]: /docs/api/fhir/datatypes/codeableconcept
 
+To follow along with the concepts described in this guide, you can download and import this [sample FHIR bundle](https://drive.google.com/file/d/1196wfX-aBMUK33GdQiIdBUNlYn_cymBU/view?usp=drive_link) into your Medplum project. For instructions on how to import the data, refer to our [Import Sample Data](/docs/tutorials/importing-sample-data) guide.
+
 ## Why FHIR?
 
 Medplum stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:
@@ -146,6 +148,12 @@ The example below shows a resource modeling a prescription (i.e. [`MedicationReq
 
 ## Querying Data: Search
 
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/PcZoZvfkmiQ?si=EQJtdbrBCiRh4dJP" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
+
 FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](/blog/graphql-vs-rest) for tradeoffs between REST and GraphQL).
 
 **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification defines specific [search parameters](/docs/search/basic-search#search-parameters) for each resource that can be used for queries.
@@ -154,14 +162,13 @@ Refer to the [Medplum search documentation](/docs/search/basic-search) for a mor
 
 ## Standardizing Data: Codeable Concepts
 
-The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**.
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/tWW2_0lxNl4?si=bs4lD_2pm1HO0Ux2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
-Some of the most commonly used code systems in the U.S. are:
+<br/>
 
-- [ICD-10](https://www.cms.gov/Medicare/Coding/ICD10) - Diagnoses.
-- [LOINC](/docs/careplans/loinc) - Clinical measurements and lab results.
-- [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) - [Medication](/docs/medications/medication-codes#ndc).
-- [SNOMED](https://www.snomed.org/) - [Workforce administration](/docs/careplans/tasks#task-assignment), clinical findings.
+The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**. See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
 
 Because there are multiple code systems for many domains, the same _concept_ can be defined in _multiple code systems_. To handle this mapping from concept to system, the FHIR defines the [`CodeableConcept`][codeableconcept] element type.
 
@@ -191,6 +198,12 @@ Below is an example [`CodeableConcept`][codeableconcept], that defines the medic
 </details>
 
 ## Naming Data: Identifiers
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/NumGLpR9Q7w?si=EPkEYFI2_jkxdzPw"  title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
 
 One issue in healthcare applications is that the same entity can have many different identifiers in different systems. For example, a patient might be identified simultaneously by their:
 
@@ -248,6 +261,45 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 ```
 
 </details>
+
+
+
+
+## ValueSets
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/rUulfIWlckI?si=jy7BwirKmkGZAqi8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<br/>
+
+
+ValueSets are a collection of codes that are used to represent a concept. They act as filters or subsets of larger terminology systems (like SNOMED CT, LOINC, or ICD-10) to specify exactly which codes are appropriate for a specific use case. They are defined by a `system` and a `concept` array. The `concept` array contains the codes that are part of the ValueSet.
+
+
+```json
+{
+  "resourceType": "ValueSet",
+  "url": "http://example.com/ValueSet/vitals",
+  "name": "vitals",
+  "title": "Vital Signs",
+  "status": "active",
+  "compose": {
+    "include": [
+      {
+        "system": "http://loinc.org",
+        "concept": [
+          { "code": "8310-5", "display": "Body temperature" },
+          { "code": "8462-4", "display": "Diastolic blood pressure" },
+          { "code": "8480-6", "display": "Systolic blood pressure" },
+          { "code": "8867-4", "display": "Heart rate" },
+          { "code": "9279-1", "display": "Respiratory rate" }
+        ]
+      }
+    ]
+  }
+}
+```
 
 ## Listening for changes: Subscriptions
 

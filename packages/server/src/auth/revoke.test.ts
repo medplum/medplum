@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { tryLogin } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';

@@ -8,7 +8,6 @@ Medplum maintains a library of React components which we use in the [Medplum app
 The best way to get started is to try one of the Medplum example apps:
 
 - [Medplum Hello World](https://github.com/medplum/medplum/tree/main/examples/medplum-hello-world)
-- [Medplum Chart Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-chart-demo)
 - [Medplum Next.js Demo](https://github.com/medplum/medplum/tree/main/examples/medplum-nextjs-demo)
 
 Or, you can try our full-featured patient demo called [Foo Medical](https://github.com/medplum/medplum/tree/main/examples/foomedical).
@@ -36,7 +35,7 @@ npm i -D postcss postcss-preset-mantine
 While not strictly required, Medplum recommends using [React Router](https://reactrouter.com/) for client side routing. Medplum uses React Router version 6+.
 
 ```bash
-npm i -D react-router-dom
+npm i -D react-router
 ```
 
 And then finally you can install Medplum React components:
@@ -113,7 +112,7 @@ import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { App } from './App';
 
 const medplum = new MedplumClient({

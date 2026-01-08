@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Practitioner, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
@@ -32,6 +35,10 @@ describe('Google Auth', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+  });
+
+  beforeEach(() => {
+    getConfig().registerEnabled = undefined;
   });
 
   afterAll(async () => {
@@ -111,6 +118,25 @@ describe('Google Auth', () => {
     expect(user).toBeUndefined();
   });
 
+  test('Register disabled', async () => {
+    getConfig().registerEnabled = false;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+        projectId: 'new',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Registration is disabled');
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeUndefined();
+  });
+
   test('Create new user account', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
     const res = await request(app)
@@ -139,6 +165,31 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
         createUser: true,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeDefined();
+  });
+
+  test('Existing user for new project', async () => {
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await getSystemRepo().createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+    });
+
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
@@ -181,6 +232,51 @@ describe('Google Auth', () => {
       });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
+  });
+
+  test('Google auth profile picture', async () => {
+    const email = `google${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const state = {
+      profile: undefined as Practitioner | undefined,
+    };
+
+    // Register and create a project
+    await withTestContext(async () => {
+      const { project, profile } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Profile Picture Test',
+        email,
+        password,
+      });
+      state.profile = profile as Practitioner;
+
+      // As a super admin, update the project to require Google auth
+      const systemRepo = getSystemRepo();
+      await systemRepo.updateResource({
+        ...project,
+        setting: [{ name: 'googleAuthProfilePictures', valueBoolean: true }],
+      });
+    });
+
+    // Then try to login with Google auth
+    // This should succeed
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email, 'https://example.com/picture.jpg'),
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+
+    // Now re-fetch the profile
+    const systemRepo = getSystemRepo();
+    const updatedProfile = await systemRepo.readResource<Practitioner>('Practitioner', state.profile?.id as string);
+    expect(updatedProfile.photo).toBeDefined();
+    expect(updatedProfile.photo?.[0].url).toBe('https://example.com/picture.jpg');
   });
 
   test('Custom Google client success', async () => {
@@ -355,7 +451,7 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Invalid googleClientId');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Invalid googleClientId');
   });
 
   test('Custom OAuth client success', async () => {
@@ -409,10 +505,10 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Text', 'User', email),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid projectId');
+    expect(res.body.issue[0].details.text).toStrictEqual('Invalid projectId');
   });
 });
 
-function createCredential(firstName: string, lastName: string, email: string): string {
-  return JSON.stringify({ given_name: firstName, family_name: lastName, email });
+function createCredential(firstName: string, lastName: string, email: string, picture?: string): string {
+  return JSON.stringify({ given_name: firstName, family_name: lastName, email, picture });
 }

@@ -1,7 +1,10 @@
-import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Button, Flex, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
@@ -20,10 +23,10 @@ export function ChangePasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Center style={{ flexDirection: 'column' }}>
+        <Flex direction="column" align="center" justify="center">
           <Logo size={32} />
           <Title>Change password</Title>
-        </Center>
+        </Flex>
         {!success && (
           <Stack gap="xl" mt="xl">
             <PasswordInput

@@ -1,16 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Table, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  formatDateTime,
-  formatHumanName,
-  getReferenceString,
-  normalizeErrorString,
-  ProfileResource,
-} from '@medplum/core';
-import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
+import type { ProfileResource } from '@medplum/core';
+import { formatDateTime, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface UserSession {
   readonly id: string;
@@ -102,12 +100,14 @@ export function SecurityPage(): JSX.Element | null {
       </Document>
       <Document>
         <Title>Password</Title>
-        <Button onClick={() => navigate('/changepassword')}>Change password</Button>
+        <Button onClick={() => navigate('/changepassword')?.catch(console.error)}>Change password</Button>
       </Document>
       <Document>
         <Title>Multi Factor Auth</Title>
         <p>Enrolled: {details.security.mfaEnrolled.toString()}</p>
-        {!details.security.mfaEnrolled && <Button onClick={() => navigate('/mfa')}>Enroll</Button>}
+        {!details.security.mfaEnrolled && (
+          <Button onClick={() => navigate('/mfa')?.catch(console.error)}>Enroll</Button>
+        )}
       </Document>
     </>
   );

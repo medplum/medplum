@@ -170,7 +170,7 @@
       "path": "AsyncJob.status",
       "min": 1,
       "max": "1",
-      "short": "accepted | error | completed",
+      "short": "accepted | error | completed | cancelled",
       "definition": "The status of the request.",
       "comment": "",
       "inherited": false
@@ -239,6 +239,68 @@
       "definition": "Outputs resulting from the async job.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "AsyncJob.type",
+      "min": 0,
+      "max": "1",
+      "short": "data-migration",
+      "definition": "The type of the AsyncJob.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dataVersion",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "integer"
+        }
+      ],
+      "path": "AsyncJob.dataVersion",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The data version of the migration this job represents.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "minServerVersion",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AsyncJob.minServerVersion",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The minimum Medplum server version required to run this job.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "type",
+      "type": "token",
+      "description": "Search for AsyncJob by type",
+      "expression": "AsyncJob.type"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "Search for AsyncJob by status",
+      "expression": "AsyncJob.status"
     }
   ]
 }

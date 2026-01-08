@@ -1,4 +1,22 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
+import {
+  IconCategory2,
+  IconChecklist,
+  IconCircleCheck,
+  IconClipboardData,
+  IconCloudLock,
+  IconCube,
+  IconDashboard,
+  IconExchange,
+  IconFlask,
+  IconLock,
+  IconReceipt2,
+  IconUsers,
+} from '@tabler/icons-react';
 import Layout from '@theme/Layout';
+import { JSX } from 'react';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
 import { ProfileCard } from '../components/ProfileCard';
@@ -18,57 +36,62 @@ export default function EnterprisePage(): JSX.Element {
               Medplum is a platform with powerful primitives and pre-built integrations that scales to meet the needs of
               your organization.
             </p>
-            <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
               <div>Book a demo</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-            </a>
+            </Link>
           </div>
           <div className={styles.heroImage}>
-            <img src="/img/about-jumbotron.svg" alt="Medplum robot coding" width="488" height="384" />
+            <img
+              src="/img/hero/hero-custom-apps-and-portals-square.webp"
+              alt="Medplum Enterprise"
+              width="450"
+              height="450"
+            />
           </div>
         </Jumbotron>
         <Section>
           <FeatureGrid columns={3}>
-            <Feature title="Security" imgSrc="/img/icons/security.svg">
+            <Feature title="Security" icon={<IconLock />}>
               Monitor data access and authentication in real time using a CISO Suite that's integrated with common
               observability tools like Datadog and Sumo Logic.
             </Feature>
-            <Feature title="Identity and Access" imgSrc="/img/icons/identity.svg">
+            <Feature title="Identity and Access" icon={<IconCloudLock />}>
               Fine grained access controls enable 50 state workflows, partnerships or multiple physician groups to
               collaborate on the same platform using SSO.
             </Feature>
-            <Feature title="Compliance" imgSrc="/img/icons/shield.svg">
+            <Feature title="Compliance" icon={<IconChecklist />}>
               Certify CMS, attest ONC Compliance, enable CMS 9115, get CLIA/CAP certification, SOC 2, HITRUST, certify
               HIPAA and more.
             </Feature>
-            <Feature title="Lab and Imaging" imgSrc="/img/icons/lab-imaging.svg">
+            <Feature title="Lab and Imaging" icon={<IconFlask />}>
               Send orders and receive results from lab and imaging providers. Use vendors with the best service and
               prices.
             </Feature>
-            <Feature title="HIE" imgSrc="/img/icons/hie.svg">
+            <Feature title="HIE" icon={<IconExchange />}>
               Request records from and write records to Health Information Exchanges like CareQuality and Commonwell.
             </Feature>
-            <Feature title="Value Based Care" imgSrc="/img/icons/value-based-care.svg">
+            <Feature title="Value Based Care" icon={<IconClipboardData />}>
               Report HEDIS, CMS Measures, MIPS and more. Compute RAF scores for your patients.
             </Feature>
-            <Feature title="Workforce" imgSrc="/img/icons/workforce.svg">
+            <Feature title="Workforce" icon={<IconUsers />}>
               Manage and store credentials for practitioners. Track productivity, turnaround times and billables for
               your team and partners.
             </Feature>
-            <Feature title="Data Analytics" imgSrc="/img/icons/data-analytics.svg">
+            <Feature title="Data Analytics" icon={<IconCube />}>
               Synchronize data to popular tools like Snowflake, Datadog, Redshift or any Open Telemetry (oTel) platform.
             </Feature>
-            <Feature title="Payors" imgSrc="/img/icons/payors.svg">
+            <Feature title="Payors" icon={<IconReceipt2 />}>
               Robust reporting for insurance coverage by payor and patient.
             </Feature>
-            <Feature title="EMPI" imgSrc="/img/icons/empi.svg">
+            <Feature title="EMPI" icon={<IconCircleCheck />}>
               Reports, monitoring and deduplication workflows for your Enterprise Master Patient Index (EMPI).
             </Feature>
-            <Feature title="Service Menu" imgSrc="/img/icons/user-interface.svg">
+            <Feature title="Service Menu" icon={<IconCategory2 />}>
               Manage, version and oversee your healthcare service menu. Allow partners to send referrals
               programmaticaly.
             </Feature>
-            <Feature title="Claims Dashboard" imgSrc="/img/icons/claims-dashboard.svg">
+            <Feature title="Claims Dashboard" icon={<IconDashboard />}>
               View, monitor and troubleshoot claims in real time. Track and report on claims by payor and patient.
             </Feature>
           </FeatureGrid>
@@ -104,7 +127,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Okta"
               title="Identity, security"
               imgUrl="/img/blog/okta-logo.png"
-              webUrl="/docs/auth/methods/domain-level-identity-providers"
+              webUrl="/docs/auth/domain-level-identity-providers"
             />
             <ProfileCard
               name="Azure SSO"
@@ -116,7 +139,7 @@ export default function EnterprisePage(): JSX.Element {
               name="Google SSO"
               title="Identity, security"
               imgUrl="/img/blog/google-logo.jpeg"
-              webUrl="/docs/auth/methods/google-auth"
+              webUrl="/docs/auth/google-auth"
             />
           </CardContainer>
         </Section>
@@ -211,13 +234,13 @@ export default function EnterprisePage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Onboarding Workshop</h1>
             <p className={styles.heroText}>
-              Medplum Enterprise includes a two week workship with team training, integrations planning, documentation
+              Medplum Enterprise includes a two week workshop with team training, integrations planning, documentation
               and setup. The materials are customized to the specific needs of your implementation.
             </p>
-            <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
               <div>Book Now</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-            </a>
+            </Link>
           </div>
           <div className={styles.heroImage}>
             <img src="/img/blog/workshop.svg" alt="Medplum robot coding" width="488" height="384" />

@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, isResource } from '@medplum/core';
-import { Reference, UserConfiguration } from '@medplum/fhirtypes';
+import type { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
+import type { JSX } from 'react';
 
 export interface UserConfigurationInputProps {
   readonly name: string;
@@ -12,7 +15,7 @@ export function UserConfigurationInput(props: UserConfigurationInputProps): JSX.
   return (
     <ResourceInput
       resourceType="UserConfiguration"
-      name="userConfiguration"
+      name={props.name}
       defaultValue={props.defaultValue}
       placeholder="User Configuration"
       onChange={(newValue) => {

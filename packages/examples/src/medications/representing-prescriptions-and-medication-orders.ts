@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
-import { MedicationRequest } from '@medplum/fhirtypes';
+import type { MedicationRequest } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -12,6 +15,7 @@ const instructions: MedicationRequest =
     subject: {
       reference: 'Patient/homer-simpson',
     },
+    authoredOn: '2023-09-04',
     medicationCodeableConcept: {
       coding: [
         {
@@ -47,9 +51,6 @@ const instructions: MedicationRequest =
       expectedSupplyDuration: {
         value: 30,
         unit: 'days',
-      },
-      performer: {
-        reference: 'Organization/example-pharmacy',
       },
     },
   };

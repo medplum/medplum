@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, Button, Group, Modal, NumberInput, Stack, Table, Title } from '@mantine/core';
 import { createReference, formatDate, formatDateTime, formatObservationValue, getReferenceString } from '@medplum/core';
-import { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
+import type { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { ChartData, ChartDataset } from 'chart.js';
+import type { ChartData, ChartDataset } from 'chart.js';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 import { LineChart } from '../../components/LineChart';
 import { measurementsMeta } from './Measurement.data';
 
@@ -61,7 +64,7 @@ export function Measurement(): JSX.Element | null {
 
     if (chartDatasets.length === 1) {
       obs.valueQuantity = {
-        value: parseFloat(formData[chartDatasets[0].label]),
+        value: Number.parseFloat(formData[chartDatasets[0].label]),
         system: 'http://unitsofmeasure.org',
         unit: chartDatasets[0].unit,
         code: chartDatasets[0].unit,
@@ -79,7 +82,7 @@ export function Measurement(): JSX.Element | null {
           text: item.label,
         },
         valueQuantity: {
-          value: parseFloat(formData[item.label]),
+          value: Number.parseFloat(formData[item.label]),
           system: 'http://unitsofmeasure.org',
           unit: item.unit,
           code: item.unit,

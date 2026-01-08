@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Vitals } from './Vitals';
 
@@ -57,7 +59,7 @@ describe('PatientSummary - Vitals', () => {
     await setup(<Vitals patient={HomerSimpson} vitals={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     await screen.findByLabelText('BP Sys');

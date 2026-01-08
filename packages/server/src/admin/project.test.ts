@@ -1,13 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
+import type { ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { RegisterResponse, registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import type { RegisterResponse } from '../auth/register';
+import { registerNew } from '../auth/register';
+import { loadTestConfig } from '../config/loader';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
@@ -81,14 +84,14 @@ describe('Project Admin routes', () => {
       .set('X-Medplum', 'extended');
     expect(res3.status).toBe(200);
     expect(res3.body.entry).toBeDefined();
-    expect(res3.body.entry.length).toEqual(3);
+    expect(res3.body.entry.length).toStrictEqual(3);
 
     const members = res3.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const owner = members.find((m) => m.admin);
     expect(owner).toBeDefined();
     const member = members.find((m) => m.id === res2.body.id) as ProjectMembership;
     expect(member).toBeDefined();
-    expect(member.meta?.author?.reference).toEqual('system');
+    expect(member.meta?.author?.reference).toStrictEqual('system');
 
     // Get the new membership details
     const res4 = await request(app)
@@ -96,9 +99,9 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
     expect(res4.status).toBe(200);
-    expect(res4.body.resourceType).toEqual('ProjectMembership');
+    expect(res4.body.resourceType).toStrictEqual('ProjectMembership');
     expect(res4.body.id).toBeDefined();
-    expect(res4.body.meta.project).toEqual(project.id);
+    expect(res4.body.meta.project).toStrictEqual(project.id);
 
     // Try a naughty request using a different resource type
     const res5 = await request(app)
@@ -132,7 +135,7 @@ describe('Project Admin routes', () => {
         admin: true,
       });
     expect(res7.status).toBe(200);
-    expect(res7.body.meta?.author?.reference).toEqual(owner?.profile?.reference);
+    expect(res7.body.meta?.author?.reference).toStrictEqual(owner?.profile?.reference);
 
     // Make sure the new member is an admin
     const res8 = await request(app)
@@ -424,8 +427,8 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project.secret).toHaveLength(1);
-    expect(res3.body.project.secret[0].name).toEqual('test_secret');
-    expect(res3.body.project.secret[0].valueString).toEqual('test_value');
+    expect(res3.body.project.secret[0].name).toStrictEqual('test_secret');
+    expect(res3.body.project.secret[0].valueString).toStrictEqual('test_value');
 
     // Verify the author is set
     const res4 = await request(app)
@@ -466,7 +469,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project.site).toHaveLength(1);
-    expect(res3.body.project.site[0].name).toEqual('test_site');
+    expect(res3.body.project.site[0].name).toStrictEqual('test_site');
   });
 
   test('Set password access denied', async () => {

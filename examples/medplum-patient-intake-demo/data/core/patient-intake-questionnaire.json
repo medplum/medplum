@@ -12,6 +12,7 @@
         "resourceType": "Questionnaire",
         "status": "active",
         "title": "Patient Intake Questionnaire",
+        "url": "https://medplum.com/Questionnaire/patient-intake-questionnaire-example",
         "name": "patient-intake",
         "item": [
           {
@@ -68,6 +69,16 @@
                 "type": "string"
               },
               {
+                "linkId": "phone-sms",
+                "text": "Phone (SMS)",
+                "type": "string"
+              },
+              {
+                "linkId": "email",
+                "text": "Email",
+                "type": "string"
+              },
+              {
                 "linkId": "ssn",
                 "text": "Social Security Number",
                 "type": "string",
@@ -89,7 +100,8 @@
                 "linkId": "gender-identity",
                 "text": "Gender Identity",
                 "type": "choice",
-                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32",
+                "required": true
               },
               {
                 "linkId": "sexual-orientation",
@@ -217,6 +229,52 @@
                 "linkId": "family-member-history-deceased",
                 "text": "Deceased",
                 "type": "boolean"
+              }
+            ]
+          },
+          {
+            "linkId": "vaccination-history",
+            "text": "Vaccination History",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "immunization-vaccine",
+                "text": "Vaccine",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.6"
+              },
+              {
+                "linkId": "immunization-date",
+                "text": "Administration Date",
+                "type": "dateTime"
+              }
+            ]
+          },
+          {
+            "linkId": "preferred-pharmacy",
+            "text": "Preferred Pharmacy",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "preferred-pharmacy-reference",
+                "text": "Pharmacy",
+                "type": "reference",
+                "extension": [
+                  {
+                    "id": "reference-pharmacy",
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/fhir-types",
+                          "display": "Organizations",
+                          "code": "Organization"
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -479,6 +537,63 @@
                 "linkId": "acknowledgement-for-advance-directives-date",
                 "text": "Date",
                 "type": "date"
+              }
+            ]
+          },
+          {
+            "linkId": "patient-contact-preference",
+            "text": "Contact Preferences",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "patient-contact-preference-email",
+                "text": "Ok to send email appointment reminders",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-call-or-text",
+                "text": "Ok to call/text",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-voice-text-appointment-reminders",
+                "text": "Ok to send voice/text messages",
+                "type": "boolean"
+              },
+              {
+                "linkId": "patient-contact-preference-preferred-method-for-phone-reminders",
+                "text": "Preferred method for phone reminders",
+                "type": "choice",
+                "repeats": false,
+                "answerOption": [
+                  {
+                    "valueCoding": {
+                      "system": "http://hl7.org/fhir/contact-point-system",
+                      "code": "sms",
+                      "display": "Text message"
+                    }
+                  },
+                  {
+                    "valueCoding": {
+                      "system": "http://hl7.org/fhir/contact-point-system",
+                      "code": "phone",
+                      "display": "Phone call"
+                    }
+                  }
+                ],
+                "extension": [
+                  {
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/questionnaire-item-control",
+                          "code": "radio-button"
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           }

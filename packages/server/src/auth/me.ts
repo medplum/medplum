@@ -1,10 +1,22 @@
-import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { UAParser } from 'ua-parser-js';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { getReferenceString, Operator } from '@medplum/core';
+import type {
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+  UserConfiguration,
+  UserConfigurationMenu,
+} from '@medplum/fhirtypes';
+import Bowser from 'bowser';
+import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {
@@ -19,6 +31,7 @@ interface UserSession {
 interface UserSecurity {
   mfaEnrolled: boolean;
   sessions: UserSession[];
+  memberships: Partial<ProjectMembership>[];
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
@@ -29,18 +42,51 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
+  let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
-    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+    user = await systemRepo.readReference<User>(membership.user as Reference<User>);
     const sessions = await getSessions(systemRepo, user);
+    const memberships = await systemRepo.searchResources<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'user',
+          operator: Operator.EQUALS,
+          value: getReferenceString(user),
+        },
+        {
+          code: 'project',
+          operator: Operator.EQUALS,
+          value: getReferenceString(project),
+        },
+      ],
+    });
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       sessions,
+      memberships: memberships
+        .filter((m) => m.active !== false)
+        .map((membership) => ({
+          resourceType: 'ProjectMembership',
+          id: membership.id,
+          identifier: membership.identifier,
+          profile: membership.profile,
+          admin: membership.admin,
+        })),
     };
   }
 
   const result = {
+    user: user
+      ? {
+          resourceType: 'User',
+          id: user.id,
+          email: user.email,
+          identifier: user.identifier,
+        }
+      : undefined,
     project: {
       resourceType: 'Project',
       id: project.id,
@@ -52,6 +98,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     membership: {
       resourceType: 'ProjectMembership',
       id: membership.id,
+      identifier: membership.identifier,
       user: membership.user,
       profile: membership.profile,
       admin: membership.admin,
@@ -65,29 +112,38 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(
+export async function getUserConfiguration(
   systemRepo: Repository,
   project: Project,
   membership: ProjectMembership
 ): Promise<UserConfiguration> {
+  let result: UserConfiguration;
+
   if (membership.userConfiguration) {
-    return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+  } else {
+    result = { resourceType: 'UserConfiguration' };
   }
 
+  if (!result.menu) {
+    result.menu = getUserConfigurationMenu(project, membership);
+  }
+
+  return result;
+}
+
+export function getUserConfigurationMenu(project: Project, membership: ProjectMembership): UserConfigurationMenu[] {
   const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];
 
-  const result = {
-    resourceType: 'UserConfiguration',
-    menu: [
-      {
-        title: 'Favorites',
-        link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
-      },
-    ],
-  } satisfies UserConfiguration;
+  const result = [
+    {
+      title: 'Favorites',
+      link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
+    },
+  ];
 
   if (membership.admin) {
-    result.menu.push({
+    result.push({
       title: 'Admin',
       link: [
         { name: 'Project', target: '/admin/project' },
@@ -100,11 +156,13 @@ async function getUserConfiguration(
   }
 
   if (project.superAdmin) {
-    result.menu.push({
+    result.push({
       title: 'Super Admin',
       link: [
         { name: 'Projects', target: '/Project' },
         { name: 'Super Config', target: '/admin/super' },
+        { name: 'Super AsyncJob', target: '/admin/super/asyncjob' },
+        { name: 'Super DB', target: '/admin/super/db' },
       ],
     });
   }
@@ -112,7 +170,7 @@ async function getUserConfiguration(
   return result;
 }
 
-async function getSessions(systemRepo: Repository, user: User): Promise<UserSession[]> {
+async function getSessions(systemRepo: Repository, user: WithId<User>): Promise<UserSession[]> {
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -135,18 +193,16 @@ async function getSessions(systemRepo: Repository, user: User): Promise<UserSess
       continue;
     }
 
-    let uaParser = undefined;
-    if (login.userAgent) {
-      uaParser = new UAParser(login.userAgent);
-    }
+    // Previously used ua-parser, but ultimately replaced due to incompatible licence
+    const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
-      id: login.id as string,
+      id: login.id,
       lastUpdated: login.meta?.lastUpdated as string,
       authMethod: login.authMethod as string,
       remoteAddress: login.remoteAddress as string,
-      browser: uaParser?.getBrowser()?.name,
-      os: uaParser?.getOS()?.name,
+      browser: browser?.getBrowser()?.name,
+      os: browser?.getOS()?.name,
     });
   }
   return result;

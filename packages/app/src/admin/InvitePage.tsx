@@ -1,8 +1,20 @@
-import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { InviteRequest, isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Form, FormSection, MedplumLink, ResourceInput, getErrorsForInput, useMedplum } from '@medplum/react';
+import type { InviteRequest } from '@medplum/core';
+import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import type { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  Form,
+  FormSection,
+  MedplumLink,
+  ResourceInput,
+  SubmitButton,
+  getErrorsForInput,
+  useMedplum,
+} from '@medplum/react';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
@@ -15,7 +27,7 @@ export function InvitePage(): JSX.Element {
   const [result, setResult] = useState<ProjectMembership | undefined>(undefined);
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
+    (formData: Record<string, string>): Promise<void> => {
       const body = {
         resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
         firstName: formData.firstName,
@@ -24,8 +36,10 @@ export function InvitePage(): JSX.Element {
         sendEmail: formData.sendEmail === 'on',
         accessPolicy,
         admin: formData.isAdmin === 'on',
+        scope: formData.isProjectScoped === 'on' ? 'project' : 'server',
+        mfaRequired: formData.mfaRequired === 'on',
       };
-      medplum
+      return medplum
         .invite(project?.id as string, body as InviteRequest)
         .then((response: ProjectMembership | OperationOutcome) => {
           medplum.invalidateSearches('Patient');
@@ -89,8 +103,10 @@ export function InvitePage(): JSX.Element {
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
           <Checkbox name="isAdmin" label="Admin" />
+          <Checkbox name="isProjectScoped" label="Project scoped" />
+          <Checkbox name="mfaRequired" label="MFA required" />
           <Group justify="flex-end">
-            <Button type="submit">Invite</Button>
+            <SubmitButton>Invite</SubmitButton>
           </Group>
         </Stack>
       )}

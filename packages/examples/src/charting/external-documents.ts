@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { MedplumClient, getReferenceString } from '@medplum/core';
 
@@ -8,7 +11,7 @@ const data = '1234ABC';
 
 // start-block docReferenceBinaryTS
 // Create a `Binary` resource with file data
-const binary = await medplum.createBinary(data, 'records.pdf', 'application/pdf');
+const binary = await medplum.createBinary({ data, filename: 'records.pdf', contentType: 'application/pdf' });
 
 // Create the `DocumentReference` resource
 const docReference = await medplum.createResource({

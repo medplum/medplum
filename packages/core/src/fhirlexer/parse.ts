@@ -1,5 +1,7 @@
-import { TypedValue } from '../types';
-import { Token } from './tokenize';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '../types';
+import type { Token } from './tokenize';
 
 export interface AtomContext {
   parent?: AtomContext;
@@ -12,10 +14,13 @@ export interface Atom {
 }
 
 export abstract class PrefixOperatorAtom implements Atom {
-  constructor(
-    public readonly operator: string,
-    public readonly child: Atom
-  ) {}
+  readonly operator: string;
+  readonly child: Atom;
+
+  constructor(operator: string, child: Atom) {
+    this.operator = operator;
+    this.child = child;
+  }
 
   abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
@@ -25,16 +30,20 @@ export abstract class PrefixOperatorAtom implements Atom {
 }
 
 export abstract class InfixOperatorAtom implements Atom {
-  constructor(
-    public readonly operator: string,
-    public readonly left: Atom,
-    public readonly right: Atom
-  ) {}
+  readonly operator: string;
+  readonly left: Atom;
+  readonly right: Atom;
+
+  constructor(operator: string, left: Atom, right: Atom) {
+    this.operator = operator;
+    this.left = left;
+    this.right = right;
+  }
 
   abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
   toString(): string {
-    return `${this.left.toString()} ${this.operator} ${this.right.toString()}`;
+    return `(${this.left.toString()} ${this.operator} ${this.right.toString()})`;
   }
 }
 
@@ -91,8 +100,8 @@ export class ParserBuilder {
 
 export class Parser {
   private tokens: Token[];
-  private prefixParselets: Record<string, PrefixParselet>;
-  private infixParselets: Record<string, InfixParselet>;
+  private readonly prefixParselets: Record<string, PrefixParselet>;
+  private readonly infixParselets: Record<string, InfixParselet>;
 
   constructor(
     tokens: Token[],
@@ -122,7 +131,7 @@ export class Parser {
     const token = this.consume();
     const prefix = this.prefixParselets[token.id];
     if (!prefix) {
-      throw Error(
+      throw new Error(
         `Parse error at "${token.value}" (line ${token.line}, column ${token.column}). No matching prefix parselet.`
       );
     }
@@ -152,17 +161,17 @@ export class Parser {
 
   consume(expectedId?: string, expectedValue?: string): Token {
     if (!this.tokens.length) {
-      throw Error('Cant consume unknown more tokens.');
+      throw new Error('Cant consume unknown more tokens.');
     }
     if (expectedId && this.peek()?.id !== expectedId) {
       const actual = this.peek() as Token;
-      throw Error(
+      throw new Error(
         `Expected ${expectedId} but got "${actual.id}" (${actual.value}) at line ${actual.line} column ${actual.column}.`
       );
     }
     if (expectedValue && this.peek()?.value !== expectedValue) {
       const actual = this.peek() as Token;
-      throw Error(
+      throw new Error(
         `Expected "${expectedValue}" but got "${actual.value}" at line ${actual.line} column ${actual.column}.`
       );
     }

@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig, OperationOutcomeError } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { ExternalSecret, MedplumInfraConfig, MedplumSourceInfraConfig } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import {
   InfraConfigNormalizer,
@@ -21,12 +25,15 @@ const baseConfig = {
   apiDomainName: { system: 'aws_ssm_parameter_store', key: 'apiDomainName', type: 'string' },
   apiSslCertArn: { system: 'aws_ssm_parameter_store', key: 'apiSslCertArn', type: 'string' },
   apiInternetFacing: true,
+  apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
   appDomainName: 'app.foomedical.com',
   appSslCertArn: 'arn:abc-123',
   appApiProxy: { system: 'aws_ssm_parameter_store', key: 'appApiProxy', type: 'boolean' },
+  appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
   storageBucketName: { system: 'aws_ssm_parameter_store', key: 'storageBucketName', type: 'string' },
   storageDomainName: 'storage.foomedical.com',
   storageSslCertArn: 'arn:def-123',
+  storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
   signingKeyId: { system: 'aws_ssm_parameter_store', key: 'signingKeyId', type: 'string' },
   storagePublicKey: { system: 'aws_ssm_parameter_store', key: 'storagePublicKey', type: 'string' },
   baseUrl: 'foomedical.com',
@@ -163,6 +170,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
       });
     });
 
@@ -199,6 +209,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
         additionalContainers: [
           {
             name: 'BIG IMAGE',
@@ -245,6 +258,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
         cloudTrailAlarms: {
           logGroupName: 'FOOMEDICAL_PROD',
           logGroupCreate: false,
@@ -297,15 +313,15 @@ describe('Config', () => {
     });
     // Test [string, string] => return raw
     test('Provided string, expected string => rawValue', () => {
-      expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toEqual('medplum');
+      expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toStrictEqual('medplum');
     });
     // Test [string, number] => number
-    test('Provided string, expected number => parseInt(string)', () => {
-      expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toEqual(20);
+    test('Provided string, expected number => Number.parseInt(string)', () => {
+      expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toStrictEqual(20);
     });
     // Test [number, number] => rawValue
     test('Provided number, expected number => rawValue', () => {
-      expect(normalizeFetchedValue('medplumNumber', 20, 'number')).toEqual(20);
+      expect(normalizeFetchedValue('medplumNumber', 20, 'number')).toStrictEqual(20);
     });
     // Test [invalidNumStr, number] => throws
     test('Provided non-numeric string, expected number => throws', () => {
@@ -313,10 +329,10 @@ describe('Config', () => {
     });
     // Test [string, boolean] => boolean
     test('Provided string, expected boolean => parsedBoolean', () => {
-      expect(normalizeFetchedValue('medplumBool', 'TRUE', 'boolean')).toEqual(true);
-      expect(normalizeFetchedValue('medplumBool', 'false', 'boolean')).toEqual(false);
-      expect(normalizeFetchedValue('medplumBool', 'TrUe', 'boolean')).toEqual(true);
-      expect(normalizeFetchedValue('medplumBool', 'FALSE', 'boolean')).toEqual(false);
+      expect(normalizeFetchedValue('medplumBool', 'TRUE', 'boolean')).toStrictEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'false', 'boolean')).toStrictEqual(false);
+      expect(normalizeFetchedValue('medplumBool', 'TrUe', 'boolean')).toStrictEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'FALSE', 'boolean')).toStrictEqual(false);
     });
     // Test [invalidStr, boolean] => throws
     test('Provided string, expected boolean => parsedBoolean', () => {
@@ -358,7 +374,7 @@ describe('Config', () => {
     });
 
     test('Valid key in param store', async () => {
-      await expect(configNormalizer.fetchParameterStoreSecret('stackName')).resolves.toEqual('MyFoomedicalStack');
+      await expect(configNormalizer.fetchParameterStoreSecret('stackName')).resolves.toStrictEqual('MyFoomedicalStack');
     });
 
     test('Invalid key in param store', async () => {
@@ -403,7 +419,7 @@ describe('Config', () => {
             } satisfies ExternalSecret<'string'>,
           ],
         })
-      ).toEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
+      ).toStrictEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
       expect(
         await configNormalizer.normalizeObjectInInfraConfig({
           medplumStuff: [
@@ -415,7 +431,7 @@ describe('Config', () => {
             'medplum',
           ],
         })
-      ).toEqual({ medplumStuff: ['MyMedplumSecret', 'medplum'] });
+      ).toStrictEqual({ medplumStuff: ['MyMedplumSecret', 'medplum'] });
     });
   });
 
@@ -460,7 +476,7 @@ describe('Config', () => {
           key: 'medplumString',
           type: 'string',
         } satisfies ExternalSecret<'string'>)
-      ).toEqual(true);
+      ).toStrictEqual(true);
     });
     // Test secret with shape but invalid type
     test('Almost valid ExternalSecret, invalid type value', () => {
@@ -470,7 +486,7 @@ describe('Config', () => {
           key: 'medplumString',
           type: 'plum',
         })
-      ).toEqual(false);
+      ).toStrictEqual(false);
     });
     // Test completely invalid secret
     test('Invalid ExternalSecret', () => {
@@ -479,7 +495,7 @@ describe('Config', () => {
           key: 10,
           type: true,
         })
-      ).toEqual(false);
+      ).toStrictEqual(false);
     });
   });
 });

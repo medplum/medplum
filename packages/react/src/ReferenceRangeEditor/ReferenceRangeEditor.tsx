@@ -1,10 +1,18 @@
-import { ActionIcon, Button, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { formatRange, getCodeBySystem } from '@medplum/core';
-import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
+import type {
+  CodeableConcept,
+  ObservationDefinition,
+  ObservationDefinitionQualifiedInterval,
+} from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { MouseEvent, useEffect, useState } from 'react';
+import type { JSX, MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { RangeInput } from '../RangeInput/RangeInput';
 import { killEvent } from '../utils/dom';
 import classes from './ReferenceRangeEditor.module.css';
@@ -76,7 +84,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
       </ActionIcon>
 
       <Group justify="flex-end">
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Group>
     </Form>
   );
@@ -377,8 +385,8 @@ function ensureQualifiedIntervalKeys(
   let nextId =
     Math.max(
       ...intervals.map((interval) => {
-        const existingNum = parseInt(interval.id?.substring(3) || '', 10);
-        return !isNaN(existingNum) ? existingNum : Number.NEGATIVE_INFINITY;
+        const existingNum = Number.parseInt(interval.id?.substring(3) || '', 10);
+        return !Number.isNaN(existingNum) ? existingNum : Number.NEGATIVE_INFINITY;
       })
     ) + 1;
 

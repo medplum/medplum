@@ -1,8 +1,11 @@
-import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
-import { InternalSchemaElement } from '../typeschema/types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
+import type { TypedValue } from '../types';
+import { PropertyType, getElementDefinition, isResource } from '../types';
+import type { InternalSchemaElement } from '../typeschema/types';
 import { validationRegexes } from '../typeschema/validation';
-import { capitalize, isEmpty } from '../utils';
+import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -33,6 +36,10 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.Quantity, value };
   } else if (isResource(value)) {
     return { type: value.resourceType, value };
+  } else if (isCodeableConcept(value)) {
+    return { type: PropertyType.CodeableConcept, value };
+  } else if (isCoding(value)) {
+    return { type: PropertyType.Coding, value };
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
@@ -158,6 +165,11 @@ export function getTypedPropertyValueWithSchema(
       for (let i = 0; i < Math.max(resultValue.length, primitiveExtension.length); i++) {
         resultValue[i] = assignPrimitiveExtension(resultValue[i], primitiveExtension[i]);
       }
+    } else if (!resultValue && Array.isArray(primitiveExtension)) {
+      resultValue = primitiveExtension.slice();
+      for (let i = 0; i < primitiveExtension.length; i++) {
+        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
+      }
     } else {
       resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
     }
@@ -193,7 +205,7 @@ function toTypedValueWithType(value: any, type: string): TypedValue {
  * @param path - The property path.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithoutSchema(
+export function getTypedPropertyValueWithoutSchema(
   typedValue: TypedValue,
   path: string
 ): TypedValue[] | TypedValue | undefined {
@@ -202,9 +214,15 @@ function getTypedPropertyValueWithoutSchema(
     return undefined;
   }
 
-  let result: any = undefined;
+  let result: TypedValue[] | TypedValue | undefined = undefined;
+
   if (path in input) {
-    result = (input as { [key: string]: unknown })[path];
+    const propertyValue = (input as { [key: string]: unknown })[path];
+    if (Array.isArray(propertyValue)) {
+      result = propertyValue.map(toTypedValue);
+    } else {
+      result = toTypedValue(propertyValue);
+    }
   } else {
     // Only support property names that would be valid types
     // Examples:
@@ -212,25 +230,30 @@ function getTypedPropertyValueWithoutSchema(
     // value + valueDecimal = ok, because "decimal" is valid
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
-    //eslint-disable-next-line guard-for-in
-    for (const propertyType in PropertyType) {
-      const propertyName = path + capitalize(propertyType);
+    const trimmedPath = path.endsWith('[x]') ? path.substring(0, path.length - 3) : path;
+    for (const propertyType of Object.values(PropertyType)) {
+      const propertyName = trimmedPath + capitalize(propertyType);
       if (propertyName in input) {
-        result = (input as { [key: string]: unknown })[propertyName];
+        const propertyValue = (input as { [key: string]: unknown })[propertyName];
+        if (Array.isArray(propertyValue)) {
+          result = propertyValue.map((v) => ({ type: propertyType, value: v }));
+        } else {
+          result = { type: propertyType, value: propertyValue };
+        }
         break;
       }
     }
   }
 
-  if (isEmpty(result)) {
+  if (Array.isArray(result)) {
+    if (result.length === 0 || isEmpty(result[0])) {
+      return undefined;
+    }
+  } else if (isEmpty(result)) {
     return undefined;
   }
 
-  if (Array.isArray(result)) {
-    return result.map(toTypedValue);
-  } else {
-    return toTypedValue(result);
-  }
+  return result;
 }
 
 /**
@@ -414,7 +437,17 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     return false;
   }
 
-  switch (desiredType) {
+  let cleanType = desiredType;
+
+  if (cleanType.startsWith('System.')) {
+    cleanType = cleanType.substring('System.'.length);
+  }
+
+  if (cleanType.startsWith('FHIR.')) {
+    cleanType = cleanType.substring('FHIR.'.length);
+  }
+
+  switch (cleanType) {
     case 'Boolean':
       return typeof value === 'boolean';
     case 'Decimal':
@@ -431,7 +464,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && value?.resourceType === desiredType;
+      return typedValue.type === cleanType || (typeof value === 'object' && value?.resourceType === cleanType);
   }
 }
 
@@ -477,27 +510,39 @@ export function toPeriod(input: unknown): Period | undefined {
     return undefined;
   }
 
-  if (isDateString(input)) {
+  if (isDateString(input) || isDateTimeString(input)) {
     return {
-      start: dateStringToInstantString(input, '0000-00-00T00:00:00.000Z'),
-      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
+      start: dateStringToInstantString(input, '0000-01-01T00:00:00.000'),
+      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999'),
     };
   }
 
-  if (isDateTimeString(input)) {
-    return { start: input, end: input };
-  }
-
   if (isPeriod(input)) {
-    return input;
+    return {
+      start: input.start ? dateStringToInstantString(input.start, '0000-01-01T00:00:00.000') : undefined,
+      end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999') : undefined,
+    };
   }
 
   return undefined;
 }
 
 function dateStringToInstantString(input: string, fill: string): string {
+  // For any input with a time zone offset, we need to normalize it to "Z" time zone.
+  // The time zone offset is valid, but for this function to work as expected, we need to normalize.
+  // Note that the "+" or "-" comes after the seconds, so we must check after the "T" character.
+  let timezone = 'Z';
+  const tzDelimiter = Math.max(input.indexOf('+', 10), input.indexOf('-', 10));
+  if (tzDelimiter > -1) {
+    timezone = input.substring(tzDelimiter);
+    input = input.substring(0, tzDelimiter);
+  } else if (input.endsWith('Z')) {
+    input = input.substring(0, input.length - 1);
+  }
+
   // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
-  return input + fill.substring(input.length);
+  const instant = input + fill.substring(input.length) + timezone;
+  return new Date(instant).toISOString();
 }
 
 /**

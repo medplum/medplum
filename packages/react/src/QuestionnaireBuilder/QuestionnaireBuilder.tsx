@@ -1,6 +1,8 @@
-import { Anchor, Box, Button, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
-import {
+import type {
   Extension,
   Questionnaire,
   QuestionnaireItem,
@@ -8,22 +10,26 @@ import {
   Reference,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import {
+  getQuestionnaireItemReferenceTargetTypes,
+  isChoiceQuestion,
+  QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QuestionnaireItemType,
+  setQuestionnaireItemReferenceTargetTypes,
+  useMedplum,
+  useResource,
+} from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
-import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import type { JSX, MouseEvent, SyntheticEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
+import { SubmitButton } from '../Form/SubmitButton';
+import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 import { killEvent } from '../utils/dom';
-import {
-  getQuestionnaireItemReferenceTargetTypes,
-  isChoiceQuestion,
-  QuestionnaireItemType,
-  setQuestionnaireItemReferenceTargetTypes,
-} from '../utils/questionnaire';
 import classes from './QuestionnaireBuilder.module.css';
 
 export interface QuestionnaireBuilderProps {
@@ -87,7 +93,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setHoverKey={setHoverKey}
           onChange={handleChange}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
@@ -117,7 +123,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>();
+  const itemRef = useRef<T>(props.item);
   itemRef.current = props.item;
 
   function onClick(e: SyntheticEvent): void {
@@ -216,14 +222,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         ) : (
           <>
             {resource.title && <Title>{resource.title}</Title>}
-            {item.text && <div>{item.text}</div>}
+            {item.text && <div className={classes.preserveBreaks}>{item.text}</div>}
             {!isContainer && (
-              <QuestionnaireFormItem
-                item={item}
-                index={0}
-                onChange={() => undefined}
-                response={{ linkId: item.linkId }}
-              />
+              <QuestionnaireFormItem item={item} index={0} required={false} responseItem={{ linkId: item.linkId }} />
             )}
           </>
         )}
@@ -615,10 +616,10 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   }
   items.forEach((item) => {
     if (item.id?.match(/^id-\d+$/)) {
-      nextId = Math.max(nextId, parseInt(item.id.substring(3), 10) + 1);
+      nextId = Math.max(nextId, Number.parseInt(item.id.substring(3), 10) + 1);
     }
     if (item.linkId?.match(/^q\d+$/)) {
-      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1), 10) + 1);
+      nextLinkId = Math.max(nextLinkId, Number.parseInt(item.linkId.substring(1), 10) + 1);
     }
   });
   return items.map((item) => ({
@@ -649,7 +650,7 @@ function createPage(): QuestionnaireItem {
     text: `New Page`,
     extension: [
       {
-        url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+        url: QUESTIONNAIRE_ITEM_CONTROL_URL,
         valueCodeableConcept: {
           coding: [
             {

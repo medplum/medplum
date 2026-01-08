@@ -1,29 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
+import '@mantine/spotlight/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { RouterProvider, createBrowserRouter } from 'react-router';
 import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
-
-if ('serviceWorker' in navigator) {
-  // Clear all server workers
-  // Once upon a time, we used a service worker to cache static assets.
-  // We don't do that anymore, but the old service worker is still there.
-  // This code removes it.
-  // Someday we can remove this code.
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .getRegistrations()
-      .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-      .catch((regError) => console.error('SW registration failed: ', regError));
-  });
-}
 
 export async function initApp(): Promise<void> {
   const config = getConfig();
@@ -31,6 +20,7 @@ export async function initApp(): Promise<void> {
   const medplum = new MedplumClient({
     baseUrl: config.baseUrl,
     clientId: config.clientId,
+    storagePrefix: '@medplum:',
     cacheTime: 60000,
     autoBatchTime: 100,
     onUnauthenticated: () => {

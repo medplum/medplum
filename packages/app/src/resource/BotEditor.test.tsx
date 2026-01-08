@@ -1,10 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -103,15 +105,6 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
-    };
-
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
@@ -120,23 +113,17 @@ describe('BotEditor', () => {
   });
 
   test('Deploy error', async () => {
-    await setup('/Bot/123/editor');
-    expect(await screen.findByText('Deploy')).toBeInTheDocument();
+    const medplum = new MockClient();
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [badRequest('Something went wrong')]);
 
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
-    };
+    await setup('/Bot/123/editor', medplum);
+    expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
   test('Execute success', async () => {

@@ -1,16 +1,23 @@
-import { Anchor, Box, Group, Modal, Text } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { getDisplayString } from '@medplum/core';
+import type { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { killEvent } from '../utils/dom';
-import { ConceptBadge } from './ConceptBadge';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { CollapsibleSection } from './CollapsibleSection';
 import { MedicationDialog } from './MedicationDialog';
+import SummaryItem from './SummaryItem';
+import styles from './SummaryItem.module.css';
 
 export interface MedicationsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly medicationRequests: MedicationRequest[];
+  readonly onClickResource?: (resource: MedicationRequest) => void;
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {
@@ -37,37 +44,44 @@ export function Medications(props: MedicationsProps): JSX.Element {
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Medications
-        </Text>
-        <Anchor
-          component="button"
-          onClick={(e) => {
-            killEvent(e);
-            setEditMedication(undefined);
-            open();
-          }}
-        >
-          + Add
-        </Anchor>
-      </Group>
-      {medicationRequests.length > 0 ? (
-        <Box>
-          {medicationRequests.map((request) => (
-            <ConceptBadge<MedicationRequest>
-              key={request.id}
-              resource={request}
-              onEdit={(mr) => {
-                setEditMedication(mr);
-                open();
-              }}
-            />
-          ))}
-        </Box>
-      ) : (
-        <Text>(none)</Text>
-      )}
+      <CollapsibleSection
+        title="Medications"
+        onAdd={() => {
+          setEditMedication(undefined);
+          open();
+        }}
+      >
+        {medicationRequests.length > 0 ? (
+          <Flex direction="column" gap={8}>
+            {medicationRequests.map((medication) => (
+              <SummaryItem
+                key={medication.id}
+                onClick={() => {
+                  setEditMedication(medication);
+                  open();
+                }}
+              >
+                <Box>
+                  <Text fw={500} className={styles.itemText}>
+                    {getDisplayString(medication)}
+                  </Text>
+                  <Group mt={2} gap={4}>
+                    {medication.status && (
+                      <StatusBadge
+                        color={getStatusColor(medication.status)}
+                        variant="light"
+                        status={medication.status}
+                      />
+                    )}
+                  </Group>
+                </Box>
+              </SummaryItem>
+            ))}
+          </Flex>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
       <Modal opened={opened} onClose={close} title={editMedication ? 'Edit Medication' : 'Add Medication'}>
         <MedicationDialog
           patient={props.patient}
@@ -78,4 +92,29 @@ export function Medications(props: MedicationsProps): JSX.Element {
       </Modal>
     </>
   );
+}
+
+function getStatusColor(status?: string): string {
+  if (!status) {
+    return 'gray';
+  }
+
+  switch (status) {
+    case 'active':
+      return 'green';
+    case 'stopped':
+      return 'red';
+    case 'on-hold':
+      return 'yellow';
+    case 'cancelled':
+      return 'red';
+    case 'completed':
+      return 'blue';
+    case 'entered-in-error':
+      return 'red';
+    case 'draft':
+      return 'gray';
+    default:
+      return 'gray';
+  }
 }

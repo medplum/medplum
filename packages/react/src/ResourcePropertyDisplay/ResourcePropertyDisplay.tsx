@@ -1,13 +1,12 @@
-import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
-import {
-  InternalSchemaElement,
-  PropertyType,
-  formatDateTime,
-  formatPeriod,
-  formatTiming,
-  isEmpty,
-} from '@medplum/core';
-import { IconCheck, IconCopy } from '@tabler/icons-react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType, formatDateTime, formatPeriod, formatTiming, isEmpty } from '@medplum/core';
+import type { ElementDefinitionType } from '@medplum/fhirtypes';
+import { IconCheck, IconCopy, IconEye, IconEyeOff } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useState } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -16,6 +15,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { CodingDisplay } from '../CodingDisplay/CodingDisplay';
 import { ContactDetailDisplay } from '../ContactDetailDisplay/ContactDetailDisplay';
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
+import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { IdentifierDisplay } from '../IdentifierDisplay/IdentifierDisplay';
 import { MoneyDisplay } from '../MoneyDisplay/MoneyDisplay';
@@ -24,8 +24,6 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
-import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
-import { ElementDefinitionType } from '@medplum/fhirtypes';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;
@@ -54,7 +52,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   const isIdProperty = property?.path?.endsWith('.id');
   if (isIdProperty) {
     return (
-      <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+      <Flex gap={3} align="center">
         {value}
         {!isEmpty(value) && (
           <CopyButton value={value} timeout={2000}>
@@ -67,7 +65,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
             )}
           </CopyButton>
         )}
-      </Box>
+      </Flex>
     );
   }
 
@@ -101,6 +99,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <>{value === undefined ? '' : Boolean(value).toString()}</>;
     case PropertyType.SystemString:
     case PropertyType.string:
+      // Check if this is a secret field that should be masked
+      if (props.property?.path?.toLowerCase().includes('secret')) {
+        return <SecretFieldDisplay value={value} />;
+      }
       return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
     case PropertyType.code:
     case PropertyType.date:
@@ -111,6 +113,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
+    case PropertyType.xhtml:
       return <>{value}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
@@ -155,7 +158,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
@@ -167,7 +170,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     case PropertyType.Extension:
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <ExtensionDisplay
@@ -180,10 +183,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       );
     default:
       if (!property) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires element schema`);
       }
       if (!props.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+        throw new Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
@@ -194,4 +197,55 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         />
       );
   }
+}
+
+interface SecretFieldDisplayProps {
+  readonly value: string;
+}
+
+function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
+  const [isVisible, setIsVisible] = useState(false);
+  const secretValue = props.value ?? '';
+  const hasValue = !isEmpty(secretValue);
+  const MASK = '•'.repeat(8);
+
+  return (
+    <Flex gap={3} align="center">
+      {isVisible ? (
+        <div style={{ whiteSpace: 'pre-wrap' }}>{secretValue}</div>
+      ) : (
+        <div style={{ whiteSpace: 'pre-wrap' }} aria-hidden="true">
+          {hasValue ? MASK : ''}
+        </div>
+      )}
+      {hasValue && (
+        <>
+          <CopyButton value={props.value} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? 'Copied' : 'Copy secret'} withArrow position="right">
+                <ActionIcon
+                  variant="subtle"
+                  color={copied ? 'teal' : 'gray'}
+                  onClick={copy}
+                  aria-label={copied ? 'Copied' : 'Copy secret'}
+                >
+                  {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+          <Tooltip label={isVisible ? 'Hide secret' : 'Show secret'} withArrow position="right">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={() => setIsVisible(!isVisible)}
+              aria-label={isVisible ? 'Hide secret' : 'Show secret'}
+            >
+              {isVisible ? <IconEyeOff size="1rem" /> : <IconEye size="1rem" />}
+            </ActionIcon>
+          </Tooltip>
+        </>
+      )}
+    </Flex>
+  );
 }

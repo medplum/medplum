@@ -1,7 +1,9 @@
-import { ElementsInput } from './ElementsInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType } from '@medplum/core';
 import { render, screen } from '../test-utils/render';
+import { ElementsInput } from './ElementsInput';
 import { ElementsContext } from './ElementsInput.utils';
-import { ElementsContextType } from '@medplum/core';
 
 const elementsContext: ElementsContextType = {
   debugMode: false,

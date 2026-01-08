@@ -32,7 +32,7 @@ First, you must enable access logs so that AWS Application Load Balancer logs ar
   "loadBalancerLoggingPrefix": "elb-staging",
 ```
 
-And then deploy the CDK changes. See [Medplum Config Settings](./config-settings) and [Install on AWS](./install-on-aws) for more details.
+And then deploy the CDK changes. See [Medplum Config Settings](./aws-cdk-settings) and [Install on AWS](./install-on-aws) for more details.
 
 Next, if you do not have a "default" Athena database, follow [Creating databases in Athena](https://docs.aws.amazon.com/athena/latest/ug/creating-databases.html).
 

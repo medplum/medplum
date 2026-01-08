@@ -16,6 +16,12 @@ rahul:
   url: https://github.com/rahul1
   image_url: https://github.com/rahul1.png
 
+mattlong:
+  name: Matt Long
+  title: Medplum Core Team
+  url: https://github.com/mattlong
+  image_url: https://github.com/mattlong.png
+
 jdjkelly:
   name: Joshua Kelly
   title: Flexpa CTO
@@ -33,3 +39,39 @@ andrewdilling:
   title: Head of Product, Chamber Cardio
   url: https://github.com/andrewdilling
   image_url: https://github.com/andrewdilling.png
+
+andrei-zudin:
+  name: Andrei Zudin
+  title: Head of Interoperability and Security, RhythmX
+  url: https://github.com/andrei-zudin
+  image_url: https://github.com/andrei-zudin.png
+  
+finnbergquist:
+  name: Finn Bergquist
+  title: Forward Deployed Engineer, Medplum
+  url: https://github.com/finnbergquist
+  image_url: https://github.com/finnbergquist.png
+
+ThatOneBro:
+  name: Derrick Farris
+  title: Founding Engineer, Medplum
+  url: https://github.com/ThatOneBro
+  image_url: https://github.com/ThatOneBro.png
+
+kerbearasaurus:
+  name: Kerry Weinberg
+  title: CEO, phenoml
+  url: https://github.com/kerbearasaurus
+  image_url: https://github.com/kerbearasaurus.png
+
+mattwiller:
+  name: Matt Willer
+  title: Founding Engineer, Medplum
+  url: https://github.com/mattwiller
+  image_url: https://github.com/mattwiller.png
+
+codyhall:
+  name: Cody Hall
+  title: CTO and Co-Founder, Unity AI
+  url: https://github.com/codyhall
+  image_url: https://github.com/codyhall.png 

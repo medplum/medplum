@@ -1,28 +1,45 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { CreateFunctionRequest } from '@aws-sdk/client-lambda';
 import {
   CreateFunctionCommand,
-  CreateFunctionRequest,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ResourceConflictException,
+  ResourceNotFoundException,
+  TooManyRequestsException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { ContentType } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import { allOk, badRequest, ContentType } from '@medplum/core';
+import type { Bot } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import { randomUUID } from 'crypto';
 import express from 'express';
+import JSZip from 'jszip';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import {
+  DEFAULT_LAMBDA_TIMEOUT,
+  getLambdaNameForBot,
+  getLambdaTimeoutForBot,
+  LAMBDA_HANDLER,
+  LAMBDA_RUNTIME,
+} from './deploy';
 
-const app = express();
-let accessToken: string;
-let mockLambdaClient: AwsClientStub<LambdaClient>;
+const TEST_LAYER_ARN = 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1';
 
 describe('Deploy', () => {
+  const app = express();
+  let accessToken: string;
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -34,61 +51,77 @@ describe('Deploy', () => {
   });
 
   beforeEach(() => {
-    let created = false;
+    const lambdaMap = new Map<string, Record<string, any>>();
 
     mockLambdaClient = mockClient(LambdaClient);
 
-    mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName }) => {
-      created = true;
-
-      return {
-        Configuration: {
-          FunctionName,
-        },
+    mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName, Timeout }) => {
+      const lambdaConfig = {
+        FunctionName,
+        Timeout,
       };
+      lambdaMap.set(FunctionName, lambdaConfig);
+      return { Configuration: lambdaConfig };
     });
 
     mockLambdaClient.on(GetFunctionCommand).callsFake(({ FunctionName }) => {
-      if (created) {
-        return {
-          Configuration: {
-            FunctionName,
-          },
-        };
+      if (lambdaMap.has(FunctionName)) {
+        const lambdaConfig = lambdaMap.get(FunctionName);
+        return { Configuration: lambdaConfig };
       }
-
-      return {
-        Configuration: {},
-      };
+      // When the function is not found, a `ResourceNotFoundException` is thrown
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
     mockLambdaClient.on(GetFunctionConfigurationCommand).callsFake(({ FunctionName }) => {
-      return {
-        FunctionName,
-        Runtime: 'nodejs18.x',
-        Handler: 'index.handler',
-        State: 'Active',
-        Layers: [
-          {
-            Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
-          },
-        ],
-      };
+      if (lambdaMap.has(FunctionName)) {
+        const config = lambdaMap.get(FunctionName) as Record<string, any>;
+        return {
+          FunctionName,
+          Timeout: config.Timeout ?? DEFAULT_LAMBDA_TIMEOUT,
+          Runtime: 'nodejs22.x',
+          Handler: 'index.handler',
+          State: 'Active',
+          Layers: [
+            {
+              Arn: TEST_LAYER_ARN,
+            },
+          ],
+        };
+      }
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
     mockLambdaClient.on(ListLayerVersionsCommand).resolves({
       LayerVersions: [
         {
-          LayerVersionArn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
+          LayerVersionArn: TEST_LAYER_ARN,
         },
       ],
     });
 
-    mockLambdaClient.on(UpdateFunctionCodeCommand).callsFake(({ FunctionName }) => ({
-      Configuration: {
+    mockLambdaClient.on(UpdateFunctionConfigurationCommand).callsFake(({ FunctionName, Timeout }) => {
+      const lambdaConfig = {
         FunctionName,
-      },
-    }));
+        Timeout,
+      };
+
+      if (lambdaMap.has(FunctionName)) {
+        lambdaMap.set(FunctionName, lambdaConfig);
+        return { Configuration: lambdaConfig };
+      }
+
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
+    });
+
+    mockLambdaClient.on(UpdateFunctionCodeCommand).callsFake(({ FunctionName }) => {
+      if (lambdaMap.has(FunctionName)) {
+        const lambdaConfig = lambdaMap.get(FunctionName);
+        return { Configuration: lambdaConfig };
+      }
+
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
+    });
   });
 
   afterEach(() => {
@@ -124,7 +157,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         code: `
-        export async function handler() {
+        exports.handler = async (event) => {
           console.log('input', input);
           return input;
         }
@@ -132,7 +165,7 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
@@ -141,6 +174,14 @@ describe('Deploy', () => {
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
     } as CreateFunctionRequest);
+
+    // Verify that this was uploaded as a CJS zip file
+    const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
+    const createCodeBytes = createCall.args[0].input.Code?.ZipFile;
+    expect(createCodeBytes).toBeInstanceOf(Uint8Array);
+    const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
+    expect(Object.keys(createZip.files)).toEqual(expect.arrayContaining(['index.cjs', 'user.cjs']));
+
     mockLambdaClient.resetHistory();
 
     // Step 3: Deploy again to trigger the update path
@@ -164,9 +205,13 @@ describe('Deploy', () => {
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
+
+    // Verify that this was uploaded as a MJS zip file
+    const updateCall = mockLambdaClient.commandCall(0, UpdateFunctionCodeCommand);
+    const updateCodeBytes = updateCall.args[0].input?.ZipFile;
+    expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
+    const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
+    expect(Object.keys(updateZip.files)).toEqual(expect.arrayContaining(['index.mjs', 'user.mjs']));
   });
 
   test('Deploy bot with lambda layer update', async () => {
@@ -208,7 +253,7 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(200);
 
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
@@ -228,7 +273,24 @@ describe('Deploy', () => {
       ],
     });
 
-    // Step 4: Deploy again to trigger the update path
+    // Step 4: Simulate an error when updating the code
+    // On the first call to UpdateFunctionCode, return a failure
+    // On the second call, return success
+    mockLambdaClient
+      .on(UpdateFunctionCodeCommand)
+      .rejectsOnce(
+        new ResourceConflictException({
+          $metadata: {},
+          message: 'The operation cannot be performed at this time. An update is in progress for resource',
+        })
+      )
+      .callsFake(({ FunctionName }) => ({
+        Configuration: {
+          FunctionName,
+        },
+      }));
+
+    // Step 5: Deploy again to trigger the update path
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -246,11 +308,287 @@ describe('Deploy', () => {
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 2);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 2);
+  });
+
+  test('Deploy bot with timeout configured', async () => {
+    // Step 1: Create a bot with no timeout
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    // Step 2: Deploy the bot without timeout ... check that default timeout was set on lambda
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body).toMatchObject(allOk);
+
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
+
+    mockLambdaClient.resetHistory();
+
+    // Step 3: Update bot to have to have a timeout
+    const res3 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...bot,
+        timeout: 15,
+      });
+    expect(res3.status).toBe(200);
+
+    // Step 4: Deploy bot again
+    const res4 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `,
+      });
+    // expect(res4.status).toBe(200);
+    expect(res4.body).toMatchObject(allOk);
+
+    // Make sure that timeout was updated
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedNthSpecificCommandWith(1, UpdateFunctionConfigurationCommand, {
+      FunctionName: getLambdaNameForBot(bot),
+      Role: getConfig().botLambdaRoleArn,
+      Runtime: LAMBDA_RUNTIME,
+      Handler: LAMBDA_HANDLER,
+      Layers: [TEST_LAYER_ARN],
+      Timeout: 15,
     });
+
+    mockLambdaClient.resetHistory();
+
+    // Step 5: Remove timeout
+    // This actually tests that timeout is not overridden
+    const res5 = await request(app)
+      .put(`/fhir/R4/Bot/${bot.id}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...bot,
+      });
+    expect(res5.status).toBe(200);
+
+    // Step 6: Deploy bot for final time
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `,
+      });
+    expect(res6.status).toBe(200);
+    expect(res6.body).toMatchObject(allOk);
+
+    // Make sure that timeout was updated again
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
+  });
+
+  test('Deploying new Bot with no timeout results in Bot with default timeout', async () => {
+    const botProps = {
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      runtimeVersion: 'awslambda',
+      code: `
+    export async function handler() {
+      console.log('input', input);
+      return input;
+    }
+    `,
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...botProps,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+      export async function handler() {
+        console.log('input', input);
+        return input;
+      }
+      `,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body).toMatchObject(allOk);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/Bot/${bot.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body).toMatchObject({ ...botProps, timeout: DEFAULT_LAMBDA_TIMEOUT });
+
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 2);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 0);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 0);
+  });
+
+  test('Deploy fails when Bot timeout is greater than max', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+        timeout: 1000,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Bot timeout exceeds allowed maximum of 900 seconds'));
+  });
+
+  test('Exists check throws error', async () => {
+    mockLambdaClient.on(GetFunctionCommand).callsFakeOnce(() => {
+      throw new TooManyRequestsException({ message: 'Too many requests', $metadata: {} });
+    });
+
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+        timeout: 100,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Too many requests'));
+  });
+});
+
+describe('getLambdaTimeoutForBot', () => {
+  const app = express();
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+
+    mockLambdaClient = mockClient(LambdaClient);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  afterEach(() => {
+    mockLambdaClient.restore();
+  });
+
+  test('Throws when any exception except for `ResourceNotFoundException` is thrown', async () => {
+    mockLambdaClient.on(GetFunctionCommand).callsFake(() => {
+      throw new TooManyRequestsException({ message: 'Too many requests', $metadata: {} });
+    });
+
+    await expect(getLambdaTimeoutForBot({ id: randomUUID(), resourceType: 'Bot', name: 'Test Bot' })).rejects.toThrow(
+      new TooManyRequestsException({ message: 'Too many requests', $metadata: {} })
+    );
   });
 });

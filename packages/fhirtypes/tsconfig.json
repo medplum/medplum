@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "noEmit": false,
+    "skipLibCheck": false,
+    "typeRoots": ["dist"]
+  },
+  "include": ["dist"]
+}

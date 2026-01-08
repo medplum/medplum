@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
@@ -17,24 +17,29 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "main": "index.cjs",
+  "type": "module",
+  "main": "index.mjs",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "8.5.0",
-    "@typescript-eslint/parser": "8.5.0",
-    "eslint": "8.57.0",
-    "eslint-plugin-jsdoc": "50.2.2",
-    "eslint-plugin-react-hooks": "4.6.2",
-    "eslint-plugin-react-refresh": "0.4.11"
+    "eslint": "9.39.2",
+    "eslint-plugin-header": "3.1.1",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-jsdoc": "61.5.0",
+    "eslint-plugin-no-only-tests": "3.3.0",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.4.26",
+    "typescript-eslint": "8.51.0"
   },
   "peerDependencies": {
-    "@typescript-eslint/eslint-plugin": "^7",
-    "@typescript-eslint/parser": "^7",
-    "eslint": "^8",
-    "eslint-plugin-jsdoc": "^48",
-    "eslint-plugin-react-hooks": "^4",
-    "eslint-plugin-react-refresh": "^0"
+    "eslint": "^9",
+    "eslint-plugin-header": "^3",
+    "eslint-plugin-import": "^2",
+    "eslint-plugin-jsdoc": "^61",
+    "eslint-plugin-no-only-tests": "^3",
+    "eslint-plugin-react-hooks": "^7",
+    "eslint-plugin-react-refresh": "^0",
+    "typescript-eslint": "^8"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

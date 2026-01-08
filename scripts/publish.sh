@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 
+set -xe
+
 PACKAGES=(
   "agent"
   "app"
   "bot-layer"
+  "ccda"
   "cdk"
   "cli"
+  "cli-wrapper"
   "core"
+  "create-medplum"
   "definitions"
+  "dosespot-react"
   "eslint-config"
-  "expo-polyfills"
   "fhir-router"
   "fhirtypes"
   "health-gorilla-core"
+  "health-gorilla-react"
   "hl7"
   "mock"
   "react"
@@ -22,6 +28,8 @@ PACKAGES=(
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
-  npm publish --access public
+  cp ../../LICENSE.txt .
+  cp ../../NOTICE .
+  npm publish --provenance --access public
   popd
 done

@@ -1,8 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect, TextInput } from '@mantine/core';
-import { Address } from '@medplum/fhirtypes';
+import { trimTrailingEmptyElements } from '@medplum/core';
+import type { Address } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useRef, useState } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';
@@ -14,7 +18,7 @@ function setLine(address: Address, index: number, str: string): Address {
     line.push('');
   }
   line[index] = str;
-  return { ...address, line };
+  return { ...address, line: trimTrailingEmptyElements(line) };
 }
 
 export type AddressInputProps = ComplexTypeInputProps<Address>;
@@ -22,7 +26,7 @@ export type AddressInputProps = ComplexTypeInputProps<Address>;
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
 
-  const valueRef = useRef<Address>();
+  const valueRef = useRef<Address>(value);
   valueRef.current = value;
 
   const { getExtendedProps } = useContext(ElementsContext);

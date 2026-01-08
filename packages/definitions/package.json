@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum Data Definitions",
   "keywords": [
     "medplum",
@@ -29,17 +29,34 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
-  "main": "dist/index.js",
+  "type": "module",
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/esm/index.d.ts",
   "files": [
-    "dist"
+    "dist/cjs",
+    "dist/esm",
+    "dist/fhir"
   ],
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json",
-    "clean": "rimraf dist/index.js dist/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc && node build.mjs && npm run api-extractor",
+    "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

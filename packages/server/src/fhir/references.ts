@@ -1,17 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue } from '@medplum/core';
 import {
   badRequest,
-  crawlResource,
+  crawlTypedValueAsync,
   createReference,
   createStructureIssue,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
-  TypedValue,
+  toTypedValue,
 } from '@medplum/core';
-import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { getSystemRepo, Repository } from './repo';
+import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
+import { randomUUID } from 'node:crypto';
+import type { Repository } from './repo';
+import { getSystemRepo } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation
@@ -26,23 +30,23 @@ import { getSystemRepo, Repository } from './repo';
  * a criteria that requires Project.id matches the admin's ProjectMembership.project
  * reference which will always fail for linked projects.
  */
-const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project'];
+const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'ProjectMembership.user'];
 
-async function validateReference(
+async function validateReferences(
   repo: Repository,
-  reference: Reference,
-  issues: OperationOutcomeIssue[],
-  path: string
+  references: Record<string, Reference>,
+  issues: OperationOutcomeIssue[]
 ): Promise<void> {
-  if (reference.reference?.split?.('/')?.length !== 2) {
-    return;
-  }
+  const toValidate = Object.values(references);
+  const paths = Object.keys(references);
 
-  try {
-    const validatingRepo = SYSTEM_REFERENCE_PATHS.includes(path) ? getSystemRepo() : repo;
-    await validatingRepo.readReference(reference);
-  } catch (err) {
-    issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+  const validated = await repo.readReferences(toValidate);
+  for (let i = 0; i < validated.length; i++) {
+    const reference = validated[i];
+    if (reference instanceof Error) {
+      const path = paths[i];
+      issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(reference)})`));
+    }
   }
 }
 
@@ -51,10 +55,16 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean
   return valueType === PropertyType.Reference;
 }
 
-export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
-  const issues: OperationOutcomeIssue[] = [];
-  await crawlResource(
-    resource,
+function shouldValidateReference(ref: Reference): boolean {
+  return Boolean(ref.reference && !ref.reference.startsWith('%') && !ref.reference.startsWith('#'));
+}
+
+export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
+  const references: Record<string, Reference> = Object.create(null);
+  const systemReferences: Record<string, Reference> = Object.create(null);
+
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
@@ -64,16 +74,32 @@ export async function validateReferences<T extends Resource>(repo: Repository, r
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
-            await validateReference(repo, reference, issues, path + '[' + i + ']');
+            if (!shouldValidateReference(reference)) {
+              continue;
+            }
+
+            if (SYSTEM_REFERENCE_PATHS.includes(path)) {
+              systemReferences[path + '[' + i + ']'] = reference;
+            } else {
+              references[path + '[' + i + ']'] = reference;
+            }
           }
-        } else {
+        } else if (shouldValidateReference(propertyValue.value)) {
           const reference = propertyValue.value as Reference;
-          await validateReference(repo, reference, issues, path);
+          if (SYSTEM_REFERENCE_PATHS.includes(path)) {
+            systemReferences[path] = reference;
+          } else {
+            references[path] = reference;
+          }
         }
       },
     },
     { skipMissingProperties: true }
   );
+
+  const issues: OperationOutcomeIssue[] = [];
+  await validateReferences(repo, references, issues);
+  await validateReferences(getSystemRepo(), systemReferences, issues);
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({
@@ -86,10 +112,10 @@ export async function validateReferences<T extends Resource>(repo: Repository, r
 
 async function resolveReplacementReference(
   repo: Repository,
-  reference: Reference,
+  reference: Reference | undefined,
   path: string
 ): Promise<Reference | undefined> {
-  if (!reference.reference?.includes?.('?')) {
+  if (!reference?.reference?.includes?.('?')) {
     return undefined;
   }
 
@@ -110,8 +136,8 @@ async function resolveReplacementReference(
 }
 
 export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
-  await crawlResource(
-    resource,
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue)) {

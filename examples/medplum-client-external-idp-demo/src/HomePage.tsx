@@ -1,8 +1,11 @@
-import { Title, Button, Group } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Button, Group, Title } from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
-import { Practitioner } from '@medplum/fhirtypes';
+import type { Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useState } from 'react';
+import type { JSX } from 'react';
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -55,6 +58,9 @@ export function HomePage(): JSX.Element {
           }
         >
           Practitioners
+        </Button>
+        <Button component="a" href="/Patient">
+          Patients
         </Button>
       </Group>
 

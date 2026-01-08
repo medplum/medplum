@@ -1,0 +1,43 @@
+{
+  "name": "medplum-mso-demo",
+  "version": "5.0.10",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "devDependencies": {
+    "@mantine/core": "8.3.10",
+    "@mantine/hooks": "8.3.10",
+    "@mantine/notifications": "8.3.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/eslint-config": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
+    "@medplum/react": "5.0.10",
+    "@tabler/icons-react": "3.36.0",
+    "@types/node": "22.19.3",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.2",
+    "postcss": "8.5.6",
+    "postcss-preset-mantine": "1.18.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-router": "7.11.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.0"
+  },
+  "packageManager": "npm@10.9.4",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}

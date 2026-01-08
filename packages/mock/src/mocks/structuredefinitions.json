@@ -12324,6 +12324,17 @@
               "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
+        },
+        {
+          "id": "Project.exportedResourceType",
+          "path": "Project.exportedResourceType",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
         }
       ]
     }
@@ -12514,6 +12525,17 @@
           ]
         },
         {
+          "id": "Bot.timeout",
+          "path": "Bot.timeout",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
           "id": "Bot.photo",
           "path": "Bot.photo",
           "min": 0,
@@ -12550,8 +12572,30 @@
           ]
         },
         {
+          "id": "Bot.system",
+          "path": "Bot.system",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
           "id": "Bot.runAsUser",
           "path": "Bot.runAsUser",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Bot.publicWebhook",
+          "path": "Bot.publicWebhook",
           "min": 0,
           "max": "1",
           "type": [
@@ -12601,6 +12645,94 @@
           "type": [
             {
               "code": "Attachment"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService",
+          "path": "Bot.cdsService",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.hook",
+          "path": "Bot.cdsService.hook",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.title",
+          "path": "Bot.cdsService.title",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.description",
+          "path": "Bot.cdsService.description",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.usageRequirements",
+          "path": "Bot.cdsService.usageRequirements",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.prefetch",
+          "path": "Bot.cdsService.prefetch",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.prefetch.key",
+          "path": "Bot.cdsService.prefetch.key",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Bot.cdsService.prefetch.query",
+          "path": "Bot.cdsService.prefetch.query",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
             }
           ]
         },

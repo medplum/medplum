@@ -14,7 +14,7 @@ Bots are disabled by default for accounts. Contact info@medplum.com if you'd lik
 
 :::note Bots in Local Development
 
-If you want to run bots locally, you should use a VM Context. For more details see the [VM Context Bots docs](/docs/bots/vm-context-bots).
+If you want to run bots locally, you should use a VM Context. For more details see the [Running Bots Locally docs](/docs/bots/running-bots-locally).
 
 :::
 
@@ -79,11 +79,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
 
-| Name          | Type                                                                        | Description                                                                         |
-| ------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](../sdk/core.medplumclient)                                  | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
-| `event`       | [BotEvent](../sdk/core.botevent)                                            | The event that object that triggered the Bot                                        |
-| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
+| Name                | Type                                                                                         | Description                                                                                              |
+| ------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `medplum`           | [MedplumClient](/docs/sdk/core.medplumclient)                                                | An instance of the medplum JS SDK ([documentation](/docs/sdk))                                           |
+| `event`             | [BotEvent](/docs/sdk/core.botevent)                                                          | The event object that triggered the Bot                                                                  |
+| `event.bot`         | `Reference<Bot>`                                                                             | Reference to the Bot resource that is executing                                                          |
+| `event.contentType` | `string`                                                                                     | The content type of the input (e.g., `application/fhir+json`, `text/plain`)                              |
+| `event.input`       | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>`                  | The bot input, usually a FHIR resource or content that was posted to a bot endpoint                      |
+| `event.secrets`     | `Record<string, ProjectSetting>`                                                             | Map of project secrets accessible to the bot. See [Bot Secrets](/docs/bots/bot-secrets) for more details |
+| `event.traceId`     | `string` (optional)                                                                          | Trace ID for request correlation and debugging                                                           |
+| `event.requester`   | `Reference<Bot \| ClientApplication \| Patient \| Practitioner \| RelatedPerson>` (optional) | Reference to the resource that requested the bot execution                                               |
+| `event.headers`     | `Record<string, string \| string[] \| undefined>` (optional)                                 | Headers from the original HTTP request, when invoked by HTTP request                                     |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
@@ -127,7 +133,7 @@ Because these properties may be undefined, we make heavy use of the Javascript [
 
 ## Deploying a Bot
 
-Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy your to run in production.
+Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy it to run in production.
 To deploy your bot, click the "Deploy" button.
 
 ![Deploy Button](/img/app/bots/deploy_button.png)
@@ -136,6 +142,25 @@ This works well for initial prototyping, but as you get closer to a production i
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
+
+### Creating and Deploying Bot from your IDE instead of Editor tab
+
+Alternatively, you can also write the code for a Bot and deploy from within your IDE.
+
+- [Create a Bot](https://app.medplum.com/admin/project) on Medplum and note its `id`. (All Bots in your account can be found [here](https://app.medplum.com/Bot))
+- Create a new typescript file (e.g. `my-bot.ts`) and copy the contents of `examples/hello-patient.ts` into your new file.
+- With the `id` of the Bot `id` in hand, add a section to `medplum.config.json` like so
+
+```json
+{
+  "name": "sample-account-setup",
+  "id": "<BOT_ID>",
+  "source": "src/examples/sample-account-setup.ts",
+  "dist": "dist/sample-account-setup.js"
+}
+```
+
+Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#deploying-your-bot)
 
 ## Executing a Bot
 
@@ -188,7 +213,7 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 #### `ACCESS_TOKEN`
 
-This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/methods/client-credentials#connecting-to-the-service) for more information.
+This is the `access_token` you receive after completing the OAuth authentication flow. See [this how-to](/docs/auth/client-credentials#connecting-to-the-service) for more information.
 
 #### `INPUT_DATA`
 
@@ -266,3 +291,11 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 ## Software Development Lifecycle
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
+
+## Medplum Lambda Bots Size Limits
+
+Medplum Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
+
+- **Maximum compressed size**: 50 MB
+
+These limits apply to your bot code and any extra dependencies you include. The [bot layer](/docs/bots/bot-lambda-layer) already provides many common dependencies (like `@medplum/core`, `node-fetch`, etc.).

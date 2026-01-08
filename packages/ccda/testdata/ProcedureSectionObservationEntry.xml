@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns="urn:hl7-org:v3"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc="urn:hl7-org:v3/voc"
+    xmlns:sdtc="urn:hl7-org:sdtc">
+    <realmCode code="US" />
+    <typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.1" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01" />
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="978a95c6-248e-49d1-b5dd-7c13282bd938" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <templateId root="2.16.840.1.113883.10.20.22.2.7.1" extension="2014-06-09" />
+                    <code code="47519-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+                        displayName="HISTORY OF PROCEDURES" />
+                    <title>Procedures</title>
+                    <text>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Date and Time (Range)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="Procedure2">
+                                    <td ID="ProcedureDesc2">Electrocardiogram (12-Lead)</td>
+                                    <td>29 Mar 2014 09:15am</td>
+                                    <td>Completed</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <!-- Observations should be used for care that result in information about
+                        the patient (e.g. a diagnostic test & result) but do not alter physical
+                        state-->
+                        <observation classCode="OBS" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.13" />
+                            <templateId root="2.16.840.1.113883.10.20.22.4.13"
+                                extension="2014-06-09" />
+                            <id root="c03e5445-af1b-4911-a419-e2782f21448c" />
+                            <code code="268400002" codeSystem="2.16.840.1.113883.6.96"
+                                displayName="12 lead electrocardiogram" codeSystemName="SNOMED CT">
+                            </code>
+                            <text>
+                                <reference value="#Procedure2" />
+                            </text>
+                            <statusCode code="completed" />
+                            <effectiveTime value="20140329091522-0500" />
+                            <!-- When choosing an observation, value records relevant findings-->
+                            <value xsi:type="CD" code="251135002"
+                                codeSystem="2.16.840.1.113883.6.96"
+                                displayName="Borderline normal electrocardiogram"
+                                codeSystemName="SNOMED CT" />
+                        </observation>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

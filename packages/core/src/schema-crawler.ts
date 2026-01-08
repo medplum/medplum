@@ -1,12 +1,11 @@
-import { ElementsContextType, buildElementsContext } from './elements-context';
-import { SliceDefinitionWithTypes, isSliceDefinitionWithTypes } from './typeschema/slices';
-import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SliceDefinition,
-  SlicingRules,
-  tryGetProfile,
-} from './typeschema/types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ElementsContextType } from './elements-context';
+import { buildElementsContext } from './elements-context';
+import type { SliceDefinitionWithTypes } from './typeschema/slices';
+import { isSliceDefinitionWithTypes } from './typeschema/slices';
+import type { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
+import { tryGetProfile } from './typeschema/types';
 import { isPopulated } from './utils';
 
 export type VisitorSlicingRules = Omit<SlicingRules, 'slices'> & {
@@ -128,7 +127,7 @@ export class SchemaCrawler {
   }
 
   private get elementsContext(): ElementsContextType {
-    return this.elementsContextStack[this.elementsContextStack.length - 1];
+    return this.elementsContextStack.at(-1) as ElementsContextType;
   }
 
   crawlElement(element: InternalSchemaElement, key: string, path: string): void {

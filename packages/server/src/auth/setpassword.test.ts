@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference } from '@medplum/core';
+import type { UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -7,12 +10,11 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { getSystemRepo } from '../fhir/repo';
-import { UserSecurityRequest } from '@medplum/fhirtypes';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -75,8 +77,8 @@ describe('Set Password', () => {
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
-    const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const id = paths.at(-2);
+    const secret = paths.at(-1);
 
     const res3 = await request(app).post('/auth/setpassword').type('json').send({
       id,
@@ -245,8 +247,8 @@ describe('Set Password', () => {
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
-    const id = paths[paths.length - 2];
-    const secret = paths[paths.length - 1];
+    const id = paths.at(-2);
+    const secret = paths.at(-1);
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

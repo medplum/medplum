@@ -1,13 +1,8 @@
-import {
-  convertToTransactionBundle,
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  MedplumClient,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
-import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter, MedplumClient, SearchRequest, SortRule } from '@medplum/core';
+import { convertToTransactionBundle, DEFAULT_SEARCH_COUNT, formatSearchQuery } from '@medplum/core';
+import type { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 
 /** Custom navigation paths when the user clicks New... */
 export const RESOURCE_TYPE_CREATION_PATHS: Partial<Record<ResourceType, string>> = {
@@ -50,6 +45,9 @@ export function getDefaultFields(resourceType: string): string[] {
   switch (resourceType) {
     case 'Patient':
       fields.push('name', 'birthDate', 'gender');
+      break;
+    case 'AsyncJob':
+      fields.push('status', 'dataVersion');
       break;
     case 'AccessPolicy':
     case 'Bot':
@@ -121,10 +119,9 @@ export function saveLastSearch(search: SearchRequest): void {
 
 export async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
   const transactionBundleSearch: SearchRequest = {
-    resourceType: search.resourceType,
+    ...search,
     count: 1000,
     offset: 0,
-    filters: search.filters,
   };
   const transactionBundleSearchValues = addSearchValues(transactionBundleSearch, medplum.getUserConfiguration());
   const bundle = await medplum.search(

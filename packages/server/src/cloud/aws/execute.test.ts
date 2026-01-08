@@ -1,13 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { Bot } from '@medplum/fhirtypes';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { getConfig, loadTestConfig } from '../../config';
-import { getBinaryStorage } from '../../fhir/storage';
+import { getConfig, loadTestConfig } from '../../config/loader';
+import { getBinaryStorage } from '../../storage/loader';
 import { initTestAuth } from '../../test.setup';
 import { getLambdaFunctionName } from './execute';
 
@@ -83,7 +86,7 @@ describe('Execute', () => {
       .send('input');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('input');
+    expect(res.text).toStrictEqual('input');
   });
 
   test('Submit FHIR with content type', async () => {
@@ -96,7 +99,7 @@ describe('Execute', () => {
         name: [{ given: ['John'], family: ['Doe'] }],
       });
     expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
   });
 
   test('Submit FHIR without content type', async () => {
@@ -134,9 +137,9 @@ describe('Execute', () => {
     expect(args[1]).toBe(ContentType.JSON);
 
     const row = JSON.parse(args[2] as string);
-    expect(row.botId).toEqual(bot.id);
-    expect(row.hl7MessageType).toEqual('ACK');
-    expect(row.hl7Version).toEqual('2.6.1');
+    expect(row.botId).toStrictEqual(bot.id);
+    expect(row.hl7MessageType).toStrictEqual('ACK');
+    expect(row.hl7Version).toStrictEqual('2.6.1');
   });
 
   test('Execute without code', async () => {
@@ -208,13 +211,13 @@ describe('Execute', () => {
       identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
     };
 
-    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toEqual('medplum-bot-lambda-456');
+    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
+    expect(getLambdaFunctionName(customBot)).toStrictEqual('medplum-bot-lambda-456');
 
     // Temporarily enable custom bot support
     config.botCustomFunctionsEnabled = true;
-    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
-    expect(getLambdaFunctionName(customBot)).toEqual('custom');
+    expect(getLambdaFunctionName(normalBot)).toStrictEqual('medplum-bot-lambda-123');
+    expect(getLambdaFunctionName(customBot)).toStrictEqual('custom');
     config.botCustomFunctionsEnabled = false;
   });
 
@@ -226,6 +229,6 @@ describe('Execute', () => {
       .send('input');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('input');
+    expect(res.text).toStrictEqual('input');
   });
 });

@@ -1,5 +1,8 @@
-import { SubscriptionEmitter, SubscriptionEventMap, generateId } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SubscriptionEventMap } from '@medplum/core';
+import { SubscriptionEmitter, generateId } from '@medplum/core';
+import type { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from './client';
 import { MockReconnectingWebSocket, MockSubscriptionManager } from './subscription-manager';
 
@@ -10,18 +13,18 @@ describe('MockReconnectingWebSocket', () => {
 
   test('.close()', () => {
     const mockWs = new MockReconnectingWebSocket();
-    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+    expect(mockWs.readyState).toStrictEqual(WebSocket.OPEN);
     expect(() => mockWs.close()).not.toThrow();
-    expect(mockWs.readyState).toEqual(WebSocket.CLOSED);
+    expect(mockWs.readyState).toStrictEqual(WebSocket.CLOSED);
   });
 
   test('.reconnect()', () => {
     const mockWs = new MockReconnectingWebSocket();
-    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+    expect(mockWs.readyState).toStrictEqual(WebSocket.OPEN);
     expect(() => mockWs.close()).not.toThrow();
-    expect(mockWs.readyState).toEqual(WebSocket.CLOSED);
+    expect(mockWs.readyState).toStrictEqual(WebSocket.CLOSED);
     expect(() => mockWs.reconnect()).not.toThrow();
-    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+    expect(mockWs.readyState).toStrictEqual(WebSocket.OPEN);
   });
 });
 
@@ -37,22 +40,22 @@ describe('MockSubscriptionManager', () => {
   test('addCriteria()', () => {
     const emitter1 = manager.addCriteria('Communication');
     expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
-    expect(manager.getCriteriaCount()).toEqual(1);
+    expect(manager.getCriteriaCount()).toStrictEqual(1);
 
     const emitter2 = manager.addCriteria('Communication');
     expect(emitter2).toBeInstanceOf(SubscriptionEmitter);
-    expect(manager.getCriteriaCount()).toEqual(1);
+    expect(manager.getCriteriaCount()).toStrictEqual(1);
 
     expect(emitter1).toBe(emitter2);
   });
 
   test('removeCriteria()', () => {
     manager.removeCriteria('Communication');
-    expect(manager.getCriteriaCount()).toEqual(1);
+    expect(manager.getCriteriaCount()).toStrictEqual(1);
     manager.removeCriteria('Communication');
-    expect(manager.getCriteriaCount()).toEqual(0);
+    expect(manager.getCriteriaCount()).toStrictEqual(0);
     expect(() => manager.removeCriteria('Communucation')).not.toThrow();
-    expect(manager.getCriteriaCount()).toEqual(0);
+    expect(manager.getCriteriaCount()).toStrictEqual(0);
   });
 
   test('getMasterEmitter()', () => {
@@ -62,7 +65,7 @@ describe('MockSubscriptionManager', () => {
   test('emitEventForCriteria()', async () => {
     const emitter = manager.addCriteria('Communication');
     expect(emitter).toBeInstanceOf(SubscriptionEmitter);
-    expect(emitter.getCriteria().has('Communication')).toEqual(true);
+    expect(emitter.getCriteria().has('Communication')).toStrictEqual(true);
 
     const bundleId = generateId();
 
@@ -89,7 +92,7 @@ describe('MockSubscriptionManager', () => {
       });
       manager.closeWebSocket();
     });
-    expect(receivedEvent?.type).toEqual('close');
+    expect(receivedEvent?.type).toStrictEqual('close');
   });
 
   test('openWebSocket()', async () => {
@@ -99,7 +102,7 @@ describe('MockSubscriptionManager', () => {
       });
       manager.openWebSocket();
     });
-    expect(receivedEvent?.type).toEqual('open');
+    expect(receivedEvent?.type).toStrictEqual('open');
   });
 
   test('getEmitter()', async () => {

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'node:crypto';
 import { unlinkSync, writeFileSync } from 'node:fs';
@@ -73,11 +76,8 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() =>
-      mockReadline(
-        'y' // Yes, write to Parameter Store
-      )
-    );
+    // Mock readline.createInterface for two calls
+    (readline.createInterface as jest.Mock).mockImplementation(() => mockReadline('y', 'y'));
 
     await main(['node', 'index.js', 'aws', 'update-config', tag]);
     unlinkSync(infraFileName);

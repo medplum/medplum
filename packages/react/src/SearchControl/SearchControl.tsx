@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ActionIcon,
   Button,
@@ -10,16 +12,15 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
+import type { Filter, SearchRequest } from '@medplum/core';
 import {
   DEFAULT_SEARCH_COUNT,
-  Filter,
-  SearchRequest,
   deepEquals,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -31,7 +32,8 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import type { ChangeEvent, JSX, MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -40,7 +42,8 @@ import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
-import { isCheckboxCell, killEvent } from '../utils/dom';
+import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
+import { getPaginationControlProps } from '../utils/pagination';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
@@ -100,6 +103,7 @@ interface SearchControlState {
   readonly exportDialogVisible: boolean;
   readonly filterDialogFilter?: Filter;
   readonly filterDialogSearchParam?: SearchParameter;
+  readonly dialogOpenTime?: number;
 }
 
 /**
@@ -240,7 +244,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     killEvent(e);
 
-    const isAux = e.button === 1 || e.ctrlKey || e.metaKey;
+    const isAux = isAuxClick(e);
 
     if (!isAux && props.onClick) {
       props.onClick(new SearchClickEvent(resource, e));
@@ -289,7 +293,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconColumns size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Fields
             </Button>
@@ -298,7 +302,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconFilter size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Filters
             </Button>
@@ -320,7 +324,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 color={buttonColor}
                 leftSection={<IconTableExport size={iconSize} />}
                 onClick={
-                  props.onExport ? props.onExport : () => setState({ ...stateRef.current, exportDialogVisible: true })
+                  props.onExport
+                    ? props.onExport
+                    : () => setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
                 }
               >
                 Export...
@@ -401,6 +407,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         filterDialogVisible: true,
                         filterDialogSearchParam: searchParam,
                         filterDialogFilter: filter,
+                        dialogOpenTime: Date.now(),
                       });
                     }}
                     onChange={(result) => {
@@ -459,7 +466,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           )}
         </Table.Tbody>
       </Table>
-      {resources?.length === 0 && (
+      {!resources?.length && (
         <Container>
           <Center style={{ height: 150 }}>
             <Text size="xl" c="dimmed">
@@ -474,20 +481,12 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             value={getPage(memoizedSearch)}
             total={getTotalPages(memoizedSearch, lastResult)}
             onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
-            getControlProps={(control) => {
-              switch (control) {
-                case 'previous':
-                  return { 'aria-label': 'Previous page' };
-                case 'next':
-                  return { 'aria-label': 'Next page' };
-                default:
-                  return {};
-              }
-            }}
+            getControlProps={getPaginationControlProps}
           />
         </Center>
       )}
       <SearchFieldEditor
+        key={`search-field-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
         visible={stateRef.current.fieldEditorVisible}
         onOk={(result) => {
@@ -505,6 +504,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterEditor
+        key={`search-filter-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
         visible={stateRef.current.filterEditorVisible}
         onOk={(result) => {
@@ -522,6 +522,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchExportDialog
+        key={`search-export-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.exportDialogVisible}
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
@@ -533,7 +534,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterValueDialog
-        key={state.filterDialogSearchParam?.code}
+        key={`search-filter-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.filterDialogVisible}
         title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}
@@ -557,21 +558,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     </div>
   );
 }
-
-/**
- * @deprecated
- *
- * The memoization `MemoizedSearchControl` provides has been merged into `SearchControl`. Previously the memoization was done via HOC but
- * it was proven that this wasn't effective for a large number of use cases, especially when:
- * 1. `search` was an inline static object, which would trigger the memo to recompute on every re-render of the parent component
- * 2. Any of the callbacks, such as `onClick` were not memoized via `useCallback`, which would result in the recomputation as well
- *
- * Scenario 1 also retriggered the effect that runs `loadResults` on change of the `search`, which was less than desirable.
- *
- * The memoization is now accomplished via checking deep equality of the incoming `search` prop in the body of the component, and setting a memoized
- * state whenever the incoming and current memoized value are not deeply equal. See: https://github.com/medplum/medplum/pull/5023
- */
-export const MemoizedSearchControl = SearchControl;
 
 interface FilterDescriptionProps {
   readonly resourceType: string;

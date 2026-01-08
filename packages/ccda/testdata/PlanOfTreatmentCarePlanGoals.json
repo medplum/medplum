@@ -1,0 +1,187 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "PLAN OF CARE",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "18776-5",
+                  "display": "Plan of care note"
+                }
+              ],
+              "text": "Plan of care note"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\" width=\"100%\"><thead><tr><th>Date/time</th><th>Goal</th><th>Instructions</th></tr></thead><tbody><tr ID=\"Goal1\"><td>August 15, 2012 10:00am</td><td ID=\"Goal1_desc\">Weight Loss</td><td ID=\"Action1\"><content ID=\"Action1_Type\">Patient Education:</content><content ID=\"Action1_desc\">Diet and exercise counseling provided during visit.</content></td></tr><tr ID=\"Goal2\"><td>August 15, 2012 10:00am</td><td ID=\"Goal2_desc\">Asthma management</td><td ID=\"Action2\"><content ID=\"Action2_Type\">Patient Education:</content><content ID=\"Action2_desc\">Resources and instructions provided during visit.</content></td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Goal/2a620155-9d11-439e-92b3-5d9815ff4dd4"
+              },
+              {
+                "reference": "Goal/2a620155-9d11-439e-92b3-5d9815ff4dd3"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "ce862cfe-6559-411e-92e9-e8d005b1c226",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Goal",
+        "id": "2a620155-9d11-439e-92b3-5d9815ff4dd4",
+        "lifecycleStatus": "active",
+        "category": [{
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "289169006",
+              "display": "Exercising to lose weight"
+            }
+          ],
+          "text": "Exercising to lose weight"
+        }],
+        "description": {
+          "text": "Exercising to lose weight"
+        },
+        "subject": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "startDate": "2012-08-15",
+        "target": [
+          {
+            "measure": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "311401005",
+                  "display": "Patient education"
+                }
+              ],
+              "text": "Patient education"
+            },
+            "detailCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "311401005",
+                  "display": "Patient education"
+                }
+              ],
+              "text": "Patient education"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Goal1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Goal",
+        "id": "2a620155-9d11-439e-92b3-5d9815ff4dd3",
+        "lifecycleStatus": "active",
+        "category": [{
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "406162001",
+              "display": "Asthma management"
+            }
+          ],
+          "text": "Asthma management"
+        }],
+        "description": {
+          "text": "Asthma management"
+        },
+        "subject": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "startDate": "2012-08-15",
+        "target": [
+          {
+            "measure": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "311401005",
+                  "display": "Patient education"
+                }
+              ],
+              "text": "Patient education"
+            },
+            "detailCodeableConcept": {
+              "coding": [
+                {
+                  "system": "http://snomed.info/sct",
+                  "code": "311401005",
+                  "display": "Patient education"
+                }
+              ],
+              "text": "Patient education"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Goal2"
+          }
+        ]
+      }
+    }
+  ]
+}

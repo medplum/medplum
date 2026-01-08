@@ -1,11 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@medplum/core';
 import {
   AccessPolicyInteraction,
-  BackgroundJobContext,
-  BackgroundJobInteraction,
   ContentType,
-  OperationOutcomeError,
   Operator,
   createReference,
+  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -15,36 +16,67 @@ import {
   normalizeOperationOutcome,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
-  serverError,
   stringify,
 } from '@medplum/core';
-import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import fetch, { HeadersInit } from 'node-fetch';
+import type {
+  Bot,
+  ClientApplication,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  Subscription,
+} from '@medplum/fhirtypes';
+import type { Job, QueueBaseOptions } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
+import fetch from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import { MedplumServerConfig } from '../config';
-import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { executeBot } from '../bots/execute';
+import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
-import { executeBot } from '../fhir/operations/execute';
-import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
+import { isPreCommitSubscription } from '../fhir/precommit';
+import type { Repository, ResendSubscriptionsOptions } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
+import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
+import { getLogger, globalLogger } from '../logger';
+import type { AuthState } from '../oauth/middleware';
+import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { SubEventsOptions } from '../subscriptions/websockets';
+import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
-import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
+import type { WorkerInitializer } from './utils';
+import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
- * The upper limit on the number of times a job can be retried.
- * Using exponential backoff, 18 retries is about 73 hours.
+ * The timeout for outbound rest-hook subscription HTTP requests.
+ * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
  */
-const MAX_JOB_ATTEMPTS = 18;
+const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
- * The default number of times a job will be retried.
+ * The upper limit on the number of times a job can be attempted.
+ * Using exponential backoff, 19 attempts is about 73 hours (2^18 seconds).
+ */
+const MAX_JOB_ATTEMPTS = 19;
+
+/**
+ * The default number of times a job will be attempted.
  * This can be overridden by the subscription-max-attempts extension.
  */
-const DEFAULT_RETRIES = 3;
+const DEFAULT_ATTEMPTS = 4;
+
+/**
+ * The maximum number of attempts to get through the preamble (loading subscription and resource).
+ * Errors in the preamble point to issues with the Medplum server as opposed to the client's hook, bot, etc,
+ * so we limit the number of retries differently. Set to a large value to allow time for server issues to be resolved
+ * before dropping the job.
+ */
+const MAX_PREAMBLE_ATTEMPTS = MAX_JOB_ATTEMPTS;
 
 /*
  * The subscription worker inspects every resource change,
@@ -64,26 +96,31 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  readonly authState?: AuthState;
   readonly verbose?: boolean;
+}
+
+function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string | undefined> {
+  return {
+    subscription: 'Subscription/' + job.data.subscriptionId,
+    resource: `${job.data.resourceType}/${job.data.id}`,
+    versionId: job.data.versionId,
+    interaction: job.data.interaction,
+    channelType: job.data.channelType,
+    requestId: job.data.requestId,
+    traceId: job.data.traceId,
+  };
 }
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
-let queue: Queue<SubscriptionJobData> | undefined = undefined;
-let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
-/**
- * Initializes the subscription worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initSubscriptionWorker(config: MedplumServerConfig): void {
+export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<SubscriptionJobData>(queueName, {
+  const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
@@ -94,34 +131,45 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(
+  const worker = new Worker<SubscriptionJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+    (job) =>
+      job.data.authState
+        ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+        : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
     }
   );
-  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
+  addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
+  worker.on('active', (job) => {
+    // Only record queuedDuration on the first attempt
+    if (job.attemptsMade === 0) {
+      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - (job.timestamp as number)) / 1000);
+    }
+  });
+  worker.on('completed', (job) => {
+    recordHistogramValue(
+      'medplum.subscription.executionDuration',
+      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+    );
+    recordHistogramValue(
+      'medplum.subscription.totalDuration',
+      ((job.finishedOn as number) - (job.timestamp as number)) / 1000
+    );
+  });
+  worker.on('failed', (job) => {
+    if (job) {
+      recordHistogramValue(
+        'medplum.subscription.failedExecutionDuration',
+        ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+      );
+    }
+  });
 
-/**
- * Shuts down the subscription worker.
- * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
- */
-export async function closeSubscriptionWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the subscription queue instance.
@@ -129,7 +177,7 @@ export async function closeSubscriptionWorker(): Promise<void> {
  * @returns The subscription queue (if available).
  */
 export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -147,7 +195,7 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  */
 async function satisfiesAccessPolicy(
   resource: Resource,
-  project: Project,
+  project: WithId<Project>,
   subscription: Subscription
 ): Promise<boolean> {
   let satisfied = true;
@@ -155,7 +203,7 @@ async function satisfiesAccessPolicy(
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
     // The current Repository author, which must exist for Repository to successfully construct
     const subAuthor = subscription.meta?.author as Reference;
-    const membership = await findProjectMembership(project.id as string, subAuthor);
+    const membership = await findProjectMembership(project.id, subAuthor);
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
@@ -210,7 +258,7 @@ async function satisfiesAccessPolicy(
  * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
-  resource: Resource,
+  resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext,
   options?: ResendSubscriptionsOptions
@@ -220,24 +268,19 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  // websocket subscriptions are persisted differently than other subscriptions
+  // and are generally thought of as more transient in a way that firing subscriptions
+  // for websocket subscriptions themselves would be quite noisy and not particularly useful
+  // since they cannot be found through traditional means like reading by resource ID.
+  if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
+    return;
+  }
+
   const ctx = tryGetRequestContext();
   const logger = getLogger();
   const logFn = options?.verbose ? logger.info : logger.debug;
-  const systemRepo = getSystemRepo();
-  let project: Project | undefined;
-  try {
-    const projectId = resource.meta?.project;
-    if (projectId) {
-      project = await systemRepo.readResource<Project>('Project', projectId);
-    }
-  } catch (err: unknown) {
-    const resourceReference = getReferenceString(resource);
-    globalLogger.error(`[Subscription]: No project found for '${resourceReference}' -- something is very wrong.`, {
-      error: err,
-      resource: resourceReference,
-    });
-    return;
-  }
+
+  const project = context?.project;
   if (!project) {
     return;
   }
@@ -247,33 +290,50 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
-
   for (const subscription of subscriptions) {
+    if (isPreCommitSubscription(subscription)) {
+      // Ignore pre-commit subscriptions
+      continue;
+    }
+
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
       logFn('Subscription does not match options.subscription');
       continue;
     }
-    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
-    logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
-    if (criteria) {
+    let matches: boolean;
+    try {
+      matches = await matchesCriteria(resource, previousVersion, subscription, context);
+      logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${matches}`);
+    } catch (err) {
+      // If we throw when evaluating the criteria, log and continue
+      logFn('Error when evaluating matchesCriteria for resource against Subscription', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        subscription: subscription.id,
+        err,
+      });
+      continue;
+    }
+    if (matches) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id as string, { includeResource: true }]);
+        wsEvents.push([resource, subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
-        subscriptionId: subscription.id as string,
+        subscriptionId: subscription.id,
         resourceType: resource.resourceType,
         channelType: subscription.channel.type,
-        id: resource.id as string,
+        id: resource.id,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        authState: ctx?.authState,
         verbose: options?.verbose,
       });
     }
@@ -314,6 +374,7 @@ async function matchesCriteria(
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     await queue.add(jobName, job);
   }
@@ -325,8 +386,8 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: Project): Promise<Subscription[]> {
-  const projectId = project.id as string;
+async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+  const projectId = project.id;
   const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
@@ -344,17 +405,34 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
       },
     ],
   });
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  const redis = getRedis();
+  const setKey = `medplum:subscriptions:r4:project:${projectId}:active`;
+  const redisOnlySubRefStrs = await redis.smembers(setKey);
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
-      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      const activeSubStrs = redisOnlySubStrs.filter(Boolean);
+      if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
+        getLogger().warn('Excessive subscription cache miss', {
+          numKeys: redisOnlySubRefStrs.length,
+          hitRate: activeSubStrs.length / redisOnlySubStrs.length,
+          projectId,
+        });
+        const inactiveSubs: string[] = [];
+        for (let i = 0; i < redisOnlySubStrs.length; i++) {
+          if (!redisOnlySubStrs[i]) {
+            inactiveSubs.push(redisOnlySubRefStrs[i]);
+          }
+        }
+        await redis.srem(setKey, inactiveSubs);
+      }
+      const subArrStr = '[' + activeSubStrs.join(',') + ']';
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
       for (const { resource } of inMemorySubs) {
         subscriptions.push(resource);
       }
     } else {
-      globalLogger.warn(
+      globalLogger.debug(
         `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
       );
     }
@@ -367,52 +445,70 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime, verbose } = job.data;
-  const logger = getLogger();
-  const logFn = verbose ? logger.info : logger.debug;
+  let subscription: WithId<Subscription> | undefined;
+  let rewrittenResource: Resource;
 
-  const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
-  if (!subscription) {
-    // If the subscription was deleted, then stop processing it.
-    logFn(`Subscription ${subscriptionId} not found`);
-    return;
-  }
+  try {
+    const systemRepo = getSystemRepo();
+    const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
+    const logger = getLogger();
+    const logFn = verbose ? logger.info : logger.debug;
 
-  if (subscription.status !== 'active') {
-    // If the subscription has been disabled, then stop processing it.
-    logFn(`Subscription ${subscriptionId} is not active`);
-    return;
-  }
-
-  if (interaction !== 'delete') {
-    const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
-    if (!currentVersion) {
-      // If the resource was deleted, then stop processing it.
-      logFn(`Resource ${resourceType}/${id} not found`);
+    subscription = await tryGetSubscription(systemRepo, subscriptionId, job.data.channelType);
+    if (!subscription) {
+      // If the subscription was deleted, then stop processing it.
+      logFn(`Subscription ${subscriptionId} not found`);
       return;
     }
 
-    if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
-      // If this is a retry and the resource is not the current version, then stop processing it.
-      logFn(`Resource ${resourceType}/${id} is not the current version`);
+    const channelType = subscription.channel.type;
+    if (channelType !== 'rest-hook') {
+      logFn(`Subscription ${subscriptionId} has unsupported channel type ${channelType}`);
       return;
     }
+
+    if (subscription.status !== 'active') {
+      // If the subscription has been disabled, then stop processing it.
+      logFn(`Subscription ${subscriptionId} is not active`);
+      return;
+    }
+
+    if (job.data.interaction !== 'delete') {
+      const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
+      if (!currentVersion) {
+        // If the resource was deleted, then stop processing it.
+        logFn(`Resource ${resourceType}/${id} not found`);
+        return;
+      }
+
+      if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+        // If this is a retry and the resource is not the current version, then stop processing it.
+        logFn(`Resource ${resourceType}/${id} is not the current version`);
+        return;
+      }
+    }
+
+    const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
+    // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
+    // They would get if they did a search
+    rewrittenResource = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, deepClone(versionedResource));
+  } catch (err) {
+    if (job.attemptsMade < MAX_PREAMBLE_ATTEMPTS) {
+      throw err;
+    }
+
+    // Too many errors in the preamble, give up
+    globalLogger.error('Subscription job preamble failed too many times, giving up', getLoggingFields(job));
+    return;
   }
 
   try {
-    const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
-    const channelType = subscription.channel?.type;
-    switch (channelType) {
-      case 'rest-hook':
-        if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(subscription, versionedResource, interaction, requestTime);
-        } else {
-          await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
-        }
-        break;
-      default:
-        throw new OperationOutcomeError(serverError(new Error('Subscription type not currently supported.')));
+    // Errors in this try/catch are considered to be issues in the client's rest hook or bot
+    // and should trigger retries according to the subscription's max attempts
+    if (subscription.channel?.endpoint?.startsWith('Bot/')) {
+      await execBot(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+    } else {
+      await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
   } catch (err) {
     await catchJobError(subscription, job, err);
@@ -422,8 +518,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 async function tryGetSubscription(
   systemRepo: Repository,
   subscriptionId: string,
-  channelType: SubscriptionJobData['channelType'] | undefined
-): Promise<Subscription | undefined> {
+  channelType: SubscriptionJobData['channelType']
+): Promise<WithId<Subscription> | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
       checkCacheOnly: channelType === 'websocket',
@@ -450,7 +546,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
     return await systemRepo.readResource(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
-    if (isGone(outcome)) {
+    if (isGone(outcome) || isNotFound(outcome)) {
       // If the resource was deleted, then stop processing it.
       return undefined;
     }
@@ -469,30 +565,33 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  */
 async function sendRestHook(
   job: Job<SubscriptionJobData>,
-  subscription: Subscription,
+  subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
-  const ctx = getRequestContext();
+  const log = getLogger();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    ctx.logger.debug(`Ignore rest hook missing URL`);
+    log.debug(`Ignore rest hook missing URL`);
     return;
   }
 
-  const headers = buildRestHookHeaders(job, subscription, resource, interaction);
   const body = interaction === 'delete' ? '{}' : stringify(resource);
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
   let error: Error | undefined = undefined;
 
+  const fetchStartTime = Date.now();
+  let fetchEndTime: number;
   try {
-    ctx.logger.info('Sending rest hook to: ' + url);
-    ctx.logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body });
-    ctx.logger.info('Received rest hook status: ' + response.status);
+    log.info('Sending rest hook to: ' + url);
+    log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    fetchEndTime = Date.now();
+    log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
-    await createAuditEvent(
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -504,8 +603,9 @@ async function sendRestHook(
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
-    ctx.logger.info('Subscription exception: ' + ex);
-    await createAuditEvent(
+    fetchEndTime = Date.now();
+    log.info('Subscription exception: ' + ex);
+    await createSubscriptionAuditEvent(
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
@@ -514,6 +614,14 @@ async function sendRestHook(
     );
     error = ex as Error;
   }
+
+  const fetchDurationMs = fetchEndTime - fetchStartTime;
+  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
+  log.info('Subscription rest hook fetch duration', {
+    fetchDurationMs,
+    subscription: subscription.id,
+    project: subscription?.meta?.project,
+  });
 
   if (error) {
     throw error;
@@ -526,17 +634,19 @@ async function sendRestHook(
  * @param subscription - The subscription resource.
  * @param resource - The trigger resource.
  * @param interaction - The interaction type.
+ * @param body - The request body.
  * @returns The HTTP request headers.
  */
 function buildRestHookHeaders(
   job: Job<SubscriptionJobData>,
-  subscription: Subscription,
+  subscription: WithId<Subscription>,
   resource: Resource,
-  interaction: BackgroundJobInteraction
-): HeadersInit {
-  const headers: HeadersInit = {
+  interaction: BackgroundJobInteraction,
+  body: string
+): Record<string, string> {
+  const headers: Record<string, string> = {
     'Content-Type': ContentType.FHIR_JSON,
-    'X-Medplum-Subscription': subscription.id as string,
+    'X-Medplum-Subscription': subscription.id,
     'X-Medplum-Interaction': interaction,
   };
 
@@ -558,7 +668,6 @@ function buildRestHookHeaders(
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret && isString(secret)) {
-    const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
   }
 
@@ -575,13 +684,15 @@ function buildRestHookHeaders(
 
 /**
  * Executes a Bot subscription.
+ * @param job - The subscription job.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
  * @param interaction - The interaction type.
  * @param requestTime - The request time.
  */
 async function execBot(
-  subscription: Subscription,
+  job: Job<SubscriptionJobData>,
+  subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction,
   requestTime: string
@@ -599,9 +710,12 @@ async function execBot(
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
-  let runAs: ProjectMembership | undefined;
+  const requester = resource.meta?.author as Reference<
+    Bot | ClientApplication | Patient | Practitioner | RelatedPerson
+  >;
+  let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, resource.meta?.author as Reference);
+    runAs = await findProjectMembership(project, requester);
   } else {
     runAs = await findProjectMembership(project, createReference(bot));
   }
@@ -610,21 +724,26 @@ async function execBot(
     throw new Error('Could not find project membership for bot');
   }
 
+  const body = interaction === 'delete' ? { deletedResource: resource } : resource;
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction, JSON.stringify(body));
+
   await executeBot({
     subscription,
     bot,
     runAs,
-    input: interaction === 'delete' ? { deletedResource: resource } : resource,
+    requester,
+    input: body,
     contentType: ContentType.FHIR_JSON,
     requestTime,
     traceId: ctx.traceId,
+    headers,
   });
 }
 
 async function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): Promise<void> {
   const maxJobAttempts =
     getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-      ?.valueInteger ?? DEFAULT_RETRIES;
+      ?.valueInteger ?? DEFAULT_ATTEMPTS;
 
   if (job.attemptsMade < maxJobAttempts) {
     globalLogger.debug(`Retrying job due to error: ${err}`);

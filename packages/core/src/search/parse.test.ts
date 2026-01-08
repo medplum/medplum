@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { Operator, SearchRequest, parseSearchRequest, parseSearchUrl } from './search';
+import type { SearchRequest } from './search';
+import { Operator, parseSearchRequest } from './search';
 
 describe('Search parser', () => {
   beforeAll(() => {
@@ -25,7 +28,9 @@ describe('Search parser', () => {
   });
 
   test('Parse _account', () => {
-    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=123'))).toMatchObject<SearchRequest>({
+    expect(
+      parseSearchRequest(new URL('https://example.com/fhir/R4/Patient?_account=123'))
+    ).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       filters: [{ code: '_account', operator: Operator.EQUALS, value: '123' }],
     });
@@ -33,7 +38,7 @@ describe('Search parser', () => {
 
   test('Parse _account:not', () => {
     expect(
-      parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account:not=123'))
+      parseSearchRequest(new URL('https://example.com/fhir/R4/Patient?_account:not=123'))
     ).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       filters: [{ code: '_account', operator: Operator.NOT, value: '123' }],
@@ -41,14 +46,16 @@ describe('Search parser', () => {
   });
 
   test('Parse _account not equals', () => {
-    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=ne123'))).toMatchObject<SearchRequest>({
+    expect(
+      parseSearchRequest(new URL('https://example.com/fhir/R4/Patient?_account=ne123'))
+    ).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       filters: [{ code: '_account', operator: Operator.NOT_EQUALS, value: '123' }],
     });
   });
 
   test('Parse Patient _id:not', () => {
-    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_id:not=1'))).toMatchObject<SearchRequest>({
+    expect(parseSearchRequest(new URL('https://example.com/fhir/R4/Patient?_id:not=1'))).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       filters: [{ code: '_id', operator: Operator.NOT, value: '1' }],
     });
@@ -114,7 +121,7 @@ describe('Search parser', () => {
   });
 
   test('Parse URL', () => {
-    expect(parseSearchUrl(new URL('https://example.com/Patient?name=Alice'))).toMatchObject<SearchRequest>({
+    expect(parseSearchRequest(new URL('https://example.com/Patient?name=Alice'))).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
       filters: [
         {

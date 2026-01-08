@@ -1,14 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Media } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
+import type { DocumentReference, Media } from '@medplum/fhirtypes';
+import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { Repository } from '../fhir/repo';
+import { getConfig, loadTestConfig } from '../config/loader';
+import type { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
+import { execDownloadJob, getDownloadQueue } from './download';
 
 jest.mock('node-fetch');
 
@@ -24,11 +26,11 @@ describe('Download Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeDownloadWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
     (fetch as unknown as jest.Mock).mockClear();
+    getConfig().autoDownloadEnabled = true;
   });
 
   test('Download external URL', () =>
@@ -76,6 +78,10 @@ describe('Download Worker', () => {
             traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
           },
         });
+
+        const updatedMedia = await repo.readResource<Media>('Media', media.id);
+        expect(updatedMedia.content?.url).toMatch(/^Binary\//);
+        expect(updatedMedia.meta?.author?.reference).toBe('system');
       },
       { traceId: '00-12345678901234567890123456789012-3456789012345678-01' }
     ));
@@ -91,6 +97,23 @@ describe('Download Worker', () => {
         content: {
           contentType: ContentType.TEXT,
           url: '',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore HTTP URL', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'http://localhost/download',
         },
       });
       expect(media).toBeDefined();
@@ -169,7 +192,7 @@ describe('Download Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the resource
-      await repo.deleteResource('Media', media.id as string);
+      await repo.deleteResource('Media', media.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await execDownloadJob(job);
@@ -202,6 +225,309 @@ describe('Download Worker', () => {
           contentType: ContentType.TEXT,
           url: 'Binary/' + randomUUID(),
         },
+      });
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job);
+
+      // Fetch should not have been called
+      expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore if disabled', () =>
+    withTestContext(async () => {
+      const config = getConfig();
+      config.autoDownloadEnabled = false;
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore if disabled in project', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        project: {
+          setting: [
+            {
+              name: 'autoDownloadEnabled',
+              valueBoolean: false,
+            },
+          ],
+        },
+      });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore if matches URL prefix', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        project: {
+          setting: [
+            {
+              name: 'autoDownloadIgnoredUrlPrefixes',
+              valueString: 'https://ignore.example.com',
+            },
+          ],
+        },
+      });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media1 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://ignore.example.com/download',
+        },
+      });
+      expect(media1).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Ensure that other URLs still work
+      const media2 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media2).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+    }));
+
+  test('Ignore if does not match allowed URL prefix', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        project: {
+          setting: [
+            {
+              name: 'autoDownloadAllowedUrlPrefixes',
+              valueString: 'https://allowed.example.com',
+            },
+          ],
+        },
+      });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media1 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://ignore.example.com/download',
+        },
+      });
+      expect(media1).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
+
+      // Ensure that other URLs still work
+      const media2 = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://allowed.example.com/download',
+        },
+      });
+      expect(media2).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+    }));
+
+  test('Stop retries if auto download disabled', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // At this point the job should be in the queue
+      // But let's disable auto download in the project
+      await repo.updateResource({
+        ...project,
+        setting: [{ name: 'autoDownloadEnabled', valueBoolean: false }],
+      });
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job);
+
+      // Fetch should not have been called
+      expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Does not enqueue when mutating non-URL fields', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalledTimes(1);
+
+      queue.add.mockClear();
+
+      await repo.updateResource<Media>({
+        ...media,
+        status: 'in-progress',
+      });
+
+      expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Updates only matching attachment paths', () =>
+    withTestContext(async () => {
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const firstUrl = 'https://example.com/download-1';
+      const secondUrl = 'https://example.com/download-2';
+
+      const doc = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: firstUrl,
+            },
+          },
+          {
+            attachment: {
+              contentType: ContentType.TEXT,
+              url: secondUrl,
+            },
+          },
+        ],
+      });
+      expect(doc).toBeDefined();
+      expect(queue.add).toHaveBeenCalledTimes(2);
+
+      const body1 = new Readable();
+      body1.push('foo1');
+      body1.push(null);
+
+      const body2 = new Readable();
+      body2.push('foo2');
+      body2.push(null);
+
+      (fetch as unknown as jest.Mock).mockImplementation((url: string) =>
+        url === firstUrl
+          ? {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-1',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body1,
+            }
+          : {
+              status: 200,
+              headers: {
+                get(name: string): string | undefined {
+                  return {
+                    'content-disposition': 'attachment; filename=download-2',
+                    'content-type': ContentType.TEXT,
+                  }[name];
+                },
+              },
+              body: body2,
+            }
+      );
+
+      const job1 = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execDownloadJob(job1);
+
+      const afterFirstDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterFirstDownload.content?.[0]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterFirstDownload.content?.[1]?.attachment?.url).toBe(secondUrl);
+      expect(afterFirstDownload.meta?.author?.reference).toBe('system');
+
+      const job2 = { id: 2, data: queue.add.mock.calls[1][1] } as unknown as Job;
+      await execDownloadJob(job2);
+
+      const afterSecondDownload = await repo.readResource<DocumentReference>('DocumentReference', doc.id);
+      expect(afterSecondDownload.content?.[0]?.attachment?.url).toBe(afterFirstDownload.content[0].attachment.url);
+      expect(afterSecondDownload.content?.[1]?.attachment?.url).toMatch(/^Binary\//);
+      expect(afterSecondDownload.meta?.author?.reference).toBe('system');
+    }));
+
+  test('Stop retries if auto download disabled', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      // At this point the job should be in the queue
+      // But let's disable auto download in the project
+      await repo.updateResource({
+        ...project,
+        setting: [{ name: 'autoDownloadIgnoredUrlPrefixes', valueString: 'https://example.com' }],
       });
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;

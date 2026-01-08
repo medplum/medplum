@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bot, Bundle, CoverageEligibilityRequest, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { Bot, Bundle, CoverageEligibilityRequest, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 import { generalBenefitsCheck, otherEligibilityCheck, requestData, requestWithNoCoverage } from './bot-testing-data';
@@ -53,7 +55,7 @@ describe('Process Eligibility Request', async () => {
     const response = await medplum.searchOne('CoverageEligibilityResponse');
 
     expect(response).toBeDefined();
-    expect(response?.insurance?.[0].item?.[0].excluded).toEqual(true);
+    expect(response?.insurance?.[0].item?.[0].excluded).toStrictEqual(true);
   });
 
   test('Non-eligible request', async () => {
@@ -66,6 +68,6 @@ describe('Process Eligibility Request', async () => {
 
     const response = await medplum.searchOne('CoverageEligibilityResponse');
     expect(response).toBeDefined();
-    expect(response?.insurance?.[0].item?.[0].excluded).toEqual(false);
+    expect(response?.insurance?.[0].item?.[0].excluded).toStrictEqual(false);
   });
 });

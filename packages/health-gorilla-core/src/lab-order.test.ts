@@ -1,29 +1,34 @@
-import { Bundle, Patient, Practitioner, Questionnaire, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import {
-  assertLabOrderInputs,
-  createLabOrderBundle,
-  isValidLabOrderInputs,
-  LabOrderValidationError,
-  PartialLabOrderInputs,
-  validateLabOrderInputs,
-} from './lab-order';
-import {
+  getExtension,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  MedplumClient,
 } from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import path from 'path';
+import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import type { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
-import { LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import type { PartialLabOrderInputs } from './lab-order';
+import {
+  assertLabOrderInputs,
+  createLabOrderBundle,
+  isValidLabOrderInputs,
+  LabOrderValidationError,
+  validateLabOrderInputs,
+} from './lab-order';
+import { expectToBeDefined } from './test-utils';
+import type { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
 
 interface TestContext {
   medplum: MedplumClient;
@@ -77,25 +82,23 @@ const TEST_CODES_TO_AOES = {
 };
 
 describe('createLabOrderBundle', () => {
-  const testDataDir = path.resolve(__dirname, '__test__');
-
-  function readTestJson<T extends Resource>(testDataFilename: string): T {
-    return JSON.parse(readFileSync(path.resolve(testDataDir, testDataFilename), 'utf8')) as T;
-  }
-
   beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readDefinitionsJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readDefinitionsJson('fhir/r4/profiles-resources.json') as Bundle);
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+      indexSearchParameterBundle(readDefinitionsJson(filename) as Bundle<SearchParameter>);
     }
   });
+
+  function readJson(filename: string): any {
+    return JSON.parse(readFileSync(resolve(__dirname, filename), 'utf8'));
+  }
 
   beforeEach<TestContext>(async (ctx) => {
     const medplum = new MockClient();
     ctx.medplum = medplum;
 
-    const commonInputBundle = readTestJson('test-common-inputs.json') as Bundle;
+    const commonInputBundle = readJson('../dist/json/test-common-inputs.json') as Bundle;
     const result = await medplum.executeBatch(commonInputBundle);
 
     if (result.entry?.some((e) => !e.response?.status.startsWith('2'))) {
@@ -150,15 +153,16 @@ describe('createLabOrderBundle', () => {
       performingLab,
       selectedTests,
       testMetadata,
+      orderNotes: 'order notes',
       billingInformation: {
         billTo: 'patient',
       },
     });
 
-    expect(bundle.type).toEqual('transaction');
+    expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('transaction-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -167,7 +171,7 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest?.extension).toEqual([
+    expect(orderServiceRequest?.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'patient' },
     ]);
   });
@@ -179,6 +183,7 @@ describe('createLabOrderBundle', () => {
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
       selectedTests.push({ code } as TestCoding);
+      testMetadata[code] = { notes: 'test notes' };
     }
 
     const bundle = createLabOrderBundle({
@@ -201,10 +206,10 @@ describe('createLabOrderBundle', () => {
       },
     });
 
-    expect(bundle.type).toEqual('transaction');
+    expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('transaction-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -213,8 +218,8 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.insurance).toEqual([{ reference: 'Coverage/coverage-1' }]);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.insurance).toStrictEqual([{ reference: 'Coverage/coverage-1' }]);
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'insurance' },
     ]);
   });
@@ -249,7 +254,7 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
@@ -303,10 +308,50 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
+  });
+
+  test<TestContext>('requesting location', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+    const requestingOrg = { resourceType: 'Organization', id: 'org-123' } satisfies Organization;
+
+    const selectedTests: TestCoding[] = [];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {};
+    for (const code of TEST_CODES) {
+      selectedTests.push({ code } as TestCoding);
+    }
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      requestingLocation: requestingOrg,
+      selectedTests,
+      testMetadata,
+      performingLab,
+      billingInformation: {
+        billTo: 'patient',
+      },
+    });
+
+    expect(bundle.type).toStrictEqual('transaction');
+
+    const txnResponse = await medplum.executeBatch(bundle);
+    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+
+    const authorizedByExt = getExtension(orderServiceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT);
+    expectToBeDefined(authorizedByExt);
+    expect(authorizedByExt.valueReference).toMatchObject({ reference: 'Organization/org-123' });
   });
 
   describe('Input validation', () => {
@@ -346,6 +391,7 @@ describe('createLabOrderBundle', () => {
         performingLab,
         selectedTests,
         testMetadata,
+        orderNotes: 'order notes',
         billingInformation: { billTo: 'customer-account' },
       };
 
@@ -373,6 +419,20 @@ describe('createLabOrderBundle', () => {
 
       const errors = validateLabOrderInputs(inputs);
       expectToBeDefined(errors?.testMetadata?.[TEST_CODES[0]]?.priority);
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+
+    test<TestContext>('Invalid billTo', async ({ patient, requester, performingLab }) => {
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        billingInformation: { billTo: 'xxx' as unknown as BillTo },
+      };
+
+      const errors = validateLabOrderInputs(inputs);
+      expectToBeDefined(errors?.billingInformation?.billTo);
       expect(isValidLabOrderInputs(inputs)).toBe(false);
       expect(() => assertLabOrderInputs(inputs)).toThrow();
     });
@@ -469,8 +529,4 @@ function expectBundleResultSuccessful(bundle: Bundle): boolean {
     throw new Error('Empty bundle');
   }
   return bundle.entry.every((e) => e.response?.status.startsWith('2'));
-}
-
-export function expectToBeDefined<T>(value: T | undefined): asserts value is T {
-  expect(value).toBeDefined();
 }

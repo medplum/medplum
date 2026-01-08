@@ -1,18 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { DatabaseMode, getDatabasePool } from '../database';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import type { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { r4ProjectId } from '../constants';
+import { DatabaseMode } from '../database';
+import type { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { r4ProjectId } from '../seed';
 
 /**
  * Creates all StructureDefinition resources.
+ * @param systemRepo - The system repository to use
  */
-export async function rebuildR4StructureDefinitions(): Promise<void> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
+export async function rebuildR4StructureDefinitions(systemRepo: Repository): Promise<void> {
+  const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
 
-  const systemRepo = getSystemRepo();
   await createStructureDefinitionsForBundle(systemRepo, readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(systemRepo, readJson('fhir/r4/profiles-medplum.json') as Bundle);
   await createStructureDefinitionsForBundle(systemRepo, readJson('fhir/r4/profiles-others.json') as Bundle);

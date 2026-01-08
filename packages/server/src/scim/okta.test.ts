@@ -1,12 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
-import { AccessPolicy } from '@medplum/fhirtypes';
+import type { AccessPolicy } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 
 // Based on: https://developer.okta.com/docs/guides/scim-provisioning-integration-prepare/main/
@@ -19,29 +20,27 @@ describe('Okta SCIM Tests', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    await requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-      const registration = await registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      });
-      accessToken = registration.accessToken;
+    const registration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+    accessToken = registration.accessToken;
 
-      const systemRepo = getSystemRepo();
+    const systemRepo = getSystemRepo();
 
-      // Create default access policy
-      const accessPolicy = await systemRepo.createResource<AccessPolicy>({
-        resourceType: 'AccessPolicy',
-        resource: [{ resourceType: 'Patient' }],
-      });
+    // Create default access policy
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Patient' }],
+    });
 
-      // Update project with default access policy
-      await systemRepo.updateResource({
-        ...registration.project,
-        defaultPatientAccessPolicy: createReference(accessPolicy),
-      });
+    // Update project with default access policy
+    await systemRepo.updateResource({
+      ...registration.project,
+      defaultPatientAccessPolicy: createReference(accessPolicy),
     });
   });
 

@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
+import type { Parameter } from '@aws-sdk/client-ssm';
+import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
-import { MedplumServerConfig } from '../../config';
+import type { MedplumServerConfig } from '../../config/types';
+import { setValue } from '../../config/utils';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -72,49 +76,4 @@ async function loadAwsSecrets(region: string, secretId: string): Promise<Record<
   }
 
   return JSON.parse(result.SecretString);
-}
-
-function setValue(config: Record<string, unknown>, key: string, value: string): void {
-  const keySegments = key.split('.');
-  let obj = config;
-
-  while (keySegments.length > 1) {
-    const segment = keySegments.shift() as string;
-    if (!obj[segment]) {
-      obj[segment] = {};
-    }
-    obj = obj[segment] as Record<string, unknown>;
-  }
-
-  let parsedValue: any = value;
-  if (isIntegerConfig(key)) {
-    parsedValue = parseInt(value, 10);
-  } else if (isBooleanConfig(key)) {
-    parsedValue = value === 'true';
-  } else if (isObjectConfig(key)) {
-    parsedValue = JSON.parse(value);
-  }
-
-  obj[keySegments[0]] = parsedValue;
-}
-
-function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold';
-}
-
-function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
-}
-
-function isObjectConfig(key: string): boolean {
-  return key === 'tls';
 }

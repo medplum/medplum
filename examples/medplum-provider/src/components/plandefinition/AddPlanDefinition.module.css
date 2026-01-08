@@ -1,0 +1,40 @@
+.planDefinition {
+  cursor: pointer;
+}
+
+.selected {
+  background-color: var(--mantine-color-blue-6) !important;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--mantine-spacing-md);
+  height: 70px;
+}
+
+.preview {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.notFound {
+  display: flex;
+  background-color: var(--mantine-color-yellow-0);
+  color: var(--mantine-color-yellow-8);
+  align-items: center;
+  justify-content: center;
+}
+
+[data-mantine-color-scheme='dark'] .preview,
+[data-mantine-color-scheme='dark'] .planDefinition,
+[data-mantine-color-scheme='dark'] .footer {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .preview,
+[data-mantine-color-scheme='light'] .planDefinition,
+[data-mantine-color-scheme='light'] .footer {
+  background-color: var(--mantine-color-gray-1);
+}

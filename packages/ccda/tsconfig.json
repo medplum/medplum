@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "module": "esnext",
+    "types": ["jest"],
+    "lib": ["esnext", "dom"],
+    "rootDir": "src",
+    "outDir": "dist/types",
+    "noEmit": false,
+    "emitDeclarationOnly": true
+  },
+  "references": [{ "path": "../core" }, { "path": "../fhirtypes" }, { "path": "../definitions" }],
+  "include": ["src/**/*.ts"]
+}

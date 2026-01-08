@@ -35,6 +35,14 @@ If you haven't already done so, follow the instructions in [this tutorial](https
 
 [Fork](https://github.com/medplum/medplum-eligibility-demo/fork) and clone the repo.
 
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need.
+
 Next, install the dependencies
 
 ```bash
@@ -42,6 +50,7 @@ npm install
 ```
 
 Then, build the bots
+
 ```bash
 npm run build:bot
 ```
@@ -61,5 +70,5 @@ This app should run on `http://localhost:3000/`
 Medplum supports self-hosting, and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
 
 - Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [react component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

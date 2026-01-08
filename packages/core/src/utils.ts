@@ -1,4 +1,6 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Attachment,
   Bundle,
   CodeableConcept,
@@ -7,6 +9,7 @@ import {
   Extension,
   ExtensionValue,
   Identifier,
+  Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -22,7 +25,7 @@ import {
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
-import { isReference } from './types';
+import { isReference, isResource } from './types';
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -54,13 +57,22 @@ export interface Code {
 
 export type ResourceWithCode = Resource & Code;
 
+export type WithId<T> = T & { id: string };
+
+export function isResourceWithId<T extends Resource>(
+  resource: unknown,
+  resourceType?: T['resourceType']
+): resource is WithId<T> {
+  return isResource(resource, resourceType) && 'id' in resource && typeof resource.id === 'string';
+}
+
 /**
  * Creates a reference resource.
  * @param resource - The FHIR resource.
  * @returns A reference resource.
  */
-export function createReference<T extends Resource>(resource: T): Reference<T> {
-  const reference = getReferenceString(resource);
+export function createReference<T extends Resource>(resource: T): Reference<T> & { reference: string } {
+  const reference = getReferenceString(resource) ?? 'undefined/undefined';
   const display = getDisplayString(resource);
   return display === reference ? { reference } : { reference, display };
 }
@@ -70,11 +82,18 @@ export function createReference<T extends Resource>(resource: T): Reference<T> {
  * @param input - The FHIR resource or reference.
  * @returns A reference string of the form resourceType/id.
  */
-export function getReferenceString(input: Reference | Resource): string {
+export function getReferenceString(input: (Reference & { reference: string }) | WithId<Resource>): string;
+export function getReferenceString(input: Reference | Resource): string | undefined;
+export function getReferenceString(
+  input: Reference | Resource | (Reference & { reference: string }) | WithId<Resource>
+): string | undefined {
   if (isReference(input)) {
     return input.reference;
   }
-  return `${(input as Resource).resourceType}/${input.id}`;
+  if (isResourceWithId(input)) {
+    return `${(input as Resource).resourceType}/${input.id}`;
+  }
+  return undefined;
 }
 
 /**
@@ -95,7 +114,8 @@ export function resolveId(input: Reference | Resource | undefined): string | und
 /**
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
- * @returns A tuple containing the `ResourceType` and the ID of the resource or `undefined` when `undefined` or an invalid reference is passed.
+ * @returns A tuple containing the `ResourceType` and the ID of the resource.
+ * @throws {@link OperationOutcomeError} If the reference cannot be parsed.
  */
 export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
@@ -106,6 +126,26 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type, id];
+}
+
+/**
+ * Normalizes Medplum's `meta.account` and `meta.accounts` into a singular array of FHIR references.
+ * @param meta - The `meta` object of a FHIR resource.
+ * @returns An array of references, or `undefined` if none.
+ */
+export function extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
+  if (!meta) {
+    return undefined;
+  }
+  if (meta.accounts && meta.account) {
+    const accounts = meta.accounts;
+    if (accounts.some((a) => a.reference === meta.account?.reference)) {
+      return accounts;
+    }
+    return [meta.account, ...accounts];
+  } else {
+    return arrayify(meta.accounts ?? meta.account);
+  }
 }
 
 /**
@@ -163,7 +203,7 @@ export function getDisplayString(resource: Resource): string {
       return code.text;
     }
   }
-  return getReferenceString(resource);
+  return getReferenceString(resource) ?? '';
 }
 
 /**
@@ -454,37 +494,142 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
 }
 
 /**
- * FHIR JSON stringify.
+ * Returns the FHIR JSON string representation of the input value.
+ *
  * Removes properties with empty string values.
  * Removes objects with zero properties.
+ *
+ * Does not modify the input value.
+ * If the input value does not contain any empty properties, then the original value is returned.
+ * Otherwise, a new value is returned with the empty properties removed.
+ *
  * See: https://www.hl7.org/fhir/json.html
+ *
  * @param value - The input value.
  * @param pretty - Optional flag to pretty-print the JSON.
  * @returns The resulting JSON string.
  */
 export function stringify(value: any, pretty?: boolean): string {
-  return JSON.stringify(value, stringifyReplacer, pretty ? 2 : undefined);
+  const processedValue = removeEmptyFromUnknown(value);
+  return JSON.stringify(processedValue, null, pretty ? 2 : undefined) ?? '';
 }
 
 /**
- * Evaluates JSON key/value pairs for FHIR JSON stringify.
- * Removes properties with empty string values.
- * Removes objects with zero properties.
- * @param k - Property key.
- * @param v - Property value.
- * @returns The replaced value.
+ * Removes empty properties from an unknown value.
+ *
+ * Does not modify the input value.
+ *
+ * If the input value does not contain any empty properties, then the original value is returned.
+ *
+ * Otherwise, a new value is returned with the empty properties removed.
+ *
+ * @param value - The unknown input value.
+ * @returns The value with empty properties removed.
  */
-function stringifyReplacer(k: string, v: any): any {
-  return !isArrayKey(k) && isEmpty(v) ? undefined : v;
+function removeEmptyFromUnknown(value: unknown): any {
+  if (value === undefined || value === null || value === '') {
+    // For null, undefined, and empty strings, return undefined
+    return undefined;
+  }
+
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) {
+      return removeEmptyFromArray(value);
+    }
+    return removeEmptyFromObject(value);
+  }
+
+  // Otherwise, return the primitive value
+  return value;
 }
 
 /**
- * Returns true if the key is an array key.
- * @param k - The property key.
- * @returns True if the key is an array key.
+ * Removes empty elements from an array.
+ *
+ * If the input array is empty, then undefined is returned.
+ * Otherwise, a new array is returned with the empty values replaced with null.
+ *
+ * FHIR arrays must maintain the same length, so null is used to replace empty values.
+ *
+ * @param inputArray - The input array value.
+ * @returns The array with empty values removed.
  */
-function isArrayKey(k: string): boolean {
-  return !!/\d+$/.exec(k);
+function removeEmptyFromArray(inputArray: unknown[]): any[] | undefined {
+  const len = inputArray.length;
+  if (len === 0) {
+    return undefined;
+  }
+  let newArray = undefined; // Only create a new array if needed
+  let count = 0;
+  for (let i = 0; i < len; i++) {
+    const inputElement = inputArray[i];
+    const processedElement = removeEmptyFromUnknown(inputElement);
+
+    if (processedElement !== inputElement && !newArray) {
+      newArray = Array.from(inputArray); // Clone only when a change is needed
+    }
+
+    if (processedElement === undefined) {
+      if (newArray) {
+        newArray[i] = null;
+      }
+    } else {
+      if (newArray) {
+        newArray[i] = processedElement; // Propagate changed element
+      }
+      count++;
+    }
+  }
+  if (count === 0) {
+    return undefined;
+  }
+  return newArray ?? inputArray;
+}
+
+/**
+ * Removes empty properties from an object.
+ *
+ * If the input object is empty, then undefined is returned.
+ *
+ * @param inputObject - The input object value.
+ * @returns The object with empty properties removed.
+ */
+function removeEmptyFromObject(inputObject: Record<string, any>): Record<string, any> | undefined {
+  let newObject = undefined;
+  let count = 0;
+
+  // Use 'in' for faster key iteration
+  // Using `Object.keys()` and `Object.entries()` is 2x+ slower
+  // Using `Object.hasOwn` guard is about 50% slower
+  // We can safely skip the hasOwn check, because this value will be passed to JSON.stringify,
+  // which has its own property checking.
+  // eslint-disable-next-line guard-for-in
+  for (const key in inputObject) {
+    const inputValue = inputObject[key];
+    const processedValue = removeEmptyFromUnknown(inputValue);
+
+    // If the processed value is different than the input value, then we need to clone the object
+    if (processedValue !== inputValue && !newObject) {
+      newObject = { ...inputObject }; // Shallow clone only when a change is needed
+    }
+
+    if (processedValue === undefined) {
+      if (newObject) {
+        delete newObject[key];
+      }
+    } else {
+      if (newObject) {
+        newObject[key] = processedValue;
+      }
+      count++;
+    }
+  }
+
+  if (count === 0) {
+    return undefined;
+  }
+
+  return newObject ?? inputObject;
 }
 
 /**
@@ -505,13 +650,15 @@ export function isEmpty(v: unknown): boolean {
   return false;
 }
 
-export type CanBePopulated = { length: number } | object;
+export type CanBePopulated = { length: number } | Record<string, any>;
 /**
  * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  * @param arg - Any value
  * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  */
-export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+export function isPopulated<T extends { length: number } | Record<string, any>>(
+  arg: CanBePopulated | undefined | null
+): arg is T {
   if (arg === null || arg === undefined) {
     return false;
   }
@@ -521,6 +668,25 @@ export function isPopulated<T extends { length: number } | object>(arg: CanBePop
     (t === 'string' && arg !== '') ||
     (t === 'object' && (('length' in arg && arg.length > 0) || Object.keys(arg).length > 0))
   );
+}
+
+/**
+ * Returns an array with trailing empty elements removed.
+ * For example, [1, 2, 3, null, undefined, ''] becomes [1, 2, 3].
+ * This is useful for FHIR arrays, which by default must maintain the same length,
+ * but while editing we may want to trim trailing empty elements.
+ * @param arr - The input array.
+ * @returns The array with trailing empty elements removed.
+ */
+export function trimTrailingEmptyElements<T>(arr: T[] | undefined): T[] | undefined {
+  if (!arr) {
+    return undefined;
+  }
+  let i = arr.length - 1;
+  while (i >= 0 && isEmpty(arr[i])) {
+    i--;
+  }
+  return i >= 0 ? arr.slice(0, i + 1) : undefined;
 }
 
 /**
@@ -652,7 +818,7 @@ export function deepClone<T>(input: T): T {
  * @returns True if the input string matches the UUID format.
  */
 export function isUUID(input: string): input is string {
-  return !!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i.exec(input);
+  return /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(input);
 }
 
 /**
@@ -703,6 +869,29 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
 }
 
 /**
+ * Finds the code for a specific system in a list of CodeableConcepts.
+ * @param categories - The list of CodeableConcepts to search.
+ * @param system - The system to match.
+ * @returns The code for the matching system, or undefined if not found.
+ */
+export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
+  if (!categories) {
+    return undefined;
+  }
+  for (const category of categories) {
+    if (!category.coding) {
+      continue;
+    }
+    for (const coding of category.coding) {
+      if (coding.system === system) {
+        return coding.code;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * Returns true if the input value is an object with a string text property.
  * This is a heuristic check based on the presence of the "text" property.
  * @param value - The candidate value.
@@ -725,8 +914,9 @@ for (let n = 0; n < 256; n++) {
  * @param arrayBuffer - The input array buffer.
  * @returns The resulting hex string.
  */
-export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(arrayBuffer);
+export function arrayBufferToHex(arrayBuffer: ArrayBufferLike | ArrayBufferView): string {
+  const buffer = normalizeArrayBufferView(arrayBuffer);
+  const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
     result[i] = byteToHex[bytes[i]];
@@ -739,13 +929,27 @@ export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
  * @param arrayBuffer - The input array buffer.
  * @returns The base-64 encoded string.
  */
-export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(arrayBuffer);
-  const result: string[] = [];
+export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferView): string {
+  const buffer = normalizeArrayBufferView(arrayBuffer);
+  const bytes = new Uint8Array(buffer);
+  const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCharCode(bytes[i]);
+    result[i] = String.fromCodePoint(bytes[i]);
   }
   return window.btoa(result.join(''));
+}
+
+/**
+ * Normalizes an `ArrayBufferLike` (eg. an `ArrayBuffer`) to a raw `ArrayBufferLike` (without a view). If the passed buffer is a view, it gives the raw `ArrayBufferLike`.
+ *
+ * This is useful in cases where you need to operate on the raw bytes of an `ArrayBuffer` where a `TypedArray` (eg. `Uint32Array`) might be passed in.
+ * This ensures that you will always operate on the raw bytes rather than accidentally truncating the input by operating on the elements of the view.
+ *
+ * @param typedArrayOrBuffer - The `ArrayBufferLike` (either `TypedArray` or raw `ArrayBuffer`) to normalize to raw `ArrayBuffer`.
+ * @returns The raw `ArrayBuffer` without a view.
+ */
+export function normalizeArrayBufferView(typedArrayOrBuffer: ArrayBufferLike | ArrayBufferView): ArrayBufferLike {
+  return ArrayBuffer.isView(typedArrayOrBuffer) ? typedArrayOrBuffer.buffer : typedArrayOrBuffer;
 }
 
 export function capitalize(word: string): string {
@@ -831,16 +1035,34 @@ export function findObservationInterval(
  * Tries to find an observation reference range for the given patient and condition names.
  * @param definition - The observation definition.
  * @param patient - The patient.
- * @param names - The condition names.
+ * @param names - Optional condition names.
  * @returns The observation interval if found; otherwise undefined.
  */
 export function findObservationReferenceRange(
   definition: ObservationDefinition,
   patient: Patient,
-  names: string[]
+  names?: string[]
 ): ObservationDefinitionQualifiedInterval | undefined {
-  return definition.qualifiedInterval?.find(
-    (interval) => observationIntervalMatchesPatient(interval, patient) && names.includes(interval.condition as string)
+  return findObservationReferenceRanges(definition, patient, names)[0];
+}
+
+/**
+ * Returns all matching observation reference range for the given patient and condition names.
+ * @param definition - The observation definition.
+ * @param patient - The patient.
+ * @param names - Optional condition names.
+ * @returns The observation intervals if found; otherwise an empty array.
+ */
+export function findObservationReferenceRanges(
+  definition: ObservationDefinition,
+  patient: Patient,
+  names?: string[]
+): ObservationDefinitionQualifiedInterval[] {
+  return (
+    definition.qualifiedInterval?.filter(
+      (interval) =>
+        observationIntervalMatchesPatient(interval, patient) && (!names || names.includes(interval.condition as string))
+    ) ?? []
   );
 }
 
@@ -913,7 +1135,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return parseFloat(a.toFixed(precision));
+  return Number.parseFloat(a.toFixed(precision));
 }
 
 /**
@@ -1004,13 +1226,23 @@ export function findResourceByCode(
   );
 }
 
+export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
-  if (!value) {
+  if (value === undefined) {
     return undefined;
   } else if (Array.isArray(value)) {
     return value;
   } else {
     return [value];
+  }
+}
+
+export function singularize<T>(value: T | T[] | undefined): T | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  } else {
+    return value;
   }
 }
 
@@ -1226,15 +1458,37 @@ export function removeProfileFromResource<T extends Resource = Resource>(resourc
   return resource;
 }
 
-export function flatMapFilter<T, U>(arr: T[], fn: (value: T, idx: number) => U | undefined): U[] {
-  const result = [];
+export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | U[] | undefined): U[] {
+  const result: U[] = [];
+  if (!arr) {
+    return result;
+  }
+
   for (let i = 0; i < arr.length; i++) {
     const resultValue = fn(arr[i], i);
     if (Array.isArray(resultValue)) {
-      result.push(...resultValue.flat());
+      result.push(...resultValue);
     } else if (resultValue !== undefined) {
       result.push(resultValue);
     }
   }
   return result;
+}
+
+/**
+ * Returns the escaped HTML string of the input string.
+ * @param unsafe - The unsafe HTML string to escape.
+ * @returns The escaped HTML string.
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('“', '&ldquo;')
+    .replaceAll('”', '&rdquo;')
+    .replaceAll('‘', '&lsquo;')
+    .replaceAll('’', '&rsquo;')
+    .replaceAll('…', '&hellip;');
 }

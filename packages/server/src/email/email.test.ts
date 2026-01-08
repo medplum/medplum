@@ -1,17 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ContentType, getReferenceString, normalizeOperationOutcome, notFound } from '@medplum/core';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import { ContentType, getReferenceString } from '@medplum/core';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { simpleParser } from 'mailparser';
-import nodemailer, { Transporter } from 'nodemailer';
-import Mail from 'nodemailer/lib/mailer';
+import type { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
+import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
+import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
 
@@ -89,6 +93,31 @@ describe('Email', () => {
     expect(parsed.text).toBe('Hello Alice\n');
   });
 
+  test('Send with display string', async () => {
+    const fromAddress = 'Display Test <no-reply@example.com>';
+    const toAddresses = 'alice@example.com';
+    await sendEmail(systemRepo, {
+      from: fromAddress,
+      to: toAddresses,
+      cc: 'bob@example.com',
+      subject: 'Hello',
+      text: 'Hello Alice',
+    });
+
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.FromEmailAddress).toBe(fromAddress);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.Destination?.CcAddresses?.[0] ?? '').toBe('bob@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.subject).toBe('Hello');
+    expect(parsed.text).toBe('Hello Alice\n');
+  });
+
   test('Send with attachments', async () => {
     await sendEmail(systemRepo, {
       to: 'alice@example.com',
@@ -113,6 +142,28 @@ describe('Email', () => {
     expect(parsed.text).toBe('Hello Alice');
     expect(parsed.attachments).toHaveLength(1);
     expect(parsed.attachments[0].filename).toBe('text1.txt');
+  });
+
+  test('Send with replyTo', async () => {
+    const fromAddress = 'gibberish@example.com';
+    const toAddresses = 'alice@example.com';
+    const replyToAddress = 'reply-test@example.com';
+    await sendEmail(systemRepo, {
+      from: fromAddress,
+      to: toAddresses,
+      replyTo: replyToAddress,
+      subject: 'Hello',
+      text: 'Hello Alice',
+    });
+
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.FromEmailAddress).toBe(getConfig().supportEmail);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.ReplyToAddresses?.[0] ?? '').toBe(replyToAddress);
   });
 
   test('Array of addresses', async () => {
@@ -198,8 +249,8 @@ describe('Email', () => {
   });
 
   test('Block invalid binary', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -209,21 +260,16 @@ describe('Email', () => {
             path: `Binary/${randomUUID()}`,
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome).toMatchObject(notFound);
-    }
+      })
+    ).rejects.toThrow('Not found');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
   });
 
   test('Block file path', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -233,24 +279,16 @@ describe('Email', () => {
             path: './package.json',
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toEqual(
-        'Invalid email options: File access rejected for ./package.json'
-      );
-    }
+      })
+    ).rejects.toThrow('Invalid email options: File access rejected for ./package.json');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
   });
 
   test('Catch invalid options', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -260,14 +298,8 @@ describe('Email', () => {
             content: { foo: 'bar' } as unknown as Readable, // Invalid content
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email options: ERR_INVALID_ARG_TYPE');
-    }
+      })
+    ).rejects.toThrow(/Invalid email options/);
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);

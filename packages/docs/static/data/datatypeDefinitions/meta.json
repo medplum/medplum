@@ -183,7 +183,25 @@
       "max": "1",
       "short": "The individual, device or organization who initiated the last change.",
       "definition": "The individual, device or organization who initiated the last change.",
-      "comment": "The individual, device or organization who initiated the last change.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "onBehalfOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Meta.onBehalfOf",
+      "min": 0,
+      "max": "1",
+      "short": "Optional individual, device, or organization for whom the change was made.",
+      "definition": "Optional individual, device, or organization for whom the change was made.",
+      "comment": "",
       "inherited": false
     },
     {
@@ -200,8 +218,26 @@
       "min": 0,
       "max": "1",
       "short": "Optional account reference that can be used for sub-project compartments.",
-      "definition": "Optional account reference that can be used for sub-project compartments.",
+      "definition": "@deprecated Use Meta.accounts instead",
       "comment": "Optional account reference that can be used for sub-project compartments.",
+      "inherited": false
+    },
+    {
+      "name": "accounts",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Meta.accounts",
+      "min": 0,
+      "max": "*",
+      "short": "Optional account references that can be used for sub-project compartments.",
+      "definition": "Optional account references that can be used for sub-project compartments.",
+      "comment": "",
       "inherited": false
     },
     {
@@ -217,9 +253,9 @@
       "path": "Meta.compartment",
       "min": 0,
       "max": "*",
-      "short": "The list of compartments containing this resource. This is readonly and is set by the server.",
-      "definition": "The list of compartments containing this resource. This is readonly and is set by the server.",
-      "comment": "The list of compartments containing this resource. This is readonly and is set by the server.",
+      "short": "The list of compartments containing this resource",
+      "definition": "The list of compartments containing this resource",
+      "comment": "The list of compartments containing this resource",
       "inherited": false
     }
   ]

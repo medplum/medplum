@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OAuthTokenType } from '@medplum/core';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { exchangeExternalAuthToken } from '../oauth/token';
 import { makeValidationMiddleware } from '../util/validator';

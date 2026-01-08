@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import cx from 'clsx';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { getPatient } from '../utils';
 import classes from './QuickServiceRequests.module.css';
@@ -28,7 +31,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
     medplum
       .search('ServiceRequest', 'subject=' + patientRefStr)
       .then((bundle) => {
-        const entries = bundle.entry as BundleEntry<ServiceRequest>[];
+        const entries = bundle.entry ?? [];
         const resources = entries.map((e) => e.resource as ServiceRequest);
         sortByDateAndPriority(resources);
         resources.reverse();

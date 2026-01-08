@@ -1,13 +1,15 @@
-import { Binary, Resource } from '@medplum/fhirtypes';
-import { getConfig } from '../config';
-import { getLogger } from '../context';
-import { Repository } from './repo';
-import { getBinaryStorage } from './storage';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Binary, Resource } from '@medplum/fhirtypes';
+import { getConfig } from '../config/loader';
+import { getLogger } from '../logger';
+import { getPresignedUrl } from '../storage/loader';
+import type { Repository } from './repo';
 
 /**
  * The target type of the attachment rewrite.
  */
-export enum RewriteMode {
+export const RewriteMode = {
   /**
    * Rewrite the attachment URL to a presigned URL.
    *
@@ -17,7 +19,7 @@ export enum RewriteMode {
    *
    * Example: https://storage.medplum.com/binary/123/456?Signature=...
    */
-  PRESIGNED_URL,
+  PRESIGNED_URL: 'PRESIGNED_URL',
 
   /**
    * Rewrite the attachment URL to a canonical FHIR reference string.
@@ -26,8 +28,9 @@ export enum RewriteMode {
    *
    * Example: Binary/11feac5b-b5b7-4d5d-a416-0d64c194dac0
    */
-  REFERENCE,
-}
+  REFERENCE: 'REFERENCE',
+} as const;
+export type RewriteMode = (typeof RewriteMode)[keyof typeof RewriteMode];
 
 /**
  * Rewrites an object to replace any attachment references with signed URLs.
@@ -49,11 +52,13 @@ export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository,
  */
 class Rewriter {
   readonly cache: Record<string, string> = {};
+  private readonly mode: RewriteMode;
+  private readonly repo: Repository;
 
-  constructor(
-    private readonly mode: RewriteMode,
-    private readonly repo: Repository
-  ) {}
+  constructor(mode: RewriteMode, repo: Repository) {
+    this.mode = mode;
+    this.repo = repo;
+  }
 
   /**
    * Rewrites an object to replace any attachment references with signed URLs.
@@ -165,7 +170,7 @@ class Rewriter {
       return `Binary/${id}`;
     }
 
-    return getBinaryStorage().getPresignedUrl(binary);
+    return getPresignedUrl(binary);
   }
 }
 

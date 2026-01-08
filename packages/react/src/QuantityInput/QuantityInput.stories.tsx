@@ -1,9 +1,12 @@
-import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { QuantityInput } from './QuantityInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { Document } from '../Document/Document';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { QuantityInput } from './QuantityInput';
 
 export default {
   title: 'Medplum/QuantityInput',

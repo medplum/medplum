@@ -1,10 +1,17 @@
-import { ElementsContextType, buildElementsContext, tryGetDataType } from '@medplum/core';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box } from '@mantine/core';
+import type { ElementsContextType } from '@medplum/core';
+import { buildElementsContext, tryGetDataType } from '@medplum/core';
+import type { AccessPolicyResource } from '@medplum/fhirtypes';
+import cx from 'clsx';
+import type { JSX } from 'react';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import type { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import classes from './BackboneElementInput.module.css';
 
 export interface BackboneElementInputProps extends BaseInputProps {
   /** Type name the backbone element represents */
@@ -46,16 +53,20 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     return <div>{type}&nbsp;not implemented</div>;
   }
 
+  const isNested = parentElementsContext.path !== '';
+
   return maybeWrapWithContext(
     ElementsContext.Provider,
     contextValue,
-    <ElementsInput
-      path={props.path}
-      valuePath={props.valuePath}
-      type={type}
-      defaultValue={defaultValue}
-      onChange={props.onChange}
-      outcome={props.outcome}
-    />
+    <Box className={cx({ [classes.nested]: isNested })}>
+      <ElementsInput
+        path={props.path}
+        valuePath={props.valuePath}
+        type={type}
+        defaultValue={defaultValue}
+        onChange={props.onChange}
+        outcome={props.outcome}
+      />
+    </Box>
   );
 }

@@ -1,0 +1,164 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "MEDICATIONS",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "10160-0",
+                  "display": "History of Medication Use"
+                }
+              ],
+              "text": "History of Medication Use"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\" width=\"100%\"><thead><tr><th>Medication</th><th>Instructions</th><th>Dosage</th><th>Effective Dates (start - stop)</th><th>Status</th></tr></thead><tbody><tr ID=\"Medication_6\"><td><content ID=\"MedicationName_6\">3 ML Insulin Glargine 100 UNT/ML Pen Injector [Lantus]</content></td><td><content ID=\"MedicationSig_6\">Administer 40 units at bedtime</content></td><td><content>40 units</content></td><td>Jan-09-2009 -</td><td>Active</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "MedicationRequest/1310a2d3-f888-4722-b4c4-a3c5911ac7f9"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "5adfedd2-3aaf-4a4f-aa35-5f6600b60c99",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationRequest",
+        "id": "1310a2d3-f888-4722-b4c4-a3c5911ac7f9",
+        "contained": [
+          {
+            "resourceType": "Medication",
+            "id": "med-1310a2d3-f888-4722-b4c4-a3c5911ac7f9",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  "code": "847232",
+                  "display": "3 ML insulin glargine 100 UNT/ML Pen Injector [Lantus]"
+                }
+              ],
+              "text": "3 ML insulin glargine 100 UNT/ML Pen Injector [Lantus]"
+            },
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#MedicationName_6"
+              }
+            ],
+            "manufacturer": {
+              "display": "SANOFI-AVENTIS"
+            }
+          }
+        ],
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
+        },
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Medication_6"
+          }
+        ],
+        "status": "active",
+        "intent": "order",
+        "medicationReference": {
+          "reference": "#med-1310a2d3-f888-4722-b4c4-a3c5911ac7f9"
+        },
+        "subject": {
+          "reference": "Patient/5adfedd2-3aaf-4a4f-aa35-5f6600b60c99",
+          "display": "Katherine Madison"
+        },
+        "dispenseRequest": {
+          "validityPeriod": {
+            "start": "2009-01-09T00:00:00Z"
+          }
+        },
+        "dosageInstruction": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#MedicationSig_6"
+              }
+            ],
+            "route": {
+              "coding": [
+                {
+                  "system": "http://ncithesaurus-stage.nci.nih.gov",
+                  "code": "C38299",
+                  "display": "Subcutaneous Route of Administration"
+                }
+              ],
+              "text": "Subcutaneous Route of Administration"
+            },
+            "timing": {
+              "repeat": {
+                "period": 12,
+                "periodUnit": "h"
+              }
+            },
+            "doseAndRate": [
+              {
+                "doseQuantity": {
+                  "system": "http://unitsofmeasure.org",
+                  "value": 40,
+                  "code": "[IU]",
+                  "unit": "[IU]"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

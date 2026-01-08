@@ -1,5 +1,8 @@
-import { BotEvent, CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10, MedplumClient } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import { CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
+import type {
   Address,
   Coverage,
   CoverageClass,
@@ -188,7 +191,7 @@ function convertInsuranceCard(coverage: Coverage | undefined): object | undefine
 
 // Convert the Coverage.type field to the Candid Health Source of Payment code
 // Assume the that coverage is the in the standard [NAHDO Source of Payment Typology](https://www.nahdo.org/sopt)
-function convertCoverageType(coverageType: Coverage['type'] | undefined): string {
+function convertCoverageType(coverageType: Coverage['type']): string {
   if (!coverageType) {
     return 'not_given';
   }
@@ -332,7 +335,7 @@ function convertAddress(address: Address | undefined): object | undefined {
   };
 }
 
-function convertGender(fhirGender: Patient['gender'] | undefined): string {
+function convertGender(fhirGender: Patient['gender']): string {
   if (!fhirGender) {
     return 'not_given';
   }

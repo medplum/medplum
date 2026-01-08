@@ -676,6 +676,18 @@
       "type": "string",
       "description": "The name of the group",
       "expression": "Group.name"
+    },
+    {
+      "name": "characteristic-range",
+      "type": "quantity",
+      "description": "The name of the client application",
+      "expression": "Group.characteristic.value.ofType(Range)"
+    },
+    {
+      "name": "characteristic-reference",
+      "type": "reference",
+      "description": "An entity referenced in a characteristic",
+      "expression": "Group.characteristic.value.ofType(Reference)"
     }
   ]
 }

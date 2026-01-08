@@ -1,37 +1,65 @@
 name: Publish
+
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
 jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      NODE_VERSION: '20'
+      GITHUB_TOKEN: ${{ github.token }}
+      NODE_VERSION: '22'
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+      TURBO_CACHE: 'remote:rw'
     permissions:
       actions: read
       contents: write
+      id-token: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Check if latest version
+        id: check-latest
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          echo "Current Tag: ${CURRENT_TAG}"
+
+          LATEST_TAG=$(gh release view --json tagName -q '.tagName')
+          echo "Latest Tag: ${LATEST_TAG}"
+
+          HIGHEST_TAG=$(printf '%s\n%s' "${CURRENT_TAG}" "${LATEST_TAG}" | sort -V | tail -n1)
+          echo "Highest Tag: ${HIGHEST_TAG}"
+
+          if [ "${CURRENT_TAG}" = "${HIGHEST_TAG}" ]; then
+            echo "Current tag is the latest."
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "Current tag is not the latest."
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          node-version: 20
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         env:
           cache-name: cache-node-modules
         with:
@@ -43,13 +71,13 @@ jobs:
             ${{ runner.os }}-
 
       - name: Slack start message
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         with:
           payload: |
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Build
         run: npm run build:all
@@ -57,82 +85,124 @@ jobs:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          MEDPLUM_AWS_TEXTRACT_ENABLED: '__MEDPLUM_AWS_TEXTRACT_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
+      - name: Update npm # Ensure npm 11.5.1 or later is installed
+        run: npm install -g npm@latest
+
       - name: Publish to NPM
         run: ./scripts/publish.sh
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Sync example repos
+        if: steps.check-latest.outputs.result == 'true'
         run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55 # v2.10.0
 
-      - name: Build and push Docker images
-        run: ./scripts/build-docker.sh --release
+      - name: Build and push server Docker image
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-server.sh --release --latest
+          else
+            ./scripts/build-docker-server.sh --release
+          fi
         env:
-          DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
+          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
+
+      - name: Build and push app Docker image
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-app.sh --release --latest
+          else
+            ./scripts/build-docker-app.sh --release
+          fi
+        env:
+          APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
+        if: steps.check-latest.outputs.result == 'true' # only deploy latest versions
         run: ./scripts/deploy-bot-layer.sh
 
   build_agent_win64:
     runs-on: windows-latest
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: '24'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+      TURBO_CACHE: 'remote:rw'
     permissions:
       actions: read
       contents: write
+      id-token: write # Required for OIDC authentication with Azure Trusted Signing
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install NSIS
         run: choco install nsis
 
+      - name: Add NSIS to PATH
+        run: echo "C:\Program Files (x86)\NSIS" >> $GITHUB_PATH
+        shell: bash
+
       - name: Install Wget
         run: choco install wget
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          node-version: 20
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: pwsh
+        run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
+
+      - name: Cache node modules
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
+
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
+
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: find-signtool
         with:
           result-encoding: string
@@ -153,7 +223,7 @@ jobs:
                     if (!folder.endsWith('.0')) {
                         continue;
                     }
-                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    const folderVersion = Number.parseInt(folder.replaceAll('.',''));
                     if (folderVersion > maxVersion) {
                         const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
                         try {
@@ -170,7 +240,7 @@ jobs:
                 if(fileName == '') {
                     throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
                 }
-                
+
                 console.log(fileName);
                 return fileName;
             }
@@ -178,19 +248,73 @@ jobs:
             const path = await getSigntoolLocation();
             return path.replace(' ', '\ ');
 
+      - name: Build Agent executable and download dependencies
+        shell: bash
+        run: ./scripts/build-agent-win64.sh
+        env:
+          SHAWL_VERSION: 'v1.7.0'
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+
+      - name: Login to Azure
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          enable-AzPSSession: true
+
+      - name: Sign executables with Azure Trusted Signing
+        uses: azure/trusted-signing-action@fc390cf8ed0f14e248a542af1d838388a47c7a7c # v0.5.10
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          exclude-azure-cli-credential: true
+          exclude-environment-credential: true
+          exclude-workload-identity-credential: true
+          exclude-managed-identity-credential: true
+          exclude-shared-token-cache-credential: true
+          exclude-visual-studio-credential: true
+          exclude-visual-studio-code-credential: true
+          exclude-azure-powershell-credential: false
+          exclude-azure-developer-cli-credential: true
+          exclude-interactive-browser-credential: true
+          endpoint: https://eus.codesigning.azure.net/
+          trusted-signing-account-name: GitHubActionSigner
+          certificate-profile-name: MedplumCI
+          files-folder: ${{ github.workspace }}\packages\agent\dist
+          files-folder-filter: medplum-agent-*-win64.exe,shawl-*.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          append-signature: true
+
+      - name: Set Azure CodeSigning DLL path
+        shell: pwsh
+        run: |
+          $dll = Get-ChildItem -Path "$env:LOCALAPPDATA" -Filter "Azure.CodeSigning.Dlib.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($dll) {
+            $folder = Split-Path $dll.FullName -Parent
+            echo "AZURE_CODESIGNING_PATH=$folder" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Set AZURE_CODESIGNING_PATH=$folder"
+          } else {
+            Write-Error "Azure.CodeSigning.Dlib.dll not found"
+            exit 1
+          }
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
         env:
+          SHAWL_VERSION: 'v1.7.0'
           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
-          SM_HOST: ${{ secrets.SM_HOST }}
-          SM_API_KEY: ${{ secrets.SM_API_KEY }}
-          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
-          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
-          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
 
       - name: Upload Agent installer
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const packageJson = require('./packages/agent/package.json');
@@ -206,39 +330,75 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + packageJson.version + ".exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.asc`)
             });
 
   build_agent_linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - image: ubuntu-latest
+            suffix: x64
+          - image: ubuntu-24.04-arm
+            suffix: arm64
+    runs-on: ${{ matrix.arch.image }}
     timeout-minutes: 45
     env:
-      NODE_VERSION: '20'
+      NODE_VERSION: '24'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+      TURBO_CACHE: 'remote:rw'
     permissions:
       actions: read
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
-          node-version: 20
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Cache node modules
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
+
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
+
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
@@ -246,9 +406,12 @@ jobs:
       - name: Build Agent
         shell: bash
         run: ./scripts/build-agent-installer-linux.sh
+        env:
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
 
       - name: Upload Agent
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const packageJson = require('./packages/agent/package.json');
@@ -263,13 +426,110 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux")
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux.sha256")
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.asc`)
+            });
+
+  build_agent_macos:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '24'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_RELEASE_GPG_KEY }}" | gpg --batch --no-tty --import
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache node modules
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-macos.sh
+        env:
+          GPG_KEY_ID: ${{ secrets.MEDPLUM_RELEASE_GPG_KEY_ID }}
+          GPG_PASSPHRASE: ${{ secrets.MEDPLUM_RELEASE_GPG_PASSPHRASE }}
+
+      - name: Upload Agent
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const packageJson = require('./packages/agent/package.json');
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.sha256`)
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-macos-arm64.asc",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-macos.asc`)
             });

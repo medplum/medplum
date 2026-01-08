@@ -1,16 +1,20 @@
-import { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { getMissingRequiredQuestionnaireItems } from './aoe';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import type { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { getMissingRequiredQuestionnaireItems, questionnaireItemIterator } from './aoe';
 
-type AoeTestingLinkId =
-  | 'date'
-  | 'fasting'
-  | 'specimen-source'
-  | 'additional-testing'
-  | 'medications'
-  | 'family-history'
-  | 'translator';
+const AoeTestingLinkIds = [
+  'date',
+  'fasting',
+  'specimen-source',
+  'additional-testing',
+  'medications',
+  'family-history',
+  'translator',
+] as const;
+type AoeTestingLinkId = (typeof AoeTestingLinkIds)[number];
 function generateAoeTestingQuestionnaire(): Questionnaire {
   // Questionnaire from HGDX LabCorp (f-388554647b89801ea5e8320b), AOE Testing (aoe_testing) test
   return {
@@ -267,6 +271,42 @@ function generateAoeTestingQuestionnaire(): Questionnaire {
 
 type QuestionnaireResponseWithLinkIds<LinkId extends string> = QuestionnaireResponse & { item: { linkId: LinkId }[] };
 
+describe('questionnaireItemIterator', () => {
+  test('empty Questionaire.item', () => {
+    expect(questionnaireItemIterator(undefined).next().done).toBe(true);
+  });
+
+  test('flat Questionaire.item', () => {
+    const q = generateAoeTestingQuestionnaire();
+    expect(Array.from(questionnaireItemIterator(q.item))).toHaveLength(AoeTestingLinkIds.length);
+  });
+
+  test('flat Questionaire.item', () => {
+    const q: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      item: [
+        {
+          linkId: 'a',
+          type: 'group',
+          item: [
+            {
+              linkId: 'b',
+              type: 'group',
+              item: [
+                {
+                  linkId: 'c',
+                  type: 'string',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(Array.from(questionnaireItemIterator(q.item)).map((i) => i.linkId)).toStrictEqual(['a', 'b', 'c']);
+  });
+});
 describe('getMissingRequiredQuestionnaireItems', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -280,7 +320,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       item: [],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, false);
-    expect(missing).toEqual(['fasting']);
+    expect(missing).toStrictEqual(['fasting']);
   });
 
   test('AOE Testing Questionnaire with answers', () => {
@@ -303,7 +343,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, false);
-    expect(missing).toEqual([]);
+    expect(missing).toStrictEqual([]);
   });
 
   test('AOE Testing Questionnaire with requiredwhenspecimen with some answers', () => {
@@ -326,7 +366,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, true);
-    expect(missing).toEqual(['specimen-source']);
+    expect(missing).toStrictEqual(['specimen-source']);
   });
 
   test('AOE Testing Questionnaire with requiredwhenspecimen with some answers', () => {
@@ -360,6 +400,6 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, true);
-    expect(missing).toEqual([]);
+    expect(missing).toStrictEqual([]);
   });
 });

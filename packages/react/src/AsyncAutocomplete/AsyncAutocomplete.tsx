@@ -1,19 +1,13 @@
-import {
-  Combobox,
-  ComboboxItem,
-  ComboboxProps,
-  Group,
-  Loader,
-  Pill,
-  PillsInput,
-  ScrollAreaAutosize,
-  useCombobox,
-} from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ComboboxItem, ComboboxProps } from '@mantine/core';
+import { Combobox, Group, Loader, Pill, PillsInput, ScrollAreaAutosize, useCombobox } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { killEvent } from '../utils/dom';
 import { IconCheck } from '@tabler/icons-react';
+import type { JSX, KeyboardEvent, ReactNode, SyntheticEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
@@ -21,8 +15,10 @@ export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly resource: T;
 }
 
-export interface AsyncAutocompleteProps<T>
-  extends Omit<ComboboxProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+export interface AsyncAutocompleteProps<T> extends Omit<
+  ComboboxProps,
+  'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'
+> {
   readonly name?: string;
   readonly label?: ReactNode;
   readonly description?: ReactNode;
@@ -31,6 +27,11 @@ export interface AsyncAutocompleteProps<T>
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  readonly pillComponent?: (props: {
+    item: AsyncAutocompleteOption<T>;
+    disabled?: boolean;
+    onRemove: () => void;
+  }) => JSX.Element;
   readonly emptyComponent?: (props: { search: string }) => JSX.Element | ReactNode;
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
@@ -59,6 +60,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     toOption,
     loadOptions,
     itemComponent,
+    pillComponent,
     emptyComponent,
     onChange,
     onCreate,
@@ -81,24 +83,25 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
+  const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
-  const searchRef = useRef<string>();
+  const searchRef = useRef<string>(search);
   searchRef.current = search;
 
-  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>();
-  const lastValueRef = useRef<string>();
+  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
+  const lastValueRef = useRef<string>(undefined);
 
-  const timerRef = useRef<number>();
+  const timerRef = useRef<number>(timer);
   timerRef.current = timer;
 
-  const abortControllerRef = useRef<AbortController>();
+  const abortControllerRef = useRef<AbortController>(abortController);
   abortControllerRef.current = abortController;
 
-  const autoSubmitRef = useRef<boolean>();
+  const autoSubmitRef = useRef<boolean>(autoSubmit);
   autoSubmitRef.current = autoSubmit;
 
-  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>();
+  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>(options);
   optionsRef.current = options;
 
   const handleTimer = useCallback((): void => {
@@ -224,6 +227,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       }
       lastValueRef.current = undefined;
       if (val === '$create') {
+        setSearch('');
         addSelected(search);
       } else {
         addSelected(val);
@@ -269,7 +273,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const clearButton = !disabled && clearable && selected.length > 0 && (
     <Combobox.ClearButton
       title="Clear all"
-      size={16}
+      size="sm"
       onClear={() => {
         setSearch('');
         setSelected([]);
@@ -278,6 +282,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       }}
     />
   );
+
+  const createVisible = creatable && search.trim().length > 0;
+  const comboboxVisible = options.length > 0 || createVisible;
 
   return (
     <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl" {...rest}>
@@ -294,11 +301,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         >
           <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
             {selected.map((item) => (
-              <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
-                {item.label}
-              </Pill>
+              <PillComponent
+                key={item.value}
+                item={item}
+                disabled={disabled}
+                onRemove={() => handleValueRemove(item)}
+              />
             ))}
-
             {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
@@ -320,7 +329,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         </PillsInput>
       </Combobox.DropdownTarget>
 
-      <Combobox.Dropdown hidden={options.length === 0} data-testid={AsyncAutocompleteTestIds.options}>
+      <Combobox.Dropdown hidden={!comboboxVisible} data-testid={AsyncAutocompleteTestIds.options}>
         <Combobox.Options>
           <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
             {options.map((item) => {
@@ -332,9 +341,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
               );
             })}
 
-            {creatable && search.trim().length > 0 && (
-              <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
-            )}
+            {createVisible && <Combobox.Option value="$create">+ Create {search}</Combobox.Option>}
 
             {!creatable && search.trim().length > 0 && options.length === 0 && <EmptyComponent search={search} />}
           </ScrollAreaAutosize>
@@ -360,6 +367,22 @@ function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element
       {props.active && <IconCheck size={12} />}
       <span>{props.label}</span>
     </Group>
+  );
+}
+
+function DefaultPillComponent<T>({
+  item,
+  disabled,
+  onRemove,
+}: {
+  readonly item: AsyncAutocompleteOption<T>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
+}): JSX.Element {
+  return (
+    <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+      {item.label}
+    </Pill>
   );
 }
 

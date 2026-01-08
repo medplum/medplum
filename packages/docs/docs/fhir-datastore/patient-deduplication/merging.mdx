@@ -108,6 +108,8 @@ The downstream applications and the frequency of unmerge operations will primari
 
 Rewriting all references to point to the master record simplifies queries for client applications, and most mature implementations for patient care should target this approach. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
 
+The most efficient way to retrieve all clinical data associated with a patient is to use the [`readPatientEverything`](/docs/sdk/core.medplumclient.readpatienteverything) operation. This operation returns all resources in the patient compartment in a single request (or paginated across multiple requests for large datasets). The operation supports pagination via the `_count` and `_offset` parameters, and the returned Bundle will include `next` links when additional pages are available. The example below demonstrates how to use `readPatientEverything` to rewrite all clinical data references, including handling pagination to process all resources.
+
 <details>
   <summary>Example: Update References on Clinical Data</summary>
   <MedplumCodeBlock language="ts" selectBlocks="updateReferences">

@@ -1,10 +1,13 @@
-import { AgentTransmitResponse, Logger } from '@medplum/core';
-import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import { App } from './app';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentTransmitResponse, ILogger } from '@medplum/core';
+import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import type { App } from './app';
 
 export interface Channel {
-  readonly log: Logger;
-  start(): void;
+  readonly log: ILogger;
+  readonly channelLog: ILogger;
+  start(): Promise<void>;
   stop(): Promise<void>;
   sendToRemote(message: AgentTransmitResponse): void;
   reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
@@ -13,38 +16,22 @@ export interface Channel {
 }
 
 export abstract class BaseChannel implements Channel {
-  private definition: AgentChannel;
-  private endpoint: Endpoint;
+  readonly app: App;
+  protected definition: AgentChannel;
+  protected endpoint: Endpoint;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
+    this.app = app;
     this.definition = definition;
     this.endpoint = endpoint;
   }
 
-  abstract readonly log: Logger;
-  abstract start(): void;
+  abstract readonly log: ILogger;
+  abstract readonly channelLog: ILogger;
+  abstract start(): Promise<void>;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;
-
-  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    const previousEndpoint = this.endpoint;
-    this.definition = definition;
-    this.endpoint = endpoint;
-
-    this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    if (needToRebindToPort(previousEndpoint, endpoint)) {
-      await this.stop();
-      this.start();
-      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
-    }
-  }
+  abstract reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
 
   getDefinition(): AgentChannel {
     return this.definition;
@@ -55,20 +42,12 @@ export abstract class BaseChannel implements Channel {
   }
 }
 
-export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
-  if (
-    firstEndpoint.address === secondEndpoint.address ||
-    new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
-  ) {
-    return false;
-  }
-  return true;
-}
-
-export enum ChannelType {
-  HL7_V2 = 'HL7_V2',
-  DICOM = 'DICOM',
-}
+export const ChannelType = {
+  HL7_V2: 'HL7_V2',
+  DICOM: 'DICOM',
+  BYTE_STREAM: 'BYTE_STREAM',
+} as const;
+export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
 export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('dicom')) {
@@ -77,16 +56,27 @@ export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('mllp')) {
     return ChannelType.HL7_V2;
   }
+  if (endpoint.address.startsWith('tcp')) {
+    return ChannelType.BYTE_STREAM;
+  }
   throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
 }
 
 export function getChannelTypeShortName(endpoint: Endpoint): string {
-  switch (getChannelType(endpoint)) {
-    case ChannelType.HL7_V2:
-      return 'HL7';
-    case ChannelType.DICOM:
-      return 'DICOM';
-    default:
-      throw new Error(`Invalid endpoint type with address '${endpoint.address}'`);
+  try {
+    const channelType = getChannelType(endpoint);
+    switch (channelType) {
+      case ChannelType.HL7_V2:
+        return 'HL7';
+      case ChannelType.DICOM:
+        return 'DICOM';
+      case ChannelType.BYTE_STREAM:
+        return 'Byte Stream';
+      default:
+        channelType satisfies never;
+        throw new Error('Unreachable');
+    }
+  } catch (err) {
+    throw new Error(`Invalid endpoint type with address '${endpoint.address}'`, { cause: err });
   }
 }

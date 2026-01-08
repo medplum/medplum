@@ -1,28 +1,24 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, NativeSelect } from '@mantine/core';
-import {
-  LRUCache,
-  MedplumClient,
-  ReadablePromise,
-  createReference,
-  isEmpty,
-  isPopulated,
-  tryGetProfile,
-} from '@medplum/core';
-import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import type { MedplumClient } from '@medplum/core';
+import { LRUCache, ReadablePromise, createReference, isEmpty, isPopulated, tryGetProfile } from '@medplum/core';
+import type { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
-export interface ReferenceInputProps {
+export interface ReferenceInputProps<T extends Resource = Resource> {
   readonly name: string;
   readonly placeholder?: string;
-  readonly defaultValue?: Reference;
+  readonly defaultValue?: Reference<T>;
   readonly targetTypes?: string[];
   readonly searchCriteria?: Record<string, string>;
   readonly autoFocus?: boolean;
   readonly required?: boolean;
-  readonly onChange?: (value: Reference | undefined) => void;
+  readonly onChange?: (value: Reference<T> | undefined) => void;
   readonly disabled?: boolean;
 }
 
@@ -44,10 +40,10 @@ type ResourceTypeTargetType = BaseTargetType & {
 };
 type TargetType = ResourceTypeTargetType | ProfileTargetType;
 
-export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
+export function ReferenceInput<T extends Resource = Resource>(props: ReferenceInputProps<T>): JSX.Element {
   const { onChange } = props;
   const medplum = useMedplum();
-  const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
+  const [value, setValue] = useState<Reference<T> | undefined>(props.defaultValue);
   const [targetTypes, setTargetTypes] = useState<TargetType[] | undefined>(() => createTargetTypes(props.targetTypes));
   const [targetType, setTargetType] = useState<TargetType | undefined>(() =>
     getInitialTargetType(props.defaultValue, targetTypes)
@@ -130,8 +126,8 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [medplum, targetType, targetTypes]);
 
   const setValueHelper = useCallback(
-    (item: Resource | undefined) => {
-      const newValue = item ? createReference(item) : undefined;
+    (item: T | undefined) => {
+      const newValue = item ? createReference<T>(item) : undefined;
       setValue(newValue);
       if (onChange) {
         onChange(newValue);
@@ -153,50 +149,54 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [targetTypes]);
 
   return (
-    <Group gap="xs" grow wrap="nowrap">
-      {targetTypes && targetTypes.length > 1 && (
-        <NativeSelect
+    <>
+      {props.name && <input type="hidden" name={props.name} value={value?.reference ?? ''} />}
+      <Group gap="xs" grow wrap="nowrap">
+        {targetTypes && targetTypes.length > 1 && (
+          <NativeSelect
+            name={props.name + '-resourceType'}
+            disabled={props.disabled}
+            data-autofocus={props.autoFocus}
+            data-testid="reference-input-resource-type-select"
+            defaultValue={targetType?.resourceType}
+            autoFocus={props.autoFocus}
+            onChange={(e) => {
+              const newValue = e.currentTarget.value;
+              const newTargetType = targetTypes.find((tt) => tt.value === newValue);
+              setTargetType(newTargetType);
+            }}
+            data={typeSelectOptions}
+          />
+        )}
+        {!targetTypes && (
+          <ResourceTypeInput
+            disabled={props.disabled}
+            autoFocus={props.autoFocus}
+            testId="reference-input-resource-type-input"
+            defaultValue={targetType?.resourceType as ResourceType}
+            onChange={(newResourceType) => {
+              if (newResourceType) {
+                setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
+              } else {
+                setTargetType(undefined);
+              }
+            }}
+            name={props.name + '-resourceType'}
+            placeholder="Resource Type"
+          />
+        )}
+        <ResourceInput
+          resourceType={targetType?.resourceType as ResourceType}
+          name={props.name + '-id'}
+          required={props.required}
+          placeholder={props.placeholder}
+          defaultValue={value}
+          searchCriteria={searchCriteria}
+          onChange={setValueHelper}
           disabled={props.disabled}
-          data-autofocus={props.autoFocus}
-          data-testid="reference-input-resource-type-select"
-          defaultValue={targetType?.resourceType}
-          autoFocus={props.autoFocus}
-          onChange={(e) => {
-            const newValue = e.currentTarget.value;
-            const newTargetType = targetTypes.find((tt) => tt.value === newValue);
-            setTargetType(newTargetType);
-          }}
-          data={typeSelectOptions}
         />
-      )}
-      {!targetTypes && (
-        <ResourceTypeInput
-          disabled={props.disabled}
-          autoFocus={props.autoFocus}
-          testId="reference-input-resource-type-input"
-          defaultValue={targetType?.resourceType as ResourceType}
-          onChange={(newResourceType) => {
-            if (newResourceType) {
-              setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
-            } else {
-              setTargetType(undefined);
-            }
-          }}
-          name={props.name + '-resourceType'}
-          placeholder="Resource Type"
-        />
-      )}
-      <ResourceInput
-        resourceType={targetType?.resourceType as ResourceType}
-        name={props.name + '-id'}
-        required={props.required}
-        placeholder={props.placeholder}
-        defaultValue={value}
-        searchCriteria={searchCriteria}
-        onChange={setValueHelper}
-        disabled={props.disabled}
-      />
-    </Group>
+      </Group>
+    </>
   );
 }
 
@@ -271,7 +271,7 @@ async function fetchResourceTypeOfProfile(
         name,
         title,
       }
-    }`.replace(/\s+/g, ' ');
+    }`.replaceAll(/\s+/g, ' ');
 
   const response = (await medplum.graphql(query)) as ResourceTypeGraphQLResponse;
 

@@ -1,10 +1,13 @@
-import { badRequest, NewUserRequest, normalizeOperationOutcome } from '@medplum/core';
-import { ClientApplication, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { NewUserRequest, WithId } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome } from '@medplum/core';
+import type { ClientApplication, User } from '@medplum/fhirtypes';
+import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
-import { getConfig } from '../config';
+import { randomUUID } from 'node:crypto';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -93,12 +96,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 }
 
-export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>): Promise<User> {
+export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>): Promise<WithId<User>> {
   const { firstName, lastName, email, password, projectId } = request;
 
   const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
-    return Promise.reject(badRequest('Password found in breach database', 'password'));
+    throw badRequest('Password found in breach database', 'password');
   }
 
   globalLogger.info('User creation request received', { email });

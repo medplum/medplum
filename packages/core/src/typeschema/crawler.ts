@@ -1,8 +1,12 @@
-import { Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, GetTypedPropertyValueOptions, toTypedValue } from '../fhirpath/utils';
-import { isResource, TypedValue } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { GetTypedPropertyValueOptions } from '../fhirpath/utils';
+import { getTypedPropertyValue } from '../fhirpath/utils';
+import type { TypedValue } from '../types';
+import { isResource } from '../types';
 import { arrayify } from '../utils';
-import { getDataType, InternalTypeSchema } from './types';
+import type { InternalTypeSchema } from './types';
+import { getDataType } from './types';
 import { isPrimitiveType } from './validation';
 
 export interface CrawlerVisitor {
@@ -19,9 +23,6 @@ export interface CrawlerVisitor {
   ) => void;
 }
 
-/** @deprecated - Use CrawlerVisitor instead */
-export type ResourceVisitor = CrawlerVisitor;
-
 export interface AsyncCrawlerVisitor {
   onEnterObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
   onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
@@ -36,102 +37,11 @@ export interface AsyncCrawlerVisitor {
   ) => Promise<void>;
 }
 
-/** @deprecated - Use AsyncCrawlerVisitor instead */
-export type AsyncResourceVisitor = AsyncCrawlerVisitor;
-
-function isSchema(obj: InternalTypeSchema | CrawlerOptions): obj is InternalTypeSchema {
-  return 'elements' in obj;
-}
-
-function isAsync(visitor: CrawlerVisitor | AsyncCrawlerVisitor): visitor is AsyncCrawlerVisitor {
-  return Boolean((visitor as AsyncCrawlerVisitor).visitPropertyAsync);
-}
-
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param schema - The schema to use for the resource.
- * @param initialPath - The path within the resource form which to start crawling.
- * @deprecated - Use crawlTypedValue instead
- */
-export function crawlResource(
-  resource: Resource,
-  visitor: CrawlerVisitor,
-  schema?: InternalTypeSchema,
-  initialPath?: string
-): void;
-/**
- * Crawls the resource asynchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @returns void
- * @deprecated - Use crawlTypedValueAsync instead
- */
-export function crawlResource(resource: Resource, visitor: AsyncCrawlerVisitor, options: CrawlerOptions): Promise<void>;
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @deprecated - Use crawlTypedValue instead
- */
-export function crawlResource(resource: Resource, visitor: CrawlerVisitor, options?: CrawlerOptions): void;
-
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param schema - The schema to use for the resource.
- * @param initialPath - The path within the resource form which to start crawling.
- * @returns Promise
- * @deprecated - Use crawlTypedValue or crawlTypedValueAsync instead
- */
-export function crawlResource(
-  resource: Resource,
-  visitor: CrawlerVisitor | AsyncCrawlerVisitor,
-  schema?: InternalTypeSchema | CrawlerOptions,
-  initialPath?: string
-): Promise<void> | void {
-  let options: CrawlerOptions | undefined;
-  if (schema && isSchema(schema)) {
-    options = { schema, initialPath };
-  } else {
-    options = schema;
-  }
-
-  if (isAsync(visitor)) {
-    return crawlTypedValueAsync(toTypedValue(resource), visitor, options);
-  } else {
-    return crawlTypedValue(toTypedValue(resource), visitor, options);
-  }
-}
-
-/**
- * Crawls the resource asynchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @returns Promise
- * @deprecated - Use crawlTypedValueAsync instead
- */
-export async function crawlResourceAsync(
-  resource: Resource,
-  visitor: AsyncCrawlerVisitor,
-  options: CrawlerOptions
-): Promise<void> {
-  return crawlTypedValueAsync(toTypedValue(resource), visitor, options);
-}
-
 export interface CrawlerOptions {
   skipMissingProperties?: boolean;
   schema?: InternalTypeSchema;
   initialPath?: string;
 }
-
-/** @deprecated - Use CrawlerOptions instead */
-export type ResourceCrawlerOptions = CrawlerOptions;
 
 /**
  * Crawls the typed value synchronously.
@@ -215,18 +125,16 @@ class Crawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue)) {
+        this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }
@@ -263,7 +171,7 @@ class AsyncCrawler {
       await this.visitor.onEnterObject(path, obj, schema);
     }
 
-    if (this.excludeMissingProperties) {
+    if (this.excludeMissingProperties && obj.value) {
       for (const key of Object.keys(obj.value)) {
         await this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }
@@ -296,18 +204,16 @@ class AsyncCrawler {
     }
 
     for (const propertyValue of propertyValues) {
-      if (propertyValue) {
-        for (const value of arrayify(propertyValue) as TypedValueWithPath[]) {
-          await this.crawlPropertyValue(value, path);
-        }
+      for (const value of arrayify(propertyValue)) {
+        await this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private async crawlPropertyValue(value: TypedValueWithPath, path: string): Promise<void> {
+  private async crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): Promise<void> {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       await this.crawlObject(value, type, path);
     }
   }
@@ -347,7 +253,7 @@ export function getNestedProperty(
         for (const element of current) {
           next.push(propertyGetter(element, prop, options));
         }
-      } else if (options?.withPath && current && current.value !== undefined) {
+      } else if (options?.withPath && current?.value !== undefined) {
         next.push(propertyGetter(current, prop, options));
       } else if (!options?.withPath && current !== undefined) {
         next.push(propertyGetter(current, prop, options));
@@ -388,4 +294,16 @@ function withPath(
   }
 
   return { ...tv, path: `${parentPrefix}${key}` };
+}
+
+/**
+ * Translates a path emitted by this crawler into an RFC6902 JSON Patch pointer
+ *
+ * @param path - A path emitted from a Crawler
+ * @returns pointer -An RFC6902 pointer describing the path
+ */
+export function pathToJSONPointer(path: string): string {
+  return `.${path}` // Prepend a delimiter to match RFC6902
+    .replaceAll('.', '/') // convert dot delimiters to slash delimiters
+    .replaceAll(/\[(\d+)]/g, (m, g1) => `/${g1}`); // convert array syntax: `arr[0]` => `arr/0`
 }

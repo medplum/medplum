@@ -1,12 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { CodeSystem, Parameters } from '@medplum/fhirtypes';
+import type { CodeSystem, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
+import { selectCoding } from './utils/terminology';
 
 const app = express();
 
@@ -47,7 +50,7 @@ describe('CodeSystem $import', () => {
       .get(`/fhir/R4/CodeSystem?url=${snomedJSON.url}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(resS.status).toEqual(200);
+    expect(resS.status).toStrictEqual(200);
 
     if (resS.body.entry.length > 0) {
       for (const entry of resS.body.entry) {
@@ -55,7 +58,7 @@ describe('CodeSystem $import', () => {
           .delete(`/fhir/R4/CodeSystem/${entry.resource.id}`)
           .set('Authorization', 'Bearer ' + accessToken)
           .send();
-        expect(resD.status).toEqual(200);
+        expect(resD.status).toStrictEqual(200);
       }
     }
 
@@ -64,7 +67,7 @@ describe('CodeSystem $import', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(snomedJSON);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     snomed = res.body as CodeSystem;
   });
 
@@ -85,7 +88,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '315306007', display: 'Examination by method (procedure)' } },
         ],
       });
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -105,9 +108,10 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
 
-    await assertCodeExists(snomed.id, '37931006');
+    const coding = await assertCodeExists(snomed.id, '37931006');
+    expect(coding.isSynonym).toBe(false);
     await assertCodeExists(snomed.id, '315306007');
     await assertPropertyExists(snomed.id, '37931006', 'parent', '315306007');
   });
@@ -156,7 +160,7 @@ describe('CodeSystem $import', () => {
     await assertCodeExists(snomed.id, '702707005');
     const target = await assertCodeExists(snomed.id, '118690002');
     const relationship = await assertPropertyExists(snomed.id, '702707005', 'parent', '118690002');
-    expect(relationship.target).toEqual(target.id);
+    expect(relationship.target).toStrictEqual(target.id);
   });
 
   test('Returns error on unknown code system', async () => {
@@ -171,8 +175,8 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '1', display: 'Aspirin' } },
         ],
       });
-    expect(res.status).toEqual(400);
-    expect(res.body.issue[0].code).toEqual('invalid');
+    expect(res.status).toStrictEqual(400);
+    expect(res.body.issue[0].code).toStrictEqual('invalid');
   });
 
   test('Returns error on unknown code for property', async () => {
@@ -194,8 +198,8 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toEqual(400);
-    expect(res2.body.issue[0].code).toEqual('invalid');
+    expect(res2.status).toStrictEqual(400);
+    expect(res2.body.issue[0].code).toStrictEqual('invalid');
   });
 
   test('Returns error on unknown property', async () => {
@@ -218,8 +222,8 @@ describe('CodeSystem $import', () => {
           },
         ],
       });
-    expect(res2.status).toEqual(400);
-    expect(res2.body.issue[0].code).toEqual('invalid');
+    expect(res2.status).toStrictEqual(400);
+    expect(res2.body.issue[0].code).toStrictEqual('invalid');
   });
 
   test('Returns error on non-SuperAdmin user', async () => {
@@ -235,8 +239,8 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '184598004', display: 'Needle biopsy of brain (procedure)' } },
         ],
       });
-    expect(res2.status).toEqual(403);
-    expect(res2.body.issue[0].code).toEqual('forbidden');
+    expect(res2.status).toStrictEqual(403);
+    expect(res2.body.issue[0].code).toStrictEqual('forbidden');
   });
 
   test('Allows access by Project admin', async () => {
@@ -252,7 +256,7 @@ describe('CodeSystem $import', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(snomedJSON);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
@@ -265,7 +269,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: '184598004', display: 'Needle biopsy of brain (procedure)' } },
         ],
       });
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     await assertCodeExists(res.body.id, '184598004');
   });
 
@@ -287,16 +291,48 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: 'NIBL', display: 'nibling' } },
         ],
       });
-    expect(res2.status).toEqual(400);
+    expect(res2.status).toStrictEqual(400);
+  });
+
+  test('Imports concepts and synonym designations', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: snomed.url },
+          { name: 'concept', valueCoding: { code: '37931006', display: 'Auscultation (procedure)' } },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '37931006' },
+              { name: 'value', valueString: 'Listening' },
+            ],
+          },
+          {
+            name: 'designation',
+            part: [
+              { name: 'code', valueCode: '37931006' },
+              { name: 'language', valueCode: 'fr' },
+              { name: 'value', valueString: 'auscultation (intervention)' },
+            ],
+          },
+        ],
+      });
+    expect(res.status).toStrictEqual(200);
+
+    const coding = await assertCodeExists(snomed.id, '37931006');
+    expect(coding.isSynonym).toBe(false);
   });
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
   const db = getDatabasePool(DatabaseMode.READER);
-  const coding = await new SelectQuery('Coding')
-    .column('id')
-    .where('system', '=', system)
-    .where('code', '=', code)
+  const coding = await selectCoding(system as string, code)
+    .column('isSynonym')
+    .where('synonymOf', '=', null)
     .execute(db);
   expect(coding).toHaveLength(1);
   return coding[0];

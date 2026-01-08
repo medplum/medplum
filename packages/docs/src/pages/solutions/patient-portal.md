@@ -6,7 +6,9 @@ Build a patient facing application that allows users to view their records, fill
 
 The sample application is called [Foo Medical](https://www.foomedical.com). To see the experience you can [register here](https://www.foomedical.com/register). The source code for the application and how to set it up can be found [here](https://github.com/medplum/foomedical).
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/aXKWDJ-GBKk?controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/aXKWDJ-GBKk?controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 ## Features
 
@@ -36,13 +38,14 @@ Allow patients to message their provider or care team in a chat-like interface. 
 
 Giving patients access to only their data can be enabled via [access controls](/docs/access/access-policies).
 
-## Case Studies
-
-- At home lab provider [Lumba Health](https://lumba.health/) used the `foomedical` template to build [my.lumba.health](https://my.lumba.health/) patient records portal.
-
 ## Demos and Reference Material
 
 - Sample app [Foo Medical](https://www.foomedical.com) live for testing
 - [Foo Medical Source Code](https://github.com/medplum/foomedical)
-- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)
+- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts)
 - [UI components on Storybook](https://storybook.medplum.com)
+
+## Case Studies
+
+- At home lab provider [Lumba Health](https://lumba.health/) used the `foomedical` template to build [my.lumba.health](https://my.lumba.health/) patient records portal.
+

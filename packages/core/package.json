@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum TS/JS Library",
   "keywords": [
     "medplum",
@@ -49,15 +49,16 @@
   ],
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "3.2.10",
-    "@medplum/fhirtypes": "3.2.10",
+    "@medplum/definitions": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
     "jest-websocket-mock": "2.5.0"
   },
   "peerDependencies": {
@@ -69,6 +70,6 @@
     }
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^22.18.0 || >=24.2.0"
   }
 }

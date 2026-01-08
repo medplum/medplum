@@ -160,6 +160,39 @@
       "base": "DomainResource"
     },
     {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ProjectMembership.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this ProjectMembership",
+      "definition": "An identifier for this ProjectMembership.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "active",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ProjectMembership.active",
+      "min": 0,
+      "max": "1",
+      "short": "Whether this patient's record is in active use",
+      "definition": "Whether this project membership record is in active use.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "project",
       "depth": 1,
       "types": [
@@ -504,6 +537,12 @@
       "type": "reference",
       "description": "The access policy of the user",
       "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The identifier of the project membership",
+      "expression": "ProjectMembership.identifier"
     }
   ]
 }

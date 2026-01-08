@@ -1,0 +1,71 @@
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: 'package-lock.json'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/docs/blog/**/*
+          - packages/docs/docs/**/*
+          - packages/docs/src/**/*
+
+example:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/examples/src/**/*
+          - examples/*/src/**/*
+
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/server/src/auth/**/*
+          - packages/server/src/oauth/**/*
+          - packages/server/src/scim/**/*
+          - packages/server/src/fhir/accesspolicy.ts
+          - packages/core/src/access.ts
+
+fhir-datastore:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/server/src/fhir/**/*
+
+search:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/server/src/fhir/search*
+          - packages/server/src/fhir/lookups/**/*
+
+medications:
+  - changed-files:
+      - any-glob-to-any-file:
+          - examples/medplum-photon-integration/src/**/*
+
+integration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/ccda/src/**/*
+          - packages/core/src/fhircast/**/*
+          - packages/dosespot-react/src/**/*
+          - packages/health-gorilla/src/**/*
+          - packages/health-gorilla-core/src/**/*
+          - packages/health-gorilla-react/src/**/*
+          - packages/hl7/src/**/*
+          - packages/server/src/fhircast/**/*
+
+compliance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/ccda/src/**/*
+
+react:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/react/src/**/*
+          - packages/react-hooks/src/**/*
+
+self-host:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/cdk/src/**/*
+          - charts/**/*
+          - terraform/**/*

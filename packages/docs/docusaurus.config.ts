@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import type * as Preset from '@docusaurus/preset-classic';
 import type { Config } from '@docusaurus/types';
 import { themes as prismThemes } from 'prism-react-renderer';
@@ -10,11 +12,17 @@ const config: Config = {
   trailingSlash: false,
   onBrokenLinks: 'throw',
   onBrokenAnchors: 'throw',
-  onBrokenMarkdownLinks: 'throw',
   onDuplicateRoutes: 'throw',
   favicon: 'favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
   projectName: 'medplum', // Usually your repo name.
+
+  // Set this to true to enable the faster experimental build mode.
+  // https://github.com/facebook/docusaurus/issues/10556
+  future: {
+    v4: true,
+    experimental_faster: true,
+  },
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -37,6 +45,7 @@ const config: Config = {
             items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
             return items;
           },
+          showLastUpdateTime: true,
         },
         blog: {
           showReadingTime: true,
@@ -44,7 +53,7 @@ const config: Config = {
           blogSidebarTitle: 'Recent posts',
         },
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: './src/css/custom.css',
         },
         gtag: {
           trackingID: 'G-SHW0ZNT27G',
@@ -59,15 +68,7 @@ const config: Config = {
       attributes: {
         rel: 'apple-touch-icon',
         sizes: '180x180',
-        href: '/img/logo-192x192.png',
-      },
-    },
-    {
-      tagName: 'link',
-      attributes: {
-        rel: 'icon',
-        href: '/img/logo.svg',
-        type: 'image/svg+xml',
+        href: '/img/medplum-apple-touch-icon.png',
       },
     },
     {
@@ -81,7 +82,6 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Medplum',
       logo: {
         alt: 'Medplum Logo',
         src: 'img/logo.svg',
@@ -103,11 +103,11 @@ const config: Config = {
           type: 'doc',
           docId: 'home',
           position: 'left',
-          label: 'Documentation',
+          label: 'Resources',
         },
         {
-          to: '/docs/api',
-          label: 'Reference',
+          to: '/pricing',
+          label: 'Pricing',
           position: 'left',
         },
         {
@@ -124,17 +124,6 @@ const config: Config = {
     },
     footer: {
       links: [
-        {
-          title: 'Medplum',
-          items: [
-            {
-              html: `
-                <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
-                <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
-                  `,
-            },
-          ],
-        },
         {
           title: 'Developers',
           items: [
@@ -172,6 +161,10 @@ const config: Config = {
               to: 'https://github.com/medplum/medplum',
             },
             {
+              label: 'Knowledge Base',
+              to: 'https://linen.medplum.com',
+            },
+            {
               label: 'Contributing',
               to: '/docs/contributing',
             },
@@ -183,18 +176,6 @@ const config: Config = {
             {
               label: 'About us',
               to: '/about',
-            },
-            {
-              label: 'Security',
-              to: '/security',
-            },
-            {
-              label: 'Terms of Service',
-              to: '/terms',
-            },
-            {
-              label: 'Privacy Policy',
-              to: '/privacy',
             },
             {
               label: 'Pricing',
@@ -212,6 +193,10 @@ const config: Config = {
               label: 'Blog',
               to: '/blog',
             },
+            {
+              label: 'Brand',
+              to: '/brand',
+            },
           ],
         },
       ],
@@ -221,7 +206,7 @@ const config: Config = {
       theme: prismThemes.github,
       darkTheme: prismThemes.dracula,
     },
-    image: 'img/medplum.png',
+    image: 'img/medplum-og-cover-image.png',
     algolia: {
       // The application ID provided by Algolia
       appId: '6A1DXS603N',
@@ -245,6 +230,9 @@ const config: Config = {
   } satisfies Preset.ThemeConfig,
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'throw',
+    },
   },
   themes: ['@docusaurus/theme-mermaid'],
 };

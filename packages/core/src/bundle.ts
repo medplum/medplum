@@ -1,4 +1,13 @@
-import { Bundle, BundleEntry, BundleEntryRequest, Resource } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  Bundle,
+  BundleEntry,
+  BundleEntryRequest,
+  ExtractResource,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -17,14 +26,21 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
   bundle = deepClone(bundle);
   for (const entry of bundle.entry || []) {
-    if (entry.resource?.meta !== undefined) {
-      delete entry.resource.meta.author;
-      delete entry.resource.meta.compartment;
-      delete entry.resource.meta.lastUpdated;
-      delete entry.resource.meta.project;
-      delete entry.resource.meta.versionId;
+    const resource = entry.resource;
+    if (!resource) {
+      continue;
     }
-    const id = entry.resource?.id;
+    if (resource.meta !== undefined) {
+      delete resource.meta.author;
+      delete resource.meta.compartment;
+      delete resource.meta.lastUpdated;
+      delete resource.meta.project;
+      delete resource.meta.versionId;
+      if (Object.keys(resource.meta).length === 0) {
+        delete resource.meta;
+      }
+    }
+    const id = resource?.id;
     if (id) {
       idToUuid[id] = generateId();
 
@@ -37,9 +53,9 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
     {
       resourceType: 'Bundle',
       type: 'transaction',
-      entry: input?.map((entry: any) => ({
+      entry: input?.map((entry: BundleEntry) => ({
         fullUrl: entry.fullUrl,
-        request: { method: 'POST', url: entry.resource.resourceType },
+        request: { method: 'POST', url: entry.resource?.resourceType },
         resource: entry.resource,
       })),
     },
@@ -84,10 +100,15 @@ export function reorderBundle(bundle: Bundle): Bundle {
   const { sorted: sortedFullUrls, cycles } = topologicalSortWithCycles(adjacencyList);
 
   const entryMap: Record<string, BundleEntry> = {};
+  const entriesWithoutFullUrl: BundleEntry[] = [];
 
-  for (const entry of bundle.entry || []) {
+  for (const entry of bundle.entry ?? []) {
     if (entry.fullUrl) {
       entryMap[entry.fullUrl] = entry;
+    } else {
+      // Preserve entries without fullUrl (e.g., PATCH operations)
+      // These don't need topological sorting since they operate on existing resources
+      entriesWithoutFullUrl.push(entry);
     }
   }
 
@@ -108,16 +129,20 @@ export function reorderBundle(bundle: Bundle): Bundle {
     }
   }
 
+  // Append entries without fullUrl at the end (e.g., PATCH operations that update existing resources)
+  reorderedEntries.push(...entriesWithoutFullUrl);
+
   return { ...bundle, entry: reorderedEntries };
 }
 
 type AdjacencyList = Record<string, string[]>;
 
-enum VertexState {
-  NotVisited,
-  Visiting,
-  Visited,
-}
+const VertexState = {
+  NotVisited: 'NotVisited',
+  Visiting: 'Visiting',
+  Visited: 'Visited',
+} as const;
+type VertexState = (typeof VertexState)[keyof typeof VertexState];
 
 function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cycles: string[][] } {
   const sorted: string[] = [];
@@ -232,7 +257,7 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   const simpleBundle = {
     resourceType: 'Bundle',
     type: 'transaction',
-    entry: [{ resource }] as BundleEntry[],
+    entry: [{ resource }],
   } satisfies Bundle;
 
   // Move all contained resources to the bundle
@@ -255,4 +280,13 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   // This adds fullUrl and request properties to each entry
   // and reorders the bundle to ensure that contained resources are created before they are referenced.
   return convertToTransactionBundle(simpleBundle);
+}
+
+export function findResourceInBundle<K extends ResourceType>(
+  bundle: Bundle,
+  resourceType: K,
+  id: string
+): ExtractResource<K> {
+  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+    ?.resource as ExtractResource<K>;
 }

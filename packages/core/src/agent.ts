@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { LogMessage } from './logger';
+
 export interface BaseAgentMessage {
   type: string;
   callback?: string;
@@ -59,6 +63,7 @@ export interface AgentReloadConfigResponse extends BaseAgentMessage {
 export interface AgentUpgradeRequest extends BaseAgentRequestMessage {
   type: 'agent:upgrade:request';
   version?: string;
+  force?: boolean;
 }
 
 export interface AgentUpgradeResponse extends BaseAgentMessage {
@@ -66,12 +71,24 @@ export interface AgentUpgradeResponse extends BaseAgentMessage {
   statusCode: number;
 }
 
+export interface AgentLogsRequest extends BaseAgentRequestMessage {
+  type: 'agent:logs:request';
+  limit?: number;
+}
+
+export interface AgentLogsResponse extends BaseAgentMessage {
+  type: 'agent:logs:response';
+  statusCode: number;
+  logs: LogMessage[];
+}
+
 export type AgentRequestMessage =
   | AgentConnectRequest
   | AgentHeartbeatRequest
   | AgentTransmitRequest
   | AgentReloadConfigRequest
-  | AgentUpgradeRequest;
+  | AgentUpgradeRequest
+  | AgentLogsRequest;
 
 export type AgentResponseMessage =
   | AgentConnectResponse
@@ -79,6 +96,7 @@ export type AgentResponseMessage =
   | AgentTransmitResponse
   | AgentReloadConfigResponse
   | AgentUpgradeResponse
+  | AgentLogsResponse
   | AgentError;
 
 export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

@@ -1,7 +1,10 @@
-import { Communication } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Communication } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
 import { MessagePage } from './MessagePage';
 import { ThreadPage } from './ThreadPage';
 

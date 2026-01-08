@@ -1,15 +1,20 @@
-import { MedplumClient, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import {
+import type {
   Bundle,
-  QuestionnaireItem,
-  SearchParameter,
   Questionnaire,
+  QuestionnaireItem,
   QuestionnaireItemAnswerOption,
+  SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeEach, MockedFunction, beforeAll, describe, test, vi, expect } from 'vitest';
-import { Marker, handler } from './vital';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import type { MockedFunction } from 'vitest';
+import { handler } from './vital';
+import type { Marker } from './vital';
 
 global.fetch = vi.fn();
 
@@ -99,7 +104,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labTestsResponse).toEqual(labTests);
+    expect(labTestsResponse).toStrictEqual(labTests);
   });
 
   test<Context>('Get Lab Tests with lab filter', async (ctx) => {
@@ -164,41 +169,35 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labTestsResponse).toEqual(labTests.filter((lt) => lt.lab.id === 24));
+    expect(labTestsResponse).toStrictEqual(labTests.filter((lt) => lt.lab.id === 24));
   });
 
   test<Context>('Get Labs', async (ctx) => {
     const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
     const baseURL = 'https://api.dev.tryvital.io';
 
-    const labTests = [
+    const labsMock = [
       {
-        lab: {
-          id: 24,
-          slug: 'ussl',
-          name: 'USSL',
-          collection_methods: ['testkit'],
-        },
+        id: 24,
+        slug: 'ussl',
+        name: 'USSL',
+        collection_methods: ['testkit'],
       },
       {
-        lab: {
-          id: 2,
-          slug: 'spiriplex',
-          name: 'Spiriplex',
-          collection_methods: ['testkit'],
-        },
+        id: 2,
+        slug: 'spiriplex',
+        name: 'Spiriplex',
+        collection_methods: ['testkit'],
       },
       {
-        lab: {
-          id: 27,
-          slug: 'labcorp',
-          name: 'Labcorp',
-          collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
-        },
+        id: 27,
+        slug: 'labcorp',
+        name: 'Labcorp',
+        collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
       },
     ];
 
-    (fetch as any).mockResolvedValue(createFetchResponse(labTests));
+    (fetch as any).mockResolvedValue(createFetchResponse(labsMock));
 
     const labs = await handler(ctx.medplum, {
       bot: { reference: 'Bot/123' },
@@ -218,7 +217,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests`, {
+    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests/labs`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +225,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labs).toEqual(labTests.map((lt) => lt.lab));
+    expect(labs).toStrictEqual(labsMock);
   });
 
   test<Context>('Get Markers', async (ctx) => {
@@ -301,7 +300,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(markers).toEqual(labTests[0].markers);
+    expect(markers).toStrictEqual(labTests[0].markers);
   });
 
   test<Context>('Get AOEs', async (ctx) => {
@@ -365,7 +364,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(questionnaire).toEqual(buildQuestionnaire(labTests[0].markers));
+    expect(questionnaire).toStrictEqual(buildQuestionnaire(labTests[0].markers));
   });
 });
 
@@ -396,7 +395,7 @@ function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
           valueString: question.type !== 'numeric' ? answer.value : undefined,
-          valueInteger: question.type === 'numeric' ? parseFloat(answer.value) : undefined,
+          valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),
     })),

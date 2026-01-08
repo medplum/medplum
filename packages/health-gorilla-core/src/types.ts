@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isReference } from '@medplum/core';
-import {
+import type {
   CodeableConcept,
   Coding,
   Coverage,
@@ -12,9 +14,6 @@ import {
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-
-declare const __brand: unique symbol;
-export type Branded<T, B> = T & { [__brand]: B };
 
 export type LabOrderServiceRequest = ServiceRequest & {
   performer: [Reference<LabOrganization>];
@@ -36,11 +35,11 @@ export interface LabOrderTestMetadata {
   aoeResponses?: QuestionnaireResponse;
 }
 
-export const BillToOptions = ['patient', 'insurance', 'customer-account'] as const;
+export const BillToOptions = ['patient', 'insurance', 'customer-account', 'self'] as const;
 export type BillTo = (typeof BillToOptions)[number];
 
 export function isBillTo(value: unknown): value is BillTo {
-  if (value === 'patient' || value === 'insurance' || value === 'customer-account') {
+  if (value === 'patient' || value === 'insurance' || value === 'customer-account' || value === 'self') {
     value satisfies BillTo;
     return true;
   }
@@ -49,15 +48,14 @@ export function isBillTo(value: unknown): value is BillTo {
 
 export type LabOrganization = Organization & { id: string };
 
-export type TestCoding = Branded<Coding & { code: string }, 'TestCoding'>;
+export type TestCoding = Coding & { code: string };
 
-export type DiagnosisCodeableConcept = Branded<
-  CodeableConcept & { coding: (Coding & Required<Pick<Coding, 'system' | 'code'>>)[] },
-  'DiagnosisCodeableConcept'
->;
+export type DiagnosisCodeableConcept = CodeableConcept & {
+  coding: (Coding & Required<Pick<Coding, 'system' | 'code'>>)[];
+};
 
 export type BillingInformation = {
-  billTo: BillTo;
+  billTo?: BillTo;
   patientCoverage?: [] | [Coverage] | [Coverage, Coverage] | [Coverage, Coverage, Coverage];
 };
 

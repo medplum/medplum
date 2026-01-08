@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 # ONC Certification
@@ -11,9 +11,9 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 | Item                           | Description                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------ |
 | Developer Organization Name    | Medplum                                                                        |
-| Date the product was certified | 07/31/2024                                                                     |
-| Product Name and Version       | Medplum, 3                                                                     |
-| Unique Certification Number    | [15.04.04.3147.Medp.03.01.1.240731](https://chpl.healthit.gov/#/listing/11496) |
+| Date the product was certified | 07/31/2025                                                                     |
+| Product Name and Version       | Medplum, 4                                                                     |
+| Unique Certification Number    | [15.04.04.3147.Medp.04.02.1.250731](https://chpl.healthit.gov/#/listing/11676) |
 | Certification Criteria         | [Criteria link](#criteria-certified)                                           |
 | Pricing                        | [Offering Grid](/pricing)                                                      |
 | Registration Process           | [Instructions](/docs/tutorials/register)                                       |
@@ -28,6 +28,8 @@ Notice of Intent to Implement HL7 FHIR US Core Implementation Guide STU 5.0.1 fo
 
 Please be advised that Medplum has opted to leverage ONC's SVAP process for the certification criteria at 170.315(g)(10) to adopt the HL7 FHIR US Core Implementation Guide STU 5.0.1 in its Patient and Population API Services. The adoption of the updated version will provide better forward compatibility and longevity for the APIs certified to this criterion. Because Medplum is adopting this version in its initial certification of to the (g)(10) criterion, it is expected that the adoption of the updated version will have no impact on the interoperability of the affected module.
 
+All certified criteria have been updated to the current HTI-1 certification requirements.
+
 ## Criteria Certified
 
 This is the list of certified criteria. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
@@ -37,7 +39,9 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [a2](/docs/careplans/diagnostic-catalog) | CPOE - Laboratory  |
 | [a5](/docs/charting/patient-demographics) | Demographics  |
 | [a14](/docs/charting/implantable-devices) | Implantable Device List  |
+| [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
+| c1                                                  | Clinical Quality Measures Record and Export          |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d2](/docs/api/fhir/resources/auditevent) | Auditable Events and Tamper Resistance  |
 | d3 | Audit report  |
@@ -51,6 +55,9 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | g3                      | Safety Enhanced Design                            |
 | [g4](/docs/compliance/iso9001)                      | Quality Management System                            |
 | g5                                                  | Accessibility-Centered Design                        |
+| [g6](/docs/integration/c-cda)                                                  | Consolidated CDA Creation Performance                        |
+| [g7](/docs/integration/c-cda)                                                  | Application Access - Patient Selection                        |
+| [g9](/docs/integration/c-cda)                                                  | Application Access - Patient Selection                        |
 | [g10](/docs/api)                                    | Standardized API for Patient and Population Services |
 
 The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compliance/iso9001), g5.
@@ -69,6 +76,7 @@ The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compl
 
 ## Real World Testing
 
-Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024 ([Results](https://drive.google.com/file/d/1qR9vM3XYZ2ABl806W7HI8z6Und5GkEIz/view?usp=drive_link))
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

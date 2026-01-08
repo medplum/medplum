@@ -1,7 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { AgentError, AgentRequestMessage, AgentResponseMessage, WithId } from '@medplum/core';
 import {
-  AgentError,
-  AgentRequestMessage,
-  AgentResponseMessage,
   ContentType,
   OperationOutcomeError,
   Operator,
@@ -12,16 +12,17 @@ import {
   isValidHostname,
   parseSearchRequest,
   serverError,
+  singularize,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import { Request } from 'express';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
 import { getRedis, getRedisSubscriber } from '../../../redis';
-import { Repository } from '../../repo';
-import { AgentPushParameters } from '../agentpush';
+import type { Repository } from '../../repo';
+import type { AgentPushParameters } from '../agentpush';
 
 export const MAX_AGENTS_PER_PAGE = 100;
 
@@ -40,7 +41,10 @@ export const MAX_AGENTS_PER_PAGE = 100;
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
-export async function getAgentForRequest(req: Request | FhirRequest, repo: Repository): Promise<Agent | undefined> {
+export async function getAgentForRequest(
+  req: Request | FhirRequest,
+  repo: Repository
+): Promise<WithId<Agent> | undefined> {
   // Prefer to search by ID from path parameter
   const { id } = req.params;
   if (id) {
@@ -67,7 +71,7 @@ export async function getAgentForRequest(req: Request | FhirRequest, repo: Repos
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
-export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<Agent[] | undefined> {
+export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<WithId<Agent>[] | undefined> {
   if (req.params.id) {
     const agent = await getAgentForRequest(req, repo);
     return agent ? [agent] : undefined;
@@ -95,12 +99,13 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
 
 export async function handleBulkAgentOperation(
   req: FhirRequest,
-  handler: (agent: Agent) => Promise<FhirResponse>
+  handler: (agent: WithId<Agent>) => Promise<FhirResponse>
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
-  if (req.query._count && Number.parseInt(req.query._count, 10) > MAX_AGENTS_PER_PAGE) {
-    return [badRequest(`'_count' of ${req.query._count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
+  const count = singularize(req.query._count);
+  if (count && Number.parseInt(count, 10) > MAX_AGENTS_PER_PAGE) {
+    return [badRequest(`'_count' of ${count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
   }
 
   const agents = await getAgentsForRequest(req, repo);
@@ -112,9 +117,9 @@ export async function handleBulkAgentOperation(
     return handler(agents[0]);
   }
 
-  const promises = agents.map((agent: Agent) => handler(agent));
+  const promises = agents.map((agent) => handler(agent));
   const results = await Promise.allSettled(promises);
-  const entries = [] as BundleEntry<Parameters>[];
+  const entries: BundleEntry<Parameters>[] = [];
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
@@ -163,7 +168,7 @@ export interface AgentMessageOptions {
 }
 
 export async function publishAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
-  agent: Agent,
+  agent: WithId<Agent>,
   message: AgentRequestMessage,
   options?: AgentMessageOptions
 ): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
@@ -203,8 +208,41 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
   return [allOk];
 }
 
+export interface SendAndHandleAgentRequestOptions<T extends AgentResponseMessage = AgentResponseMessage> {
+  successHandler?: (response: T) => Parameters;
+  messageOptions?: Partial<AgentMessageOptions>;
+}
+
+export async function sendAndHandleAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
+  agent: WithId<Agent>,
+  message: AgentRequestMessage,
+  expectedResponseType: T['type'],
+  options?: SendAndHandleAgentRequestOptions<T>
+): Promise<FhirResponse> {
+  // Send agent message
+  const [outcome, result] = await publishAgentRequest<T>(agent, message, {
+    ...options?.messageOptions,
+    waitForResponse: true,
+  });
+
+  if (!result) {
+    return [outcome];
+  }
+
+  if (result.type === 'agent:error') {
+    throw new OperationOutcomeError(badRequest(result.body));
+  }
+
+  if (result.type === expectedResponseType) {
+    const parameters = options?.successHandler?.(result);
+    return parameters ? [outcome, parameters] : [outcome];
+  }
+
+  throw new OperationOutcomeError(serverError(new Error('Invalid response received from agent')));
+}
+
 function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(
-  agent: Agent,
+  agent: WithId<Agent>,
   message: T
 ): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));

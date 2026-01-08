@@ -1,5 +1,8 @@
-import { BotEvent, MedplumClient, createReference } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, isResource } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type {
   Binary,
   Bundle,
   BundleEntry,
@@ -8,6 +11,7 @@ import {
   Observation,
   Patient,
   ProjectSetting,
+  Resource,
 } from '@medplum/fhirtypes';
 
 type OrderEvent = {
@@ -22,9 +26,9 @@ type OrderEvent = {
  *
  * @returns A promise that resolves to true if the event was handled successfully
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Resource>): Promise<any> {
   // Check if event.input is of type Resource
-  if (typeof event.input !== 'object' || !('id' in event.input)) {
+  if (!isResource(event.input)) {
     return false;
   }
 

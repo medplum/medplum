@@ -1,10 +1,20 @@
-import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
-import { Reference, User } from '@medplum/fhirtypes';
-import { NextFunction, Request, RequestHandler, Response, Router } from 'express';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  badRequest,
+  getStatus,
+  isReference,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
+} from '@medplum/core';
+import type { User } from '@medplum/fhirtypes';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
+import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
-import { createScimUser, deleteScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
+import { createScimUser, deleteScimUser, patchScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
 
 // SCIM
 // http://www.simplecloud.info/
@@ -26,8 +36,10 @@ scimRouter.post(
   '/Users',
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    // TODO: Fix this value
-    const result = await createScimUser(ctx.login.user as Reference<User>, ctx.project, req.body);
+    if (!isReference<User>(ctx.login.user, 'User')) {
+      throw new OperationOutcomeError(badRequest('Disallowed login user type'));
+    }
+    const result = await createScimUser(ctx.login.user, ctx.project, req.body);
     res.status(201).json(result);
   })
 );
@@ -46,6 +58,15 @@ scimRouter.put(
   scimWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const result = await updateScimUser(ctx.project, req.body);
+    res.status(200).json(result);
+  })
+);
+
+scimRouter.patch(
+  '/Users/:id',
+  scimWrap(async (req: Request, res: Response) => {
+    const ctx = getAuthenticatedContext();
+    const result = await patchScimUser(ctx.project, req.params.id, req.body);
     res.status(200).json(result);
   })
 );

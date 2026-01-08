@@ -1,6 +1,12 @@
-import { Quantity } from '@medplum/fhirtypes';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
-import { PropertyType, TypedValue } from '../types';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Quantity } from '@medplum/fhirtypes';
+import type { LRUCache } from '../cache';
+import type { Atom, InfixParselet, Parser, PrefixParselet } from '../fhirlexer/parse';
+import { ParserBuilder } from '../fhirlexer/parse';
+import type { TypedValue } from '../types';
+import { PropertyType } from '../types';
+import type { TypedValueWithPath } from '../typeschema/crawler';
 import {
   AndAtom,
   ArithemticOperatorAtom,
@@ -109,7 +115,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
 function parseQuantity(str: string): Quantity {
   const parts = str.split(' ');
-  const value = parseFloat(parts[0]);
+  const value = Number.parseFloat(parts[0]);
   let unit = parts[1];
   if (unit?.startsWith("'") && unit.endsWith("'")) {
     unit = unit.substring(1, unit.length - 1);
@@ -134,7 +140,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       parse: (_, token) =>
         new LiteralAtom({
           type: token.value.includes('.') ? PropertyType.decimal : PropertyType.integer,
-          value: parseFloat(token.value),
+          value: Number.parseFloat(token.value),
         }),
     })
     .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })
@@ -203,7 +209,7 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .infixLeft(
       'div',
       OperatorPrecedence.Divide,
-      (left, _, right) => new ArithemticOperatorAtom('div', left, right, (x, y) => (x / y) | 0)
+      (left, _, right) => new ArithemticOperatorAtom('div', left, right, (x, y) => Math.trunc(x / y))
     )
     .infixLeft('in', OperatorPrecedence.In, (left, _, right) => new InAtom(left, right))
     .infixLeft('is', OperatorPrecedence.Is, (left, _, right) => new IsAtom(left, right))
@@ -233,11 +239,11 @@ export function parseFhirPath(input: string): FhirPathAtom {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(expression: string, input: unknown): unknown[] {
+export function evalFhirPath(expression: string | FhirPathAtom, input: unknown): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
   const array = Array.isArray(input) ? input : [input];
@@ -252,19 +258,36 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @param variables - A map of variables for eval input.
+ * @param cache - Cache for parsed ASTs.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(
-  expression: string,
+  expression: string | FhirPathAtom,
   input: TypedValue[],
-  variables: Record<string, TypedValue> = {}
-): TypedValue[] {
-  const ast = parseFhirPath(expression);
-  return ast.eval({ variables }, input).map((v) => ({
-    type: v.type,
-    value: v.value?.valueOf(),
-  }));
+  variables: Record<string, TypedValue> = {},
+  cache: LRUCache<FhirPathAtom> | undefined = undefined
+): (TypedValue | TypedValueWithPath)[] {
+  let ast: FhirPathAtom;
+  if (typeof expression === 'string') {
+    const cachedAst = cache?.get(expression);
+    ast = cachedAst ?? parseFhirPath(expression);
+    if (cache && !cachedAst) {
+      cache.set(expression, ast);
+    }
+  } else {
+    ast = expression;
+  }
+  return ast.eval({ variables }, input).map((v) => {
+    const result: TypedValue & { path?: string } = {
+      type: v.type,
+      value: v.value?.valueOf(),
+    };
+    if ('path' in v) {
+      result.path = v.path as string;
+    }
+    return result;
+  });
 }

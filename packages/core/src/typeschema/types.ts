@@ -1,16 +1,21 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   Bundle,
   Coding,
   ElementDefinition,
   ElementDefinitionBinding,
   Resource,
+  ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { DataTypesMap, inflateBaseSchema } from '../base-schema';
+import type { DataTypesMap } from '../base-schema-utils';
+import { inflateBaseSchema } from '../base-schema-utils';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
+import type { TypedValue } from '../types';
+import { getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
@@ -22,6 +27,7 @@ export interface InternalTypeSchema {
   path: string;
   title?: string;
   url?: string;
+  version?: string;
   kind?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
@@ -123,7 +129,9 @@ function getDataTypesMap(profileUrl: string): DataTypesMap {
  * @param bundle - Bundle or array of structure definitions to be parsed and indexed
  */
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
-  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+  const maybeSds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
+  const sds: StructureDefinition[] = maybeSds.filter((r) => r?.resourceType === 'StructureDefinition');
+  indexDefaultSearchParameters(sds);
   for (const sd of sds) {
     loadDataType(sd);
   }
@@ -209,7 +217,7 @@ export function getDataType(type: string, profileUrl?: string): InternalTypeSche
  * @param resourceType - The candidate resource type string.
  * @returns True if the resource type is a valid FHIR resource type.
  */
-export function isResourceType(resourceType: string): boolean {
+export function isResourceType(resourceType: string): resourceType is ResourceType {
   const typeSchema = DATA_TYPES[resourceType];
   return typeSchema && isResourceTypeSchema(typeSchema);
 }
@@ -238,7 +246,7 @@ class StructureDefinitionParser {
   private index: number;
   private readonly resourceSchema: InternalTypeSchema;
   private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
-  private innerTypes: InternalTypeSchema[];
+  private readonly innerTypes: InternalTypeSchema[];
   private backboneContext: BackboneContext | undefined;
 
   /**
@@ -260,6 +268,7 @@ class StructureDefinitionParser {
       title: sd.title,
       type: sd.type,
       url: sd.url as string,
+      version: sd.version,
       kind: sd.kind,
       description: getDescription(sd),
       elements: {},
@@ -601,9 +610,9 @@ function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
   const discriminators = element.slicing?.discriminator;
   return Boolean(
     element.type?.some((t) => t.code === 'Extension') &&
-      discriminators?.length === 1 &&
-      discriminators[0].type === 'value' &&
-      discriminators[0].path === 'url'
+    discriminators?.length === 1 &&
+    discriminators[0].type === 'value' &&
+    discriminators[0].path === 'url'
   );
 }
 

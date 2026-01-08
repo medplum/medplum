@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Patient, Resource } from '@medplum/fhirtypes';
+import type { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { PatientConsents } from './PatientConsents';
+import { PatientImmunizations } from './PatientImmunizations';
 import { PatientObservations } from './PatientObservations';
 
 interface PatientDetailsProps {
@@ -24,13 +28,14 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['history', 'History'],
     ['observations', 'SDOH'],
     ['consents', 'Consents'],
+    ['immunizations', 'Immunizations'],
   ];
   // Get the current tab
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   function handlePatientEdit(resource: Resource): void {
@@ -44,7 +49,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           title: 'Success',
           message: 'Patient edited',
         });
-        navigate(`/Patient/${id}/details`);
+        navigate(`/Patient/${id}/details`)?.catch(console.error);
         window.scrollTo(0, 0);
       })
       .catch((err) => {
@@ -81,6 +86,9 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="consents">
           <PatientConsents patient={props.patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="immunizations">
+          <PatientImmunizations patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>

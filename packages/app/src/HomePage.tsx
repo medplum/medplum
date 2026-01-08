@@ -1,13 +1,16 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequest } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
-import { Loading, SearchControl, useMedplum } from '@medplum/react';
+import type { SearchRequest } from '@medplum/core';
+import { formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
+import { exportJsonFile, Loading, SearchControl, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import classes from './HomePage.module.css';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
-import { exportJsonFile } from './utils';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
@@ -31,7 +34,7 @@ export function HomePage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // Otherwise, navigate to the desired URL
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -44,13 +47,15 @@ export function HomePage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
         onNew={() => {
-          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
+          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`)?.catch(
+            console.error
+          );
         }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
@@ -85,7 +90,7 @@ export function HomePage(): JSX.Element {
           }
         }}
         onBulk={(ids: string[]) => {
-          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
         }}
       />
     </Paper>

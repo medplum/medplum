@@ -1,11 +1,88 @@
-import { ActionIcon, Button, Divider, Group, NumberInput, Table, TextInput, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import {
+  ActionIcon,
+  Button,
+  Checkbox,
+  Code,
+  Divider,
+  Group,
+  Modal,
+  NumberInput,
+  Table,
+  TextInput,
+  Title,
+} from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core';
-import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
-import { Document, Form, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
+import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
+import type { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
+import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
+
+type UpgradeConfirmContentProps = {
+  readonly opened: boolean;
+  readonly close: () => void;
+  readonly version: string | undefined;
+  readonly loadingStatus: boolean;
+  readonly handleStatus: () => void;
+  readonly handleUpgrade: (force: boolean) => void;
+};
+
+function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
+  const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
+
+  const [latestVersionString, setLatestVersionString] = useState<string>();
+  const [shouldForceUpgrade, setShouldForceUpgrade] = useState(false);
+
+  useEffect(() => {
+    if (opened) {
+      if (!latestVersionString) {
+        fetchLatestVersionString('app-tools-page').then(setLatestVersionString).catch(console.error);
+      }
+      handleStatus();
+    }
+  }, [opened, latestVersionString, handleStatus]);
+
+  // If we don't have the latest version string
+  // The current agent version
+  // Or if we are still loading something
+  // Show loading
+  if (!(latestVersionString && version && !loadingStatus)) {
+    return <Loading />;
+  }
+
+  if (version === 'unknown') {
+    return <p>Unable to determine the current version of the agent. Check the network connectivity of the agent.</p>;
+  }
+
+  if (version.startsWith(latestVersionString)) {
+    return <p>This agent is already on the latest version ({latestVersionString}).</p>;
+  }
+
+  return (
+    <>
+      <p>
+        Are you sure you want to upgrade this agent from version {version} to version {latestVersionString}?
+      </p>
+      <Group>
+        <Button
+          onClick={() => {
+            handleUpgrade(shouldForceUpgrade);
+            close();
+          }}
+          aria-label="Confirm upgrade"
+        >
+          Confirm Upgrade
+        </Button>
+        <Checkbox label="Force" onChange={(e) => setShouldForceUpgrade(e.currentTarget.checked)} />
+      </Group>
+    </>
+  );
+}
 
 export function ToolsPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -14,12 +91,15 @@ export function ToolsPage(): JSX.Element | null {
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [reloadingConfig, setReloadingConfig] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
+  const [fetchingLogs, setFetchingLogs] = useState(false);
   const [status, setStatus] = useState<string>();
   const [version, setVersion] = useState<string>();
   const [lastUpdated, setLastUpdated] = useState<string>();
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
   const [working, setWorking] = useState(false);
+  const [logs, setLogs] = useState<string | undefined>();
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
   useEffect(() => {
     if (loadingStatus || reloadingConfig || upgrading || pinging) {
@@ -70,16 +150,41 @@ export function ToolsPage(): JSX.Element | null {
       .finally(() => setReloadingConfig(false));
   }, [medplum, id]);
 
-  const handleUpgrade = useCallback(() => {
-    setUpgrading(true);
-    medplum
-      .get(medplum.fhirUrl('Agent', id, '$upgrade'), { cache: 'reload' })
-      .then((_result: Bundle<Parameters>) => {
-        showSuccess('Agent upgraded successfully.');
-      })
-      .catch((err) => showError(normalizeErrorString(err)))
-      .finally(() => setUpgrading(false));
-  }, [medplum, id]);
+  const handleUpgrade = useCallback(
+    (force: boolean) => {
+      setUpgrading(true);
+      const upgradeUrl = medplum.fhirUrl('Agent', id, '$upgrade');
+      upgradeUrl.searchParams.set('force', String(force));
+      medplum
+        .get(upgradeUrl, { cache: 'reload' })
+        .then((_result: Bundle<Parameters>) => {
+          showSuccess('Agent upgraded successfully.');
+        })
+        .catch((err) => showError(normalizeErrorString(err)))
+        .finally(() => setUpgrading(false));
+    },
+    [medplum, id]
+  );
+
+  const handleFetchLogs = useCallback(
+    (formData: Record<string, string>) => {
+      setFetchingLogs(true);
+      const limit = formData.logLimit || 20;
+      medplum
+        .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit !== undefined ? `?limit=${limit}` : ''}`), {
+          cache: 'reload',
+        })
+        .then((result: Parameters) => {
+          const param = result?.parameter?.find((param) => param.name === 'logs');
+          if (param) {
+            setLogs(param?.valueString);
+          }
+        })
+        .catch((err) => showError(normalizeErrorString(err)))
+        .finally(() => setFetchingLogs(false));
+    },
+    [medplum, id]
+  );
 
   function showSuccess(message: string): void {
     showNotification({
@@ -101,6 +206,16 @@ export function ToolsPage(): JSX.Element | null {
 
   return (
     <Document>
+      <Modal opened={modalOpened} onClose={closeModal} title="Upgrade Agent" centered>
+        <UpgradeConfirmContent
+          opened={modalOpened}
+          close={closeModal}
+          version={version}
+          loadingStatus={loadingStatus}
+          handleStatus={handleStatus}
+          handleUpgrade={handleUpgrade}
+        />
+      </Modal>
       <Title order={1}>Agent Tools</Title>
       <div style={{ marginBottom: 10 }}>
         Agent: <ResourceName value={reference} link />
@@ -151,9 +266,31 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Upgrade Agent</Title>
       <p>Upgrade the version of this agent, to either the latest (default) or a specified version.</p>
-      <Button onClick={handleUpgrade} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
+      <Button onClick={openModal} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
         Upgrade
       </Button>
+      <Divider my="lg" />
+      <Form onSubmit={handleFetchLogs}>
+        <Title order={2}>Fetch Logs</Title>
+        <p>Fetch logs from the agent.</p>
+        {logs?.length ? (
+          <Code block mb={15}>
+            {logs}
+          </Code>
+        ) : null}
+        <Group>
+          <NumberInput w={100} id="logLimit" name="logLimit" placeholder="20" label="Log Limit" />
+          <Button
+            mt={22}
+            loading={fetchingLogs}
+            disabled={working && !fetchingLogs}
+            aria-label="Fetch logs"
+            type="submit"
+          >
+            Fetch Logs
+          </Button>
+        </Group>
+      </Form>
       <Divider my="lg" />
       <Title order={2}>Ping from Agent</Title>
       <p>

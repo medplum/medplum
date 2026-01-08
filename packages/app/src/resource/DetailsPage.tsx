@@ -1,10 +1,13 @@
-import { Box, Combobox, Group, Stack, useCombobox, Text, UnstyledButton, Code } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Code, Combobox, Group, Stack, Text, UnstyledButton, useCombobox } from '@mantine/core';
 import { isPopulated } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceTable, useResource } from '@medplum/react';
 import { IconChevronDown } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import classes from './DetailsPage.module.css';
 
 export function DetailsPage(): JSX.Element | null {

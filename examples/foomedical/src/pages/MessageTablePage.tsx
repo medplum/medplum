@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Divider, Stack, Table, Title } from '@mantine/core';
-import { formatGivenName, formatFamilyName } from '@medplum/core';
-import { HumanName } from '@medplum/fhirtypes';
+import { formatFamilyName, formatGivenName } from '@medplum/core';
+import type { HumanName } from '@medplum/fhirtypes';
 import { Document, useSearchResources } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { Loading } from '../components/Loading';
 import classes from './MessageTablePage.module.css';
 
@@ -27,7 +30,11 @@ export function MessageTable(): JSX.Element {
           </Table.Thead>
           <Table.Tbody className={classes.tableBody}>
             {practitioners.map((resource) => (
-              <Table.Tr key={resource.id} className={classes.tr} onClick={() => navigate(`/messages/${resource.id}`)}>
+              <Table.Tr
+                key={resource.id}
+                className={classes.tr}
+                onClick={() => navigate(`/messages/${resource.id}`)?.catch(console.error)}
+              >
                 <Table.Td>
                   {formatGivenName(resource.name?.[0] as HumanName)} {formatFamilyName(resource.name?.[0] as HumanName)}
                 </Table.Td>

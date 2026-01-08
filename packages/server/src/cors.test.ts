@@ -1,5 +1,7 @@
-import { Request } from 'express';
-import { getConfig, loadTestConfig } from './config';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Request } from 'express';
+import { getConfig, loadTestConfig } from './config/loader';
 import { corsOptions } from './cors';
 
 describe('CORS', () => {

@@ -17,21 +17,28 @@ Medplum [`Projects`](/docs/api/fhir/medplum/project) enable the following use ca
 
 Medplum [`Projects`](/docs/api/fhir/medplum/project) create a hard boundary between FHIR resources, and resources within one project cannot reference resources in another.
 
-Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own user administration. A user can be a member of one, or multiple [`Projects`](/docs/api/fhir/medplum/project), with different privileges in each. See our [User Administration Guide](/docs/auth/user-management-guide) for more information.
+Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own user administration. A user can be a member of one, or multiple [`Projects`](/docs/api/fhir/medplum/project), with different privileges in each. See our [User Administration Guide](/docs/user-management) for more information.
 
 [`Projects`](/docs/api/fhir/medplum/project) can each be configured with own global settings and secrets (see [Project Settings](#settings) below).
 
 ## Project Linking
 
+Sometimes it is useful to share a common set of resources with multiple projects.
+
+Medplum super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
+
+When a project is linked, all resources from the linked project appear alongside the target project's resources in search results and queries.
+
+### Common Use Cases
+
+- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Medplum UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
+- Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clincal domain
+- Sharing common data sets (e.g. Medplum Payor Directory, Medplum Lab Directory)
+- Sharing [Bots](/docs/bots)
+
 Certain Medplum features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
 
-Medplum super administrators can _link_ shared projects into a target project, providing users with a _read-only_ view of all resources in the linked projects.
-
-A common use case for project linking is the Medplum terminology service. When enabled, Medplum links the shared UMLS Project, which contains [`CodeSystem`](/docs/api/fhir/resources/codesystem) resources for major UMLS code systems:
-
-- [ICD-10](/docs/charting/representing-diagnoses)
-- [RxNORM](/docs/medications/medication-codes#rxnorm)
-- [LOINC](/docs/careplans/loinc)
+### Viewing Linked Projects
 
 You can see linked Projects in the Medplum App by:
 
@@ -39,19 +46,26 @@ You can see linked Projects in the Medplum App by:
 - Selecting your Project
 - Selecting the "Details" tab
 
+### Best Practices
+
+When working with linked projects:
+
+- Be aware that queries like `medplum.searchresources()` will return the first matching resource across all accessible projects (both local and linked)
+- If you need to distinguish between local and linked resources, consider adding additional search parameters, such as the `_compartment` search parameter.
+
 ## The SuperAdmin `Project` {#superadmin}
 
 The main exception to this isolation model is the "Super Admin" project. This is a special project that provides a global view over all the resources on the Medplum server. See our [SuperAdmin Guide](/docs/self-hosting/super-admin-guide) for more information.
 
 The SuperAdmin has the following privileges:
 
-- Access to protected resources.
-- Ability to overwrite the `id` of a resource, which is normally server generated.
+- Access to protected resources
+- Ability to overwrite the `id` of a resource, which is normally server generated
 - Ability to overwrite fields in the `meta` element of resources such as `author`, `lastUpdated`, etc.
 
 :::warning
 
-Logging into the Super Admin project allows for potential dangerous operations and is only intended for server administrators
+Logging into the Super Admin project allows for potentially dangerous operations and is only intended for server administrators
 
 :::
 
@@ -72,14 +86,15 @@ To switch to the SuperAdmin project or check if you are already in it, you can u
 
 ## Project Settings {#settings}
 
-You can find the full `Project` resource schema [here](/docs/api/fhir/medplum/project)
+Project-level settings can be used to configure server behavior for different groups of users. A subset of the available
+settings related to authentication and access control are shown below; see the full [Project Settings](/docs/self-hosting/project-settings)
+documentation for more information.
 
-| Setting                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Default |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `superAdmin`                 | Whether this project is the super administrator project ([see above](#superadmin)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `false` |
-| `checkReferencesOnWrite`     | If `true`, the the server will reject any create or write operations to a FHIR resource with invalid references.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `false` |
-| `features`                   | A list of optional features that are enabled for the project. Allowed values are: <ul><li>`bots`: This [`Project`](/docs/api/fhir/medplum/project) is allowed to create and run [Bots](/docs/bots/bot-basics).</li><li>`email`: Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail). </li><li>`cron`: This [`Project`](/docs/api/fhir/medplum/project) can run Bots on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)</li><li>`google-auth-required`: [Google authentication](/docs/auth/methods/google-auth) is the only method allowed for this [`Project`](/docs/api/fhir/medplum/project)</li></ul> |         |
-| `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/auth/user-management-guide#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/auth/open-patient-registration).                                                                                                                                                                                                                                                                                                                                       |         |
+| Setting                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Default |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `superAdmin`                 | Whether this project is the super administrator project ([see above](#superadmin)).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | `false` |
+| `features`                   | A list of optional features that are enabled for the project. Values related to access control include: <ul><li>`bots`: This [`Project`](/docs/api/fhir/medplum/project) is allowed to create and run [Bots](/docs/bots/bot-basics).</li><li>`email`: Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail). </li><li>`cron`: This [`Project`](/docs/api/fhir/medplum/project) can run Bots on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)</li><li>`google-auth-required`: [Google authentication](/docs/auth/google-auth) is the only method allowed for this [`Project`](/docs/api/fhir/medplum/project)</li></ul> |         |
+| `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/user-management/project-vs-server-scoped-users#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/user-management/open-patient-registration).                                                                                                                                                                                                                                                                                                                                                             |         |
 
 ## Project Secrets
 
@@ -98,7 +113,7 @@ For more information, refer to the Super Admin [Project Management guide](/docs/
 
 ## See Also
 
-- [User management guide](/docs/auth/user-management-guide)
+- [User management guide](/docs/user-management)
 - [Super Admin Guide](/docs/self-hosting/super-admin-guide)
 - [Super Admin CLI](/docs/self-hosting/super-admin-cli#project-management)
 - [Project Resource Schema](/docs/api/fhir/medplum/project)

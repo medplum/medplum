@@ -1,10 +1,13 @@
-import { Identifier } from '@medplum/fhirtypes';
-import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { IdentifierInput } from './IdentifierInput';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { buildElementsContext } from '@medplum/core';
+import type { Identifier } from '@medplum/fhirtypes';
+import type { Meta } from '@storybook/react';
+import type { JSX } from 'react';
+import { Document } from '../Document/Document';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { IdentifierInput } from './IdentifierInput';
 
 export default {
   title: 'Medplum/IdentifierInput',

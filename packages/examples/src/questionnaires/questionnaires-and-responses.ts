@@ -1,4 +1,6 @@
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 
 const basicQuestionnaire: Questionnaire =
   // start-block simpleQuestionnaire

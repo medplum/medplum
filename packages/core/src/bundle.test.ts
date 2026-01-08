@@ -1,5 +1,20 @@
-import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
+  Bundle,
+  BundleEntry,
+  DiagnosticReport,
+  Observation,
+  Patient,
+  Resource,
+  Specimen,
+} from '@medplum/fhirtypes';
+import {
+  convertContainedResourcesToBundle,
+  convertToTransactionBundle,
+  findResourceInBundle,
+  reorderBundle,
+} from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
 
@@ -71,7 +86,7 @@ describe('Bundle tests', () => {
     test('create a FHIR bundle from JSON File', () => {
       const transactionBundle = convertToTransactionBundle(jsonFile);
       const firstEntry = transactionBundle.entry?.[0];
-      expect(firstEntry?.request?.url).toEqual('Patient');
+      expect(firstEntry?.request?.url).toStrictEqual('Patient');
     });
   });
 
@@ -90,7 +105,10 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual(['Patient', 'DiagnosticReport']);
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
+        'Patient',
+        'DiagnosticReport',
+      ]);
     });
 
     test('reorders a bundle with a cycle', () => {
@@ -109,13 +127,13 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'ServiceRequest',
         'Specimen',
         'ServiceRequest',
         'Specimen',
       ]);
-      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toEqual(['POST', 'POST', 'PUT', 'PUT']);
+      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toStrictEqual(['POST', 'POST', 'PUT', 'PUT']);
     });
 
     test('Reorders Lab bundle', () => {
@@ -140,7 +158,7 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'Patient',
         'Observation',
         'ServiceRequest',
@@ -216,6 +234,34 @@ describe('Bundle tests', () => {
       });
     });
 
+    test('Remove empty resource.meta', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          project: '11111111-2222-3333-4444-555555555555',
+        },
+        active: true,
+      };
+
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Patient/00000000-0000-0000-0000-000000000000',
+            resource: patient,
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+
+      // meta.project will be removed
+      // so meta will be empty
+      // and therefore should be removed
+      expect(result?.entry?.[0]?.resource?.meta).toBeUndefined();
+    });
+
     test('Preserve resource.meta', () => {
       const patient: Patient = {
         resourceType: 'Patient',
@@ -224,6 +270,12 @@ describe('Bundle tests', () => {
             reference: 'Organization/33333333-3333-3333-3333-333333333333',
             display: 'Organization #3',
           },
+          accounts: [
+            {
+              reference: 'Organization/33333333-3333-3333-3333-333333333333',
+              display: 'Organization #3',
+            },
+          ],
           author: {
             reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
             display: 'Doctor',
@@ -281,7 +333,7 @@ describe('Bundle tests', () => {
       };
 
       const result = convertToTransactionBundle(inputBundle);
-      expect(result?.entry?.[0]?.resource).toEqual(expected);
+      expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
     });
   });
 
@@ -364,6 +416,202 @@ describe('Bundle tests', () => {
             },
           },
         ],
+      });
+    });
+  });
+
+  describe('reorderBundle', () => {
+    test('Preserves entries without fullUrl and appends them at the end', () => {
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          // Entry with fullUrl that references Patient (should be reordered)
+          createResourceWithReference('DiagnosticReport', 'urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620', {
+            subject: { reference: 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13' },
+          }),
+          // Entry with fullUrl (should come first after reordering)
+          createResourceWithReference('Patient', 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13'),
+          // Entry without fullUrl (PATCH operation - should be preserved and appended at end)
+          {
+            request: {
+              method: 'PATCH',
+              url: 'Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'application/json-patch+json',
+              data: 'W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6dHJ1ZX1d',
+            },
+          },
+          // Another entry without fullUrl (should also be preserved)
+          {
+            request: {
+              method: 'PATCH',
+              url: 'Observation/123',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'application/json-patch+json',
+              data: 'W3sib3AiOiJhZGQiLCJwYXRoIjoiL3N0YXR1cyIsInZhbHVlIjoiZmluYWwifV0=',
+            },
+          },
+          {
+            fullUrl: 'urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            request: { method: 'POST', url: 'Observation' },
+            resource: {
+              resourceType: 'Observation',
+              status: 'final',
+              code: { text: 'test' },
+              subject: { reference: 'urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13' },
+              derivedFrom: [{ reference: 'urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620' }],
+            },
+          },
+        ],
+      };
+
+      const reorderedBundle = reorderBundle(inputBundle);
+
+      // Entries with fullUrl should be reordered (Patient before DiagnosticReport)
+      expect(reorderedBundle?.entry?.length).toBe(5);
+      expect(reorderedBundle?.entry?.[0]?.resource?.resourceType).toBe('Patient');
+      expect(reorderedBundle?.entry?.[0]?.fullUrl).toBe('urn:uuid:70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle?.entry?.[1]?.resource?.resourceType).toBe('DiagnosticReport');
+      expect(reorderedBundle?.entry?.[1]?.fullUrl).toBe('urn:uuid:3d8b6e96-6de4-48c1-b7ff-e2c26c924620');
+      expect(reorderedBundle?.entry?.[2]?.resource?.resourceType).toBe('Observation');
+      expect(reorderedBundle?.entry?.[2]?.fullUrl).toBe('urn:uuid:a1b2c3d4-e5f6-7890-abcd-ef1234567890');
+
+      // Entries without fullUrl should be preserved and appended at the end
+      expect(reorderedBundle?.entry?.[3]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle?.entry?.[3]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle?.entry?.[3]?.request?.url).toBe('Patient/70653c8f-95e1-4b4e-84e8-8d64c15e4a13');
+      expect(reorderedBundle?.entry?.[3]?.resource?.resourceType).toBe('Binary');
+      expect(reorderedBundle?.entry?.[4]?.fullUrl).toBeUndefined();
+      expect(reorderedBundle?.entry?.[4]?.request?.method).toBe('PATCH');
+      expect(reorderedBundle?.entry?.[4]?.request?.url).toBe('Observation/123');
+      expect(reorderedBundle?.entry?.[4]?.resource?.resourceType).toBe('Binary');
+    });
+  });
+
+  describe('findResourceById', () => {
+    test('Single resource', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('No matches', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }],
+      };
+      const result = findResourceInBundle(bundle, 'Observation', '123');
+      expect(result).toBeUndefined();
+    });
+
+    test('Two resources, same type', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const patient2: Patient = {
+        resourceType: 'Patient',
+        id: '456',
+        name: [{ given: ['Jane'], family: 'Doe' }],
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: patient2 }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
+      });
+    });
+
+    test('Two resources, different types, same id', () => {
+      const patient1: Patient = {
+        resourceType: 'Patient',
+        id: '123',
+        name: [{ given: ['John'], family: 'Doe' }],
+      };
+      const obs: Observation = {
+        resourceType: 'Observation',
+        id: '123',
+        status: 'preliminary',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '9372-2',
+              display: 'test title',
+            },
+          ],
+          text: 'test title',
+        },
+      };
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [{ resource: patient1 }, { resource: obs }],
+      };
+      const result = findResourceInBundle(bundle, 'Patient', '123');
+      expect(result).toMatchObject({
+        resourceType: 'Patient',
+        id: '123',
       });
     });
   });

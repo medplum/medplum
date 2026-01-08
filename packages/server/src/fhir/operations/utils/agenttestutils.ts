@@ -1,23 +1,25 @@
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   AgentConnectRequest,
   AgentConnectResponse,
   AgentHeartbeatResponse,
   AgentMessage,
   AgentRequestMessage,
   AgentResponseMessage,
-  MEDPLUM_VERSION,
-  getWebSocketUrl,
+  WithId,
 } from '@medplum/core';
-import {
+import { MEDPLUM_VERSION, getWebSocketUrl } from '@medplum/core';
+import type {
   Agent,
   Bundle,
-  BundleEntry,
   OperationOutcome,
   OperationOutcomeIssue,
   Parameters,
   ParametersParameter,
 } from '@medplum/fhirtypes';
-import { MessageEvent, WebSocket } from 'ws';
+import type { MessageEvent } from 'ws';
+import { WebSocket } from 'ws';
 
 let serverPort: number | undefined;
 const agentWsMap = new Map<string, WebSocket>();
@@ -43,18 +45,23 @@ export interface MockAgentResponseHandle {
 export async function mockAgentResponse<
   TRequest extends AgentRequestMessage = AgentRequestMessage,
   TResponse extends AgentResponseMessage = AgentResponseMessage,
->(agent: Agent, accessToken: string, msgType: TRequest['type'], res: TResponse): Promise<MockAgentResponseHandle> {
+>(
+  agent: WithId<Agent>,
+  accessToken: string,
+  msgType: TRequest['type'],
+  res: TResponse
+): Promise<MockAgentResponseHandle> {
   if (!serverPort) {
     throw new Error('Must call `configMockAgents()` before calling `mockAgentResponse()`');
   }
 
-  if (!agentWsMap.has(agent.id as string)) {
+  if (!agentWsMap.has(agent.id)) {
     const ws = new WebSocket(getWebSocketUrl(`ws://localhost:${serverPort}/`, '/ws/agent'));
     ws.binaryType = 'nodebuffer';
-    agentWsMap.set(agent.id as string, ws);
+    agentWsMap.set(agent.id, ws);
   }
 
-  const ws = agentWsMap.get(agent.id as string) as WebSocket;
+  const ws = agentWsMap.get(agent.id) as WebSocket;
   const handler = (event: MessageEvent): void => {
     if (event.type === 'binary') {
       throw new Error('Invalid message type');
@@ -71,7 +78,7 @@ export async function mockAgentResponse<
   ws.addEventListener('message', handler);
 
   // Await connection before returning
-  await getConnectionPromise(ws, agent.id as string, accessToken);
+  await getConnectionPromise(ws, agent.id, accessToken);
   return {
     cleanup: () => {
       ws.removeEventListener('message', handler);
@@ -139,7 +146,7 @@ export function expectBundleToContainOutcome(
   agent: Agent,
   outcome: Partial<OperationOutcome> & { issue: OperationOutcomeIssue[] }
 ): void {
-  const entries = bundle.entry as BundleEntry<Parameters>[];
+  const entries = bundle.entry;
   expect(entries).toContainEqual({
     resource: expect.objectContaining<Parameters>({
       resourceType: 'Parameters',

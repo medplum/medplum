@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { Appointment, Patient } from '@medplum/fhirtypes';
+import { Operator } from '@medplum/core';
+import type { Filter, SearchRequest } from '@medplum/core';
+import type { Appointment, Patient } from '@medplum/fhirtypes';
 import { Document, ResourceTable, SearchControl } from '@medplum/react';
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
 interface AppointmentDetailsProps {
   appointment: Appointment;
@@ -76,7 +80,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   ];
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Appointment/${appointment.id}/${newTab}`);
+    navigate(`/Appointment/${appointment.id}/${newTab}`)?.catch(console.error);
   }
 
   // Get the current tab, default to 'details' if not found
@@ -99,7 +103,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={encountersSearch}
             onChange={(e) => setEncountersSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
@@ -109,7 +113,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={upcomingAppointmentsSearch}
             onChange={(e) => setUpcomingAppointmentsSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
@@ -119,7 +123,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={pastAppointmentsSearch}
             onChange={(e) => setPastAppointmentsSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar

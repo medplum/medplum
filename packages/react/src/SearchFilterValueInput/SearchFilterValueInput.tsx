@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Checkbox, TextInput } from '@mantine/core';
 import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
-import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
@@ -8,6 +11,7 @@ import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 export interface SearchFilterValueInputProps {
   readonly resourceType: string;
   readonly searchParam: SearchParameter;
+  readonly name?: string;
   readonly defaultValue?: string;
   readonly autoFocus?: boolean;
   readonly onChange: (value: string) => void;
@@ -15,7 +19,7 @@ export interface SearchFilterValueInputProps {
 
 export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.Element | null {
   const details = getSearchParameterDetails(props.resourceType, props.searchParam);
-  const name = 'filter-value';
+  const name = props.name ?? 'filter-value';
 
   switch (details.type) {
     case SearchParameterType.REFERENCE:
@@ -120,7 +124,7 @@ function tryParseQuantity(value: string | undefined): Quantity | undefined {
     const [valueString, systemString, unitString] = value.split('|');
     if (valueString) {
       return {
-        value: parseFloat(valueString),
+        value: Number.parseFloat(valueString),
         system: systemString,
         unit: unitString,
       };

@@ -1,11 +1,8 @@
-import {
-  Filter,
-  formatDateTime,
-  getSearchParameterDetails,
-  globalSchema,
-  Operator,
-  SearchParameterType,
-} from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Filter } from '@medplum/core';
+import { formatDateTime, getSearchParameterDetails, globalSchema, Operator, SearchParameterType } from '@medplum/core';
+import type { JSX } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface SearchFilterValueDisplayProps {

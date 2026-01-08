@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { formatDate, getReferenceString } from '@medplum/core';
-import { Immunization, Patient } from '@medplum/fhirtypes';
+import type { Immunization, Patient } from '@medplum/fhirtypes';
 import { StatusBadge, useMedplum } from '@medplum/react';
 import { IconCalendar, IconMapPin } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { InfoButton } from '../../components/InfoButton';
 import { InfoSection } from '../../components/InfoSection';
 import PillsImage from '../../img/pills.svg';
@@ -60,7 +63,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
   const theme = useMantineTheme();
   const navigate = useNavigate();
   return (
-    <InfoButton onClick={() => navigate(`./${vaccine.id}`)}>
+    <InfoButton onClick={() => navigate(`./${vaccine.id}`)?.catch(console.error)}>
       <div>
         <Text c={theme.primaryColor} fw={500} mb={8}>
           {vaccine.vaccineCode?.text}

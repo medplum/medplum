@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString, parseReference, PatchOperation } from '@medplum/core';
-import {
+import { createReference, normalizeErrorString, parseReference } from '@medplum/core';
+import type { PatchOperation } from '@medplum/core';
+import type {
   Communication,
   Encounter,
   Group,
@@ -14,8 +17,9 @@ import {
 } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { getAttenders } from '../../utils';
 
 interface CreateEncounterProps {
@@ -44,7 +48,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
         message: 'Encounter created.',
       });
       handlers.close();
-      navigate(`/Encounter/${encounter.id}`);
+      navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,

@@ -1,16 +1,24 @@
-import { createReference } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource } from '@medplum/core';
+import { append, createReference, flatMapFilter, isResource, isResourceWithId, resolveId } from '@medplum/core';
+import type {
   AuditEvent,
   AuditEventAgentNetwork,
   AuditEventEntity,
+  Bot,
   Coding,
+  Extension,
   Practitioner,
+  Project,
   Reference,
   Resource,
+  Subscription,
 } from '@medplum/fhirtypes';
-import { MedplumServerConfig, getConfig } from '../config';
-import { CloudWatchLogger } from './cloudwatch';
-import { buildTracingExtension } from '../context';
+import type { BotExecutionRequest } from '../bots/types';
+import { getConfig } from '../config/loader';
+import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -66,8 +74,8 @@ export const RestfulOperationType: Coding = {
  * See: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_D.html
  */
 
-export const LoginEvent: Coding = { system: DicomCodeSystem, code: '110122', display: 'Login' };
-export const LogoutEvent: Coding = { system: DicomCodeSystem, code: '110123', display: 'Logout' };
+export const LoginEvent = { system: DicomCodeSystem, code: '110122', display: 'Login' } as const;
+export const LogoutEvent = { system: DicomCodeSystem, code: '110123', display: 'Logout' } as const;
 
 /*
  * Restful interactions.
@@ -77,25 +85,25 @@ export const RestfulInteractions = {
   read: { system: RestfulActionCodeSystem, code: 'read', display: 'read' },
 };
 
-export const ReadInteraction: Coding = { system: RestfulActionCodeSystem, code: 'read', display: 'read' };
-export const VreadInteraction: Coding = { system: RestfulActionCodeSystem, code: 'vread', display: 'vread' };
-export const UpdateInteraction: Coding = { system: RestfulActionCodeSystem, code: 'update', display: 'update' };
-export const PatchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'patch', display: 'patch' };
-export const DeleteInteraction: Coding = { system: RestfulActionCodeSystem, code: 'delete', display: 'delete' };
-export const HistoryInteraction: Coding = { system: RestfulActionCodeSystem, code: 'history', display: 'history' };
-export const CreateInteraction: Coding = { system: RestfulActionCodeSystem, code: 'create', display: 'create' };
-export const SearchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'search', display: 'search' };
-export const BatchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'batch', display: 'batch' };
-export const TransactionInteraction: Coding = {
+export const ReadInteraction = { system: RestfulActionCodeSystem, code: 'read', display: 'read' } as const;
+export const VreadInteraction = { system: RestfulActionCodeSystem, code: 'vread', display: 'vread' } as const;
+export const UpdateInteraction = { system: RestfulActionCodeSystem, code: 'update', display: 'update' } as const;
+export const PatchInteraction = { system: RestfulActionCodeSystem, code: 'patch', display: 'patch' } as const;
+export const DeleteInteraction = { system: RestfulActionCodeSystem, code: 'delete', display: 'delete' } as const;
+export const HistoryInteraction = { system: RestfulActionCodeSystem, code: 'history', display: 'history' } as const;
+export const CreateInteraction = { system: RestfulActionCodeSystem, code: 'create', display: 'create' } as const;
+export const SearchInteraction = { system: RestfulActionCodeSystem, code: 'search', display: 'search' } as const;
+export const BatchInteraction = { system: RestfulActionCodeSystem, code: 'batch', display: 'batch' } as const;
+export const TransactionInteraction = {
   system: RestfulActionCodeSystem,
   code: 'transaction',
   display: 'transaction',
-};
-export const OperationInteraction: Coding = {
+} as const;
+export const OperationInteraction = {
   system: RestfulActionCodeSystem,
   code: 'operation',
   display: 'operation',
-};
+} as const;
 
 /* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 export type AuditEventType = typeof UserAuthenticationEvent | typeof RestfulOperationType;
@@ -120,99 +128,65 @@ export type AuditEventSubtype =
  * AuditEvent action code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-action.html
  */
-export enum AuditEventAction {
-  Create = 'C',
-  Read = 'R',
-  Update = 'U',
-  Delete = 'D',
-  Execute = 'E',
-}
+export const AuditEventAction = {
+  Create: 'C',
+  Read: 'R',
+  Update: 'U',
+  Delete: 'D',
+  Execute: 'E',
+} as const;
+export type AuditEventAction = (typeof AuditEventAction)[keyof typeof AuditEventAction];
 
-const AuditEventActionLookup: Record<string, 'C' | 'R' | 'U' | 'D' | 'E'> = {
+const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction | undefined> = {
   create: 'C',
   read: 'R',
   vread: 'R',
   history: 'R',
   search: 'R',
   update: 'U',
+  patch: 'U',
+  delete: 'D',
+  batch: undefined,
+  transaction: undefined,
+  operation: undefined,
+  110122: undefined,
+  110123: undefined,
 };
 
 /**
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
  */
-export enum AuditEventOutcome {
-  Success = '0',
-  MinorFailure = '4',
-  SeriousFailure = '8',
-  MajorFailure = '12',
-}
+export const AuditEventOutcome = {
+  Success: '0',
+  MinorFailure: '4',
+  SeriousFailure: '8',
+  MajorFailure: '12',
+} as const;
+export type AuditEventOutcome = (typeof AuditEventOutcome)[keyof typeof AuditEventOutcome];
 
-export function logAuthEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    UserAuthenticationEvent,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-export function logRestfulEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    RestfulOperationType,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc,
-    resource,
-    searchQuery
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-function createAuditEvent(
+export function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
   projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
+  options?: {
+    description?: string;
+    resource?: Resource | Reference;
+    searchQuery?: string;
+    durationMs?: number;
+  }
 ): AuditEvent {
   const config = getConfig();
 
   let entity: AuditEventEntity[] | undefined = undefined;
-  if (resource) {
-    entity = [{ what: createReference(resource) }];
-  }
-  if (searchQuery) {
-    entity = [{ query: searchQuery }];
+  if (options?.resource) {
+    const what: Reference = isResource(options.resource) ? createReference(options.resource) : options.resource;
+    entity = [{ what: applyOptionalRedaction(what) }];
+  } else if (options?.searchQuery) {
+    entity = [{ query: options.searchQuery }];
   }
 
   let network: AuditEventAgentNetwork | undefined = undefined;
@@ -220,27 +194,30 @@ function createAuditEvent(
     network = { address: remoteAddress, type: '2' };
   }
 
+  let extension = buildTracingExtension();
+  if (options?.durationMs) {
+    extension = append(extension, buildDurationExtension(options.durationMs));
+  }
+
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
-    meta: {
-      project: projectId,
-    },
+    meta: { project: projectId },
     type,
     subtype: [subtype],
-    action: AuditEventActionLookup[subtype.code as string],
+    action: AuditEventActionLookup[subtype.code],
     recorded: new Date().toISOString(),
     source: { observer: { identifier: { value: config.baseUrl } } },
     agent: [
       {
-        who: who as Reference<Practitioner>,
+        who: applyOptionalRedaction(who) as Reference<Practitioner>,
         requestor: true,
         network,
       },
     ],
     outcome,
-    outcomeDesc,
+    outcomeDesc: options?.description,
     entity,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   return auditEvent;
@@ -249,29 +226,178 @@ function createAuditEvent(
 export function logAuditEvent(auditEvent: AuditEvent): void {
   const config = getConfig();
   if (config.logAuditEvents) {
-    if (config.auditEventLogGroup) {
-      getCloudWatchLogger(config).write(JSON.stringify(auditEvent));
-    } else {
-      console.log(JSON.stringify(auditEvent));
+    console.log(JSON.stringify(auditEvent));
+  }
+}
+
+function buildDurationExtension(duration: number): Extension {
+  return {
+    url: 'https://medplum.com/fhir/StructureDefinition/durationMs',
+    valueInteger: Math.round(duration),
+  };
+}
+
+export function applyOptionalRedaction(ref: Reference | undefined): Reference | undefined {
+  const config = getConfig();
+  const ctx = tryGetRequestContext();
+  let project: Project | undefined;
+  if (ctx instanceof AuthenticatedRequestContext) {
+    project = ctx.project;
+  }
+  if (config.redactAuditEvents || project?.setting?.find((s) => s.name === 'redactAuditEvents')?.valueBoolean) {
+    return { ...ref, display: undefined };
+  } else {
+    return ref;
+  }
+}
+
+const defaultBotOutputLength = 10 * 1024; // 10 KiB
+
+/**
+ * Creates an AuditEvent for a Bot execution.
+ * @param request - The bot request.
+ * @param startTime - The time the execution attempt started.
+ * @param outcome - The outcome code.
+ * @param outcomeDesc - The outcome description text.
+ */
+export async function createBotAuditEvent(
+  request: BotExecutionRequest,
+  startTime: string,
+  outcome: AuditEventOutcome,
+  outcomeDesc: string
+): Promise<void> {
+  const { bot, runAs, requester, input, subscription, agent, device } = request;
+  const trigger = bot.auditEventTrigger ?? 'always';
+  if (
+    trigger === 'never' ||
+    (trigger === 'on-error' && outcome === AuditEventOutcome.Success) ||
+    (trigger === 'on-output' && outcomeDesc.length === 0)
+  ) {
+    return;
+  }
+
+  const auditEvent: AuditEvent = {
+    resourceType: 'AuditEvent',
+    meta: {
+      project: resolveId(runAs.project) as string,
+      account: bot.meta?.account,
+      accounts: bot.meta?.accounts,
+    },
+    period: {
+      start: startTime,
+      end: new Date().toISOString(),
+    },
+    recorded: new Date().toISOString(),
+    type: { system: 'https://medplum.com/CodeSystem/audit-event', code: 'execute' },
+    agent: [
+      {
+        who: applyOptionalRedaction(requester) as Reference<ProfileResource>,
+        requestor: true,
+      },
+      {
+        who: applyOptionalRedaction(runAs.profile) as Reference<ProfileResource>,
+        requestor: false,
+      },
+    ],
+    source: { observer: applyOptionalRedaction(createReference(bot)) as Reference<Bot> },
+    entity: createAuditEventEntities(bot, input, subscription, agent, device),
+    outcome,
+    outcomeDesc,
+    extension: buildTracingExtension(),
+  };
+
+  const config = getConfig();
+  for (const destination of bot.auditEventDestination ?? ['resource']) {
+    switch (destination) {
+      case 'resource':
+        await getSystemRepo().createResource<AuditEvent>({
+          ...auditEvent,
+          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
+        });
+        break;
+      case 'log':
+        logAuditEvent({
+          ...auditEvent,
+          outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForLogs ?? defaultBotOutputLength),
+        });
+        break;
     }
   }
 }
 
-/** @deprecated */
-let cloudWatchLogger: CloudWatchLogger | undefined = undefined;
+function tail(str: string, n: number): string {
+  return str.substring(str.length - n);
+}
 
 /**
- * @param config - The server config.
- * @returns The CloudWatch logger.
- * @deprecated
+ * Creates an AuditEvent for a subscription attempt.
+ * @param resource - The resource that triggered the subscription.
+ * @param startTime - The time the subscription attempt started.
+ * @param outcome - The outcome code.
+ * @param outcomeDesc - The outcome description text.
+ * @param subscription - Optional rest-hook subscription.
+ * @param bot - Optional bot that was executed.
  */
-function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
-  if (!cloudWatchLogger) {
-    cloudWatchLogger = cloudWatchLogger = new CloudWatchLogger(
-      config.awsRegion,
-      config.auditEventLogGroup as string,
-      config.auditEventLogStream
-    );
+export async function createSubscriptionAuditEvent(
+  resource: Resource,
+  startTime: string,
+  outcome: AuditEventOutcome,
+  outcomeDesc?: string,
+  subscription?: Subscription,
+  bot?: Bot
+): Promise<void> {
+  const systemRepo = getSystemRepo();
+  const auditedEvent = subscription ?? resource;
+
+  await systemRepo.createResource<AuditEvent>({
+    resourceType: 'AuditEvent',
+    meta: {
+      project: auditedEvent.meta?.project,
+      account: auditedEvent.meta?.account,
+      accounts: auditedEvent.meta?.accounts,
+    },
+    period: {
+      start: startTime,
+      end: new Date().toISOString(),
+    },
+    recorded: new Date().toISOString(),
+    type: {
+      code: 'transmit',
+    },
+    agent: [
+      {
+        type: { text: auditedEvent.resourceType },
+        requestor: false,
+      },
+    ],
+    source: {
+      observer: applyOptionalRedaction(createReference(auditedEvent)) as Reference as Reference<Practitioner>,
+    },
+    entity: createAuditEventEntities(resource, subscription, bot),
+    outcome,
+    outcomeDesc,
+    extension: buildTracingExtension(),
+  });
+}
+
+export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
+  return flatMapFilter(resources, (v) => (isResourceWithId(v) ? createAuditEventEntity(v) : undefined));
+}
+
+export function createAuditEventEntity(resource: Resource): AuditEventEntity {
+  return {
+    what: applyOptionalRedaction(createReference(resource)),
+    role: getAuditEventEntityRole(resource),
+  };
+}
+
+export function getAuditEventEntityRole(resource: Resource): Coding {
+  switch (resource.resourceType) {
+    case 'Patient':
+      return { code: '1', display: 'Patient' };
+    case 'Subscription':
+      return { code: '9', display: 'Subscriber' };
+    default:
+      return { code: '4', display: 'Domain' };
   }
-  return cloudWatchLogger;
 }

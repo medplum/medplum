@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   ContentType,
   OAuthClientAssertionType,
   OAuthGrantType,
+  OAuthSigningAlgorithm,
   OAuthTokenType,
   Operator,
-  ProfileResource,
   createReference,
   getStatus,
   isJwt,
@@ -13,23 +16,26 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { createHash, randomUUID } from 'crypto';
-import { Request, RequestHandler, Response } from 'express';
-import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
-import { asyncWrap } from '../async';
+import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Request, RequestHandler, Response } from 'express';
+import type { JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
+import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
-import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
+import type { MedplumRefreshTokenClaims } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import {
   checkIpAccessRules,
   getAuthTokens,
   getClientApplication,
   getClientApplicationMembership,
   getExternalUserInfo,
+  hashCode,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
@@ -48,8 +54,10 @@ type FhircastProps = { 'hub.topic': string; 'hub.url': string };
  *  3) Refresh - for "remember me" long term access
  *
  * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
+ * @param req - The request object
+ * @param res - The response object
  */
-export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const tokenHandler: RequestHandler = async (req: Request, res: Response): Promise<void> => {
   if (!req.is(ContentType.FORM_URL_ENCODED)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -77,7 +85,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
     default:
       sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
   }
-});
+};
 
 /**
  * Handles the "Client Credentials" OAuth flow.
@@ -103,7 +111,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (_err) {
@@ -145,14 +153,15 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   // TODO: build full AuthState object, including on-behalf-of
 
   try {
-    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
+    const userConfig = await getUserConfiguration(systemRepo, project, membership);
+    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
     sendTokenError(res, 'invalid_request', normalizeErrorString(err));
     return;
   }
 
-  await sendTokenResponse(res, login, client.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -191,7 +200,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const login = searchResult.entry[0].resource as Login;
+  const login = searchResult.entry[0].resource as WithId<Login>;
 
   if (clientId && login.client?.reference !== 'ClientApplication/' + clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -226,11 +235,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  if (clientSecret) {
-    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
-      return;
-    }
-  } else if (!client?.pkceOptional) {
+  if (!client?.pkceOptional) {
     if (login.codeChallenge) {
       const codeVerifier = req.body.code_verifier;
       if (!codeVerifier) {
@@ -246,9 +251,13 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
       sendTokenError(res, 'invalid_request', 'Missing verification context');
       return;
     }
+  } else if (clientSecret) {
+    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
+      return;
+    }
   }
 
-  await sendTokenResponse(res, login, client?.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -275,9 +284,9 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
-  if (login.refreshSecret === undefined) {
+  if (login.refreshSecret === undefined || !claims.refresh_secret) {
     // This token does not have a refresh available
-    sendTokenError(res, 'invalid_request', 'Invalid token');
+    sendTokenError(res, 'invalid_request', 'Invalid refresh token');
     return;
   }
 
@@ -323,8 +332,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const refreshTokenLifetime = client?.refreshTokenLifetime;
-
   // Refresh token rotation
   // Generate a new refresh secret and update the login
   const updatedLogin = await systemRepo.updateResource<Login>({
@@ -334,7 +341,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     userAgent: req.get('User-Agent'),
   });
 
-  await sendTokenResponse(res, updatedLogin, refreshTokenLifetime);
+  await sendTokenResponse(res, updatedLogin, client);
 }
 
 /**
@@ -345,7 +352,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
-  return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);
+  return exchangeExternalAuthToken(
+    req,
+    res,
+    req.body.client_id,
+    req.body.subject_token,
+    req.body.subject_token_type,
+    req.body.membership_id
+  );
 }
 
 /**
@@ -356,13 +370,15 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
  * @param clientId - The client application ID.
  * @param subjectToken - The subject token. Only access tokens are currently supported.
  * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ * @param membershipId - Optional membership ID to restrict the exchange to.
  */
 export async function exchangeExternalAuthToken(
   req: Request,
   res: Response,
   clientId: string,
   subjectToken: string,
-  subjectTokenType: OAuthTokenType
+  subjectTokenType: OAuthTokenType,
+  membershipId?: string
 ): Promise<void> {
   if (!clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -390,7 +406,7 @@ export async function exchangeExternalAuthToken(
 
   let userInfo;
   try {
-    userInfo = await getExternalUserInfo(idp, subjectToken);
+    userInfo = await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
     const outcome = normalizeOperationOutcome(err);
     sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
@@ -415,9 +431,11 @@ export async function exchangeExternalAuthToken(
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
+    forceUseFirstMembership: true,
+    membershipId,
   });
 
-  await sendTokenResponse(res, login, client.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -507,7 +525,14 @@ async function parseClientAssertion(
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: clientId,
-    algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+    algorithms: [
+      OAuthSigningAlgorithm.RS256,
+      OAuthSigningAlgorithm.RS384,
+      OAuthSigningAlgorithm.RS512,
+      OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.ES384,
+      OAuthSigningAlgorithm.ES512,
+    ],
     audience: tokenUrl,
   };
 
@@ -552,23 +577,35 @@ async function validateClientIdAndSecret(
     return false;
   }
 
+  let failed = false;
+
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
   if (!timingSafeEqualStr(client.secret, clientSecret)) {
-    sendTokenError(res, 'invalid_request', 'Invalid secret');
-    return false;
+    failed = true;
+  }
+  // Always perform a second comparison, in order to not leak timing information about the presence or absence of
+  // a retiring secret
+  const secondarySecret = client.retiringSecret ?? client.secret;
+  if (timingSafeEqualStr(secondarySecret, clientSecret)) {
+    failed = false;
   }
 
-  return true;
+  if (failed) {
+    sendTokenError(res, 'invalid_request', 'Invalid secret');
+    return false;
+  } else {
+    return true;
+  }
 }
 
 /**
  * Sends a successful token response.
  * @param res - The HTTP response.
  * @param login - The user login.
- * @param refreshLifetime - The refresh token duration.
+ * @param client - The client application. Optional.
  */
-async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: string): Promise<void> {
+async function sendTokenResponse(res: Response, login: WithId<Login>, client?: ClientApplication): Promise<void> {
   const config = getConfig();
 
   const systemRepo = getSystemRepo();
@@ -577,7 +614,10 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
     login.membership as Reference<ProjectMembership>
   );
 
-  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, refreshLifetime);
+  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, {
+    accessLifetime: client?.accessTokenLifetime,
+    refreshLifetime: client?.refreshTokenLifetime,
+  });
   let patient = undefined;
   let encounter = undefined;
 
@@ -601,13 +641,15 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
       sendTokenError(res, normalizeErrorString(err));
       return;
     }
-    fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.url'] = `${config.baseUrl}fhircast/STU3`; // TODO: Figure out how to handle the split between STU2 and STU3...
     fhircastProps['hub.topic'] = topic;
   }
 
+  const { exp, iat } = parseJWTPayload(tokens.accessToken);
+
   res.status(200).json({
     token_type: 'Bearer',
-    expires_in: 3600,
+    expires_in: (exp ?? 0) - (iat ?? 0),
     scope: login.scope,
     id_token: tokens.idToken,
     access_token: tokens.accessToken,
@@ -654,22 +696,4 @@ function verifyCode(challenge: string, method: string, verifier: string): boolea
   }
 
   return false;
-}
-
-/**
- * Returns the base64-url-encoded SHA256 hash of the code.
- * The details around '+', '/', and '=' are important for compatibility.
- * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
- * See: packages/client/src/crypto.ts
- * @param code - The input code.
- * @returns The base64-url-encoded SHA256 hash.
- */
-export function hashCode(code: string): string {
-  return createHash('sha256')
-    .update(code)
-    .digest()
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '');
 }

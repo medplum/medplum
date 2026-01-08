@@ -1,6 +1,9 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { DocumentReference } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<DocumentReference> {
   console.log(event);
 
   // Generate the PDF
@@ -14,15 +17,19 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   });
 
   // Create a Media, representing an attachment
-  const media = await medplum.createResource({
-    resourceType: 'Media',
-    status: 'completed',
-    content: {
-      contentType: 'application/pdf',
-      url: 'Binary/' + binary.id,
-      title: 'report.pdf',
-    },
+  const documentReference = await medplum.createResource({
+    resourceType: 'DocumentReference',
+    status: 'current',
+    content: [
+      {
+        attachment: {
+          contentType: 'application/pdf',
+          url: 'Binary/' + binary.id,
+          title: 'report.pdf',
+        },
+      },
+    ],
   });
 
-  return media;
+  return documentReference;
 }

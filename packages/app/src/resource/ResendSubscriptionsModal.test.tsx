@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Resource } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { Resource } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResendSubscriptionsModal, ResendSubscriptionsModalProps } from './ResendSubscriptionsModal';
+import type { ResendSubscriptionsModalProps } from './ResendSubscriptionsModal';
+import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 
 describe('ResendSubscriptionsModal', () => {
   let medplum: MockClient;
@@ -68,7 +71,7 @@ describe('ResendSubscriptionsModal', () => {
     // Create a Subscription to find with autocomplete
     await medplum.createResource({
       resourceType: 'Subscription',
-      id: '123',
+      id: '1234',
       status: 'active',
       reason: 'test',
       criteria: 'Patient',
@@ -126,7 +129,7 @@ describe('ResendSubscriptionsModal', () => {
     expect(resendCallback).toHaveBeenCalledTimes(1);
 
     const request = resendCallback.mock.calls[0][0];
-    expect(request.body.subscription).toBe('Subscription/123');
+    expect(request.body.subscription).toBe('Subscription/1234');
     expect(request.body.verbose).toBe(true);
   });
 

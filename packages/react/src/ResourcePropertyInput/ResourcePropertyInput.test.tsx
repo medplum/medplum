@@ -1,5 +1,8 @@
-import { InternalSchemaElement, PropertyType } from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { InternalSchemaElement } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import type {
   Address,
   Annotation,
   Attachment,
@@ -17,7 +20,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
+import type { ResourcePropertyInputProps } from './ResourcePropertyInput';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
 
@@ -105,6 +109,28 @@ describe('ResourcePropertyInput', () => {
     });
 
     expect(onChange).toHaveBeenCalledWith(isoString, 'dateTime');
+  });
+
+  test('Time property', async () => {
+    const onChange = jest.fn();
+
+    await setup({
+      ...defaultProps,
+      name: 'time',
+      property: { ...baseProperty, type: [{ code: 'time' }] },
+      onChange,
+    });
+
+    const input = screen.getByTestId('time');
+    expect(input).toBeDefined();
+    expect(input).toHaveAttribute('type', 'time');
+    expect(input).toHaveAttribute('step', '1');
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '14:30:00' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('14:30:00', 'time');
   });
 
   test('Markdown property', async () => {

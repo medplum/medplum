@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
+import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { Logo } from '../Logo/Logo';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Header } from './Header';
@@ -62,13 +65,7 @@ describe('Header', () => {
   });
 
   test('Switch profile', async () => {
-    const reloadMock = jest.fn();
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        reload: reloadMock,
-      },
-    });
+    const reloadSpy = jest.spyOn(locationUtils, 'reload').mockImplementation(() => {});
 
     window.localStorage.setItem(
       'activeLogin',
@@ -130,17 +127,17 @@ describe('Header', () => {
       fireEvent.click(screen.getByText('My Other Project'));
     });
 
-    expect(window.location.reload).toHaveBeenCalled();
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
-  test('Add another account', async () => {
+  test('Switch to another project', async () => {
     await setup();
     await openMenu();
 
-    expect(screen.getByText('Add another account')).toBeInTheDocument();
+    expect(screen.getByText('Switch to another project')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add another account'));
+      fireEvent.click(screen.getByText('Switch to another project'));
     });
 
     expect(navigateMock).toHaveBeenCalledWith('/signin');
@@ -195,7 +192,7 @@ function isMenuOpen(): boolean {
 async function openMenu(): Promise<void> {
   if (!isMenuOpen()) {
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+      fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
     });
 
     await screen.findByText('Sign out');

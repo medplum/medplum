@@ -1,11 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Flex, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { UpdateCoverageEligibilityStatus } from '../components/actions/UpdateCoverageEligibilityStatus';
 import { cleanResource } from '../components/utils';
 
@@ -46,7 +49,7 @@ export function ResourcePage(): JSX.Element | null {
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   };
 
   const handleEditSubmit = async (newResource: Resource): Promise<void> => {
@@ -61,7 +64,7 @@ export function ResourcePage(): JSX.Element | null {
         message: `${resourceType} updated`,
       });
       // Navigate back to the top of the details page
-      navigate(`/${resourceType}/${id}`);
+      navigate(`/${resourceType}/${id}`)?.catch(console.error);
       window.scrollTo(0, 0);
     } catch (err) {
       showNotification({

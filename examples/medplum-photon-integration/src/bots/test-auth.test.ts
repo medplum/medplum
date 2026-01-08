@@ -1,6 +1,8 @@
-import { handler } from './test-auth';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
+import { handler } from './test-auth';
 
 test.skip('Success', async () => {
   const medplum = new MockClient();

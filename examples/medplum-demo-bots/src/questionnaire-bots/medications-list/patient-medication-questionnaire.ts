@@ -1,5 +1,8 @@
-import { BotEvent, createReference, MedplumClient, RXNORM } from '@medplum/core';
-import { Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, RXNORM } from '@medplum/core';
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   // Get all of the answers from the questionnaire response

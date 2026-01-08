@@ -1,9 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
-import { TextDecoder, TextEncoder } from 'util';
-import { getConfig } from '../../config';
-import { BotExecutionContext, BotExecutionResult } from '../../fhir/operations/execute';
+import type { Bot } from '@medplum/fhirtypes';
+import { TextDecoder, TextEncoder } from 'node:util';
+import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
+import { getConfig } from '../../config/loader';
+
+let client: LambdaClient;
 
 /**
  * Executes a Bot in an AWS Lambda.
@@ -11,18 +15,22 @@ import { BotExecutionContext, BotExecutionResult } from '../../fhir/operations/e
  * @returns The bot execution result.
  */
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId } = request;
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
-  const client = new LambdaClient({ region: config.awsRegion });
+  if (!client) {
+    client = new LambdaClient({ region: config.awsRegion });
+  }
   const name = getLambdaFunctionName(bot);
   const payload = {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
+    requester,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
     secrets,
     traceId,
+    headers,
   };
 
   // Build the command

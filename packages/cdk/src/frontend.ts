@@ -1,19 +1,20 @@
-import { MedplumInfraConfig } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { MedplumInfraConfig } from '@medplum/core';
+import type { aws_iam as iam, aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 import {
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   Duration,
-  aws_iam as iam,
   aws_cloudfront_origins as origins,
   RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_route53_targets as targets,
-  aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -72,7 +73,7 @@ export class FrontEnd extends Construct {
               `default-src 'none'`,
               `base-uri 'self'`,
               `child-src 'self'`,
-              `connect-src 'self' ${config.apiDomainName} *.google.com`,
+              `connect-src 'self' ${config.apiDomainName} *.medplum.com *.google.com`,
               `font-src 'self' fonts.gstatic.com`,
               `form-action 'self' *.gstatic.com *.google.com`,
               `frame-ancestors 'none'`,
@@ -111,10 +112,14 @@ export class FrontEnd extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'FrontEndWAF',
-        buildWafConfig(`${config.stackName}-FrontEndWAF`, 'CLOUDFRONT', config.appWafIpSetArn)
+        `${config.stackName}-FrontEndWAF`,
+        'CLOUDFRONT',
+        config.appWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // API Origin Cache Policy
@@ -145,7 +150,7 @@ export class FrontEnd extends Construct {
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(this.appBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.appBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

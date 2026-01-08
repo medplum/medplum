@@ -1,29 +1,31 @@
-import {
-  CloudFormationClient,
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {
   CloudFormationClientResolvedConfig,
   ServiceInputTypes as CloudFormationServiceInputTypes,
   ServiceOutputTypes as CloudFormationServiceOutputTypes,
-  DescribeStackResourcesCommand,
-  DescribeStacksCommand,
-  ListStacksCommand,
   StackResource,
 } from '@aws-sdk/client-cloudformation';
 import {
-  CloudFrontClient,
+  CloudFormationClient,
+  DescribeStackResourcesCommand,
+  DescribeStacksCommand,
+  ListStacksCommand,
+} from '@aws-sdk/client-cloudformation';
+import type {
   CloudFrontClientResolvedConfig,
   ServiceInputTypes as CloudFrontServiceInputTypes,
   ServiceOutputTypes as CloudFrontServiceOutputTypes,
-  CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
-import {
-  GetBucketPolicyCommand,
-  PutBucketPolicyCommand,
-  S3Client,
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
+import type {
   S3ClientResolvedConfig,
   ServiceInputTypes as S3ServiceInputTypes,
   ServiceOutputTypes as S3ServiceOutputTypes,
 } from '@aws-sdk/client-s3';
-import { AwsStub, mockClient } from 'aws-sdk-client-mock';
+import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client } from '@aws-sdk/client-s3';
+import type { AwsStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import fs from 'node:fs';
 import { main } from '../index';
 import { updateBucketPolicy } from './update-bucket-policies';

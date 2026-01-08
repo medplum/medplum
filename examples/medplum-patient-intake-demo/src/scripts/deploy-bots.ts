@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
-import { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -14,7 +16,8 @@ const Bots: BotDescription[] = [
   {
     src: 'src/bots/core/intake-form.ts',
     dist: 'dist/bots/core/intake-form.js',
-    criteria: 'QuestionnaireResponse?questionnaire=$patient-intake',
+    criteria:
+      'QuestionnaireResponse?questionnaire=https://medplum.com/Questionnaire/patient-intake-questionnaire-example',
   },
 ];
 
@@ -51,9 +54,8 @@ async function main(): Promise<void> {
       if (botDescription.criteria) {
         results.push({
           request: {
-            url: 'Subscription',
-            method: 'POST',
-            ifNoneExist: `url=${botUrlPlaceholder}`,
+            url: `Subscription?url=${botUrlPlaceholder}`,
+            method: 'PUT',
           },
           resource: {
             resourceType: 'Subscription',

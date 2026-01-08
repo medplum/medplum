@@ -1,8 +1,12 @@
-import { Operator, SearchRequest } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { SearchRequest } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import type { ResourceType } from '@medplum/fhirtypes';
 import { SearchControl, useMedplum } from '@medplum/react';
+import type { JSX } from 'react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
@@ -27,7 +31,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   return (
     <SearchControl
       search={search}
-      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)}
+      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar

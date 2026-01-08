@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Grid, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getDisplayString, normalizeErrorString } from '@medplum/core';
-import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
   PatientSummary,
@@ -12,7 +14,8 @@ import {
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource, shouldShowPatientSummary } from '../utils';
 
 /**
@@ -59,7 +62,7 @@ export function ResourcePage(): JSX.Element | null {
   }
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   if (!resource) {
@@ -71,7 +74,7 @@ export function ResourcePage(): JSX.Element | null {
       <Grid>
         {resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? (
           <Grid.Col span={4}>
-            <PatientSummary patient={resource.subject as Reference<Patient>} m="sm" />
+            <PatientSummary patient={resource.subject as Reference<Patient>} />
           </Grid.Col>
         ) : null}
         <Grid.Col span={resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? 8 : 12}>

@@ -38,6 +38,14 @@ Move into the `medplum-chat-demo` directory.
 cd examples/medplum-chat-demo
 ```
 
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need.
+
 Next, install the dependencies
 
 ```bash
@@ -59,5 +67,5 @@ This app should run on `http://localhost:3000/`
 Medplum supports self-hosting, and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
 
 - Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [react component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

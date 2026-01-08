@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Hl7Message } from '@medplum/core';
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
 export interface HL7BodyParserOptions {
   type: string[];
@@ -11,7 +13,7 @@ export interface HL7BodyParserOptions {
  * @returns Express middleware request handler.
  */
 export function hl7BodyParser(options: HL7BodyParserOptions): RequestHandler {
-  return (req: Request, _res: Response, next: NextFunction) => {
+  return function hl7Parser(req: Request, _res: Response, next: NextFunction) {
     if (req.is(options.type)) {
       req.body = Hl7Message.parse(req.body);
     }

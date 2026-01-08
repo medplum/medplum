@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
-import { Binary } from '@medplum/fhirtypes';
-import { getConfig } from '../../config';
+import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
+import type { Binary } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 
 /**
  * Returns a presigned URL for the Binary resource content.
@@ -12,8 +15,11 @@ import { getConfig } from '../../config';
  */
 export function getPresignedUrl(binary: Binary): string {
   const config = getConfig();
+  if (!config.signingKeyId || !config.signingKey) {
+    throw new OperationOutcomeError(badRequest('Need to provide signingKeyId and signingKey in config file'));
+  }
   const storageBaseUrl = config.storageBaseUrl;
-  const unsignedUrl = `${storageBaseUrl}${binary.id}/${binary.meta?.versionId}`;
+  const unsignedUrl = concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
   const dateLessThan = new Date();
   dateLessThan.setHours(dateLessThan.getHours() + 1);
   return getSignedUrl({

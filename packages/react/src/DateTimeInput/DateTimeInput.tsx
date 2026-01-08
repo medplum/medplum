@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TextInput } from '@mantine/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
-import { ChangeEvent } from 'react';
+import type { OperationOutcome } from '@medplum/fhirtypes';
+import type { ChangeEvent, JSX } from 'react';
+import type { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';
-import { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface DateTimeInputProps extends PrimitiveTypeInputProps {
   readonly label?: string;
@@ -34,6 +36,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       required={props.required}
       disabled={props.disabled}
       type={getInputType()}
+      step={1}
       defaultValue={convertIsoToLocal(props.defaultValue)}
       autoFocus={props.autoFocus}
       error={getErrorsForInput(props.outcome, props.name)}

@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import type { BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -70,6 +73,7 @@ const searchParams = [
   'Communication-part-of',
   'Media-encounter',
   'Questionnaire-name',
+  'Questionnaire-url',
   'ActivityDefinition-name',
   'Schedule-identifier',
   'Task-identifier',
@@ -100,8 +104,8 @@ export function main(): void {
     // such as https://hl7.org/fhir/us/core/STU5.0.1/package.tgz which is linked to
     // from https://hl7.org/fhir/us/core/STU5.0.1/downloads.html
     buildUSCoreStructureDefinitions('/absolute/path/to/expanded/package-file', [
-      resolve(__dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
-      resolve(__dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../mock/src/mocks/uscore/uscore-v5.0.1-structuredefinitions.json'),
+      resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json'),
     ]);
   }
 }
@@ -111,17 +115,17 @@ function writeStructureDefinitions(): void {
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   writeFileSync(
-    resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
 }
 
 function addStructureDefinitions(fileName: string, output: StructureDefinition[]): void {
-  const bundle = readJson(fileName) as Bundle<StructureDefinition>;
-  for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
-    const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
+  const entries = readJson(fileName).entry as BundleEntry<WithId<StructureDefinition>>[];
+  for (const entry of entries) {
+    const resource = entry.resource as WithId<Resource>;
+    if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id)) {
       removeBaseFromElements(resource);
       output.push(resource);
     }
@@ -130,12 +134,7 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 
 function removeBaseFromElements(sd: StructureDefinition): void {
   for (const element of sd.snapshot?.element ?? []) {
-    if (
-      element.base &&
-      element.path === element.base.path &&
-      element.min === element.base.min &&
-      element.max === element.base.max
-    ) {
+    if (element.path === element.base?.path && element.min === element.base.min && element.max === element.base.max) {
       element.base = undefined;
     }
   }
@@ -144,19 +143,19 @@ function removeBaseFromElements(sd: StructureDefinition): void {
 function writeSearchParameters(): void {
   const output: SearchParameter[] = [];
   for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
-    const resource = entry.resource as SearchParameter;
-    if (searchParams.includes(resource.id as string)) {
+    const resource = entry.resource as WithId<SearchParameter>;
+    if (searchParams.includes(resource.id)) {
       output.push(resource);
     }
   }
   for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
-    const resource = entry.resource as SearchParameter;
-    if (searchParams.includes(resource.id as string)) {
+    const resource = entry.resource as WithId<SearchParameter>;
+    if (searchParams.includes(resource.id)) {
       output.push(resource);
     }
   }
   writeFileSync(
-    resolve(__dirname, '../../mock/src/mocks/searchparameters.json'),
+    resolve(import.meta.dirname, '../../mock/src/mocks/searchparameters.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );

@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
+import type { AwsClientStub } from 'aws-sdk-client-mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { getConfig, loadConfig } from '../../config';
+import { getConfig, loadConfig } from '../../config/loader';
 
 describe('Config', () => {
   let mockSSMClient: AwsClientStub<SSMClient>;
@@ -28,6 +31,10 @@ describe('Config', () => {
         { Name: 'botCustomFunctionsEnabled', Value: 'true' },
         { Name: 'logAuditEvents', Value: 'true' },
         { Name: 'registerEnabled', Value: 'false' },
+        {
+          Name: 'defaultProjectSystemSetting',
+          Value: '[{"name":"someSetting","valueString":"someValue"},{"name":"secondSetting","valueInteger":5}]',
+        },
       ],
     });
   });
@@ -41,15 +48,19 @@ describe('Config', () => {
     const config = await loadConfig('aws:test');
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
-    expect(config.port).toEqual(8080);
-    expect(config.botCustomFunctionsEnabled).toEqual(true);
-    expect(config.logAuditEvents).toEqual(true);
-    expect(config.registerEnabled).toEqual(false);
+    expect(config.port).toStrictEqual(8080);
+    expect(config.botCustomFunctionsEnabled).toStrictEqual(true);
+    expect(config.logAuditEvents).toStrictEqual(true);
+    expect(config.registerEnabled).toStrictEqual(false);
+    expect(config.defaultProjectSystemSetting).toStrictEqual([
+      { name: 'someSetting', valueString: 'someValue' },
+      { name: 'secondSetting', valueInteger: 5 },
+    ]);
     expect(config.database).toBeDefined();
     expect(config.database.ssl).toBeDefined();
-    expect(config.database.ssl?.require).toEqual(true);
-    expect(config.database.ssl?.rejectUnauthorized).toEqual(true);
-    expect(config.database.ssl?.ca).toEqual('DatabaseSslCa');
+    expect(config.database.ssl?.require).toStrictEqual(true);
+    expect(config.database.ssl?.rejectUnauthorized).toStrictEqual(true);
+    expect(config.database.ssl?.ca).toStrictEqual('DatabaseSslCa');
     expect(getConfig()).toBe(config);
     expect(mockSSMClient).toReceiveCommand(GetParametersByPathCommand);
   });
@@ -58,7 +69,7 @@ describe('Config', () => {
     const config = await loadConfig('aws:ap-southeast-2:test');
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
-    expect(config.port).toEqual(8080);
+    expect(config.port).toStrictEqual(8080);
     expect(getConfig()).toBe(config);
     expect(mockSecretsManagerClient).toReceiveCommand(GetSecretValueCommand);
     expect(mockSecretsManagerClient).toReceiveCommandWith(GetSecretValueCommand, {

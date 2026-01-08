@@ -1,51 +1,35 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import os from 'node:os';
-import v8 from 'node:v8';
-import { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
-import { RecordMetricOptions, setGauge } from './otel/otel';
+import type { RecordMetricOptions } from './otel/otel';
+import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
 const METRIC_IN_SECS_OPTIONS = { ...BASE_METRIC_OPTIONS, options: { unit: 's' } } satisfies RecordMetricOptions;
 
+let readerConn: PoolClient | undefined;
+let writerConn: PoolClient | undefined;
+
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  const writerPool = getDatabasePool(DatabaseMode.WRITER);
-  const readerPool = getDatabasePool(DatabaseMode.READER);
-
-  setGauge('medplum.db.idleConnections', writerPool.idleCount, {
-    ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-  });
-  setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
-    ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-  });
-
-  if (writerPool !== readerPool) {
-    setGauge('medplum.db.idleConnections', readerPool.idleCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-    });
-    setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-    });
-  }
-
+  writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
   let startTime = Date.now();
-  const postgresWriterOk = await testPostgres(writerPool);
+  const postgresWriterOk = await testPostgres(writerConn);
   const writerRoundtripMs = Date.now() - startTime;
   setGauge('medplum.db.healthcheckRTT', writerRoundtripMs / 1000, {
     ...METRIC_IN_SECS_OPTIONS,
     attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer' },
   });
 
-  if (writerPool !== readerPool) {
+  if (hasSeparateReaderPool()) {
+    readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
     startTime = Date.now();
-    await testPostgres(readerPool);
+    await testPostgres(readerConn);
     const readerRoundtripMs = Date.now() - startTime;
     setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
       ...METRIC_IN_SECS_OPTIONS,
@@ -58,21 +42,6 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   const redisRoundtripMs = Date.now() - startTime;
   setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, METRIC_IN_SECS_OPTIONS);
 
-  const heapStats = v8.getHeapStatistics();
-  setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
-
-  const heapSpaceStats = v8.getHeapSpaceStatistics();
-  setGauge(
-    'medplum.node.oldSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
-    BASE_METRIC_OPTIONS
-  );
-  setGauge(
-    'medplum.node.newSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
-    BASE_METRIC_OPTIONS
-  );
-
   res.json({
     ok: true,
     version: MEDPLUM_VERSION,
@@ -83,7 +52,22 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   });
 }
 
-async function testPostgres(pool: Pool): Promise<boolean> {
+async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
+  return getDatabasePool(mode).connect();
+}
+
+export function cleanupReservedDatabaseConnections(): void {
+  writerConn?.release(true);
+  writerConn = undefined;
+  readerConn?.release(true);
+  readerConn = undefined;
+}
+
+function hasSeparateReaderPool(): boolean {
+  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+}
+
+async function testPostgres(pool: PoolClient): Promise<boolean> {
   return (await pool.query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 

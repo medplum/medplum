@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
@@ -9,7 +12,7 @@ import {
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { randomInt, randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
 
@@ -32,15 +35,65 @@ describe('MemoryRepository', () => {
   test('Create resource with meta', async () => {
     const id = randomUUID();
     const versionId = randomUUID();
-    const lastUpdated = new Date().toISOString();
+    const lastUpdated = new Date('2020-01-01').toISOString();
+
+    const account = await repo.createResource({
+      resourceType: 'Account',
+      status: 'active',
+    });
+    const accounts = [createReference(account)];
+
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       id,
-      meta: { versionId, lastUpdated },
+      meta: { versionId, lastUpdated, accounts },
     });
     expect(patient.id).toBe(id);
+
+    // Management properties are overridden by the repo
+    expect(patient.meta?.versionId).not.toBe(versionId);
+    expect(patient.meta?.lastUpdated).not.toBe(lastUpdated);
+
+    // Other properties are passed through
+    expect(patient.meta?.accounts).toEqual([{ reference: `Account/${account.id}` }]);
+  });
+
+  test('Create resource with meta when seeding', async () => {
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const lastUpdated = new Date('2020-01-01').toISOString();
+
+    const account = await repo.createResource({
+      resourceType: 'Account',
+      status: 'active',
+    });
+    const accounts = [createReference(account)];
+
+    const patient = await repo.withSeeding(() =>
+      repo.createResource<Patient>({
+        resourceType: 'Patient',
+        id,
+        meta: { versionId, lastUpdated, accounts },
+      })
+    );
+
+    expect(patient.id).toBe(id);
+
+    // Management properties may be set when seeding
     expect(patient.meta?.versionId).toBe(versionId);
     expect(patient.meta?.lastUpdated).toBe(lastUpdated);
+
+    // Other properties are passed through
+    expect(patient.meta?.accounts).toEqual([{ reference: `Account/${account.id}` }]);
+  });
+
+  test('Create resource with duplicate ID throws error', async () => {
+    const id = randomUUID();
+    await repo.createResource({ resourceType: 'Patient', id });
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(OperationOutcomeError);
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(
+      'Assigned ID is already in use'
+    );
   });
 
   test('Read invalid reference', async () => {
@@ -57,15 +110,11 @@ describe('MemoryRepository', () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
     expect(patient.id).toBeDefined();
 
-    const patient2 = await repo.readVersion<Patient>(
-      'Patient',
-      patient.id as string,
-      patient.meta?.versionId as string
-    );
+    const patient2 = await repo.readVersion<Patient>('Patient', patient.id, patient.meta?.versionId as string);
     expect(patient2.id).toBe(patient.id);
 
     try {
-      await repo.readVersion<Patient>('Patient', patient.id as string, randomUUID());
+      await repo.readVersion<Patient>('Patient', patient.id, randomUUID());
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -143,7 +192,7 @@ describe('MemoryRepository', () => {
   });
 
   describe('searchByReference', () => {
-    async function createPatients(repo: MemoryRepository, count: number): Promise<Patient[]> {
+    async function createPatients(repo: MemoryRepository, count: number): Promise<WithId<Patient>[]> {
       const patients = [];
       for (let i = 0; i < count; i++) {
         patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
@@ -151,7 +200,11 @@ describe('MemoryRepository', () => {
       return patients;
     }
 
-    async function createObservations(repo: MemoryRepository, count: number, patient: Patient): Promise<Observation[]> {
+    async function createObservations(
+      repo: MemoryRepository,
+      count: number,
+      patient: Patient
+    ): Promise<WithId<Observation>[]> {
       const resources = [];
       for (let i = 0; i < count; i++) {
         resources.push(
@@ -177,7 +230,7 @@ describe('MemoryRepository', () => {
     ): void {
       expect(Object.keys(results)).toHaveLength(parents.length);
       for (const [parent, children] of zip(parents, childrenByParent)) {
-        const result = results[getReferenceString(parent)];
+        const result = results[getReferenceString(parent) as string];
         expect(result).toHaveLength(Math.min(children.length - offset, count));
         for (const child of result) {
           expect(children.map((c) => c.id)).toContain(child.id);
@@ -204,7 +257,7 @@ describe('MemoryRepository', () => {
 
       expectResultsContents(patients, patientObservations, { count, offset }, result);
       const resultRepoObservation = result[getReferenceString(patients[0])][0];
-      expect(resultRepoObservation).toEqual(observation);
+      expect(resultRepoObservation).toStrictEqual(observation);
       expect(resultRepoObservation.meta?.tag).toBeUndefined();
     });
 
@@ -225,8 +278,8 @@ describe('MemoryRepository', () => {
       );
 
       expectResultsContents(patients, patientObservations, { count, offset }, resultDesc);
-      expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['2', '1', '0']);
-      expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['1', '0']);
+      expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['2', '1', '0']);
+      expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['1', '0']);
 
       // ascending
       const resultAsc = await repo.searchByReference<Observation>(
@@ -235,8 +288,8 @@ describe('MemoryRepository', () => {
         patients.map((p) => getReferenceString(p))
       );
       expectResultsContents(patients, patientObservations, { count, offset }, resultAsc);
-      expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['0', '1', '2']);
-      expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['0', '1']);
+      expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
+      expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
     });
   });
 });

@@ -236,7 +236,7 @@
       "min": 0,
       "max": "1",
       "short": "Whether this project uses strict FHIR validation.",
-      "definition": "Whether this project uses strict FHIR validation.",
+      "definition": "Whether this project uses strict FHIR validation.  This setting has been deprecated, and can only be set by a super admin.",
       "comment": "",
       "inherited": false
     },
@@ -566,6 +566,70 @@
       "max": "1",
       "short": "",
       "definition": "A reference to the Project to be linked into this one",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "defaultProfile",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Project.defaultProfile",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Default profiles to apply to resources in this project that do not individually specify profiles",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "resourceType",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Project.defaultProfile.resourceType",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The resource type onto which to apply the default profiles",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "profile",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "Project.defaultProfile.profile",
+      "min": 1,
+      "max": "*",
+      "short": "",
+      "definition": "The profiles to add by default",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "exportedResourceType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Project.exportedResourceType",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "The resource types exported by the project when linked",
       "comment": "",
       "inherited": false
     }

@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
+import { IconBrandTwitterFilled } from '@tabler/icons-react';
+import type { JSX } from 'react';
 import styles from './TestimonialHeader.module.css';
 
 export interface TestimonialHeaderProps {
@@ -16,9 +21,9 @@ export function TestimonialHeader(props: TestimonialHeaderProps): JSX.Element {
         <div className={styles.testimonialTitle}>{props.title}</div>
       </div>
       {props.twitter && (
-        <a href={props.twitter} className={styles.testimonialLink}>
-          <img src="/img/icons/twitter-icon.svg" loading="lazy" alt="Twitter icon" className={styles.testimonialIcon} />
-        </a>
+        <Link href={props.twitter} className={styles.testimonialLink}>
+          <IconBrandTwitterFilled className={styles.twitterIcon} />
+        </Link>
       )}
     </div>
   );

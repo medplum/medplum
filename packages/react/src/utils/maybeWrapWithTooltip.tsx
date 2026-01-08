@@ -1,4 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tooltip } from '@mantine/core';
+import type { JSX } from 'react';
 
 export const READ_ONLY_TOOLTIP_TEXT = 'Read Only';
 

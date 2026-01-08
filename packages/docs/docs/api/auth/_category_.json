@@ -1,0 +1,11 @@
+{
+  "label": "Auth",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "slug": "/api/auth",
+    "title": "Auth",
+    "description": "Auth Endpoints",
+    "keywords": ["auth", "password", "authentication"]
+  }
+}

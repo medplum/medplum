@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Grid, GridCol, List, Paper, Stack, Title } from '@mantine/core';
 import { resolveId } from '@medplum/core';
-import { Communication, Patient } from '@medplum/fhirtypes';
+import type { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { CommunicationActions } from '../components/actions/CommunicationActions';
 
 interface ThreadPageProps {
@@ -32,7 +35,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
       {patient ? (
         <Grid gutter="xs">
           <GridCol span={4}>
-            <PatientSummary patient={patient} m="md" />
+            <PatientSummary patient={patient} />
           </GridCol>
           <GridCol span={5}>
             <Paper m="md" h="600px">
@@ -49,7 +52,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
                 <List>
                   {props.thread.recipient?.map((participant, index) => (
                     <List.Item key={index}>
-                      <Anchor onClick={() => navigate(`/${participant.reference}`)}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)?.catch(console.error)}>
                         {participant.display ?? participant.reference}
                       </Anchor>
                     </List.Item>
@@ -76,7 +79,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
                 <List>
                   {props.thread.recipient?.map((participant, index) => (
                     <List.Item key={index}>
-                      <Anchor onClick={() => navigate(`/${participant.reference}`)}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)?.catch(console.error)}>
                         {participant.display ?? participant.reference}
                       </Anchor>
                     </List.Item>

@@ -1,19 +1,14 @@
-import {
-  BotEvent,
-  MedplumClient,
-  createReference,
-  deepClone,
-  getQuestionnaireAnswers,
-  getReferenceString,
-  resolveId,
-} from '@medplum/core';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { createReference, deepClone, getQuestionnaireAnswers, getReferenceString, resolveId } from '@medplum/core';
+import type { BotEvent, MedplumClient, WithId } from '@medplum/core';
+import type {
+  Bundle,
   Identifier,
   Patient,
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
   Reference,
-  ResourceType,
   RiskAssessment,
 } from '@medplum/fhirtypes';
 
@@ -68,8 +63,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Read the source and target Patient resource
-  const targetPatient = (await medplum.readReference(targetReference)) as Patient;
-  const sourcePatient = (await medplum.readReference(srcReference)) as Patient;
+  const targetPatient = await medplum.readReference(targetReference);
+  const sourcePatient = await medplum.readReference(srcReference);
 
   const patients = linkPatientRecords(sourcePatient, targetPatient);
 
@@ -90,11 +85,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Update clinical data to point to the target resource
   // To improve efficiency, consider grouping these requests into a batch transaction (http://hl7.org/fhir/R4/http.html#transaction)
-  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'ServiceRequest');
-  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'Observation');
-  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'DiagnosticReport');
-  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'MedicationRequest');
-  await updateResourceReferences(medplum, mergedPatients.src, mergedPatients.target, 'Encounter');
+  await rewriteClinicalDataReferences(medplum, mergedPatients.src, mergedPatients.target);
 
   // We might delete the source patient record if we don't want to continue to have a duplicate of an existing patient
   // despite the fact that it is an inactive record.
@@ -112,8 +103,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
 // start-block linkPatientRecords
 interface MergedPatients {
-  readonly src: Patient;
-  readonly target: Patient;
+  readonly src: WithId<Patient>;
+  readonly target: WithId<Patient>;
 }
 
 /**
@@ -123,7 +114,7 @@ interface MergedPatients {
  * @param target - The target patient record which will replace the source.
  * @returns - Object containing updated source and target patient records with their links.
  */
-export function linkPatientRecords(src: Patient, target: Patient): MergedPatients {
+export function linkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
   const targetLinks = targetCopy.link ?? [];
   targetLinks.push({ other: createReference(src), type: 'replaces' });
@@ -145,7 +136,7 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
  * @param target - The target patient marked as the master record.
  * @returns - Object containing updated source and target patient records with their links.
  */
-export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatients {
+export function unlinkPatientRecords(src: WithId<Patient>, target: WithId<Patient>): MergedPatients {
   const targetCopy = deepClone(target);
   const srcCopy = deepClone(src);
   // Filter out links from the target to the source
@@ -173,7 +164,11 @@ export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatie
  * @param fields - Optional additional fields to be merged.
  * @returns - Object containing the original source and the merged target patient records.
  */
-export function mergePatientRecords(src: Patient, target: Patient, fields?: Partial<Patient>): MergedPatients {
+export function mergePatientRecords(
+  src: WithId<Patient>,
+  target: WithId<Patient>,
+  fields?: Partial<Patient>
+): MergedPatients {
   const targetCopy = deepClone(target);
   const mergedIdentifiers = targetCopy.identifier ?? [];
   const srcIdentifiers = src.identifier ?? [];
@@ -243,31 +238,55 @@ export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
 
 // start-block updateReferences
 /**
- * Rewrites all references to source patient to the target patient, for the given resource type.
+ * Rewrites all references to source patient to the target patient for all clinical data.
+ * Uses the Patient $everything operation to efficiently retrieve all resources in the patient compartment.
  *
  * @param medplum - The MedplumClient
- * @param sourcePatient - Source `Patient` resource. After this operation, no resources of the specified type will refer
- * to this `Patient`
- * @param targetPatient - Target `Patient` resource. After this operation, no resources of the specified type will refer
- * to this `Patient`
- * @param resourceType - Resource type to rewrite (e.g. `Encounter`)
+ * @param sourcePatient - Source `Patient` resource. After this operation, no resources will refer to this `Patient`
+ * @param targetPatient - Target `Patient` resource. After this operation, all clinical resources will refer to this `Patient`
  */
-export async function updateResourceReferences<T extends ResourceType>(
+export async function rewriteClinicalDataReferences(
   medplum: MedplumClient,
-  sourcePatient: Patient,
-  targetPatient: Patient,
-  resourceType: T
+  sourcePatient: WithId<Patient>,
+  targetPatient: WithId<Patient>
 ): Promise<void> {
-  // Search for clinical resources related to the source patient, by searching for all resources in the patient compartment
-  // Refer to the FHIR documentation on compartments for more information:
-  // https://hl7.org/fhir/R4/compartmentdefinition-patient.html
-  const clinicalResources = await medplum.searchResources(resourceType, {
-    _compartment: getReferenceString(sourcePatient),
-  });
+  const sourceReference = getReferenceString(sourcePatient);
+  const targetReference = getReferenceString(targetPatient);
 
-  for (const clinicalResource of clinicalResources) {
-    replaceReferences(clinicalResource, getReferenceString(sourcePatient), getReferenceString(targetPatient));
-    await medplum.updateResource(clinicalResource);
+  // Use readPatientEverything to efficiently retrieve all resources in the patient compartment
+  // This operation supports pagination, so we need to follow 'next' links to get all resources
+  let bundle: Bundle = await medplum.readPatientEverything(sourcePatient.id);
+
+  // Process all pages of results
+  while (bundle) {
+    // Process all entries in the current bundle
+    if (bundle.entry) {
+      for (const entry of bundle.entry) {
+        const resource = entry.resource;
+        if (!resource) {
+          continue;
+        }
+
+        // Skip the Patient resource itself (only if it matches the source patient ID)
+        if (resource.resourceType === 'Patient' && resource.id === sourcePatient.id) {
+          continue;
+        }
+
+        // Rewrite references from source to target
+        replaceReferences(resource, sourceReference, targetReference);
+        await medplum.updateResource(resource);
+      }
+    }
+
+    // Check for next page
+    const nextLink = bundle.link?.find((link) => link.relation === 'next');
+    if (nextLink?.url) {
+      // Fetch the next page
+      bundle = await medplum.get<Bundle>(nextLink.url);
+    } else {
+      // No more pages
+      break;
+    }
   }
 }
 

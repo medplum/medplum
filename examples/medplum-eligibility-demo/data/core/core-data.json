@@ -841,6 +841,24 @@
           ]
         }
       }
+    },
+    {
+      "request": { "method": "POST", "url": "CodeSystem" },
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "https://example.org/x12-service-type-codes",
+        "name": "x12-service-type-codes",
+        "title": "X12 Service Type Codes",
+        "status": "active",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "30",
+            "display": "Plan Coverage and General Benefits",
+            "definition": "Services related to plan coverage and general benefits information"
+          }
+        ]
+      }
     }
   ]
 }

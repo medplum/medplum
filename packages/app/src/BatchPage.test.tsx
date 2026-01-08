@@ -1,8 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { BatchPage } from './BatchPage';
-import { act, fireEvent, render, RenderResult, screen } from './test-utils/render';
+import type { RenderResult, UserEvent } from './test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from './test-utils/render';
 
 const exampleBundle = `{
   "resourceType": "Bundle",
@@ -27,14 +30,18 @@ const exampleBundle = `{
 const medplum = new MockClient();
 
 describe('BatchPage', () => {
-  function setup(): RenderResult {
-    return render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <BatchPage />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  function setup(): { user: UserEvent; renderResult: RenderResult } {
+    const user = userEvent.setup();
+    return {
+      user: user,
+      renderResult: render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <BatchPage />
+          </MedplumProvider>
+        </MemoryRouter>
+      ),
+    };
   }
 
   test('Renders', async () => {
@@ -43,30 +50,24 @@ describe('BatchPage', () => {
   });
 
   test('Submit file', async () => {
-    const renderResult = setup();
+    const { user, renderResult } = setup();
 
     // Upload file
-    await act(async () => {
-      const fileInput = renderResult.container.querySelector('input[type="file"]') as HTMLInputElement;
-      const files = [new File([exampleBundle], 'patient.json', { type: 'application/json' })];
-      fireEvent.change(fileInput, { target: { files } });
-    });
+    const fileInput = renderResult.container.querySelector('input[type="file"]') as HTMLInputElement;
+    const files = [new File([exampleBundle], 'patient.json', { type: 'application/json' })];
+    await user.upload(fileInput, files);
 
     expect(await screen.findByText('Output')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
-    });
+    await user.click(screen.getByRole('button', { name: 'Start over' }));
   });
 
   test('Submit JSON', async () => {
-    setup();
+    const { user } = setup();
 
     // Click on the JSON tab
-    await act(async () => {
-      fireEvent.click(screen.getByRole('tab', { name: 'JSON' }));
-    });
+    await user.click(screen.getByRole('tab', { name: 'JSON' }));
 
     // Enter JSON
     await act(async () => {
@@ -77,15 +78,11 @@ describe('BatchPage', () => {
       });
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Submit'));
-    });
+    await user.click(screen.getByText('Submit'));
 
     expect(await screen.findByText('Output')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start over' })).toBeInTheDocument();
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Start over' }));
-    });
+    await user.click(screen.getByRole('button', { name: 'Start over' }));
   });
 });

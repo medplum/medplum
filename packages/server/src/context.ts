@@ -1,26 +1,45 @@
-import { LogLevel, Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
-import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
-import { randomUUID } from 'crypto';
-import { NextFunction, Request, Response } from 'express';
-import { getConfig } from './config';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { Logger, isUUID, parseLogLevel } from '@medplum/core';
+import type {
+  Bot,
+  ClientApplication,
+  Extension,
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
+import type { NextFunction, Request, Response } from 'express';
+import { randomUUID } from 'node:crypto';
+import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
-import { Repository, getSystemRepo } from './fhir/repo';
-import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { FhirRateLimiter } from './fhir/fhirquota';
+import type { Repository } from './fhir/repo';
+import { ResourceCap } from './fhir/resource-cap';
+import { globalLogger } from './logger';
+import type { AuthState } from './oauth/middleware';
+import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { getRedis } from './redis';
+import type { IRequestContext } from './request-context-store';
+import { requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
 
-export class RequestContext {
+export class RequestContext implements IRequestContext {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
 
-  constructor(requestId: string, traceId: string, logger?: Logger) {
+  constructor(requestId: string, traceId: string, logger?: Logger, loggerMetadata?: Record<string, any>) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = logger ?? new Logger(write, { requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
+    this.logger =
+      logger ??
+      new Logger(write, { ...loggerMetadata, requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
   }
 
-  close(): void {
+  [Symbol.dispose](): void {
     // No-op, descendants may override
   }
 
@@ -29,53 +48,75 @@ export class RequestContext {
   }
 }
 
-const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
+export type AuthenticatedContextOptions = {
+  logger?: Logger;
+  async?: boolean;
+};
 
 export class AuthenticatedRequestContext extends RequestContext {
+  readonly authState: Readonly<AuthState>;
+  readonly repo: Repository;
+  readonly isAsync: boolean;
+  readonly fhirRateLimiter?: FhirRateLimiter;
+  readonly resourceCap?: ResourceCap;
+
   constructor(
-    ctx: RequestContext,
-    readonly authState: Readonly<AuthState>,
-    readonly repo: Repository
+    requestId: string,
+    traceId: string,
+    authState: Readonly<AuthState>,
+    repo: Repository,
+    options?: AuthenticatedContextOptions
   ) {
-    super(ctx.requestId, ctx.traceId, ctx.logger);
+    let loggerMetadata: Record<string, any> | undefined;
+    const projectId = repo.currentProject()?.id;
+    if (projectId) {
+      let profile = authState.membership.profile.reference;
+      const asUserProfile = authState.onBehalfOfMembership?.profile.reference;
+      if (asUserProfile && asUserProfile !== profile) {
+        profile += ` (as ${asUserProfile})`;
+      }
+      loggerMetadata = { projectId, profile };
+    }
+    super(requestId, traceId, options?.logger, loggerMetadata);
+
+    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger, options?.async);
+    this.resourceCap = getResourceCap(authState, this.logger);
+
+    this.authState = authState;
+    this.repo = repo;
+    this.isAsync = options?.async ?? false;
   }
 
-  get project(): Project {
+  get project(): WithId<Project> {
     return this.authState.project;
   }
 
-  get membership(): ProjectMembership {
-    return this.authState.membership;
+  get membership(): WithId<ProjectMembership> {
+    return this.authState.onBehalfOfMembership ?? this.authState.membership;
   }
 
   get login(): Login {
     return this.authState.login;
   }
 
-  get profile(): Reference<ProfileResource> {
-    return this.authState.membership.profile as Reference<ProfileResource>;
+  get profile(): Reference<ProfileResource | Bot | ClientApplication> {
+    return this.membership.profile;
   }
 
-  close(): void {
-    this.repo.close();
+  get authentication(): Readonly<AuthState> {
+    return this.authState;
   }
 
-  static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
-    return new AuthenticatedRequestContext(
-      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? '', systemLogger),
-      {} as unknown as AuthState,
-      getSystemRepo()
-    );
+  [Symbol.dispose](): void {
+    this.repo[Symbol.dispose]();
   }
 }
 
-export const requestContextStore = new AsyncLocalStorage<RequestContext>();
-
-export function tryGetRequestContext(): RequestContext | undefined {
+export function tryGetRequestContext(): IRequestContext | undefined {
   return requestContextStore.getStore();
 }
 
-export function getRequestContext(): RequestContext {
+export function getRequestContext(): IRequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
     throw new Error('No request context available');
@@ -93,16 +134,15 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    let ctx: RequestContext;
     const { requestId, traceId } = requestIds(req);
-
-    let ctx = new RequestContext(requestId, traceId);
-
     const authState = await authenticateTokenImpl(req);
     if (authState) {
       const repo = await getRepoForLogin(authState, isExtendedMode(req));
-      ctx = new AuthenticatedRequestContext(ctx, authState, repo);
+      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+    } else {
+      ctx = new RequestContext(requestId, traceId);
     }
-
     requestContextStore.run(ctx, () => next());
   } catch (err) {
     next(err);
@@ -112,13 +152,8 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
 export function closeRequestContext(): void {
   const ctx = requestContextStore.getStore();
   if (ctx) {
-    ctx.close();
+    ctx[Symbol.dispose]();
   }
-}
-
-export function getLogger(): Logger {
-  const ctx = requestContextStore.getStore();
-  return ctx ? ctx.logger : systemLogger;
 }
 
 export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {
@@ -127,6 +162,22 @@ export function tryRunInRequestContext<T>(requestId: string | undefined, traceId
   } else {
     return fn();
   }
+}
+
+export async function runInAsyncContext<T>(
+  authState: Readonly<AuthState>,
+  requestId: string | undefined,
+  traceId: string | undefined,
+  fn: () => T
+): Promise<T> {
+  const repo = await getRepoForLogin(authState, true);
+  requestId ??= randomUUID();
+  traceId ??= randomUUID();
+
+  return requestContextStore.run(
+    new AuthenticatedRequestContext(requestId, traceId, authState, repo, { async: true }),
+    fn
+  );
 }
 
 export function getTraceId(req: Request): string | undefined {
@@ -196,4 +247,24 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
 
 function write(msg: string): void {
   process.stdout.write(msg + '\n');
+}
+
+function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boolean): FhirRateLimiter | undefined {
+  const defaultUserLimit = authState.project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = authState.userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
+
+  const perProjectLimit = authState.project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  const projectLimit = perProjectLimit ?? userLimit * 10;
+
+  return authState.membership
+    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    : undefined;
+}
+
+function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
+  const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
+  return authState.membership && projectLimit
+    ? new ResourceCap(getRedis(), authState, projectLimit, logger ?? globalLogger)
+    : undefined;
 }

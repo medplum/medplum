@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
+import type { ExtendedInternalSchemaElement } from '@medplum/core';
 import {
   applyDefaultValuesToElement,
   capitalize,
-  ExtendedInternalSchemaElement,
   getPathDifference,
   HTTP_HL7_ORG,
   isComplexTypeCode,
@@ -10,7 +12,8 @@ import {
   isPopulated,
   PropertyType,
 } from '@medplum/core';
-import { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
+import type { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
@@ -37,14 +40,14 @@ import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
 import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
-import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
+import type { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
-  readonly defaultPropertyType?: string | undefined;
+  readonly defaultPropertyType?: string;
   readonly defaultValue: any;
-  readonly arrayElement?: boolean | undefined;
+  readonly arrayElement?: boolean;
   readonly onChange?: (value: any, propName?: string) => void;
 }
 
@@ -163,8 +166,10 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
 }
 
 // Avoiding optional props on lower-level components like to make it more difficult to misuse
-export interface ElementDefinitionTypeInputProps
-  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'> {
+export interface ElementDefinitionTypeInputProps extends Pick<
+  ResourcePropertyInputProps,
+  'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'
+> {
   readonly elementDefinitionType: ElementDefinitionType;
   readonly min: number;
   readonly max: number;
@@ -234,7 +239,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.string:
-    case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
       if (props.path === 'Project.secret.value[x]') {
@@ -272,6 +276,19 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           }}
         />
       );
+    case PropertyType.time:
+      return (
+        <TextInput
+          {...getPrimitiveInputProps()}
+          type="time"
+          step={1}
+          onChange={(e) => {
+            if (onChange) {
+              onChange(e.currentTarget.value);
+            }
+          }}
+        />
+      );
     case PropertyType.dateTime:
     case PropertyType.instant:
       return <DateTimeInput {...getPrimitiveInputProps()} onChange={onChange} outcome={outcome} />;
@@ -295,7 +312,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.code:
       // overwrite getPrimitiveInputProps().error since FormSection already shows errors
       return (
-        <CodeInput {...getPrimitiveInputProps()} error={undefined} onChange={onChange} binding={binding?.valueSet} />
+        <CodeInput
+          {...getPrimitiveInputProps()}
+          error={undefined}
+          onChange={onChange}
+          binding={binding?.valueSet}
+          creatable
+          maxValues={1}
+        />
       );
     case PropertyType.boolean:
       return (
@@ -311,6 +335,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.base64Binary:
     case PropertyType.markdown:
+    case PropertyType.xhtml:
       return (
         <Textarea
           {...getPrimitiveInputProps()}

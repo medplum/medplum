@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import type { Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -99,7 +101,9 @@ describe('CLI Bots', () => {
     await expect(main(['node', 'index.js', 'bot', 'deploy', 'hello-world'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
-    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: Not found'));
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Save bot success', async () => {
@@ -124,7 +128,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'save', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -153,7 +157,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -181,7 +185,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -390,7 +394,9 @@ describe('CLI Bots', () => {
     await expect(main(['node', 'index.js', 'deploy-bot', 'hello-world'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
-    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Deprecate Save bot success', async () => {
@@ -415,7 +421,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'save-bot', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -444,7 +450,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'deploy-bot', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });

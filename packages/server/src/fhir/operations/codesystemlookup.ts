@@ -1,12 +1,15 @@
-import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue, WithId } from '@medplum/core';
+import { OperationOutcomeError, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, SelectQuery } from '../sql';
+import { Column, Condition } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource } from './utils/terminology';
+import { findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -20,21 +23,25 @@ type CodeSystemLookupParameters = {
 
 export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.system, { version: params.version });
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.system, { version: params.version });
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.coding.system, { version: params.version });
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.coding.system, { version: params.version });
   } else {
     return [badRequest('No code system specified')];
   }
 
-  let coding: Coding;
+  let coding: Coding & { code: string };
   if (params.coding) {
-    coding = params.coding;
+    if (!params.coding.code) {
+      return [badRequest('No code specified')];
+    }
+    coding = params.coding as Coding & { code: string };
   } else if (params.code) {
     coding = { system: params.system ?? codeSystem.url, code: params.code };
   } else {
@@ -48,15 +55,19 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
 export type CodeSystemLookupOutput = {
   name: string;
   display: string;
+  designation?: { language?: string; value: string }[];
   property?: { code: string; description: string; value: TypedValue }[];
 };
 
-export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Promise<CodeSystemLookupOutput> {
+export async function lookupCoding(
+  codeSystem: WithId<CodeSystem>,
+  coding: Coding & { code: string }
+): Promise<CodeSystemLookupOutput> {
   if (coding.system && coding.system !== codeSystem.url) {
     throw new OperationOutcomeError(notFound);
   }
 
-  const lookup = new SelectQuery('Coding').column('display');
+  const lookup = selectCoding(codeSystem.id, coding.code);
   const propertyTable = lookup.getNextJoinAlias();
   lookup.join(
     'LEFT JOIN',
@@ -83,29 +94,50 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     .column(new Column(csPropTable, 'type'))
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
-    .column(new Column(target, 'display', undefined, 'targetDisplay'))
-    .where('code', '=', coding.code)
-    .where('system', '=', codeSystem.id);
+    .column(new Column(target, 'display', undefined, 'targetDisplay'));
 
   const db = getDatabasePool(DatabaseMode.READER);
   const result = await lookup.execute(db);
-  const resolved = result?.[0];
-  if (!resolved) {
+  if (!result.length) {
     throw new OperationOutcomeError(notFound);
   }
 
   const output: CodeSystemLookupOutput = {
     name: codeSystem.title ?? codeSystem.name ?? (codeSystem.url as string),
-    display: resolved.display ?? '',
+    display: result.find((r) => !r.synonymOf).display ?? '',
   };
   for (const property of result) {
-    if (property.code && property.value) {
+    if (property.synonymOf) {
+      output.designation = append(output.designation, {
+        language: property.language,
+        value: property.display,
+      });
+    } else if (property.code && property.value) {
       output.property = append(output.property, {
         code: property.code,
-        description: property.targetDisplay ?? property.description,
-        value: { type: property.type, value: property.value },
+        description: property.targetDisplay ?? property.description ?? undefined,
+        value: toTypedValue(property.value, property.type),
       });
     }
   }
   return output;
+}
+
+function toTypedValue(value: string, type: CodeSystemProperty['type']): TypedValue {
+  switch (type) {
+    case 'boolean':
+      if (value === 'true') {
+        return { type, value: true };
+      } else if (value === 'false') {
+        return { type, value: false };
+      } else {
+        throw new OperationOutcomeError(serverError(new Error('Invalid value for boolean property: ' + value)));
+      }
+    case 'integer':
+      return { type, value: Number.parseInt(value, 10) };
+    case 'decimal':
+      return { type, value: Number.parseFloat(value) };
+    default:
+      return { type, value };
+  }
 }

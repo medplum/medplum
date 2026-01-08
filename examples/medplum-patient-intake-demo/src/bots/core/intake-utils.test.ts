@@ -1,9 +1,11 @@
-import { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
-import { getGroupRepeatedAnswers } from './intake-utils';
-import { intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
-import { MockClient } from '@medplum/mock';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import type { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { getGroupRepeatedAnswers } from './intake-utils';
+import { intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
 
 describe('getAnswers', async () => {
   let medplum: MockClient, questionnaire: Questionnaire, response: QuestionnaireResponse;
@@ -26,18 +28,18 @@ describe('getAnswers', async () => {
   test('returns correct number of answers', async () => {
     const repeatedAnswers = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
-    expect(repeatedAnswers.length).toEqual(2);
+    expect(repeatedAnswers.length).toStrictEqual(2);
   });
 
   test('answer objects have the correct keys', async () => {
     const repeatedAnswers = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
-    expect(Object.keys(repeatedAnswers[0])).toEqual([
+    expect(Object.keys(repeatedAnswers[0])).toStrictEqual([
       'insurance-provider',
       'subscriber-id',
       'relationship-to-subscriber',
     ]);
-    expect(Object.keys(repeatedAnswers[1])).toEqual([
+    expect(Object.keys(repeatedAnswers[1])).toStrictEqual([
       'insurance-provider',
       'subscriber-id',
       'relationship-to-subscriber',

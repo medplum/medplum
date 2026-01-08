@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { PropertyType } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '../test-utils/render';
 import { FhirPathDisplay } from './FhirPathDisplay';
@@ -25,7 +27,6 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Error on multiple values', () => {
-    console.error = jest.fn();
     const patient: Patient = {
       resourceType: 'Patient',
       name: [
@@ -38,7 +39,6 @@ describe('FhirPathDisplay', () => {
     expect(() =>
       render(<FhirPathDisplay resource={patient} path="Patient.name.given" propertyType={PropertyType.string} />)
     ).toThrow('must resolve to a single element');
-    expect(console.error).toHaveBeenCalled();
   });
 
   test('Handles null name', () => {

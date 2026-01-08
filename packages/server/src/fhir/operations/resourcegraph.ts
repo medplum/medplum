@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { TypedValue, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -10,10 +13,9 @@ import {
   parseSearchRequest,
   PropertyType,
   toTypedValue,
-  TypedValue,
 } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
@@ -21,8 +23,11 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getLogger } from '../../context';
-import { Repository } from '../repo';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
+import type { Repository } from '../repo';
+
+type ResourceCache = Record<string, WithId<Resource>>;
 
 /**
  * Handles a Resource $graph request.
@@ -42,8 +47,8 @@ export async function resourceGraphHandler(req: FhirRequest): Promise<FhirRespon
   }
 
   const rootResource = await ctx.repo.readResource(resourceType, id);
-  const results = [rootResource] as Resource[];
-  const resourceCache = {} as Record<string, Resource>;
+  const results = [rootResource];
+  const resourceCache: ResourceCache = Object.create(null);
   resourceCache[getReferenceString(rootResource)] = rootResource;
   if ('url' in rootResource) {
     resourceCache[(rootResource as { url: string }).url] = rootResource;
@@ -89,10 +94,10 @@ function isSearchLink(link: GraphDefinitionLink): link is SearchLink {
 }
 async function followLinks(
   repo: Repository,
-  resource: Resource,
+  resource: WithId<Resource>,
   links: GraphDefinitionLink[] | undefined,
-  results: Resource[],
-  resourceCache: Record<string, Resource>,
+  results: WithId<Resource>[],
+  resourceCache: ResourceCache,
   depth = 0
 ): Promise<void> {
   // Circuit Breaker
@@ -106,7 +111,7 @@ async function followLinks(
   }
   for (const link of links) {
     for (const target of link.target || []) {
-      let linkedResources: Resource[];
+      let linkedResources: WithId<Resource>[];
 
       if (isFhirPathLink(link)) {
         linkedResources = await followFhirPathLink(repo, link, target, resource, resourceCache);
@@ -141,10 +146,10 @@ async function followFhirPathLink(
   repo: Repository,
   link: FhirPathLink,
   target: GraphDefinitionLinkTarget,
-  resource: Resource,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
-  const results = [] as Resource[];
+  resource: WithId<Resource>,
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
+  const results = [] as WithId<Resource>[];
 
   const elements = evalFhirPathTyped(link.path, [toTypedValue(resource)]);
 
@@ -173,13 +178,13 @@ async function followReferenceElements(
   repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
   const targetReferences = elements
     .filter((elem) => elem.value.reference?.split('/')[0] === target.type)
     .map((elem) => elem.value as Reference);
 
-  const results = [] as Resource[];
+  const results = [] as WithId<Resource>[];
 
   for (const ref of targetReferences) {
     if (ref.reference) {
@@ -201,12 +206,12 @@ async function followCanonicalElements(
   repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
   // Filter out Resources where we've seen the canonical URL
   const targetUrls = elements.map((elem) => elem.value as string);
 
-  const results = [] as Resource[];
+  const results = [] as WithId<Resource>[];
   for (const url of targetUrls) {
     if (url in resourceCache) {
       results.push(resourceCache[url]);
@@ -239,11 +244,11 @@ async function followCanonicalElements(
  */
 async function followSearchLink(
   repo: Repository,
-  resource: Resource,
+  resource: WithId<Resource>,
   link: SearchLink,
-  resourceCache: Record<string, Resource>
-): Promise<Resource[]> {
-  const results = [] as Resource[];
+  resourceCache: ResourceCache
+): Promise<WithId<Resource>[]> {
+  const results = [] as WithId<Resource>[];
   for (const target of link.target) {
     const searchResourceType = target.type;
     const params = target.params as string;
@@ -309,7 +314,7 @@ function parseCardinality(cardinality: string | undefined): number {
   return Number.parseInt(cardinality, 10);
 }
 
-function addToCache(resource: Resource, cache: Record<string, Resource>): void {
+function addToCache(resource: WithId<Resource>, cache: ResourceCache): void {
   cache[getReferenceString(resource)] = resource;
   const url = (resource as any).url;
   if (url) {
@@ -317,7 +322,7 @@ function addToCache(resource: Resource, cache: Record<string, Resource>): void {
   }
 }
 
-function deduplicateResources(resources: Resource[]): Resource[] {
+function deduplicateResources<T extends Resource>(resources: WithId<T>[]): WithId<T>[] {
   const seen = new Set<string>();
   return resources.filter((item) => {
     const key = getReferenceString(item);

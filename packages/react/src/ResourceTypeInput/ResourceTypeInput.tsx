@@ -1,4 +1,7 @@
-import { ResourceType } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ResourceType } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { CodeInput } from '../CodeInput/CodeInput';
 

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "3.2.10",
+  "version": "5.0.10",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -10,37 +10,38 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "scripts": {
-    "baseschema": "ts-node src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
-    "benchmark": "ts-node src/benchmarks.ts",
+    "baseschema": "tsx src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
     "build": "npm run clean && tsc",
     "clean": "rimraf dist",
-    "compare": "ts-node src/compare.ts",
-    "docs": "ts-node src/docs.ts && cd ../.. && patch -p1 apply src/ONC-compliance-text.patch",
-    "fhirtypes": "ts-node src/index.ts",
-    "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
-    "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
+    "compare": "tsx src/compare.ts",
+    "docs": "tsx src/docs.ts && cd ../.. && git apply packages/generator/src/ONC-compliance-text.patch && git apply packages/generator/src/medication-recommendations.patch",
+    "fhirtypes": "tsx src/index.ts && cd ../fhirtypes && tsc",
+    "generate": "npm run valuesets && npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient && npm run docs",
+    "jsonschema": "tsx src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "lint": "eslint .",
-    "migrate": "ts-node src/migrate.ts",
-    "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
-    "test": "jest"
+    "lint:fix": "eslint . --fix",
+    "mockclient": "tsx src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
+    "test": "jest",
+    "valuesets": "tsx src/valuesets.ts"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.10",
-    "@medplum/definitions": "3.2.10",
-    "@medplum/fhirtypes": "3.2.10",
+    "@medplum/core": "5.0.10",
+    "@medplum/definitions": "5.0.10",
+    "@medplum/fhirtypes": "5.0.10",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.11.8",
-    "@types/unzipper": "0.10.10",
-    "fast-xml-parser": "4.5.0",
-    "fhirpath": "3.15.2",
+    "@types/pg": "8.16.0",
+    "@types/unzipper": "0.10.11",
+    "csv-parser": "3.2.0",
+    "fast-xml-parser": "5.3.3",
+    "fhirpath": "4.8.2",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "pg": "8.12.0",
-    "tinybench": "2.9.0",
+    "pg": "8.16.3",
     "unzipper": "0.12.3"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

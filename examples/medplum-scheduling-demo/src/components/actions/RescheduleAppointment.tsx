@@ -1,10 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Appointment, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import type { Appointment, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 
 interface RescheduleAppointmentProps {
   appointment: Appointment;
@@ -46,7 +49,7 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
         status: 'booked',
       });
 
-      navigate(`/Appointment/${appointment.id}/details`);
+      navigate(`/Appointment/${appointment.id}/details`)?.catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

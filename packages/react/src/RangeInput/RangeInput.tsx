@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group } from '@mantine/core';
-import { Range } from '@medplum/fhirtypes';
+import type { Range } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
 import { useContext, useMemo, useState } from 'react';
-import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { QuantityInput } from '../QuantityInput/QuantityInput';
+import type { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface RangeInputProps extends ComplexTypeInputProps<Range> {}
 

@@ -1,65 +1,82 @@
-import { Communication, HumanName } from '@medplum/fhirtypes';
-import { BaseChat, Loading, useMedplum, useMedplumProfile, Container } from '@medplum/react';
-import { useCallback, useMemo, useState } from 'react';
-import { usePatient } from '../../hooks/usePatient';
-import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
-import { Alert } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { Communication } from '@medplum/fhirtypes';
+import type { JSX } from 'react';
+import { ThreadInbox } from '../../components/messages/ThreadInbox';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { useEffect, useMemo } from 'react';
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import { normalizeCommunicationSearch } from '../../utils/communication-search';
 
 export function CommunicationTab(): JSX.Element {
-  const medplum = useMedplum();
-  const profile = useMedplumProfile();
-  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
-  const patient = usePatient();
-  const [communications, setCommunications] = useState<Communication[]>([]);
+  const { patientId, messageId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const patientRef = `Patient/${patientId}`;
 
-  const sendMessage = useCallback(
-    (message: string) => {
-      if (!patient) {
-        return;
-      }
+  const currentSearch = useMemo(() => (location.search ? location.search.substring(1) : ''), [location.search]);
 
-      if (!profileRef) {
-        return;
-      }
+  const params = useMemo(() => new URLSearchParams(currentSearch), [currentSearch]);
 
-      const patientRef = createReference(patient);
+  const hasPatient = params.has('patient');
 
-      medplum
-        .createResource<Communication>({
-          resourceType: 'Communication',
-          status: 'in-progress',
-          sender: profileRef,
-          subject: patientRef,
-          recipient: [patientRef],
-          sent: new Date().toISOString(),
-          payload: [{ contentString: message }],
-        })
-        .catch(console.error);
-    },
-    [medplum, patient, profileRef]
-  );
+  const { normalizedSearch, parsedSearch } = useMemo(() => {
+    const entries = Array.from(params.entries());
+    if (!hasPatient) {
+      entries.push(['patient', patientRef]);
+    }
+    const searchWithPatient = new URLSearchParams(entries).toString();
+    return normalizeCommunicationSearch({
+      search: searchWithPatient,
+    });
+  }, [hasPatient, params, patientRef]);
 
-  if (!profileRef) {
-    return <Alert color="red">Error: Provider profile not found</Alert>;
-  }
+  useEffect(() => {
+    if (normalizedSearch !== currentSearch) {
+      const prefix = normalizedSearch ? `?${normalizedSearch}` : '';
+      navigate(`/Patient/${patientId}/Communication${prefix}`, { replace: true })?.catch(console.error);
+    }
+  }, [currentSearch, navigate, normalizedSearch, patientId]);
 
-  if (!patient) {
-    return <Loading />;
-  }
+  const onChange = (search: SearchRequest): void => {
+    navigate(`/Patient/${patientId}/Communication${formatSearchQuery(search)}`)?.catch(console.error);
+  };
+
+  const getThreadUri = (topic: Communication): string => {
+    return `/Patient/${patientId}/Communication/${topic.id}${formatSearchQuery(parsedSearch)}`;
+  };
+
+  const buildStatusSearch = (value: Communication['status']): SearchRequest => {
+    const otherFilters = parsedSearch.filters?.filter((f) => f.code !== 'status') || [];
+    const newFilters = [...otherFilters, { code: 'status', operator: Operator.EQUALS, value }];
+    return {
+      ...parsedSearch,
+      filters: newFilters,
+      offset: 0,
+    };
+  };
+
+  const inProgressUri = `/Patient/${patientId}/Communication${formatSearchQuery(buildStatusSearch('in-progress'))}`;
+  const completedUri = `/Patient/${patientId}/Communication${formatSearchQuery(buildStatusSearch('completed'))}`;
+
+  const onNew = (message: Communication): void => {
+    navigate(getThreadUri(message))?.catch(console.error);
+  };
 
   return (
-    <Container size="sm">
-      <BaseChat
-        title={`Communications with ${formatHumanName(patient.name?.[0] as HumanName)}`}
-        communications={communications}
-        setCommunications={setCommunications}
-        query={`subject=${getReferenceString(patient)}`}
-        sendMessage={sendMessage}
-        radius="sm"
-        shadow="sm"
-        h={600}
-        mt="xl"
+    <div style={{ height: `calc(100vh - 98px)` }}>
+      <ThreadInbox
+        threadId={messageId}
+        query={formatSearchQuery(parsedSearch).substring(1)}
+        subject={{ reference: patientRef }}
+        showPatientSummary={false}
+        onNew={onNew}
+        getThreadUri={getThreadUri}
+        onChange={onChange}
+        inProgressUri={inProgressUri}
+        completedUri={completedUri}
       />
-    </Container>
+    </div>
   );
 }

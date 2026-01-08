@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <templateId root="2.16.840.1.113883.10.20.22.2.4.1" extension="2015-08-01" />
+                    <code code="8716-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+                        displayName="Vital signs" />
+                    <title>Vital Signs</title>
+                    <text>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vital Sign</th>
+                                    <th>Reading</th>
+                                    <th>Time Taken</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- These 2 rows are for vitals taken when the patient was around 1
+                                year old.
+                         At this time, when the patient is a 1 year old male, they fall into the recommendation of 
+                         using the WHO 0-2 years charts. Note that there are no recommended charts for BMI when the patient
+                                is 
+                         younger than 2 years old, so that value is not included here.
+                    -->
+                                <tr ID="WfLPerc_1">
+                                    <td>
+                                        <content ID="WfLPerc_1Name">Weight-for-length Percentile</content>
+                                        (<content ID="WfLPerc_1GC">WHO Males, 0-2 years Chart</content>
+                                        ) </td>
+                                    <td>50 %</td>
+                                    <td>05/20/2014 7:36 PM</td>
+                                </tr>
+                                <tr ID="headCircPerc_1">
+                                    <td>
+                                        <content ID="headCircPerc_1Name">Head Circumference Percentile</content> (<content ID="headCircPerc_1GC">WHO Males, 0-2 years Chart</content>)
+                                    </td>
+                                    <td>45 %</td>
+                                    <td>05/20/2014 7:36 PM</td>
+                                </tr>
+
+                                <!-- These 3 rows are for vitals taken when the patient was around
+                                2.5 years old
+                         At this time, when the patient is a 2.5 year old male, they fall into the recommendation of 
+                         using the CDC 2-20 years charts. However, Head circumference percentile is not in the the CDC 2-20
+                                years charts. 
+                         For Head circumference percentile, the CDC 0-36 months chart should be used for patients 24-36
+                                months old (note that when the patient is 0-2 years
+                         old WHO 0-2 years chart should be used).
+                    -->
+                                <tr ID="bmiPerc_2">
+                                    <td>
+                                        <content ID="bmiPerc_2Name">Body Mass Index Percentile</content>
+                                        (<content ID="bmiPerc_2GC">CDC Males, 2-20 years Chart</content>)
+                                    </td>
+                                    <td>49 %</td>
+                                    <td>11/20/2015 7:36 PM</td>
+                                </tr>
+                                <tr ID="WfLPerc_2">
+                                    <td>
+                                        <content ID="WfLPerc_2Name">Weight-for-length Percentile</content>
+                                        (<content ID="WfLPerc_2GC">CDC Males, 2-20 years Chart</content>)
+                                    </td>
+                                    <td>48 %</td>
+                                    <td>11/20/2015 7:36 PM</td>
+                                </tr>
+                                <tr ID="headCircPerc_2">
+                                    <td>
+                                        <content ID="headCircPerc_2Name">Head Circumference Percentile</content> (<content ID="headCircPerc_2GC">CDC Males, 0-36 months Chart</content>)
+                                    </td>
+                                    <td>50 %</td>
+                                    <td>11/20/2015 7:36 PM</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <!-- The organizer is the Vital Sign Organizer defined in the C-CDA
+                        Implementation Guide and represents 
+                 the vitals taken at the same time - when the patient was around 1 year old. These observations all
+                        use the WHO Males, 0-2 years 
+                 growth chart.
+            This example omits Provenance for brevity.
+
+            -->
+                        <organizer classCode="CLUSTER" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.26" />
+                            <templateId root="2.16.840.1.113883.10.20.22.4.26"
+                                extension="2015-08-01" />
+                            <id root="1a70f2d9-d576-466e-ba5c-003da6fb2107" />
+                            <id extension="5610719400-Z197199"
+                                root="1.2.840.114350.1.13.861.1.7.1.2109" />
+                            <code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs">
+                            </code>
+                            <statusCode code="completed" />
+                            <effectiveTime value="20140520193605-0600" />
+
+                            <!-- The components are all based on the Vital Sign Observation template
+                            defined in the C-CDA Implementation Guide, just with different LOINC
+                            Codes -->
+
+                            <!-- Weight-for-length Percentile -->
+                            <component>
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27"
+                                        extension="2014-06-09" />
+                                    <id root="701c0a9a-d25c-4d74-9149-5659eb446557" />
+                                    <id extension="5610719400-WfLPerc-Z197199"
+                                        root="1.2.840.114350.1.13.861.1.7.1.2109.1" />
+                                    <code code="77606-2" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC"
+                                        displayName="Weight-for-length Per age and sex">
+                                    </code>
+                                    <!-- This reference identifies content in human readable
+                                    formatted text-->
+                                    <text>
+                                        <reference value="#WfLPerc_1" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime value="20140520193605-0600" />
+                                    <value xsi:type="PQ" unit="%" value="50" />
+                                    <referenceRange>
+                                        <observationRange>
+
+                                            <!-- Since Weight-for-length Percentile is dependent on
+                                            which Growth Chart is used to determine percentile, that
+                                            is important to include.
+                                     This indicates that the patient was in the 50th percentile of weight-for-lengths using the Males,
+                                            0-2 years WHO Weight-for-length Growth Chart.
+                                -->
+                                            <!-- If future LOINC codes are assigned for specific
+                                            growth charts it may affect value/@code and other places  -->
+                                            <text>
+                                                <reference value="#WfLPerc_1GC" />
+                                            </text>
+                                            <value xsi:type="ED">
+                                                <reference value="#WfLPerc_1GC" />
+                                            </value>
+                                        </observationRange>
+                                    </referenceRange>
+                                </observation>
+                            </component>
+
+                            <!-- Head Circumference Percentile -->
+                            <component>
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27"
+                                        extension="2014-06-09" />
+                                    <id root="fb9c8da2-c2f3-46cc-85d1-c1098032f1f5" />
+                                    <id extension="5610719400-headCirPerc-Z197199"
+                                        root="1.2.840.114350.1.13.861.1.7.1.2109.1" />
+                                    <code code="8289-1" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC"
+                                        displayName="Head Occipital-frontal circumference Percentile">
+                                    </code>
+                                    <!-- This reference identifies content in human readable
+                                    formatted text-->
+                                    <text>
+                                        <reference value="#headCircPerc_1" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime value="20140520193605-0600" />
+                                    <value xsi:type="PQ" unit="%" value="45" />
+                                    <referenceRange>
+                                        <observationRange>
+
+                                            <!-- Since Head Circumference Percentile is dependent on
+                                            which Growth Chart is used to determine percentile, that
+                                            is important to include.
+                                     This indicates that the patient was in the 45th percentile of head circumferences using the Males,
+                                            0-2 years WHO Head Circumference Growth Chart.
+                                -->
+                                            <text>
+                                                <reference value="#headCircPerc_1GC" />
+                                            </text>
+                                            <value xsi:type="ED">
+                                                <reference value="#headCircPerc_1GC" />
+                                            </value>
+                                        </observationRange>
+                                    </referenceRange>
+                                </observation>
+                            </component>
+                        </organizer>
+
+                    </entry>
+                    <entry>
+                        <!-- This is the second vital signs organizer, used to show the vitals from
+                        around a year and a half later after the previous organizer.
+                 This is when the patient is about 2.5 years of age. At this point, the recommendation from CDC
+                        would be to use the following growth charts
+                    - Weight for Length - CDC 2-20 year old charts
+                    - BMI Percentile - CDC 2-20 year old charts
+                    - Head Circumference - CDC Males, 0-36 months Chart
+            -->
+                        <organizer classCode="CLUSTER" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.26" />
+                            <templateId root="2.16.840.1.113883.10.20.22.4.26"
+                                extension="2015-08-01" />
+                            <id root="1791f1e7-9642-4b51-be66-997de22370bb" />
+                            <id extension="5710719405-Z197199"
+                                root="1.2.840.114350.1.13.861.1.7.1.2109" />
+                            <code code="46680005" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Vital signs"></code>
+                            <statusCode code="completed" />
+                            <effectiveTime value="20151120193605-0600" />
+                            <!-- The components are all based on the Vital Sign Observation template
+                            defined in the C-CDA Implementation Guide, just with different LOINC
+                            Codes -->
+
+                            <!-- BMI Percentile -->
+                            <component>
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27"
+                                        extension="2014-06-09" />
+                                    <id root="15c8bd35-b9dc-4da7-a13d-70b9618bc945" />
+                                    <id extension="5710719405-BMIPerc-Z197199"
+                                        root="1.2.840.114350.1.13.861.1.7.1.2109.1" />
+                                    <code code="59576-9" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC"
+                                        displayName="Body mass index (BMI) [Percentile] Per age and sex">
+                                    </code>
+                                    <!-- This reference identifies content in human readable
+                                    formatted text-->
+                                    <text>
+                                        <reference value="#bmiPerc_2" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime value="20151120193605-0600" />
+                                    <value xsi:type="PQ" unit="%" value="49" />
+                                    <referenceRange>
+                                        <observationRange>
+
+                                            <!-- Since BMI Percentile is dependent on which Growth
+                                            Chart is used to determine percentile, that is important
+                                            to include.
+                                     This indicates that the patient was in the 49th percentile of BMIs using the Males, 2-20 Years CDC
+                                            BMI Percentile Growth Chart.
+                                -->
+                                            <text>
+                                                <reference value="#bmiPerc_2GC" />
+                                            </text>
+                                            <value xsi:type="ED">
+                                                <reference value="#bmiPerc_2GC" />
+                                            </value>
+                                        </observationRange>
+                                    </referenceRange>
+                                </observation>
+                            </component>
+
+                            <!-- Weight-for-length Percentile -->
+                            <component>
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27"
+                                        extension="2014-06-09" />
+                                    <id root="70ad5e83-58b8-453f-866a-afabd9e525fd" />
+                                    <id extension="5710719405-WfLPerc-Z197199"
+                                        root="1.2.840.114350.1.13.861.1.7.1.2109.1" />
+                                    <code code="77606-2" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC"
+                                        displayName="Weight-for-length Per age and sex">
+                                    </code>
+                                    <!-- This reference identifies content in human readable
+                                    formatted text-->
+                                    <text>
+                                        <reference value="#WfLPerc_2" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime value="20151120193605-0600" />
+                                    <value xsi:type="PQ" unit="%" value="48" />
+                                    <referenceRange>
+                                        <observationRange>
+
+                                            <!-- Since Weight-for-length Percentile is dependent on
+                                            which Growth Chart is used to determine percentile, that
+                                            is important to include.
+                                     This indicates that the patient was in the 48th percentile of weight-for-lengths using the Males,
+                                            2-20 Years CDC Weight-for-length Growth Chart.
+                                -->
+                                            <text>
+                                                <reference value="#WfLPerc_2GC" />
+                                            </text>
+                                            <value xsi:type="ED">
+                                                <reference value="#WfLPerc_2GC" />
+                                            </value>
+                                        </observationRange>
+                                    </referenceRange>
+                                </observation>
+                            </component>
+
+                            <!-- Head Circumference Percentile -->
+                            <component>
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.27"
+                                        extension="2014-06-09" />
+                                    <id root="cf5ac9f4-e31d-4066-8458-6f42be3877ef" />
+                                    <id extension="5710719405-headCirPerc-Z197199"
+                                        root="1.2.840.114350.1.13.861.1.7.1.2109.1" />
+                                    <code code="8289-1" codeSystem="2.16.840.1.113883.6.1"
+                                        codeSystemName="LOINC"
+                                        displayName="Head Occipital-frontal circumference Percentile">
+                                    </code>
+                                    <!-- This reference identifies content in human readable
+                                    formatted text-->
+                                    <text>
+                                        <reference value="#headCircPerc_2" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime value="20151120193605-0600" />
+                                    <value xsi:type="PQ" unit="%" value="50" />
+                                    <referenceRange>
+                                        <observationRange>
+
+                                            <!-- Since Head Circumference Percentile is dependent on
+                                            which Growth Chart is used to determine percentile, that
+                                            is important to include.
+                                     This indicates that the patient was in the 50th percentile of head circumferences using the CDC
+                                            Males, 0-36 months Chart Head Circumference Growth
+                                            Chart.
+                                -->
+                                            <text>
+                                                <reference value="#headCircPerc_2GC" />
+                                            </text>
+                                            <value xsi:type="ED">
+                                                <reference value="#headCircPerc_2GC" />
+                                            </value>
+                                        </observationRange>
+                                    </referenceRange>
+                                </observation>
+                            </component>
+                        </organizer>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

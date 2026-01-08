@@ -2,11 +2,11 @@
 sidebar_position: 0
 ---
 
-# Intro
-
-If you have never heard of Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](./bots/bot-basics).
+# Bots
 
 Medplum bots are functions that execute when triggered. They are similar to AWS Lambda functions, and in Medplum we make them easy to write and deploy and trigger with [FHIR Subscriptions](/docs/subscriptions). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Medplum**.
+
+If you are new to Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](/docs/bots/bot-basics).
 
 The following tutorials will walk through some of the use cases for Bots, to give you a sense of how they can work for you.
 
@@ -24,30 +24,40 @@ Super administrators can enable bots via the Medplum App:
 
 :::
 
-## Consume event data or webhooks from other platforms
+## Getting Started
+Learn the fundamentals of building and testing bots before deploying them to production.
+- [Bot Basics](/docs/bots/bot-basics)
+- [Unit Testing Bots](/docs/bots/unit-testing-bots)
+- [Running Bots Locally](/docs/bots/running-bots-locally)
 
-1. [Consuming Webhooks](consuming-webhooks.md)
-2. [Consuming HL7 Feeds and Converting to FHIR](hl7-into-fhir.md)
-3. Coming Soon: Consuming Lab Results from a lab instrument or LIS
-4. [Receive payment and accounts data](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots)
+## Bot Triggers & Invocation
+Configure how and when your bots execute, from scheduled tasks to real-time event responses.
+- [Cron Jobs for Bots](/docs/bots/bot-cron-job)
+- [Consuming Webhooks](/docs/bots/consuming-webhooks)
+- [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response)
+- [Custom FHIR Operations](/docs/bots/custom-fhir-operations)
 
-## Export data to other systems
+## Common Use Cases & Patterns
+Implement frequently-needed functionality like file handling, document generation, and data transformation.
+- [Uploading Files](/docs/bots/file-uploads)
+- [Create a PDF](/docs/bots/creating-a-pdf)
+- [HL7 to FHIR](/docs/bots/hl7-into-fhir)
 
-1. [Exporting data to a billing service](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health)
-2. [Exporting a PDF Report for human consumption](creating-a-pdf.md)
-3. [File Uploads](file-uploads.md)
+## Deployment & Infrastructure
+Deploy your bots to Medplum's cloud infrastructure or integrate with your existing AWS environment.
+- [Bots in Production](/docs/bots/bots-in-production)
+- [Running Bots on Fission](/docs/bots/running-bots-on-fission)
+- [External Lambda Functions](/docs/bots/external-function)
+- [Medplum Bot Layers](/docs/bots/bot-lambda-layer)
 
-## Drive workflow
+## Security & Permissions
+Manage sensitive credentials and control what actions your bots can perform.
+- [Bot Secrets](/docs/bots/bot-secrets)
+- [Run as User](/docs/bots/bot-run-as-user)
 
-1. Checking Insurance Eligibility for a specific medical service
-2. Coming Soon: Order Medication through an Online Pharmacy
-3. [Creating and FHIR Objects on Questionnaire submissions](./bot-for-questionnaire-response/bot-for-questionnaire-response.md)
-4. Coming Soon: Send email notifications when critical lab values are received
-5. Data automation driven by [FHIR Questionnaires](/docs/bots/bot-for-questionnaire-response)
-
-## Ensure correctness
-
-1. Coming Soon: Verifying that all Lab Results are present on a DiagnosticReport before sending it for physician review
+## Monitoring & Operations
+Track bot performance and troubleshoot issues in production environments.
+- [Monitoring Bots](/docs/bots/monitoring-bots)
 
 ## Reference
 

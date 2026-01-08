@@ -1,11 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
-import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
+import type { GoogleCredentialResponse } from '@medplum/core';
+import { allOk, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { randomUUID, webcrypto } from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { RegisterForm, RegisterFormProps } from './RegisterForm';
+import type { RegisterFormProps } from './RegisterForm';
+import { RegisterForm } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
 
@@ -190,7 +194,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -200,7 +204,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -240,7 +244,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     expect(await screen.findByLabelText('Project Name', { exact: false })).toBeInTheDocument();
@@ -250,7 +254,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Create Project' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -293,7 +297,7 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Create account'));
+      fireEvent.click(screen.getByText('Register Account'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());

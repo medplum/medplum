@@ -1,7 +1,11 @@
-import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import type { Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import type { JSX } from 'react';
+import { useNavigate } from 'react-router';
 
 interface PatientObservationsProps {
   patient: Patient;
@@ -24,9 +28,9 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
       search={search}
       hideFilters={true}
       hideToolbar={true}
-      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => {
-        navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+        navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
       }}
     />
   );

@@ -1,6 +1,9 @@
-import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import {
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { ProfileResource, WithId } from '@medplum/core';
+import { badRequest, createReference, created } from '@medplum/core';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type {
   ClientApplication,
   OperationDefinition,
   Project,
@@ -8,15 +11,16 @@ import {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getConfig } from '../../config/loader';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { getConfig } from '../../config';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -121,25 +125,26 @@ export async function createProject(
   projectName: string,
   admin?: User
 ): Promise<{
-  project: Project;
-  client: ClientApplication;
-  profile?: ProfileResource;
-  membership?: ProjectMembership;
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
 }> {
-  const ctx = getRequestContext();
+  const log = getLogger();
   const systemRepo = getSystemRepo();
   const config = getConfig();
 
-  ctx.logger.info('Project creation request received', { name: projectName });
+  log.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: admin ? createReference(admin) : undefined,
     strictMode: true,
     features: config.defaultProjectFeatures,
+    systemSetting: config.defaultProjectSystemSetting,
   });
 
-  ctx.logger.info('Project created', {
+  log.info('Project created', {
     id: project.id,
     name: projectName,
   });
@@ -157,7 +162,7 @@ export async function createProject(
       admin.lastName as string,
       admin.email as string
     );
-    const membership = await createProjectMembership(admin, project, profile, { admin: true });
+    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };
   }
   return { project, client };

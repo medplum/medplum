@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export type PhotonPatient = {
   id: string;
   externalId?: string;
-  name: PhotonNmae;
+  name: PhotonName;
   dateOfBirth: string;
   sex: PhotonSexType;
   gender?: string;
@@ -9,7 +11,7 @@ export type PhotonPatient = {
   phone: string;
   allergies?: PhotonPatientAllergy[];
   medicationHistory?: PhotonPatientMedication[];
-  address?: Address;
+  address?: PhotonAddress;
   prescriptions?: PhotonPrescription[];
   orders?: PhotonOrder[];
   preferredPharmacy?: PhotonPharmacy[];
@@ -97,7 +99,7 @@ export type Fill = {
   state: 'SCHEDULED' | 'NEW' | 'SENT' | 'CANCELED';
   requestedAt: string;
   filledAt?: string;
-  order: PhotonOrder;
+  order?: PhotonOrder;
 };
 
 export type PhotonPharmacy = {
@@ -123,11 +125,11 @@ export type PhotonDiagnosis = {
 export type PhotonProvider = {
   id: string;
   externalId?: string;
-  name: Name;
+  name: PhotonName;
   email: string;
   phone: string;
   fax?: string;
-  address: Address;
+  address: PhotonAddress;
   organizations: PhotonOrganization[];
   NPI?: string;
 };
@@ -221,7 +223,7 @@ export interface PhotonWebhook {
 type BasePhotonEvent = {
   id: string;
   type: OrderEventType | PrescriptionEventType;
-  specversion: number;
+  specversion: string;
   datacontenttype: string;
   time: string;
   subject: string;
@@ -328,12 +330,13 @@ interface PrescriptionCreatedData extends PrescriptionData {
   dispenseUnit: string;
   dispenseAsWritten: boolean;
   refillsAllowed: number;
+  fillsAllowed?: number;
   daysSupply: number;
   instructions: string;
   effectiveDate: string;
   expirationDate: string;
   prescriberId: string;
-  medicationId: string;
+  treatmentId: string;
   patient: {
     id: string;
     externalId: string;

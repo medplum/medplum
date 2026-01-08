@@ -1,12 +1,20 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { allOk, badRequest } from '@medplum/core';
-import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem } from '@medplum/fhirtypes';
+import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import type { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
-import { Column, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findAncestor, findTerminologyResource } from './utils/terminology';
+import {
+  findAncestor,
+  findTerminologyResource,
+  getParentProperty,
+  resolveProperty,
+  selectCoding,
+} from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'subsumes');
 
@@ -22,12 +30,15 @@ type CodeSystemSubsumesParameters = {
 
 export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
-    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, { version: params.version });
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
+      version: params.version,
+    });
   } else {
     return [badRequest('No code system specified')];
   }
@@ -42,7 +53,7 @@ export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<Fhi
 export type SubsumptionOutcome = 'equivalent' | 'subsumes' | 'subsumed-by' | 'not-subsumed';
 
 export async function testSubsumption(
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   left: string,
   right: string
 ): Promise<SubsumptionOutcome> {
@@ -60,16 +71,20 @@ export async function testSubsumption(
   }
 }
 
-export async function isSubsumed(baseCode: string, ancestorCode: string, codeSystem: CodeSystem): Promise<boolean> {
-  const ctx = getAuthenticatedContext();
-  const base = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where(new Column('Coding', 'system'), '=', codeSystem.id)
-    .where(new Column('Coding', 'code'), '=', baseCode);
+export async function isSubsumed(
+  baseCode: string,
+  ancestorCode: string,
+  codeSystem: WithId<CodeSystem>
+): Promise<boolean> {
+  const { repo } = getAuthenticatedContext();
+  const base = selectCoding(codeSystem.id, baseCode);
+  const db = repo.getDatabaseClient(DatabaseMode.READER);
 
-  const query = findAncestor(base, codeSystem, ancestorCode);
-  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
+  const parentProperty = await resolveProperty(db, codeSystem, getParentProperty(codeSystem));
+  if (!parentProperty) {
+    return false;
+  }
+  const query = findAncestor(base, codeSystem, parentProperty, ancestorCode);
+  const results = await query.execute(db);
   return results.length > 0;
 }

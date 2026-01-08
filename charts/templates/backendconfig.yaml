@@ -1,0 +1,26 @@
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: medplum-backendconfig
+  namespace: {{ include  "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  securityPolicy:
+    name: ingress-security-policy
+  cdn:
+    enabled: true
+    cachePolicy:
+      includeHost: true
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /healthcheck 
+  logging:
+    enable: true
+    sampleRate: 0.5
+{{- end }}

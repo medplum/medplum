@@ -1,7 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 /* global console */
 /* global process */
-/* eslint no-console: "off" */
-/*eslint no-process-exit: "off"*/
+/* eslint no-process-exit: "off" */
 
 import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };
 import esbuild from 'esbuild';
@@ -10,7 +11,7 @@ import fastGlob from 'fast-glob';
 // Find all TypeScript files in your source directory
 const entryPoints = fastGlob.sync('./src/**/*.ts').filter((file) => !file.endsWith('test.ts'));
 
-const botLayerDeps = Object.keys(botLayer.dependencies);
+const botLayerDeps = [...Object.keys(botLayer.dependencies), '@aws-sdk/client-*'];
 
 // Define the esbuild options
 const esbuildOptions = {
@@ -21,7 +22,7 @@ const esbuildOptions = {
   loader: {
     '.ts': 'ts', // Load TypeScript files
   },
-  resolveExtensions: ['.ts'],
+  resolveExtensions: ['.ts', '.js'],
   external: botLayerDeps,
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version

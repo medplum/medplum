@@ -33,5 +33,6 @@ The materials in this section can be used in multiple contexts, and depend on yo
 
 ## Reference
 
-- [Medplum Compliance](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acompliance) on Github
+- [Medplum's Trust Center on Vanta](https://app.vanta.com/medplum.com/trust/ybe9my9rkc6ok8yijm04h)
+- [Medplum Compliance](https://github.com/orgs/medplum/projects/17) on Github
 - [Medplum Audit and Logging](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) on Github
