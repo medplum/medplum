@@ -1998,7 +1998,10 @@ describe('AccessPolicy', () => {
         admin: true,
       });
 
-      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project }, true);
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
 
       const check1 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
       expect(check1.id).toEqual(membership.id);
