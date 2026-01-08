@@ -2010,21 +2010,24 @@ describe('AccessPolicy', () => {
 
       // Try to change user.display
       // This should succeed
-      const check2 = await repo2.updateResource<ProjectMembership>({
+      let check2 = await repo2.updateResource<ProjectMembership>({
         ...check1,
         user: { ...check1.user, display: 'updated@example.com' },
       });
+      check2 = await repo2.readResource<ProjectMembership>('ProjectMembership', check2.id);
       expect(check2.id).toEqual(check1.id);
       expect(check2.meta?.versionId).not.toEqual(check1.meta?.versionId);
       expect(check2.user?.display).toEqual('updated@example.com');
+      expect(check2.user?.reference).toEqual(originalUserRef);
 
       // Try to change user.reference
       // This should be a no-op (readonly field)
       const newUserRef = 'User/' + randomUUID();
-      const check3 = await repo2.updateResource<ProjectMembership>({
+      let check3 = await repo2.updateResource<ProjectMembership>({
         ...check2,
         user: { ...check2.user, reference: newUserRef },
       });
+      check3 = await repo2.readResource<ProjectMembership>('ProjectMembership', check3.id);
       expect(check3.id).toEqual(check2.id);
       expect(check3.meta?.versionId).toEqual(check2.meta?.versionId);
       expect(check3.user?.reference).toEqual(originalUserRef);
