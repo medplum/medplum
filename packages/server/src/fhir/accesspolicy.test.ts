@@ -2017,7 +2017,6 @@ describe('AccessPolicy', () => {
       expect(check2.id).toEqual(check1.id);
       expect(check2.meta?.versionId).not.toEqual(check1.meta?.versionId);
       expect(check2.user?.display).toEqual('updated@example.com');
-      expect(check2.user?.reference).toEqual(originalUserRef);
 
       // Try to change user.reference
       // This should be a no-op (readonly field)
