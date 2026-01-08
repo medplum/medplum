@@ -1195,6 +1195,23 @@ describe('Client', () => {
     await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenAudience));
   });
 
+  test('Basic auth and startClientLogin with invalid input', async () => {
+    const clientId = 'not-a-real-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(400, () => ({
+      error: 'invalid_request',
+      error_description: 'Invalid client',
+    }));
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Invalid client');
+    }
+  });
+
   test('Basic auth and startClientLogin Failed to fetch tokens', async () => {
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
@@ -1206,6 +1223,30 @@ describe('Client', () => {
       throw new Error('test');
     } catch (err) {
       expect((err as Error).message).toBe('Failed to fetch tokens');
+    }
+  });
+
+  test('Basic auth and startClientLogin hit rate limit', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(429, () => ({
+      resourceType: 'OperationOutcome',
+      id: 'to-many-requests',
+      issue: [
+        {
+          severity: 'error',
+          code: 'throttled',
+          details: { text: 'Too Many Requests' },
+        },
+      ],
+    }));
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Too Many Requests');
     }
   });
 

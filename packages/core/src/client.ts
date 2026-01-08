@@ -4246,6 +4246,33 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
+  private async handleTokenError(response: Response): Promise<never> {
+    try {
+      const error = await response.json();
+
+      // An error from any endpoint can be an OperationOutcome (example: rate
+      // limiting errors are an HTTP 429 with an OperationOutcome in the
+      // response body)
+      if (isOperationOutcome(error)) {
+        throw new OperationOutcomeError(error);
+      }
+
+      // An error from the OAuth endpoints can be an OAuth 2.0 error type
+      // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1
+      if (error.error_description) {
+        throw new OperationOutcomeError(badRequest(error.error_description));
+      }
+
+      // Handle unknown error type by stringifying it
+      throw new Error(JSON.stringify(error));
+    } catch (err) {
+      if (err instanceof OperationOutcomeError) {
+        throw err;
+      }
+      throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
+    }
+  }
+
   /**
    * Makes a POST request to the tokens endpoint.
    * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
@@ -4285,12 +4312,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!response.ok) {
       this.clearActiveLogin();
       this.onUnauthenticated?.();
-      try {
-        const error = await response.json();
-        throw new OperationOutcomeError(badRequest(error.error_description));
-      } catch (err) {
-        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
-      }
+      await this.handleTokenError(response);
     }
     const tokens = await response.json();
     await this.verifyTokens(tokens);
