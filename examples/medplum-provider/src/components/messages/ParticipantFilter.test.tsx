@@ -40,10 +40,7 @@ describe('ParticipantFilter', () => {
       render(
         <MantineProvider>
           <MedplumProvider medplum={medplum}>
-            <ParticipantFilter
-              selectedParticipantRefs={selectedParticipantRefs}
-              onFilterChange={mockOnFilterChange}
-            />
+            <ParticipantFilter selectedParticipantRefs={selectedParticipantRefs} onFilterChange={mockOnFilterChange} />
           </MedplumProvider>
         </MantineProvider>
       );
@@ -179,13 +176,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('searches for participants when typing in search input', async () => {
-    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockPatient as WithId<Patient> }],
-      } 
-    );
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPatient as WithId<Patient> }],
+    });
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -208,13 +203,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('displays search results', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockPatient as WithId<Patient> }],
-      }   
-    );
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPatient as WithId<Patient> }],
+    });
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -233,13 +226,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('filters out current user from search results', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockPractitioner as WithId<Practitioner> }],
-      } 
-    );
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPractitioner as WithId<Practitioner> }],
+    });
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -259,13 +250,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('shows "No results found" when search returns empty', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      }
-    );
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    });
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -284,13 +273,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('clears search input when clear button is clicked', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockPatient as WithId<Patient> }],
-      }
-    );
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPatient as WithId<Patient> }],
+    });
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -315,13 +302,11 @@ describe('ParticipantFilter', () => {
   });
 
   test('selecting a search result calls onFilterChange', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(
-      {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [{ resource: mockPatient as WithId<Patient> }],
-      }
-    );
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPatient as WithId<Patient> }],
+    });
     const user = await setup([]);
 
     const button = screen.getByRole('button');
@@ -493,11 +478,7 @@ describe('ParticipantFilter', () => {
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [
-        { resource: mockPatient as WithId<Patient> },
-        { resource: undefined as unknown as WithId<Patient> },
-        {}, 
-      ],
+      entry: [{ resource: mockPatient as WithId<Patient> }, { resource: undefined as unknown as WithId<Patient> }, {}],
     });
     const user = await setup();
 

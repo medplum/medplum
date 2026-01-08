@@ -1,16 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  ActionIcon,
-  Checkbox,
-  CloseButton,
-  Group,
-  Popover,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
 import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
@@ -156,7 +147,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
         result.push(p);
       }
     }
-    
+
     if (searchQuery.trim() && searchResults.length > 0) {
       for (const p of searchResults) {
         if (currentUserParticipant?.reference === p.reference) {
@@ -174,7 +165,14 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
   const hasActiveFilter = selectedParticipantRefs.length > 0;
 
   return (
-    <Popover opened={opened} onChange={(o) => !o && close()} position="bottom-start" width={360} shadow="md" withinPortal>
+    <Popover
+      opened={opened}
+      onChange={(o) => !o && close()}
+      position="bottom-start"
+      width={360}
+      shadow="md"
+      withinPortal
+    >
       <Popover.Target>
         <ActionIcon
           variant={hasActiveFilter ? 'filled' : 'light'}
