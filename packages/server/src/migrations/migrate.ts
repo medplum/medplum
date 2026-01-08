@@ -67,7 +67,7 @@ export type BuildMigrationOptions = {
   skipMigration?: boolean;
 };
 
-function combine(migrations: PhasalMigration[]): PhasalMigration {
+export function combine(migrations: PhasalMigration[]): PhasalMigration {
   return {
     preDeploy: migrations.flatMap((m) => m.preDeploy),
     postDeploy: migrations.flatMap((m) => m.postDeploy),

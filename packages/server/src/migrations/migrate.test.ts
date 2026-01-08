@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { FileBuilder } from '@medplum/core';
+import { FileBuilder, loadDataType } from '@medplum/core';
 import { escapeIdentifier } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
@@ -8,6 +8,7 @@ import {
   buildCreateTables,
   buildSchema,
   columnDefinitionsEqual,
+  combine,
   executeMigrationActions,
   generateMigrationActions,
   getCreateTableQueries,
@@ -58,6 +59,92 @@ describe('Generator', () => {
           analyzeResourceTables: true,
         })
       ).resolves.not.toThrow();
+    });
+
+    test('returns PhasalMigration with preDeploy and postDeploy arrays', async () => {
+      const result = await generateMigrationActions({
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+        dropUnmatchedIndexes: false,
+        analyzeResourceTables: false,
+      });
+
+      expect(result).toHaveProperty('preDeploy');
+      expect(result).toHaveProperty('postDeploy');
+      expect(Array.isArray(result.preDeploy)).toBe(true);
+      expect(Array.isArray(result.postDeploy)).toBe(true);
+    });
+
+    test('creating a new table is a preDeploy migration', async () => {
+      // create a fake data type to build migrations for
+      loadDataType({
+        resourceType: 'StructureDefinition',
+        id: 'TestExample',
+        name: 'TestExample',
+        url: 'https://medplum.com/fhir/StructureDefinition/TestExample',
+        status: 'draft',
+        description: 'Fake resource used for test examples',
+        kind: 'resource',
+        abstract: false,
+        type: 'TestExample',
+        baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+        snapshot: {
+          element: [
+            {
+              id: 'TestExample',
+              path: 'TestExample',
+              min: 0,
+              max: '*',
+            },
+            {
+              id: 'TestExample.id',
+              path: 'TestExample.id',
+              min: 0,
+              max: '1',
+              type: [{ code: 'string' }],
+            },
+          ],
+        },
+      });
+
+      const result = await generateMigrationActions({
+        dbClient: getDatabasePool(DatabaseMode.WRITER),
+      });
+
+      expect(result.preDeploy).toContainEqual(expect.objectContaining({ type: 'CREATE_TABLE' }));
+
+      expect(result.postDeploy).not.toContainEqual(expect.objectContaining({ type: 'CREATE_TABLE' }));
+    });
+  });
+
+  describe('combine', () => {
+    test('merges multiple PhasalMigration objects', () => {
+      const action1: MigrationAction = { type: 'DROP_INDEX', indexName: 'idx1' };
+      const action2: MigrationAction = { type: 'CREATE_INDEX', indexName: 'idx2', createIndexSql: 'CREATE INDEX ...' };
+      const action3: MigrationAction = { type: 'DROP_INDEX', indexName: 'idx3' };
+
+      const result = combine([
+        { preDeploy: [action1], postDeploy: [action2] },
+        { preDeploy: [action3], postDeploy: [] },
+      ]);
+
+      expect(result.preDeploy).toEqual([action1, action3]);
+      expect(result.postDeploy).toEqual([action2]);
+    });
+
+    test('preserves action order within each phase', () => {
+      const actions: MigrationAction[] = [
+        { type: 'DROP_INDEX', indexName: 'idx1' },
+        { type: 'DROP_INDEX', indexName: 'idx2' },
+        { type: 'DROP_INDEX', indexName: 'idx3' },
+      ];
+
+      const result = combine([
+        { preDeploy: [actions[0]], postDeploy: [] },
+        { preDeploy: [actions[1]], postDeploy: [] },
+        { preDeploy: [actions[2]], postDeploy: [] },
+      ]);
+
+      expect(result.preDeploy).toEqual(actions);
     });
   });
 
@@ -589,6 +676,25 @@ export const migration: CustomPostDeployMigration = {
 // prettier-ignore
 async function callback(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
 `);
+  });
+
+  test('writePostDeployActionsToBuilder includes actions in callback body', () => {
+    const builder = new FileBuilder();
+    const actions: MigrationAction[] = [
+      {
+        type: 'CREATE_INDEX',
+        indexName: 'test_idx',
+        createIndexSql: 'CREATE INDEX CONCURRENTLY test_idx ON foo (bar)',
+      },
+      { type: 'DROP_COLUMN', tableName: 'TestTable', columnName: 'oldColumn' },
+    ];
+    writePostDeployActionsToBuilder(builder, actions);
+    const output = builder.toString();
+
+    // Verify actions are included in the callback body
+    expect(output).toContain('fns.idempotentCreateIndex');
+    expect(output).toContain('test_idx');
+    expect(output).toContain('DROP COLUMN IF EXISTS "oldColumn"');
   });
 
   test('writeActionsToBuilder does not generate boilerplate', () => {
