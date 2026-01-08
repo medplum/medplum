@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Practitioner, Patient, Bundle } from '@medplum/fhirtypes';
+import type { Practitioner, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ParticipantFilter } from './ParticipantFilter';
-import { WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 
 const mockPractitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -22,14 +22,6 @@ const mockPatient: Patient = {
   name: [{ given: ['Jane'], family: 'Smith' }],
 };
 
-function createBundle(resources: (Patient | Practitioner)[]): Bundle {
-  return {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry: resources.map((resource) => ({ resource })),
-  };
-}
-
 const mockOnFilterChange = vi.fn();
 
 describe('ParticipantFilter', () => {
@@ -39,11 +31,7 @@ describe('ParticipantFilter', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
-    // Set up the current user profile
     medplum.setProfile(mockPractitioner);
-
-    // Mock search to return empty by default
-    vi.spyOn(medplum, 'search').mockResolvedValue({ bundle: { entry: [] } as Bundle<WithId<Patient | Practitioner>> });
   });
 
   const setup = async (selectedParticipantRefs: string[] = []): Promise<ReturnType<typeof userEvent.setup>> => {
@@ -76,7 +64,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('button shows filled variant when filter is active', async () => {
-    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient as WithId<Patient>);
     await setup(['Patient/patient-456']);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('data-variant', 'filled');
@@ -191,7 +179,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('searches for participants when typing in search input', async () => {
-    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([mockPatient]));
+    const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [{ resource: mockPatient as WithId<Patient> }],
+      } 
+    );
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -214,7 +208,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('displays search results', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([mockPatient]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [{ resource: mockPatient as WithId<Patient> }],
+      }   
+    );
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -233,8 +233,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('filters out current user from search results', async () => {
-    // Return current user in search results - should be filtered out
-    vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([mockPractitioner]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [{ resource: mockPractitioner as WithId<Practitioner> }],
+      } 
+    );
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -248,14 +253,19 @@ describe('ParticipantFilter', () => {
     await user.type(searchInput, 'John');
 
     await waitFor(() => {
-      // Should only have one John Doe entry (the hardcoded current user at top)
       const johnDoeElements = screen.getAllByText(/John Doe/);
       expect(johnDoeElements).toHaveLength(1);
     });
   });
 
   test('shows "No results found" when search returns empty', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [],
+      }
+    );
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -274,7 +284,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('clears search input when clear button is clicked', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([mockPatient]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [{ resource: mockPatient as WithId<Patient> }],
+      }
+    );
     const user = await setup();
 
     const button = screen.getByRole('button');
@@ -291,7 +307,6 @@ describe('ParticipantFilter', () => {
       expect(searchInput).toHaveValue('Jane');
     });
 
-    // Clear by selecting all and pressing backspace instead of finding clear button
     await user.clear(searchInput);
 
     await waitFor(() => {
@@ -300,7 +315,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('selecting a search result calls onFilterChange', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue(createBundle([mockPatient]));
+    vi.spyOn(medplum, 'search').mockResolvedValue(
+      {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [{ resource: mockPatient as WithId<Patient> }],
+      }
+    );
     const user = await setup([]);
 
     const button = screen.getByRole('button');
@@ -315,12 +336,10 @@ describe('ParticipantFilter', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Jane Smith/)).toBeInTheDocument();
-      // Use container query since popover display:none hides elements from accessibility tree
       const checkboxes = document.querySelectorAll('input[type="checkbox"]');
       expect(checkboxes.length).toBeGreaterThan(1);
     });
 
-    // Click the checkbox for Jane Smith (second checkbox after current user)
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
     await user.click(checkboxes[1]);
 
@@ -328,7 +347,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('shows additional participants from URL', async () => {
-    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient as WithId<Patient>);
     const user = await setup(['Patient/patient-456']);
 
     const button = screen.getByRole('button');
@@ -340,7 +359,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('multiple participants can be selected', async () => {
-    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient as WithId<Patient>);
     const user = await setup(['Practitioner/practitioner-123', 'Patient/patient-456']);
 
     const button = screen.getByRole('button');
@@ -348,8 +367,174 @@ describe('ParticipantFilter', () => {
 
     await waitFor(() => {
       const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes[0]).toBeChecked(); // Current user
-      expect(checkboxes[1]).toBeChecked(); // Patient
+      expect(checkboxes[0]).toBeChecked();
+      expect(checkboxes[1]).toBeChecked();
     });
+  });
+
+  test('removes participant when X button is clicked', async () => {
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockPatient as WithId<Patient>);
+    const user = await setup(['Patient/patient-456']);
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Jane Smith/)).toBeInTheDocument();
+    });
+
+    const closeButtons = document.querySelectorAll('button[class*="CloseButton"]');
+    expect(closeButtons.length).toBeGreaterThan(0);
+    const participantCloseButton = closeButtons[closeButtons.length - 1];
+    await user.click(participantCloseButton);
+
+    expect(mockOnFilterChange).toHaveBeenCalledWith([]);
+  });
+
+  test('clears search when clear button is clicked', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockPatient as WithId<Patient> }],
+    });
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
+    await user.type(searchInput, 'Jane');
+
+    await waitFor(() => {
+      expect(searchInput).toHaveValue('Jane');
+    });
+
+    const inputWrapper = searchInput.closest('.mantine-TextInput-root');
+    const clearButton = inputWrapper?.querySelector('button[class*="CloseButton"]');
+    expect(clearButton).toBeInTheDocument();
+    await user.click(clearButton as Element);
+
+    await waitFor(() => {
+      expect(searchInput).toHaveValue('');
+    });
+  });
+
+  test('closes popover when clicking outside', async () => {
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    await user.click(document.body);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Message Participants')).not.toBeInTheDocument();
+    });
+  });
+
+  test('handles no profile (logged out state)', async () => {
+    medplum.setProfile(undefined as unknown as Practitioner);
+
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('(you)')).not.toBeInTheDocument();
+  });
+
+  test('handles error when resolving participant from URL', async () => {
+    vi.spyOn(medplum, 'readResource').mockRejectedValue(new Error('Not found'));
+    const user = await setup(['Patient/unknown-patient']);
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Patient/unknown-patient')).toBeInTheDocument();
+    });
+  });
+
+  test('handles search error gracefully', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
+    await user.type(searchInput, 'test');
+
+    await waitFor(() => {
+      expect(medplum.search).toHaveBeenCalled();
+    });
+
+    consoleSpy.mockRestore();
+  });
+
+  test('handles search results with undefined resources', async () => {
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        { resource: mockPatient as WithId<Patient> },
+        { resource: undefined as unknown as WithId<Patient> },
+        {}, 
+      ],
+    });
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
+    await user.type(searchInput, 'test');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Jane Smith/)).toBeInTheDocument();
+    });
+  });
+
+  test('handles empty search query', async () => {
+    const searchSpy = vi.spyOn(medplum, 'search');
+    const user = await setup();
+
+    const button = screen.getByRole('button');
+    await user.click(button);
+
+    await waitFor(() => {
+      expect(screen.getByText('Message Participants')).toBeInTheDocument();
+    });
+
+    const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
+
+    await user.type(searchInput, '   ');
+
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 400);
+    });
+
+    expect(searchSpy).not.toHaveBeenCalled();
   });
 });

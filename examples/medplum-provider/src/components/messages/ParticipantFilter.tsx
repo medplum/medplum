@@ -11,14 +11,15 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
 import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUsers } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import classes from './ParticipantFilter.module.css';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface Participant {
   reference: string;
@@ -89,60 +90,45 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
     resolveParticipants().catch(console.error);
   }, [selectedParticipantRefs, medplum, currentUserParticipant]);
 
-  const handleSearch = useCallback(
-    async (query: string): Promise<void> => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
+  const debouncedSearch = useDebouncedCallback(async (query: string): Promise<void> => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
 
-      setIsSearching(true);
-      try {
-        // Search both Patient and Practitioner in a single query using _type parameter
-        const bundle = await medplum.search('Patient', {
-          _type: 'Patient,Practitioner',
-          name: query,
-          _count: '10',
-        });
+    setIsSearching(true);
+    try {
+      const bundle = await medplum.search('Patient', {
+        _type: 'Patient,Practitioner',
+        name: query,
+        _count: '10',
+      });
 
-        const results: Participant[] = [];
-        const currentUserRef = currentUserParticipant?.reference;
+      const currentUserRef = currentUserParticipant?.reference;
 
-        for (const entry of bundle.entry ?? []) {
-          const resource = entry.resource as Patient | Practitioner;
+      const results = (bundle.entry ?? [])
+        .map((entry) => entry.resource as Patient | Practitioner)
+        .filter((resource): resource is Patient | Practitioner => {
           if (!resource) {
-            continue;
+            return false;
           }
           const refString = getReferenceString(resource);
-          if (!refString || refString === currentUserRef) {
-            continue;
-          }
-          const name = resource.name?.[0] ? formatHumanName(resource.name[0]) : undefined;
-          const fallbackName = resource.resourceType === 'Patient' ? 'Unknown Patient' : 'Unknown Practitioner';
-          results.push({
-            reference: refString,
-            display: name ?? fallbackName,
-          });
-        }
+          return !!refString && refString !== currentUserRef;
+        })
+        .map((resource) => createReference(resource) as Participant);
 
-        setSearchResults(results);
-      } catch (error) {
-        console.error('Error searching participants:', error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [medplum, currentUserParticipant]
-  );
+      setSearchResults(results);
+    } catch (error) {
+      showErrorNotification(error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, 300);
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      handleSearch(searchQuery).catch(console.error);
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
-  }, [searchQuery, handleSearch]);
+    debouncedSearch(searchQuery);
+  }, [searchQuery, debouncedSearch]);
 
   const isSelected = (reference: string): boolean => {
     return selectedParticipantRefs.includes(reference);
@@ -173,7 +159,6 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
     
     if (searchQuery.trim() && searchResults.length > 0) {
       for (const p of searchResults) {
-        // Skip current user (shown at top) and already added
         if (currentUserParticipant?.reference === p.reference) {
           continue;
         }
