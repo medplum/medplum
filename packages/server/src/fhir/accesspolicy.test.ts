@@ -1237,15 +1237,15 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const { repo: repo2, project } = await createTestProject({
         withRepo: true,
-      // AccessPolicy that hides Patient name
+        // AccessPolicy that hides Patient name
         accessPolicy: {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Patient',
-            hiddenFields: ['name'],
-          },
-        ],
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['name'],
+            },
+          ],
         },
       });
 
@@ -1588,12 +1588,12 @@ describe('AccessPolicy', () => {
       const identifier = randomUUID();
       const { repo: repo2, project } = await createTestProject({
         withRepo: true,
-      // AccessPolicy that only allows one specific Questionnaire
+        // AccessPolicy that only allows one specific Questionnaire
         accessPolicy: {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Questionnaire',
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Questionnaire',
               criteria: 'Questionnaire?identifier=https://example.com|' + identifier,
             },
           ],
@@ -2855,18 +2855,18 @@ describe('AccessPolicy', () => {
 
   test.each<[AccessPolicyResource, string]>([
     [
-            {
-              resourceType: 'Patient',
-              criteria: 'identifier=123',
-              readonly: true,
-            },
+      {
+        resourceType: 'Patient',
+        criteria: 'identifier=123',
+        readonly: true,
+      },
       'axp-3',
     ],
     [
-            {
-              resourceType: 'Patient',
-              criteria: 'Patient',
-            },
+      {
+        resourceType: 'Patient',
+        criteria: 'Patient',
+      },
       'axp-3',
     ],
     [
