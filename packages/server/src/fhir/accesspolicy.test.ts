@@ -1237,15 +1237,15 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const { repo: repo2, project } = await createTestProject({
         withRepo: true,
-        // AccessPolicy that hides Patient name
+      // AccessPolicy that hides Patient name
         accessPolicy: {
-          resourceType: 'AccessPolicy',
-          resource: [
-            {
-              resourceType: 'Patient',
-              hiddenFields: ['name'],
-            },
-          ],
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            hiddenFields: ['name'],
+          },
+        ],
         },
       });
 
@@ -1588,12 +1588,12 @@ describe('AccessPolicy', () => {
       const identifier = randomUUID();
       const { repo: repo2, project } = await createTestProject({
         withRepo: true,
-        // AccessPolicy that only allows one specific Questionnaire
+      // AccessPolicy that only allows one specific Questionnaire
         accessPolicy: {
-          resourceType: 'AccessPolicy',
-          resource: [
-            {
-              resourceType: 'Questionnaire',
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Questionnaire',
               criteria: 'Questionnaire?identifier=https://example.com|' + identifier,
             },
           ],
@@ -2010,9 +2010,11 @@ describe('AccessPolicy', () => {
 
       // Try to change user.display
       // This should succeed
+      // Exclude reference from the update to avoid it being removed by restoreReadonlyFields
+      const { reference: _ref, ...userWithoutReference } = check1.user || {};
       let check2 = await repo2.updateResource<ProjectMembership>({
         ...check1,
-        user: { ...check1.user, display: 'updated@example.com' },
+        user: { ...userWithoutReference, display: 'updated@example.com' },
       });
       check2 = await repo2.readResource<ProjectMembership>('ProjectMembership', check2.id);
       expect(check2.id).toEqual(check1.id);
@@ -2035,10 +2037,11 @@ describe('AccessPolicy', () => {
 
       // Try to change both user.reference and user.display
       // user.reference should be ignored, but user.display should be updated
-      const check4 = await repo2.updateResource<ProjectMembership>({
+      let check4 = await repo2.updateResource<ProjectMembership>({
         ...check3,
         user: { reference: newUserRef, display: 'newdisplay@example.com' },
       });
+      check4 = await repo2.readResource<ProjectMembership>('ProjectMembership', check4.id);
       expect(check4.id).toEqual(check3.id);
       expect(check4.meta?.versionId).not.toEqual(check3.meta?.versionId);
       expect(check4.user?.reference).toEqual(originalUserRef);
@@ -2852,18 +2855,18 @@ describe('AccessPolicy', () => {
 
   test.each<[AccessPolicyResource, string]>([
     [
-      {
-        resourceType: 'Patient',
-        criteria: 'identifier=123',
-        readonly: true,
-      },
+            {
+              resourceType: 'Patient',
+              criteria: 'identifier=123',
+              readonly: true,
+            },
       'axp-3',
     ],
     [
-      {
-        resourceType: 'Patient',
-        criteria: 'Patient',
-      },
+            {
+              resourceType: 'Patient',
+              criteria: 'Patient',
+            },
       'axp-3',
     ],
     [
