@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Kbd, Text } from '@mantine/core';
+import { Kbd, Stack, Text } from '@mantine/core';
 import type { SpotlightActionData, SpotlightActionGroupData } from '@mantine/spotlight';
 import { Spotlight as MantineSpotlight } from '@mantine/spotlight';
-import { formatHumanName, isUUID } from '@medplum/core';
+import { formatHumanName, isUUID, normalizeErrorString } from '@medplum/core';
 import type { Patient, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import type { MedplumNavigateFunction } from '@medplum/react-hooks';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
@@ -18,10 +18,6 @@ export type HeaderSearchTypes = Patient;
 const MAX_RECENTLY_VIEWED = 10;
 
 export interface SpotlightProps {
-  /**
-   * When true, only search for patients (no resource type search).
-   * Useful for provider-facing applications.
-   */
   patientsOnly?: boolean;
 }
 
@@ -35,16 +31,27 @@ interface RecentlyViewedItem {
   timestamp: number;
 }
 
-interface SearchGraphQLResponse {
-  readonly data: {
-    readonly Patients1: Patient[] | undefined;
-    readonly Patients2: Patient[] | undefined;
-  };
-}
-
 interface ActionWithTimestamp {
   action: SpotlightActionData;
   timestamp: number;
+}
+
+function KeyboardShortcutHint({ error }: { error?: unknown }): JSX.Element {
+  return (
+    <Stack gap="xs" py="lg">
+      {error !== undefined && (
+        <Text size="sm" c="red">
+          {normalizeErrorString(error)}
+        </Text>
+      )}
+      <Text size="sm" c="dimmed">
+        Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
+      </Text>
+      <Text size="sm" c="dimmed">
+        (<Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
+      </Text>
+    </Stack>
+  );
 }
 
 export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.Element {
@@ -57,14 +64,7 @@ export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.El
   const loadRecentlyViewed = useCallback(async (): Promise<void> => {
     const recentlyViewed = getRecentlyViewed(storageKey, patientsOnly);
     if (recentlyViewed.length === 0) {
-      // Show keyboard shortcut hint when no recently viewed items
-      setNothingFoundMessage(
-        <Text size="sm" c="dimmed" py="lg">
-          Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
-          <br />
-          <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
-        </Text>
-      );
+      setNothingFoundMessage(<KeyboardShortcutHint />);
       setActions([]);
       return;
     }
@@ -82,14 +82,7 @@ export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.El
       const sortedActions = sortRecentlyViewedActions(actionsWithTimestamps);
 
       if (sortedActions.length === 0) {
-        // Show keyboard shortcut hint when no valid recently viewed items
-        setNothingFoundMessage(
-          <Text size="sm" c="dimmed" py="lg">
-            Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
-            <br />
-            <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
-          </Text>
-        );
+        setNothingFoundMessage(<KeyboardShortcutHint />);
         setActions([]);
         return;
       }
@@ -97,54 +90,35 @@ export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.El
       setActions([{ group: patientsOnly ? 'Recent Patients' : 'Recent', actions: sortedActions }]);
       setNothingFoundMessage('No results found');
     } catch (error) {
-      console.error('Failed to load recently viewed:', error);
-      // Show keyboard shortcut hint on error
-      setNothingFoundMessage(
-        <Text size="sm" c="dimmed" py="lg">
-          Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
-          <br />
-          <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
-        </Text>
-      );
+      setNothingFoundMessage(<KeyboardShortcutHint error={error} />);
       setActions([]);
     }
   }, [medplum, navigate, storageKey, patientsOnly]);
 
-  // Load recently viewed items when Spotlight opens (empty query)
   useEffect(() => {
-    // Load recently viewed items on mount to show them when Spotlight first opens
     loadRecentlyViewed().catch((error) => {
-      console.error('Failed to load recently viewed:', error);
+      setNothingFoundMessage(normalizeErrorString(error));
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadRecentlyViewed]);
 
   const performSearch = useCallback(
     async (query: string): Promise<void> => {
       setNothingFoundMessage('Searching...');
 
       try {
-        const graphqlQuery = buildGraphQLQuery(query);
+        const patients = await searchPatients(medplum, query);
 
         if (patientsOnly) {
-          // Only search patients, skip resource type search
-          const graphqlResponse = await medplum.graphql(graphqlQuery);
-          const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
-          setActions(resourcesToActions(resources, [], navigate, storageKey, false));
+          setActions(resourcesToActions(patients, [], navigate, storageKey, false));
         } else {
-          // Search both patients and resource types
-          const [valueSetResult, graphqlResponse] = await Promise.all([
-            medplum.valueSetExpand({
-              url: 'https://medplum.com/fhir/ValueSet/resource-types',
-              filter: query,
-              count: 5,
-            }),
-            medplum.graphql(graphqlQuery),
-          ]);
+          const valueSetResult = await medplum.valueSetExpand({
+            url: 'https://medplum.com/fhir/ValueSet/resource-types',
+            filter: query,
+            count: 5,
+          });
 
           const resourceTypes = valueSetResult.expansion?.contains ?? [];
-          const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
-          setActions(resourcesToActions(resources, resourceTypes, navigate, storageKey, false));
+          setActions(resourcesToActions(patients, resourceTypes, navigate, storageKey, false));
         }
       } catch (error) {
         console.error('Search failed:', error);
@@ -157,15 +131,14 @@ export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.El
 
   const handleQueryChange = (query: string): void => {
     if (!query) {
-      // When query is cleared, show recently viewed
       loadRecentlyViewed().catch((error) => {
-        console.error('Failed to load recently viewed:', error);
+        setNothingFoundMessage(normalizeErrorString(error));
       });
       return;
     }
 
     performSearch(query).catch((error) => {
-      console.error('Search failed:', error);
+      setNothingFoundMessage(normalizeErrorString(error));
     });
   };
 
@@ -209,91 +182,21 @@ export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.El
   );
 }
 
-function buildGraphQLQuery(input: string): string {
-  const escaped = JSON.stringify(input);
-  if (isUUID(input)) {
-    return `{
-      Patients1: PatientList(_id: ${escaped}, _count: 1) {
-        resourceType
-        id
-        identifier {
-          system
-          value
-        }
-        name {
-          given
-          family
-        }
-        birthDate
-      }
-    }`.replaceAll(/\s+/g, ' ');
-  }
-  return `{
-    Patients1: PatientList(name: ${escaped}, _count: 5) {
-      resourceType
-      id
-      identifier {
-        system
-        value
-      }
-      name {
-        given
-        family
-      }
-      birthDate
-    }
-    Patients2: PatientList(identifier: ${escaped}, _count: 5) {
-      resourceType
-      id
-      identifier {
-        system
-        value
-      }
-      name {
-        given
-        family
-      }
-      birthDate
-    }
-  }`.replaceAll(/\s+/g, ' ');
-}
-
 /**
- * Returns a de-duped and sorted list of resources from the search response.
- * The search request is actually 3+ separate searches, which can include duplicates.
- * This function combines the results, de-dupes, and sorts by relevance.
- * @param response - The response from a search query.
- * @returns The resources to display in the autocomplete.
+ * Searches for patients using the Medplum client search (with caching).
+ * @param medplum - The Medplum client.
+ * @param query - The search query.
+ * @returns A de-duped list of matching patients.
  */
-function getResourcesFromResponse(response: SearchGraphQLResponse): HeaderSearchTypes[] {
-  const resources = [];
-  if (response.data.Patients1) {
-    resources.push(...response.data.Patients1);
-  }
-  if (response.data.Patients2) {
-    resources.push(...response.data.Patients2);
-  }
-  return dedupeResources(resources);
-}
-
-/**
- * Removes duplicate resources from an array by ID.
- * @param resources - The array of resources with possible duplicates.
- * @returns The array of resources with no duplicates.
- */
-function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
-  const ids = new Set<string>();
-  const result = [];
-
-  for (const resource of resources) {
-    if (!resource.id || ids.has(resource.id)) {
-      continue;
-    }
-    ids.add(resource.id);
-    result.push(resource);
+async function searchPatients(medplum: ReturnType<typeof useMedplum>, query: string): Promise<Patient[]> {
+  if (isUUID(query)) {
+    return medplum.searchResources('Patient', { _id: query, _count: '1' });
   }
 
-  return result;
+  return medplum.searchResources('Patient', {
+    _filter: `name co "${query}" or identifier eq "${query}"`,
+    _count: '5',
+  });
 }
 
 function resourcesToActions(
