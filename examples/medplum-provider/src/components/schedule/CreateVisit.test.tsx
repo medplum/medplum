@@ -193,11 +193,7 @@ describe('CreateVisit', () => {
         setup(mockSlotInfo);
       });
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Patient/i)).toBeInTheDocument();
-      });
-
-      const patientInput = screen.getByLabelText(/Patient/i);
+      const patientInput = await screen.findByLabelText(/Patient/i);
       expect(patientInput).toBeInTheDocument();
     });
 
@@ -226,11 +222,7 @@ describe('CreateVisit', () => {
         setup(mockSlotInfo);
       });
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/End Time/i)).toBeInTheDocument();
-      });
-
-      const endInput = screen.getByLabelText(/End Time/i);
+      const endInput = await screen.findByLabelText(/End Time/i);
       await act(async () => {
         await user.clear(endInput);
         await user.type(endInput, '2024-01-15T12:00');
@@ -245,11 +237,7 @@ describe('CreateVisit', () => {
         setup(mockSlotInfo);
       });
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Class/i)).toBeInTheDocument();
-      });
-
-      const classInput = screen.getByLabelText(/Class/i);
+      const classInput = await screen.findByLabelText(/Class/i);
       await act(async () => {
         await user.click(classInput);
       });
@@ -262,11 +250,7 @@ describe('CreateVisit', () => {
         setup(mockSlotInfo);
       });
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-      });
-
-      const templateInput = screen.getByLabelText(/Care template/i);
+      const templateInput = await screen.findByLabelText(/Care template/i);
       expect(templateInput).toBeInTheDocument();
     });
   });
@@ -288,13 +272,8 @@ describe('CreateVisit', () => {
         setup(mockSlotInfo);
       });
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
-      });
-
-      // The included tasks card would show when a plan definition is selected
-      // For now, verify the form renders correctly
-      expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
+      const templateInput = await screen.findByLabelText(/Care template/i);
+      expect(templateInput).toBeInTheDocument();
     });
   });
 });

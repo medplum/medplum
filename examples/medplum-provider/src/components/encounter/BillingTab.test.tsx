@@ -894,7 +894,7 @@ describe('BillingTab', () => {
     await user.click(screen.getByText('CMS 1500 Form'));
 
     await waitFor(() => {
-      expect(medplum.post).toHaveBeenCalled();
+      expect(screen.getByText('Failed to download PDF')).toBeInTheDocument();
     });
   });
 
