@@ -99,7 +99,6 @@ describe('Spotlight', () => {
       expect(screen.getByTestId('spotlight')).toBeInTheDocument();
       expect(screen.getByTestId('spotlight-search')).toBeInTheDocument();
     });
-    
   });
 
   describe('Search functionality', () => {
