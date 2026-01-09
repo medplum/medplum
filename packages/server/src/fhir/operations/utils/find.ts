@@ -299,6 +299,10 @@ export function findAlignedSlotTimes(
     maxCount?: number;
   }
 ): Interval[] {
+  if (options.alignment < 1) {
+    throw new Error(`Invalid alignment; must be in range [1,60], got ${options.alignment}`);
+  }
+
   const firstMinuteStart = advanceToMinuteMark(interval.start);
 
   // Find how much we need to shift the interval start to hit an alignment

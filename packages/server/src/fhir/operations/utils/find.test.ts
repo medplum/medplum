@@ -729,6 +729,15 @@ describe('findAlignedSlotTimes', () => {
     ]);
   });
 
+  test('errors when alignment is zero', () => {
+    expect(() => {
+      findAlignedSlotTimes(
+        { start: new Date('2025-12-01'), end: new Date('2025-12-08') },
+        { alignment: 0, offsetMinutes: 0, durationMinutes: 10 }
+      );
+    }).toThrow('Invalid alignment');
+  });
+
   test('maxCount option is respected', () => {
     const slots = findAlignedSlotTimes(
       { start: new Date('2025-12-01T00:00:00Z'), end: new Date('2025-12-01T02:00:00Z') },
