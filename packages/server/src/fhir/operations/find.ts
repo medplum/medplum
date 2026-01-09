@@ -149,11 +149,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   if (schedule.actor.length !== 1) {
     throw new OperationOutcomeError(badRequest('$find only supported on schedules with exactly one actor'));
   }
-
-  const [actor] = await ctx.repo.readReferences(schedule.actor);
-  if (actor instanceof Error) {
-    throw new OperationOutcomeError(badRequest('Loading actor for schedule failed'), { cause: actor });
-  }
+  const actor = await ctx.repo.readReference(schedule.actor[0]);
   const timeZone = getTimeZone(actor);
   if (!timeZone) {
     throw new OperationOutcomeError(badRequest('No timezone specified'));
