@@ -15,7 +15,6 @@ import type { JSX } from 'react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
-import { Spotlight } from './components/Spotlight';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -115,9 +114,8 @@ export function App(): JSX.Element | null {
           : undefined
       }
       resourceTypeSearchDisabled={true}
-      customSpotlight={true}
+      spotlightPatientsOnly={true}
     >
-      {profile && <Spotlight />}
       <Suspense fallback={<Loading />}>
         <Routes>
           {profile ? (

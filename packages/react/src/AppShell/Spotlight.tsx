@@ -15,8 +15,19 @@ import classes from './Spotlight.module.css';
 
 export type HeaderSearchTypes = Patient;
 
-const RECENTLY_VIEWED_STORAGE_KEY = 'medplum-spotlight-recently-viewed';
 const MAX_RECENTLY_VIEWED = 10;
+
+export interface SpotlightProps {
+  /**
+   * When true, only search for patients (no resource type search).
+   * Useful for provider-facing applications.
+   */
+  patientsOnly?: boolean;
+}
+
+function getStorageKey(patientsOnly: boolean): string {
+  return patientsOnly ? 'medplum-provider-spotlight-recently-viewed' : 'medplum-spotlight-recently-viewed';
+}
 
 interface RecentlyViewedItem {
   resourceType: string;
@@ -36,14 +47,15 @@ interface ActionWithTimestamp {
   timestamp: number;
 }
 
-export function Spotlight(): JSX.Element {
+export function Spotlight({ patientsOnly = false }: SpotlightProps = {}): JSX.Element {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const [nothingFoundMessage, setNothingFoundMessage] = useState<React.ReactNode>(undefined);
   const [actions, setActions] = useState<SpotlightActionGroupData[]>([]);
+  const storageKey = getStorageKey(patientsOnly);
 
   const loadRecentlyViewed = useCallback(async (): Promise<void> => {
-    const recentlyViewed = getRecentlyViewed();
+    const recentlyViewed = getRecentlyViewed(storageKey, patientsOnly);
     if (recentlyViewed.length === 0) {
       // Show keyboard shortcut hint when no recently viewed items
       setNothingFoundMessage(
@@ -60,24 +72,43 @@ export function Spotlight(): JSX.Element {
     setNothingFoundMessage('Loading recently viewed...');
 
     try {
-      const actionsWithTimestamps = await buildRecentlyViewedActions(recentlyViewed, medplum, navigate);
+      const actionsWithTimestamps = await buildRecentlyViewedActions(
+        recentlyViewed,
+        medplum,
+        navigate,
+        storageKey,
+        patientsOnly
+      );
       const sortedActions = sortRecentlyViewedActions(actionsWithTimestamps);
 
       if (sortedActions.length === 0) {
-        setNothingFoundMessage(undefined);
+        // Show keyboard shortcut hint when no valid recently viewed items
+        setNothingFoundMessage(
+          <Text size="sm" c="dimmed" py="lg">
+            Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
+            <br />
+            <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
+          </Text>
+        );
         setActions([]);
         return;
       }
 
-      setActions([{ group: 'Recent', actions: sortedActions }]);
+      setActions([{ group: patientsOnly ? 'Recent Patients' : 'Recent', actions: sortedActions }]);
       setNothingFoundMessage('No results found');
     } catch (error) {
       console.error('Failed to load recently viewed:', error);
-      // Hide the actions list entirely on error with no results
-      setNothingFoundMessage(undefined);
+      // Show keyboard shortcut hint on error
+      setNothingFoundMessage(
+        <Text size="sm" c="dimmed" py="lg">
+          Try <Kbd>⌘</Kbd> + <Kbd>K</Kbd> to open Search next time.
+          <br />
+          <br />( <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> on Windows.)
+        </Text>
+      );
       setActions([]);
     }
-  }, [medplum, navigate]);
+  }, [medplum, navigate, storageKey, patientsOnly]);
 
   // Load recently viewed items when Spotlight opens (empty query)
   useEffect(() => {
@@ -94,25 +125,34 @@ export function Spotlight(): JSX.Element {
 
       try {
         const graphqlQuery = buildGraphQLQuery(query);
-        const [valueSetResult, graphqlResponse] = await Promise.all([
-          medplum.valueSetExpand({
-            url: 'https://medplum.com/fhir/ValueSet/resource-types',
-            filter: query,
-            count: 5,
-          }),
-          medplum.graphql(graphqlQuery),
-        ]);
 
-        const resourceTypes = valueSetResult.expansion?.contains ?? [];
-        const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
-        setActions(resourcesToActions(resources, resourceTypes, navigate, false));
+        if (patientsOnly) {
+          // Only search patients, skip resource type search
+          const graphqlResponse = await medplum.graphql(graphqlQuery);
+          const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
+          setActions(resourcesToActions(resources, [], navigate, storageKey, false));
+        } else {
+          // Search both patients and resource types
+          const [valueSetResult, graphqlResponse] = await Promise.all([
+            medplum.valueSetExpand({
+              url: 'https://medplum.com/fhir/ValueSet/resource-types',
+              filter: query,
+              count: 5,
+            }),
+            medplum.graphql(graphqlQuery),
+          ]);
+
+          const resourceTypes = valueSetResult.expansion?.contains ?? [];
+          const resources = getResourcesFromResponse(graphqlResponse as SearchGraphQLResponse);
+          setActions(resourcesToActions(resources, resourceTypes, navigate, storageKey, false));
+        }
       } catch (error) {
         console.error('Search failed:', error);
       } finally {
         setNothingFoundMessage('No results found');
       }
     },
-    [medplum, navigate]
+    [medplum, navigate, patientsOnly, storageKey]
   );
 
   const handleQueryChange = (query: string): void => {
@@ -138,12 +178,12 @@ export function Spotlight(): JSX.Element {
       searchProps={
         {
           leftSection: <IconSearch size="1.2rem" stroke={2} color="var(--mantine-color-gray-5)" />,
-          placeholder: 'Start typing to search…',
+          placeholder: patientsOnly ? 'Search patients…' : 'Start typing to search…',
           type: 'search',
           autoComplete: 'off',
           autoCorrect: 'off',
           spellCheck: false,
-          name: 'spotlight-search',
+          name: patientsOnly ? 'provider-spotlight-search' : 'spotlight-search',
           inputProps: {
             // Tell common password managers to ignore this field
             'data-1p-ignore': 'true',
@@ -260,6 +300,7 @@ function resourcesToActions(
   resources: HeaderSearchTypes[],
   resourceTypes: ValueSetExpansionContains[],
   navigate: MedplumNavigateFunction,
+  storageKey: string,
   isRecentlyViewed = false
 ): SpotlightActionGroupData[] {
   const patientActions: SpotlightActionData[] = resources
@@ -272,7 +313,7 @@ function resourcesToActions(
       description: resource.birthDate,
       leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
       onClick: () => {
-        trackRecentlyViewed(resource.resourceType, resource.id);
+        trackRecentlyViewed(storageKey, resource.resourceType, resource.id);
         navigate(`/Patient/${resource.id}`);
       },
     }));
@@ -282,7 +323,7 @@ function resourcesToActions(
     label: rt.display ?? rt.code ?? '',
     description: 'Resource Type',
     onClick: () => {
-      trackRecentlyViewedResourceType(rt.code ?? '');
+      trackRecentlyViewedResourceType(storageKey, rt.code ?? '');
       navigate(`/${rt.code}`);
     },
   }));
@@ -303,12 +344,13 @@ function resourcesToActions(
 
 /**
  * Tracks an individual resource as recently viewed in localStorage.
+ * @param storageKey - The localStorage key to use.
  * @param resourceType - The resource type (e.g., 'Patient').
  * @param id - The resource ID.
  */
-function trackRecentlyViewed(resourceType: string, id: string): void {
+function trackRecentlyViewed(storageKey: string, resourceType: string, id: string): void {
   try {
-    const stored = localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey);
     let recentlyViewed: RecentlyViewedItem[] = stored ? JSON.parse(stored) : [];
 
     // Remove existing entry if it exists
@@ -324,7 +366,7 @@ function trackRecentlyViewed(resourceType: string, id: string): void {
     // Keep only the most recent items
     recentlyViewed = recentlyViewed.slice(0, MAX_RECENTLY_VIEWED);
 
-    localStorage.setItem(RECENTLY_VIEWED_STORAGE_KEY, JSON.stringify(recentlyViewed));
+    localStorage.setItem(storageKey, JSON.stringify(recentlyViewed));
   } catch (error) {
     console.error('Failed to track recently viewed:', error);
   }
@@ -332,11 +374,12 @@ function trackRecentlyViewed(resourceType: string, id: string): void {
 
 /**
  * Tracks a resource type page as recently viewed in localStorage.
+ * @param storageKey - The localStorage key to use.
  * @param resourceType - The resource type (e.g., 'Patient', 'ServiceRequest', 'Observation').
  */
-function trackRecentlyViewedResourceType(resourceType: string): void {
+function trackRecentlyViewedResourceType(storageKey: string, resourceType: string): void {
   try {
-    const stored = localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey);
     let recentlyViewed: RecentlyViewedItem[] = stored ? JSON.parse(stored) : [];
 
     // Remove existing entry if it exists (resource type pages have no id)
@@ -352,7 +395,7 @@ function trackRecentlyViewedResourceType(resourceType: string): void {
     // Keep only the most recent items
     recentlyViewed = recentlyViewed.slice(0, MAX_RECENTLY_VIEWED);
 
-    localStorage.setItem(RECENTLY_VIEWED_STORAGE_KEY, JSON.stringify(recentlyViewed));
+    localStorage.setItem(storageKey, JSON.stringify(recentlyViewed));
   } catch (error) {
     console.error('Failed to track recently viewed resource type:', error);
   }
@@ -360,18 +403,27 @@ function trackRecentlyViewedResourceType(resourceType: string): void {
 
 /**
  * Gets the list of recently viewed resources from localStorage.
+ * @param storageKey - The localStorage key to use.
+ * @param patientsOnly - If true, filter to only Patient resources.
  * @returns Array of recently viewed items, sorted by most recent first.
  */
-function getRecentlyViewed(): RecentlyViewedItem[] {
+function getRecentlyViewed(storageKey: string, patientsOnly: boolean): RecentlyViewedItem[] {
   try {
-    const stored = localStorage.getItem(RECENTLY_VIEWED_STORAGE_KEY);
+    const stored = localStorage.getItem(storageKey);
     if (!stored) {
       return [];
     }
     const recentlyViewed: RecentlyViewedItem[] = JSON.parse(stored);
     // Filter out items older than 30 days
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return recentlyViewed.filter((item) => item.timestamp > thirtyDaysAgo);
+    let filtered = recentlyViewed.filter((item) => item.timestamp > thirtyDaysAgo);
+
+    // If patientsOnly, filter to only Patient resources with IDs
+    if (patientsOnly) {
+      filtered = filtered.filter((item) => item.resourceType === 'Patient' && item.id);
+    }
+
+    return filtered;
   } catch (error) {
     console.error('Failed to get recently viewed:', error);
     return [];
@@ -381,12 +433,14 @@ function getRecentlyViewed(): RecentlyViewedItem[] {
 async function buildRecentlyViewedActions(
   items: RecentlyViewedItem[],
   medplum: ReturnType<typeof useMedplum>,
-  navigate: MedplumNavigateFunction
+  navigate: MedplumNavigateFunction,
+  storageKey: string,
+  patientsOnly: boolean
 ): Promise<ActionWithTimestamp[]> {
   const actions: ActionWithTimestamp[] = [];
 
   for (const item of items) {
-    const action = await buildActionForItem(item, medplum, navigate);
+    const action = await buildActionForItem(item, medplum, navigate, storageKey, patientsOnly);
     if (action) {
       actions.push(action);
     }
@@ -398,14 +452,17 @@ async function buildRecentlyViewedActions(
 async function buildActionForItem(
   item: RecentlyViewedItem,
   medplum: ReturnType<typeof useMedplum>,
-  navigate: MedplumNavigateFunction
+  navigate: MedplumNavigateFunction,
+  storageKey: string,
+  patientsOnly: boolean
 ): Promise<ActionWithTimestamp | undefined> {
   if (isPatientRecentlyViewed(item)) {
-    return buildPatientAction(item, medplum, navigate);
+    return buildPatientAction(item, medplum, navigate, storageKey);
   }
 
-  if (isResourceTypePage(item)) {
-    return buildResourceTypeAction(item, navigate);
+  // Skip resource type pages if patientsOnly
+  if (!patientsOnly && isResourceTypePage(item)) {
+    return buildResourceTypeAction(item, navigate, storageKey);
   }
 
   return undefined;
@@ -414,7 +471,8 @@ async function buildActionForItem(
 async function buildPatientAction(
   item: RecentlyViewedItem & { resourceType: 'Patient'; id: string },
   medplum: ReturnType<typeof useMedplum>,
-  navigate: MedplumNavigateFunction
+  navigate: MedplumNavigateFunction,
+  storageKey: string
 ): Promise<ActionWithTimestamp | undefined> {
   try {
     const resource = await medplum.readResource('Patient', item.id);
@@ -429,7 +487,7 @@ async function buildPatientAction(
         description: resource.birthDate,
         leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
         onClick: () => {
-          trackRecentlyViewed('Patient', resource.id);
+          trackRecentlyViewed(storageKey, 'Patient', resource.id);
           navigate(`/Patient/${resource.id}`);
         },
       },
@@ -441,14 +499,18 @@ async function buildPatientAction(
   }
 }
 
-function buildResourceTypeAction(item: RecentlyViewedItem, navigate: MedplumNavigateFunction): ActionWithTimestamp {
+function buildResourceTypeAction(
+  item: RecentlyViewedItem,
+  navigate: MedplumNavigateFunction,
+  storageKey: string
+): ActionWithTimestamp {
   return {
     action: {
       id: `resource-type-${item.resourceType}`,
       label: item.resourceType,
       description: 'Resource Type',
       onClick: () => {
-        trackRecentlyViewedResourceType(item.resourceType);
+        trackRecentlyViewedResourceType(storageKey, item.resourceType);
         navigate(`/${item.resourceType}`);
       },
     },

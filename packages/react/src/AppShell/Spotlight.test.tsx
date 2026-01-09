@@ -609,4 +609,106 @@ describe('Spotlight', () => {
       expect(screen.getByText('Second Patient')).toBeInTheDocument();
     });
   });
+
+  describe('patientsOnly mode', () => {
+    const PROVIDER_STORAGE_KEY = 'medplum-provider-spotlight-recently-viewed';
+
+    async function setupPatientsOnly(): Promise<ReturnType<typeof render>> {
+      return render(
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <Spotlight patientsOnly />
+          </MantineProvider>
+        </MedplumProvider>
+      );
+    }
+
+    test('uses different localStorage key for recently viewed', async () => {
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Provider'], family: 'Patient' }],
+      });
+
+      const recentItems = [{ resourceType: 'Patient', id: patient.id, timestamp: Date.now() }];
+      mockLocalStorageData[PROVIDER_STORAGE_KEY] = JSON.stringify(recentItems);
+
+      await setupPatientsOnly();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('action-group-Recent Patients')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Provider Patient')).toBeInTheDocument();
+    });
+
+    test('shows "Recent Patients" group label instead of "Recent"', async () => {
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+      });
+
+      const recentItems = [{ resourceType: 'Patient', id: patient.id, timestamp: Date.now() }];
+      mockLocalStorageData[PROVIDER_STORAGE_KEY] = JSON.stringify(recentItems);
+
+      await setupPatientsOnly();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('action-group-Recent Patients')).toBeInTheDocument();
+      });
+    });
+
+    test('filters out resource type pages from recently viewed', async () => {
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Only'], family: 'Patient' }],
+      });
+
+      const recentItems = [
+        { resourceType: 'Patient', id: patient.id, timestamp: Date.now() },
+        { resourceType: 'ServiceRequest', id: undefined, timestamp: Date.now() - 1000 },
+      ];
+      mockLocalStorageData[PROVIDER_STORAGE_KEY] = JSON.stringify(recentItems);
+
+      await setupPatientsOnly();
+
+      await waitFor(() => {
+        expect(screen.getByText('Only Patient')).toBeInTheDocument();
+      });
+
+      // Resource type should not appear
+      expect(screen.queryByText('ServiceRequest')).not.toBeInTheDocument();
+    });
+
+    test('uses patients-only placeholder text', async () => {
+      await setupPatientsOnly();
+
+      expect(screen.getByPlaceholderText('Search patients…')).toBeInTheDocument();
+    });
+
+    test('clicking patient tracks in provider storage key', async () => {
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Track'], family: 'Patient' }],
+      });
+
+      const recentItems = [{ resourceType: 'Patient', id: patient.id, timestamp: Date.now() - 10000 }];
+      mockLocalStorageData[PROVIDER_STORAGE_KEY] = JSON.stringify(recentItems);
+
+      await setupPatientsOnly();
+
+      await waitFor(() => {
+        expect(screen.getByTestId(`action-patient-${patient.id}`)).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId(`action-patient-${patient.id}`));
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith(`/Patient/${patient.id}`);
+
+      // Verify it was stored in the provider storage key
+      const stored = JSON.parse(mockLocalStorageData[PROVIDER_STORAGE_KEY]);
+      expect(stored[0].id).toBe(patient.id);
+    });
+  });
 });
