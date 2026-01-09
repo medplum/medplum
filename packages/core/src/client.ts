@@ -4267,6 +4267,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error(JSON.stringify(error));
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
+        err.message = `Failed to fetch tokens: ${err.message}`;
         throw err;
       }
       throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });

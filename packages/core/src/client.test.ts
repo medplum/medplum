@@ -1208,7 +1208,7 @@ describe('Client', () => {
       await client.startClientLogin(clientId, clientSecret);
       throw new Error('test');
     } catch (err) {
-      expect((err as Error).message).toBe('Invalid client');
+      expect((err as Error).message).toBe('Failed to fetch tokens: Invalid client');
     }
   });
 
@@ -1246,7 +1246,7 @@ describe('Client', () => {
       await client.startClientLogin(clientId, clientSecret);
       throw new Error('test');
     } catch (err) {
-      expect((err as Error).message).toBe('Too Many Requests');
+      expect((err as Error).message).toBe('Failed to fetch tokens: Too Many Requests');
     }
   });
 
