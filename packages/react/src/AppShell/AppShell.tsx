@@ -27,7 +27,6 @@ export interface AppShellProps {
   readonly resourceTypeSearchDisabled?: boolean;
   readonly notifications?: ReactNode;
   readonly layoutVersion?: 'v1' | 'v2';
-  readonly customSpotlight?: boolean;
   /**
    * When true, the Spotlight search only searches for patients (no resource type search).
    * Useful for provider-facing applications.
@@ -91,7 +90,6 @@ export function AppShell(props: AppShellProps): JSX.Element {
         resourceTypeSearchDisabled={true}
         opened={navbarOpen}
         spotlightEnabled={true}
-        customSpotlight={props.customSpotlight}
         patientsOnly={props.spotlightPatientsOnly}
         userMenuEnabled={true}
         version={props.version}
@@ -130,7 +128,6 @@ export function AppShell(props: AppShellProps): JSX.Element {
           closeNavbar={closeNavbar}
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
-          customSpotlight={props.customSpotlight}
           patientsOnly={props.spotlightPatientsOnly}
         />
       ) : undefined;

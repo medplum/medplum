@@ -45,7 +45,6 @@ export interface NavbarProps {
   readonly navbarToggle: () => void;
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
-  readonly customSpotlight?: boolean;
   readonly patientsOnly?: boolean;
   readonly userMenuEnabled?: boolean;
   readonly displayAddBookmark?: boolean;
@@ -107,7 +106,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </Tooltip>
               </Box>
             )}
-            {props.spotlightEnabled && !props.customSpotlight && <Spotlight patientsOnly={props.patientsOnly} />}
+            {props.spotlightEnabled && <Spotlight patientsOnly={props.patientsOnly} />}
             {!props.resourceTypeSearchDisabled && (
               <MantineAppShell.Section mb="sm">
                 <ResourceTypeInput
