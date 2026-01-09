@@ -2289,7 +2289,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         return; // Path doesn't exist in original
       }
       originalValue = originalValue[keys[0]];
-      
+
       // If there's an array index, navigate to that element
       if (index !== undefined) {
         if (!Array.isArray(originalValue) || index < 0 || index >= originalValue.length) {
@@ -2297,7 +2297,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
         originalValue = originalValue[index];
       }
-      
+
       if (!isObject(originalValue)) {
         return; // Path is not an object
       }
@@ -2327,7 +2327,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         return; // Parent doesn't exist in input, don't create it
       }
       inputParent = inputParent[key];
-      
+
       // If there's an array index, navigate to that element
       if (index !== undefined) {
         if (!Array.isArray(inputParent) || index < 0 || index >= inputParent.length) {
@@ -2335,7 +2335,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
         inputParent = inputParent[index];
       }
-      
+
       if (!isObject(inputParent)) {
         return; // Path is not an object in input
       }
