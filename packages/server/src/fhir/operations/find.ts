@@ -152,7 +152,9 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const actor = await ctx.repo.readReference(schedule.actor[0]);
   const timeZone = getTimeZone(actor);
   if (!timeZone) {
-    throw new OperationOutcomeError(badRequest('No timezone specified'));
+    throw new OperationOutcomeError(
+      badRequest('No timezone specified', `Schedule.actor[0].extension(${TimezoneExtensionURI})`)
+    );
   }
 
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
