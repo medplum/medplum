@@ -47,18 +47,23 @@ export const MIGRATIONS = [
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );`,
+  // Performance indexes for common query patterns
+  `CREATE INDEX IF NOT EXISTS idx_hl7_messages_status ON hl7_messages(status);`,
+  `CREATE INDEX IF NOT EXISTS idx_hl7_messages_status_received_time ON hl7_messages(status, received_time);`,
+  `CREATE INDEX IF NOT EXISTS idx_hl7_messages_callback ON hl7_messages(callback) WHERE callback IS NOT NULL;`,
+  `CREATE INDEX IF NOT EXISTS idx_hl7_messages_remote ON hl7_messages(remote) WHERE remote IS NOT NULL;`,
+  `CREATE INDEX IF NOT EXISTS idx_hl7_messages_channel_status ON hl7_messages(channel, status, received_time);`,
 ];
 
 export class AgentHl7DurableQueue {
   private readonly db: DatabaseSync;
   private readonly insertMessageStmt;
-  private readonly insertMessageWithCallbackStmt;
   private readonly getNextMessageStmt;
   private readonly getNextReceivedMessageStmt;
+  private readonly getAllReceivedMessagesStmt;
   private readonly getNextResponseQueuedMessageStmt;
   private readonly getMessageByCallbackStmt;
   private readonly getMessageByRemoteStmt;
-  private readonly markQueuedStmt;
   private readonly markSentStmt;
   private readonly markCommitAckedStmt;
   private readonly markAppAckedStmt;
@@ -72,26 +77,29 @@ export class AgentHl7DurableQueue {
 
   constructor() {
     this.db = new DatabaseSync(MESSAGE_DB_PATH);
+
+    // // Enable WAL mode for better concurrent read/write performance
+    // this.db.exec('PRAGMA journal_mode=WAL;');
+    // // NORMAL synchronous is a good balance between safety and performance
+    // this.db.exec('PRAGMA synchronous=NORMAL;');
+    // Increase cache size for better read performance (negative value = KB)
+    this.db.exec('PRAGMA cache_size=-64000;'); // 64MB cache
+
     for (const migration of MIGRATIONS) {
       this.db.exec(migration);
     }
 
     // Prepare statements for better performance
     this.insertMessageStmt = this.db.prepare(
-      `INSERT INTO hl7_messages (received_time, raw_message, sender, receiver, message_id, channel, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'received')`
-    );
-
-    this.insertMessageWithCallbackStmt = this.db.prepare(
       `INSERT INTO hl7_messages (received_time, raw_message, sender, receiver, message_id, channel, remote, callback, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'received')`
     );
 
     this.getNextMessageStmt = this.db.prepare(
       `SELECT id, raw_message, sender, receiver, message_id, channel FROM hl7_messages
-      WHERE status IN ('received', 'timed_out')
-      ORDER BY received_time ASC
-      LIMIT 1`
+       WHERE channel = ? AND status IN ('received', 'timed_out')
+       ORDER BY received_time ASC
+       LIMIT 1`
     );
 
     this.getNextReceivedMessageStmt = this.db.prepare(
@@ -99,6 +107,13 @@ export class AgentHl7DurableQueue {
        WHERE status = 'received'
        ORDER BY received_time ASC
        LIMIT 1`
+    );
+
+    this.getAllReceivedMessagesStmt = this.db.prepare(
+      `SELECT id, raw_message, sender, receiver, message_id, channel, remote, callback FROM hl7_messages
+       WHERE status = 'received'
+       ORDER BY received_time ASC
+       LIMIT ?`
     );
 
     this.getNextResponseQueuedMessageStmt = this.db.prepare(
@@ -118,12 +133,6 @@ export class AgentHl7DurableQueue {
       `SELECT id, raw_message, sender, receiver, message_id, channel, remote, callback, status FROM hl7_messages
        WHERE remote = ?
        LIMIT 1`
-    );
-
-    this.markQueuedStmt = this.db.prepare(
-      `UPDATE hl7_messages
-       SET status = 'queued', queued_time = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`
     );
 
     this.markSentStmt = this.db.prepare(
@@ -186,10 +195,10 @@ export class AgentHl7DurableQueue {
   /**
    * Add a message to the queue with metadata from the MSH segment.
    * @param message - The HL7 message to add to the queue.
-   * @param channel - The channel the message is being sent to.
-   * @param remote - The remote address the message is being sent to.
-   * @param callback - The callback ID for the message.
-   * @returns The ID of the message that was added to the queue.
+   * @param channel - The channel the message was received on.
+   * @param remote - The remote address the message was received from.
+   * @param callback - Optional callback ID for the message.
+   * @returns The ID of the inserted message.
    */
   addMessage(message: Hl7Message, channel: string, remote: string, callback?: string): number {
     const receivedTime = Date.now();
@@ -199,27 +208,25 @@ export class AgentHl7DurableQueue {
     const receiver = msh?.getField(5)?.toString() ?? '';
     const messageId = msh?.getField(10)?.toString() ?? '';
 
-    const result = callback
-      ? this.insertMessageWithCallbackStmt.run(
-          receivedTime,
-          rawMessage,
-          sender,
-          receiver,
-          messageId,
-          channel,
-          remote,
-          callback
-        )
-      : this.insertMessageStmt.run(receivedTime, rawMessage, sender, receiver, messageId, channel);
+    const result = this.insertMessageStmt.run(
+      receivedTime,
+      rawMessage,
+      sender,
+      receiver,
+      messageId,
+      channel,
+      remote ?? null,
+      callback ?? null
+    );
 
     return result.lastInsertRowid as number;
   }
 
   /**
-   * Get the next message to process.
-   * Returns messages with status 'received' or 'timed_out', ordered by received time
+   * Get the next message to process for a channel.
+   * Returns messages with status 'received' or 'timed_out', ordered by received time.
    * @param channel - The channel to get the next message for.
-   * @returns The next message to process, or undefined if no message is available.
+   * @returns The next message to process, or undefined if none available.
    */
   getNextMessage(channel: string):
     | {
@@ -231,110 +238,94 @@ export class AgentHl7DurableQueue {
         channel: string;
       }
     | undefined {
-    return this.getNextMessageStmt.get(channel) as {
-      id: number;
-      raw_message: string;
-      sender: string;
-      receiver: string;
-      message_id: string;
-      channel: string;
-    };
+    return this.getNextMessageStmt.get(channel) as
+      | {
+          id: number;
+          raw_message: string;
+          sender: string;
+          receiver: string;
+          message_id: string;
+          channel: string;
+        }
+      | undefined;
   }
 
   /**
-   * Mark a message as queued and set the queue time.
-   * @param messageId - The ID of the message to mark as queued.
-   */
-  markAsQueued(messageId: number): void {
-    const queuedTime = Date.now();
-    this.markQueuedStmt.run(queuedTime, messageId);
-  }
-
-  /**
-   * Mark a message as sent and set the sent time.
+   * Mark a message as sent.
    * @param messageId - The ID of the message to mark as sent.
    */
   markAsSent(messageId: number): void {
-    const sentTime = Date.now();
-    this.markSentStmt.run(sentTime, messageId);
+    this.markSentStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Mark a message as commit_acked and set the commit ack time.
+   * Mark a message as commit_acked.
    * @param messageId - The ID of the message to mark as commit_acked.
    */
   markAsCommitAcked(messageId: number): void {
-    const ackTime = Date.now();
-    this.markCommitAckedStmt.run(ackTime, messageId);
+    this.markCommitAckedStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Mark a message as app_acked and set the app ack time
+   * Mark a message as app_acked.
    * @param messageId - The ID of the message to mark as app_acked.
    */
   markAsAppAcked(messageId: number): void {
-    const ackTime = Date.now();
-    this.markAppAckedStmt.run(ackTime, messageId);
+    this.markAppAckedStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Mark a message as error and set the error time
+   * Mark a message as error.
    * @param messageId - The ID of the message to mark as error.
    */
   markAsError(messageId: number): void {
-    const errorTime = Date.now();
-    this.markErrorStmt.run(errorTime, messageId);
+    this.markErrorStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Mark a message as timed_out and set the timed_out time.
+   * Mark a message as timed_out.
    * @param messageId - The ID of the message to mark as timed_out.
    */
   markAsTimedOut(messageId: number): void {
-    const timedOutTime = Date.now();
-    this.markTimedOutStmt.run(timedOutTime, messageId);
+    this.markTimedOutStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Mark a message as response_sent and set the sent time.
-   * @param messageId - The ID of the message to mark as response_sent.
-   */
-  markAsResponseSent(messageId: number): void {
-    const sentTime = Date.now();
-    this.markResponseSentStmt.run(sentTime, messageId);
-  }
-
-  /**
-   * Mark a message as response_timed_out and set the timed out time.
-   * @param messageId - The ID of the message to mark as response_timed_out.
-   */
-  markAsResponseTimedOut(messageId: number): void {
-    const timedOutTime = Date.now();
-    this.markResponseTimedOutStmt.run(timedOutTime, messageId);
-  }
-
-  /**
-   * Mark a message as response_queued and store the response message.
+   * Mark a message as response_queued and store the response.
    * @param messageId - The ID of the message to mark as response_queued.
    * @param responseMessage - The response message to store.
    */
   markAsResponseQueued(messageId: number, responseMessage: string): void {
-    const queuedTime = Date.now();
-    this.markResponseQueuedStmt.run(responseMessage, queuedTime, messageId);
+    this.markResponseQueuedStmt.run(responseMessage, Date.now(), messageId);
   }
 
   /**
-   * Mark a message as response_error and set the error time.
+   * Mark a message as response_sent.
+   * @param messageId - The ID of the message to mark as response_sent.
+   */
+  markAsResponseSent(messageId: number): void {
+    this.markResponseSentStmt.run(Date.now(), messageId);
+  }
+
+  /**
+   * Mark a message as response_timed_out.
+   * @param messageId - The ID of the message to mark as response_timed_out.
+   */
+  markAsResponseTimedOut(messageId: number): void {
+    this.markResponseTimedOutStmt.run(Date.now(), messageId);
+  }
+
+  /**
+   * Mark a message as response_error.
    * @param messageId - The ID of the message to mark as response_error.
    */
   markAsResponseError(messageId: number): void {
-    const errorTime = Date.now();
-    this.markResponseErrorStmt.run(errorTime, messageId);
+    this.markResponseErrorStmt.run(Date.now(), messageId);
   }
 
   /**
-   * Get the next message that needs to be sent to WebSocket (status = 'received')
-   * @returns The next message to send to WebSocket, or undefined if no message is available.
+   * Get the next message with status 'received'.
+   * @returns The next received message, or undefined if none available.
    */
   getNextReceivedMessage():
     | {
@@ -363,8 +354,35 @@ export class AgentHl7DurableQueue {
   }
 
   /**
-   * Get the next response message that needs to be sent back (status = 'response_queued')
-   * @returns The next response message to send back, or undefined if no message is available.
+   * Get all messages with status 'received', up to a limit.
+   * @param limit - Maximum number of messages to return (default 1000).
+   * @returns Array of received messages.
+   */
+  getAllReceivedMessages(limit: number = 1000): {
+    id: number;
+    raw_message: string;
+    sender: string;
+    receiver: string;
+    message_id: string;
+    channel: string;
+    remote: string;
+    callback: string;
+  }[] {
+    return this.getAllReceivedMessagesStmt.all(limit) as {
+      id: number;
+      raw_message: string;
+      sender: string;
+      receiver: string;
+      message_id: string;
+      channel: string;
+      remote: string;
+      callback: string;
+    }[];
+  }
+
+  /**
+   * Get the next message with status 'response_queued'.
+   * @returns The next response queued message, or undefined if none available.
    */
   getNextResponseQueuedMessage():
     | {
@@ -389,9 +407,9 @@ export class AgentHl7DurableQueue {
   }
 
   /**
-   * Get a message by its callback ID
-   * @param callback - The callback ID to get the message by.
-   * @returns The message by its callback ID, or undefined if no message is available.
+   * Get a message by its callback ID.
+   * @param callback - The callback ID to search for.
+   * @returns The message, or undefined if not found.
    */
   getMessageByCallback(callback: string):
     | {
@@ -422,9 +440,9 @@ export class AgentHl7DurableQueue {
   }
 
   /**
-   * Get a message by its remote identifier
-   * @param remote - The remote identifier to get the message by.
-   * @returns The message by its remote identifier, or undefined if no message is available.
+   * Get a message by its remote identifier.
+   * @param remote - The remote identifier to search for.
+   * @returns The message, or undefined if not found.
    */
   getMessageByRemote(remote: string):
     | {
@@ -456,8 +474,8 @@ export class AgentHl7DurableQueue {
 
   /**
    * Count messages by status.
-   * @param status - The status to count messages by.
-   * @returns The number of messages by status.
+   * @param status - The status to count.
+   * @returns The count of messages with that status.
    */
   countByStatus(status: (typeof MESSAGE_STATUSES)[number]): number {
     const result = this.countByStatusStmt.get(status) as { count: number };

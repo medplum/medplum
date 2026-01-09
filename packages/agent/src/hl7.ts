@@ -234,12 +234,18 @@ export class AgentHl7ChannelConnection {
       this.channel.channelLog.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
       const callback = `Agent/${this.channel.app.agentId}-${randomUUID()}`;
 
-      // Trigger processing
-      this.channel.app.startWebSocketWorker();
       const msgControlId = event.message.getSegment('MSH')?.getField(10)?.toString();
       this.channel.channelLog.info(
         `[Received -- ID: ${msgControlId ?? 'not provided'}]: ${event.message.toString().replaceAll('\r', '\n')}`
       );
+
+      // Log immediate ACK sent by HL7 library in enhanced mode
+      const enhancedMode = this.channel.server.getEnhancedMode();
+      if (enhancedMode === 'standard') {
+        this.channel.channelLog.info(`[Sent Commit ACK (CA) -- ID: ${msgControlId ?? 'not provided'}]`);
+      } else if (enhancedMode === 'aaMode') {
+        this.channel.channelLog.info(`[Sent Immediate ACK (AA) -- ID: ${msgControlId ?? 'not provided'}]`);
+      }
 
       // Check if we should assign sequence no. If so, take the next one and set it in MSH.13
       if (this.channel.shouldAssignSeqNo()) {
@@ -248,13 +254,16 @@ export class AgentHl7ChannelConnection {
         this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${seqNo}`);
       }
 
-      // Store in durable queue
+      // Store in durable queue first, then trigger processing
       this.channel.app.hl7DurableQueue.addMessage(
         event.message,
         this.channel.getDefinition().name as string,
         this.remote,
         callback
       );
+
+      // Trigger WebSocket worker to process the queued message
+      this.channel.app.startWebSocketWorker();
 
       // Log stats
       if (msgControlId) {

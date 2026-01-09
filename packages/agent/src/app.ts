@@ -88,7 +88,7 @@ export class App {
   readonly log: ILogger;
   readonly channelLog: ILogger;
   readonly channels = new Map<string, Channel>();
-  readonly hl7DurableQueue = new AgentHl7DurableQueue();
+  readonly hl7DurableQueue: AgentHl7DurableQueue;
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
   heartbeatPeriod = HEARTBEAT_PERIOD_MS; // 10 seconds
   private heartbeatTimer?: NodeJS.Timeout;
@@ -111,6 +111,9 @@ export class App {
     this.agentId = agentId;
     this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
     this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+
+    // Initialize durable queue
+    this.hl7DurableQueue = new AgentHl7DurableQueue();
   }
 
   async start(): Promise<void> {
@@ -303,6 +306,8 @@ export class App {
                 // Update durable queue with response
                 this.hl7DurableQueue.markAsResponseQueued(dbMsg.id, command.body);
                 this.trySendToHl7Connection();
+                // Trigger worker to process any new messages that arrived while waiting
+                this.startWebSocketWorker();
               } else if (command.callback) {
                 this.log.warn(`Received response for unknown message: ${command.remote}`);
               }
@@ -704,41 +709,67 @@ export class App {
 
     // Start the worker
     this.webSocketWorker = this.trySendToWebSocket()
-      .then(() => {
+      .then((processedCount) => {
         this.webSocketWorker = undefined;
+        // Only restart if we processed messages (new ones might have arrived)
+        if (processedCount && processedCount > 0) {
+          this.startWebSocketWorker();
+        }
       })
-      .catch((err) => console.log('WebSocket worker error', err));
+      .catch((err) => {
+        this.log.error(`WebSocket worker error: ${normalizeErrorString(err)}`);
+        this.webSocketWorker = undefined;
+        // Try to restart worker to process any remaining messages
+        this.startWebSocketWorker();
+      });
   }
 
-  private async trySendToWebSocket(): Promise<void> {
+  private async trySendToWebSocket(): Promise<number> {
     if (this.live) {
-      // Process messages from durable queue
-      let dbMsg = this.hl7DurableQueue.getNextReceivedMessage();
-      while (dbMsg) {
+      // Refresh token once upfront to avoid repeated refreshes
+      await this.medplum.refreshIfExpired();
+      const accessToken = this.medplum.getAccessToken() as string;
+
+      // Get all messages with status='received' in one query
+      const dbMessages = this.hl7DurableQueue.getAllReceivedMessages();
+
+      if (dbMessages.length === 0) {
+        return 0;
+      }
+
+      // Send all messages and track results
+      let successCount = 0;
+
+      for (const dbMsg of dbMessages) {
         const agentMsg: AgentMessage = {
           type: 'agent:transmit:request',
-          accessToken: 'placeholder',
+          accessToken,
           channel: dbMsg.channel,
-          remote: dbMsg.sender,
+          remote: dbMsg.remote,
           contentType: ContentType.HL7_V2,
           body: dbMsg.raw_message,
           callback: dbMsg.callback,
         };
 
         try {
+          if (!this.webSocket) {
+            throw new Error('WebSocket not connected');
+          }
+          // Send via WebSocket
+          this.webSocket.send(JSON.stringify(agentMsg));
+          // Mark as sent IMMEDIATELY after sending to avoid race condition
+          // where response arrives before status is updated
           this.hl7DurableQueue.markAsSent(dbMsg.id);
-          await this.sendToWebSocket(agentMsg);
-          // Keep status as 'sent' - will be updated when response arrives
+          successCount++;
         } catch (err) {
           this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
           this.hl7DurableQueue.markAsError(dbMsg.id);
-          throw err;
         }
-
-        dbMsg = this.hl7DurableQueue.getNextReceivedMessage();
       }
+
+      return successCount;
     }
-    this.webSocketWorker = undefined;
+    return 0;
   }
 
   private trySendToHl7Connection(): void {

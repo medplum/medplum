@@ -18,7 +18,7 @@
     "dist"
   ],
   "scripts": {
-    "agent": "tsx src/main.ts",
+    "agent": "NODE_NO_WARNINGS=1 tsx src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
