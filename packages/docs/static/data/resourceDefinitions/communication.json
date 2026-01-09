@@ -845,6 +845,12 @@
       "type": "token",
       "description": "Description of the purpose/content",
       "expression": "Communication.topic"
+    },
+    {
+      "name": "priority",
+      "type": "token",
+      "description": "The priority of this Communication",
+      "expression": "Communication.priority"
     }
   ]
 }
