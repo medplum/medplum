@@ -1823,6 +1823,9 @@ describe('FHIR Repo', () => {
           resourceType: 'AccessPolicy',
           resource: [
             {
+              resourceType: '*',
+            },
+            {
               resourceType: 'ProjectMembership',
               readonlyFields: ['user.reference'],
             },
@@ -1868,6 +1871,9 @@ describe('FHIR Repo', () => {
           resourceType: 'AccessPolicy',
           resource: [
             {
+              resourceType: '*',
+            },
+            {
               resourceType: 'ProjectMembership',
               readonlyFields: ['user.reference'],
             },
@@ -1908,6 +1914,9 @@ describe('FHIR Repo', () => {
         const accessPolicy: AccessPolicy = {
           resourceType: 'AccessPolicy',
           resource: [
+            {
+              resourceType: '*',
+            },
             {
               resourceType: 'ProjectMembership',
               readonlyFields: ['user.reference'],
@@ -1954,6 +1963,9 @@ describe('FHIR Repo', () => {
         const accessPolicy: AccessPolicy = {
           resourceType: 'AccessPolicy',
           resource: [
+            {
+              resourceType: '*',
+            },
             {
               resourceType: 'Patient',
               readonlyFields: ['identifier[0].system'],
@@ -2006,6 +2018,9 @@ describe('FHIR Repo', () => {
         const accessPolicy: AccessPolicy = {
           resourceType: 'AccessPolicy',
           resource: [
+            {
+              resourceType: '*',
+            },
             {
               resourceType: 'Patient',
               readonlyFields: ['identifier[0].system'],
