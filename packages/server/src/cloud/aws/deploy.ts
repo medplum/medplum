@@ -42,7 +42,7 @@ export const handler = async (event, context) => {
 `;
 
 const WRAPPER_CODE = `
-  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
@@ -59,7 +59,20 @@ const WRAPPER_CODE = `
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
+
+    // Create event data for bot handler
+    const eventData = { bot, requester, input, contentType, secrets, traceId, headers };
+
+    // Add onChunk callback for streaming mode
+    if (streaming) {
+      eventData.onChunk = async (chunk) => {
+        // Write chunks to console in a special format
+        // The streaming handler will parse these
+        console.log(JSON.stringify({ __medplum_chunk__: chunk }));
+      };
+    }
+
+    let result = await userCode.handler(medplum, eventData);
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }

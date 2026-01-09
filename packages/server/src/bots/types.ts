@@ -34,9 +34,12 @@ export interface BotExecutionRequest {
   readonly defaultHeaders?: Record<string, string>;
 }
 
+export type StreamingCallback = (chunk: any) => Promise<void>;
+
 export interface BotExecutionContext extends BotExecutionRequest {
   readonly accessToken: string;
   readonly secrets: Record<string, ProjectSetting>;
+  readonly streamingCallback?: StreamingCallback;
 }
 
 export interface BotExecutionResult {
@@ -44,3 +47,11 @@ export interface BotExecutionResult {
   readonly logResult: string;
   readonly returnValue?: any;
 }
+
+export interface BotStreamingResult {
+  readonly streaming: true;
+  readonly success: boolean;
+  readonly logResult: string;
+}
+
+export type BotExecutionResponse = BotExecutionResult | BotStreamingResult;
