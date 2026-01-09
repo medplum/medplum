@@ -376,5 +376,4 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread).toBeUndefined();
     });
   });
-
 });
