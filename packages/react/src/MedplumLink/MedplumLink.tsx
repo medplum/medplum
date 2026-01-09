@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { TextProps } from '@mantine/core';
+import type { AnchorProps } from '@mantine/core';
 import { Anchor } from '@mantine/core';
 import { isReference, isResource } from '@medplum/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
@@ -8,7 +8,7 @@ import { useMedplumNavigate } from '@medplum/react-hooks';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode } from 'react';
 import { isAuxClick } from '../utils/dom';
 
-export interface MedplumLinkProps extends TextProps {
+export interface MedplumLinkProps extends AnchorProps {
   readonly to?: Resource | Reference | string;
   readonly suffix?: string;
   readonly label?: string;

@@ -127,6 +127,7 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             label="Patient"
             resourceType="Patient"
             name="patient"
+            placeholder="Search for patient"
             defaultValue={task?.for as Reference<Patient>}
             onChange={async (patient: Patient | undefined) => {
               await handlePatientChange(patient ? { reference: getReferenceString(patient) } : undefined);

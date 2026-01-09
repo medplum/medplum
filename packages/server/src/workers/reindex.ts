@@ -13,7 +13,7 @@ import type { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, Resou
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getConfig } from '../config/loader';
-import { getRequestContext, tryRunInRequestContext } from '../context';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository } from '../fhir/repo';
@@ -489,7 +489,7 @@ export function prepareReindexJobData(
   searchFilter?: SearchRequest,
   maxResourceVersion?: number
 ): ReindexJobData {
-  const { requestId, traceId } = getRequestContext();
+  const ctx = tryGetRequestContext();
   const startTime = Date.now();
   const endTimestamp = new Date(startTime + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
@@ -503,7 +503,7 @@ export function prepareReindexJobData(
     searchFilter,
     maxResourceVersion,
     results: Object.create(null),
-    requestId,
-    traceId,
+    requestId: ctx?.requestId,
+    traceId: ctx?.traceId,
   };
 }

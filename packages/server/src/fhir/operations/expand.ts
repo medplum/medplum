@@ -17,6 +17,7 @@ import type { Pool, PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
 import { getLogger } from '../../logger';
+import type { Repository } from '../repo';
 import {
   Column,
   Condition,
@@ -48,7 +49,7 @@ type ValueSetExpandParameters = {
   count?: number;
   excludeNotForUI?: boolean;
   includeDesignations?: boolean;
-  displayLanguage?: boolean;
+  displayLanguage?: string;
   valueSet?: ValueSet;
 };
 
@@ -65,6 +66,7 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   if (filter !== undefined && typeof filter !== 'string') {
     return [badRequest('Invalid filter')];
   }
+  const repo = getAuthenticatedContext().repo;
   let valueSet = params.valueSet;
   if (!valueSet) {
     let url = params.url;
@@ -77,13 +79,13 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
       url = url.substring(0, pipeIndex);
     }
 
-    valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+    valueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
   }
 
   if (params.filter && !params.count) {
     params.count = 10; // Default to small page size for typeahead queries
   }
-  const result = await expandValueSet(valueSet, params);
+  const result = await expandValueSet(repo, valueSet, params);
 
   return [allOk, buildOutputParameters(operation, result)];
 }
@@ -96,11 +98,7 @@ export function filterIncludedConcepts(
   system?: string
 ): ValueSetExpansionContains[] {
   const filter = params.filter?.trim().toLowerCase();
-  const codings: Coding[] = flattenConcepts(concepts, { filter, system });
-  if (!filter) {
-    return codings;
-  }
-  return codings.filter((c) => c.display?.toLowerCase().includes(filter));
+  return flattenConcepts(concepts, { filter, system, displayLanguage: params.displayLanguage });
 }
 
 function flattenConcepts(
@@ -108,8 +106,9 @@ function flattenConcepts(
   options?: {
     filter?: string;
     system?: string;
+    displayLanguage?: string;
   }
-): Coding[] {
+): ValueSetExpansionContains[] {
   const result: Coding[] = [];
   for (const concept of concepts) {
     const system = (concept as Coding).system ?? options?.system;
@@ -124,16 +123,21 @@ function flattenConcepts(
     }
 
     const filter = options?.filter;
-    if (!filter || concept.display?.toLowerCase().includes(filter)) {
-      result.push({ system, code: concept.code, display: concept.display });
+    const display = getDisplayText(concept, options?.displayLanguage);
+    if (!filter || matchesTextFilter(display, filter)) {
+      result.push({ system, code: concept.code, display });
     }
   }
 
   return result;
 }
 
-export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
-  const expandedSet = await computeExpansion(valueSet, params);
+export async function expandValueSet(
+  repo: Repository,
+  valueSet: ValueSet,
+  params: ValueSetExpandParameters
+): Promise<ValueSet> {
+  const expandedSet = await computeExpansion(repo, valueSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: MAX_EXPANSION_SIZE + 1,
@@ -151,6 +155,7 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
 }
 
 async function computeExpansion(
+  repo: Repository,
   valueSet: ValueSet,
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
@@ -174,10 +179,11 @@ async function computeExpansion(
   for (const include of valueSet.compose.include) {
     if (include.valueSet) {
       for (const url of include.valueSet) {
-        const includedValueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
+        const includedValueSet = await findTerminologyResource<ValueSet>(repo, 'ValueSet', url);
         terminologyResources[includedValueSet.url as string] = includedValueSet;
 
         const nestedExpansion = await computeExpansion(
+          repo,
           includedValueSet,
           {
             ...params,
@@ -207,12 +213,12 @@ async function computeExpansion(
 
     const codeSystem =
       (terminologyResources[include.system] as WithId<CodeSystem>) ??
-      (await findTerminologyResource('CodeSystem', include.system));
+      (await findTerminologyResource(repo, 'CodeSystem', include.system));
     terminologyResources[include.system] = codeSystem;
 
     if (include.concept) {
       const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
-      const validCodings = await validateCodings(codeSystem, filteredCodings);
+      const validCodings = await validateCodings(codeSystem, filteredCodings, params);
       for (const c of validCodings) {
         if (c) {
           c.id = undefined;
@@ -281,7 +287,7 @@ export function expansionQuery(
   codeSystem: WithId<CodeSystem>,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
-  let query = new SelectQuery('Coding')
+  let query: SelectQuery | undefined = new SelectQuery('Coding')
     .column('id')
     .column('code')
     .column('display')
@@ -290,46 +296,58 @@ export function expansionQuery(
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {
-    for (const condition of include.filter) {
-      switch (condition.op) {
-        case 'is-a':
-        case 'descendent-of': {
-          const parentProperty = getParentProperty(codeSystem);
-          if (!parentProperty?.id) {
-            return undefined;
-          }
-          const newQuery = addParentFilter(
-            query,
-            codeSystem,
-            condition,
-            parentProperty as WithId<CodeSystemProperty>,
-            params
-          );
-          if (!newQuery) {
-            return undefined;
-          }
-          query = newQuery;
-          break;
+    query = applyValueSetFilters(query, include.filter, codeSystem, params);
+  }
+  if (params) {
+    query = applyExpansionFilters(query, codeSystem, params);
+  }
+  return query;
+}
+
+function applyValueSetFilters(
+  query: SelectQuery,
+  filters: ValueSetComposeIncludeFilter[],
+  codeSystem: WithId<CodeSystem>,
+  params?: ValueSetExpandParameters
+): SelectQuery | undefined {
+  for (const condition of filters) {
+    switch (condition.op) {
+      case 'is-a':
+      case 'descendent-of': {
+        const parentProperty = getParentProperty(codeSystem);
+        if (!parentProperty?.id) {
+          return undefined;
         }
-        case '=':
-        case 'in': {
-          const property = codeSystem.property?.find((p) => p.code === condition.property);
-          if (!property?.id) {
-            return undefined;
-          }
-          query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
-          break;
+        const newQuery = addParentFilter(
+          query,
+          codeSystem,
+          condition,
+          parentProperty as WithId<CodeSystemProperty>,
+          params
+        );
+        if (!newQuery) {
+          return undefined;
         }
-        default:
-          getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
-          return undefined; // Unknown filter type, don't make DB query with incorrect filters
+        query = newQuery;
+        break;
       }
+
+      case '=':
+      case 'in': {
+        const property = codeSystem.property?.find((p) => p.code === condition.property);
+        if (!property?.id) {
+          return undefined;
+        }
+        query = addPropertyFilter(query, condition, property as WithId<CodeSystemProperty>);
+        break;
+      }
+
+      default:
+        getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
+        return undefined; // Unknown filter type, don't make DB query with incorrect filters
     }
   }
 
-  if (params) {
-    query = addExpansionFilters(query, codeSystem, params);
-  }
   return query;
 }
 
@@ -353,6 +371,7 @@ export function addParentFilter(
       .column('language')
       .where(new Column('origin', 'system'), '=', codeSystem.id)
       .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+
     const ancestorQuery = findAncestor(base, codeSystem, parentProperty, condition.value);
     query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
   } else {
@@ -364,11 +383,15 @@ export function addParentFilter(
   return query;
 }
 
-function addExpansionFilters(
-  query: SelectQuery,
+function applyExpansionFilters(
+  query: SelectQuery | undefined,
   codeSystem: WithId<CodeSystem>,
   params: ValueSetExpandParameters
-): SelectQuery {
+): SelectQuery | undefined {
+  if (!query) {
+    return undefined;
+  }
+
   if (params.filter) {
     query
       .whereExpr(
@@ -423,4 +446,18 @@ function addAbstractFilter(query: SelectQuery, codeSystem: WithId<CodeSystem>): 
   query.where(new Column(propertyTable, 'value'), '=', null);
 
   return query;
+}
+
+function matchesTextFilter(text: string | undefined, filter: string): boolean {
+  return text ? text.toLowerCase().includes(filter) : false;
+}
+
+function getDisplayText(
+  concept: ValueSetComposeIncludeConcept | ValueSetExpansionContains | Coding,
+  language?: string
+): string | undefined {
+  if (language && 'designation' in concept) {
+    return concept.designation?.find((c) => c.language === language)?.value ?? concept.display;
+  }
+  return concept.display;
 }

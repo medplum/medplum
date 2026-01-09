@@ -32,6 +32,8 @@ import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
+import { getColumnStatisticsHandler } from './operations/db-column-statistics';
+import { configureColumnStatisticsHandler } from './operations/db-configure-column-statistics';
 import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
 import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
@@ -379,6 +381,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
+  router.add('GET', '/$db-column-statistics', getColumnStatisticsHandler);
+  router.add('POST', '/$db-configure-column-statistics', configureColumnStatisticsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

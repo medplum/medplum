@@ -54,6 +54,7 @@ describe('useThreadInbox', () => {
     expect(result.current.threadMessages).toEqual([]);
     expect(result.current.selectedThread).toBeUndefined();
     expect(result.current.error).toBeNull();
+    expect(result.current.total).toBeUndefined();
   });
 
   test('fetches thread messages and returns only one message per topic', async () => {
@@ -250,7 +251,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadStatusChange('in-progress');
+    await act(async () => result.current.handleThreadStatusChange('in-progress'));
 
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
@@ -297,7 +298,7 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread?.id).toBe('comm-1');
     });
 
-    await result.current.handleThreadStatusChange('in-progress');
+    await act(async () => result.current.handleThreadStatusChange('in-progress'));
 
     await waitFor(() => {
       expect(result.current.error).toBe(error);
@@ -335,7 +336,7 @@ describe('useThreadInbox', () => {
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(medplum, 'searchResources').mockRejectedValue(error);
+    vi.spyOn(medplum, 'search').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,

@@ -37,13 +37,21 @@ export interface Hl7ConnectionOptions {
   messagesPerMin?: number;
 }
 
+/**
+ * Enhanced mode for HL7 connections.
+ * - `'standard'`: Standard enhanced mode behavior
+ * - `'aaMode'`: AA mode - special enhanced mode that only accepts AA acknowledgements
+ * - `undefined`: Enhanced mode is not enabled (standard behavior)
+ */
+export type EnhancedMode = 'standard' | 'aaMode' | undefined;
+
 export const DEFAULT_ENCODING = 'utf-8';
 const ONE_MINUTE = 60 * 1000;
 
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   encoding: string;
-  enhancedMode: boolean;
+  enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
   private chunks: Buffer[] = [];
   private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
@@ -54,7 +62,7 @@ export class Hl7Connection extends Hl7Base {
   constructor(
     socket: net.Socket,
     encoding: string = DEFAULT_ENCODING,
-    enhancedMode = false,
+    enhancedMode?: EnhancedMode,
     options: Hl7ConnectionOptions = {}
   ) {
     super();
@@ -92,8 +100,12 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
-      if (this.enhancedMode) {
+      // In standard enhanced mode, send commit ACK (CA) immediately, then later forward app-level ACKs
+      // In aaMode, send application ACK (AA) immediately, then ignore any later app-level ACKs
+      if (this.enhancedMode === 'standard') {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
+      } else if (this.enhancedMode === 'aaMode') {
+        this.send(event.message.buildAck({ ackCode: 'AA' }));
       }
       const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
       // If there is no message control ID, just return
@@ -357,11 +369,11 @@ export class Hl7Connection extends Hl7Base {
     return this.encoding;
   }
 
-  setEnhancedMode(enhancedMode: boolean): void {
+  setEnhancedMode(enhancedMode: EnhancedMode): void {
     this.enhancedMode = enhancedMode;
   }
 
-  getEnhancedMode(): boolean {
+  getEnhancedMode(): EnhancedMode {
     return this.enhancedMode;
   }
 

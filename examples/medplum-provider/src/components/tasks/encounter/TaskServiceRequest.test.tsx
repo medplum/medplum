@@ -137,12 +137,12 @@ describe('TaskServiceRequest', () => {
     });
   });
 
-  test('renders service request title and SNOMED codes', async () => {
+  test('renders task display string', async () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('Complete Blood Count, Metabolic Panel')).toBeInTheDocument();
-      expect(screen.getByText('SNOMED: 123456789, 987654321')).toBeInTheDocument();
+      // Component displays getDisplayString(task), which shows "Task/task-123"
+      expect(screen.getByText('Task/task-123')).toBeInTheDocument();
     });
   });
 
@@ -388,7 +388,7 @@ describe('TaskServiceRequest', () => {
 
     await waitFor(() => {
       const viewLink = screen.getByRole('link', { name: 'View in Labs' });
-      expect(viewLink).toHaveAttribute('href', `/Patient/${HomerSimpson.id}/labs/lab-order-456`);
+      expect(viewLink).toHaveAttribute('href', `/Patient/${HomerSimpson.id}/ServiceRequest/lab-order-456`);
       expect(viewLink).toHaveAttribute('target', '_blank');
     });
   });

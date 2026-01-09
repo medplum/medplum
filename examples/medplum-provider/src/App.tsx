@@ -85,19 +85,19 @@ export function App(): JSX.Element | null {
                       />
                     ),
                     label: 'Messages',
-                    href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                    href: `/Communication?status=in-progress`,
                   },
                   {
                     icon: (
                       <NotificationIcon
                         resourceType="Task"
-                        countCriteria={`owner=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}`}
+                        countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
+                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
                         iconComponent={<IconClipboardCheck />}
                       />
                     ),
                     label: 'Tasks',
-                    href: `/Task?owner=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                    href: `/Task?owner=${getReferenceString(profile)}&_sort=-_lastUpdated&status=requested,ready,received,accepted,in-progress,draft`,
                   },
                 ],
               },
@@ -144,8 +144,8 @@ export function App(): JSX.Element | null {
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
-                <Route path="labs" element={<LabsPage />} />
-                <Route path="labs/:labId" element={<LabsPage />} />
+                <Route path="ServiceRequest" element={<LabsPage />} />
+                <Route path="ServiceRequest/:serviceRequestId" element={<LabsPage />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>

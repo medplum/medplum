@@ -1287,4 +1287,86 @@ describe('Expand', () => {
       { code: 'MSG_INVALID_ID', display: 'ID not accepted', system: codeSystem.url },
     ]);
   });
+
+  test('Honors ValueSet designation overrides', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'MSG_INVALID_ID',
+          display: 'ID not accepted',
+          designation: [
+            { language: 'fr', value: 'ID non accepté' },
+            { language: 'zh', value: 'ID不被接受' },
+          ],
+        },
+      ],
+    };
+    const valueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: codeSystem.url,
+            concept: [
+              {
+                code: 'MSG_INVALID_ID',
+                display: 'Invalid ID',
+                designation: [
+                  { language: 'fr', value: 'Identifiant invalide' },
+                  { language: 'es', value: 'ID inválido' },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    } satisfies ValueSet;
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url)}&filter=invalid&displayLanguage=fr`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'MSG_INVALID_ID', display: 'Identifiant invalide', system: codeSystem.url },
+    ]);
+  });
+
+  test('Base resources are not shadowed for Super Admin', async () => {
+    const url = 'https://medplum.com/fhir/ValueSet/resource-types';
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'active',
+        url,
+        content: 'not-present',
+      } satisfies CodeSystem);
+    expect(csRes.status).toStrictEqual(201);
+
+    const superAdminToken = await initTestAuth({ superAdmin: true });
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${url}&filter=clien`)
+      .set('Authorization', 'Bearer ' + superAdminToken);
+    expect(res.status).toBe(200);
+    expect(res.body.expansion.contains[0].display).toStrictEqual('ClientApplication');
+  });
 });

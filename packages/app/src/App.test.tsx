@@ -59,7 +59,7 @@ describe('App', () => {
     const user = await setup();
     await openMenu(user);
 
-    await user.click(screen.getByText('Add another account'));
+    await user.click(screen.getByText('Switch to another project'));
   });
 
   test('Click sign out', async () => {

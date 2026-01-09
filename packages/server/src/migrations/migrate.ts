@@ -11,10 +11,11 @@ import {
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { escapeIdentifier } from 'pg';
 import { systemResourceProjectId } from '../constants';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
-import type { SearchParameterImplementation } from '../fhir/searchparameter';
+import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
 import { TokenArrayToTextFn } from '../fhir/sql';
@@ -99,9 +100,7 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
         return;
       }
 
-      if (!options.allowPostDeployActions) {
-        throw new Error(`Post-deploy migration required for: ${description}`);
-      }
+      assert(options.allowPostDeployActions, `Post-deploy migration required for: ${description}`);
 
       action();
     },
@@ -220,9 +219,7 @@ WHERE connamespace = 'public'::regnamespace AND conrelid IN($1::regclass) AND co
   for (const row of rs.rows) {
     if (row.contype === 'c') {
       const expressionMatch = /CHECK \((.*)\)/.exec(row.condef);
-      if (!expressionMatch) {
-        throw new Error('Could not parse check constraint expression from ' + row.condef);
-      }
+      assert(expressionMatch, 'Could not parse check constraint expression from ' + row.condef);
       cds.push({
         name: row.conname,
         type: 'check',
@@ -342,21 +339,19 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    if (!searchParam.base?.includes(resourceType as ResourceType)) {
-      throw new Error(
-        `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
-      );
-    }
+    assert(
+      searchParam.base?.includes(resourceType as ResourceType),
+      `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
+    );
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
     for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
-        if (!columnDefinitionsEqual(tableDefinition, existing, column)) {
-          throw new Error(
-            `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
-          );
-        }
+        assert(
+          columnDefinitionsEqual(tableDefinition, existing, column),
+          `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+        );
         continue;
       }
       tableDefinition.columns.push(column);
@@ -383,9 +378,10 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
-      if (impl.type !== SearchParameterType.TEXT) {
-        throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
-      }
+      assert(
+        impl.type === SearchParameterType.TEXT,
+        'Expected SearchParameterDetails.type to be TEXT for token-column search strategy but got ' + impl.type
+      );
       const columns = [
         { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
@@ -395,7 +391,7 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
       return columns;
     }
     case 'column':
-      return [getColumnDefinition(impl.columnName, impl)];
+      return [getColumnDefinition(impl)];
     case 'lookup-table': {
       if (impl.sortColumnName) {
         return [{ name: impl.sortColumnName, type: 'TEXT' }];
@@ -450,7 +446,7 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
-function getColumnDefinition(name: string, impl: SearchParameterImplementation): ColumnDefinition {
+function getColumnDefinition(impl: ColumnSearchParameterImplementation): ColumnDefinition {
   let baseColumnType: string;
   switch (impl.type) {
     case SearchParameterType.BOOLEAN:
@@ -475,23 +471,13 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
       break;
   }
 
-  if (impl.searchStrategy === 'token-column') {
-    if (baseColumnType.toLocaleUpperCase() !== 'TEXT') {
-      throw new Error('Token columns must have TEXT column type');
-    }
-
-    return { name, type: 'TEXT[]' };
-  }
-
-  return { name, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
+  return { name: impl.columnName, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
   if (resourceType === 'UserConfiguration') {
     const nameCol = result.columns.find((c) => c.name === 'name');
-    if (!nameCol) {
-      throw new Error('Could not find UserConfiguration.name column');
-    }
+    assert(nameCol, 'Could not find UserConfiguration.name column');
     nameCol.defaultValue = "''::text";
   }
 
@@ -513,25 +499,19 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   // getSearchParameterDetails looks for
   if (resourceType === 'DomainConfiguration') {
     const domainIdx = result.indexes.find((i) => i.columns.length === 1 && i.columns[0] === 'domain');
-    if (!domainIdx) {
-      throw new Error('DomainConfiguration.domain index not found');
-    }
+    assert(domainIdx, 'Could not find DomainConfiguration.domain index');
     domainIdx.unique = true;
   }
 
   if (resourceType === 'ServiceRequest') {
     const orderDetail = result.columns.find((c) => c.name === 'orderDetail');
-    if (!orderDetail) {
-      throw new Error('Could not find ServiceRequest.orderDetail column');
-    }
+    assert(orderDetail, 'Could not find ServiceRequest.orderDetail column');
     orderDetail.defaultValue = "'{}'::text[]";
   }
 
   if (resourceType === 'ProjectMembership') {
     const profileCol = result.columns.find((c) => c.name === 'profile');
-    if (!profileCol) {
-      throw new Error('Could not find ProjectMembership.profile column');
-    }
+    assert(profileCol, 'Could not find ProjectMembership.profile column');
     profileCol.defaultValue = "''::text";
 
     result.indexes.push(
@@ -935,7 +915,7 @@ function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
     }
   }
 }
-function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
+export function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import type { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
@@ -1130,9 +1110,10 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
       parts.push('NOT NULL');
     }
     if (column.defaultValue) {
-      if (column.identity) {
-        throw new Error(`Cannot set default value on identity column ${tableDef.name}.${column.name}`);
-      }
+      assert(
+        column.identity === undefined,
+        `Cannot set default value on identity column ${tableDef.name}.${column.name}`
+      );
       parts.push(`DEFAULT ${column.defaultValue}`);
     }
     createTableLines.push(`  ${parts.join(' ')}`);
@@ -1143,11 +1124,8 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
   }
 
   for (const constraint of tableDef.constraints ?? []) {
-    if (constraint.type === 'check') {
-      createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
-    } else {
-      throw new Error(`Unsupported constraint type: ${constraint.type}`);
-    }
+    assert(constraint.type === 'check', `Unsupported constraint type: ${constraint.type}`);
+    createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
   }
 
   queries.push(
@@ -1242,9 +1220,7 @@ function generateIndexesActions(
   }
   for (const targetIndex of [...targetTable.indexes, ...computedIndexes]) {
     const indexName = getIndexName(targetTable.name, targetIndex);
-    if (seenIndexNames.has(indexName)) {
-      throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
-    }
+    assert(!seenIndexNames.has(indexName), new Error('Duplicate index name: ' + indexName, { cause: targetIndex }));
     seenIndexNames.add(indexName);
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
@@ -1272,9 +1248,7 @@ function generateIndexesActions(
       );
       if (options?.dropUnmatchedIndexes) {
         const indexName = parseIndexName(startIndex.indexdef ?? '');
-        if (!indexName) {
-          throw new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex });
-        }
+        assert(indexName, new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex }));
         actions.push({ type: 'DROP_INDEX', indexName });
       }
     }
@@ -1290,13 +1264,14 @@ function generateConstraintsActions(
   const actions: MigrationAction[] = [];
 
   const matchedConstraints = new Set<CheckConstraintDefinition>();
-  const seenConstraintNames = new Set<string>();
+  const seenNames = new Set<string>();
 
   for (const targetConstraint of targetTable.constraints ?? []) {
-    if (seenConstraintNames.has(targetConstraint.name)) {
-      throw new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint });
-    }
-    seenConstraintNames.add(targetConstraint.name);
+    assert(
+      !seenNames.has(targetConstraint.name),
+      new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint })
+    );
+    seenNames.add(targetConstraint.name);
 
     const startConstraint = startTable.constraints?.find((c) => constraintDefinitionsEqual(c, targetConstraint));
     if (startConstraint) {
@@ -1344,10 +1319,7 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
     .join('_');
   indexName += '_' + (index.indexNameSuffix ?? 'idx');
 
-  if (indexName.length > 63) {
-    throw new Error('Index name too long: ' + indexName);
-  }
-
+  assert(indexName.length <= 63, 'Index name too long: ' + indexName);
   return indexName;
 }
 

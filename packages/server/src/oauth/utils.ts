@@ -312,7 +312,8 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  if (!authenticator.check(token, secret)) {
+  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+  if (!authenticator.verify({ token, secret })) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
@@ -616,6 +617,7 @@ export async function getAuthTokens(
       username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
     { lifetime: options?.accessLifetime }
   );

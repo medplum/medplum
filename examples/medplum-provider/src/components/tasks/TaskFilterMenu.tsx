@@ -1,24 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Menu, ActionIcon, Text, Flex } from '@mantine/core';
-import { IconFilter, IconChevronRight, IconUserCheck, IconStethoscope, IconCheck } from '@tabler/icons-react';
+import {
+  IconFilter,
+  IconChevronRight,
+  IconUserCheck,
+  IconStethoscope,
+  IconCheck,
+  IconExclamationCircle,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import type { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
-import { TaskFilterType, TASK_STATUSES } from './TaskFilterMenu.utils';
+import { TaskFilterType, TASK_STATUSES, TASK_PRIORITIES } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
 
 interface TaskFilterMenuProps {
-  status?: Task['status'];
+  statuses?: Task['status'][];
   owner?: Task['owner'];
   performerType?: CodeableConcept;
-  priority?: Task['priority'];
+  priorities?: Task['priority'][];
   patient?: Patient;
   performerTypes?: CodeableConcept[];
   onFilterChange?: (filterType: TaskFilterType, value: TaskFilterValue) => void;
 }
 
 export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
-  const { status, performerType, performerTypes, onFilterChange } = props;
+  const { statuses = [], priorities = [], performerType, performerTypes, onFilterChange } = props;
 
   const uniquePerformerTypes =
     performerTypes?.filter((performerType, index, self) => {
@@ -56,9 +63,37 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
                 <Menu.Item
                   key={taskStatus}
                   onClick={() => onFilterChange?.(TaskFilterType.STATUS, taskStatus)}
-                  rightSection={status === taskStatus ? <IconCheck size={16} /> : null}
+                  rightSection={statuses.includes(taskStatus) ? <IconCheck size={16} /> : null}
                 >
                   <Text size="sm">{taskStatus}</Text>
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        </Menu.Item>
+
+        {/* Priority Submenu */}
+        <Menu.Item>
+          <Menu trigger="hover" openDelay={100} closeDelay={400} position="right-start" offset={5}>
+            <Menu.Target>
+              <Flex align="center" justify="space-between" w="100%">
+                <Flex align="center" gap="xs">
+                  <IconExclamationCircle size={16} />
+                  <Text size="sm">Priority</Text>
+                </Flex>
+                <IconChevronRight size={16} />
+              </Flex>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>Task Priority</Menu.Label>
+              {TASK_PRIORITIES.map((taskPriority) => (
+                <Menu.Item
+                  key={taskPriority}
+                  onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority ?? '')}
+                  rightSection={priorities.includes(taskPriority) ? <IconCheck size={16} /> : null}
+                >
+                  <Text size="sm">{taskPriority}</Text>
                 </Menu.Item>
               ))}
             </Menu.Dropdown>

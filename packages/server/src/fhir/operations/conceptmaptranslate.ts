@@ -38,7 +38,7 @@ async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: stri
   if (id) {
     return repo.readResource('ConceptMap', id);
   } else if (params.url) {
-    return findTerminologyResource<ConceptMap>('ConceptMap', params.url);
+    return findTerminologyResource<ConceptMap>(repo, 'ConceptMap', params.url);
   } else if (params.source) {
     const result = await repo.searchOne<ConceptMap>({
       resourceType: 'ConceptMap',
