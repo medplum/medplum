@@ -1982,6 +1982,231 @@ describe('AccessPolicy', () => {
       }
     }));
 
+  test('Nested readonly fields are restored from original on update', () =>
+    withTestContext(async () => {
+      const originalUserRef = 'User/' + randomUUID();
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: originalUserRef, display: 'original@example.com' },
+        project: { reference: 'Project/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'ProjectMembership',
+            readonlyFields: ['user.reference'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      // Read the resource
+      const readResource = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+      expect(readResource.user?.reference).toEqual(originalUserRef);
+      expect(readResource.user?.display).toEqual('original@example.com');
+
+      // Update with user.display only (excluding user.reference)
+      const { reference: _ref, ...userWithoutReference } = readResource.user || {};
+      const updated = await repo.updateResource<ProjectMembership>({
+        ...readResource,
+        user: { ...userWithoutReference, display: 'updated@example.com' },
+      });
+
+      // user.reference should be restored from original
+      expect(updated.user?.reference).toEqual(originalUserRef);
+      expect(updated.user?.display).toEqual('updated@example.com');
+    }));
+
+  test('Nested readonly fields cannot be modified', () =>
+    withTestContext(async () => {
+      const originalUserRef = 'User/' + randomUUID();
+      const newUserRef = 'User/' + randomUUID();
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: originalUserRef, display: 'original@example.com' },
+        project: { reference: 'Project/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'ProjectMembership',
+            readonlyFields: ['user.reference'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      // Read the resource
+      const readResource = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+
+      // Try to update user.reference - should be ignored
+      const updated = await repo.updateResource<ProjectMembership>({
+        ...readResource,
+        user: { ...readResource.user, reference: newUserRef },
+      });
+
+      // user.reference should remain unchanged
+      expect(updated.user?.reference).toEqual(originalUserRef);
+      expect(updated.user?.display).toEqual('original@example.com');
+    }));
+
+  test('Nested readonly fields are restored even when parent object is modified', () =>
+    withTestContext(async () => {
+      const originalUserRef = 'User/' + randomUUID();
+      const membership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: originalUserRef, display: 'original@example.com' },
+        project: { reference: 'Project/' + randomUUID() },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'ProjectMembership',
+            readonlyFields: ['user.reference'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      // Read the resource
+      const readResource = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+
+      // Update both user.reference (readonly) and user.display (editable)
+      const newUserRef = 'User/' + randomUUID();
+      const updated = await repo.updateResource<ProjectMembership>({
+        ...readResource,
+        user: { reference: newUserRef, display: 'updated@example.com' },
+      });
+
+      // user.reference should be restored from original, user.display should be updated
+      expect(updated.user?.reference).toEqual(originalUserRef);
+      expect(updated.user?.display).toEqual('updated@example.com');
+    }));
+
+  test('Nested readonly fields work with deeply nested paths', () =>
+    withTestContext(async () => {
+      const originalSystem = 'https://example.com/system';
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+        identifier: [
+          {
+            system: originalSystem,
+            value: '12345',
+          },
+        ],
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            readonlyFields: ['identifier[0].system'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      // Read the resource
+      const readResource = await repo.readResource<Patient>('Patient', patient.id as string);
+      expect(readResource.identifier?.[0]?.system).toEqual(originalSystem);
+
+      // Try to update the system (readonly) and value (editable)
+      const newSystem = 'https://new-system.com';
+      const updated = await repo.updateResource<Patient>({
+        ...readResource,
+        identifier: [
+          {
+            system: newSystem,
+            value: '67890',
+          },
+        ],
+      });
+
+      // system should be restored from original, value should be updated
+      expect(updated.identifier?.[0]?.system).toEqual(originalSystem);
+      expect(updated.identifier?.[0]?.value).toEqual('67890');
+    }));
+
+  test('Nested readonly fields are not restored if parent object does not exist in input', () =>
+    withTestContext(async () => {
+      const originalSystem = 'https://example.com/system';
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+        identifier: [
+          {
+            system: originalSystem,
+            value: '12345',
+          },
+        ],
+      });
+
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+            readonlyFields: ['identifier[0].system'],
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        author: {
+          reference: 'Practitioner/123',
+        },
+        accessPolicy,
+      });
+
+      // Read the resource
+      const readResource = await repo.readResource<Patient>('Patient', patient.id as string);
+
+      // Update without identifier array at all
+      const { identifier: _identifier, ...withoutIdentifier } = readResource;
+      const updated = await repo.updateResource<Patient>({
+        ...withoutIdentifier,
+        name: [{ given: ['Updated'], family: 'Name' }],
+      });
+
+      // identifier should not be restored since it wasn't in the input
+      expect(updated.identifier).toBeUndefined();
+    }));
+
   test('Project admin cannot modify user.reference but can modify user.display', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({
