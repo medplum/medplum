@@ -1,6 +1,22 @@
 import http.client
 import time
 import json
+import os
+from typing import Any, TypedDict, List
+
+
+class ExportOutput(TypedDict):
+  type: str
+  url: str
+
+
+class BulkExportResponse(TypedDict):
+  transactionTime: str
+  request: str
+  requiresAccessToken: bool
+  output: List[ExportOutput]
+  error: List[Any]
+
 
 # You'll need to go through the auth process to get a valid access token,
 # see https://www.medplum.com/docs/auth/client-credentials for details
@@ -26,9 +42,12 @@ if init.status != 202:
   raise RuntimeError('Failed to start bulk export')
 
 # Get the status URL from the Content-Location header
-status_url = init.getheader('Content-Location')
+status_url: str | None = init.getheader('Content-Location')
 if status_url == None:
   raise RuntimeError('No status URL found')
+
+# Read and discard the initial response body to allow reusing the connection
+init.read()
 
 # Make an initial request for the status of the export
 conn.request(
@@ -39,6 +58,9 @@ status = conn.getresponse()
 
 # 202 Accepted status code means the export is still in progress
 while status.status == 202:
+  # Read and discard the response body before making the next request
+  status.read()
+
   # Wait 1s between requests
   time.sleep(1)
 
@@ -55,7 +77,7 @@ if status.status != 200:
 
 # Read the JSON body of the response
 body = status.read()
-export = json.loads(body)
+export: BulkExportResponse = json.loads(body)
 
 # The response JSON looks like this:
 # {
@@ -71,20 +93,47 @@ export = json.loads(body)
 #   }],
 #   "error" : []
 # }
-def download_export_to_file(export_record, access_token):
+def download_export_to_file(export_record: ExportOutput, access_token: str) -> None:
+  from urllib.parse import urlparse
+
+  # Parse the URL to extract the host and path
+  url: str = export_record['url']
+
+  parsed = urlparse(url)
+  host = parsed.netloc
+  path = parsed.path
+  if parsed.query:
+    path += '?' + parsed.query
+
+  # Create a new connection to the host specified in the URL
+  if parsed.scheme == 'https':
+    download_conn = http.client.HTTPSConnection(host)
+  else:
+    download_conn = http.client.HTTPConnection(host)
+
   # Request the NDJSON export data
-  conn.request(
-    'GET', export_record.url, None, {
+  download_conn.request(
+    'GET', path, None, {
       'Authorization': 'Bearer ' + access_token,
     })
-  export_data = conn.getresponse()
+  export_data = download_conn.getresponse()
 
-  # Append NDJSON data to file on disk
-  with open(export_record.type + '.ndjson', 'a') as f:
-    f.write(export_data.read())
+  # Read the response once
+  data: bytes = export_data.read()
+
+  # Close the download connection
+  download_conn.close()
+
+  # Append NDJSON data to file on disk in medplum_resources folder
+  file_path: str = os.path.join('medplum_resources', export_record['type'] + '.ndjson')
+  with open(file_path, 'w') as f:
+    f.write(data.decode('utf-8'))
+
+# Create medplum_resources folder if it doesn't exist
+os.makedirs('medplum_resources', exist_ok=True)
 
 # Iterate over the output items to download the exported data
-for record in export.output:
+for record in export['output']:
   # record.type: the resource type contained in the export file
   # record.url: a URL pointing to an NDJSON file containing the exported data
   download_export_to_file(record, access_token)
