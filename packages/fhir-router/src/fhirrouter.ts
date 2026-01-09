@@ -143,7 +143,6 @@ async function createResource(
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
-
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
 
