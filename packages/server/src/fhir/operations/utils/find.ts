@@ -249,7 +249,9 @@ export function applyExistingSlots(params: {
 
   const busySlotIntervals = normalizeIntervals(
     params.slots
-      .filter((slot) => slot.status === 'busy' || slot.status === 'busy-unavailable')
+      .filter(
+        (slot) => slot.status === 'busy' || slot.status === 'busy-unavailable' || slot.status === 'busy-tentative'
+      )
       .map((slot) => ({ start: new Date(slot.start), end: new Date(slot.end) }))
   );
   const allAvailability = normalizeIntervals(params.availability.concat(freeSlotIntervals));

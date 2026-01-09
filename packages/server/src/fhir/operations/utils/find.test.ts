@@ -495,6 +495,30 @@ describe('applyExistingSlots', () => {
     ]);
   });
 
+  test('it removes busy-tentative slots from the availability', () => {
+    const availability = [{ start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') }];
+    const busyTentativeIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const slots = makeSlots(schedule, busyTentativeIntervals, 'busy-tentative');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots({ availability, slots, range })).toEqual([
+      { start: new Date('2025-12-01T14:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+    ]);
+  });
+
+  test('it ignores entered-in-error slots', () => {
+    const availability = [{ start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') }];
+    const enteredInErrorIntervals = [
+      { start: new Date('2025-12-01T10:00:00-05:00'), end: new Date('2025-12-01T14:00:00-05:00') },
+    ];
+    const slots = makeSlots(schedule, enteredInErrorIntervals, 'entered-in-error');
+    const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
+    expect(applyExistingSlots({ availability, slots, range })).toEqual([
+      { start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },
+    ]);
+  });
+
   test('busy slots override free slots', () => {
     const availability = [
       { start: new Date('2025-12-01T12:00:00-05:00'), end: new Date('2025-12-01T16:00:00-05:00') },

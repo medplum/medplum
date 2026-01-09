@@ -134,7 +134,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         {
           code: 'status',
           operator: Operator.EQUALS,
-          value: 'busy,free,busy-unavailable',
+          value: 'busy,busy-tentative,busy-unavailable,free',
         },
       ],
     }),
