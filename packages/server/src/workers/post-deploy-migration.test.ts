@@ -16,7 +16,7 @@ import type {
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
-import type { MigrationAction } from '../migrations/types';
+import type { PhasalMigration } from '../migrations/types';
 import type { ServerRegistryInfo } from '../server-registry';
 import { getRegisteredServers } from '../server-registry';
 import { withTestContext } from '../test.setup';
@@ -213,18 +213,21 @@ describe('Post-Deploy Migration Worker', () => {
       request: '/admin/super/reconcile-schema-drift',
     });
 
-    const migrationActions: MigrationAction[] = [
-      {
-        type: 'CREATE_INDEX',
-        indexName: 'some_necessary_test_index',
-        createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
-      },
-    ];
+    const migration: PhasalMigration = {
+      preDeploy: [],
+      postDeploy: [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'some_necessary_test_index',
+          createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
+        },
+      ],
+    };
 
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
     await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migrationActions);
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migration);
       job = {
         id: '1',
         data: jobData,
@@ -237,13 +240,86 @@ describe('Post-Deploy Migration Worker', () => {
 
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
     expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(1);
-    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), expect.any(Array), migrationActions);
+    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Array),
+      migration.postDeploy
+    );
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
     expect(updatedAsyncJob.output?.parameter).toEqual([
       { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
     ]);
+
+    getPostDeployMigrationSpy.mockRestore();
+    executeMigrationActionsSpy.mockRestore();
+  });
+
+  test('Job processor runs dynamic migration with both preDeploy and postDeploy actions', async () => {
+    const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(() => {
+      throw new Error('Should not be called');
+    });
+
+    const executeMigrationActionsSpy = jest
+      .spyOn(migrateModule, 'executeMigrationActions')
+      .mockImplementation(async (_client, results) => {
+        results.push({ name: 'executed-action', durationMs: 5 });
+      });
+
+    const systemRepo = getSystemRepo();
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/reconcile-schema-drift',
+    });
+
+    const migration: PhasalMigration = {
+      preDeploy: [
+        {
+          type: 'DROP_INDEX',
+          indexName: 'old_index_to_drop',
+        },
+      ],
+      postDeploy: [
+        {
+          type: 'CREATE_INDEX',
+          indexName: 'new_index_to_create',
+          createIndexSql: 'CREATE INDEX new_index_to_create ON Observation (id)',
+        },
+      ],
+    };
+
+    const job = await withTestContext(async () => {
+      return {
+        id: '1',
+        data: prepareDynamicMigrationJobData(mockAsyncJob, migration),
+        queueName: 'PostDeployMigrationQueue',
+      } as unknown as Job<PostDeployJobData>;
+    });
+    expect(job.data).toBeDefined();
+
+    await jobProcessor(job);
+
+    expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
+    // Should be called twice: once for preDeploy, once for postDeploy
+    expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(2);
+    expect(executeMigrationActionsSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.any(Object),
+      expect.any(Array),
+      migration.preDeploy
+    );
+    expect(executeMigrationActionsSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Object),
+      expect.any(Array),
+      migration.postDeploy
+    );
+
+    const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
+    expect(updatedAsyncJob.status).toBe('completed');
 
     getPostDeployMigrationSpy.mockRestore();
     executeMigrationActionsSpy.mockRestore();

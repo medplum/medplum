@@ -27,7 +27,7 @@ import {
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
-import type { MigrationAction, MigrationActionResult } from '../migrations/types';
+import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
 import type { WorkerInitializer } from './utils';
 import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
@@ -151,7 +151,12 @@ async function runDynamicMigration(
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {
-      await executeMigrationActions(client, results, job.data.migrationActions);
+      if (job.data.migrationActions.preDeploy.length) {
+        await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
+      }
+      if (job.data.migrationActions.postDeploy.length) {
+        await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
+      }
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
@@ -251,7 +256,7 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
 
 export function prepareDynamicMigrationJobData(
   asyncJob: WithId<AsyncJob>,
-  migrationActions: MigrationAction[]
+  migrationActions: PhasalMigration
 ): DynamicPostDeployJobData {
   const ctx = tryGetRequestContext();
   return {

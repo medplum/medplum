@@ -4,7 +4,7 @@ import type { WithId } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import type { Repository } from '../../fhir/repo';
-import type { MigrationAction } from '../types';
+import type { PhasalMigration } from '../types';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom' | 'dynamic';
@@ -46,7 +46,7 @@ export interface CustomPostDeployMigration extends PostDeployMigration<CustomPos
 // Dynamic Migration Jobs
 export interface DynamicPostDeployJobData extends PostDeployJobData {
   readonly type: 'dynamic';
-  readonly migrationActions: MigrationAction[];
+  readonly migrationActions: PhasalMigration;
 }
 
 export interface DynamicPostDeployMigration extends PostDeployMigration<DynamicPostDeployJobData> {
