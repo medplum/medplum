@@ -453,11 +453,16 @@ const subexpressionPattern = /{{([^{}]+)}}/g;
  * @see https://hl7.org/fhir/fhir-xquery.html
  * @param query - The X-Fhir-Query string to parse
  * @param variables - Values to pass into embedded FHIRPath expressions
+ * @param context - The context collection to evaluate over
  * @returns The parsed search request
  */
-export function parseXFhirQuery(query: string, variables: Record<string, TypedValue>): SearchRequest {
+export function parseXFhirQuery(
+  query: string,
+  variables: Record<string, TypedValue>,
+  context: TypedValue[] = []
+): SearchRequest {
   query = query.replaceAll(subexpressionPattern, (_, expr) => {
-    const replacement = evalFhirPathTyped(expr, [], variables);
+    const replacement = evalFhirPathTyped(expr, context, variables);
     if (replacement.length !== 1) {
       return '';
     }
