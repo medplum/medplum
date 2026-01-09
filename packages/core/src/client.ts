@@ -3382,13 +3382,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private isCacheEnabled(
     options: MedplumRequestOptions | undefined
   ): this is this & { requestCache: LRUCache<RequestCacheEntry> } {
-    return !!(
-      this.requestCache &&
-      options?.cache !== 'no-cache' &&
-      options?.cache !== 'reload' &&
-      !this.defaultHeaders?.['on-behalf-of'] &&
-      !this.getRequestHeader(options, 'on-behalf-of')
-    );
+    return !!this.requestCache && !this.getRequestHeader(options, 'x-medplum-on-behalf-of');
   }
 
   /**
@@ -3398,7 +3392,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The cached entry if found.
    */
   private getCacheEntry(key: string, options: MedplumRequestOptions | undefined): RequestCacheEntry | undefined {
-    if (!this.isCacheEnabled(options)) {
+    if (!this.isCacheEnabled(options) || options?.cache === 'no-cache' || options?.cache === 'reload') {
       return undefined;
     }
     const entry = this.requestCache.get(key);
