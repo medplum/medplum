@@ -26,15 +26,6 @@ const mockCommunication2: Communication = {
   partOf: [{ reference: 'Communication/comm-1' }],
 };
 
-const mockCommunication3: Communication = {
-  resourceType: 'Communication',
-  id: 'comm-3',
-  status: 'completed',
-  sent: '2024-01-01T12:00:00Z',
-  payload: [{ contentString: 'Third message' }],
-  partOf: [{ reference: 'Communication/comm-1' }],
-};
-
 describe('useThreadInbox', () => {
   let medplum: MockClient;
 
@@ -58,11 +49,6 @@ describe('useThreadInbox', () => {
   });
 
   test('fetches thread messages and returns only one message per topic', async () => {
-    await medplum.createResource(mockCommunication1);
-    await medplum.createResource(mockCommunication2);
-    await medplum.createResource(mockCommunication3);
-
-    // Create additional messages for the same thread to test that only one is returned
     const mockCommunication4: Communication = {
       resourceType: 'Communication',
       id: 'comm-4',
@@ -71,11 +57,17 @@ describe('useThreadInbox', () => {
       payload: [{ contentString: 'Fourth message' }],
       partOf: [{ reference: 'Communication/comm-1' }],
     };
-    await medplum.createResource(mockCommunication4);
+
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
+    });
 
     const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
-        thread_comm1: [mockCommunication4], // Only the most recent message, even though comm-2, comm-4 exist
+        thread_comm1: [mockCommunication4],
       },
     } as any);
 
@@ -122,9 +114,15 @@ describe('useThreadInbox', () => {
       partOf: [{ reference: 'Communication/comm-with-replies' }],
     };
 
-    await medplum.createResource(parentWithoutMessages);
-    await medplum.createResource(parentWithMessages);
-    await medplum.createResource(replyMessage);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 2,
+      entry: [
+        { resource: parentWithoutMessages as WithId<Communication> },
+        { resource: parentWithMessages as WithId<Communication> },
+      ],
+    });
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
@@ -225,8 +223,12 @@ describe('useThreadInbox', () => {
   });
 
   test('handles thread status update', async () => {
-    await medplum.createResource(mockCommunication1);
-    await medplum.createResource(mockCommunication2);
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockCommunication1 as WithId<Communication> }],
+    });
 
     vi.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
@@ -256,7 +258,6 @@ describe('useThreadInbox', () => {
     await waitFor(() => {
       expect(updateSpy).toHaveBeenCalled();
       expect(result.current.selectedThread?.status).toBe('in-progress');
-      // Verify threadMessages is also updated
       expect(result.current.threadMessages[0][0].status).toBe('in-progress');
     });
   });
@@ -375,4 +376,5 @@ describe('useThreadInbox', () => {
       expect(result.current.selectedThread).toBeUndefined();
     });
   });
+
 });
