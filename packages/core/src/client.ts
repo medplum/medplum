@@ -719,7 +719,7 @@ interface SchemaGraphQLResponse {
   };
 }
 
-interface RequestCacheEntry {
+export interface RequestCacheEntry {
   readonly requestTime: number;
   readonly value: ReadablePromise<any>;
 }
@@ -829,7 +829,7 @@ export interface ValueSetExpandParams {
   displayLanguage?: string;
 }
 
-export interface RequestProfileSchemaOptions {
+export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
   /** (optional) Whether to include nested profiles, e.g. from extensions. Defaults to false. */
   expandProfile?: boolean;
 }
@@ -2214,7 +2214,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post(url, resource, undefined, options);
-    this.cacheResource(result);
+    this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     return result;
