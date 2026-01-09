@@ -27,12 +27,7 @@ describe('LabListItem', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <LabListItem
-              item={item}
-              selectedItem={selectedItem}
-              activeTab={activeTab}
-              onItemSelect={onItemSelect}
-            />
+            <LabListItem item={item} selectedItem={selectedItem} activeTab={activeTab} onItemSelect={onItemSelect} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -59,10 +54,7 @@ describe('LabListItem', () => {
       const item: ServiceRequest = {
         ...baseServiceRequest,
         code: {
-          coding: [
-            { display: 'Test A' },
-            { display: 'Test B' },
-          ],
+          coding: [{ display: 'Test A' }, { display: 'Test B' }],
         },
       };
       setup(item, undefined, 'open');
