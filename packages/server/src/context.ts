@@ -269,13 +269,20 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boole
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
-    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    ? new FhirRateLimiter(
+        getRedis(authState.projectShardId),
+        authState,
+        userLimit,
+        projectLimit,
+        logger ?? globalLogger,
+        async
+      )
     : undefined;
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
   const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
   return authState.membership && projectLimit
-    ? new ResourceCap(getRedis(), authState, projectLimit, logger ?? globalLogger)
+    ? new ResourceCap(getRedis(authState.projectShardId), authState, projectLimit, logger ?? globalLogger)
     : undefined;
 }

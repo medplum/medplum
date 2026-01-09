@@ -290,7 +290,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRedis(GLOBAL_SHARD_ID), testRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

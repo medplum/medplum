@@ -41,7 +41,7 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
     return [badRequest('No agent(s) for given query')];
   }
 
-  const statuses = await getStatusForAgents(agents);
+  const statuses = await getStatusForAgents(repo, agents);
 
   const outBundle = {
     resourceType: 'Bundle',

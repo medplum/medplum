@@ -2466,23 +2466,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.conn;
   }
 
-  public getResourceTypeShardId(
-    resourceType: string | undefined,
-    defaultShardId: string = 'TODO-getResourceTypeShardIdDefault'
-  ): string {
+  public getResourceTypeShardId(resourceType: string | undefined): string {
+    if (resourceType && GlobalResourceTypes.has(resourceType)) {
+      return 'global';
+    }
+
     if (!this.shardId) {
       throw new Error('No project shard ID');
-    }
-
-    if (!resourceType) {
-      if (defaultShardId.startsWith('TODO')) {
-        defaultShardId = this.shardId;
-      }
-      return defaultShardId;
-    }
-
-    if (GlobalResourceTypes.has(resourceType)) {
-      return 'global';
     }
 
     return this.shardId;

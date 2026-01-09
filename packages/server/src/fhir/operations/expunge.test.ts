@@ -19,12 +19,16 @@ const systemRepo = getGlobalSystemRepo();
 describe('Expunge', () => {
   const app = express();
   let superAdminAccessToken: string;
+  let projectShardId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    ({ accessToken: superAdminAccessToken, projectShardId } = await createTestProject({
+      superAdmin: true,
+      withAccessToken: true,
+    }));
   });
 
   afterAll(async () => {
@@ -183,12 +187,12 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient3.id)).toBe(false);
     expect(await existsInCache('Observation', obs.id)).toBe(false);
   });
-});
 
-async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
-  const redis = await getRedis().get(`${resourceType}/${id}`);
-  return !!redis;
-}
+  async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
+    const redis = await getRedis(projectShardId).get(`${resourceType}/${id}`);
+    return !!redis;
+  }
+});
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
   const rows = await new SelectQuery(tableName)

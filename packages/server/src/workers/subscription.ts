@@ -341,7 +341,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
+    await getRedis(projectShardId).publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
   }
 }
 
@@ -405,7 +405,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
+  const redis = getRedis(systemRepo.shardId);
   const setKey = `medplum:subscriptions:r4:project:${project.id}:active`;
   const redisOnlySubRefStrs = await redis.smembers(setKey);
   if (redisOnlySubRefStrs.length) {

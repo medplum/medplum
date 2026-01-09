@@ -84,7 +84,7 @@ export async function closeRedis(): Promise<void> {
  * @param shardId - The shard ID to use.
  * @returns The global `Redis` instance.
  */
-export function getRedis(shardId: string = 'TODO-getRedis'): Redis & { duplicate: never } {
+export function getRedis(shardId: string): Redis & { duplicate: never } {
   if (shardId.startsWith('TODO')) {
     shardId = GLOBAL_SHARD_ID;
   }
