@@ -21,6 +21,11 @@ resource "azurerm_application_gateway" "medplum_appgw" {
     capacity = 2
   }
 
+  ssl_policy {
+    policy_type = "Predefined"
+    policy_name = "AppGwSslPolicy20220101"
+  }
+
   gateway_ip_configuration {
     name      = "medplum-${var.environment}-${var.deployment_id}-gateway-ip-configuration"
     subnet_id = azurerm_subnet.medplum_appgw_subnet.id
