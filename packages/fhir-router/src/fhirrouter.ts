@@ -143,6 +143,12 @@ async function createResource(
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
+
+  // Indicates a custom system-level operation to be handled by implementation, not a resource
+  if (resourceType?.startsWith('$')) {
+    return [notFound];
+  }
+  
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
 
