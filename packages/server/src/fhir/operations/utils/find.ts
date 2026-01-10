@@ -47,10 +47,8 @@ function hasMatchingServiceType(slot: Slot, inputCoding: Coding | undefined): bo
 
   // Check if there any of the Slot's service type codes match the input code
   for (const codeableConcept of serviceType) {
-    for (const coding of codeableConcept.coding ?? []) {
-      if (coding.system === inputCoding.system && coding.code === inputCoding.code) {
-        return true;
-      }
+    if (codeableConcept.coding?.some((c) => c.system === inputCoding.system && c.code === inputCoding.code)) {
+      return true;
     }
   }
   return false;
