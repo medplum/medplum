@@ -55,6 +55,7 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { AgentHl7DurableQueue } from './queue';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -86,9 +87,8 @@ export class App {
   readonly agentId: string;
   readonly log: ILogger;
   readonly channelLog: ILogger;
-  readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
-  readonly hl7Queue: AgentMessage[] = [];
+  readonly hl7DurableQueue: AgentHl7DurableQueue;
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
   heartbeatPeriod = HEARTBEAT_PERIOD_MS; // 10 seconds
   private heartbeatTimer?: NodeJS.Timeout;
@@ -111,6 +111,9 @@ export class App {
     this.agentId = agentId;
     this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
     this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+
+    // Initialize durable queue
+    this.hl7DurableQueue = new AgentHl7DurableQueue();
   }
 
   async start(): Promise<void> {
@@ -295,10 +298,29 @@ export class App {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
             } else if (!(command.statusCode && command.statusCode >= 400)) {
-              this.addToHl7Queue(command);
+              // Check if this is a response to a durable queue message
+              const dbMsg = command.callback
+                ? this.hl7DurableQueue.getMessageByCallback(command.callback)
+                : this.hl7DurableQueue.getMessageByRemote(command.remote);
+              if (dbMsg?.status === 'sent') {
+                // Update durable queue with response
+                this.hl7DurableQueue.markAsResponseQueued(dbMsg.id, command.body);
+                this.trySendToHl7Connection();
+                // Trigger worker to process any new messages that arrived while waiting
+                this.startWebSocketWorker();
+              } else if (command.callback) {
+                this.log.warn(`Received response for unknown message: ${command.remote}`);
+              }
             } else {
               // Log error
               this.log.error(`Error during handling transmit request: ${command.body}`);
+              // Mark as error in durable queue if applicable
+              const dbMsg = command.callback
+                ? this.hl7DurableQueue.getMessageByCallback(command.callback)
+                : this.hl7DurableQueue.getMessageByRemote(command.remote);
+              if (dbMsg) {
+                this.hl7DurableQueue.markAsError(dbMsg.id);
+              }
             }
             break;
           }
@@ -445,8 +467,9 @@ export class App {
     this.log.info('Agent stats', {
       stats: {
         ...stats,
-        webSocketQueueDepth: this.webSocketQueue.length,
-        hl7QueueDepth: this.hl7Queue.length,
+        durableQueueReceived: this.hl7DurableQueue.countByStatus('received'),
+        durableQueueSent: this.hl7DurableQueue.countByStatus('sent'),
+        durableQueueResponseQueued: this.hl7DurableQueue.countByStatus('response_queued'),
         hl7ClientCount: totalHl7Clients,
         live: this.live,
         outstandingHeartbeats: this.outstandingHeartbeats,
@@ -667,20 +690,18 @@ export class App {
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
-    this.webSocketQueue.push(message);
-    this.startWebSocketWorker();
-  }
-
-  addToHl7Queue(message: AgentMessage): void {
-    this.hl7Queue.push(message);
-    this.trySendToHl7Connection();
+    // Legacy method - for non-HL7 messages (like ping responses, errors)
+    // Store in a temporary variable and send immediately
+    this.sendToWebSocket(message).catch((err) =>
+      this.log.error(`Error sending to WebSocket: ${normalizeErrorString(err)}`)
+    );
   }
 
   getAgentConfig(): Agent | undefined {
     return this.config;
   }
 
-  private startWebSocketWorker(): void {
+  startWebSocketWorker(): void {
     if (this.webSocketWorker) {
       // Websocket worker is already running
       return;
@@ -688,39 +709,94 @@ export class App {
 
     // Start the worker
     this.webSocketWorker = this.trySendToWebSocket()
-      .then(() => {
+      .then((processedCount) => {
         this.webSocketWorker = undefined;
+        // Only restart if we processed messages (new ones might have arrived)
+        if (processedCount && processedCount > 0) {
+          this.startWebSocketWorker();
+        }
       })
-      .catch((err) => console.log('WebSocket worker error', err));
+      .catch((err) => {
+        this.log.error(`WebSocket worker error: ${normalizeErrorString(err)}`);
+        this.webSocketWorker = undefined;
+        // Try to restart worker to process any remaining messages
+        this.startWebSocketWorker();
+      });
   }
 
-  private async trySendToWebSocket(): Promise<void> {
+  private async trySendToWebSocket(): Promise<number> {
     if (this.live) {
-      while (this.webSocketQueue.length > 0) {
-        const msg = this.webSocketQueue.shift();
-        if (msg) {
-          try {
-            await this.sendToWebSocket(msg);
-          } catch (err) {
-            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
-            this.webSocketQueue.unshift(msg);
-            throw err;
+      // Refresh token once upfront to avoid repeated refreshes
+      await this.medplum.refreshIfExpired();
+      const accessToken = this.medplum.getAccessToken() as string;
+
+      // Get all messages with status='received' in one query
+      const dbMessages = this.hl7DurableQueue.getAllReceivedMessages();
+
+      if (dbMessages.length === 0) {
+        return 0;
+      }
+
+      // Send all messages and track results
+      let successCount = 0;
+
+      for (const dbMsg of dbMessages) {
+        const agentMsg: AgentMessage = {
+          type: 'agent:transmit:request',
+          accessToken,
+          channel: dbMsg.channel,
+          remote: dbMsg.remote,
+          contentType: ContentType.HL7_V2,
+          body: dbMsg.raw_message,
+          callback: dbMsg.callback,
+        };
+
+        try {
+          if (!this.webSocket) {
+            throw new Error('WebSocket not connected');
           }
+          // Send via WebSocket
+          this.webSocket.send(JSON.stringify(agentMsg));
+          // Mark as sent IMMEDIATELY after sending to avoid race condition
+          // where response arrives before status is updated
+          this.hl7DurableQueue.markAsSent(dbMsg.id);
+          successCount++;
+        } catch (err) {
+          this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
+          this.hl7DurableQueue.markAsError(dbMsg.id);
         }
       }
+
+      return successCount;
     }
-    this.webSocketWorker = undefined;
+    return 0;
   }
 
   private trySendToHl7Connection(): void {
-    while (this.hl7Queue.length > 0) {
-      const msg = this.hl7Queue.shift();
-      if (msg?.type === 'agent:transmit:response' && msg.channel) {
-        const channel = this.channels.get(msg.channel);
-        if (channel) {
-          channel.sendToRemote(msg);
+    // Process response messages from durable queue
+    let dbMsg = this.hl7DurableQueue.getNextResponseQueuedMessage();
+    while (dbMsg) {
+      const channel = this.channels.get(dbMsg.channel);
+      if (channel) {
+        try {
+          channel.sendToRemote({
+            type: 'agent:transmit:response',
+            channel: dbMsg.channel,
+            remote: dbMsg.remote,
+            contentType: ContentType.HL7_V2,
+            body: dbMsg.response_message,
+          });
+          this.hl7DurableQueue.markAsResponseSent(dbMsg.id);
+        } catch (err) {
+          this.log.error(`Error sending HL7 response: ${normalizeErrorString(err)}`);
+          this.hl7DurableQueue.markAsResponseError(dbMsg.id);
         }
+      } else {
+        this.log.warn(`Channel not found for response: ${dbMsg.channel}`);
+        this.hl7DurableQueue.markAsResponseError(dbMsg.id);
       }
+
+      dbMsg = this.hl7DurableQueue.getNextResponseQueuedMessage();
     }
   }
 
