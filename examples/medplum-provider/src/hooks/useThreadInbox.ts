@@ -44,6 +44,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     const searchParams = new URLSearchParams(query);
     searchParams.append('identifier:not', 'ai-message-topic');
     searchParams.append('part-of:missing', 'true');
+    searchParams.append('_has:Communication:part-of:_id:not', 'null');
 
     const bundle = await medplum.search('Communication', searchParams.toString(), { cache: 'no-cache' });
     const parents =
