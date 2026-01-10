@@ -12,6 +12,7 @@ import { IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import classes from './Spotlight.module.css';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 const DEBOUNCE_MS = 200;
 
@@ -144,6 +145,7 @@ function buildGraphQLQuery(input: string): string {
         identifier { system value }
         name { given family }
         birthDate
+        photo { url contentType }
       }
       ServiceRequestList(_id: ${escaped}, _count: 1) {
         resourceType
@@ -160,6 +162,7 @@ function buildGraphQLQuery(input: string): string {
       identifier { system value }
       name { given family }
       birthDate
+      photo { url contentType }
     }
     Patients2: PatientList(identifier: ${escaped}, _count: 5) {
       resourceType
@@ -167,6 +170,7 @@ function buildGraphQLQuery(input: string): string {
       identifier { system value }
       name { given family }
       birthDate
+      photo { url contentType }
     }
     ServiceRequestList(identifier: ${escaped}, _count: 5) {
       resourceType
@@ -210,6 +214,7 @@ function patientsToActions(patients: Patient[], navigate: MedplumNavigateFunctio
       id: patient.id,
       label: patient.name ? formatHumanName(patient.name[0]) : patient.id,
       description: patient.birthDate,
+      leftSection: <ResourceAvatar value={patient} radius="xl" size={24} />,
       onClick: () => navigate(`/Patient/${patient.id}`),
     }));
 
@@ -234,7 +239,6 @@ function resourcesToActions(
     result.push({ group: 'Resource Types', actions: resourceTypeActions });
   }
 
-  // Patients
   const patientActions: SpotlightActionData[] = [];
   const serviceRequestActions: SpotlightActionData[] = [];
 
@@ -244,6 +248,7 @@ function resourcesToActions(
         id: resource.id,
         label: resource.name ? formatHumanName(resource.name[0]) : resource.id,
         description: resource.birthDate,
+        leftSection: <ResourceAvatar value={resource} radius="xl" size={24} />,
         onClick: () => navigate(`/Patient/${resource.id}`),
       });
     } else if (resource.resourceType === 'ServiceRequest' && resource.id) {
