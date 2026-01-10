@@ -11,8 +11,8 @@ import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import classes from './Spotlight.module.css';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import classes from './Spotlight.module.css';
 
 const DEBOUNCE_MS = 200;
 
