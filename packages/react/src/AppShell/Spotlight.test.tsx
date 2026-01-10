@@ -175,7 +175,7 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: '' } });
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Press/)).toBeInTheDocument();
       });
