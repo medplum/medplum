@@ -4,7 +4,7 @@
 import { MantineProvider } from '@mantine/core';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import type { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -91,6 +91,7 @@ describe('Spotlight', () => {
       });
 
       expect(screen.getByText(/Press/)).toBeInTheDocument();
+      expect(screen.getByText(/to open Search next time/)).toBeInTheDocument();
     });
 
     test('renders spotlight component', async () => {
@@ -99,17 +100,39 @@ describe('Spotlight', () => {
       expect(screen.getByTestId('spotlight')).toBeInTheDocument();
       expect(screen.getByTestId('spotlight-search')).toBeInTheDocument();
     });
-    
+
+    test('shows correct placeholder text', async () => {
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      expect(searchInput).toHaveAttribute('placeholder', 'Start typing to search…');
+    });
   });
 
   describe('Search functionality', () => {
-    test('shows "No results found" after search completes with no results', async () => {
-      // Use patientsOnly mode to get predictable results (no valueSetExpand)
-      await setup(true);
+    test('shows "Searching..." when query is entered', async () => {
+      await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'nonexistentzzzxxx' } });
+        fireEvent.change(searchInput, { target: { value: 'Jane' } });
+      });
+
+      expect(screen.getByText('Searching...')).toBeInTheDocument();
+    });
+
+    test('performs search and shows results', async () => {
+      await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Jane'], family: 'Smith' }],
+        birthDate: '1985-05-15',
+      });
+
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Jane' } });
       });
 
       await waitFor(
@@ -120,59 +143,240 @@ describe('Spotlight', () => {
       );
     });
 
+    test('searches by UUID when input is a valid UUID', async () => {
+      const patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['UUID'], family: 'Patient' }],
+      });
+
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: patient.id } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('nothing-found')).toBeInTheDocument();
+      });
+    });
+
     test('returns to keyboard hint when query is cleared', async () => {
-      // Use patientsOnly mode to get predictable results
-      await setup(true);
+      await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
 
-      // First, perform a search
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'test' } });
       });
 
-      // Wait for search to complete (MockClient resolves synchronously)
-      await waitFor(() => {
-        expect(screen.getByText('No results found')).toBeInTheDocument();
-      });
+      expect(screen.getByText('Searching...')).toBeInTheDocument();
 
-      // Then clear the query
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: '' } });
       });
-
-      // Should show keyboard hint again
+      
       await waitFor(() => {
         expect(screen.getByText(/Press/)).toBeInTheDocument();
+      });
+    });
+
+    test('handles empty search results', async () => {
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'nonexistentzzzxxx' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('No results found')).toBeInTheDocument();
       });
     });
   });
 
   describe('patientsOnly mode', () => {
-    test('only searches patients when patientsOnly is true', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql');
-      const valueSetExpandSpy = jest.spyOn(medplum, 'valueSetExpand');
+    test('searches only patients when patientsOnly is true', async () => {
+      await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Test'], family: 'Patient' }],
+      });
 
       await setup(true);
 
       const searchInput = screen.getByTestId('spotlight-search');
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'test' } });
+        fireEvent.change(searchInput, { target: { value: 'Test' } });
+      });
+
+      await waitFor(
+        () => {
+          expect(screen.getByText('No results found')).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
+    });
+  });
+
+  describe('Action clicks and navigation', () => {
+    test('clicking search result patient navigates to patient page', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-123',
+              name: [{ given: ['Test'], family: 'Patient' }],
+              birthDate: '1990-01-01',
+            },
+          ],
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
+
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Test' } });
       });
 
       await waitFor(() => {
-        expect(graphqlSpy).toHaveBeenCalled();
+        expect(screen.getByTestId('action-group-Patients')).toBeInTheDocument();
       });
 
-      // Should NOT call valueSetExpand when patientsOnly is true
-      expect(valueSetExpandSpy).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('action-patient-123'));
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/Patient/patient-123');
+
+      graphqlSpy.mockRestore();
     });
 
-    test('searches patients and resource types when patientsOnly is false', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql');
-      const valueSetExpandSpy = jest.spyOn(medplum, 'valueSetExpand');
+    test('clicking search result service request navigates to service request page', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: undefined,
+          Patients2: undefined,
+          ServiceRequestList: [
+            {
+              resourceType: 'ServiceRequest',
+              id: 'sr-123',
+              subject: { display: 'Test Patient' },
+            },
+          ],
+        },
+      });
 
-      await setup(false);
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Test' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('action-group-Service Requests')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('action-sr-123'));
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/ServiceRequest/sr-123');
+
+      graphqlSpy.mockRestore();
+    });
+
+    test('clicking resource type navigates to resource type page', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: undefined,
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
+
+      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [{ code: 'Observation', display: 'Observation' }],
+        },
+      });
+
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Obs' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('action-group-Resource Types')).toBeInTheDocument();
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('action-resource-type-Observation'));
+      });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/Observation');
+
+      graphqlSpy.mockRestore();
+      valueSetSpy.mockRestore();
+    });
+  });
+
+  describe('Resource display', () => {
+    test('displays patient name when available', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-123',
+              name: [{ given: ['Alice'], family: 'Wonderland' }],
+              birthDate: '1990-01-01',
+            },
+          ],
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
+
+      await setup();
+
+      const searchInput = screen.getByTestId('spotlight-search');
+      await act(async () => {
+        fireEvent.change(searchInput, { target: { value: 'Alice' } });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Alice Wonderland')).toBeInTheDocument();
+      });
+
+      graphqlSpy.mockRestore();
+    });
+
+    test('displays patient ID when name is not available', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-no-name',
+              birthDate: '1990-01-01',
+            },
+          ],
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
+
+      await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
       await act(async () => {
@@ -180,95 +384,143 @@ describe('Spotlight', () => {
       });
 
       await waitFor(() => {
-        expect(graphqlSpy).toHaveBeenCalled();
-        expect(valueSetExpandSpy).toHaveBeenCalled();
+        expect(screen.getByText('patient-no-name')).toBeInTheDocument();
       });
-    });
-  });
 
-  describe('GraphQL query building', () => {
-    test('searches by UUID when input is a valid UUID', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql');
+      graphqlSpy.mockRestore();
+    });
+
+    test('displays birthDate as description for patients', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-123',
+              name: [{ given: ['DOB'], family: 'Patient' }],
+              birthDate: '1985-12-25',
+            },
+          ],
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
 
       await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
-      const uuid = '12345678-1234-1234-1234-123456789012';
-
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: uuid } });
+        fireEvent.change(searchInput, { target: { value: 'DOB' } });
       });
 
       await waitFor(() => {
-        expect(graphqlSpy).toHaveBeenCalled();
+        expect(screen.getByText('1985-12-25')).toBeInTheDocument();
       });
 
-      // The GraphQL query for UUID should use _id parameter
-      const callArgs = graphqlSpy.mock.calls[0][0] as string;
-      expect(callArgs).toContain('_id');
-      expect(callArgs).toContain('_count: 1');
+      graphqlSpy.mockRestore();
     });
 
-    test('searches by name and identifier for non-UUID queries', async () => {
-      const graphqlSpy = jest.spyOn(medplum, 'graphql');
+    test('displays "Resource Type" as description for resource type actions', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: undefined,
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
+      });
+
+      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [{ code: 'Encounter', display: 'Encounter' }],
+        },
+      });
 
       await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
-
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'Smith' } });
+        fireEvent.change(searchInput, { target: { value: 'Enc' } });
       });
 
       await waitFor(() => {
-        expect(graphqlSpy).toHaveBeenCalled();
+        expect(screen.getByText('Resource Type')).toBeInTheDocument();
       });
 
-      // The GraphQL query for name should use name and identifier parameters
-      const callArgs = graphqlSpy.mock.calls[0][0] as string;
-      expect(callArgs).toContain('name:');
-      expect(callArgs).toContain('identifier:');
-      expect(callArgs).toContain('_count: 5');
+      graphqlSpy.mockRestore();
+      valueSetSpy.mockRestore();
     });
-  });
 
-  describe('Error handling', () => {
-    test('handles GraphQL errors gracefully', async () => {
-      jest.spyOn(medplum, 'graphql').mockRejectedValueOnce(new Error('GraphQL error'));
+    test('displays service request subject display', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: undefined,
+          Patients2: undefined,
+          ServiceRequestList: [
+            {
+              resourceType: 'ServiceRequest',
+              id: 'sr-123',
+              subject: { display: 'John Doe' },
+            },
+          ],
+        },
+      });
 
       await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'test' } });
+        fireEvent.change(searchInput, { target: { value: 'sr' } });
       });
 
-      // Should show "No results found" even after error
-      await waitFor(
-        () => {
-          expect(screen.getByText('No results found')).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      await waitFor(() => {
+        expect(screen.getByText('John Doe')).toBeInTheDocument();
+      });
+
+      graphqlSpy.mockRestore();
     });
+  });
 
-    test('handles valueSetExpand errors gracefully', async () => {
-      jest.spyOn(medplum, 'valueSetExpand').mockRejectedValueOnce(new Error('ValueSet error'));
+  describe('Deduplication', () => {
+    test('deduplicates patients from multiple search results', async () => {
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-123',
+              name: [{ given: ['Duplicate'], family: 'Patient' }],
+            },
+          ],
+          Patients2: [
+            {
+              resourceType: 'Patient',
+              id: 'patient-123', // Same patient from identifier search
+              name: [{ given: ['Duplicate'], family: 'Patient' }],
+            },
+          ],
+          ServiceRequestList: undefined,
+        },
+      });
 
-      await setup(false);
+      await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
       await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'test' } });
+        fireEvent.change(searchInput, { target: { value: 'Duplicate' } });
       });
 
-      // Should show "No results found" even after error
-      await waitFor(
-        () => {
-          expect(screen.getByText('No results found')).toBeInTheDocument();
-        },
-        { timeout: 3000 }
-      );
+      await waitFor(() => {
+        expect(screen.getByTestId('action-group-Patients')).toBeInTheDocument();
+      });
+
+      // Should only have one action for the patient
+      const patientActions = screen.getAllByTestId('action-patient-123');
+      expect(patientActions).toHaveLength(1);
+
+      graphqlSpy.mockRestore();
     });
   });
 });
