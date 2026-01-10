@@ -14,6 +14,17 @@ FHIR has the option to query everything associated to an individual patient. Thi
 [base]/R4/Patient/<id>/$everything
 ```
 
+### Parameters
+
+| Name      | Type         | Description                                                              | Required |
+| --------- | ------------ | ------------------------------------------------------------------------ | -------- |
+| `start`   | `date`       | Start date for filtering resources by care date                          | No       |
+| `end`     | `date`       | End date for filtering resources by care date                            | No       |
+| `_since`  | `instant`    | Only include resources updated since this time                           | No       |
+| `_count`  | `integer`    | Maximum number of results to return (default: 1000)                      | No       |
+| `_offset` | `integer`    | Offset for pagination                                                    | No       |
+| `_type`   | `string[]`   | Restrict output to specific resource types (comma-separated)             | No       |
+
 ### Output
 
 The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) with all resources belonging to the patient for whom the request is made. The FHIR Bundle created from this operation is the supported machine readable Electronic Health Information Export (EHI) format for Medplum.
