@@ -1,24 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
 import { getReferenceString } from '@medplum/core';
+import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
-  AppShell,
-  Loading,
-  Logo,
-  NotificationIcon,
-  useMedplum,
-  useMedplumNavigate,
-  useMedplumProfile,
-} from '@medplum/react';
-import {
-  IconCalendarMonth,
+  IconApps,
+  IconBook2,
+  IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
-  IconPencil,
-  IconPuzzle,
-  IconTransformPoint,
-  IconUser,
+  IconUserPlus,
+  IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense } from 'react';
@@ -56,7 +47,6 @@ import { TasksPage } from './pages/tasks/TasksPage';
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const navigate = useMedplumNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -77,13 +67,13 @@ export function App(): JSX.Element | null {
           ? [
               {
                 links: [
-                  { icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' },
+                  { icon: <IconBook2 />, label: 'Spaces', href: '/Spaces/Communication' },
                   {
-                    icon: <IconUser />,
+                    icon: <IconUsers />,
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                  { icon: <IconCalendarMonth />, label: 'Schedule', href: '/schedule' },
+                  { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
                       <NotificationIcon
@@ -113,8 +103,8 @@ export function App(): JSX.Element | null {
               {
                 title: 'Quick Links',
                 links: [
-                  { icon: <IconPencil />, label: 'New Patient', href: '/onboarding' },
-                  { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
+                  { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
+                  { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
                     ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
                     : []),
@@ -124,25 +114,7 @@ export function App(): JSX.Element | null {
           : undefined
       }
       resourceTypeSearchDisabled={true}
-      notifications={
-        profile && (
-          <>
-            <NotificationIcon
-              label="Tasks"
-              resourceType="Task"
-              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconClipboardCheck />}
-              onClick={() =>
-                navigate(
-                  `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
-                )
-              }
-            />
-            {hasDoseSpot && <DoseSpotIcon />}
-          </>
-        )
-      }
+      spotlightPatientsOnly={true}
     >
       <Suspense fallback={<Loading />}>
         <Routes>

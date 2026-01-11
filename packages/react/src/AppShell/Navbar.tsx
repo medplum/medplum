@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Button,
+  Box,
   Divider,
   AppShell as MantineAppShell,
   Menu,
   ScrollArea,
-  Space,
+  Stack,
   Text,
   Tooltip,
   UnstyledButton,
@@ -15,7 +15,7 @@ import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { HumanName } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useMedplumProfile } from '@medplum/react-hooks';
-import { IconLayoutSidebar, IconPlus, IconSearch } from '@tabler/icons-react';
+import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch } from '@tabler/icons-react';
 import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
@@ -45,6 +45,7 @@ export interface NavbarProps {
   readonly navbarToggle: () => void;
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
+  readonly patientsOnly?: boolean;
   readonly userMenuEnabled?: boolean;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
@@ -80,7 +81,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
     <>
       <MantineAppShell.Navbar id="navbar" className={classes.navbar}>
         {props.logo && (
-          <MantineAppShell.Section px="sm" pt="xs">
+          <MantineAppShell.Section px="xs" pt="xs" pb="4px">
             <UnstyledButton
               className={classes.logoButton}
               onClick={props.navbarToggle}
@@ -91,19 +92,21 @@ export function Navbar(props: NavbarProps): JSX.Element {
             </UnstyledButton>
           </MantineAppShell.Section>
         )}
-        <ScrollArea px="sm" pb="xs" h="100%">
+        <ScrollArea px="xs" pb="xs" pt="sm" h="100%">
           <MantineAppShell.Section grow>
             {props.spotlightEnabled && (
-              <NavbarLink
-                to="#"
-                active={false}
-                onClick={spotlight.open}
-                icon={<IconSearch size="1.2rem" />}
-                label="Search"
-                opened={opened}
-              />
+              <Box mb={2}>
+                <Tooltip label="Search" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
+                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()}>
+                    <IconSearch size="1.2rem" />
+                    <span className={classes.linkLabel} data-opened={opened || undefined}>
+                      Search
+                    </span>
+                  </UnstyledButton>
+                </Tooltip>
+              </Box>
             )}
-            {props.spotlightEnabled && <Spotlight />}
+            {props.spotlightEnabled && <Spotlight patientsOnly={props.patientsOnly} />}
             {!props.resourceTypeSearchDisabled && (
               <MantineAppShell.Section mb="sm">
                 <ResourceTypeInput
@@ -115,42 +118,53 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 />
               </MantineAppShell.Section>
             )}
-            {props.menus?.map((menu) => (
-              <Fragment key={`menu-${menu.title}`}>
-                {menu.title && opened && <Text className={classes.menuTitle}>{menu.title}</Text>}
-                {menu.title && !opened && <Space h={41} />}
-                {menu.links?.map((link) => (
-                  <NavbarLink
-                    key={link.href}
-                    to={link.href}
-                    active={link.href === activeLink?.href}
-                    onClick={(e) => onLinkClick(e, link.href)}
-                    icon={link.icon}
-                    label={link.label ?? ''}
-                    opened={opened}
-                  />
-                ))}
+            {props.menus?.map((menu, index) => (
+              <Fragment key={`menu-${menu.title ?? index}`}>
+                {menu.title && (
+                  <Text className={classes.menuTitle} data-opened={opened || undefined}>
+                    {menu.title}
+                  </Text>
+                )}
+                <Stack gap="2">
+                  {menu.links?.map((link) => (
+                    <NavbarLink
+                      key={link.href}
+                      to={link.href}
+                      active={link.href === activeLink?.href}
+                      onClick={(e) => onLinkClick(e, link.href)}
+                      icon={link.icon}
+                      label={link.label ?? ''}
+                      opened={opened}
+                    />
+                  ))}
+                </Stack>
               </Fragment>
             ))}
             {props.displayAddBookmark && (
-              <Button
-                variant="subtle"
-                size="xs"
-                mt="xl"
-                leftSection={<IconPlus size="0.75rem" />}
-                onClick={() => setBookmarkDialogVisible(true)}
-              >
-                Add Bookmark
-              </Button>
+              <Tooltip label="Add Bookmark" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
+                <UnstyledButton
+                  className={`${classes.link} ${classes.addBookmarkLink}`}
+                  onClick={() => setBookmarkDialogVisible(true)}
+                >
+                  <IconCirclePlus />
+                  <span className={classes.linkLabel} data-opened={opened || undefined}>
+                    Add Bookmark
+                  </span>
+                </UnstyledButton>
+              </Tooltip>
             )}
           </MantineAppShell.Section>
         </ScrollArea>
         {props.userMenuEnabled && (
-          <MantineAppShell.Section px="sm" py="xs">
-            <Tooltip label="Toggle navbar" position="right" transitionProps={{ duration: 0 }}>
+          <MantineAppShell.Section px="xs" py="xs">
+            <Tooltip
+              label={opened ? 'Close Sidebar' : 'Open Sidebar'}
+              position="right"
+              transitionProps={{ duration: 0 }}
+            >
               <UnstyledButton
                 className={classes.toggleButton}
-                aria-label="Toggle navbar"
+                aria-label={opened ? 'Close Sidebar' : 'Open Sidebar'}
                 onClick={props.navbarToggle}
                 aria-expanded={opened}
                 aria-controls="navbar"
@@ -158,7 +172,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 <IconLayoutSidebar />
               </UnstyledButton>
             </Tooltip>
-            <Divider my="xs" />
+            <Divider my="xs" mx={6} className={classes.divider} />
             <Menu
               width={260}
               shadow="xl"
@@ -170,13 +184,16 @@ export function Navbar(props: NavbarProps): JSX.Element {
               <Menu.Target>
                 <UnstyledButton
                   className={classes.link}
+                  pl="7"
                   aria-label="User menu"
                   data-active={userMenuOpened || undefined}
                   onClick={() => setUserMenuOpened((o) => !o)}
                   bd="1px 0 0 0 solid var(--mantine-color-gray-200)"
                 >
-                  <ResourceAvatar value={profile} radius="xl" size={18} />
-                  {opened && <span>{formatHumanName(profile?.name?.[0] as HumanName)}</span>}
+                  <ResourceAvatar value={profile} radius="xl" size={24} />
+                  <span className={classes.linkLabel} data-opened={opened || undefined}>
+                    {formatHumanName(profile?.name?.[0] as HumanName)}
+                  </span>
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown>
@@ -211,21 +228,13 @@ interface NavbarLinkProps {
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const { to, icon, label, onClick, active } = props;
 
-  // If the navbar is opened, show the labels, but no tooltips
-  if (props.opened) {
-    return (
-      <MedplumLink to={to} onClick={onClick} className={classes.link} data-active={active || undefined}>
-        {icon}
-        <span>{label}</span>
-      </MedplumLink>
-    );
-  }
-
-  // Otherwise, if the navbar is closed, show tooltips, but no labels
   return (
-    <Tooltip label={label} position="right" transitionProps={{ duration: 0 }}>
+    <Tooltip label={label} position="right" transitionProps={{ duration: 0 }} disabled={props.opened}>
       <MedplumLink to={to} onClick={onClick} className={classes.link} data-active={active || undefined}>
-        {icon}
+        {icon ?? <IconBookmark />}
+        <span className={classes.linkLabel} data-opened={props.opened || undefined}>
+          {label}
+        </span>
       </MedplumLink>
     </Tooltip>
   );
