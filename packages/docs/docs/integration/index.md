@@ -10,56 +10,304 @@ Medplum's integrations the most commonly used features of the platform, and the 
 
 Medplum supports the following first party integrations.
 
-| Name                                                                   | Type            | Description                                   | Documentation                                                                                               |
-| ---------------------------------------------------------------------- | --------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| [Okta](https://www.okta.com/)                                          | Authentication  | Enable Okta SSO for Providers                 | [Okta setup](/docs/auth/domain-level-identity-providers#okta-setup)                                 |
-| [Auth0](https://auth0.com/)                                            | Authentication  | Enable Auth0 SSO for Providers and Patients   | [Auth0 account Setup](/docs/user-management/external-ids#invite-user)                                          |
-| [Google Authentication](https://safety.google/authentication/)         | Authentication  | Enable Google SSO for Providers and Patients  | [Google Auth Setup](/docs/auth/google-auth)                                                         |
-| [Entra SSO](https://learn.microsoft.com/en-us/entra/identity-platform) (fka Azure SSO) | Authentication  | Enable Microsoft Entra SSO for Providers and Patients   | [Entra Auth Setup](https://www.medplum.com//docs/auth/external-identity-providers)                   |
-| [Labcorp](https://www.labcorp.com/)                                    | Diagnostics     | Lab orders and results                        | [Bot and setup](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) |
-| [Quest](https://www.questdiagnostics.com/)                             | Diagnostics     | Lab orders and results                        | [Bot and setup](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) |
-| [Health Gorilla](https://www.healthgorilla.com/)                       | HIE/Diagnostics | Diagnostics orders - records - ADT            | [Bot and setup](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) |
-| [Candid Health](https://www.joincandidhealth.com/)                     | Billing         | Revenue cycle and insurance eligibility check | [Candid bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health)     |
-| [Epic Systems](https://www.epic.com/)                                  | EHR             | Read/Write via FHIR API                       | [Epic JWT authentication](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic) |
-| [eFax](https://www.efax.com/)                               | Communications  | Send and receive faxes via FHIR Communication resources | [eFax Integration](/docs/integration/efax)                                                                 |
-| [Recaptcha](https://www.google.com/recaptcha/about/)                   | Security        | Enable recaptcha on patient registration      | [Setup recaptcha](/docs/user-management/custom-emails#setup-recaptcha)                                                 |
-| [Datadog](https://www.datadoghq.com/)                                  | Observability   | Application monitoring                        | [Datadog sidecar setup](/docs/self-hosting/datadog)                                                         |
-| [Sumo Logic](https://www.sumologic.com/)                               | Observability   | Application monitoring                        | Coming soon                                                                                                 |
-| [Snowflake](https://www.datadoghq.com/)                                | Data warehouse  | Synchronize data to datawarehouse             | Documentation coming soon                                                                                   |
-| [OpenAI](https://www.openai.com/)                                      | AI              | Large language models                         | [Medplum AI](/docs/ai)                                                                                      |
-| [Zus Health](https://zushealth.com/)                                   | HIE             | Integrated HIE, analytics and longitudinal care | [Medplum integration](https://docs.zushealth.com/docs/medplum) |
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Authentication and Identity</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.okta.com/">Okta</a></td>
+      <td>Authentication</td>
+      <td>Enable Okta SSO for Providers</td>
+      <td><a href="/docs/auth/domain-level-identity-providers#okta-setup">Okta setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://auth0.com/">Auth0</a></td>
+      <td>Authentication</td>
+      <td>Enable Auth0 SSO for Providers and Patients</td>
+      <td><a href="/docs/user-management/external-ids#invite-user">Auth0 account Setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://safety.google/authentication/">Google Authentication</a></td>
+      <td>Authentication</td>
+      <td>Enable Google SSO for Providers and Patients</td>
+      <td><a href="/docs/auth/google-auth">Google Auth Setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://learn.microsoft.com/en-us/entra/identity-platform">Entra SSO</a> (fka Azure SSO)</td>
+      <td>Authentication</td>
+      <td>Enable Microsoft Entra SSO for Providers and Patients</td>
+      <td><a href="https://www.medplum.com//docs/auth/external-identity-providers">Entra Auth Setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.google.com/recaptcha/about/">Recaptcha</a></td>
+      <td>Security</td>
+      <td>Enable recaptcha on patient registration</td>
+      <td><a href="/docs/user-management/custom-emails#setup-recaptcha">Setup recaptcha</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Clinical Systems (EHR, HIE, Labs)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.epic.com/">Epic Systems</a></td>
+      <td>EHR</td>
+      <td>Read/Write via FHIR API</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic">Epic JWT authentication</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.healthgorilla.com/">Health Gorilla Patient 360</a></td>
+      <td>HIE</td>
+      <td>Integrated records and ADT data</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://zushealth.com/">Zus Health</a></td>
+      <td>HIE</td>
+      <td>Integrated HIE, analytics and longitudinal care</td>
+      <td><a href="https://docs.zushealth.com/docs/medplum">Medplum integration</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.healthgorilla.com/">Health Gorilla Lab Network</a></td>
+      <td>Diagnostics</td>
+      <td>Lab orders and results</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.labcorp.com/">Labcorp</a></td>
+      <td>Diagnostics</td>
+      <td>Lab orders and results</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.questdiagnostics.com/">Quest</a></td>
+      <td>Diagnostics</td>
+      <td>Lab orders and results</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Communications</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.efax.com/">eFax</a></td>
+      <td>Communications</td>
+      <td>Send and receive faxes via FHIR Communication resources</td>
+      <td><a href="/docs/integration/efax">eFax Integration</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Billing</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.joincandidhealth.com/">Candid Health</a></td>
+      <td>Billing</td>
+      <td>Revenue cycle and insurance eligibility check</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health">Candid bot</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Data and Observability</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.datadoghq.com/">Datadog</a></td>
+      <td>Observability</td>
+      <td>Application monitoring</td>
+      <td><a href="/docs/self-hosting/datadog">Datadog sidecar setup</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.sumologic.com/">Sumo Logic</a></td>
+      <td>Observability</td>
+      <td>Application monitoring</td>
+      <td>Coming soon</td>
+    </tr>
+    <tr>
+      <td><a href="https://www.snowflake.com/">Snowflake</a></td>
+      <td>Data warehouse</td>
+      <td>Synchronize data to datawarehouse</td>
+      <td>Documentation coming soon</td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Artificial Intelligence</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.openai.com/">OpenAI</a></td>
+      <td>AI</td>
+      <td>Large language models</td>
+      <td><a href="/docs/ai">Medplum AI</a></td>
+    </tr>
+  </tbody>
+</table>
 
 ## Common Medical Integrations
 
 Medplum provides templates and playbooks for common medical integrations.
 
-| Name          | Type         | Description                                           | Documentation                                                                                                                                                          |
-| ------------- | ------------ | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HL7 V2        | EHR          | Connect to ADT ORU or other HL7 Feeds                 | [On premise agent](/docs/agent)                                                                                                                                        |
-| FHIR (g)(10)  | EHR          | FHIR API for other EHRs                               | [Example bot FHIR API connectivity](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic) [CLI connector](/docs/cli/external-fhir-servers) |
-| SFTP          | EHR          | Synchronize data                                      | [Example bot](/docs/bots/file-uploads#sftp-uploads)                                                                                                                    |
-| FHIR CMS 9115 | Payor        | FHIR Provider directory for Payor compliance          | [Documentation](/docs/administration/provider-directory)                                                                                                               |
-| FHIRcast      | Radiology    | Event driven workflow for workstations                | [Documentation](/docs/fhircast)                                                                                                                                        |
-| Video         | Binary Files | Upload and transcode video                            | [Documentation](/docs/fhir-datastore/binary-data)                                                                                                                      |
-| PDF           | Binary Files | Upload and access PDF                                 | [Documentation](/docs/fhir-datastore/binary-data)                                                                                                                      |
-| Images        | Binary Files | Upload and access image files                         | [Documentation](/docs/fhir-datastore/binary-data)                                                                                                                      |
-| OAuth2        | Identity     | Plug in any oAuth2 provider                           | [Documentation](/docs/auth/external-identity-providers)                                                                                                        |
-| Basic Auth    | Identity     | Support connections via Basic Auth for legacy systems | [Basic auth](/docs/sdk/core.medplumclient.setbasicauth)                                                                                                                |
-| BulkFHIR      | EHR/Payor    | Export FHIR Data for use by partners                  | [BulkFHIR documentation](/docs/api/fhir/operations/bulk-fhir)                                                                                                          |
-| SMART-on-FHIR | EHR          | SMART app launch from Medplum or another EHR          | [SMART App Launch](/docs/integration/smart-app-launch)                                                                                                                 |
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Clinical and EHR Data</strong></td>
+    </tr>
+    <tr>
+      <td>HL7 V2</td>
+      <td>EHR</td>
+      <td>Connect to ADT ORU or other HL7 Feeds</td>
+      <td><a href="/docs/agent">On premise agent</a></td>
+    </tr>
+    <tr>
+      <td>FHIR (g)(10)</td>
+      <td>EHR</td>
+      <td>FHIR API for other EHRs</td>
+      <td>
+        <a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/epic">Example bot FHIR API connectivity</a><br />
+        <a href="/docs/cli/external-fhir-servers">CLI connector</a>
+      </td>
+    </tr>
+    <tr>
+      <td>SFTP</td>
+      <td>EHR</td>
+      <td>Synchronize data</td>
+      <td><a href="/docs/bots/file-uploads#sftp-uploads">Example bot</a></td>
+    </tr>
+    <tr>
+      <td>SMART-on-FHIR</td>
+      <td>EHR</td>
+      <td>SMART app launch from Medplum or another EHR</td>
+      <td><a href="/docs/integration/smart-app-launch">SMART App Launch</a></td>
+    </tr>
+    <tr>
+      <td>FHIRcast</td>
+      <td>Radiology</td>
+      <td>Event driven workflow for workstations</td>
+      <td><a href="/docs/fhircast">Documentation</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Payor and Compliance</strong></td>
+    </tr>
+    <tr>
+      <td>FHIR CMS 9115</td>
+      <td>Payor</td>
+      <td>FHIR Provider directory for Payor compliance</td>
+      <td><a href="/docs/administration/provider-directory">Documentation</a></td>
+    </tr>
+    <tr>
+      <td>BulkFHIR</td>
+      <td>EHR/Payor</td>
+      <td>Export FHIR Data for use by partners</td>
+      <td><a href="/docs/api/fhir/operations/bulk-fhir">BulkFHIR documentation</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Identity and Authentication</strong></td>
+    </tr>
+    <tr>
+      <td>OAuth2</td>
+      <td>Identity</td>
+      <td>Plug in any oAuth2 provider</td>
+      <td><a href="/docs/auth/external-identity-providers">Documentation</a></td>
+    </tr>
+    <tr>
+      <td>Basic Auth</td>
+      <td>Identity</td>
+      <td>Support connections via Basic Auth for legacy systems</td>
+      <td><a href="/docs/sdk/core.medplumclient.setbasicauth">Basic auth</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Binary and Media</strong></td>
+    </tr>
+    <tr>
+      <td>Video</td>
+      <td>Binary Files</td>
+      <td>Upload and transcode video</td>
+      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
+    </tr>
+    <tr>
+      <td>PDF</td>
+      <td>Binary Files</td>
+      <td>Upload and access PDF</td>
+      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
+    </tr>
+    <tr>
+      <td>Images</td>
+      <td>Binary Files</td>
+      <td>Upload and access image files</td>
+      <td><a href="/docs/fhir-datastore/binary-data">Documentation</a></td>
+    </tr>
+  </tbody>
+</table>
 
 ## Custom built integrations
 
 Medplum provides building blocks for custom integrations. Some examples are below.
 
-| Name                                                                               | Template Type | Description                     | Documentation                                                                                              |
-| ---------------------------------------------------------------------------------- | ------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| [Stripe](https://stripe.com/)                                                      | Bot Webhooks  | Synchronize payments data       | [Stripe bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots)      |
-| [CMS 1500](https://www.cms.gov/medicare/cms-forms/cms-forms/downloads/cms1500.pdf) | Bot PDF       | Create PDF for CMS 1500         | [PDF Bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts)       |
-| Superbill                                                                          | Bot PDF       | Create PDF for Superbill        | [PDF Bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts)       |
-| Medications                                                                        | API           | Prescribe and check medications | [Medication related integration](https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb) |
-| [Acuity Scheduling](https://www.acuityscheduling.com/)                             | Bot Webhooks  | Enable third party scheduling   | [Consuming webhooks](/docs/bots/consuming-webhooks)                                                        |
-| [Cal.com](https://cal.com/)                                                        | Bot Webhooks  | Enable third party scheduling   | [Consuming webhooks](/docs/bots/consuming-webhooks)                                                        |
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Template Type</th>
+      <th>Description</th>
+      <th>Documentation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Scheduling and Payments (Bot Webhooks)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://stripe.com/">Stripe</a></td>
+      <td>Bot Webhooks</td>
+      <td>Synchronize payments data</td>
+      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/stripe-bots">Stripe bot</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.acuityscheduling.com/">Acuity Scheduling</a></td>
+      <td>Bot Webhooks</td>
+      <td>Enable third party scheduling</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
+    <tr>
+      <td><a href="https://cal.com/">Cal.com</a></td>
+      <td>Bot Webhooks</td>
+      <td>Enable third party scheduling</td>
+      <td><a href="/docs/bots/consuming-webhooks">Consuming webhooks</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Clinical (API)</strong></td>
+    </tr>
+    <tr>
+      <td>Medications</td>
+      <td>API</td>
+      <td>Prescribe and check medications</td>
+      <td><a href="https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb">Medication related integration</a></td>
+    </tr>
+    <tr style={{backgroundColor: '#f6f8fa'}}>
+      <td colspan="4"><strong>Documents and Forms (Bot PDF)</strong></td>
+    </tr>
+    <tr>
+      <td><a href="https://www.cms.gov/medicare/cms-forms/cms-forms/downloads/cms1500.pdf">CMS 1500</a></td>
+      <td>Bot PDF</td>
+      <td>Create PDF for CMS 1500</td>
+      <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+    </tr>
+    <tr>
+      <td>Superbill</td>
+      <td>Bot PDF</td>
+      <td>Create PDF for Superbill</td>
+      <td><a href="https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/create-pdf.ts">PDF Bot</a></td>
+    </tr>
+  </tbody>
+</table>
 
 ## Integration Building Blocks and Testing
 
