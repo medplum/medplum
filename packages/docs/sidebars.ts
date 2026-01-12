@@ -419,7 +419,6 @@ const sidebars: SidebarsConfig = {
 
                 { type: 'html', value: '<strong class="menu__link">Patient Operations</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/patient-everything' },
-                { type: 'doc', id: 'api/fhir/operations/patient-set-accounts' },
                 { type: 'doc', id: 'api/fhir/operations/patient-summary' },
 
                 { type: 'html', value: '<strong class="menu__link">Bot Operations</strong>' },
@@ -452,11 +451,11 @@ const sidebars: SidebarsConfig = {
                 { type: 'doc', id: 'api/fhir/operations/project-init' },
                 { type: 'doc', id: 'api/fhir/operations/expunge' },
                 { type: 'doc', id: 'api/fhir/operations/resend' },
+                { type: 'doc', id: 'api/fhir/operations/set-accounts' },
 
                 { type: 'html', value: '<strong class="menu__link">Authentication & Security</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/rotate-client-secret' },
                 { type: 'doc', id: 'api/fhir/operations/clientapplication-smart-launch' },
-                { type: 'doc', id: 'api/fhir/operations/subscription-get-ws-binding-token' },
                 { type: 'doc', id: 'api/fhir/operations/user-update-email' },
               ],
             },
