@@ -81,7 +81,9 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-EXCLUDE=""
+# ioredis - v5.9.x broke BullMQ, holding off on updating until late Jan 2026
+# pdfmake - v0.3.x introduced breaking changes to the API
+EXCLUDE="ioredis pdfmake"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
