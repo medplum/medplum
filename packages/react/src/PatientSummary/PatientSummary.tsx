@@ -38,6 +38,7 @@ import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
 import { PatientInfoItem } from './PatientInfoItem';
+import { Pharmacies } from './Pharmacies';
 import styles from './PatientSummary.module.css';
 import {
   formatPatientGenderDisplay,
@@ -300,6 +301,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             />
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
+            <Divider />
+            <Pharmacies patient={patient} onClickResource={onClickResource} />
             <Divider />
           </>
         )}
