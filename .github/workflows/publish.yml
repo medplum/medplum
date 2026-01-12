@@ -1,15 +1,22 @@
 name: Publish
+
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
 jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      GITHUB_TOKEN: ${{ github.token }}
       NODE_VERSION: '20'
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
@@ -19,19 +26,40 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Check if latest version
+        id: check-latest
+        run: |
+          CURRENT_TAG="${GITHUB_REF#refs/tags/}"
+          echo "Current Tag: ${CURRENT_TAG}"
+
+          LATEST_TAG=$(gh release view --json tagName -q '.tagName')
+          echo "Latest Tag: ${LATEST_TAG}"
+
+          HIGHEST_TAG=$(printf '%s\n%s' "${CURRENT_TAG}" "${LATEST_TAG}" | sort -V | tail -n1)
+          echo "Highest Tag: ${HIGHEST_TAG}"
+
+          if [ "${CURRENT_TAG}" = "${HIGHEST_TAG}" ]; then
+            echo "Current tag is the latest."
+            echo "result=true" >> $GITHUB_OUTPUT
+          else
+            echo "Current tag is not the latest."
+            echo "result=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
-        uses: actions/cache@v4
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         env:
           cache-name: cache-node-modules
         with:
@@ -43,13 +71,13 @@ jobs:
             ${{ runner.os }}-
 
       - name: Slack start message
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@e28cf165c92ffef168d23c5c9000cffc8a25e117 # v1.24.0
         with:
           payload: |
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Build
         run: npm run build:all
@@ -61,41 +89,58 @@ jobs:
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
+      - name: Update npm # Ensure npm 11.5.1 or later is installed
+        run: npm install -g npm@latest
+
       - name: Publish to NPM
-        run: ./scripts/publish.sh
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/publish.sh
+          else
+            ./scripts/publish.sh backport
+          fi
 
       - name: Sync example repos
+        if: steps.check-latest.outputs.result == 'true'
         run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55 # v2.10.0
 
       - name: Build and push server Docker image
-        run: ./scripts/build-docker-server.sh --release
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-server.sh --release --latest
+          else
+            ./scripts/build-docker-server.sh --release
+          fi
         env:
           SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
 
       - name: Build and push app Docker image
-        run: ./scripts/build-docker-app.sh --release
+        run: |
+          if [ "${{ steps.check-latest.outputs.result }}" = "true" ]; then
+            ./scripts/build-docker-app.sh --release --latest
+          else
+            ./scripts/build-docker-app.sh --release
+          fi
         env:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
+        if: steps.check-latest.outputs.result == 'true' # only deploy latest versions
         run: ./scripts/deploy-bot-layer.sh
 
   build_agent_win64:
@@ -111,7 +156,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Install NSIS
         run: choco install nsis
@@ -126,7 +171,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -267,10 +312,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
