@@ -11,10 +11,12 @@ export interface CollapsibleSectionProps {
   readonly title: string;
   readonly children: ReactNode;
   readonly onAdd?: () => void;
+  /** Additional actions to render in the header (e.g., sync button) */
+  readonly headerActions?: ReactNode;
 }
 
 export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element {
-  const { title, children, onAdd } = props;
+  const { title, children, onAdd, headerActions } = props;
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -36,21 +38,24 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
           </Text>
         </Group>
 
-        {onAdd && (
-          <ActionIcon
-            role="button"
-            aria-label="Add item"
-            className={classes.addButton}
-            variant="subtle"
-            onClick={(e) => {
-              killEvent(e);
-              onAdd();
-            }}
-            size="md"
-          >
-            <IconPlus size={18} />
-          </ActionIcon>
-        )}
+        <Group gap={8} wrap="nowrap">
+          {headerActions}
+          {onAdd && (
+            <ActionIcon
+              role="button"
+              aria-label="Add item"
+              className={classes.addButton}
+              variant="subtle"
+              onClick={(e) => {
+                killEvent(e);
+                onAdd();
+              }}
+              size="md"
+            >
+              <IconPlus size={18} />
+            </ActionIcon>
+          )}
+        </Group>
       </Group>
 
       <Collapse in={!collapsed}>
