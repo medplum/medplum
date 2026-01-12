@@ -179,7 +179,7 @@ export default function AboutPage(): JSX.Element {
             <ProfileCard
               name="Everett Williams"
               title="Deployment Strategist"
-              imgUrl="/img/people/everettwilliams.jpg"
+              imgUrl="/img/people/everettwilliams.jpeg"
               linkedInUrl="https://www.linkedin.com/in/everetttwilliams/"
               githubUrl="https://github.com/everett-williams"
             />
