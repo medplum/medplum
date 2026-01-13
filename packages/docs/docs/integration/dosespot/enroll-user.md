@@ -114,7 +114,7 @@ The bot requires the following input parameters:
 | Parameter | Required | Type | Description | Example/Valid Values |
 |-----------|----------|------|-------------|---------------------|
 | `practitionerId` | Yes | `string` | The ID of the FHIR Practitioner resource to enroll | `"ced6426b-ad93-4abe-8e75-1695d956e471"` |
-| `practitionerRoleTypes` | Yes | `DoseSpotClinicianRoleType[]` (array of numbers) | Array of role types for the clinician in DoseSpot | Valid values:<br/>- `1` - PrescribingClinician<br/>- `2` - ReportingClinician<br/>- `3` - EpcsCoordinator<br/>- `4` - ClinicianAdmin<br/>- `5` - PrescribingAgentClinician<br/>- `6` - ProxyClinician<br/><br/>Example: `[1]` (Prescribing Clinician) or `[1, 3]` (Prescribing Clinician and EPCS Coordinator) |
+| `practitionerRoleTypes` | Yes | `DoseSpotClinicianRoleType[]` (array of numbers) | Array of role types for the clinician in DoseSpot | Valid values:<br/>- `1` - PrescribingClinician<br/>- `2` - ReportingClinician<br/>- `3` - EpcsCoordinator<br/>- `4` - ClinicianAdmin<br/>- `5` - PrescribingAgentClinician<br/>- `6` - ProxyClinician<br/><br/>Example: `[1]` (Prescribing Clinician) or `[1, 4]` (Prescribing Clinician and Clinician Admin) |
 
 :::note
 Users that need to be able to invite others should be added with ClinicianAdmin role type.
