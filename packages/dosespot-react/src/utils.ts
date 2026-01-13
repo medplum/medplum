@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Extension, MedicationKnowledge, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
+import type { Extension, MedicationKnowledge, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { DOSESPOT_PHARMACY_ID_SYSTEM } from './common';
 
 export const getMedicationName = (medication: MedicationKnowledge | undefined): string => {
@@ -97,10 +97,7 @@ export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPh
  * @param isPrimary - Whether this is the primary pharmacy.
  * @returns The extension object to add to a Patient.
  */
-export function createPreferredPharmacyExtension(
-  orgRef: Reference<Organization>,
-  isPrimary: boolean
-): Extension {
+export function createPreferredPharmacyExtension(orgRef: Reference<Organization>, isPrimary: boolean): Extension {
   const typeCode = isPrimary ? PHARMACY_TYPE_PRIMARY : PHARMACY_TYPE_PREFERRED;
   const typeDisplay = isPrimary ? 'Primary Pharmacy' : 'Preferred Pharmacy';
 
@@ -185,9 +182,7 @@ export function addPreferredPharmacyToPatient(
       return false;
     }
     const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
-    const existingRefString = pharmacyExt?.valueReference
-      ? getReferenceString(pharmacyExt.valueReference)
-      : undefined;
+    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
     return existingRefString === orgRefString;
   });
 
@@ -209,10 +204,7 @@ export function addPreferredPharmacyToPatient(
  * @param orgRef - Reference to the Organization resource to remove.
  * @returns The modified Patient resource.
  */
-export function removePreferredPharmacyFromPatient(
-  patient: Patient,
-  orgRef: Reference<Organization>
-): Patient {
+export function removePreferredPharmacyFromPatient(patient: Patient, orgRef: Reference<Organization>): Patient {
   if (!patient.extension) {
     return patient;
   }
@@ -224,9 +216,7 @@ export function removePreferredPharmacyFromPatient(
       return true; // Keep non-pharmacy extensions
     }
     const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
-    const existingRefString = pharmacyExt?.valueReference
-      ? getReferenceString(pharmacyExt.valueReference)
-      : undefined;
+    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
     return existingRefString !== orgRefString;
   });
 

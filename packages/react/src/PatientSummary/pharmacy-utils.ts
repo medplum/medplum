@@ -3,8 +3,7 @@
 
 import type { Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
 
-export const PATIENT_PREFERRED_PHARMACY_URL =
-  'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+export const PATIENT_PREFERRED_PHARMACY_URL = 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 export const PHARMACY_TYPE_PRIMARY = 'primary';
 
 // Bot identifiers

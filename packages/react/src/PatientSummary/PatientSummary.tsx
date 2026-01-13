@@ -38,7 +38,6 @@ import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
 import { PatientInfoItem } from './PatientInfoItem';
-import { Pharmacies } from './Pharmacies';
 import styles from './PatientSummary.module.css';
 import {
   formatPatientGenderDisplay,
@@ -48,6 +47,7 @@ import {
   getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
+import { Pharmacies } from './Pharmacies';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
