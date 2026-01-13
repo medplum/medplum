@@ -23,6 +23,8 @@ interface AddPharmacyResponse {
 
 /**
  * Type guard to validate that the bot response is an array of Organization resources.
+ * @param value - The value to check.
+ * @returns True if the value is an array of Organization resources.
  */
 function isOrganizationArray(value: unknown): value is Organization[] {
   if (!Array.isArray(value)) {
@@ -38,6 +40,8 @@ function isOrganizationArray(value: unknown): value is Organization[] {
 
 /**
  * Type guard to validate the add pharmacy bot response.
+ * @param value - The value to check.
+ * @returns True if the value is a valid AddPharmacyResponse.
  */
 function isAddPharmacyResponse(value: unknown): value is AddPharmacyResponse {
   if (typeof value !== 'object' || value === null) {
@@ -49,11 +53,19 @@ function isAddPharmacyResponse(value: unknown): value is AddPharmacyResponse {
 
 /**
  * Gets a unique key for a pharmacy based on its identifier or index.
+ * @param pharmacy - The pharmacy Organization resource.
+ * @param index - The index of the pharmacy in the list.
+ * @returns A unique key string for the pharmacy.
  */
 function getPharmacyKey(pharmacy: Organization, index: number): string {
   return pharmacy.identifier?.[0]?.value || `pharmacy-${index}`;
 }
 
+/**
+ * Renders a dialog for searching and adding pharmacies to a patient's favorites.
+ * @param props - The dialog props.
+ * @returns The pharmacy dialog component.
+ */
 export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
   const { patient, onSubmit, onClose } = props;
   const medplum = useMedplum();
