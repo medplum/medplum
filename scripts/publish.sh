@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+set -xe
+
+TAG=''
+if [ ! -z "$1" ]; then
+  TAG="--tag $1"
+fi
+
 PACKAGES=(
   "agent"
   "app"
@@ -28,6 +35,6 @@ for package in ${PACKAGES[@]}; do
   pushd packages/$package
   cp ../../LICENSE.txt .
   cp ../../NOTICE .
-  npm publish --provenance --access public
+  npm publish --provenance --access public $TAG
   popd
 done

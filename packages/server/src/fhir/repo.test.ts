@@ -46,7 +46,7 @@ import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
-import { DatabaseMode } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -1063,6 +1063,92 @@ describe('FHIR Repo', () => {
       await systemRepo.deleteResource(patient.resourceType, patient.id);
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
+
+  describe('Array column padding', () => {
+    let prevConfig: string | undefined;
+    beforeEach(() => {
+      const config = getConfig();
+      prevConfig = config.arrayColumnPadding && JSON.stringify(config.arrayColumnPadding);
+    });
+
+    afterEach(() => {
+      if (prevConfig) {
+        const config = getConfig();
+        config.arrayColumnPadding = JSON.parse(prevConfig);
+      }
+    });
+
+    test.each([
+      ['no config', undefined, false], // off by default
+      [
+        'no resourceType array',
+        {
+          config: {
+            // ensure a padding element is chosen
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        true,
+      ],
+      [
+        'resourceType in the resourceType array',
+        {
+          resourceType: ['Patient', 'Observation'],
+          config: {
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        true,
+      ],
+      [
+        'resourceType NOT in the resourceType array',
+        {
+          resourceType: ['Patient'],
+          config: {
+            m: 1,
+            lambda: 300,
+            statisticsTarget: 1,
+          },
+        },
+        false,
+      ],
+    ])('with %s', async (desc, identifierArrayColumnPadding, shouldPad) =>
+      withTestContext(async () => {
+        const config = getConfig();
+        if (identifierArrayColumnPadding) {
+          config.arrayColumnPadding = {
+            identifier: identifierArrayColumnPadding,
+          };
+        }
+        const res = await systemRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'unknown',
+          code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
+        });
+
+        const db = getDatabasePool(DatabaseMode.READER);
+        const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
+
+        // deleted rows also get padded
+        await systemRepo.deleteResource(res.resourceType, res.id);
+
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
+      })
+    );
+  });
 
   test('Conditional reference resolution', async () =>
     withTestContext(async () => {

@@ -35,18 +35,26 @@ PLATFORMS="--platform linux/amd64,linux/arm64"
 # If this is a release, get version information
 # Release is specified with a "--release" argument
 IS_RELEASE=false
+IS_LATEST=false
 for arg in "$@"; do
   if [[ "$arg" == "--release" ]]; then
     IS_RELEASE=true
     FULL_VERSION=$(node -p "require('./package.json').version")
     MAJOR_DOT_MINOR=$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")
-    break
+    continue
+  fi
+  if [[ "$arg" == "--latest" ]]; then
+    IS_LATEST=true
+    continue
   fi
 done
 
 # This is so we can build the staging server Dockerfile without having to build app
 # Build and push app Docker images
-APP_TAGS="--tag $APP_DOCKERHUB_REPOSITORY:latest --tag $APP_DOCKERHUB_REPOSITORY:$GITHUB_SHA"
+APP_TAGS="--tag $APP_DOCKERHUB_REPOSITORY:$GITHUB_SHA"
+if [[ "$IS_LATEST" == "true" ]]; then
+  APP_TAGS="$APP_TAGS --tag $APP_DOCKERHUB_REPOSITORY:latest"
+fi
 if [[ "$IS_RELEASE" == "true" ]]; then
   APP_TAGS="$APP_TAGS --tag $APP_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $APP_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
