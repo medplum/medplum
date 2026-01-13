@@ -6,6 +6,7 @@ import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult, BotStreamingResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { getAuthenticatedContext } from '../../context';
 
 let client: LambdaClient;
 
@@ -67,6 +68,8 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
 /**
  * Parses the Lambda response from awslambda.streamifyResponse.
  * The response contains newline-separated JSON objects.
+ * Supports both the new streaming format with __medplum_result__/__medplum_error__
+ * and the legacy format with raw return values for backwards compatibility.
  * @param responseStr - The raw response string from Lambda.
  * @returns The parsed result object containing __medplum_result__ or __medplum_error__.
  */
@@ -82,7 +85,15 @@ function parseLambdaStreamResponse(responseStr: string): { __medplum_result__?: 
       // Skip malformed lines
     }
   }
-  return {};
+  // Backwards compatibility: if no __medplum_result__ wrapper found,
+  // treat the entire response as the raw return value (legacy format)
+  try {
+    const parsed = JSON.parse(responseStr);
+    return { __medplum_result__: parsed };
+  } catch {
+    // If it's not valid JSON, return the raw string
+    return { __medplum_result__: responseStr };
+  }
 }
 
 /**
@@ -159,6 +170,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
     headers,
     streaming: true, // Indicate streaming mode
   };
+  const ctx = getAuthenticatedContext();
 
   // Build the streaming command
   const encoder = new TextEncoder();
@@ -182,7 +194,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of response.EventStream!) {
+          for await (const event of response.EventStream ?? []) {
             if (event.PayloadChunk?.Payload) {
               controller.enqueue(event.PayloadChunk.Payload);
             }
@@ -233,7 +245,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
               await streamingCallback(parsed);
             }
           } catch (err) {
-            // Skip malformed chunks
+            ctx.logger.error('Error parsing stream chunk', { error: err });
           }
         }
       }
