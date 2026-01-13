@@ -51,6 +51,7 @@ import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
+import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { SelectQuery } from './sql';
@@ -140,6 +141,31 @@ describe('FHIR Repo', () => {
     await expect(systemRepo.readResource('Subscription', randomUUID(), { checkCacheOnly: true })).rejects.toThrow(
       new OperationOutcomeError(notFound)
     );
+  });
+
+  test('Read AuditEvent after update', async () => {
+    const projectId = randomUUID();
+    const resource = await systemRepo.createResource({ resourceType: 'Patient', meta: { project: projectId } });
+    const data = createAuditEvent(
+      RestfulOperationType,
+      ReadInteraction,
+      projectId,
+      undefined,
+      undefined,
+      AuditEventOutcome.Success,
+      { resource }
+    );
+
+    let auditEvent = await systemRepo.createResource(data);
+    // Read resource to load into cache
+    auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
+
+    const updatedEvent = await systemRepo.updateResource({ ...auditEvent, outcomeDesc: 'foo' });
+    expect(updatedEvent.outcomeDesc).not.toStrictEqual(auditEvent.outcomeDesc);
+
+    // Re-read resource; should get the updated data
+    auditEvent = await systemRepo.readResource('AuditEvent', auditEvent.id);
+    expect(updatedEvent.outcomeDesc).toStrictEqual(auditEvent.outcomeDesc);
   });
 
   test('Repo read malformed reference', async () => {

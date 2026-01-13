@@ -889,7 +889,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isCacheOnly(resource)) {
       await this.writeToDatabase(resource, create);
     }
-    await this.setCacheEntry(resource);
+
+    // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
+    if (resource.resourceType !== 'AuditEvent') {
+      await this.setCacheEntry(resource);
+    } else if (!create) {
+      // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
+      await this.deleteCacheEntry(resource.resourceType, resource.id);
+    }
 
     // Handle special cases for resource caching
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
