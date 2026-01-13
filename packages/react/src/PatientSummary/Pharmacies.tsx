@@ -3,7 +3,6 @@
 import { Box, Flex, Group, Loader, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatAddress } from '@medplum/core';
-import { getPreferredPharmaciesFromPatient } from '@medplum/dosespot-react';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -11,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import { PharmacyDialog } from './PharmacyDialog';
+import { getPreferredPharmaciesFromPatient } from './pharmacy-utils';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
 
