@@ -21,6 +21,39 @@ interface AddPharmacyResponse {
   organization?: Organization;
 }
 
+/**
+ * Type guard to validate that the bot response is an array of Organization resources.
+ */
+function isOrganizationArray(value: unknown): value is Organization[] {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+  // Check first item if array is non-empty
+  if (value.length > 0) {
+    const first = value[0];
+    return typeof first === 'object' && first !== null && first.resourceType === 'Organization';
+  }
+  return true; // Empty array is valid
+}
+
+/**
+ * Type guard to validate the add pharmacy bot response.
+ */
+function isAddPharmacyResponse(value: unknown): value is AddPharmacyResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const obj = value as Record<string, unknown>;
+  return typeof obj.success === 'boolean' && typeof obj.message === 'string';
+}
+
+/**
+ * Gets a unique key for a pharmacy based on its identifier or index.
+ */
+function getPharmacyKey(pharmacy: Organization, index: number): string {
+  return pharmacy.identifier?.[0]?.value || `pharmacy-${index}`;
+}
+
 export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
   const { patient, onSubmit, onClose } = props;
   const medplum = useMedplum();
@@ -58,9 +91,15 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
       setSearching(true);
       setSelectedPharmacy(undefined);
       try {
-        const results = (await medplum.executeBot(DOSESPOT_SEARCH_PHARMACY_BOT, cleanParams)) as Organization[];
-        setSearchResults(results);
-        if (results.length === 0) {
+        const response = await medplum.executeBot(DOSESPOT_SEARCH_PHARMACY_BOT, cleanParams);
+
+        // Validate the response is an array of Organizations
+        if (!isOrganizationArray(response)) {
+          throw new Error('Invalid response from pharmacy search');
+        }
+
+        setSearchResults(response);
+        if (response.length === 0) {
           showNotification({
             color: 'blue',
             title: 'No Results',
@@ -89,25 +128,30 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
     setAdding(true);
     try {
       // Pass the full Organization to the bot instead of just the pharmacy ID
-      const result = (await medplum.executeBot(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
+      const response = await medplum.executeBot(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
         patientId: patient.id,
         pharmacy: selectedPharmacy,
         setAsPrimary,
-      })) as AddPharmacyResponse;
+      });
 
-      if (result.success) {
+      // Validate the response structure
+      if (!isAddPharmacyResponse(response)) {
+        throw new Error('Invalid response from add pharmacy bot');
+      }
+
+      if (response.success) {
         showNotification({
           color: 'green',
           title: 'Success',
-          message: result.message,
+          message: response.message,
         });
         // Return the persisted Organization if available, otherwise the selected one
-        onSubmit(result.organization || selectedPharmacy);
+        onSubmit(response.organization || selectedPharmacy);
       } else {
         showNotification({
           color: 'red',
           title: 'Error',
-          message: result.message,
+          message: response.message,
         });
       }
     } catch (error) {
@@ -162,54 +206,60 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
             Search Results ({searchResults.length})
           </Text>
           <Radio.Group
-            value={selectedPharmacy?.identifier?.[0]?.value}
+            value={selectedPharmacy ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) : ''}
             onChange={(value) => {
-              const selected = searchResults.find((p) => p.identifier?.[0]?.value === value);
+              const selected = searchResults.find((p, i) => getPharmacyKey(p, i) === value);
               setSelectedPharmacy(selected);
             }}
           >
             <Stack gap="sm">
-              {searchResults.map((pharmacy) => (
-                <Box
-                  key={pharmacy.identifier?.[0]?.value}
-                  p="sm"
-                  style={{
-                    border:
-                      selectedPharmacy?.identifier?.[0]?.value === pharmacy.identifier?.[0]?.value
+              {searchResults.map((pharmacy, index) => {
+                const pharmacyKey = getPharmacyKey(pharmacy, index);
+                const isSelected = selectedPharmacy
+                  ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) === pharmacyKey
+                  : false;
+
+                return (
+                  <Box
+                    key={pharmacyKey}
+                    p="sm"
+                    style={{
+                      border: isSelected
                         ? '2px solid var(--mantine-color-blue-6)'
                         : '1px solid var(--mantine-color-gray-3)',
-                    borderRadius: 'var(--mantine-radius-sm)',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setSelectedPharmacy(pharmacy)}
-                >
-                  <Radio
-                    value={pharmacy.identifier?.[0]?.value || ''}
-                    label={
-                      <Box>
-                        <Text fw={500} size="sm">
-                          {pharmacy.name}
-                        </Text>
-                        {pharmacy.address?.[0] && (
-                          <Text size="xs" c="dimmed">
-                            {formatAddress(pharmacy.address[0])}
+                      borderRadius: 'var(--mantine-radius-sm)',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => setSelectedPharmacy(pharmacy)}
+                  >
+                    <Radio
+                      value={pharmacyKey}
+                      label={
+                        <Box>
+                          <Text fw={500} size="sm">
+                            {pharmacy.name}
                           </Text>
-                        )}
-                        {pharmacy.telecom?.find((t) => t.system === 'phone') && (
-                          <Text size="xs" c="dimmed">
-                            Phone: {pharmacy.telecom.find((t) => t.system === 'phone')?.value}
-                          </Text>
-                        )}
-                        {pharmacy.telecom?.find((t) => t.system === 'fax') && (
-                          <Text size="xs" c="dimmed">
-                            Fax: {pharmacy.telecom.find((t) => t.system === 'fax')?.value}
-                          </Text>
-                        )}
-                      </Box>
-                    }
-                  />
-                </Box>
-              ))}
+                          {pharmacy.address?.[0] && (
+                            <Text size="xs" c="dimmed">
+                              {formatAddress(pharmacy.address[0])}
+                            </Text>
+                          )}
+                          {pharmacy.telecom?.find((t) => t.system === 'phone') && (
+                            <Text size="xs" c="dimmed">
+                              Phone: {pharmacy.telecom.find((t) => t.system === 'phone')?.value}
+                            </Text>
+                          )}
+                          {pharmacy.telecom?.find((t) => t.system === 'fax') && (
+                            <Text size="xs" c="dimmed">
+                              Fax: {pharmacy.telecom.find((t) => t.system === 'fax')?.value}
+                            </Text>
+                          )}
+                        </Box>
+                      }
+                    />
+                  </Box>
+                );
+              })}
             </Stack>
           </Radio.Group>
 

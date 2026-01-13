@@ -3,7 +3,15 @@
 
 import type { Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
 
-export const PATIENT_PREFERRED_PHARMACY_URL = 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+// Extension URLs and systems
+// Note: These constants are duplicated from @medplum/dosespot-react to avoid
+// creating a dependency between @medplum/react and @medplum/dosespot-react.
+// If you modify these, ensure the corresponding values in dosespot-react/utils.ts
+// are also updated.
+export const PATIENT_PREFERRED_PHARMACY_URL =
+  'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
+
 export const PHARMACY_TYPE_PRIMARY = 'primary';
 
 // Bot identifiers
@@ -26,23 +34,41 @@ export interface PreferredPharmacy {
 
 /**
  * Extracts preferred pharmacies from a Patient resource's extensions.
+ *
+ * Note: This function is intentionally duplicated from `@medplum/dosespot-react`
+ * to avoid creating a dependency between `@medplum/react` and `@medplum/dosespot-react`.
+ *
  * @param patient - The Patient resource.
  * @returns An array of PreferredPharmacy objects.
  */
 export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPharmacy[] {
-  const extensions = patient.extension?.filter((ext) => ext.url === PATIENT_PREFERRED_PHARMACY_URL) || [];
+  if (!patient.extension) {
+    return [];
+  }
+
   const pharmacies: PreferredPharmacy[] = [];
 
-  for (const ext of extensions) {
-    const pharmacyRefExt = ext.extension?.find((e) => e.url === 'pharmacy');
-    const typeExt = ext.extension?.find((e) => e.url === 'type');
+  for (const ext of patient.extension) {
+    if (ext.url !== PATIENT_PREFERRED_PHARMACY_URL || !ext.extension) {
+      continue;
+    }
 
-    if (pharmacyRefExt?.valueReference && typeExt?.valueCodeableConcept?.coding?.[0]?.code) {
+    // Find the pharmacy reference sub-extension
+    const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
+    const typeExt = ext.extension.find((e) => e.url === 'type');
+
+    if (pharmacyExt?.valueReference) {
+      // Check for the type code with the correct system
+      const typeCode = typeExt?.valueCodeableConcept?.coding?.find(
+        (c) => c.system === PHARMACY_PREFERENCE_TYPE_SYSTEM
+      )?.code;
+
       pharmacies.push({
-        organizationRef: pharmacyRefExt.valueReference as Reference<Organization>,
-        isPrimary: typeExt.valueCodeableConcept.coding[0].code === PHARMACY_TYPE_PRIMARY,
+        organizationRef: pharmacyExt.valueReference as Reference<Organization>,
+        isPrimary: typeCode === PHARMACY_TYPE_PRIMARY,
       });
     }
   }
+
   return pharmacies;
 }
