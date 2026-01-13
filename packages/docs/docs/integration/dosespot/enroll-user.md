@@ -5,7 +5,7 @@ sidebar_position: 4
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# DoseSpot Enroll User Bot Guide
+# Prescriber Enrollment
 
 This guide explains how to enroll a new prescriber in DoseSpot via the Medplum **Enroll Prescriber Bot**.
 
