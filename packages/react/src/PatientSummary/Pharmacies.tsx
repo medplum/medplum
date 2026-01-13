@@ -9,8 +9,8 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
-import { PharmacyDialog } from './PharmacyDialog';
 import { getPreferredPharmaciesFromPatient } from './pharmacy-utils';
+import { PharmacyDialog } from './PharmacyDialog';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
 
