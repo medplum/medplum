@@ -26,7 +26,7 @@ export function getPharmacyIdFromOrganization(organization: Organization): numbe
  * FHIR Extension URL for patient preferred pharmacy.
  * @see https://build.fhir.org/ig/HL7/fhir-extensions/StructureDefinition-patient-preferredPharmacy.html
  */
-export const PATIENT_PREFERRED_PHARMACY_URL = 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+export const PATIENT_PREFERRED_PHARMACY_URL = 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 
 /**
  * System for pharmacy preference type codes.
