@@ -279,7 +279,7 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
-      readonlyFields: ['project', 'user'],
+      readonlyFields: ['project', 'user.reference'],
     });
 
     accessPolicy.resource.push({

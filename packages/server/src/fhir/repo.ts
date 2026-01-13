@@ -2234,17 +2234,118 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     for (const field of fieldsToRestore) {
       this.removeField(input, field);
-      // only top-level fields can be restored.
+      // Restore the field from the original if it exists
       // choice-of-type fields technically aren't allowed in readonlyFields/hiddenFields,
       // but that isn't currently enforced at write time, so exclude them here
-      if (original && !field.includes('.') && !field.endsWith('[x]')) {
-        const value = original[field as keyof T];
-        if (value) {
-          input[field as keyof T] = value;
+      if (original && !field.endsWith('[x]')) {
+        if (field.includes('.')) {
+          // Nested field - restore from original
+          this.restoreNestedField(input, original, field);
+        } else {
+          // Top-level field - restore from original
+          const value = original[field as keyof T];
+          if (value) {
+            input[field as keyof T] = value;
+          }
         }
       }
     }
     return input;
+  }
+
+  /**
+   * Restores a nested field value from the original resource to the input resource.
+   * @param input - The input resource.
+   * @param original - The original resource.
+   * @param path - The path to the field to restore (e.g., "user.reference" or "identifier[0].system")
+   */
+  private restoreNestedField<T extends Resource>(input: T, original: T, path: string): void {
+    const pathParts = path.split('.');
+    if (pathParts.length < 2) {
+      return; // Not a nested field
+    }
+
+    // Helper to parse array index from path part (e.g., "identifier[0]" -> { field: "identifier", index: 0 })
+    const parsePathPart = (pathPart: string): { field: string; index?: number } => {
+      const bracketIndex = pathPart.indexOf('[');
+      if (bracketIndex > 0 && pathPart.endsWith(']')) {
+        const field = pathPart.slice(0, bracketIndex);
+        const indexStr = pathPart.slice(bracketIndex + 1, -1);
+        const index = Number.parseInt(indexStr, 10);
+        if (!Number.isNaN(index)) {
+          return { field, index };
+        }
+      }
+      return { field: pathPart };
+    };
+
+    // Navigate to the parent object in the original
+    let originalValue: any = original;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const pathPart = pathParts[i];
+      const { field, index } = parsePathPart(pathPart);
+      const keys = resolveFieldName(originalValue, field);
+      if (keys.length === 0 || originalValue[keys[0]] === undefined) {
+        return; // Path doesn't exist in original
+      }
+      originalValue = originalValue[keys[0]];
+
+      // If there's an array index, navigate to that element
+      if (index !== undefined) {
+        if (!Array.isArray(originalValue) || index < 0 || index >= originalValue.length) {
+          return; // Not an array or index out of bounds
+        }
+        originalValue = originalValue[index];
+      }
+
+      if (!isObject(originalValue)) {
+        return; // Path is not an object
+      }
+    }
+
+    // Get the final field name
+    const finalFieldName = pathParts[pathParts.length - 1];
+    const finalKeys = resolveFieldName(originalValue, finalFieldName);
+    if (finalKeys.length === 0 || originalValue[finalKeys[0]] === undefined) {
+      return; // Field doesn't exist in original
+    }
+
+    const valueToRestore = originalValue[finalKeys[0]];
+
+    // Navigate to the parent object in the input
+    // Only restore if the parent object already exists in the input
+    let inputParent: any = input;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const pathPart = pathParts[i];
+      const { field, index } = parsePathPart(pathPart);
+      const keys = resolveFieldName(inputParent, field);
+      if (keys.length === 0) {
+        return; // Can't resolve path in input
+      }
+      const key = keys[0];
+      if (inputParent[key] === undefined) {
+        return; // Parent doesn't exist in input, don't create it
+      }
+      inputParent = inputParent[key];
+
+      // If there's an array index, navigate to that element
+      if (index !== undefined) {
+        if (!Array.isArray(inputParent) || index < 0 || index >= inputParent.length) {
+          return; // Not an array or index out of bounds
+        }
+        inputParent = inputParent[index];
+      }
+
+      if (!isObject(inputParent)) {
+        return; // Path is not an object in input
+      }
+    }
+
+    // Restore the field value
+    const inputFinalKeys = resolveFieldName(inputParent, finalFieldName);
+    if (inputFinalKeys.length > 0) {
+      inputParent[inputFinalKeys[0]] = valueToRestore;
+    }
   }
 
   /**
