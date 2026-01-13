@@ -1,23 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from '@medplum/dosespot-react';
+import type { Organization, Patient, Reference } from '@medplum/fhirtypes';
+
+export { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT };
 
 export const PATIENT_PREFERRED_PHARMACY_URL = 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 export const PHARMACY_TYPE_PRIMARY = 'primary';
-
-// Bot identifiers
-export const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';
-
-export const DOSESPOT_SEARCH_PHARMACY_BOT: Identifier = {
-  system: MEDPLUM_BOT_SYSTEM,
-  value: 'dosespot-search-pharmacy-bot',
-};
-
-export const DOSESPOT_ADD_PATIENT_PHARMACY_BOT: Identifier = {
-  system: MEDPLUM_BOT_SYSTEM,
-  value: 'dosespot-add-patient-pharmacy-bot',
-};
 
 export interface PreferredPharmacy {
   organizationRef: Reference<Organization>;
