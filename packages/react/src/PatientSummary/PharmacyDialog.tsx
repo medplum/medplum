@@ -3,9 +3,9 @@
 import { Box, Button, Checkbox, Flex, Group, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatAddress, normalizeErrorString } from '@medplum/core';
-import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from '@medplum/dosespot-react';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from './pharmacy-utils';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 
