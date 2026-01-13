@@ -8,8 +8,7 @@ import type { Identifier, Organization, Patient, Reference } from '@medplum/fhir
 // creating a dependency between @medplum/react and @medplum/dosespot-react.
 // If you modify these, ensure the corresponding values in dosespot-react/utils.ts
 // are also updated.
-export const PATIENT_PREFERRED_PHARMACY_URL =
-  'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+export const PATIENT_PREFERRED_PHARMACY_URL = 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
 
 export const PHARMACY_TYPE_PRIMARY = 'primary';

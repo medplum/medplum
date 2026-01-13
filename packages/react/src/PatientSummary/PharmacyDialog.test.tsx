@@ -271,14 +271,11 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest
-      .fn()
-      .mockResolvedValueOnce(mockPharmacies)
-      .mockResolvedValueOnce({
-        success: true,
-        message: 'Successfully added primary pharmacy',
-        organization: mockPharmacies[0],
-      });
+    medplum.executeBot = jest.fn().mockResolvedValueOnce(mockPharmacies).mockResolvedValueOnce({
+      success: true,
+      message: 'Successfully added primary pharmacy',
+      organization: mockPharmacies[0],
+    });
 
     await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
 
@@ -427,13 +424,10 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest
-      .fn()
-      .mockResolvedValueOnce(mockPharmacies)
-      .mockResolvedValueOnce({
-        success: false,
-        message: 'Pharmacy already exists',
-      });
+    medplum.executeBot = jest.fn().mockResolvedValueOnce(mockPharmacies).mockResolvedValueOnce({
+      success: false,
+      message: 'Pharmacy already exists',
+    });
 
     await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
 
