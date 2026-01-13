@@ -18,7 +18,7 @@ import {
   Pagination,
   Group,
 } from '@mantine/core';
-import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { JSX } from 'react';
@@ -83,11 +83,16 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
   const status = (searchParams.get('status') as Communication['status']) || 'in-progress';
 
-  // Extract participant refs from parsed search request filters (comma-separated)
-  const participantRefsFromUrl = useMemo(() => {
+  // Extract participants from parsed search request filters (comma-separated)
+  const selectedParticipants = useMemo((): Reference<Patient | Practitioner>[] => {
     const recipientFilters = currentSearch.filters?.filter((f) => f.code === 'recipient') ?? [];
     // Split comma-separated values and flatten
-    return recipientFilters.flatMap((f) => f.value.split(',').filter(Boolean));
+    return recipientFilters.flatMap((f) =>
+      f.value
+        .split(',')
+        .filter(Boolean)
+        .map((ref) => ({ reference: ref }) as Reference<Patient | Practitioner>)
+    );
   }, [currentSearch]);
 
   const {
@@ -105,11 +110,12 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   });
 
   const handleParticipantsChange = useCallback(
-    (participantRefs: string[]) => {
+    (participants: Reference<Patient | Practitioner>[]) => {
       // Remove existing recipient filters
       const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'recipient') ?? [];
 
       // Add recipient filter with comma-separated values (OR logic in FHIR)
+      const participantRefs = participants.map((p) => p.reference).filter(Boolean) as string[];
       const newFilters =
         participantRefs.length > 0
           ? [...otherFilters, { code: 'recipient', operator: Operator.EQUALS, value: participantRefs.join(',') }]
@@ -176,7 +182,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       Completed
                     </Button>
                     <ParticipantFilter
-                      selectedParticipantRefs={participantRefsFromUrl}
+                      selectedParticipants={selectedParticipants}
                       onFilterChange={handleParticipantsChange}
                     />
                   </Group>
