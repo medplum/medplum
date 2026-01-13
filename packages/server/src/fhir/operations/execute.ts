@@ -12,6 +12,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  singularize,
 } from '@medplum/core';
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -126,7 +127,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
 async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
   // Prefer to search by ID from path parameter
-  const { id } = req.params;
+  const id = singularize(req.params.id);
   if (id) {
     return ctx.repo.readResource<Bot>('Bot', id);
   }

@@ -27,7 +27,6 @@ describe('CommunicationTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
     useNavigateSpy = vi.spyOn(reactRouter, 'useNavigate');
     useParamsSpy = vi.spyOn(reactRouter, 'useParams');
   });

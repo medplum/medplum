@@ -94,7 +94,7 @@ export function App(): JSX.Element | null {
                       />
                     ),
                     label: 'Messages',
-                    href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                    href: `/Communication?status=in-progress`,
                   },
                   {
                     icon: (

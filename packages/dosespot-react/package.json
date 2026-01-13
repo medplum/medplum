@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint src/",
@@ -70,7 +70,7 @@
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.2",
-    "jsdom": "27.3.0",
+    "jsdom": "27.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "vitest": "4.0.16"

@@ -7,6 +7,7 @@ import {
   normalizeErrorString,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  singularize,
 } from '@medplum/core';
 import type { User } from '@medplum/fhirtypes';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
@@ -47,8 +48,9 @@ scimRouter.post(
 scimRouter.get(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const result = await readScimUser(ctx.project, req.params.id);
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    const result = await readScimUser(project, id);
     res.status(200).json(result);
   })
 );
@@ -65,8 +67,9 @@ scimRouter.put(
 scimRouter.patch(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    const result = await patchScimUser(ctx.project, req.params.id, req.body);
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    const result = await patchScimUser(project, id, req.body);
     res.status(200).json(result);
   })
 );
@@ -74,8 +77,9 @@ scimRouter.patch(
 scimRouter.delete(
   '/Users/:id',
   scimWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    await deleteScimUser(ctx.project, req.params.id);
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    await deleteScimUser(project, id);
     res.sendStatus(204);
   })
 );

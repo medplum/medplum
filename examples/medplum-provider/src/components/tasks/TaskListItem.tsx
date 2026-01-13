@@ -37,7 +37,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
             <Text fw={700} className={classes.content}>
               {task.code?.text ?? `Task ${taskFrom}`}
             </Text>
-            <StatusBadge status={task.status} />
+            <StatusBadge status={task.status} variant="light" />
           </Group>
           <Stack gap={0} c="dimmed">
             {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}

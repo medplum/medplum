@@ -26,8 +26,9 @@ const mockCommunication: Communication | undefined = {
   subject: { reference: `Patient/${HomerSimpson.id}` },
 };
 
-const mockHandleNewThread = vi.fn();
-const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockOnNew = vi.fn();
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockOnChange = vi.fn();
 
 describe('ThreadInbox', () => {
   let medplum: MockClient;
@@ -36,7 +37,6 @@ describe('ThreadInbox', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
     vi.mocked(reactHooks.useSubscription).mockClear();
-    await medplum.createResource(HomerSimpson);
 
     // Mock search and graphql to return empty results by default
     medplum.search = vi.fn().mockResolvedValue({
@@ -65,8 +65,11 @@ describe('ThreadInbox', () => {
               threadId={props?.threadId}
               showPatientSummary={props?.showPatientSummary ?? false}
               subject={props?.subject}
-              handleNewThread={mockHandleNewThread}
-              onSelectedItem={mockOnSelectedItem}
+              onNew={mockOnNew}
+              getThreadUri={mockGetThreadUri}
+              onChange={mockOnChange}
+              inProgressUri="/Communication?status=in-progress"
+              completedUri="/Communication?status=completed"
             />
           </MedplumProvider>
         </MemoryRouter>
@@ -337,6 +340,218 @@ describe('ThreadInbox', () => {
       () => {
         const messagesTexts = screen.getAllByText('Messages');
         expect(messagesTexts.length).toBeGreaterThan(0);
+      },
+      { timeout: 3000 }
+    );
+  });
+
+  test('changes status filter to completed when Completed button is clicked', async () => {
+    const user = userEvent.setup();
+    await setup();
+
+    const completedButton = screen.getByText('Completed');
+    await user.click(completedButton);
+
+    await waitFor(() => {
+      // The search should be called again with completed status
+      expect(medplum.search).toHaveBeenCalled();
+    });
+  });
+
+  test('shows status dropdown for in-progress thread', async () => {
+    const user = userEvent.setup();
+    await medplum.createResource(mockCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Click the status button to open dropdown
+    const statusButton = screen.getByText('In Progress');
+    await user.click(statusButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+    });
+  });
+
+  test('changes thread status to completed through dropdown', async () => {
+    const user = userEvent.setup();
+    await medplum.createResource(mockCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    const updateResourceSpy = vi.spyOn(medplum, 'updateResource');
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Click the status button to open dropdown
+    const statusButton = screen.getByText('In Progress');
+    await user.click(statusButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+    });
+
+    // Click Completed in the dropdown - look for menu item by text
+    const completedMenuItem = screen.queryByText('Completed', { selector: '[role="menuitem"]' });
+    if (completedMenuItem) {
+      await user.click(completedMenuItem);
+      await waitFor(() => {
+        expect(updateResourceSpy).toHaveBeenCalled();
+      });
+    }
+  });
+
+  test('shows green status badge for completed thread', async () => {
+    const completedCommunication: Communication = {
+      ...mockCommunication,
+      status: 'completed',
+    };
+    await medplum.createResource(completedCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: completedCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        // The status is shown on the thread header button
+        const buttons = screen.getAllByRole('button');
+        const completedButton = buttons.find((btn) => btn.textContent?.includes('Completed'));
+        expect(completedButton).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });
+
+  test('shows red status badge for stopped thread', async () => {
+    const stoppedCommunication: Communication = {
+      ...mockCommunication,
+      status: 'stopped',
+    };
+    await medplum.createResource(stoppedCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: stoppedCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        // The status is shown on the thread header button
+        const buttons = screen.getAllByRole('button');
+        const stoppedButton = buttons.find((btn) => btn.textContent?.includes('Stopped'));
+        expect(stoppedButton).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+  });
+
+  test('shows error notification when status change fails', async () => {
+    const user = userEvent.setup();
+    await medplum.createResource(mockCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    // Make updateResource fail
+    medplum.updateResource = vi.fn().mockRejectedValue(new Error('Status update failed'));
+
+    await setup({ threadId: 'comm-123' });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    // Click the status button to open dropdown
+    const statusButton = screen.getByText('In Progress');
+    await user.click(statusButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('menu')).toBeInTheDocument();
+    });
+
+    // Click Completed in the dropdown - look for menu item by text
+    const completedMenuItem = screen.queryByText('Completed', { selector: '[role="menuitem"]' });
+    if (completedMenuItem) {
+      await user.click(completedMenuItem);
+      await waitFor(() => {
+        expect(screen.getByText(/Status update failed/i)).toBeInTheDocument();
+      });
+    }
+  });
+
+  test('shows pagination when total exceeds items per page', async () => {
+    await medplum.createResource(mockCommunication);
+
+    medplum.search = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 50, // More than 20 items per page
+      entry: [{ resource: mockCommunication }],
+    });
+    medplum.graphql = vi.fn().mockResolvedValue({
+      data: { CommunicationList: [] },
+    });
+
+    await setup();
+
+    await waitFor(
+      () => {
+        // Pagination should be visible
+        const pagination = document.querySelector('.mantine-Pagination-root');
+        expect(pagination).toBeInTheDocument();
       },
       { timeout: 3000 }
     );

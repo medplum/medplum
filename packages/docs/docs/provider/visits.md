@@ -1,10 +1,12 @@
+---
+sidebar_position: 400
+---
+
 # Visits
 
 Visit management is at the heart of clinical documentation and patient care delivery. The Medplum Provider app provides comprehensive tools for documenting patient Visits, streamlining clinical workflows through Care Templates, and customizing documentation to meet specific practice needs. This section covers the essential Visit management functions.
 
----
-
-## **Understanding Visits**
+## Understanding Visits
 
 While "Visit" isn't a defined FHIR resource, we've combined the Appointment and Encounter resources into this single, simplified concept to improve the provider experience. Each Visit also automatically generates related FHIR resources:
 
@@ -15,13 +17,11 @@ While "Visit" isn't a defined FHIR resource, we've combined the Appointment and 
 3. **Billing Integration**
    - To simplify and automate billing, [ChargeItems](../api/fhir/resources/chargeitem) and [Claims](../api/fhir/resources/claim) are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
 
----
-
-## **Documenting Visits**
+## Documenting Visits
 
 Proper Visit documentation ensures continuity of care, supports clinical decision-making, meets regulatory requirements, and facilitates billing and coding accuracy. The visit documentation system captures all aspects of patient encounters in a structured, searchable format.
 
-## **How to Start a New Visit**
+## How to Start a New Visit
 
 1. **Navigate to a Patient’s Visits Page**
    - Navigate to a Patient Profile page by using the global search field or through the “Patients” section in the left navigation menu
@@ -51,7 +51,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
 
 ---
 
-## **Setting Up Care Templates (via Medplum App)**
+## Setting Up Care Templates (via Medplum App)
 
 Before setting up your Care Templates, it’s important to understand the separate but connected resources they incorporate. In the Medplum App, Care Templates are represented by the PlanDefinition FHIR resource which can include other, linked resources:
 
@@ -63,7 +63,7 @@ Before setting up your Care Templates, it’s important to understand the separa
 - **ChargeItemDefinition**
   - For defining the cost of the Visit and related Task/ActivityDefinition/etc., which will be passed through to the billing process
 
-### **How to Set up a Care Template**
+### How to Set up a Care Template
 
 There are two main approaches for setting up Care Templates. The first is by creating an initial Care Template (as a **PlanDefinition**) to create an outline of the Visit requirements, which can then be linked to other resources as they are created subsequently. The second approach is to create the linked resources first and then create the PlanDefinition, linking the other resources where appropriate (**Questionnaire**s, **ActivityDefinition**s, **ServiceRequest**s, etc.).
 
@@ -376,6 +376,247 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
         "url": "https://www.medplum.com/questionnaire/vital-signs-assessment",
         "name": "Vital Signs Assessment",
         "status": "active",
+        "title": "Vital Signs Assessment",
+        "contained": [
+          {
+            "resourceType": "Observation",
+            "id": "blood-pressure-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "85354-9",
+                  "display": "Blood pressure panel with all children optional"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "heart-rate-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8867-4",
+                  "display": "Heart rate"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "temperature-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8310-5",
+                  "display": "Body temperature"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "respiratory-rate-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "9279-1",
+                  "display": "Respiratory rate"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "oxygen-saturation-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "2708-6",
+                  "display": "Oxygen saturation in Arterial blood"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "weight-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "29463-7",
+                  "display": "Body weight"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          },
+          {
+            "resourceType": "Observation",
+            "id": "height-template",
+            "status": "final",
+            "category": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                    "code": "vital-signs",
+                    "display": "Vital Signs"
+                  }
+                ]
+              }
+            ],
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8302-2",
+                  "display": "Body height"
+                }
+              ]
+            },
+            "valueString": "",
+            "_valueString": {
+              "extension": [
+                {
+                  "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtractValue",
+                  "valueString": "answer.value.first()"
+                }
+              ]
+            }
+          }
+        ],
         "item": [
           {
             "id": "id-8",
@@ -385,48 +626,138 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
           },
           {
             "id": "id-2",
-            "linkId": "q2",
-            "type": "text",
-            "text": "Blood Pressure (Systolic/Diastolic)"
+            "linkId": "blood-pressure",
+            "type": "string",
+            "text": "Blood Pressure (Systolic/Diastolic)",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#blood-pressure-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-3",
-            "linkId": "q3",
-            "type": "text",
-            "text": "Heart Rate"
+            "linkId": "heart-rate",
+            "type": "string",
+            "text": "Heart Rate",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#heart-rate-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-4",
-            "linkId": "q4",
-            "type": "text",
-            "text": "Temperature"
+            "linkId": "temperature",
+            "type": "string",
+            "text": "Temperature",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#temperature-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-1",
-            "linkId": "q1",
-            "type": "text",
-            "text": "Respiratory Rate"
+            "linkId": "respiratory-rate",
+            "type": "string",
+            "text": "Respiratory Rate",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#respiratory-rate-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-5",
-            "linkId": "q5",
-            "type": "text",
-            "text": "Oxygen Saturation"
+            "linkId": "oxygen-saturation",
+            "type": "string",
+            "text": "Oxygen Saturation",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#oxygen-saturation-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-6",
-            "linkId": "q6",
-            "type": "text",
-            "text": "Weight"
+            "linkId": "weight",
+            "type": "string",
+            "text": "Weight",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#weight-template"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           {
             "id": "id-7",
-            "linkId": "q7",
-            "type": "text",
-            "text": "Height"
+            "linkId": "height",
+            "type": "string",
+            "text": "Height",
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-templateExtract",
+                "extension": [
+                  {
+                    "url": "template",
+                    "valueReference": {
+                      "reference": "#height-template"
+                    }
+                  }
+                ]
+              }
+            ]
           }
-        ],
-        "title": "Vital Signs Assessment"
+        ]
       },
       "request": {
         "method": "POST",
@@ -438,6 +769,18 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 ```
 
 </details>
+
+:::tip SDC Extraction
+
+The Vital Signs Assessment questionnaire above uses [Structured Data Capture (SDC)](/docs/questionnaires/structured-data-capture) patterns to automatically extract `Observation` resources from questionnaire responses. Each vital sign item includes:
+
+- A **contained template** (`Observation` resource with LOINC codes) defining the structure of the extracted resource
+- A **`templateExtract` extension** on each item linking it to its template
+- A **`templateExtractValue` extension** in the template specifying how to extract the answer value
+
+When a `QuestionnaireResponse` is submitted, you can use the [`$extract` operation](/docs/api/fhir/operations/extract) to automatically generate properly-coded `Observation` resources for each vital sign.
+
+:::
 
 1. **Navigate to the PlanDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “PlanDefinition”
@@ -463,7 +806,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
    - Select this Care Template, complete the other required fields, and then click “Create” to create a new Visit
    - On the “Note & Tasks” tab you should see the Tasks that were added in the Medplum App along with content for any associated Questionnaires and/or ActivityDefinitions.
 
-### **How to Add Questionnaires**
+### How to Add Questionnaires
 
 1. **Navigate to the Questionnaire Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “Questionnaire”
@@ -488,7 +831,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
 4. **Test & Verify**
    - After saving, click the “Preview” tab on the Questionnaire page to preview how your Questionnaire will appear in the Provider App.
 
-### **How to Set Up ChargeItems**
+### How to Set Up ChargeItems
 
 1. **Navigate to the ChargeItemDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “ChargeItemDefinition”
@@ -504,7 +847,7 @@ Medplum provides a sample Care Template for testing and prototyping. Copy the ex
        - Amount (the dollar amount to be billed to payors)
    - After adding these definition types, scroll to the bottom of the page and click “Create” to create your ChargeItemDefinition
 
-### **How to Add ActivityDefinitions**
+### How to Add ActivityDefinitions
 
 1. **Navigate to the ActivityDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “ActivityDefinition”

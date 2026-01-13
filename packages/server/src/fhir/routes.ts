@@ -104,7 +104,7 @@ fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, n
         legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
           (s) => s.name === 'legacyFhirJsonResponseFormat'
         )?.valueBoolean;
-      } catch (_err) {
+      } catch {
         // Ignore errors since unauthenticated requests also use this middleware
       }
 
@@ -418,7 +418,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     method: req.method as HttpMethod,
     url: stripPrefix(req.originalUrl, '/fhir/R4'),
     pathname: '',
-    params: req.params,
+    params: req.params as Record<string, string>,
     query: Object.create(null), // Defer query param parsing to router for consistency
     // Express v5 changed the default value of `req.body` from {} to undefined. A decent number of FHIR handlers
     // rely on the previous behavior, so we defer handling undefined for now

@@ -59,7 +59,7 @@ export function GINIndexes(): JSX.Element {
   };
 
   const statTdProps = {
-    onClick: (value: boolean | string | number | undefined) => {
+    onClick: (value: StatValue) => {
       setModalTitle('Details');
       setModalContent(<pre>{value}</pre>);
       openModal();
@@ -170,6 +170,7 @@ export function GINIndexes(): JSX.Element {
 }
 
 type StatValue = boolean | string | number | undefined;
+
 interface StatTdProps {
   readonly value: StatValue;
   readonly onClick?: (value: StatValue) => void;
