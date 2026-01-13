@@ -9,7 +9,6 @@ import {
   normalizeOperationOutcome,
 } from '@medplum/core';
 import type { Binary, Reference } from '@medplum/fhirtypes';
-import fetch from 'node-fetch';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
@@ -50,15 +49,23 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   const sandbox = {
     console: botConsole,
-    fetch,
+    fetch: globalThis.fetch,
     require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
     TextDecoder,
     TextEncoder,
+    TextDecoderStream,
+    TextEncoderStream,
+    ReadableStream,
+    WritableStream,
+    TransformStream,
     URL,
     URLSearchParams,
+    Headers,
+    Request,
+    Response,
     event: {
       bot: createReference(bot),
       baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
@@ -169,15 +176,23 @@ export async function runInVmContextStreaming(request: BotExecutionContext): Pro
 
   const sandbox = {
     console: botConsole,
-    fetch,
+    fetch: globalThis.fetch,
     require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
     ContentType,
     Hl7Message,
     MedplumClient,
     TextDecoder,
     TextEncoder,
+    TextDecoderStream,
+    TextEncoderStream,
+    ReadableStream,
+    WritableStream,
+    TransformStream,
     URL,
     URLSearchParams,
+    Headers,
+    Request,
+    Response,
     event: {
       bot: createReference(bot),
       baseUrl: config.vmContextBaseUrl ?? config.baseUrl,

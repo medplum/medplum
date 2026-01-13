@@ -47,15 +47,14 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     const response = await client.send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
 
-    // The response from AWS Lambda is always JSON, even if the function returns a string
-    // Therefore we always use JSON.parse to get the return value
-    // See: https://stackoverflow.com/a/49951946/2051724
-    const returnValue = responseStr ? JSON.parse(responseStr) : undefined;
+    // Parse the streamed response format from awslambda.streamifyResponse
+    // The response contains newline-separated JSON objects, with the last one being __medplum_result__ or __medplum_error__
+    const returnValue = responseStr ? parseLambdaStreamResponse(responseStr) : undefined;
 
     return {
-      success: !response.FunctionError,
+      success: !response.FunctionError && !returnValue?.__medplum_error__,
       logResult: parseLambdaLog(response.LogResult as string),
-      returnValue,
+      returnValue: returnValue?.__medplum_result__ ?? returnValue?.__medplum_error__,
     };
   } catch (err) {
     return {
@@ -63,6 +62,27 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
       logResult: normalizeErrorString(err),
     };
   }
+}
+
+/**
+ * Parses the Lambda response from awslambda.streamifyResponse.
+ * The response contains newline-separated JSON objects.
+ * @param responseStr - The raw response string from Lambda.
+ * @returns The parsed result object containing __medplum_result__ or __medplum_error__.
+ */
+function parseLambdaStreamResponse(responseStr: string): { __medplum_result__?: any; __medplum_error__?: string } {
+  const lines = responseStr.split('\n').filter((line) => line.trim());
+  for (const line of lines.reverse()) {
+    try {
+      const parsed = JSON.parse(line);
+      if (parsed.__medplum_result__ !== undefined || parsed.__medplum_error__ !== undefined) {
+        return parsed;
+      }
+    } catch {
+      // Skip malformed lines
+    }
+  }
+  return {};
 }
 
 /**
