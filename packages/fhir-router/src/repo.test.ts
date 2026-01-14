@@ -181,13 +181,13 @@ describe('MemoryRepository', () => {
     const resourcesListBefore = await Promise.all(
       resourceTypes.map((rt) => repo.searchResources({ resourceType: rt }))
     );
-    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => (count += resources.length), 0);
+    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => count + resources.length, 0);
     expect(actualResourceCountBefore).toBe(expectedTotalResourceCount);
 
     repo.clear();
 
     const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
-    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
+    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => count + resources.length, 0);
     expect(actualResourceCountAfter).toBe(0);
   });
 

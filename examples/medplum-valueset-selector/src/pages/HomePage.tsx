@@ -137,7 +137,7 @@ export function HomePage(): JSX.Element {
       } else {
         setError('Code already exists in ValueSet');
       }
-    } catch (_err) {
+    } catch {
       setError('Failed to add code to ValueSet');
     }
   };

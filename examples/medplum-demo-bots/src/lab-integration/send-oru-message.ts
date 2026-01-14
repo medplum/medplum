@@ -233,8 +233,8 @@ export function createOruMessage(
   const context = new Hl7Context('\n');
   const now = new Date();
 
-  // Message Header (MSH)
   segments.push(
+    // Message Header (MSH)
     new Hl7Segment([
       'MSH', // MSH
       '^~\\&', // Field separator and encoding characters
@@ -248,12 +248,11 @@ export function createOruMessage(
       generateMessageId(), // Message control ID
       'P', // Processing ID (P = Production)
       '2.5', // HL7 version
-      ...Array(7).fill(''), // Additional optional fields
-    ])
+      ...new Array(7).fill(''), // Additional optional fields
+    ]),
+    // Patient Identification (PID)
+    createPidSegment(patient)
   );
-
-  // Patient Identification (PID)
-  segments.push(createPidSegment(patient));
 
   // Patient Visit (PV1)
   if (serviceRequest.encounter) {
@@ -281,11 +280,10 @@ export function createOruMessage(
   // Add diagnostic report presented for as OBX segment, with base64 encoded contents
   if (presentedFormAttachments) {
     const obxIndex = observations.length;
-    presentedFormAttachments.map((form, index) => {
-      const segment = createObxPdfSegment(form, obxIndex + index + 1);
-      segments.push(segment);
-      return segment;
-    });
+    for (let i = 0; i < presentedFormAttachments.length; i++) {
+      const form = presentedFormAttachments[i];
+      segments.push(createObxPdfSegment(form, obxIndex + i + 1));
+    }
   }
 
   return new Hl7Message(segments, context);

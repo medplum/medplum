@@ -28,7 +28,8 @@ export async function main(): Promise<void> {
     port: 5432,
     database: 'medplum',
     user: 'medplum',
-    password: 'medplum',
+    // eslint-disable-next-line sonarjs/no-hardcoded-passwords
+    password: 'medplum', // Development environment password
   });
   const options: BuildMigrationOptions = {
     dbClient,

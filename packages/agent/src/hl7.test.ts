@@ -1610,10 +1610,8 @@ describe('HL7', () => {
     });
 
     const releaseMessages: (() => void)[] = [];
-    const hl7Messages: Hl7Message[] = [];
     const hl7Server = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
-        hl7Messages.push(message);
         releaseMessages.push(() => {
           conn.send(message.buildAck());
         });

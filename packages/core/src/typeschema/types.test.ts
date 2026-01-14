@@ -201,7 +201,7 @@ describe('FHIR resource and data type representations', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'capability-statement.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
-    expect(profile.innerTypes.map((t) => t.name).sort()).toStrictEqual([
+    expect(profile.innerTypes.map((t) => t.name).toSorted()).toStrictEqual([
       'CapabilityStatementDocument',
       'CapabilityStatementImplementation',
       'CapabilityStatementMessaging',
@@ -219,7 +219,7 @@ describe('FHIR resource and data type representations', () => {
 
     const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
     const restProperties = Object.keys(rest?.elements ?? {});
-    expect(restProperties.sort()).toStrictEqual([
+    expect(restProperties.toSorted()).toStrictEqual([
       'compartment',
       'documentation',
       'extension',

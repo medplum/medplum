@@ -469,7 +469,7 @@ export function isReference<T extends Resource = Resource>(
   if (value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string') {
     // if resourceType is provided, check if the reference matches the resource type
     if (resourceType) {
-      return value.reference.match(new RegExp(`^${resourceType}(/|\\?)`)) !== null;
+      return new RegExp(String.raw`^${resourceType}(/|\?)`).exec(value.reference) !== null;
     }
     return true;
   }

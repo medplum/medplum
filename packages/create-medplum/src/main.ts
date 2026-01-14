@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+/* eslint-disable sonarjs/os-command, sonarjs/no-os-command-from-path -- This runs on a dev's local machine */
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

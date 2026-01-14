@@ -607,7 +607,7 @@ describe('FHIR Repo Transactions', () => {
         try {
           await repo.withTransaction(txFn);
           return true;
-        } catch (_) {
+        } catch {
           // Swallow the error
           return false;
         }

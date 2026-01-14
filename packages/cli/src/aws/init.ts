@@ -256,6 +256,7 @@ export async function initStackCommand(): Promise<void> {
       {
         ...serverParams,
         signingKey: '****',
+        // eslint-disable-next-line sonarjs/no-hardcoded-passwords
         signingKeyPassphrase: '****',
       },
       null,

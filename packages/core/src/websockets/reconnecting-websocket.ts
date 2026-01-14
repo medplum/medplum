@@ -487,13 +487,13 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
       // via https://github.com/pladaria/reconnecting-websocket/pull/166
       .catch((err) => {
         this._connectLock = false;
-        this._handleError(new Events.ErrorEvent(Error(err.message), this));
+        this._handleError(new Events.ErrorEvent(new Error(err.message), this));
       });
   }
 
   private _handleTimeout(): void {
     this._debug('timeout event');
-    this._handleError(new Events.ErrorEvent(Error('TIMEOUT'), this));
+    this._handleError(new Events.ErrorEvent(new Error('TIMEOUT'), this));
   }
 
   private _disconnect(code = 1000, reason?: string): void {
@@ -505,7 +505,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     try {
       this._ws.close(code, reason);
       this._handleClose(new Events.CloseEvent(code, reason, this));
-    } catch (_error) {
+    } catch {
       // ignore
     }
   }

@@ -575,7 +575,7 @@ describe('Agent Logger', () => {
       // Clean up temporary directory
       try {
         await rm(tempDir, { recursive: true, force: true });
-      } catch (_error) {
+      } catch {
         // Ignore cleanup errors
       }
     });

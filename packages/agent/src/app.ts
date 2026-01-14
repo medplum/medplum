@@ -64,6 +64,7 @@ async function execAsync(
   options: ExecOptionsWithStringEncoding
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    // eslint-disable-next-line sonarjs/os-command
     exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
       if (ex) {
         const err = ex as Error;
@@ -125,12 +126,12 @@ export class App {
     await this.maybeFinalizeUpgrade();
 
     this.medplum.addEventListener('change', () => {
-      if (!this.webSocket) {
+      if (this.webSocket) {
+        this.startWebSocketWorker();
+      } else {
         this.connectWebSocket().catch((err) => {
           this.log.error(normalizeErrorString(err));
         });
-      } else {
-        this.startWebSocketWorker();
       }
     });
 
@@ -188,7 +189,7 @@ export class App {
       try {
         createPidFile('medplum-agent');
         success = true;
-      } catch (_err) {
+      } catch {
         this.log.info('Unable to create agent PID file, trying again...');
         attempt++;
         if (attempt === maxAttempts) {

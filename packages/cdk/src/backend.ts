@@ -194,6 +194,7 @@ export class BackEnd extends Construct {
         storageEncrypted: true,
         // Instances with attached NVMe SSD (db.*d* instance classes) should utilize I/O optimized storage
         // to unlock additional performance improvements (e.g. tiered caching between memory and SSD)
+        // eslint-disable-next-line sonarjs/slow-regex, sonarjs/prefer-regexp-exec
         storageType: writerInstanceType?.match(/^\w+d\w*\./i)
           ? DBClusterStorageType.AURORA_IOPT1
           : DBClusterStorageType.AURORA,

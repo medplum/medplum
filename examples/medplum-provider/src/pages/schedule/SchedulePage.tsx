@@ -244,7 +244,7 @@ export function SchedulePage(): JSX.Element | null {
     _start: Date,
     _end: Date,
     _isSelected: boolean
-  ): { className?: string | undefined; style?: React.CSSProperties } {
+  ): { className?: string; style?: React.CSSProperties } {
     const result = {
       style: {
         backgroundColor: '#228be6',
@@ -252,7 +252,7 @@ export function SchedulePage(): JSX.Element | null {
         borderRadius: '4px',
         color: 'white',
         display: 'block',
-        opacity: 1.0,
+        opacity: 1,
       },
     };
 

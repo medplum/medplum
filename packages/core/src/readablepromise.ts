@@ -14,6 +14,7 @@ export class ReadablePromise<T> implements Promise<T> {
   private error: Error | undefined;
 
   constructor(requestPromise: Promise<T>) {
+    // eslint-disable-next-line sonarjs/no-async-constructor
     this.suspender = requestPromise.then(
       (res: T) => {
         this.status = 'success';

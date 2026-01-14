@@ -940,6 +940,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private keyValueClient?: MedplumKeyValueClient;
   private logLevel: ClientLogLevel;
 
+  /* eslint-disable sonarjs/no-async-constructor */
   constructor(options?: MedplumClientOptions) {
     super();
 
@@ -1013,6 +1014,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.setupStorageListener();
   }
+  /* eslint-enable sonarjs/no-async-constructor */
 
   /**
    * @returns Whether the client has been fully initialized or not. Should always be true unless a custom asynchronous `ClientStorage` was passed into the constructor.
@@ -4433,7 +4435,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           }
         }
       });
-    } catch (_err) {
+    } catch {
       // Silently ignore if this environment does not support storage events
     }
   }

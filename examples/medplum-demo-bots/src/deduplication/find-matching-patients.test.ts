@@ -55,7 +55,7 @@ describe('Link Patient', async () => {
     // We expect two risk assessments to be created for the two candidate matches
     const riskAssessments = await medplum.searchResources('RiskAssessment');
     expect(riskAssessments.length).toBe(2);
-    expect(riskAssessments.every((assessment) => resolveId(assessment.subject) === patients[0].id));
+    expect(riskAssessments.every((assessment) => resolveId(assessment.subject) === patients[0].id)).toBe(true);
   });
   // end-block createBatchData
 

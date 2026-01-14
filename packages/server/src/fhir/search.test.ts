@@ -3317,20 +3317,17 @@ describe('project-scoped Repository', () => {
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const statuses: ('preliminary' | 'final')[] = ['preliminary', 'final'];
+      const statuses: Observation['status'][] = ['preliminary', 'final'];
       const codes = ['123', '456'];
-      const observations = [];
 
       for (const status of statuses) {
         for (const code of codes) {
-          observations.push(
-            await repo.createResource<Observation>({
-              resourceType: 'Observation',
-              subject: createReference(patient),
-              status,
-              code: { coding: [{ code }] },
-            })
-          );
+          await repo.createResource<Observation>({
+            resourceType: 'Observation',
+            subject: createReference(patient),
+            status,
+            code: { coding: [{ code }] },
+          });
         }
       }
 
@@ -4686,15 +4683,13 @@ describe('project-scoped Repository', () => {
 
     test('Cursor pagination', () =>
       withTestContext(async () => {
-        const tasks: Task[] = [];
         for (let i = 0; i < 50; i++) {
-          const task = await repo.createResource<Task>({
+          await repo.createResource<Task>({
             resourceType: 'Task',
             status: 'accepted',
             intent: 'order',
             code: { text: 'cursor_test' },
           });
-          tasks.push(task);
         }
 
         let url = 'Task?code=cursor_test&_sort=_lastUpdated';
@@ -4721,16 +4716,14 @@ describe('project-scoped Repository', () => {
         const lastUpdated = new Date();
         lastUpdated.setMilliseconds(0);
 
-        const tasks: Task[] = [];
         for (let i = 0; i < 50; i++) {
-          const task = await systemRepo.createResource<Task>({
+          await systemRepo.createResource<Task>({
             resourceType: 'Task',
             status: 'accepted',
             intent: 'unknown',
             identifier: [{ value: identifier }],
             meta: { lastUpdated: lastUpdated.toISOString() },
           });
-          tasks.push(task);
 
           if (i % 7 === 6) {
             lastUpdated.setMilliseconds(lastUpdated.getMilliseconds() + 33);

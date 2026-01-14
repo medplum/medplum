@@ -29,7 +29,7 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
     let binaryUrlSearchParams: URLSearchParams;
     try {
       binaryUrlSearchParams = new URLSearchParams(new URL(binaryUrl).search);
-    } catch (_err) {
+    } catch {
       return binaryUrl;
     }
 

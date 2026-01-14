@@ -123,12 +123,7 @@ async function checkNoExistingTask(medplum: MedplumClient, threadHeader: string)
     focus: threadHeader,
     'status:not': 'complete',
   });
-
-  if (existingTasks.length === 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return existingTasks.length === 0;
 }
 
 // Builds a search bundle to get all the messages from multiple threads in one batch request

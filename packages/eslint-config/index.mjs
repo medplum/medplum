@@ -8,6 +8,7 @@ import jsdoc from 'eslint-plugin-jsdoc';
 import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import sonarJs from 'eslint-plugin-sonarjs';
 import tseslint from 'typescript-eslint';
 
 // Workaround for eslint-plugin-header ESLint 9 compatibility issue.
@@ -140,18 +141,14 @@ export const tsConfig = {
     tseslint.configs.recommended,
     {
       languageOptions: {
-        parserOptions: {
-          projectService: true,
-        },
+        parserOptions: { projectService: true },
       },
     },
     tseslint.configs.strict,
     reactHooks.configs.flat.recommended,
     reactRefresh.configs.recommended,
+    sonarJs.configs.recommended,
   ],
-  plugins: {
-    'no-only-tests': noOnlyTestsPlugin,
-  },
   rules: {
     // TypeScript+ESLint
     '@typescript-eslint/array-type': 'error',
@@ -257,8 +254,78 @@ export const tsConfig = {
     '@typescript-eslint/no-dynamic-delete': 'off',
     '@typescript-eslint/no-empty-object-type': 'off',
 
+    // SonarJS
+    'sonarjs/cognitive-complexity': 'off',
+    'sonarjs/todo-tag': 'off',
+    'sonarjs/deprecation': 'off',
+    'sonarjs/no-clear-text-protocols': 'off',
+    'sonarjs/sql-queries': 'off',
+    'sonarjs/no-nested-template-literals': 'warn', // Should try to turn on
+    'sonarjs/function-return-type': 'off',
+    'sonarjs/use-type-alias': 'off',
+    'sonarjs/no-unused-vars': 'off', // Already caught by TypeScript in actually bad cases; this rule is too strict
+    'sonarjs/regex-complexity': 'warn',
+    'sonarjs/different-types-comparison': 'off',
+    'sonarjs/no-alphabetical-sort': 'off', // ?
+    'sonarjs/pseudo-random': 'warn',
+    'sonarjs/no-small-switch': 'off',
+    'sonarjs/prefer-read-only-props': 'warn', // ?
+    'sonarjs/no-duplicated-branches': 'warn',
+    'sonarjs/no-nested-functions': 'warn',
+    'sonarjs/public-static-readonly': 'warn',
+  },
+};
+
+/**
+ * Test config applies to all TypeScript test files.
+ * These are test-specific rules that don't apply to regular source files.
+ * @type {import("@eslint/config-helpers").ConfigWithExtends}
+ */
+export const testConfig = {
+  files: ['**/*.test.ts', '**/*.test.tsx'],
+  extends: [
+    {
+      languageOptions: {
+        parserOptions: { projectService: true },
+      },
+    },
+  ],
+  plugins: {
+    'no-only-tests': noOnlyTestsPlugin,
+  },
+  rules: {
     // No Only Tests
     'no-only-tests/no-only-tests': ['error', { fix: true }],
+
+    // SonarJS
+    'sonarjs/no-hardcoded-passwords': 'off',
+    'sonarjs/no-hardcoded-ip': 'off',
+    'sonarjs/no-hardcoded-secrets': 'off',
+    'sonarjs/slow-regex': 'off',
+    'sonarjs/no-duplicated-branches': 'off',
+    'sonarjs/no-identical-functions': 'off',
+    'sonarjs/publicly-writable-directories': 'off',
+    'sonarjs/no-nested-functions': 'off',
+  },
+};
+
+export const examplesConfig = {
+  files: ['packages/examples/**/*.ts', 'packages/examples/**/*.tsx'],
+  extends: [
+    {
+      languageOptions: {
+        parserOptions: { projectService: true },
+      },
+    },
+  ],
+  rules: {
+    // SonarJS
+    'sonarjs/no-hardcoded-passwords': 'off',
+    'sonarjs/no-hardcoded-ip': 'off',
+    'sonarjs/no-hardcoded-secrets': 'off',
+    'sonarjs/no-duplicated-branches': 'off',
+    'sonarjs/no-identical-functions': 'off',
+    'sonarjs/no-commented-code': 'off',
   },
 };
 
@@ -294,4 +361,6 @@ export const medplumEslintConfig = [
   },
   coreConfig,
   tsConfig,
+  testConfig,
+  examplesConfig,
 ];

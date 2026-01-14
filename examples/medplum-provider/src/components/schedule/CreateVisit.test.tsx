@@ -75,7 +75,7 @@ describe('CreateVisit', () => {
 
     test('renders without date/time when appointmentSlot is not provided', async () => {
       await act(async () => {
-        setup(undefined);
+        setup();
       });
 
       await waitFor(() => {

@@ -42,23 +42,6 @@ export function WithLinks(): JSX.Element {
   );
 }
 
-export function WithFooter(): JSX.Element {
-  return (
-    <div style={{ minHeight: '100vh' }}>
-      <SignInForm
-        onSuccess={() => alert('Signed in!')}
-        onForgotPassword={() => alert('Forgot password')}
-        onRegister={() => alert('Register')}
-      >
-        <Logo size={32} />
-        <Title order={3} py="lg">
-          Sign in to {getAppName()}
-        </Title>
-      </SignInForm>
-    </div>
-  );
-}
-
 export function WithGoogle(): JSX.Element {
   return (
     <div style={{ minHeight: '100vh' }}>

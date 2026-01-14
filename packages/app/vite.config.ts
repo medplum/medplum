@@ -14,8 +14,9 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 
 let gitHash;
 try {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path
   gitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
-} catch (_err) {
+} catch {
   gitHash = 'unknown'; // Default value when not in a git repository
 }
 

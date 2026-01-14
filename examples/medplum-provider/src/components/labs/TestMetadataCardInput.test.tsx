@@ -100,7 +100,7 @@ describe('TestMetadataCardInput', () => {
   function setup(
     props: {
       test?: TestCoding;
-      metadata?: TestMetadata | undefined;
+      metadata?: TestMetadata;
       error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
     } = {}
   ): ReturnType<typeof render> {

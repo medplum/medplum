@@ -175,16 +175,20 @@ export type FhircastReferenceContext =
   | FhircastSelectContext;
 
 export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastPatientCloseContext = FhircastPatientOpenContext;
 export type FhircastImagingStudyOpenContext = FhircastStudyContext | FhircastEncounterContext | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastImagingStudyCloseContext = FhircastImagingStudyOpenContext;
 export type FhircastEncounterOpenContext = FhircastEncounterContext | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastEncounterCloseContext = FhircastEncounterOpenContext;
 export type FhircastDiagnosticReportOpenContext =
   | FhircastReportContext
   | FhircastEncounterContext
   | FhircastStudyContext
   | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastDiagnosticReportCloseContext = FhircastDiagnosticReportOpenContext;
 export type FhircastDiagnosticReportUpdateContext =
   | FhircastReportReferenceContext
@@ -194,6 +198,7 @@ export type FhircastDiagnosticReportSelectContext =
   | FhircastReportReferenceContext
   | FhircastPatientReferenceContext
   | FhircastSelectContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastSyncErrorContext = FhircastOperationOutcomeContext;
 
 // This is the one key that only exists within a GetCurrentContext

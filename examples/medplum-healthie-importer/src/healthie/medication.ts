@@ -152,7 +152,7 @@ export function parseDosage(dosageString?: string): Quantity | undefined {
   }
 
   // Split the string into value and unit parts
-  const match = dosageString.match(/^(\d+(?:\.\d+)?)\s*([A-Za-z]+)$/);
+  const match = /^(\d+(?:\.\d+)?)\s*([A-Za-z]+)$/.exec(dosageString);
   if (!match) {
     return undefined;
   }

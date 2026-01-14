@@ -12,7 +12,7 @@ import { SignLockDialog } from './SignLockDialog';
 
 interface EncounterHeaderProps {
   encounter: Encounter;
-  practitioner?: Practitioner | undefined;
+  practitioner?: Practitioner;
   chartNoteStatus?: ChartNoteStatus;
   onStatusChange?: (status: Encounter['status']) => void;
   onTabChange?: (tab: string) => void;

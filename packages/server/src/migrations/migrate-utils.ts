@@ -163,7 +163,7 @@ export function parseIndexColumns(expression: string): string[] {
  * @returns Escaped string
  */
 export function escapeUnicode(str: string): string {
-  // eslint-disable-next-line no-control-regex
+  // eslint-disable-next-line no-control-regex, sonarjs/no-control-regex
   return str.replaceAll(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
     const code = char.codePointAt(0);
     if (code === undefined) {

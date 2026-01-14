@@ -63,7 +63,7 @@ describe('SQL on FHIR', () => {
           } else {
             expect(evalSqlOnFhir(view, resources)).toMatchObject(expected);
           }
-        } catch (_err) {
+        } catch {
           // For now, we're just going to log the error and continue
           // Once we have stabilized the tests, we can throw the error
           passed = false;

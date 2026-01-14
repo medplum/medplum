@@ -3055,7 +3055,7 @@ describe('App', () => {
         try {
           expect(infoSpy).toHaveBeenCalledWith('Unable to create agent PID file, trying again...');
           state.infoLogged = true;
-        } catch (_err) {
+        } catch {
           state.infoLogged = false;
         }
       }

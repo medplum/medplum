@@ -120,7 +120,7 @@ export class SubscriptionManager {
     let url: string;
     try {
       url = new URL(wsUrl).toString();
-    } catch (_err) {
+    } catch {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
     const ws = options?.ReconnectingWebSocket
@@ -582,7 +582,6 @@ export async function resourceMatchesSubscriptionCriteria({
  */
 function matchesChannelType(subscription: Subscription, logger?: Logger): boolean {
   const channelType = subscription.channel?.type;
-
   if (channelType === 'rest-hook') {
     const url = subscription.channel?.endpoint;
     if (!url) {
@@ -593,11 +592,7 @@ function matchesChannelType(subscription: Subscription, logger?: Logger): boolea
     return true;
   }
 
-  if (channelType === 'websocket') {
-    return true;
-  }
-
-  return false;
+  return channelType === 'websocket';
 }
 
 export async function isFhirCriteriaMet(

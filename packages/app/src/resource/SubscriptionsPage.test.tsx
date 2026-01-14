@@ -47,7 +47,7 @@ describe('SubscriptionsPage', () => {
       fireEvent.click(screen.getByText(`${subscription.id}`));
     });
 
-    expect(screen.getByLabelText(`Actions for Subscription/${subscription.id}`));
+    expect(screen.getByLabelText(`Actions for Subscription/${subscription.id}`)).toBeInTheDocument();
   });
 
   test('Renders test changes', async () => {

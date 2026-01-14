@@ -895,7 +895,6 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
 
     await act(async () => {
-      // fireEvent.click(screen.getByLabelText('a1'));
       fireEvent.change(dropDown, { target: { value: 'a1' } });
     });
 

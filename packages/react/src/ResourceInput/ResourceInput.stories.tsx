@@ -30,7 +30,7 @@ export const Disabled = (): JSX.Element => (
   </Document>
 );
 
-export const Error = (): JSX.Element => (
+export const ErrorDisplay = (): JSX.Element => (
   <Document>
     <ResourceInput
       name="foo"

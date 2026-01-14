@@ -107,7 +107,7 @@ export async function checkIfValidMedplumVersion(appName: string, version: strin
   }
   try {
     await fetchVersionManifest(appName, version);
-  } catch (_err) {
+  } catch {
     return false;
   }
   return true;

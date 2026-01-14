@@ -92,13 +92,10 @@ export class AgentByteStreamChannel extends BaseChannel {
   }
 
   private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
-    if (
-      firstEndpoint.address === secondEndpoint.address ||
-      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
-    ) {
-      return false;
-    }
-    return true;
+    return (
+      firstEndpoint.address !== secondEndpoint.address &&
+      new URL(firstEndpoint.address).port !== new URL(secondEndpoint.address).port
+    );
   }
 
   private configureTcpServerAndConnections(): void {

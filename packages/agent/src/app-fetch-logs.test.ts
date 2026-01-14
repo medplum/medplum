@@ -46,7 +46,7 @@ describe('Fetch Logs', () => {
     for (const cleanup of cleanupFns) {
       try {
         cleanup();
-      } catch (_err) {
+      } catch {
         /* We don't care if cleanup throws, it's best effort */
       }
     }

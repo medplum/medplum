@@ -27,14 +27,14 @@ describe('Setup Medplum Agent', () => {
   test('Set up Agent', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'post').mockImplementation(async (path: string | URL, body: any): Promise<any> => {
-      if (path.toString().match(/admin\/projects\/.*\/bot/)) {
+      if (/admin\/projects\/.*\/bot/.exec(path.toString())) {
         const bot: Bot = {
           resourceType: 'Bot',
           name: body.name,
         };
         return medplum.repo.createResource(bot);
       }
-      if (path.toString().match(/admin\/projects\/.*\/client/)) {
+      if (/admin\/projects\/.*\/client/.exec(path.toString())) {
         const clientApp: ClientApplication = {
           resourceType: 'ClientApplication',
           name: body.name,

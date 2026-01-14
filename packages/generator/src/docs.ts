@@ -136,7 +136,7 @@ function buildDocsDefinition(
   }
 
   if (searchParameters) {
-    result.searchParameters = (searchParameters || []).map((param) => ({
+    result.searchParameters = (searchParameters ?? []).map((param) => ({
       name: param.name as string,
       type: param.type as
         | 'string'
@@ -377,6 +377,7 @@ function rewriteLinksText(text: string | undefined): string {
   }
 
   // Replace all the links of [[[Type]]] with internal links
+  // eslint-disable-next-line sonarjs/slow-regex
   const typeLinks = Array.from(text.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
   for (const match of typeLinks) {
     text = text.replace(match[0], `[${match[1]}](./${match[1].toLowerCase()})`);
@@ -519,7 +520,7 @@ function rewriteHtmlSpecHref(anchorElement: HTMLAnchorElement): void {
   const href = anchorElement.getAttribute('href'); // Get the href attribute of the anchor tag
 
   // Try to match the href to the expected format
-  const match = href?.match(/^(http[s]?:\/\/)?(\S+?)(\.html)?(#\w+)?$/);
+  const match = href?.match(/^(https?:\/\/)?(\S+?)(\.html)?(#\w+)?$/);
   if (match) {
     const http = match[1];
     const resourceType = match[2];

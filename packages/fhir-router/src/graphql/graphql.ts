@@ -113,7 +113,7 @@ export async function graphqlHandler(
   let document: DocumentNode;
   try {
     document = parse(query);
-  } catch (_err) {
+  } catch {
     return [badRequest('GraphQL syntax error.')];
   }
 
@@ -522,14 +522,6 @@ class MaxDepthVisitor {
   OperationDefinition(node: OperationDefinitionNode): void {
     const result = this.getDepth(...node.selectionSet.selections);
     if (result.depth > this.maxDepth) {
-      // this.context.reportError(
-      //   new GraphQLError(
-      //     `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
-      //     {
-      //       nodes: result.node,
-      //     }
-      //   )
-      // );
       this.router.log('warn', 'Query max depth too high', {
         depth: result.depth,
         limit: this.maxDepth,
@@ -619,11 +611,6 @@ class QueryCostVisitor {
       this.log(child.kind, 'node has final cost', childCost, '(', performance.now() - startTime, 'ms)');
 
       if (cost > this.maxCost) {
-        // this.context.reportError(
-        //   new GraphQLError('Query too complex', {
-        //     extensions: { cost, limit: this.maxCost },
-        //   })
-        // );
         this.router.log('warn', 'GraphQL query too complex', {
           cost,
           limit: this.maxCost,

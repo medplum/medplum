@@ -97,7 +97,7 @@ describe('mapHealthieGender', () => {
   });
 
   test('handles invalid or missing input', () => {
-    expect(mapHealthieGender(undefined)).toBe('unknown');
+    expect(mapHealthieGender()).toBe('unknown');
     expect(mapHealthieGender('')).toBe('unknown');
     expect(mapHealthieGender('other')).toBe('other');
     expect(mapHealthieGender('non-binary')).toBe('other');
@@ -219,7 +219,7 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
         }
 
         // Step 3: Find a timestamp in the middle of the results
-        const sortedUsers = firstPageResult.users.sort(
+        const sortedUsers = firstPageResult.users.toSorted(
           (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
         );
 

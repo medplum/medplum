@@ -17,7 +17,7 @@ export type CoverageInputProps = {
   patient: Patient;
   error?: NonNullable<LabOrderInputErrors['billingInformation']>['patientCoverage'];
 };
-export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Element {
+export function CoverageInput({ patient, error }: Readonly<CoverageInputProps>): JSX.Element {
   const { getActivePatientCoverages, updateBillingInformation, state } = useHealthGorillaLabOrderContext();
   const [coverages, setCoverages] = useState<PatientCoverages>(INITIAL_COVERAGES);
   const disabled = state.billingInformation.billTo !== 'insurance';

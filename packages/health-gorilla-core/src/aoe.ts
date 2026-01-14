@@ -61,7 +61,7 @@ export function getMissingRequiredQuestionnaireItems(
           );
           if (values?.some((v) => v.value)) {
             hasValue = true;
-            continue;
+            break;
           }
         }
 

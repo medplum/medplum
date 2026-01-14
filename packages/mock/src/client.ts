@@ -333,6 +333,7 @@ export class MockClient extends MedplumClient {
       if (!this.agentAvailable) {
         throw new OperationOutcomeError(badRequest('Timeout'));
       }
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip
       if (typeof destination !== 'string' || (destination !== '8.8.8.8' && destination !== 'localhost')) {
         // Exception for test case
         if (destination !== 'abc123') {
@@ -566,6 +567,7 @@ export class MockFetchClient {
               id: '123',
               lastUpdated: new Date().toISOString(),
               authMethod: 'password',
+              // eslint-disable-next-line sonarjs/no-hardcoded-ip
               remoteAddress: '5.5.5.5',
               browser: 'Chrome',
               os: 'Linux',
@@ -574,6 +576,7 @@ export class MockFetchClient {
               id: '456',
               lastUpdated: new Date().toISOString(),
               authMethod: 'password',
+              // eslint-disable-next-line sonarjs/no-hardcoded-ip
               remoteAddress: '6.6.6.6',
               browser: 'Chrome',
               os: 'Android',
@@ -826,7 +829,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (_err) {
+      } catch {
         body = options.body;
       }
     }

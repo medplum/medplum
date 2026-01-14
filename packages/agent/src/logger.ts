@@ -169,7 +169,7 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [AgentMultiLoggerCon
     } else if (LOGGER_CONFIG_INTEGER_KEYS.includes(settingName as LoggerConfigIntegerKey)) {
       try {
         configValue = Number.parseInt(propVal, 10);
-      } catch (_err) {
+      } catch {
         warnings.push(`Error while parsing ${propName}: ${propVal} is not a valid integer`);
       }
     } else {

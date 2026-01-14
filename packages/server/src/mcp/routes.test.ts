@@ -5,9 +5,9 @@ import type { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { randomUUID } from 'crypto';
 import express from 'express';
-import type { Server } from 'http';
+import { randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -146,7 +146,7 @@ describe('MCP Routes', () => {
 
     // 5. search
     const searchResult = await fhirRequest<Bundle<Patient>>('GET', 'Patient');
-    expect(searchResult.resourceType);
+    expect(searchResult.resourceType).toStrictEqual('Bundle');
     expect(searchResult.entry?.some((e) => e.resource?.id === createResult.id)).toBeTruthy();
 
     // 6. delete

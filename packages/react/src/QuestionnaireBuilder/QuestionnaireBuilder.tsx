@@ -618,7 +618,7 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
     if (item.id?.match(/^id-\d+$/)) {
       nextId = Math.max(nextId, Number.parseInt(item.id.substring(3), 10) + 1);
     }
-    if (item.linkId?.match(/^q\d+$/)) {
+    if (/^q\d+$/.exec(item.linkId)) {
       nextLinkId = Math.max(nextLinkId, Number.parseInt(item.linkId.substring(1), 10) + 1);
     }
   });

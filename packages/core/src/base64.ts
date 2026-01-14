@@ -52,10 +52,13 @@ export function encodeBase64(data: string): string {
  * @returns The Base64URL encoded string.
  */
 export function encodeBase64Url(data: string): string {
-  return encodeBase64(data)
-    .replaceAll('+', '-') // Replace + with -
-    .replaceAll('/', '_') // Replace / with _
-    .replace(/[=]{1,2}$/, ''); // Remove trailing =
+  return (
+    encodeBase64(data)
+      .replaceAll('+', '-') // Replace + with -
+      .replaceAll('/', '_') // Replace / with _
+      // eslint-disable-next-line sonarjs/single-char-in-character-classes
+      .replace(/[=]{1,2}$/, '')
+  ); // Remove trailing =
 }
 
 /**

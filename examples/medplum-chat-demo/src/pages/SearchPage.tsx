@@ -160,9 +160,5 @@ function updateSearch(newTab: string, search: SearchRequest): SearchRequest {
 }
 
 function shouldShowTabs(search: SearchRequest): boolean {
-  if (search.resourceType !== 'Communication') {
-    return false;
-  }
-
-  return true;
+  return search.resourceType === 'Communication';
 }

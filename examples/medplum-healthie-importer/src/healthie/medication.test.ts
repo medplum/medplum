@@ -256,7 +256,7 @@ describe('parseDosage', () => {
   });
 
   test('handles invalid or missing input', () => {
-    expect(parseDosage(undefined)).toBeUndefined();
+    expect(parseDosage()).toBeUndefined();
     expect(parseDosage('')).toBeUndefined();
     expect(parseDosage('invalid')).toBeUndefined();
     expect(parseDosage('10')).toBeUndefined();
