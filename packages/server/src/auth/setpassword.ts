@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
-import type { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
@@ -32,12 +32,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  if (!timingSafeEqualStr(securityRequest.secret as string, req.body.secret)) {
+  if (!timingSafeEqualStr(securityRequest.secret, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user as Reference<User>);
+  const user = await systemRepo.readReference(securityRequest.user);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {

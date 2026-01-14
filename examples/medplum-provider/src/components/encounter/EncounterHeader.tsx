@@ -3,7 +3,7 @@
 import { ActionIcon, Box, Button, Flex, Group, Menu, Modal, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatHumanName } from '@medplum/core';
-import type { Encounter, HumanName, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { Encounter, Practitioner, Reference } from '@medplum/fhirtypes';
 import { IconChevronDown, IconLock, IconLockOpen } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -67,9 +67,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     openSign();
   };
 
-  const practitionerName = practitioner?.name?.[0]
-    ? formatHumanName(practitioner.name[0] as HumanName)
-    : 'Unknown Provider';
+  const practitionerName = practitioner?.name?.[0] ? formatHumanName(practitioner.name[0]) : 'Unknown Provider';
   const formattedDate = formatDate(encounter.period?.start);
   const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
 

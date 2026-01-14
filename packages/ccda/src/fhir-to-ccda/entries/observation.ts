@@ -88,12 +88,12 @@ export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observ
       if (child.component) {
         for (const component of child.component) {
           components.push({
-            observation: [createCcdaObservation(converter, child as Observation, component)],
+            observation: [createCcdaObservation(converter, child, component)],
           });
         }
       } else {
         components.push({
-          observation: [createCcdaObservation(converter, child as Observation)],
+          observation: [createCcdaObservation(converter, child)],
         });
       }
     }
@@ -139,7 +139,7 @@ export function createCcdaObservation(
 
       entryRelationship.push({
         '@_typeCode': 'COMP',
-        observation: [createCcdaObservation(converter, child as Observation)],
+        observation: [createCcdaObservation(converter, child)],
       });
     }
   }

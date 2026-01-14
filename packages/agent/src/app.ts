@@ -27,7 +27,7 @@ import {
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
-import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue, Reference } from '@medplum/fhirtypes';
+import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { DEFAULT_ENCODING } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
@@ -497,9 +497,7 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(
-        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
-      );
+      endpointPromises.push(this.medplum.readReference(definition.endpoint, { cache: 'no-cache' }));
     }
 
     const endpoints = await Promise.all(endpointPromises);

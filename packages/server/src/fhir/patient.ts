@@ -23,9 +23,7 @@ let patientCompartment: CompartmentDefinition | undefined = undefined;
  * @returns The patient compartment definitions.
  */
 export function getPatientCompartments(): CompartmentDefinition {
-  if (!patientCompartment) {
-    patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
-  }
+  patientCompartment ??= readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
   return patientCompartment;
 }
 

@@ -29,7 +29,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Resource>)
     return false;
   }
 
-  const resource = event.input as Resource;
+  const resource = event.input;
 
   switch (resource.resourceType) {
     case 'ServiceRequest': {

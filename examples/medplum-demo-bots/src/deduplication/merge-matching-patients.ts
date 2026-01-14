@@ -91,7 +91,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // despite the fact that it is an inactive record.
   const deleteSource = responses['deleteSource']?.valueBoolean;
   if (deleteSource === true) {
-    await medplum.deleteResource('Patient', mergedPatients.src.id as string);
+    await medplum.deleteResource('Patient', mergedPatients.src.id);
   } else {
     // If we don't delete the source patient record, we need to update it to be inactive.
     await medplum.updateResource<Patient>(mergedPatients.src);

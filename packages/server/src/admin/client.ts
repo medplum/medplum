@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference } from '@medplum/core';
+import { createReference, singularize } from '@medplum/core';
 import type {
   AccessPolicy,
   ClientApplication,
@@ -26,7 +26,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
   let project: Project;
   const { project: localsProject, repo } = getAuthenticatedContext();
   if (localsProject.superAdmin) {
-    project = { resourceType: 'Project', id: req.params.projectId };
+    project = { resourceType: 'Project', id: singularize(req.params.projectId) };
   } else {
     project = localsProject;
   }

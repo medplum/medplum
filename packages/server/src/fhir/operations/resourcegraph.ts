@@ -5,6 +5,7 @@ import {
   allOk,
   badRequest,
   DEFAULT_SEARCH_COUNT,
+  EMPTY,
   evalFhirPathTyped,
   getReferenceString,
   notFound,
@@ -21,7 +22,6 @@ import type {
   GraphDefinitionLinkTarget,
   Reference,
   Resource,
-  ResourceType,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -217,7 +217,7 @@ async function followCanonicalElements(
       results.push(resourceCache[url]);
     } else {
       const linkedResources = await repo.searchResources({
-        resourceType: target.type as ResourceType,
+        resourceType: target.type,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
       if (linkedResources.length > 1) {
@@ -225,7 +225,9 @@ async function followCanonicalElements(
       }
 
       // Cache here to speed up subsequent loop iterations
-      linkedResources.forEach((res) => addToCache(res, resourceCache));
+      for (const res of linkedResources) {
+        addToCache(res, resourceCache);
+      }
       results.push(...linkedResources);
     }
   }
@@ -265,9 +267,9 @@ async function followSearchLink(
 
     // Run the search and add the results to the `results` array
     const resources = await repo.searchResources(searchRequest);
-    if (resources) {
-      resources.forEach((res) => addToCache(res, resourceCache));
-      results.push(...resources);
+    for (const res of resources ?? EMPTY) {
+      addToCache(res, resourceCache);
+      results.push(res);
     }
   }
   return results;

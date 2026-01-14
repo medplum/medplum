@@ -22,9 +22,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   let result: BotExecutionResult;
 
   const execStart = process.hrtime.bigint();
-  if (!(await isBotEnabled(bot))) {
-    result = { success: false, logResult: 'Bots not enabled' };
-  } else {
+  if (await isBotEnabled(bot)) {
     await writeBotInputToStorage(request);
 
     const context: BotExecutionContext = {
@@ -42,6 +40,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     } else {
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
+  } else {
+    result = { success: false, logResult: 'Bots not enabled' };
   }
   const executionTime = Number(process.hrtime.bigint() - execStart) / 1e9; // Report duration in seconds
 
@@ -54,6 +54,5 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
     result.logResult
   );
-
   return result;
 }

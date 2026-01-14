@@ -280,7 +280,7 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
   const expressionString = typeAndExpressionsMatch[2];
   const parsedExpressions = parseIndexColumns(expressionString);
   const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
-    if (expression.match(/^[ \w"]+$/)) {
+    if (/^[ \w"]+$/.exec(expression)) {
       return expression.trim().replaceAll('"', '');
     }
 

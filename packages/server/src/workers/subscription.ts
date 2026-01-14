@@ -146,7 +146,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
   worker.on('active', (job) => {
     // Only record queuedDuration on the first attempt
     if (job.attemptsMade === 0) {
-      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - (job.timestamp as number)) / 1000);
+      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
     }
   });
   worker.on('completed', (job) => {
@@ -154,10 +154,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
       'medplum.subscription.executionDuration',
       ((job.finishedOn as number) - (job.processedOn as number)) / 1000
     );
-    recordHistogramValue(
-      'medplum.subscription.totalDuration',
-      ((job.finishedOn as number) - (job.timestamp as number)) / 1000
-    );
+    recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
   });
   worker.on('failed', (job) => {
     if (job) {

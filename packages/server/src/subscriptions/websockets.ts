@@ -251,7 +251,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
         return;
       }
       unsubscribeWsFromAllSubscriptions(socket);
-      const cacheEntryStr = (await redis.get(`Subscription/${verifiedToken.subscription_id}`)) as string | null;
+      const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
       if (!cacheEntryStr) {
         globalLogger.warn('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect');
         return;
@@ -269,7 +269,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     }
 
     unsubscribeWsFromSubscription(socket, verifiedToken.subscription_id);
-    const cacheEntryStr = (await redis.get(`Subscription/${verifiedToken.subscription_id}`)) as string | null;
+    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
     if (!cacheEntryStr) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
         subscriptionId: verifiedToken.subscription_id,
@@ -375,7 +375,7 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   const { status, includeResource } = {
     status: 'active',
     includeResource: false,
-    ...(options ?? {}),
+    ...options,
   } as { status: SubStatus; includeResource: boolean };
   const timestamp = new Date().toISOString();
   return {

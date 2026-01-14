@@ -94,7 +94,7 @@ describe('ResendSubscriptionsModal', () => {
       fireEvent.click(screen.getByText('Choose subscription', { exact: false }));
     });
 
-    const input = screen.getByPlaceholderText('Subscription') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Subscription');
 
     // Enter "Patient"
     await act(async () => {

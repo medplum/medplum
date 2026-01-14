@@ -93,7 +93,7 @@ projectAdminRouter.post('/:projectId/sites', async (req: Request, res: Response)
 
 projectAdminRouter.get('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -104,7 +104,7 @@ projectAdminRouter.get('/:projectId/members/:membershipId', async (req: Request,
 
 projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -121,7 +121,7 @@ projectAdminRouter.post('/:projectId/members/:membershipId', async (req: Request
 
 projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { membershipId } = req.params;
+  const membershipId = req.params.membershipId as string;
   const membership = await ctx.repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   if (membership.project?.reference !== getReferenceString(ctx.project)) {
     sendOutcome(res, forbidden);
@@ -132,6 +132,6 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
     sendOutcome(res, badRequest('Cannot delete the owner of the project'));
     return;
   }
-  await ctx.repo.deleteResource('ProjectMembership', req.params.membershipId);
+  await ctx.repo.deleteResource('ProjectMembership', membershipId);
   sendOutcome(res, allOk);
 });

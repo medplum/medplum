@@ -32,17 +32,17 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "8.3.10",
-    "@mantine/dropzone": "8.3.10",
-    "@mantine/hooks": "8.3.10",
-    "@mantine/notifications": "8.3.10",
-    "@mantine/spotlight": "8.3.10",
+    "@mantine/core": "8.3.11",
+    "@mantine/dropzone": "8.3.11",
+    "@mantine/hooks": "8.3.11",
+    "@mantine/notifications": "8.3.11",
+    "@mantine/spotlight": "8.3.11",
     "@medplum/core": "5.0.10",
     "@medplum/definitions": "5.0.10",
     "@medplum/fhirtypes": "5.0.10",
     "@medplum/mock": "5.0.10",
     "@medplum/react": "5.0.10",
-    "@tabler/icons-react": "3.36.0",
+    "@tabler/icons-react": "3.36.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.1",
     "@types/react": "19.2.7",
@@ -52,9 +52,9 @@
     "postcss-preset-mantine": "1.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-router": "7.11.0",
+    "react-router": "7.12.0",
     "rfc6902": "5.1.2",
-    "vite": "7.3.0"
+    "vite": "7.3.1"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

@@ -623,7 +623,7 @@ describe('BillingTab', () => {
       expect(screen.getByText('Practitioner')).toBeInTheDocument();
     });
 
-    const practitionerInput = screen.getByPlaceholderText('Search for practitioner') as HTMLInputElement;
+    const practitionerInput = screen.getByPlaceholderText('Search for practitioner');
     expect(practitionerInput).toBeDefined();
 
     await act(async () => {
@@ -798,7 +798,7 @@ describe('BillingTab', () => {
       { timeout: 3000 }
     );
 
-    const practitionerInput = screen.getByPlaceholderText('Search for practitioner') as HTMLInputElement;
+    const practitionerInput = screen.getByPlaceholderText('Search for practitioner');
 
     await act(async () => {
       fireEvent.change(practitionerInput, { target: { value: 'Smith' } });
@@ -844,4 +844,173 @@ describe('BillingTab', () => {
       { timeout: 5000 }
     );
   }, 15000);
+
+  test('handles export when claim id is missing', async () => {
+    const user = userEvent.setup();
+
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    } as any);
+
+    // Setup with a claim but with undefined id
+    await setup({ claim: { ...mockClaim, id: undefined } });
+
+    // Export button is visible but clicking it should be a no-op
+    const exportButton = screen.getByText('Export Claim');
+    await user.click(exportButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('CMS 1500 Form'));
+
+    // Post should NOT be called due to early return
+    await waitFor(() => {
+      expect(medplum.post).not.toHaveBeenCalled();
+    });
+  });
+
+  test('shows error when export fails to return Media', async () => {
+    const user = userEvent.setup();
+
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid' }],
+    } as any);
+
+    await setup({ claim: mockClaim });
+
+    const exportButton = screen.getByText('Export Claim');
+    await user.click(exportButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('CMS 1500 Form'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to download PDF')).toBeInTheDocument();
+    });
+  });
+
+  test('creates self-pay coverage when no coverage exists', async () => {
+    const user = userEvent.setup();
+
+    // Return empty coverage array first, then return self-pay coverage for the claim
+    const selfPayCoverage: Coverage = {
+      resourceType: 'Coverage',
+      id: 'self-pay-123',
+      status: 'active',
+      beneficiary: { reference: 'Patient/patient-123' },
+      payor: [{ reference: 'Patient/patient-123' }],
+    };
+
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([] as any);
+    vi.spyOn(medplum, 'createResource').mockResolvedValue(selfPayCoverage as any);
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    } as any);
+
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup({ claim: mockClaim });
+
+    const exportButton = screen.getByText('Export Claim');
+    await user.click(exportButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('CMS 1500 Form'));
+
+    await waitFor(() => {
+      expect(medplum.post).toHaveBeenCalled();
+    });
+
+    windowOpenSpy.mockRestore();
+  });
+
+  test('handles error in encounter change', async () => {
+    const setEncounter = vi.fn();
+    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+
+    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
+    vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
+
+    await setup({
+      setEncounter,
+      practitioner: undefined,
+      encounter: mockEncounter,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Visit Details')).toBeInTheDocument();
+    });
+  });
+
+  test('exports claim with conditions that have ICD-10 coding', async () => {
+    const user = userEvent.setup();
+
+    const mockCondition = {
+      resourceType: 'Condition' as const,
+      id: 'condition-1',
+      code: {
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/sid/icd-10-cm',
+            code: 'R51',
+            display: 'Headache',
+          },
+        ],
+        text: 'Headache',
+      },
+    };
+
+    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+    vi.spyOn(medplum, 'post').mockResolvedValue({
+      resourceType: 'Media',
+      content: { url: 'https://example.com/claim.pdf' },
+    } as any);
+
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    await setup({
+      claim: mockClaim,
+      encounter: {
+        ...mockEncounter,
+        diagnosis: [
+          {
+            condition: { reference: 'Condition/condition-1' },
+          },
+        ],
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Headache')).toBeInTheDocument();
+    });
+
+    const exportButton = screen.getByText('Export Claim');
+    await user.click(exportButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('CMS 1500 Form')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('CMS 1500 Form'));
+
+    await waitFor(() => {
+      expect(medplum.post).toHaveBeenCalled();
+    });
+
+    windowOpenSpy.mockRestore();
+  });
 });

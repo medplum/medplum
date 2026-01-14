@@ -99,7 +99,7 @@ function buildDocsDefinitions(
 ): ResourceDocsProps[] {
   const results = [];
   for (const definition of definitions) {
-    results.push(buildDocsDefinition(definition, location, indexedSearchParams?.[definition.name as string]));
+    results.push(buildDocsDefinition(definition, location, indexedSearchParams?.[definition.name]));
   }
 
   return results;
@@ -111,7 +111,7 @@ function buildDocsDefinition(
   searchParameters?: SearchParameter[]
 ): ResourceDocsProps {
   const result = {
-    name: resourceDefinition.name as string,
+    name: resourceDefinition.name,
     location,
     description: resourceDefinition.description || '',
     properties: [] as PropertyDocInfo[],
@@ -137,17 +137,8 @@ function buildDocsDefinition(
 
   if (searchParameters) {
     result.searchParameters = (searchParameters || []).map((param) => ({
-      name: param.name as string,
-      type: param.type as
-        | 'string'
-        | 'number'
-        | 'uri'
-        | 'date'
-        | 'token'
-        | 'reference'
-        | 'composite'
-        | 'quantity'
-        | 'special',
+      name: param.name,
+      type: param.type,
       description: getSearchParamDescription(param, result.name),
       expression: getExpressionForResourceType(result.name, param.expression || '') || (param.expression as string),
     }));

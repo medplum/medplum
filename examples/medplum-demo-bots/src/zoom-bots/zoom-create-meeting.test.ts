@@ -76,7 +76,7 @@ test('Create Zoom meeting from Appointment', async () => {
   });
 
   // Verify appointment was updated with Zoom details
-  const updatedAppointment = await medplum.readResource('Appointment', appointment.id as string);
+  const updatedAppointment = await medplum.readResource('Appointment', appointment.id);
   expect(updatedAppointment.extension?.[0]).toMatchObject({
     url: 'https://medplum.com/zoom',
     extension: [

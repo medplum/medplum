@@ -3,7 +3,13 @@
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import type { EnhancedMode, Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import type {
+  EnhancedMode,
+  Hl7Connection,
+  Hl7EnhancedAckSentEvent,
+  Hl7ErrorEvent,
+  Hl7MessageEvent,
+} from '@medplum/hl7';
 import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
@@ -87,7 +93,7 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
-    const connection = this.connections.get(msg.remote as string);
+    const connection = this.connections.get(msg.remote);
     if (connection) {
       const hl7Message = Hl7Message.parse(msg.body);
       const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
@@ -168,7 +174,7 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   private configureHl7ServerAndConnections(): void {
-    const address = new URL(this.getEndpoint().address as string);
+    const address = new URL(this.getEndpoint().address);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = parseEnhancedMode(address.searchParams.get('enhanced'), this.log);
     const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
@@ -227,6 +233,9 @@ export class AgentHl7ChannelConnection {
     // Add listener immediately to handle incoming messages
     this.hl7Connection.addEventListener('message', (event: Hl7MessageEvent) => this.handleMessage(event));
     this.hl7Connection.addEventListener('error', (event: Hl7ErrorEvent) => this.handleError(event));
+    this.hl7Connection.addEventListener('enhancedAckSent', (event: Hl7EnhancedAckSentEvent) =>
+      this.handleEnhancedAckSent(event)
+    );
   }
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
@@ -257,7 +266,7 @@ export class AgentHl7ChannelConnection {
       // Store in durable queue first, then trigger processing
       this.channel.app.hl7DurableQueue.addMessage(
         event.message,
-        this.channel.getDefinition().name as string,
+        this.channel.getDefinition().name,
         this.remote,
         callback
       );
@@ -278,6 +287,16 @@ export class AgentHl7ChannelConnection {
   private async handleError(event: Hl7ErrorEvent): Promise<void> {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
     this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
+  }
+
+  private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {
+    const hl7Message = event.message;
+    const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
+    const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+
+    this.channel.channelLog.info(
+      `[Sent ${ackCode === 'CA' ? 'Commit ACK (CA)' : 'Immediate ACK (AA)'} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
+    );
   }
 
   close(): Promise<void> {
