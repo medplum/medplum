@@ -10,6 +10,7 @@ import type {
 } from '@medplum/core';
 import { allOk, ContentType, createReference, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
+import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
