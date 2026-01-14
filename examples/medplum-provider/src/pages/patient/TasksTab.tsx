@@ -64,7 +64,7 @@ export function TasksTab(): JSX.Element {
     value: patientRef,
   });
   if (profile) {
-    const profileRef = getReferenceString(profile as ProfileResource);
+    const profileRef = getReferenceString(profile);
     if (profileRef) {
       myTasksFilters.push({
         code: 'owner',

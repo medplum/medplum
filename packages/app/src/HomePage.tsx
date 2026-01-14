@@ -73,7 +73,7 @@ export function HomePage(): JSX.Element {
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
-            medplum.invalidateSearches(search.resourceType as ResourceType);
+            medplum.invalidateSearches(search.resourceType);
             medplum
               .executeBatch({
                 resourceType: 'Bundle',

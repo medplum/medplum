@@ -49,7 +49,7 @@ export function TasksPage(): JSX.Element {
 
   const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner') || [];
   if (profile) {
-    const profileRef = getReferenceString(profile as ProfileResource);
+    const profileRef = getReferenceString(profile);
     if (profileRef) {
       myTasksFilters.push({
         code: 'owner',

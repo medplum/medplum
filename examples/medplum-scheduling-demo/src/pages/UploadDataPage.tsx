@@ -105,7 +105,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
+    exampleBotData.entry?.filter((e: any) => (e.resource as Resource)?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -120,12 +120,12 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       })) as WithId<Bot>;
     }
 
-    botIds[botName] = existingBot.id as string;
+    botIds[botName] = existingBot.id;
 
     // Replace the Bot id placeholder in the bundle
     transactionString = transactionString
       .replaceAll(`$bot-${botName}-reference`, getReferenceString(existingBot))
-      .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
+      .replaceAll(`$bot-${botName}-id`, existingBot.id);
   }
 
   // Execute the transaction to upload / update the bot

@@ -32,15 +32,13 @@ describe('Example Data', async () => {
     });
     // Delete all existing slots
     const slots = await medplum.searchResources('Slot');
-    await Promise.all(slots.map((slot) => medplum.deleteResource('Slot', slot.id as string)));
+    await Promise.all(slots.map((slot) => medplum.deleteResource('Slot', slot.id)));
     // Delete all existing appointments
     const appointments = await medplum.searchResources('Appointment');
-    await Promise.all(
-      appointments.map((appointment) => medplum.deleteResource('Appointment', appointment.id as string))
-    );
+    await Promise.all(appointments.map((appointment) => medplum.deleteResource('Appointment', appointment.id)));
     // Delete all existing encounters
     const encounters = await medplum.searchResources('Encounter');
-    await Promise.all(encounters.map((encounter) => medplum.deleteResource('Encounter', encounter.id as string)));
+    await Promise.all(encounters.map((encounter) => medplum.deleteResource('Encounter', encounter.id)));
   });
 
   test('Successfully create example data bundle', async () => {

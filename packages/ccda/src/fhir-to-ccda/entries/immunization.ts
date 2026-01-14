@@ -99,9 +99,9 @@ export function mapImmunizationPerformerToCcdaPerformer(
     practitioner = converter.findResourceByReference(resource.practitioner) as Practitioner;
     organization = converter.findResourceByReference(resource.organization) as Organization;
   } else if (resource.resourceType === 'Practitioner') {
-    practitioner = resource as Practitioner;
+    practitioner = resource;
   } else if (resource.resourceType === 'Organization') {
-    organization = resource as Organization;
+    organization = resource;
   }
 
   return {

@@ -135,7 +135,7 @@ export const TaskDetailsModal = (): JSX.Element => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Text>View Patient</Text>
                         <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                          {formatHumanName(patient.name?.[0] as HumanName)}
+                          {formatHumanName(patient.name?.[0])}
                         </Button>
                       </div>
                     )}

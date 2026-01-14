@@ -67,9 +67,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     openSign();
   };
 
-  const practitionerName = practitioner?.name?.[0]
-    ? formatHumanName(practitioner.name[0] as HumanName)
-    : 'Unknown Provider';
+  const practitionerName = practitioner?.name?.[0] ? formatHumanName(practitioner.name[0]) : 'Unknown Provider';
   const formattedDate = formatDate(encounter.period?.start);
   const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
 

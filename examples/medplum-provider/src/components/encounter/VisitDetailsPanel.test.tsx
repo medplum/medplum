@@ -108,7 +108,7 @@ describe('VisitDetailsPanel', () => {
       { timeout: 3000 }
     );
 
-    const practitionerInput = screen.getByRole('searchbox') as HTMLInputElement;
+    const practitionerInput = screen.getByRole('searchbox');
 
     // Type to search for a practitioner using fireEvent.change (like PlanDefinitionBuilder)
     await act(async () => {

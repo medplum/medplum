@@ -304,7 +304,7 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    const input = screen.getByDisplayValue('5') as HTMLInputElement;
+    const input = screen.getByDisplayValue('5');
     await act(async () => {
       fireEvent.change(input, { target: { value: '6' } });
     });

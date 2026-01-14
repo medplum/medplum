@@ -342,7 +342,7 @@ describe('TaskProperties', () => {
       { timeout: 3000 }
     );
 
-    const patientInput = screen.getByPlaceholderText('Search for patient') as HTMLInputElement;
+    const patientInput = screen.getByPlaceholderText('Search for patient');
     await act(async () => {
       fireEvent.change(patientInput, { target: { value: 'Smith' } });
     });
@@ -515,7 +515,7 @@ describe('TaskProperties', () => {
       expect(screen.getByPlaceholderText('Select any resource...')).toBeInTheDocument();
     });
 
-    const basedOnInput = screen.getByPlaceholderText('Select any resource...') as HTMLInputElement;
+    const basedOnInput = screen.getByPlaceholderText('Select any resource...');
 
     await act(async () => {
       fireEvent.change(basedOnInput, { target: { value: 'ServiceRequest' } });

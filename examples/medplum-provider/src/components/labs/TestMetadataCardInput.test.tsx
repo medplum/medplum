@@ -150,7 +150,7 @@ describe('TestMetadataCardInput', () => {
     const metadata = createMockMetadata({ priority: 'urgent' });
     setup({ metadata });
 
-    const urgentRadio = screen.getByLabelText('Urgent') as HTMLInputElement;
+    const urgentRadio = screen.getByLabelText('Urgent');
     expect(urgentRadio).toBeChecked();
   });
 
@@ -213,7 +213,7 @@ describe('TestMetadataCardInput', () => {
     const metadata = createMockMetadata({ notes: '' });
     setup({ metadata });
 
-    const notesInput = screen.getByLabelText('Notes') as HTMLInputElement;
+    const notesInput = screen.getByLabelText('Notes');
     await act(async () => {
       fireEvent.change(notesInput, { target: { value: 'Test note' } });
     });

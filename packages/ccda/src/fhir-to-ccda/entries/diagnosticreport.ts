@@ -19,7 +19,7 @@ export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, reso
       }
 
       components.push({
-        observation: [createCcdaObservation(converter, child as Observation)],
+        observation: [createCcdaObservation(converter, child)],
       });
     }
   }

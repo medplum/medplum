@@ -1308,7 +1308,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
@@ -2435,7 +2435,7 @@ describe('QuestionnaireForm', () => {
     const searchResources = jest.spyOn(medplum, 'searchResources');
 
     // Get the search input
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Simpson"
     await act(async () => {

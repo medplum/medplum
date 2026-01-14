@@ -42,10 +42,10 @@ export async function createMedplumClient(
       medplumClient.setAccessToken(accessToken);
     } else if (clientId && clientSecret) {
       // If the client ID and secret are provided, use them.
-      medplumClient.setBasicAuth(clientId as string, clientSecret as string);
+      medplumClient.setBasicAuth(clientId, clientSecret);
       if (profile?.authType !== 'basic') {
         // Unless the user explicitly specified basic auth, start the client login.
-        await medplumClient.startClientLogin(clientId as string, clientSecret as string);
+        await medplumClient.startClientLogin(clientId, clientSecret);
       }
     }
   }

@@ -179,7 +179,7 @@ export class Hl7Connection extends Hl7Base {
     this.responseQueueProcessing = true;
     while (this.responseQueue.length) {
       if (this.messagesPerMin) {
-        const millisBetweenMsgs = ONE_MINUTE / (this.messagesPerMin as number);
+        const millisBetweenMsgs = ONE_MINUTE / this.messagesPerMin;
         const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
         if (millisBetweenMsgs > elapsedMillis) {
           await sleep(millisBetweenMsgs - elapsedMillis);

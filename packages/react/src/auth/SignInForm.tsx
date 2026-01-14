@@ -92,7 +92,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (chooseScopes) {
           setMemberships(undefined);
         } else {
-          handleCode(response.code as string);
+          handleCode(response.code);
         }
       }
     },
@@ -145,7 +145,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               qrCodeUrl={enrollQrCode}
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/login-enroll', {
-                  login: login as string,
+                  login: login,
                   token: fields.token,
                 });
                 handleAuthResponse(res);
@@ -160,7 +160,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               buttonText="Submit Code"
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/verify', {
-                  login: login as string,
+                  login: login,
                   token: fields.token,
                 });
                 handleAuthResponse(res);

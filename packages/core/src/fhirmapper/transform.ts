@@ -35,7 +35,7 @@ export class TransformMapCollection {
   get<K extends ResourceType>(resourceType: K, url: string): ExtractResource<K>[] {
     const result = [];
     for (const r of this.resources) {
-      if (r.resourceType === resourceType && r.url && this.matchesUrl(r.url as string, url)) {
+      if (r.resourceType === resourceType && r.url && this.matchesUrl(r.url, url)) {
         result.push(r);
       }
     }
@@ -134,7 +134,7 @@ function registerGlobals(ctx: TransformContext, structureMap: StructureMap): voi
 
   if (structureMap.group) {
     for (const group of structureMap.group) {
-      setVariable(ctx, group.name as string, { type: 'StructureMapGroup', value: group });
+      setVariable(ctx, group.name, { type: 'StructureMapGroup', value: group });
     }
   }
 }
@@ -154,7 +154,7 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
   const sourceDefinitions: StructureMapGroupInput[] = [];
   const targetDefinitions: StructureMapGroupInput[] = [];
 
-  for (const inputDefinition of group.input as StructureMapGroupInput[]) {
+  for (const inputDefinition of group.input) {
     if (inputDefinition.mode === 'source') {
       sourceDefinitions.push(inputDefinition);
     }
@@ -186,12 +186,12 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
   let inputIndex = 0;
 
   for (const sourceDefinition of sourceDefinitions) {
-    safeAssign(variables, sourceDefinition.name as string, input[inputIndex++]);
+    safeAssign(variables, sourceDefinition.name, input[inputIndex++]);
   }
 
   for (const targetDefinition of targetDefinitions) {
     const output = input[inputIndex++] ?? { type: targetDefinition.type ?? 'BackboneElement', value: {} };
-    safeAssign(variables, targetDefinition.name as string, output);
+    safeAssign(variables, targetDefinition.name, output);
     outputs.push(output);
   }
 
@@ -377,7 +377,7 @@ function tryFindTypesGroup(ctx: TransformContext, sourceValue: TypedValue): Stru
  * @internal
  */
 function evalSource(ctx: TransformContext, source: StructureMapGroupRuleSource): TypedValue[] {
-  const sourceContext = getVariable(ctx, source.context as string) as TypedValue | undefined;
+  const sourceContext = getVariable(ctx, source.context) as TypedValue | undefined;
   if (!sourceContext) {
     return [];
   }
@@ -770,12 +770,12 @@ function evalTruncate(ctx: TransformContext, target: StructureMapGroupRuleTarget
  * @internal
  */
 function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDependent): void {
-  const dependentGroup = getVariable(ctx, dependent.name as string) as TypedValue | undefined;
+  const dependentGroup = getVariable(ctx, dependent.name) as TypedValue | undefined;
   if (!dependentGroup) {
     throw new Error('Dependent group not found: ' + dependent.name);
   }
 
-  const variables = dependent.variable as string[];
+  const variables = dependent.variable;
   const args: TypedValue[] = [];
   for (const variable of variables) {
     const variableValue = getVariable(ctx, variable) as TypedValue | undefined;
