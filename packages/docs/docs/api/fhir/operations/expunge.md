@@ -2,7 +2,7 @@
 sidebar_position: 21
 ---
 
-# Resource $expunge Operation
+# Resource $expunge
 
 The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record), expunge completely removes all traces of the resource.
 

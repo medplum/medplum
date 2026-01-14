@@ -2,7 +2,7 @@
 sidebar_position: 23
 ---
 
-# AI Operation
+# Parameters $ai
 
 The `$ai` operation provides an interface for calling AI language models (like OpenAI's GPT) through Medplum. This operation supports both standard request/response and streaming modes.
 

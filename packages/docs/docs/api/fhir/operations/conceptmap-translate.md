@@ -2,7 +2,7 @@
 sidebar_position: 9
 ---
 
-# ConceptMap Translate
+# ConceptMap $translate
 
 Medplum implements the [`ConceptMap/$translate`][translate-operation] operation, which allows mapping a coded value
 between code systems.

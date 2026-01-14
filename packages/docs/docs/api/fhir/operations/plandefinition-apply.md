@@ -2,7 +2,7 @@
 sidebar_position: 22
 ---
 
-# PlanDefinition $apply Operation
+# PlanDefinition $apply
 
 Medplum implements the FHIR [`$apply` operation](https://hl7.org/fhir/plandefinition-operation-apply.html) for PlanDefinition resources.
 

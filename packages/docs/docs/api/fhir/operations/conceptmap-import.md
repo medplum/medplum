@@ -2,7 +2,7 @@
 sidebar_position: 26
 ---
 
-# ConceptMap $import Operation
+# ConceptMap $import
 
 The `$import` operation allows you to import code mappings into a ConceptMap. This is useful for bulk loading terminology mappings from external sources or programmatically adding mappings to an existing ConceptMap.
 

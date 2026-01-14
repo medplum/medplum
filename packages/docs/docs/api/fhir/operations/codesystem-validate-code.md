@@ -1,4 +1,4 @@
-# CodeSystem Validate Code
+# CodeSystem $validate-code
 
 Validates whether a specified code is part of the given `CodeSystem`.
 

@@ -2,7 +2,7 @@
 sidebar_position: 5.2
 ---
 
-# Update User Email
+# User $update-email
 
 This operation updates both the [`User`](/docs/api/fhir/medplum/user) resource (for authentication) and optionally the associated profile resource (Patient, Practitioner, or RelatedPerson) with the new email address.
 

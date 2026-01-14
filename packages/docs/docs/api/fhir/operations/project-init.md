@@ -2,7 +2,7 @@
 sidebar_position: 8
 ---
 
-# Project Initialization
+# Project $init
 
 Medplum implements a custom `Project/$init` operation, which can create a new Project and set up the admin user,
 resulting in a ready-to-use empty Project.

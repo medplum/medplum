@@ -2,7 +2,7 @@
 sidebar_position: 5
 ---
 
-# Patient $everything Operation
+# Patient $everything
 
 Medplum implements the FHIR [`$everything` operation](https://hl7.org/fhir/R4/operation-patient-everything.html)
 

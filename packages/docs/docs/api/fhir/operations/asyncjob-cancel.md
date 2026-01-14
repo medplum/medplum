@@ -2,7 +2,7 @@
 sidebar_position: 25
 ---
 
-# AsyncJob $cancel Operation
+# AsyncJob $cancel
 
 The `$cancel` operation allows you to cancel a running asynchronous job. This is useful when you need to stop a long-running operation that is no longer needed.
 

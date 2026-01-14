@@ -2,7 +2,7 @@
 sidebar_position: 24
 ---
 
-# Resource $csv Operation
+# Resource $csv
 
 The `$csv` operation exports FHIR resources as a CSV (Comma-Separated Values) file. This is useful for exporting data for analysis in spreadsheet applications, reporting tools, or data pipelines.
 
