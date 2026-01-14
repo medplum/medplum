@@ -197,7 +197,16 @@ describe('useDoseSpotPatientPharmacy', () => {
 
     expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
       patientId: 'patient-123',
-      pharmacyId: 12345,
+      pharmacy: {
+        resourceType: 'Organization',
+        name: 'Test Pharmacy',
+        identifier: [
+          {
+            system: DOSESPOT_PHARMACY_ID_SYSTEM,
+            value: '12345',
+          },
+        ],
+      },
       setAsPrimary: false,
     });
   });
@@ -232,7 +241,16 @@ describe('useDoseSpotPatientPharmacy', () => {
 
     expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
       patientId: 'patient-123',
-      pharmacyId: 12345,
+      pharmacy: {
+        resourceType: 'Organization',
+        name: 'Test Pharmacy',
+        identifier: [
+          {
+            system: DOSESPOT_PHARMACY_ID_SYSTEM,
+            value: '12345',
+          },
+        ],
+      },
       setAsPrimary: true,
     });
   });
