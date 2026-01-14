@@ -3,7 +3,7 @@
 import type { CodeableConcept, Coding, ConceptMap, ConceptMapGroup } from '@medplum/fhirtypes';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import type { TypedValue } from '../types';
-import { append } from '../utils';
+import { append, EMPTY } from '../utils';
 
 export interface ConceptMapTranslateParameters {
   url?: string;
@@ -66,7 +66,7 @@ export function indexConceptMapCodings(params: ConceptMapTranslateParameters): R
       results[params.coding.system ?? ''] = [params.coding.code];
     }
   } else if (params.codeableConcept && !params.code && !params.coding) {
-    for (const { system, code } of params.codeableConcept.coding ?? []) {
+    for (const { system, code } of params.codeableConcept.coding ?? EMPTY) {
       if (code) {
         results[system ?? ''] = append(results[system ?? ''], code);
       }

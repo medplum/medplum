@@ -11,6 +11,7 @@ import type {
 import {
   append,
   badRequest,
+  EMPTY,
   generateId,
   getWebSocketUrl,
   isResource,
@@ -378,7 +379,7 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
 }
 
 function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext<'DiagnosticReport'>): void {
-  for (const entry of updatesBundle?.entry ?? []) {
+  for (const entry of updatesBundle?.entry ?? EMPTY) {
     const contentBundle = currentContext.context.find((ctx) => ctx.key === 'content')?.resource as Bundle;
     // Only PUT and DELETE are supported
     // See: https://build.fhir.org/ig/HL7/fhircast-docs/StructureDefinition-fhircast-content-update-bundle.html

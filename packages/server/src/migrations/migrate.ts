@@ -4,6 +4,7 @@ import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
+  EMPTY,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -1116,7 +1117,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
     createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
   }
 
-  for (const constraint of tableDef.constraints ?? []) {
+  for (const constraint of tableDef.constraints ?? EMPTY) {
     assert(constraint.type === 'check', `Unsupported constraint type: ${constraint.type}`);
     createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
   }
@@ -1255,7 +1256,7 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
   const matchedConstraints = new Set<CheckConstraintDefinition>();
   const seenNames = new Set<string>();
 
-  for (const targetConstraint of targetTable.constraints ?? []) {
+  for (const targetConstraint of targetTable.constraints ?? EMPTY) {
     assert(
       !seenNames.has(targetConstraint.name),
       new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint })
@@ -1275,7 +1276,7 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
     }
   }
 
-  for (const startConstraint of startTable.constraints ?? []) {
+  for (const startConstraint of startTable.constraints ?? EMPTY) {
     if (!matchedConstraints.has(startConstraint)) {
       console.log(
         `[${startTable.name}] Existing constraint should not exist:`,
