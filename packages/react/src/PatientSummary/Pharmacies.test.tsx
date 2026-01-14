@@ -113,8 +113,8 @@ describe('PatientSummary - Pharmacies', () => {
     await act(async () => {
       // The close button is in the Modal.CloseButton component
       const closeButtons = document.querySelectorAll('[data-variant="subtle"]');
-      const closeButton = Array.from(closeButtons).find(
-        (btn) => btn.closest('.mantine-Modal-header')
+      const closeButton = Array.from(closeButtons).find((btn) =>
+        btn.closest('.mantine-Modal-header')
       ) as HTMLButtonElement;
       if (closeButton) {
         fireEvent.click(closeButton);
