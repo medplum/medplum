@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, Operator } from '@medplum/core';
+import { allOk, badRequest, EMPTY, flatMapFilter, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, BundleEntry, StructureDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -66,19 +66,15 @@ async function loadNestedStructureDefinitions(
 
   const profilesUrlsToLoad: string[] = [];
 
-  profile.snapshot?.element?.forEach((element) => {
-    const profileUrls: string[] | undefined = element.type
-      ?.map((t) => t.profile)
-      .flat()
-      .filter((p): p is NonNullable<string> => p !== undefined);
-
-    profileUrls?.forEach((p) => {
-      if (!searchedProfiles.has(p)) {
-        profilesUrlsToLoad.push(p);
-        searchedProfiles.add(p);
+  for (const element of profile.snapshot?.element ?? EMPTY) {
+    const profileUrls = flatMapFilter(element.type, (t) => t.profile);
+    for (const url of profileUrls) {
+      if (!searchedProfiles.has(url)) {
+        profilesUrlsToLoad.push(url);
+        searchedProfiles.add(url);
       }
-    });
-  });
+    }
+  }
 
   const promises: Promise<StructureDefinition | undefined>[] = profilesUrlsToLoad.map((url) =>
     fetchProfileByUrl(repo, url)

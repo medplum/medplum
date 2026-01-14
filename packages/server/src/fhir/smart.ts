@@ -230,7 +230,7 @@ function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartSc
     result.criteria = result.criteria.replace('*', scope.resourceType);
   }
 
-  if (scope.scope.match(readOnlyScope)) {
+  if (readOnlyScope.exec(scope.scope)) {
     result.readonly = true;
   }
   if (scope.criteria) {
@@ -250,7 +250,7 @@ function generateSmartScopesPolicy(smartScopes: SmartScope[]): PopulatedAccessPo
   };
 
   for (const smartScope of smartScopes) {
-    (result.resource as AccessPolicyResource[]).push({
+    result.resource.push({
       resourceType: smartScope.resourceType,
     });
   }

@@ -51,7 +51,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
+    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
     ContentType,
     Hl7Message,
     MedplumClient,
@@ -124,7 +124,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   // Return the result of the code execution
   try {
-    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
+    const returnValue = await vm.runInNewContext(wrappedCode, sandbox, options);
     return {
       success: true,
       logResult: botConsole.toString(),
