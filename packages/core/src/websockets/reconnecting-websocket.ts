@@ -106,9 +106,7 @@ export interface IWebSocket {
 }
 
 const Events = {
-  Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
-    | typeof globalThis.Event
-    | undefined,
+  Event: typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined,
   ErrorEvent: undefined as any,
   CloseEvent: undefined as any,
 };

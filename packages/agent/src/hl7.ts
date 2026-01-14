@@ -87,7 +87,7 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
-    const connection = this.connections.get(msg.remote as string);
+    const connection = this.connections.get(msg.remote);
     if (connection) {
       const hl7Message = Hl7Message.parse(msg.body);
       const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
@@ -168,7 +168,7 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   private configureHl7ServerAndConnections(): void {
-    const address = new URL(this.getEndpoint().address as string);
+    const address = new URL(this.getEndpoint().address);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = parseEnhancedMode(address.searchParams.get('enhanced'), this.log);
     const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
@@ -246,7 +246,7 @@ export class AgentHl7ChannelConnection {
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
-        channel: this.channel.getDefinition().name as string,
+        channel: this.channel.getDefinition().name,
         remote: this.remote,
         contentType: ContentType.HL7_V2,
         body: event.message.toString(),

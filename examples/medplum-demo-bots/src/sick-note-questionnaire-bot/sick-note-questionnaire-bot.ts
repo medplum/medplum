@@ -13,7 +13,7 @@ export async function handler(
   console.log('Questionnaire response author:', event.input?.author);
 
   // Get all of the answers from the questionnaire response
-  const answers = getQuestionnaireAnswers(event.input as QuestionnaireResponse);
+  const answers = getQuestionnaireAnswers(event.input);
 
   // Get signature data if available
   const signatureExtension = event.input.extension?.find(
@@ -165,7 +165,7 @@ export async function handler(
       },
     ],
     context: {
-      related: [createReference(event.input as QuestionnaireResponse)],
+      related: [createReference(event.input)],
     },
   });
 

@@ -96,7 +96,7 @@ describe('AppShell v1', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type');
 
     // Enter random text
     await act(async () => {
@@ -206,13 +206,13 @@ describe('AppShell v2', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const searchButton = screen.getByText('Search') as HTMLInputElement;
+    const searchButton = screen.getByText('Search');
 
     await act(async () => {
       fireEvent.click(searchButton);
     });
 
-    const input = (await screen.findByPlaceholderText(/Start typing to search/i)) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText(/Start typing to search/i);
 
     // Expect the initial keyboard shortcut hint when nothing is in recent history
     expect(screen.getByText(/open Search next time/i)).toBeInTheDocument();

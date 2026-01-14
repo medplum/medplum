@@ -60,7 +60,7 @@ interface SearchParameterDetailsBuilder {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
@@ -80,7 +80,7 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 }
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
-  const code = searchParam.code as string;
+  const code = searchParam.code;
   const expression = searchParam.expression as string;
   const expressions = getExpressionsForResourceType(resourceType, expression);
 
@@ -204,7 +204,7 @@ function crawlSearchParameterDetails(
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
     for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
-      details.propertyTypes.add(elementDefinitionType.code as string);
+      details.propertyTypes.add(elementDefinitionType.code);
     }
     return;
   }
@@ -213,7 +213,7 @@ function crawlSearchParameterDetails(
   // "code" is only missing when using "contentReference"
   // "contentReference" is handled whe parsing StructureDefinition into InternalTypeSchema
   for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
-    let propertyType = elementDefinitionType.code as string;
+    let propertyType = elementDefinitionType.code;
     if (isBackboneElement(propertyType)) {
       propertyType = elementDefinition.type[0].code;
     }

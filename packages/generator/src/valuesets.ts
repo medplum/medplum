@@ -39,7 +39,7 @@ function loadValueSets(fileName: string): void {
   for (const entry of valueSetBundle.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'CodeSystem' || resource.resourceType === 'ValueSet') {
-      valueSets.set(resource.url as string, resource as CodeSystem | ValueSet);
+      valueSets.set(resource.url as string, resource);
     }
   }
 }

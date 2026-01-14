@@ -104,7 +104,7 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
 }
 
 async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
-  const jobs = (await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'))) as WithId<AsyncJob>[];
+  const jobs = await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'));
   await repo.expungeResources(
     'AsyncJob',
     jobs.map((job) => job.id)

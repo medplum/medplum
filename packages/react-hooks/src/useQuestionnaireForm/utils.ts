@@ -136,7 +136,7 @@ function isQuestionEnabledViaEnabledWhen(
 
   const enableBehavior = item.enableBehavior ?? 'any';
   for (const enableWhen of item.enableWhen) {
-    const actualAnswers = getByLinkId(questionnaireResponse?.item, enableWhen.question as string);
+    const actualAnswers = getByLinkId(questionnaireResponse?.item, enableWhen.question);
 
     if (enableWhen.operator === 'exists' && !enableWhen.answerBoolean && !actualAnswers?.length) {
       if (enableBehavior === 'any') {
