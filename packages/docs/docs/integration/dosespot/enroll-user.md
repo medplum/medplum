@@ -152,7 +152,7 @@ await medplum.executeBot({system: "https://www.medplum.com/bots", value: "dosesp
 ### NPI Validation
 
 - **The NPI must be exactly 10 digits**
-- We recommend using a valid, real NPI number for testing.
+- For testing purposes, you can use an online NPI generator such as [this one](https://jsfiddle.net/alexdresko/cLNB6)
 
 
 ### Phone and Fax Numbers
