@@ -101,6 +101,8 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
+    medplum.executeBot = jest.fn();
+
     await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
 
     await act(async () => {
@@ -415,9 +417,11 @@ describe('PharmacyDialog', () => {
       expect(screen.getByText('CVS Pharmacy')).toBeInTheDocument();
     });
 
-    // Add button should be disabled initially
-    const addButton = screen.getByText('Add to Favorites');
-    expect(addButton).toBeDisabled();
+    // Add button should be disabled initially (when no pharmacy is selected)
+    await waitFor(() => {
+      const addButton = screen.getByText('Add to Favorites').closest('button');
+      expect(addButton).toBeDisabled();
+    });
   });
 
   test('Handles bot returning non-success response', async () => {
