@@ -70,7 +70,7 @@ export function SchedulePage(): JSX.Element {
       const appointments = await medplum.searchResources(
         'Appointment',
         {
-          actor: getReferenceString(profile as Practitioner),
+          actor: getReferenceString(profile),
         },
         { cache: 'no-cache' }
       );

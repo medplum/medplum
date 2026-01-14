@@ -40,7 +40,7 @@ describe('SignatureInput', () => {
     const signaturePadConstructor = SignaturePad as jest.Mock;
     expect(signaturePadConstructor).toBeDefined();
 
-    const signaturePadInstance = (signaturePadConstructor as jest.Mock).mock.results[0].value;
+    const signaturePadInstance = signaturePadConstructor.mock.results[0].value;
     expect(signaturePadInstance).toBeDefined();
     expect(signaturePadInstance.addEventListener).toHaveBeenCalledTimes(1);
 

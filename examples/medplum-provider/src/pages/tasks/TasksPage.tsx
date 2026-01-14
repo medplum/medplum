@@ -7,7 +7,7 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import classes from './TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import type { ProfileResource, SearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Loading, useMedplumProfile } from '@medplum/react';
 import { normalizeTaskSearch } from '../../utils/task-search';
 
@@ -49,7 +49,7 @@ export function TasksPage(): JSX.Element {
 
   const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner') || [];
   if (profile) {
-    const profileRef = getReferenceString(profile as ProfileResource);
+    const profileRef = getReferenceString(profile);
     if (profileRef) {
       myTasksFilters.push({
         code: 'owner',

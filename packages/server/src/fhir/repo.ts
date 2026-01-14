@@ -321,7 +321,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private rateLimiter(): FhirRateLimiter | undefined {
-    return !this.isSuperAdmin() ? tryGetRequestContext()?.fhirRateLimiter : undefined;
+    return this.isSuperAdmin() ? undefined : tryGetRequestContext()?.fhirRateLimiter;
   }
 
   private resourceCap(): ResourceCap | undefined {
@@ -547,7 +547,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
-    } catch (_err) {
+    } catch {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
@@ -889,7 +889,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isCacheOnly(resource)) {
       await this.writeToDatabase(resource, create);
     }
-    await this.setCacheEntry(resource);
+
+    // Skip writing AuditEvents to cache, since they are written in high volume but are seldom read by ID
+    if (resource.resourceType !== 'AuditEvent') {
+      await this.setCacheEntry(resource);
+    } else if (!create) {
+      // Explicitly remove old AuditEvents from cache on update, to prevent stale reads from cache
+      await this.deleteCacheEntry(resource.resourceType, resource.id);
+    }
 
     // Handle special cases for resource caching
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
@@ -2199,7 +2206,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
     if (!this.context.extendedMode && input.meta) {
-      const meta = input.meta as Meta;
+      const meta = input.meta;
       meta.author = undefined;
       meta.project = undefined;
       meta.account = undefined;
@@ -2260,21 +2267,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       if (i === pathParts.length - 1) {
         // final key part
-        last.forEach((item) => {
-          resolveFieldName(item, pathPart).forEach((k) => {
-            delete item[k];
-          });
-        });
+        for (const item of last) {
+          for (const key of resolveFieldName(item, pathPart)) {
+            delete item[key];
+          }
+        }
       } else {
         // intermediate key part
         const next: any[] = [];
         for (const lastItem of last) {
-          for (const k of resolveFieldName(lastItem, pathPart)) {
-            if (lastItem[k] !== undefined) {
-              if (Array.isArray(lastItem[k])) {
-                next.push(...lastItem[k]);
-              } else if (isObject(lastItem[k])) {
-                next.push(lastItem[k]);
+          for (const key of resolveFieldName(lastItem, pathPart)) {
+            if (lastItem[key] !== undefined) {
+              if (Array.isArray(lastItem[key])) {
+                next.push(...lastItem[key]);
+              } else if (isObject(lastItem[key])) {
+                next.push(lastItem[key]);
               }
             }
           }
@@ -2394,9 +2401,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
     this.assertNotClosed();
-    if (!this.conn) {
-      this.conn = await getDatabasePool(mode).connect();
-    }
+    this.conn ??= await getDatabasePool(mode).connect();
     return this.conn;
   }
 

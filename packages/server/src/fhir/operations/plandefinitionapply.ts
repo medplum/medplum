@@ -105,9 +105,9 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   const requestGroup = await ctx.repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
-    instantiatesUri: !planDefinition.url
-      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
-      : undefined,
+    instantiatesUri: planDefinition.url
+      ? undefined
+      : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     subject: subjectRef,
     status: 'active',
     intent: 'order',
@@ -121,9 +121,9 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     subject: subjectRef,
     intent: 'plan',
     instantiatesCanonical: planDefinition.url ? [planDefinition.url] : undefined,
-    instantiatesUri: !planDefinition.url
-      ? [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))]
-      : undefined,
+    instantiatesUri: planDefinition.url
+      ? undefined
+      : [concatUrls(getConfig().baseUrl, getReferenceString(planDefinition))],
     activity: [{ reference: createReference(requestGroup) }],
   });
 

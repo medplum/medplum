@@ -130,7 +130,7 @@ async function findIncludedCode(
       const filterResults = await Promise.all(
         include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
       );
-      if (filterResults.every((r) => r)) {
+      if (filterResults.every(Boolean)) {
         return coding;
       }
     }

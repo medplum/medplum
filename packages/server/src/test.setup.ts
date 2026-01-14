@@ -13,11 +13,11 @@ import type {
   ProjectMembership,
   Resource,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { setDefaultResultOrder } from 'dns';
 import type { Express } from 'express';
 import type Redis from 'ioredis';
-import type internal from 'stream';
+import { randomUUID } from 'node:crypto';
+import { setDefaultResultOrder } from 'node:dns';
+import type internal from 'node:stream';
 import request from 'supertest';
 import type { ServerInviteResponse } from './admin/invite';
 import { inviteUser } from './admin/invite';

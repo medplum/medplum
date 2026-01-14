@@ -43,7 +43,7 @@ describe('CodingInput', () => {
   test('Searches for results', async () => {
     await setup(<CodingInput path="" binding={binding} name="test" />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter random text
     await act(async () => {
@@ -71,7 +71,7 @@ describe('CodingInput', () => {
   test('Renders with empty binding property', async () => {
     await setup(<CodingInput path="" binding={undefined} name="test" />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter random text
     await act(async () => {

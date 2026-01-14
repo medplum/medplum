@@ -7,6 +7,7 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
+  EMPTY,
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
@@ -991,7 +992,7 @@ function buildSearchFilterExpression(
   if (filter.operator === Operator.IDENTIFIER) {
     param = deriveIdentifierSearchParameter(param);
     filter = {
-      code: param.code as string,
+      code: param.code,
       operator: Operator.EQUALS,
       value: filter.value,
     };
@@ -1197,7 +1198,7 @@ function buildFilterParameterComparison(
 ): Expression {
   return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
     code: filterComparison.path,
-    operator: filterComparison.operator as Operator,
+    operator: filterComparison.operator,
     value: filterComparison.value,
   });
 }
@@ -1477,7 +1478,9 @@ function buildQuantitySearchFilter(
  * @param searchRequest - The search request.
  */
 function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: SearchRequest): void {
-  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(repo, builder, searchRequest, sortRule));
+  for (const sortRule of searchRequest.sortRules ?? EMPTY) {
+    addOrderByClause(repo, builder, searchRequest, sortRule);
+  }
 }
 
 /**

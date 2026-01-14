@@ -52,7 +52,14 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       <Form onSubmit={submitHandler}>
         <Stack>
           <SelectMenu config={config}></SelectMenu>
-          <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="Bookmark Name" withAsterisk />
+          <TextInput
+            label="Bookmark Name"
+            type="text"
+            name="bookmarkname"
+            placeholder="Bookmark Name"
+            defaultValue={props.pathname.split('/')[1] || ''}
+            withAsterisk
+          />
           <Group justify="flex-end">
             <SubmitButton mt="sm">OK</SubmitButton>
           </Group>

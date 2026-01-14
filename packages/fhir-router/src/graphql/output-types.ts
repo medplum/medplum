@@ -108,7 +108,7 @@ function buildOutputPropertyField(
   elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
-  let typeName = elementDefinitionType.code as string;
+  let typeName = elementDefinitionType.code;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
     typeName = elementDefinition.type[0].code;
   }
@@ -126,10 +126,7 @@ function buildOutputPropertyField(
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
 
-  const propertyName = (key.split('.').pop() as string).replace(
-    '[x]',
-    capitalize(elementDefinitionType.code as string)
-  );
+  const propertyName = (key.split('.').pop() as string).replace('[x]', capitalize(elementDefinitionType.code));
   fields[propertyName] = fieldConfig;
 }
 
@@ -192,7 +189,7 @@ function buildListPropertyFieldArg(
   elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
-  const baseType = elementDefinitionType.code as string;
+  const baseType = elementDefinitionType.code;
   const fieldName = fieldKey.replace('[x]', capitalize(baseType));
   switch (baseType) {
     case 'canonical':

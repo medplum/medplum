@@ -116,7 +116,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for lookup to complete
@@ -178,7 +178,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for lookup to be called
@@ -219,7 +219,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Verify loading state appears
@@ -264,7 +264,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for error to appear
@@ -305,7 +305,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for lookup to complete
@@ -355,7 +355,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for properties to be rendered
@@ -451,7 +451,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for all properties to be rendered
@@ -502,7 +502,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for property to be rendered with N/A
@@ -536,7 +536,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
 
     // Type to trigger search
     await act(async () => {
@@ -609,7 +609,7 @@ describe('ValueSetPreview', () => {
 
     await setup(valueSet);
 
-    const input = (await screen.findByPlaceholderText('Select a value from the ValueSet')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText<HTMLInputElement>('Select a value from the ValueSet');
     await selectValue(input, 'Display');
 
     // Wait for properties to be rendered

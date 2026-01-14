@@ -84,7 +84,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
   if (destination.startsWith('Device/')) {
     try {
       return await repo.readReference<Device>({ reference: destination });
-    } catch (_err) {
+    } catch {
       return undefined;
     }
   }

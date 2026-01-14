@@ -576,7 +576,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 }
 
 function toDiagnosisKey(diagnosis: DiagnosisCodeableConcept): string {
-  return diagnosis.coding[0].code as string;
+  return diagnosis.coding[0].code;
 }
 
 const REQUIRED_WHEN_SPECIMEN =

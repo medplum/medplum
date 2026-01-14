@@ -740,8 +740,12 @@ function deepEqualsObject(
   path: string | undefined
 ): boolean {
   const keySet = new Set<string>();
-  Object.keys(object1).forEach((k) => keySet.add(k));
-  Object.keys(object2).forEach((k) => keySet.add(k));
+  for (const k of Object.keys(object1)) {
+    keySet.add(k);
+  }
+  for (const k of Object.keys(object2)) {
+    keySet.add(k);
+  }
   if (path === 'meta') {
     keySet.delete('versionId');
     keySet.delete('lastUpdated');
@@ -998,9 +1002,7 @@ export function getCodeBySystem(concept: CodeableConcept, system: string): strin
  * @param code - The code value.
  */
 export function setCodeBySystem(concept: CodeableConcept, system: string, code: string): void {
-  if (!concept.coding) {
-    concept.coding = [];
-  }
+  concept.coding ??= [];
   const coding = concept.coding.find((c) => c.system === system);
   if (coding) {
     coding.code = code;
@@ -1492,3 +1494,6 @@ export function escapeHtml(unsafe: string): string {
     .replaceAll('’', '&rsquo;')
     .replaceAll('…', '&hellip;');
 }
+
+/** Constant empty array. */
+export const EMPTY: readonly [] = Object.freeze([]);
