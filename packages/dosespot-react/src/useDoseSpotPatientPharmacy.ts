@@ -39,6 +39,8 @@ export interface AddPatientPharmacyResponse {
   success: boolean;
   /** A message describing the result */
   message: string;
+  /** The persisted Organization resource with ID */
+  organization?: Organization;
 }
 
 /**
@@ -150,7 +152,7 @@ export function useDoseSpotPatientPharmacy(): DoseSpotPatientPharmacyReturn {
 
       return medplum.executeBot(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
         patientId,
-        pharmacyId,
+        pharmacy: selectedPharmacy,
         setAsPrimary: setAsPrimaryState,
       }) as Promise<AddPatientPharmacyResponse>;
     },
