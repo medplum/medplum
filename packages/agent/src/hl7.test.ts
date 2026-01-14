@@ -10,7 +10,7 @@ import type {
 } from '@medplum/core';
 import { allOk, ContentType, createReference, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
-import { Hl7Client, Hl7Connection, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
+import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
@@ -3049,12 +3049,12 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     return { channel, channelLog };
   }
 
-  test('logs Commit ACK (CA) when enhanced ACK with CA is sent', () => {
+  test('logs Commit ACK (CA) when enhanced ACK with CA is sent', async () => {
     const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57200?enhanced=true');
     const mockConnection = createMockHl7Connection();
 
     // Create the channel connection which sets up the event listener
-    new AgentHl7ChannelConnection(channel, mockConnection);
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
 
     // Build a CA ACK message
     const ackMessage = BASE_MESSAGE.buildAck({ ackCode: 'CA' });
@@ -3063,17 +3063,16 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
     mockConnection.dispatchEvent(event);
 
-    expect(channelLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('[Sent Commit ACK (CA) -- ID: MSG00001]')
-    );
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: MSG00001]'));
+    await connection.close();
   });
 
-  test('logs Immediate ACK (AA) when enhanced ACK with AA is sent', () => {
+  test('logs Immediate ACK (AA) when enhanced ACK with AA is sent', async () => {
     const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57201?enhanced=aa');
     const mockConnection = createMockHl7Connection();
 
     // Create the channel connection which sets up the event listener
-    new AgentHl7ChannelConnection(channel, mockConnection);
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
 
     // Build an AA ACK message
     const ackMessage = BASE_MESSAGE.buildAck({ ackCode: 'AA' });
@@ -3082,17 +3081,16 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
     mockConnection.dispatchEvent(event);
 
-    expect(channelLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('[Sent Immediate ACK (AA) -- ID: MSG00001]')
-    );
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Immediate ACK (AA) -- ID: MSG00001]'));
+    await connection.close();
   });
 
-  test('logs "not provided" when message control ID is missing', () => {
+  test('logs "not provided" when message control ID is missing', async () => {
     const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57202?enhanced=true');
     const mockConnection = createMockHl7Connection();
 
     // Create the channel connection which sets up the event listener
-    new AgentHl7ChannelConnection(channel, mockConnection);
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
 
     // Create an ACK message directly without MSA.2 (message control ID reference)
     // This simulates a malformed or unexpected ACK where the control ID is not present
@@ -3104,8 +3102,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessageWithoutId);
     mockConnection.dispatchEvent(event);
 
-    expect(channelLog.info).toHaveBeenCalledWith(
-      expect.stringContaining('[Sent Commit ACK (CA) -- ID: not provided]')
-    );
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: not provided]'));
+    await connection.close();
   });
 });
