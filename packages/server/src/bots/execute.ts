@@ -4,7 +4,13 @@ import { runInLambda, runInLambdaStreaming } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
-import type { BotExecutionContext, BotExecutionRequest, BotExecutionResult, BotStreamingResult, StreamingCallback } from './types';
+import type {
+  BotExecutionContext,
+  BotExecutionRequest,
+  BotExecutionResult,
+  BotStreamingResult,
+  StreamingCallback,
+} from './types';
 import { getBotAccessToken, getBotSecrets, isBotEnabled, writeBotInputToStorage } from './utils';
 import { runInVmContext, runInVmContextStreaming } from './vmcontext';
 
