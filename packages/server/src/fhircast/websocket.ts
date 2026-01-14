@@ -35,7 +35,7 @@ export function initFhircastHeartbeat(): void {
       for (const projectAndTopic of topicRefCountMap.keys()) {
         redis
           .publish(
-            projectAndTopic as string,
+            projectAndTopic,
             JSON.stringify({
               ...baseHeartbeatPayload,
               event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },

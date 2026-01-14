@@ -40,7 +40,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   }
 
   const { firstName, lastName } = user;
-  const membership = await createPatient(login, projectId, firstName as string, lastName as string);
+  const membership = await createPatient(login, projectId, firstName, lastName);
 
   // Update the login
   const updated = await setLoginMembership(login, membership.id);

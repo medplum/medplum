@@ -125,10 +125,7 @@ export async function getUserConfiguration(
     result = { resourceType: 'UserConfiguration' };
   }
 
-  if (!result.menu) {
-    result.menu = getUserConfigurationMenu(project, membership);
-  }
-
+  result.menu ??= getUserConfigurationMenu(project, membership);
   return result;
 }
 
@@ -142,17 +139,17 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
     },
   ];
 
+  const link = [
+    { name: 'Project', target: '/admin/project' },
+    { name: 'AccessPolicy', target: '/AccessPolicy' },
+    { name: 'Subscriptions', target: '/Subscription' },
+    { name: 'Batch', target: '/batch' },
+  ];
+  if (!project.superAdmin) {
+    link.push({ name: 'Config', target: '/admin/config' });
+  }
   if (membership.admin) {
-    result.push({
-      title: 'Admin',
-      link: [
-        { name: 'Project', target: '/admin/project' },
-        { name: 'AccessPolicy', target: '/AccessPolicy' },
-        { name: 'Subscriptions', target: '/Subscription' },
-        { name: 'Batch', target: '/batch' },
-        ...(!project.superAdmin ? [{ name: 'Config', target: '/admin/config' }] : []),
-      ],
-    });
+    result.push({ title: 'Admin', link });
   }
 
   if (project.superAdmin) {
