@@ -3,7 +3,7 @@
 import { ActionIcon, Anchor, Badge, Card, Group, Loader, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum/core';
-import type { Communication, Organization, Practitioner, Resource } from '@medplum/fhirtypes';
+import type { Communication, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDownload } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';

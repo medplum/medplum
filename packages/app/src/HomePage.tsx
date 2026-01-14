@@ -4,7 +4,6 @@ import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { formatSearchQuery, normalizeErrorString, parseSearchRequest } from '@medplum/core';
-import type { ResourceType } from '@medplum/fhirtypes';
 import { exportJsonFile, Loading, SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';

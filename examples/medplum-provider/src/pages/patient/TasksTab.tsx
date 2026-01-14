@@ -7,7 +7,7 @@ import { useLocation, useNavigate, useParams } from 'react-router';
 import classes from '../tasks/TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
 import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
-import type { ProfileResource, SearchRequest } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
 import { Loading, useMedplumProfile } from '@medplum/react';
 import { normalizeTaskSearch } from '../../utils/task-search';
 

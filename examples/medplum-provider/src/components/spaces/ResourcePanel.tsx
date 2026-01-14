@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
-import type { DiagnosticReport, Encounter, Reference, Resource, ServiceRequest, Task } from '@medplum/fhirtypes';
+import type { Reference, Resource } from '@medplum/fhirtypes';
 import { ResourceTable, useResource, PatientSummary } from '@medplum/react';
 import type { JSX } from 'react';
 import { LabResultDetails } from '../labs/LabResultDetails';

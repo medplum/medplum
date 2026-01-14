@@ -14,7 +14,6 @@ import {
 } from '@medplum/core';
 import type { BotEvent, Hl7Segment, MedplumClient } from '@medplum/core';
 import type {
-  Attachment,
   CodeableConcept,
   DiagnosticReport,
   Media,

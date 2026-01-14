@@ -197,7 +197,7 @@ describe('TestMetadataCardInput', () => {
     const metadata = createMockMetadata({ notes: 'Test notes here' });
     setup({ metadata });
 
-    const notesInput = screen.getByLabelText('Notes') as HTMLInputElement;
+    const notesInput = screen.getByLabelText<HTMLInputElement>('Notes');
     expect(notesInput.value).toBe('Test notes here');
   });
 
@@ -205,7 +205,7 @@ describe('TestMetadataCardInput', () => {
     const metadata = createMockMetadata({ notes: undefined });
     setup({ metadata });
 
-    const notesInput = screen.getByLabelText('Notes') as HTMLInputElement;
+    const notesInput = screen.getByLabelText<HTMLInputElement>('Notes');
     expect(notesInput.value).toBe('');
   });
 
