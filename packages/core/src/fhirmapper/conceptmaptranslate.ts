@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { CodeableConcept, Coding, ConceptMap, ConceptMapGroup } from '@medplum/fhirtypes';
-import { OperationOutcomeError, badRequest } from '../outcomes';
+import { badRequest, OperationOutcomeError } from '../outcomes';
 import type { TypedValue } from '../types';
 import { append, EMPTY } from '../utils';
 
