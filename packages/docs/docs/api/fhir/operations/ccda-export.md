@@ -2,7 +2,7 @@
 sidebar_position: 10
 ---
 
-# C-CDA Export
+# Patient $ccda-export
 
 Medplum supports the C-CDA Export, which produces an XML C-CDA document with the complete or time windowed patient history.
 

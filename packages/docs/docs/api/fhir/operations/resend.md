@@ -8,7 +8,7 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
 
-# Resend Webhooks
+# Resource $resend
 
 Medplum implements a custom operation, `$resend`, that can be used to trigger [Subscriptions](/docs/subscriptions) listening to a a particular resource. Please note that the User, Bot, or ClientApplication invoking this operation must have [project admin credentials](/docs/access/admin). 
 

@@ -1,4 +1,4 @@
-# CodeSystem Subsumes
+# CodeSystem $subsumes
 
 Tests for a linear relationship between two codes in a given `CodeSystem`, where one code is a direct parent or indirect
 ancestor of the other.

@@ -1,4 +1,4 @@
-# CodeSystem Lookup
+# CodeSystem $lookup
 
 This operation checks whether a code belongs to a given code system, and returns the full information about that code
 from the code system.

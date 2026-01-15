@@ -1,4 +1,4 @@
-# QuestionnaireResponse Extract
+# QuestionnaireResponse $extract
 
 Extracts data from a questionnaire response into templated resources. It implements the
 [template-based extraction][template-extract] flow from the draft [Structured Data Capture v4 IG][sdc-ig].
