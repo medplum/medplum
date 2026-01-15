@@ -5,9 +5,6 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadAwsConfig } from '../cloud/aws/config';
-import { loadAzureConfig } from '../cloud/azure/config';
-import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
@@ -43,15 +40,21 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'file':
       config = await loadFileConfig(configPath);
       break;
-    case 'aws':
+    case 'aws': {
+      const { loadAwsConfig } = await import('../cloud/aws/config');
       config = await loadAwsConfig(configPath);
       break;
-    case 'gcp':
+    }
+    case 'gcp': {
+      const { loadGcpConfig } = await import('../cloud/gcp/config');
       config = await loadGcpConfig(configPath);
       break;
-    case 'azure':
+    }
+    case 'azure': {
+      const { loadAzureConfig } = await import('../cloud/azure/config');
       config = await loadAzureConfig(configPath);
       break;
+    }
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
