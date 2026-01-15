@@ -126,7 +126,11 @@ export interface MedplumServerConfig {
   auditEventLogStream?: string;
 
   /** Optional configuration for array column padding to mitigate statistics issues in Postgres. */
-  arrayColumnPadding?: { [searchParamCode: string]: { resourceType?: string[]; config: ArrayColumnPaddingConfig } };
+  arrayColumnPadding?: {
+    [searchParamCode: string]:
+      | { resourceType?: string[]; config: ArrayColumnPaddingConfig }
+      | { resourceType?: string[]; config: ArrayColumnPaddingConfig }[];
+  };
 }
 
 export interface ArrayColumnPaddingConfig {
