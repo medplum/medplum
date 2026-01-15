@@ -45,7 +45,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://learn.microsoft.com/en-us/entra/identity-platform">Entra SSO</a> (fka Azure SSO)</td>
       <td>Authentication</td>
       <td>Enable Microsoft Entra SSO for Providers and Patients</td>
-      <td><a href="https://www.medplum.com//docs/auth/external-identity-providers">Entra Auth Setup</a></td>
+      <td><a href="/docs/auth/external-identity-providers">Entra Auth Setup</a></td>
     </tr>
     <tr>
       <td><a href="https://www.google.com/recaptcha/about/">Recaptcha</a></td>
@@ -66,7 +66,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.healthgorilla.com/">Health Gorilla Patient 360</a></td>
       <td>HIE</td>
       <td>Integrated records and ADT data</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+      <td><a href="/docs/integration/health-gorilla">Health Gorilla Integration</a></td>
     </tr>
     <tr>
       <td><a href="https://zushealth.com/">Zus Health</a></td>
@@ -78,7 +78,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.healthgorilla.com/">Health Gorilla Lab Network</a></td>
       <td>Diagnostics</td>
       <td>Lab orders and results</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+      <td><a href="/docs/integration/health-gorilla">Health Gorilla Integration</a></td>
     </tr>
     <tr>
       <td><a href="https://www.labcorp.com/">Labcorp</a></td>
