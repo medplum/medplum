@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { heartbeat } from './heartbeat';
 import { getRedis } from './redis';
 import * as serverRegistry from './server-registry';
@@ -91,22 +91,22 @@ describe('server-registry', () => {
   test('getRegisteredServers', async () => {
     const server1 = {
       id: 'server1',
-      firstSeen: new Date(now.getTime() - 20000).toISOString(),
-      lastSeen: new Date(now.getTime() - 10000).toISOString(),
+      firstSeen: new Date(now.getTime() - 20_000).toISOString(),
+      lastSeen: new Date(now.getTime() - 10_000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
     };
     const server2 = {
       id: 'server2',
-      firstSeen: new Date(now.getTime() - 40000).toISOString(),
+      firstSeen: new Date(now.getTime() - 40_000).toISOString(),
       lastSeen: new Date(now.getTime() - 5000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
     };
     const server3 = {
       id: 'server3',
-      firstSeen: new Date(now.getTime() - 60000).toISOString(),
-      lastSeen: new Date(now.getTime() - 15000).toISOString(),
+      firstSeen: new Date(now.getTime() - 60_000).toISOString(),
+      lastSeen: new Date(now.getTime() - 15_000).toISOString(),
       version: '1.1.0',
       fullVersion: '1.1.0-b',
     };
@@ -131,22 +131,22 @@ describe('server-registry', () => {
   test('getClusterStatus - heterogeneous', async () => {
     const server1 = {
       id: 'server1',
-      firstSeen: new Date(now.getTime() - 20000).toISOString(),
-      lastSeen: new Date(now.getTime() - 10000).toISOString(),
+      firstSeen: new Date(now.getTime() - 20_000).toISOString(),
+      lastSeen: new Date(now.getTime() - 10_000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
     };
     const server2 = {
       id: 'server2',
-      firstSeen: new Date(now.getTime() - 40000).toISOString(),
+      firstSeen: new Date(now.getTime() - 40_000).toISOString(),
       lastSeen: new Date(now.getTime() - 5000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
     };
     const server3 = {
       id: 'server3',
-      firstSeen: new Date(now.getTime() - 60000).toISOString(),
-      lastSeen: new Date(now.getTime() - 15000).toISOString(),
+      firstSeen: new Date(now.getTime() - 60_000).toISOString(),
+      lastSeen: new Date(now.getTime() - 15_000).toISOString(),
       version: '1.1.0',
       fullVersion: '1.1.0-b',
     };
@@ -164,27 +164,27 @@ describe('server-registry', () => {
     expect(status.servers).toHaveLength(3);
     // Note: servers are sorted by fullVersion
     expect(status.servers[0].id).toBe('server1');
-    expect(status.servers[0].firstSeenAgeMs).toBe(20000);
-    expect(status.servers[0].lastSeenAgeMs).toBe(10000);
+    expect(status.servers[0].firstSeenAgeMs).toBe(20_000);
+    expect(status.servers[0].lastSeenAgeMs).toBe(10_000);
     expect(status.servers[1].id).toBe('server2');
-    expect(status.servers[1].firstSeenAgeMs).toBe(40000);
+    expect(status.servers[1].firstSeenAgeMs).toBe(40_000);
     expect(status.servers[1].lastSeenAgeMs).toBe(5000);
     expect(status.servers[2].id).toBe('server3');
-    expect(status.servers[2].firstSeenAgeMs).toBe(60000);
-    expect(status.servers[2].lastSeenAgeMs).toBe(15000);
+    expect(status.servers[2].firstSeenAgeMs).toBe(60_000);
+    expect(status.servers[2].lastSeenAgeMs).toBe(15_000);
   });
 
   test('getClusterStatus - homogeneous', async () => {
     const server1 = {
       id: 'server1',
-      firstSeen: new Date(now.getTime() - 20000).toISOString(),
-      lastSeen: new Date(now.getTime() - 10000).toISOString(),
+      firstSeen: new Date(now.getTime() - 20_000).toISOString(),
+      lastSeen: new Date(now.getTime() - 10_000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
     };
     const server2 = {
       id: 'server2',
-      firstSeen: new Date(now.getTime() - 40000).toISOString(),
+      firstSeen: new Date(now.getTime() - 40_000).toISOString(),
       lastSeen: new Date(now.getTime() - 5000).toISOString(),
       version: '1.0.0',
       fullVersion: '1.0.0-a',
@@ -200,9 +200,9 @@ describe('server-registry', () => {
       '1.0.0-a': 2,
     });
     expect(status.servers).toHaveLength(2);
-    expect(status.servers[0].firstSeenAgeMs).toBe(20000);
-    expect(status.servers[0].lastSeenAgeMs).toBe(10000);
-    expect(status.servers[1].firstSeenAgeMs).toBe(40000);
+    expect(status.servers[0].firstSeenAgeMs).toBe(20_000);
+    expect(status.servers[0].lastSeenAgeMs).toBe(10_000);
+    expect(status.servers[1].firstSeenAgeMs).toBe(40_000);
     expect(status.servers[1].lastSeenAgeMs).toBe(5000);
   });
 

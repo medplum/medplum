@@ -13,7 +13,7 @@ declare let grecaptcha: any;
  * @param siteKey - The reCAPTCHA site key, available from the reCAPTCHA admin page.
  */
 export function initRecaptcha(siteKey: string): void {
-  if (typeof grecaptcha === 'undefined') {
+  if (grecaptcha === undefined) {
     createScriptTag('https://www.google.com/recaptcha/api.js?render=' + siteKey);
   }
 }

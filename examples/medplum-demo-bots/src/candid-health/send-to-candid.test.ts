@@ -303,7 +303,7 @@ describe('Candid Health Tests', () => {
               ],
             },
             valueMoney: {
-              value: 10000,
+              value: 10_000,
               currency: 'USD',
             },
           },
@@ -363,7 +363,7 @@ describe('Candid Health Tests', () => {
               ],
             },
             valueMoney: {
-              value: 12000,
+              value: 12_000,
               currency: 'USD',
             },
           },
@@ -378,7 +378,7 @@ describe('Candid Health Tests', () => {
               ],
             },
             valueMoney: {
-              value: 10000,
+              value: 10_000,
               currency: 'USD',
             },
           },
@@ -529,7 +529,7 @@ describe('Candid Health Tests', () => {
       diagnoses: [{ code_type: 'ABK', code: 'J45.5', name: 'Severe persistent asthma' }],
       place_of_service_code: '10',
       service_lines: [
-        { procedure_code: '99213', quantity: '1', units: 'MJ', charge_amount_cents: 10000, diagnosis_pointers: [0] },
+        { procedure_code: '99213', quantity: '1', units: 'MJ', charge_amount_cents: 10_000, diagnosis_pointers: [0] },
       ],
       synchronicity: 'Synchronous',
     });

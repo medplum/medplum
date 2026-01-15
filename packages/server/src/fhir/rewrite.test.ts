@@ -3,8 +3,8 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
 import type { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { URL } from 'url';
+import { randomUUID } from 'node:crypto';
+import { URL } from 'node:url';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';

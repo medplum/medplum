@@ -76,7 +76,8 @@ export function SchedulePage(): JSX.Element | null {
       if (Array.isArray(newRange)) {
         // Week view passes the range as an array of dates
         newStart = newRange[0];
-        newEnd = new Date(newRange[newRange.length - 1].getTime() + 24 * 60 * 60 * 1000);
+        const end = newRange.at(-1) as Date;
+        newEnd = new Date(end.getTime() + 24 * 60 * 60 * 1000);
       } else {
         // Other views pass the range as an object
         newStart = newRange.start;
@@ -317,7 +318,7 @@ function slotsToEvents(slots: Slot[]): SlotEvent[] {
 
   // Group slots by status
   const slotsByStatus: Record<string, SlotEvent[]> = {};
-  filteredSlots.forEach((slot) => {
+  for (const slot of filteredSlots) {
     if (!slotsByStatus[slot.status]) {
       slotsByStatus[slot.status] = [];
     }
@@ -327,12 +328,12 @@ function slotsToEvents(slots: Slot[]): SlotEvent[] {
       start: new Date(slot.start),
       end: new Date(slot.end),
     });
-  });
+  }
 
   const collapsedEvents: SlotEvent[] = [];
 
   // Process each status group separately
-  Object.entries(slotsByStatus).forEach(([status, statusSlots]) => {
+  for (const [status, statusSlots] of Object.entries(slotsByStatus)) {
     // Sort slots by start time
     statusSlots.sort((a, b) => a.start.getTime() - b.start.getTime());
 
@@ -389,7 +390,7 @@ function slotsToEvents(slots: Slot[]): SlotEvent[] {
         },
       });
     }
-  });
+  }
 
   return collapsedEvents;
 }
@@ -400,9 +401,9 @@ function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
     .map((appointment) => {
       // Find the patient among the participants to use as title
       const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
-        ? ` (${appointment.status})`
-        : '';
+      const status = ['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
+        ? ''
+        : ` (${appointment.status})`;
 
       return {
         type: 'appointment',

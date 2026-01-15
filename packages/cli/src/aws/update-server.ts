@@ -73,17 +73,16 @@ async function nextUpdateVersion(currentVersion: string, targetVersion?: string)
   const allVersions = await getServerVersions(currentVersion);
   const latestVersion = allVersions[0];
   return allVersions
-    .filter(
+    .findLast(
       (v) => v === latestVersion || v === targetVersion || semver.gte(v, semver.inc(currentVersion, 'minor') as string)
-    )
-    .pop();
+    );
 }
 
 function deployServerUpdate(tag: string, config: MedplumInfraConfig): void {
   const configFile = getConfigFileName(tag);
   writeConfig(configFile, config);
 
-  const cmd = `npx cdk deploy -c config=${configFile}${config.region !== 'us-east-1' ? ' --all' : ''}`;
+  const cmd = `npx cdk deploy -c config=${configFile}${config.region === 'us-east-1' ? '' : ' --all'}`;
   console.log('> ' + cmd);
   const deploy = spawnSync(cmd, { stdio: 'inherit' });
 

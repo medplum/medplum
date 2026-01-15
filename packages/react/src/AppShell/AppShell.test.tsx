@@ -153,7 +153,7 @@ describe('AppShell v2', () => {
     const menuTitle = screen.getByText('Menu 1');
 
     expect(logoButton).toHaveAttribute('aria-expanded', 'false');
-    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+    expect(menuTitle.dataset.opened).toBeNull();
 
     // Click on the logo to open the menu
     await act(async () => {
@@ -161,7 +161,7 @@ describe('AppShell v2', () => {
     });
 
     expect(logoButton).toHaveAttribute('aria-expanded', 'true');
-    expect(menuTitle.getAttribute('data-opened')).toBe('true');
+    expect(menuTitle.dataset.opened).toBe('true');
 
     // Click on the logo to close the menu
     await act(async () => {
@@ -169,7 +169,7 @@ describe('AppShell v2', () => {
     });
 
     expect(logoButton).toHaveAttribute('aria-expanded', 'false');
-    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+    expect(menuTitle.dataset.opened).toBeNull();
   });
 
   test('Toggle sidebar v2 via toggle button', async () => {
@@ -180,7 +180,7 @@ describe('AppShell v2', () => {
     const menuTitle = screen.getByText('Menu 1');
 
     expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
-    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+    expect(menuTitle.dataset.opened).toBeNull();
 
     // Click on the toggle button to open the menu
     await act(async () => {
@@ -188,7 +188,7 @@ describe('AppShell v2', () => {
     });
 
     expect(screen.getByLabelText('Close Sidebar')).toHaveAttribute('aria-expanded', 'true');
-    expect(menuTitle.getAttribute('data-opened')).toBe('true');
+    expect(menuTitle.dataset.opened).toBe('true');
 
     // Click again to close the menu
     await act(async () => {
@@ -196,7 +196,7 @@ describe('AppShell v2', () => {
     });
 
     expect(screen.getByLabelText('Open Sidebar')).toHaveAttribute('aria-expanded', 'false');
-    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+    expect(menuTitle.dataset.opened).toBeNull();
   });
 
   test('Spotlight search', async () => {

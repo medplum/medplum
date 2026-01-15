@@ -237,7 +237,7 @@ export function createOruMessage(
     // Message Header (MSH)
     new Hl7Segment([
       'MSH', // MSH
-      '^~\\&', // Field separator and encoding characters
+      String.raw`^~\&`, // Field separator and encoding characters
       'MEDPLUM_LAB', // Sending application
       FACILITY_CODE, // Sending facility
       '', // Receiving application
@@ -263,25 +263,24 @@ export function createOruMessage(
   segments.push(createObrSegment(diagnosticReport, serviceRequest, specimen));
 
   // Add observations (OBX segments)
-  observations.forEach((observation, index) => {
+  for (const [index, observation] of observations.entries()) {
     const obxSegments = createObxSegments(observation, index + 1);
     segments.push(...obxSegments);
 
     // Add notes as NTE segments if present
     if (observation.note && observation.note.length > 0) {
-      observation.note.forEach((note, noteIndex) => {
+      for (const [noteIndex, note] of observation.note.entries()) {
         if (note.text) {
           segments.push(createNteSegment(note.text, noteIndex + 1));
         }
-      });
+      }
     }
-  });
+  }
 
   // Add diagnostic report presented for as OBX segment, with base64 encoded contents
   if (presentedFormAttachments) {
     const obxIndex = observations.length;
-    for (let i = 0; i < presentedFormAttachments.length; i++) {
-      const form = presentedFormAttachments[i];
+    for (const [i, form] of presentedFormAttachments.entries()) {
       segments.push(createObxPdfSegment(form, obxIndex + i + 1));
     }
   }

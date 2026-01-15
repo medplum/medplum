@@ -76,9 +76,9 @@ describe('Agent/$fetch-logs', () => {
         error: new Error('This is an error').toString(),
       },
     ];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentLogsRequest, AgentLogsResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:logs:request',
         {

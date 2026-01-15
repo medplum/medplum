@@ -9,6 +9,7 @@ import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import sonarJs from 'eslint-plugin-sonarjs';
+import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
 // Workaround for eslint-plugin-header ESLint 9 compatibility issue.
@@ -149,6 +150,9 @@ export const tsConfig = {
     reactRefresh.configs.recommended,
     sonarJs.configs.recommended,
   ],
+  plugins: {
+    unicorn: unicornPlugin,
+  },
   rules: {
     // TypeScript+ESLint
     '@typescript-eslint/array-type': 'error',
@@ -274,6 +278,77 @@ export const tsConfig = {
     'sonarjs/no-duplicated-branches': 'warn',
     'sonarjs/no-nested-functions': 'warn',
     'sonarjs/public-static-readonly': 'warn',
+
+    // Unicorn (included by SonarQube)
+    // https://github.com/SonarSource/SonarJS/blob/master/packages/jsts/src/rules/README.md#eslint-rules
+    'unicorn/catch-error-name': ['error', { ignore: ['err', 'e'] }],
+    'unicorn/consistent-date-clone': 'error',
+    'unicorn/consistent-empty-array-spread': 'error',
+    'unicorn/consistent-function-scoping': 'warn',
+    'unicorn/error-message': 'error',
+    'unicorn/new-for-builtins': 'error',
+    'unicorn/no-abusive-eslint-disable': 'error',
+    'unicorn/no-accessor-recursion': 'error',
+    'unicorn/no-anonymous-default-export': 'error',
+    'unicorn/no-array-method-this-argument': 'error',
+    'unicorn/no-await-expression-member': 'warn',
+    'unicorn/no-for-loop': 'error',
+    'unicorn/no-instanceof-builtins': 'error',
+    'unicorn/no-invalid-fetch-options': 'error',
+    'unicorn/no-named-default': 'error',
+    'unicorn/no-negated-condition': 'warn',
+    'unicorn/no-negation-in-equality-check': 'warn',
+    'unicorn/no-object-as-default-parameter': 'error',
+    'unicorn/no-single-promise-in-promise-methods': 'error',
+    'unicorn/no-thenable': 'error',
+    'unicorn/no-this-assignment': 'error',
+    'unicorn/no-typeof-undefined': 'error',
+    'unicorn/no-unnecessary-polyfills': 'error',
+    'unicorn/no-unreadable-iife': 'error',
+    'unicorn/no-useless-fallback-in-spread': 'error',
+    'unicorn/no-useless-length-check': 'error',
+    'unicorn/no-useless-promise-resolve-reject': 'error',
+    'unicorn/no-useless-spread': 'error',
+    'unicorn/no-zero-fractions': 'error',
+    'unicorn/numeric-separators-style': 'error',
+    'unicorn/prefer-array-find': 'error',
+    'unicorn/prefer-array-flat': 'error',
+    'unicorn/prefer-array-flat-map': 'error',
+    'unicorn/prefer-array-index-of': 'error',
+    'unicorn/prefer-array-some': 'error',
+    'unicorn/prefer-blob-reading-methods': 'error',
+    'unicorn/prefer-class-fields': 'error',
+    'unicorn/prefer-code-point': 'error',
+    'unicorn/prefer-date-now': 'error',
+    'unicorn/prefer-default-parameters': 'error',
+    'unicorn/prefer-dom-node-dataset': 'error',
+    'unicorn/prefer-dom-node-remove': 'error',
+    'unicorn/prefer-export-from': 'error',
+    'unicorn/prefer-global-this': 'off', // ?
+    'unicorn/prefer-includes': 'error',
+    'unicorn/prefer-math-min-max': 'error',
+    'unicorn/prefer-math-trunc': 'error',
+    'unicorn/prefer-modern-dom-apis': 'error',
+    'unicorn/prefer-modern-math-apis': 'error',
+    'unicorn/prefer-native-coercion-functions': 'error',
+    'unicorn/prefer-negative-index': 'error',
+    'unicorn/prefer-node-protocol': 'error',
+    'unicorn/prefer-number-properties': 'error',
+    'unicorn/prefer-prototype-methods': 'error',
+    'unicorn/prefer-regexp-test': 'error',
+    'unicorn/prefer-set-has': 'off', // Array.includes() is often faster in practice for small arrays; too strict
+    'unicorn/prefer-set-size': 'error',
+    'unicorn/prefer-single-call': 'error',
+    'unicorn/prefer-string-raw': 'warn',
+    'unicorn/prefer-string-replace-all': 'error',
+    'unicorn/prefer-string-trim-start-end': 'error',
+    'unicorn/prefer-structured-clone': 'warn', // ?
+    'unicorn/prefer-top-level-await': 'off', // ?
+    'unicorn/prefer-type-error': 'warn',
+    'unicorn/require-module-specifiers': 'error',
+    'unicorn/no-array-callback-reference': 'error',
+    'unicorn/no-array-for-each': 'error',
+    'unicorn/prefer-at': 'error',
   },
 };
 

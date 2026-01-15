@@ -59,13 +59,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
       // Otherwise, search based on the schedule(s) provided
       fetchSlots = async (period: Period): Promise<Slot[]> => {
         const scheduleArray: string[] = [];
-        if (!Array.isArray(props.schedule)) {
-          scheduleArray.push(
-            isReference<Schedule>(props.schedule, 'Schedule')
-              ? props.schedule.reference
-              : getReferenceString(props.schedule as WithId<Schedule>)
-          );
-        } else {
+        if (Array.isArray(props.schedule)) {
           for (const schedule of props.schedule) {
             if (isReference(schedule)) {
               scheduleArray.push(schedule.reference);
@@ -74,6 +68,12 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
               scheduleArray.push(scheduleRef);
             }
           }
+        } else {
+          scheduleArray.push(
+            isReference<Schedule>(props.schedule, 'Schedule')
+              ? props.schedule.reference
+              : getReferenceString(props.schedule as WithId<Schedule>)
+          );
         }
         const slotSearchParams = new URLSearchParams([
           ['_count', (30 * 24).toString()],

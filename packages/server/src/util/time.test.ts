@@ -9,7 +9,7 @@ describe('Time utils', () => {
     [1, 'ns', '1.00 ns'], // base case - no magnitude change
     [10, undefined, '10.0 ns'], // unit defaults to ns
     [1234, 'ns', '1.23 µs'], // magnitude delta 1
-    [12345, undefined, '12.3 µs'],
+    [12_345, undefined, '12.3 µs'],
     [1235, 'ns', '1.24 µs'], // rounding behavior
     [2.345e6, 'ns', '2.35 ms'], // magnitude delta 2
     [6.655e9, 'ns', '6.66 s'], // magnitude delta 3

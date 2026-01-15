@@ -60,7 +60,7 @@ export const fhirTypeToJsType = {
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
-const fhirPathCache = new LRUCache<FhirPathAtom>(1_000);
+const fhirPathCache = new LRUCache<FhirPathAtom>(1000);
 
 /**
  * Returns true if the type code is a primitive type.
@@ -139,10 +139,10 @@ class ResourceValidator implements CrawlerVisitor {
     if (isResource(typedValue.value)) {
       this.resourceStack.push(typedValue.value);
     }
-    if (!options?.profile) {
-      this.schema = getDataType(typedValue.type);
-    } else {
+    if (options?.profile) {
       this.schema = parseStructureDefinition(options.profile);
+    } else {
+      this.schema = getDataType(typedValue.type);
     }
     this.collect = options?.collect;
   }
@@ -557,7 +557,7 @@ class ResourceValidator implements CrawlerVisitor {
     }
 
     const regex = validationRegexes[type];
-    if (regex && !regex.exec(str)) {
+    if (regex && !regex.test(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
     }
   }
@@ -621,15 +621,15 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
     if (value === null) {
       issues.push(createStructureIssue(propertyPath, 'Invalid null value'));
     } else if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        if (value[i] === undefined) {
+      for (const [i, element] of value.entries()) {
+        if (element === undefined) {
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid undefined value'));
-        } else if (value[i] === null && !(obj[partnerKey] as any)?.[i]) {
+        } else if (element === null && !(obj[partnerKey] as any)?.[i]) {
           // This tests for the one case where `null` is allowed in FHIR JSON, where an array of primitive values
           // has extensions for some but not all values
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid null value'));
-        } else if (value[i]) {
-          checkObjectForNull(value[i], `${propertyPath}[${i}]`, issues);
+        } else if (element) {
+          checkObjectForNull(element, `${propertyPath}[${i}]`, issues);
         }
       }
     } else if (typeof value === 'object') {

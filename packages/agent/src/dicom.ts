@@ -36,14 +36,14 @@ export class AgentDicomChannel extends BaseChannel {
         this.association = association;
 
         // Set the preferred max PDU length
-        association.setMaxPduLength(65536);
+        association.setMaxPduLength(65_536);
 
         // Accept all presentation contexts, as needed
-        association.getPresentationContexts().forEach(({ context }) => {
-          context.getTransferSyntaxUids().forEach((ts) => {
+        for (const { context } of association.getPresentationContexts()) {
+          for (const ts of context.getTransferSyntaxUids()) {
             context.setResult(dimse.constants.PresentationContextResult.Accept, ts);
-          });
-        });
+          }
+        }
 
         this.sendAssociationAccept();
       }

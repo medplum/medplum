@@ -5,7 +5,7 @@ import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';

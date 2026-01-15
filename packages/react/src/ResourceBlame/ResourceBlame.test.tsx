@@ -53,12 +53,12 @@ describe('ResourceBlame', () => {
     expect(getTimeString(new Date(Date.now() - 120e3).toUTCString())).toEqual('2 minutes ago');
     expect(getTimeString(new Date(Date.now() - 3600e3).toUTCString())).toEqual('1 hour ago');
     expect(getTimeString(new Date(Date.now() - 7200e3).toUTCString())).toEqual('2 hours ago');
-    expect(getTimeString(new Date(Date.now() - 86400e3).toUTCString())).toEqual('1 day ago');
-    expect(getTimeString(new Date(Date.now() - 172800e3).toUTCString())).toEqual('2 days ago');
-    expect(getTimeString(new Date(Date.now() - 2592000e3).toUTCString())).toEqual('1 month ago');
-    expect(getTimeString(new Date(Date.now() - 5184000e3).toUTCString())).toEqual('2 months ago');
-    expect(getTimeString(new Date(Date.now() - 31536000e3).toUTCString())).toEqual('1 year ago');
-    expect(getTimeString(new Date(Date.now() - 63072000e3).toUTCString())).toEqual('2 years ago');
+    expect(getTimeString(new Date(Date.now() - 86_400e3).toUTCString())).toEqual('1 day ago');
+    expect(getTimeString(new Date(Date.now() - 172_800e3).toUTCString())).toEqual('2 days ago');
+    expect(getTimeString(new Date(Date.now() - 2_592_000e3).toUTCString())).toEqual('1 month ago');
+    expect(getTimeString(new Date(Date.now() - 5_184_000e3).toUTCString())).toEqual('2 months ago');
+    expect(getTimeString(new Date(Date.now() - 31_536_000e3).toUTCString())).toEqual('1 year ago');
+    expect(getTimeString(new Date(Date.now() - 63_072_000e3).toUTCString())).toEqual('2 years ago');
     jest.useRealTimers();
   });
 });

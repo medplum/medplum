@@ -86,14 +86,14 @@ async function getDefaultGinPendingListLimit(): Promise<number> {
 async function getGinIndexInfo(client: PoolClient | Pool, tableNames: string[]): Promise<GinIndexInfo[]> {
   const schemaName = 'public';
   const builder = new SqlBuilder();
-  const sql = `SELECT
+  const sql = String.raw`SELECT
     n.nspname as "schemaName",
     t.relname as "tableName",
     i.relname as "indexName",
     i.reloptions as "indexOptions",
-    (SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'fastupdate=(\\w+)'))[1]::boolean FROM unnest(coalesce(i.reloptions, '{}')) AS opt
+    (SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'fastupdate=(\w+)'))[1]::boolean FROM unnest(coalesce(i.reloptions, '{}')) AS opt
       WHERE opt ~ '^fastupdate=') AS "fastUpdate",
-		(SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'gin_pending_list_limit=(\\d+)'))[1]::INT FROM unnest(coalesce(i.reloptions, '{}')) AS opt
+		(SELECT (regexp_matches(coalesce(quote_ident(opt), ''), 'gin_pending_list_limit=(\d+)'))[1]::INT FROM unnest(coalesce(i.reloptions, '{}')) AS opt
       WHERE opt ~ '^gin_pending_list_limit=') AS "ginPendingListLimit"
     FROM pg_index ix
     JOIN pg_class i ON ix.indexrelid = i.oid

@@ -17,7 +17,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ResourcePanel } from './ResourcePanel';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('ResourcePanel', () => {
   let medplum: MockClient;

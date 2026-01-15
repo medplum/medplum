@@ -91,7 +91,7 @@ export class ReferenceTable extends LookupTable {
     for (const resource of resources) {
       const existingHashes = existingHashesByResource.get(resource.id);
       const newRowsForResource = newRowsByResource.get(resource.id);
-      const newHashes = newRowsForResource && new Set(newRowsForResource.map(hashRow));
+      const newHashes = newRowsForResource && new Set(newRowsForResource.map((row) => hashRow(row)));
 
       const identical =
         (existingHashes?.size ?? 0) === (newHashes?.size ?? 0) &&

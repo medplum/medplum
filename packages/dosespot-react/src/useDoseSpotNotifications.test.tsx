@@ -50,7 +50,7 @@ describe('useDoseSpotNotifications', () => {
     expect(screen.getByText('Count:')).toBeDefined();
 
     await act(async () => {
-      vi.advanceTimersByTime(10000);
+      vi.advanceTimersByTime(10_000);
     });
 
     expect(executeBotMock).toHaveBeenCalled();
@@ -65,7 +65,7 @@ describe('useDoseSpotNotifications', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(10000);
+      vi.advanceTimersByTime(10_000);
     });
 
     expect(screen.getByText('Count: 6')).toBeDefined();
@@ -90,7 +90,7 @@ describe('useDoseSpotNotifications', () => {
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(10000);
+      vi.advanceTimersByTime(10_000);
     });
 
     expect(screen.getByText('Count:')).toBeDefined();

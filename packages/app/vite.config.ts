@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 /// <reference types="vite/client" />
 import react from '@vitejs/plugin-react';
-import { execSync } from 'child_process';
-import { copyFileSync, existsSync } from 'fs';
-import path from 'path';
+import { execSync } from 'node:child_process';
+import { copyFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' with { type: 'json' };
 

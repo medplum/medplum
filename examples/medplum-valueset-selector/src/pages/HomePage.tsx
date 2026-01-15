@@ -122,7 +122,9 @@ export function HomePage(): JSX.Element {
         (item: any) => item.system === selectedCode.system && item.code === selectedCode.code
       );
 
-      if (!exists) {
+      if (exists) {
+        setError('Code already exists in ValueSet');
+      } else {
         valueSet.expansion.contains.push({
           system: selectedCode.system,
           code: selectedCode.code,
@@ -134,8 +136,6 @@ export function HomePage(): JSX.Element {
         }
         setCustomValueSet(JSON.stringify(valueSet, null, 2));
         setSuccessMessage('Code added to ValueSet');
-      } else {
-        setError('Code already exists in ValueSet');
       }
     } catch {
       setError('Failed to add code to ValueSet');

@@ -60,7 +60,7 @@ export function LongMenu(): JSX.Element {
       <AppShell
         logo={<Logo size={24} />}
         version="your.version"
-        menus={Array(100).fill({
+        menus={new Array(100).fill({
           title: 'My Menu',
           links: [
             { href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> },
@@ -86,7 +86,7 @@ export function DisabledSearch(): JSX.Element {
       <AppShell
         logo={<Logo size={24} />}
         version="your.version"
-        menus={Array(100).fill({
+        menus={new Array(100).fill({
           title: 'My Menu',
           links: [
             { href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> },
@@ -113,7 +113,7 @@ export function DisabledResourceNavigator(): JSX.Element {
       <AppShell
         logo={<Logo size={24} />}
         version="your.version"
-        menus={Array(100).fill({
+        menus={new Array(100).fill({
           title: 'My Menu',
           links: [
             { href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> },

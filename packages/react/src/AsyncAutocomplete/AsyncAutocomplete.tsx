@@ -80,7 +80,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
+  const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map((item) => toOption(item)));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
   const PillComponent = pillComponent ?? DefaultPillComponent;
@@ -124,7 +124,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
         if (!newAbortController.signal.aborted) {
-          setOptions(newValues.map(toOption));
+          setOptions(newValues.map((v) => toOption(v)));
           if (autoSubmitRef.current) {
             if (newValues.length > 0) {
               onChange(newValues.slice(0, 1));
@@ -254,7 +254,10 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       } else if (e.key === 'Backspace' && search.length === 0) {
         killEvent(e);
-        handleValueRemove(selected[selected.length - 1]);
+        const lastItem = selected.at(-1);
+        if (lastItem) {
+          handleValueRemove(lastItem);
+        }
       }
     },
     [abortController, handleValueRemove, search.length, selected, timer]

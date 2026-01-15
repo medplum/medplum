@@ -1,15 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
+/* eslint-disable unicorn/prefer-dom-node-remove -- Not in DOM context */
+
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import fs, { writeFileSync } from 'fs';
 import type { DOMWindow } from 'jsdom';
 import { JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
-import * as path from 'path';
-import { resolve } from 'path/posix';
+import fs, { writeFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { resolve } from 'node:path/posix';
 import * as unzipper from 'unzipper';
 
 import type {
@@ -254,7 +257,7 @@ function writeDocs(
   resourceIntroductions?: Record<string, any>
 ): void {
   console.info('Writing JS and Markdown files...');
-  definitions.forEach((definition, i) => {
+  for (const [i, definition] of definitions.entries()) {
     const resourceType = definition.name;
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
@@ -268,7 +271,7 @@ function writeDocs(
       buildDocsMarkdown(i, definition, resourceIntroductions?.[resourceType]),
       'utf8'
     );
-  });
+  }
 }
 
 function filterDefinitions(bundle: Bundle): StructureDefinition[] {
@@ -377,13 +380,13 @@ function rewriteLinksText(text: string | undefined): string {
   // Replace names of all Resources/datatypes with internal links
   const documentedTypeNames = Object.keys(documentedTypes);
   const resourceTypeExp = `(${documentedTypeNames.join('|')})`;
-  const resourceNameTextExp = new RegExp(`\\s(${resourceTypeExp}[s]?)\\b`, 'g');
+  const resourceNameTextExp = new RegExp(String.raw`\s(${resourceTypeExp}[s]?)\b`, 'g');
   text = text.replaceAll(
     resourceNameTextExp,
     (_, resourceText, resourceName) => ` <Link to="${getMedplumDocsPath(resourceName)}">${resourceText}</Link>`
   );
 
-  const resourceNameLinkExp = new RegExp(`(\\[(.*?)\\])\\(${resourceTypeExp}.html\\)`, 'gi');
+  const resourceNameLinkExp = new RegExp(String.raw`(\[(.*?)\])\(${resourceTypeExp}.html\)`, 'gi');
   text = text.replaceAll(
     resourceNameLinkExp,
     (...matches: string[]) =>
@@ -541,7 +544,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 
   // Recursive function to remove comment nodes and style attributes.
   function removeUnwantedNodes(node: Node): void {
-    Array.from(node.childNodes).forEach((child: Node) => {
+    for (const child of Array.from(node.childNodes)) {
       if (child.nodeType === 8) {
         // Node.COMMENT_NODE
         node.removeChild(child);
@@ -557,7 +560,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
         }
         removeUnwantedNodes(child);
       }
-    });
+    }
   }
 
   // Remove img tags.
@@ -613,13 +616,13 @@ async function fetchHtmlSpecContent(
   const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
   const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');
-  if (!fs.existsSync(outputFolder)) {
+  if (fs.existsSync(outputFolder)) {
+    const results = extractResourceDescriptions(siteDir, definitions);
+    return results;
+  } else {
     return downloadAndUnzip(downloadURL, zipFile, outputFolder).then(() => {
       return extractResourceDescriptions(siteDir, definitions);
     });
-  } else {
-    const results = extractResourceDescriptions(siteDir, definitions);
-    return results;
   }
 }
 

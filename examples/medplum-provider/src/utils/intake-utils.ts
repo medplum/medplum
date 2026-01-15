@@ -728,19 +728,19 @@ export function getGroupRepeatedAnswers(
     const answers: Record<string, any> = {};
 
     const extractAnswers = (items: QuestionnaireResponseItem[]): void => {
-      items.forEach(({ linkId, answer, item }) => {
+      for (const { linkId, answer, item } of items) {
         if (item) {
           const subGroupAnswers: Record<string, any> = {};
-          item.forEach((subItem) => {
+          for (const subItem of item) {
             if (subItem.answer) {
               subGroupAnswers[subItem.linkId] = subItem.answer?.[0] ?? {};
             }
-          });
+          }
           answers[linkId] = subGroupAnswers;
         } else {
           answers[linkId] = answer?.[0] ?? {};
         }
-      });
+      }
     };
 
     extractAnswers(responseItem.item || []);

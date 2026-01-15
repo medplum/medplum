@@ -247,18 +247,18 @@ async function resolveProperty(
     }
   }
 
-  const knownProp = (
+  const [knownProp] = 
     await new SelectQuery('CodeSystem_Property')
       .column('id')
       .where('system', '=', codeSystem.id)
       .where('code', '=', code)
       .execute(db)
-  )[0];
+  ;
   if (knownProp) {
     return [knownProp.id, prop];
   }
 
-  const newProp = (
+  const [newProp] = 
     await new InsertQuery('CodeSystem_Property', [
       {
         system: codeSystem.id,
@@ -270,6 +270,6 @@ async function resolveProperty(
     ])
       .returnColumn('id')
       .execute(db)
-  )[0];
+  ;
   return [newProp.id, prop];
 }

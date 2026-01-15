@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { OAuthTokenAuthMethod } from '@medplum/core';
 import type { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';

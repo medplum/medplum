@@ -137,7 +137,7 @@ describe('ResourceCreatePage', () => {
         // The path should include the patient ID
         const navigateCalls = navigateSpy.mock.calls;
         expect(navigateCalls.length).toBeGreaterThan(0);
-        const lastCall = navigateCalls[navigateCalls.length - 1][0];
+        const lastCall = navigateCalls.at(-1)?.at(0);
         expect(String(lastCall)).toContain(`Patient/${HomerSimpson.id}`);
         expect(String(lastCall)).toContain('Task/task-123');
       },

@@ -92,7 +92,7 @@ describe('buildTokenColumns', () => {
         'focus' + DELIM + system,
         'focus' + DELIM + system + DELIM + '123',
         'focus' + DELIM + DELIM + '123',
-      ].map(hashTokenColumnValue),
+      ].map((v) => hashTokenColumnValue(v)),
       __sharedTokensText: ['focus' + DELIM + 'ONE TWO THREE'],
     });
 
@@ -114,7 +114,7 @@ describe('buildTokenColumns', () => {
         'location' + DELIM + DELIM + 'FOUR FIVE SIX',
         'location' + DELIM + system + DELIM + '456',
         'location' + DELIM + DELIM + '456',
-      ].map(hashTokenColumnValue),
+      ].map((v) => hashTokenColumnValue(v)),
       __sharedTokensText: [
         'focus' + DELIM + 'ONE TWO THREE',
         'location' + DELIM + 'ONE TWO THREE',
@@ -429,7 +429,7 @@ describe('buildTokenColumnsSearchFilter', () => {
       const cond = disjunction.expressions[0] as TypedCondition<'TOKEN_ARRAY_IREGEX'>;
 
       // Special regex characters should be escaped
-      expect(cond.parameter).toContain('test\\.value\\*');
+      expect(cond.parameter).toContain(String.raw`test\.value\*`);
     });
 
     test('TEXT operator with non-dedicated columns includes code prefix', () => {
@@ -799,7 +799,7 @@ describe('buildTokenColumnsSearchFilter', () => {
 });
 describe('getPaddingElement', () => {
   test('Math.random is 0.99999999', () => {
-    const rng = jest.fn().mockReturnValue(0.99999999);
+    const rng = jest.fn().mockReturnValue(0.999_999_99);
     expect(getPaddingElement({ m: 1, lambda: 150, statisticsTarget: 1 }, rng)).toBeUndefined();
     // once to decide (not to) return a padding element
     expect(rng).toHaveBeenCalledTimes(1);
@@ -813,7 +813,7 @@ describe('getPaddingElement', () => {
         return 0;
       }
       // second call returns 0.99999999 to guarantee the largest padding element is chosen
-      return 0.99999999;
+      return 0.999_999_99;
     });
     const paddingElement = getPaddingElement({ m: 20, lambda: 150, statisticsTarget: 1 }, rng) as string;
     expect(paddingElement).toStrictEqual('00000000-0000-0000-0000-000000000019');

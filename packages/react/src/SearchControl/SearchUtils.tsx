@@ -234,7 +234,7 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
   startTime.setDate(startTime.getDate() + delta);
   startTime.setHours(0, 0, 0, 0);
 
-  const endTime = new Date(startTime.getTime());
+  const endTime = new Date(startTime);
   endTime.setDate(endTime.getDate() + 1);
   endTime.setTime(endTime.getTime() - 1);
 
@@ -300,7 +300,7 @@ function addMonthFilter(definition: SearchRequest, field: string, delta: number)
   startTime.setDate(1);
   startTime.setHours(0, 0, 0, 0);
 
-  const endTime = new Date(startTime.getTime());
+  const endTime = new Date(startTime);
   endTime.setMonth(endTime.getMonth() + 1);
   endTime.setDate(1);
   endTime.setHours(0, 0, 0, 0);
@@ -507,7 +507,10 @@ export function buildFieldNameString(key: string): string {
   }
 
   // Capitalize the first letter of each word
-  return tmp.split(/\s/).map(capitalize).join(' ');
+  return tmp
+    .split(/\s/)
+    .map((word) => capitalize(word))
+    .join(' ');
 }
 
 /**

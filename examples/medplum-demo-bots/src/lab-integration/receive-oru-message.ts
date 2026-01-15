@@ -71,7 +71,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const fileContents = await readSFTPDirectory(sftp, 'out');
 
     // Parse file contents into structured Hl7Message objects
-    const messages = fileContents.map(Hl7Message.parse);
+    const messages = fileContents.map((c) => Hl7Message.parse(c));
 
     for (const message of messages) {
       try {
@@ -181,7 +181,7 @@ export async function processOruMessage(
   );
 
   // Update the DiagnosticReport in medplum
-  report.result = observations.map(createReference);
+  report.result = observations.map((o) => createReference(o));
   if (existingReport) {
     await medplum.updateResource(report);
   } else {

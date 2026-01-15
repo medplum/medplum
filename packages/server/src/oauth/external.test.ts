@@ -3,7 +3,7 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';

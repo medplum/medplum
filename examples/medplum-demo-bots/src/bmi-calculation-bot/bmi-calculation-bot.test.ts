@@ -269,7 +269,7 @@ describe('BMI Calculation Bot', () => {
         coding: [{ system: LOINC, code: '29463-7', display: 'Body weight' }],
       },
       valueQuantity: {
-        value: 70000, // 70000 g = 70 kg
+        value: 70_000, // 70000 g = 70 kg
         unit: 'g',
         system: 'http://unitsofmeasure.org',
         code: 'g',

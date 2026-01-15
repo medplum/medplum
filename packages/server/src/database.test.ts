@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
-import { Duplex } from 'node:stream';
+import { Duplex , Readable, Writable } from 'node:stream';
 import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import pg from 'pg';
-import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
 import type { MedplumDatabaseSslConfig } from './config/types';
 import {
@@ -202,7 +201,7 @@ describe('Database config', () => {
 
     // Use `jest.runAllTimersAsync().catch(...)` instead of `await jest.runAllTimersAsync()` since
     // we expect initDBPromise to reject. Based on https://github.com/jestjs/jest/issues/14120
-    jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
+    jest.runAllTimersAsync().catch((err) => console.error('Unexpected error in jest.runAllTimersAsync', err));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
   });
@@ -217,7 +216,7 @@ describe('Database config', () => {
     expect(getDefaultStatementTimeout(config.database)).toBe(5000);
 
     config.database.queryTimeout = undefined;
-    expect(getDefaultStatementTimeout(config.database)).toBe(60000);
+    expect(getDefaultStatementTimeout(config.database)).toBe(60_000);
   });
 });
 

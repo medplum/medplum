@@ -285,8 +285,7 @@ describe('TaskProperties', () => {
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
+        const updatedTask = onTaskChange.mock.calls.at(-1)?.at(0) as Task;
         expect(updatedTask.for?.reference).toBe('Patient/patient-2');
       },
       { timeout: 5000 }
@@ -363,8 +362,7 @@ describe('TaskProperties', () => {
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
+        const updatedTask = onTaskChange.mock.calls.at(-1)?.at(0) as Task;
         expect(updatedTask.for?.reference).toBe('Patient/patient-2');
       },
       { timeout: 5000 }
@@ -389,8 +387,7 @@ describe('TaskProperties', () => {
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
+        const updatedTask = onTaskChange.mock.calls.at(-1)?.at(0) as Task;
         expect(updatedTask.restriction?.period?.end).toBeDefined();
       },
       { timeout: 3000 }
@@ -482,8 +479,7 @@ describe('TaskProperties', () => {
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
+        const updatedTask = onTaskChange.mock.calls.at(-1)?.at(0) as Task;
         expect(updatedTask.owner?.reference).toBe('Practitioner/prac-456');
       },
       { timeout: 5000 }
@@ -544,8 +540,7 @@ describe('TaskProperties', () => {
     await waitFor(
       () => {
         expect(onTaskChange).toHaveBeenCalled();
-        const call = onTaskChange.mock.calls[onTaskChange.mock.calls.length - 1];
-        const updatedTask = call[0] as Task;
+        const updatedTask = onTaskChange.mock.calls.at(-1)?.at(0) as Task;
         expect(updatedTask.basedOn).toBeDefined();
         expect(updatedTask.basedOn?.length).toBeGreaterThan(0);
       },

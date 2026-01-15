@@ -121,8 +121,7 @@ export async function handleBulkAgentOperation(
   const results = await Promise.allSettled(promises);
   const entries: BundleEntry<Parameters>[] = [];
 
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
+  for (const [i, result] of results.entries()) {
     if (result.status === 'rejected') {
       entries.push(
         makeResultWrapperEntry(

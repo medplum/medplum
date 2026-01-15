@@ -188,11 +188,11 @@ export function createPidFile(appName: string): string {
  * @param directoryPath - The path to the directory.
  */
 export function ensureDirectoryExists(directoryPath: string): void {
-  if (!fs.existsSync(directoryPath)) {
+  if (fs.existsSync(directoryPath)) {
+    pidLogger.info(`Directory already exists: ${directoryPath}`);
+  } else {
     fs.mkdirSync(directoryPath, { recursive: true });
     pidLogger.info(`Directory created: ${directoryPath}`);
-  } else {
-    pidLogger.info(`Directory already exists: ${directoryPath}`);
   }
 }
 

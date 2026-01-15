@@ -454,14 +454,14 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
     FhircastEventContext['key'],
     FhircastEventContextDetails
   >;
-  for (let i = 0; i < contexts.length; i++) {
-    const key = contexts[i].key as FhircastEventContext['key'];
+  for (const [i, context] of contexts.entries()) {
+    const key = context.key as FhircastEventContext['key'];
     if (!eventSchema[key]) {
       throw new OperationOutcomeError(
         validationError(`Key '${key}' not found for event '${event}'. Make sure to add only valid keys.`)
       );
     }
-    validateFhircastContext(event, contexts[i], i, eventSchema[key], keysSeen);
+    validateFhircastContext(event, context, i, eventSchema[key], keysSeen);
   }
   // Iterate each key, if conditions for keys are not met as confirmed by `keysSeen` map, throw an error
   for (const [key, details] of Object.entries(eventSchema) as [

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, StructureMap } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { parseMappingLanguage } from './parse';
 
@@ -1731,7 +1731,7 @@ describe('FHIR Mapping Language parser', () => {
   });
 
   test.skip('C-CDA mapping file', () => {
-    const mapFileName = 'C:\\Users\\cody\\dev\\cda-fhir-maps\\input\\maps\\CdaToBundle.map';
+    const mapFileName = String.raw`C:\Users\cody\dev\cda-fhir-maps\input\maps\CdaToBundle.map`;
     const mapFileContents = readFileSync(mapFileName, 'utf8');
     const structureMap = parseMappingLanguage(mapFileContents);
     expect(structureMap).toBeTruthy();

@@ -164,10 +164,10 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 
   if (!isBillTo(args.billingInformation?.billTo)) {
     errors.billingInformation ??= {};
-    if (!args.billingInformation?.billTo) {
-      errors.billingInformation.billTo = { message: 'Bill to is required' };
-    } else {
+    if (args.billingInformation?.billTo) {
       errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
+    } else {
+      errors.billingInformation.billTo = { message: 'Bill to is required' };
     }
   } else if (args.billingInformation.billTo === 'insurance') {
     const coverageCount = args.billingInformation.patientCoverage?.length ?? 0;
@@ -352,9 +352,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     fullUrl: labOrder.id,
     resource: labOrder,
     request: { method: 'POST', url: 'ServiceRequest' },
-  });
-
-  bundleEntry.push(...testEntries);
+  }, ...testEntries);
 
   // Remove resource.id to avoid breaking the transaction processing of the urn:uuid:<uuid> temp IDs.
   for (const entry of bundleEntry) {

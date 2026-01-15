@@ -40,7 +40,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const user = event.requester as CdsUserResource;
 
   // Discover and call the CDS service
-  const services = (await cdsClient.getCdsServices()).services;
+  const {services} = await cdsClient.getCdsServices();
 
   // For this example, we assume we want the 'patient-view' hook
   const service = services.find((s) => s.hook === 'patient-view') as CdsService;

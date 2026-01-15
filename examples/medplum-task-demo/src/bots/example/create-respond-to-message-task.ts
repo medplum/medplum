@@ -142,9 +142,8 @@ async function fetchMessageThreads(messages: Communication[], medplum: MedplumCl
     // Get the parent communication representing the thread
     const partOf = message.partOf;
 
-    const threadHeader = partOf.filter((reference) => parseReference(reference)?.[0] === 'Communication')[0];
-
-    const threadHeaderReference = getReferenceString(threadHeader);
+    const threadHeader = partOf.find((reference) => parseReference(reference)?.[0] === 'Communication');
+    const threadHeaderReference = getReferenceString(threadHeader as Communication);
 
     if (!threads.has(threadHeaderReference)) {
       threads.add(threadHeaderReference);

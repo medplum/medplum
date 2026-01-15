@@ -106,7 +106,7 @@ export interface IWebSocket {
 }
 
 const Events = {
-  Event: typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined,
+  Event: globalThis.Event === undefined ? undefined : globalThis.Event,
   ErrorEvent: undefined as any,
   CloseEvent: undefined as any,
 };
@@ -114,8 +114,8 @@ const Events = {
 let eventsInitialized = false;
 
 function lazyInitEvents(): void {
-  if (typeof globalThis.Event === 'undefined') {
-    throw new Error('Unable to lazy init events for ReconnectingWebSocket. globalThis.Event is not defined yet');
+  if (globalThis.Event === undefined) {
+    throw new TypeError('Unable to lazy init events for ReconnectingWebSocket. globalThis.Event is not defined yet');
   }
 
   Events.Event = globalThis.Event;
@@ -169,7 +169,7 @@ export type Options<WS extends IWebSocket = WebSocket> = {
 };
 
 const DEFAULT = {
-  maxReconnectionDelay: 10000,
+  maxReconnectionDelay: 10_000,
   minReconnectionDelay: 1000 + Math.random() * 4000,
   minUptime: 5000,
   reconnectionDelayGrowFactor: 1.3,
@@ -525,7 +525,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this._ws.binaryType = this._binaryType;
 
     // send enqueued messages (messages sent before websocket open event)
-    this._messageQueue.forEach((message) => this._ws?.send(message));
+    for (const message of this._messageQueue) {this._ws?.send(message);}
     this._messageQueue = [];
 
     if (this.onopen) {

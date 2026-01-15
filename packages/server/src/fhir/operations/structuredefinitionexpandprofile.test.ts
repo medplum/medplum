@@ -183,7 +183,7 @@ async function createNestedStructureDefinitions(
         {
           id: 'Patient',
           path: 'Patient',
-          definition: '\\-',
+          definition: String.raw`\-`,
           min: 0,
           max: '*',
           base: { path: 'Patient', min: 0, max: '*' },
@@ -193,7 +193,7 @@ async function createNestedStructureDefinitions(
         {
           id: 'Patient.extension',
           path: 'Patient.extension',
-          definition: '\\-',
+          definition: String.raw`\-`,
           slicing: { discriminator: [{ type: 'value', path: 'url' }], ordered: false, rules: 'open' },
           min: 0,
           max: '*',
@@ -205,7 +205,7 @@ async function createNestedStructureDefinitions(
         {
           id: 'Patient.extension:someExtension',
           path: 'Patient.extension',
-          definition: '\\-',
+          definition: String.raw`\-`,
           sliceName: 'someExtension',
           min: 0,
           max: '1',
@@ -249,7 +249,7 @@ function createExtension(id: string, url: string, nestedExtensionUrl: string | u
     nestedExtensionElement = {
       id: 'Extension.extension:nestedExtension',
       path: 'Extension.extension',
-      definition: '\\-',
+      definition: String.raw`\-`,
       sliceName: 'nestedExtension',
       min: 0,
       max: '1',
@@ -281,7 +281,7 @@ function createExtension(id: string, url: string, nestedExtensionUrl: string | u
         {
           id: 'Extension',
           path: 'Extension',
-          definition: '\\-',
+          definition: String.raw`\-`,
           min: 0,
           max: '*',
           base: { path: 'Extension', min: 0, max: '*' },
@@ -290,7 +290,7 @@ function createExtension(id: string, url: string, nestedExtensionUrl: string | u
         {
           id: 'Extension.id',
           path: 'Extension.id',
-          definition: '\\-',
+          definition: String.raw`\-`,
           min: 0,
           max: '1',
           base: { path: 'Extension.id', min: 0, max: '*' },
@@ -311,7 +311,7 @@ function createExtension(id: string, url: string, nestedExtensionUrl: string | u
         {
           id: 'Extension.extension',
           path: 'Extension.extension',
-          definition: '\\-',
+          definition: String.raw`\-`,
           slicing: {
             discriminator: [
               {

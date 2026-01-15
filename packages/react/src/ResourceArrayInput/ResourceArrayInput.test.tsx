@@ -200,19 +200,19 @@ describe('ResourceArrayInput', () => {
       onChange,
     });
 
-    ['slice-chocolateVariety-add', 'slice-vanillaVariety-add', 'nonsliced-add'].forEach((testId) => {
+    for (const testId of ['slice-chocolateVariety-add', 'slice-vanillaVariety-add', 'nonsliced-add']) {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
-    });
+    }
 
-    [
+    for (const testId of [
       'slice-chocolateVariety-elements-0',
       'slice-chocolateVariety-remove-0',
       'slice-vanillaVariety-elements-0',
       'slice-vanillaVariety-remove-0',
       'nonsliced-remove-0',
-    ].forEach((testId) => {
+    ]) {
       expect(screen.queryByTestId(testId)).toBeNull();
-    });
+    }
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('slice-chocolateVariety-add'));
@@ -256,14 +256,14 @@ describe('ResourceArrayInput', () => {
       'nonsliced-remove-0',
       'nonsliced-add',
     ];
-    shouldExist.forEach((testId) => {
+    for (const testId of shouldExist) {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
-    });
+    }
 
     const shouldNotExist = ['sliced-vanillaVariety-add'];
-    shouldNotExist.forEach((testId) => {
+    for (const testId of shouldNotExist) {
       expect(screen.queryByTestId(testId)).toBeNull();
-    });
+    }
 
     await act(async () => {
       const valueElement = within(screen.getByTestId('slice-chocolateVariety-elements-0')).getByTestId('value[x]');
@@ -306,9 +306,9 @@ describe('ResourceArrayInput', () => {
       'slice-vanillaVariety-elements-0',
       'slice-vanillaVariety-remove-0',
     ];
-    testIdsThatShouldExist.forEach((testId) => {
+    for (const testId of testIdsThatShouldExist) {
       expect(screen.getByTestId(testId)).toBeInTheDocument();
-    });
+    }
 
     const testIdsThatShouldNotExist = [
       'slice-chocolateVariety-add',
@@ -316,9 +316,9 @@ describe('ResourceArrayInput', () => {
       'nonsliced-add',
       'nonsliced-remove-0',
     ];
-    testIdsThatShouldNotExist.forEach((testId) => {
+    for (const testId of testIdsThatShouldNotExist) {
       expect(screen.queryByTestId(testId)).toBeNull();
-    });
+    }
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('slice-vanillaVariety-remove-0'));

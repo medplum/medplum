@@ -15,7 +15,7 @@ import { formatHumanName } from './format';
 import type { SearchParameterDetails } from './search/details';
 import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
 import { getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, EMPTY, getReferenceString, isResourceWithId } from './utils';
+import { capitalize, EMPTY, flatMapFilter, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -263,7 +263,7 @@ export function buildTypeName(components: string[]): string {
   if (components.length === 1) {
     return components[0];
   }
-  return components.map(capitalize).join('');
+  return components.map((c) => capitalize(c)).join('');
 }
 
 /**
@@ -281,9 +281,9 @@ export function isResourceTypeSchema(typeSchema: InternalTypeSchema): boolean {
  * @returns An array of all resource types.
  */
 export function getResourceTypes(): ResourceType[] {
-  return Object.values(getAllDataTypes())
-    .filter(isResourceTypeSchema)
-    .map((schema) => schema.name as ResourceType);
+  const dataTypes = Object.values(getAllDataTypes());
+  const resources = flatMapFilter(dataTypes, (t) => (isResourceTypeSchema(t) ? (t.name as ResourceType) : undefined));
+  return resources ?? EMPTY;
 }
 
 /**
@@ -357,7 +357,11 @@ export function getPropertyDisplayName(propertyName: string): string {
   // Then normalize whitespace to single space character
   // For example, for property name "birthDate",
   // the display name is "Birth Date".
-  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replaceAll(/\s+/g, ' ');
+  return words
+    .map((w) => capitalizeDisplayWord(w))
+    .join(' ')
+    .replace('_', ' ')
+    .replaceAll(/\s+/g, ' ');
 }
 
 const capitalizedWords = new Set(['CDS', 'ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
@@ -509,7 +513,7 @@ export function stringifyTypedValue(v: TypedValue): string {
     case PropertyType.Coding:
       return stringifyCoding(v.value);
     case PropertyType.CodeableConcept:
-      return (v.value as CodeableConcept).coding?.map(stringifyCoding).join(',') ?? v.value.text;
+      return (v.value as CodeableConcept).coding?.map((c) => stringifyCoding(c)).join(',') ?? v.value.text;
     case PropertyType.HumanName:
       if (v.value.text) {
         return v.value.text;

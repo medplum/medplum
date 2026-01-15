@@ -35,7 +35,7 @@ export function TaskActions(props: TaskActionsProps): JSX.Element {
         <UpdateBusinessStatus task={task} onChange={props.onChange} />
         <AssignTask task={task} onChange={props.onChange} />
         <AssignRole task={task} onChange={props.onChange} />
-        {!task.owner ? <ClaimTask task={task} onChange={props.onChange} /> : null}
+        {task.owner ? null : <ClaimTask task={task} onChange={props.onChange} />}
         <PauseResumeTask task={task} onChange={props.onChange} />
         <CompleteTask task={task} onChange={props.onChange} />
         <DeleteTask task={task} onChange={props.onChange} />

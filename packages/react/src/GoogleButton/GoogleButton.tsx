@@ -25,12 +25,12 @@ export interface GoogleButtonProps {
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
-  const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
+  const [scriptLoaded, setScriptLoaded] = useState<boolean>(google !== undefined);
   const initializedRef = useRef(false);
   const buttonRenderedRef = useRef(false);
 
   useEffect(() => {
-    if (typeof google === 'undefined') {
+    if (google === undefined) {
       createScriptTag('https://accounts.google.com/gsi/client', () => setScriptLoaded(true));
       return;
     }

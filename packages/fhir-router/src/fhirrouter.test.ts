@@ -12,7 +12,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { FhirRouter, makeSimpleRequest } from './fhirrouter';
 import type { FhirRepository } from './repo';
 import { MemoryRepository } from './repo';

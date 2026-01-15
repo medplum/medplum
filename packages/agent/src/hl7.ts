@@ -141,13 +141,13 @@ export class AgentHl7Channel extends BaseChannel {
       await this.stop();
       await this.start();
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else if (previousEndpoint.address !== endpoint.address) {
+    } else if (previousEndpoint.address === endpoint.address) {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    } else {
       this.log.info(
         `Reconfiguring HL7 server and ${this.connections.size} connections based on new endpoint settings: ${previousEndpoint.address} => ${endpoint.address}`
       );
       this.configureHl7ServerAndConnections();
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
     }
   }
 

@@ -643,14 +643,14 @@ export class BackEnd extends Construct {
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
 
       // Retain RDS cluster security groups and their rules
-      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+      for (const sg of this.rdsCluster.connections.securityGroups) {
         sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
-        sg.node.children.forEach((child) => {
+        for (const child of sg.node.children) {
           if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
             child.applyRemovalPolicy(RemovalPolicy.RETAIN);
           }
-        });
-      });
+        }
+      }
     }
 
     // Grant RDS Proxy access to the fargate group
@@ -732,7 +732,7 @@ export class BackEnd extends Construct {
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
-      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+      String.raw`^${config.accountNumber}\.dkr\.ecr\.${config.region}\.amazonaws\.com/(.*)[:@](.*)$`
     );
     const nameTagMatches = ecrImageUriRegex.exec(imageName);
     const serverImageName = nameTagMatches?.[1];

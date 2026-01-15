@@ -117,8 +117,7 @@ function mergePatchOperations(patch: Operation[]): Operation[] {
 function jsonPathToFhirPath(path: string): string {
   const parts = path.split('/').filter(Boolean);
   let result = '';
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i];
+  for (const [i, part] of parts.entries()) {
     if (part === '-') {
       result += '.last()';
     } else if (/^\d+$/.test(part)) {

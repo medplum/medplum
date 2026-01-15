@@ -48,7 +48,7 @@ import type {
   StructureDefinition,
   Task,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -921,7 +921,7 @@ describe('project-scoped Repository', () => {
           {
             code: 'name',
             operator: Operator.EXACT,
-            value: name.replaceAll(',', '\\,'),
+            value: name.replaceAll(',', String.raw`\,`),
           },
         ],
       });
@@ -3858,14 +3858,14 @@ describe('project-scoped Repository', () => {
         prediction: [
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000168,
+            probabilityDecimal: 0.000_168,
             whenRange: {
               high: { value: 53, unit: 'years' },
             },
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000368,
+            probabilityDecimal: 0.000_368,
             whenRange: {
               low: { value: 54, unit: 'years' },
               high: { value: 57, unit: 'years' },
@@ -3873,7 +3873,7 @@ describe('project-scoped Repository', () => {
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000594,
+            probabilityDecimal: 0.000_594,
             whenRange: {
               low: { value: 58, unit: 'years' },
               high: { value: 62, unit: 'years' },
@@ -3881,7 +3881,7 @@ describe('project-scoped Repository', () => {
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000838,
+            probabilityDecimal: 0.000_838,
             whenRange: {
               low: { value: 63, unit: 'years' },
               high: { value: 67, unit: 'years' },
@@ -4500,8 +4500,7 @@ describe('project-scoped Repository', () => {
       // All children are accounted for as well
       expect(childrenByParent).toHaveLength(parents.length);
 
-      for (let i = 0; i < parents.length; i++) {
-        const parent = parents[i];
+      for (const [i, parent] of parents.entries()) {
         const children = childrenByParent[i];
         const result = results[getReferenceString(parent)];
         expect(result).toBeDefined();

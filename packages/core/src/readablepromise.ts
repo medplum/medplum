@@ -69,6 +69,7 @@ export class ReadablePromise<T> implements Promise<T> {
    * @param onrejected - The callback to execute when the Promise is rejected.
    * @returns A Promise for the completion of which ever callback is executed.
    */
+  // eslint-disable-next-line unicorn/no-thenable
   then<TResult1 = T, TResult2 = never>(
     onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null

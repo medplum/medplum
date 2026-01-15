@@ -30,7 +30,7 @@ import { getSystemRepo } from '../repo';
 import { sendFhirResponse } from '../response';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
-export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
+export const DEFAULT_VM_CONTEXT_TIMEOUT = 10_000;
 
 /**
  * Handles HTTP requests for the execute operation.

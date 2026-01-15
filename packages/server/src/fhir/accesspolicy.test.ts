@@ -32,7 +32,7 @@ import type {
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -1939,7 +1939,7 @@ describe('AccessPolicy', () => {
         ...check2,
         superAdmin: true,
         features: ['bots'],
-        systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
+        systemSetting: [{ name: 'rateLimit', valueInteger: 1_000_000 }],
         systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
       });
       expect(check3.id).toStrictEqual(project.id);
@@ -2015,7 +2015,7 @@ describe('AccessPolicy', () => {
         ...check2,
         superAdmin: true,
         features: ['bots'],
-        systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
+        systemSetting: [{ name: 'rateLimit', valueInteger: 1_000_000 }],
         systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
       });
       expect(check3.id).toStrictEqual(project.id);

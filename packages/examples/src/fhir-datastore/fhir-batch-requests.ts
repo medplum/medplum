@@ -4,7 +4,7 @@
 // start-block imports
 import { MedplumClient } from '@medplum/core';
 import type { Bundle } from '@medplum/fhirtypes';
-import { readFile } from 'fs/promises';
+import { readFile } from 'node:fs/promises';
 // end-block imports
 
 const medplum = new MedplumClient();
@@ -371,11 +371,7 @@ patientsToCreate.push(
         given: ['John'],
       },
     ],
-  })
-);
-
-// Main thread continues
-patientsToCreate.push(
+  }),
   medplum.createResource({
     resourceType: 'Patient',
     name: [

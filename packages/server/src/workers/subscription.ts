@@ -416,8 +416,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
           projectId,
         });
         const inactiveSubs: string[] = [];
-        for (let i = 0; i < redisOnlySubStrs.length; i++) {
-          if (!redisOnlySubStrs[i]) {
+        for (const [i, redisOnlySubStr] of redisOnlySubStrs.entries()) {
+          if (!redisOnlySubStr) {
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
@@ -599,17 +599,17 @@ async function sendRestHook(
     if (!success) {
       error = new Error('Received status ' + response.status);
     }
-  } catch (ex) {
+  } catch (err) {
     fetchEndTime = Date.now();
-    log.info('Subscription exception: ' + ex);
+    log.info('Subscription exception: ' + err);
     await createSubscriptionAuditEvent(
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
-      `Attempt ${job.attemptsMade} received error ${ex}`,
+      `Attempt ${job.attemptsMade} received error ${err}`,
       subscription
     );
-    error = ex as Error;
+    error = err as Error;
   }
 
   const fetchDurationMs = fetchEndTime - fetchStartTime;

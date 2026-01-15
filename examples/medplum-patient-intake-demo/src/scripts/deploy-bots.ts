@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface BotDescription {
   src: string;
@@ -31,9 +31,7 @@ async function main(): Promise<void> {
       const botIdPlaceholder = `$bot-${botName}-id`;
       const results: BundleEntry[] = [];
       const { srcEntry, distEntry } = readBotFiles(botDescription);
-      results.push(srcEntry, distEntry);
-
-      results.push({
+      results.push(srcEntry, distEntry, {
         request: { method: 'PUT', url: botUrlPlaceholder },
         resource: {
           resourceType: 'Bot',

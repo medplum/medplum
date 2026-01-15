@@ -373,10 +373,10 @@ describe('Sync patients from Photon', async () => {
         { input: 'EXPIRED', expected: 'stopped' },
       ];
 
-      testCases.forEach(({ input, expected }) => {
+      for (const { input, expected } of testCases) {
         const result = getStatusFromPhotonState(input as PhotonPrescription['state']);
         expect(result).toBe(expected);
-      });
+      }
     });
 
     test('Invalid state', async () => {

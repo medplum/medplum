@@ -72,6 +72,7 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
     // Write PDF to binary storage
     const readableStream = new Readable();
     readableStream.push(pdfBuffer);
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     readableStream.push(null);
     await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
 

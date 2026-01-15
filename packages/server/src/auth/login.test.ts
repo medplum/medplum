@@ -4,7 +4,7 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import type { WithId } from '@medplum/core';
 import { createReference, LOINC } from '@medplum/core';
 import type { ClientApplication, Project } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';

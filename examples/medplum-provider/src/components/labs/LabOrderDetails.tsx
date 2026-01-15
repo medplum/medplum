@@ -59,7 +59,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | null>(null);
   const [loadingQuestionnaire, setLoadingQuestionnaire] = useState<boolean>(false);
   const [activeDetailTab, setActiveDetailTab] = useState<'report' | 'progress' | 'order'>(
-    order.status !== 'completed' ? 'progress' : 'report'
+    order.status === 'completed' ? 'report' : 'progress'
   );
 
   // Filter DiagnosticReports for this specific order
@@ -387,13 +387,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                 <Group gap="xs">
                   <Button
                     className={cx(classes.button, {
-                      [classes.selected]: activeDetailTab === (order.status !== 'completed' ? 'progress' : 'report'),
+                      [classes.selected]: activeDetailTab === (order.status === 'completed' ? 'report' : 'progress'),
                     })}
                     h={32}
                     radius="xl"
-                    onClick={() => setActiveDetailTab(order.status !== 'completed' ? 'progress' : 'report')}
+                    onClick={() => setActiveDetailTab(order.status === 'completed' ? 'report' : 'progress')}
                   >
-                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                    {order.status === 'completed' ? 'Report' : 'Progress Tracker'}
                   </Button>
                   <Button
                     className={cx(classes.button, { [classes.selected]: activeDetailTab === 'order' })}

@@ -4,7 +4,7 @@ import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/co
 import type { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -1651,9 +1651,9 @@ describe('QuestionnaireForm', () => {
 
     // Select all options
     await act(async () => {
-      checkboxes.forEach((checkbox) => {
+      for (const checkbox of checkboxes) {
         fireEvent.click(checkbox);
-      });
+      }
     });
 
     // Submit with all options selected
@@ -1671,9 +1671,9 @@ describe('QuestionnaireForm', () => {
 
     // Deselect all options
     await act(async () => {
-      checkboxes.forEach((checkbox) => {
+      for (const checkbox of checkboxes) {
         fireEvent.click(checkbox);
-      });
+      }
     });
 
     // Submit with no options selected

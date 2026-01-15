@@ -37,7 +37,7 @@ describe('utils', () => {
     setValue(config, 'database.port', '12345');
     expect(config).toEqual({
       database: {
-        port: 12345,
+        port: 12_345,
       },
     });
   });

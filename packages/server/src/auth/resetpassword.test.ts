@@ -3,7 +3,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference, getReferenceString, Operator, resolveId } from '@medplum/core';
 import type { DomainConfiguration, UserSecurityRequest } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';

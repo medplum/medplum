@@ -172,7 +172,7 @@ const MATRIX_FORM: HealthieFormAnswerGroup = {
       label: 'Head symptoms',
       displayed_answer: 'Complex matrix data...',
       answer:
-        '[["{\\"value\\":\\"Head\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Score\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Headaches\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"1\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Faintness\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"2\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Dizziness\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"3\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Insomnia\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"4\\",\\"type\\":\\"text\\"}"]]',
+        String.raw`[["{\"value\":\"Head\",\"type\":\"text\"}","{\"value\":\"Score\",\"type\":\"text\"}"],["{\"value\":\"Headaches\",\"type\":\"text\"}","{\"value\":\"1\",\"type\":\"text\"}"],["{\"value\":\"Faintness\",\"type\":\"text\"}","{\"value\":\"2\",\"type\":\"text\"}"],["{\"value\":\"Dizziness\",\"type\":\"text\"}","{\"value\":\"3\",\"type\":\"text\"}"],["{\"value\":\"Insomnia\",\"type\":\"text\"}","{\"value\":\"4\",\"type\":\"text\"}"]]`,
       id: '12018612',
       custom_module: {
         id: '18562262',
@@ -381,7 +381,7 @@ const _KITCHEN_SINK_FORM: HealthieFormAnswerGroup = {
     {
       label: 'Matrix',
       answer:
-        '[["{\\"value\\":\\"Col1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col3\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"asdadsa\\",\\"type\\":\\"text\\"}","{\\"value\\":true,\\"type\\":\\"checkbox\\"}"],["{\\"value\\":\\"Row2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"adfsafa\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row3\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"]]',
+        String.raw`[["{\"value\":\"Col1\",\"type\":\"text\"}","{\"value\":\"Col2\",\"type\":\"text\"}","{\"value\":\"Col3\",\"type\":\"text\"}"],["{\"value\":\"Row1\",\"type\":\"text\"}","{\"value\":\"asdadsa\",\"type\":\"text\"}","{\"value\":true,\"type\":\"checkbox\"}"],["{\"value\":\"Row2\",\"type\":\"text\"}","{\"value\":\"\",\"type\":\"checkbox\"}","{\"value\":\"adfsafa\",\"type\":\"text\"}"],["{\"value\":\"Row3\",\"type\":\"text\"}","{\"value\":\"\",\"type\":\"checkbox\"}","{\"value\":\"\",\"type\":\"checkbox\"}"]]`,
       id: '12020348',
       custom_module: {
         required: false,

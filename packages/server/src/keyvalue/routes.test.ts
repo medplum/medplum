@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -106,7 +106,7 @@ describe('Key Value Routes', () => {
       .put(`/keyvalue/v1/json`)
       .set('Authorization', 'Bearer ' + accessToken)
       .type('text/plain')
-      .send('a'.repeat(10000));
+      .send('a'.repeat(10_000));
     expect(res1.status).toBe(400);
   });
 

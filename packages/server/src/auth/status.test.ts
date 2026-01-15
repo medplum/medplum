@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import type { Login, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';

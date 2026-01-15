@@ -145,7 +145,7 @@ describe('Send to Partner Lab', () => {
   });
 });
 
-const TEST_MESSAGE = `MSH|^~\\&||52054||ACME_LAB|202302100925||ORM^O01||P|2.3|||||||
+const TEST_MESSAGE = String.raw`MSH|^~\&||52054||ACME_LAB|202302100925||ORM^O01||P|2.3|||||||
 PID|1|145632|145632||Smith^Bob||19931112|M|||||||||||
 ORC|NW|145632|||R||||202302100925||||52054||||||
 OBR|1|145632||8167^PANEL B FULL^^PANEL B FULL||202302100925|202302142005||||||||||||||||||||^^^^^R||||||`;

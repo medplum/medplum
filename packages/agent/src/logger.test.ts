@@ -3,9 +3,9 @@
 
 import type { LogLevelNames } from '@medplum/core';
 import { LogLevel, parseLogLevel, sleep } from '@medplum/core';
-import { mkdtemp, rm } from 'fs/promises';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   createWinstonFromLoggerConfig,
   DEFAULT_LOGGER_CONFIG,
@@ -772,7 +772,7 @@ describe('Agent Logger', () => {
       await sleep(100);
 
       // Check if log files were created
-      const fs = await import('fs/promises');
+      const fs = await import('node:fs/promises');
       const files = await fs.readdir(tempDir);
       const logFiles = files.filter((file) => file.includes('medplum-agent-main'));
 
@@ -802,7 +802,7 @@ describe('Agent Logger', () => {
       await sleep(100);
 
       // Check the log file content
-      const fs = await import('fs/promises');
+      const fs = await import('node:fs/promises');
       const files = await fs.readdir(tempDir);
       const logFiles = files.filter((file) => file.includes('medplum-agent-main'));
 
@@ -838,11 +838,11 @@ describe('Agent Logger', () => {
       await sleep(100);
 
       // Check the log file content
-      const fs = await import('fs/promises');
+      const fs = await import('node:fs/promises');
       const files = await fs.readdir(tempDir);
-      const logFiles = files.filter((file) => file.includes('medplum-agent-main'));
+      const logFile = files.find((file) => file.includes('medplum-agent-main'));
 
-      const logContent = await fs.readFile(join(tempDir, logFiles[0]), 'utf-8');
+      const logContent = await fs.readFile(join(tempDir, logFile ?? ''), 'utf-8');
 
       // Should not contain debug or info messages
       expect(logContent).not.toContain('Debug message');

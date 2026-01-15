@@ -103,7 +103,7 @@ export const HealthGorillaObservation2: Observation = {
   effectiveDateTime: '2023-09-11T11:24:00+00:00',
   issued: '2023-09-11T09:24:00.000+00:00',
   valueQuantity: {
-    value: 7.0,
+    value: 7,
     unit: 'm/l',
   },
   interpretation: [

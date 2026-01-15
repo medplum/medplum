@@ -96,9 +96,8 @@ describe('Schedule/:id/$find', () => {
         });
       }
 
-      Object.entries(durations).forEach(([key, value]) =>
-        extension.extension.push({ url: key, valueDuration: { value, unit: 'min' } })
-      );
+      for (const [key, value] of Object.entries(durations)) {extension.extension.push({ url: key, valueDuration: { value, unit: 'min' } })
+      ;}
 
       return extension;
     });

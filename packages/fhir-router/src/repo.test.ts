@@ -13,7 +13,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { randomInt, randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { MemoryRepository } from './repo';
 
 const repo = new MemoryRepository();

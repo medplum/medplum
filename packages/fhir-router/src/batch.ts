@@ -147,8 +147,7 @@ class BatchProcessor {
     let requiresStrongTransaction = false;
     let updates = 0;
 
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
+    for (const [i, entry] of entries.entries()) {
       const method = entry.request?.method;
       if (!method) {
         results[i] = buildBundleResponse(
@@ -266,6 +265,8 @@ class BatchProcessor {
   }
 
   private getRouteForEntry(entry: BundleEntry): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
+    /* eslint-disable-next-line unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument --
+      Not Array#find() */
     return this.router.find(entry.request?.method as HttpMethod, entry.request?.url ?? '');
   }
 

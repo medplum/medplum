@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import type { Agent, Bot, Device } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
-import type { Server } from 'http';
+import type { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import * as executeBotModule from '../bots/execute';

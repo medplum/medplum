@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Resource, SearchParameter, ViewDefinition } from '@medplum/fhirtypes';
-import { readFileSync, readdirSync, writeFileSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalSqlOnFhir } from './eval';

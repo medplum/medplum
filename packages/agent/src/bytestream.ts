@@ -81,13 +81,13 @@ export class AgentByteStreamChannel extends BaseChannel {
       await this.stop();
       await this.start();
       this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else if (previousEndpoint.address !== endpoint.address) {
+    } else if (previousEndpoint.address === endpoint.address) {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    } else {
       this.log.info(
         `Reconfiguring TCP server and ${this.connections.size} connections based on new endpoint settings: ${previousEndpoint.address} => ${endpoint.address}`
       );
       this.configureTcpServerAndConnections();
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
     }
   }
 

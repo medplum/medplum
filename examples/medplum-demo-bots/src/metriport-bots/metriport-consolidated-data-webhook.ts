@@ -118,11 +118,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
 export function convertToTransactionBundle(bundle: Bundle, medplumPatientId: string): Bundle {
   const idToFullUrlMap: Record<string, string> = {};
-  bundle.entry?.forEach((entry) => {
+  if (bundle.entry) {for (const entry of bundle.entry) {
     if (entry.resource?.id && entry.fullUrl) {
       idToFullUrlMap[entry.resource.id] = entry.fullUrl;
     }
-  });
+  }}
 
   const transactionBundle: Bundle = {
     resourceType: 'Bundle',

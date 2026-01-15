@@ -444,7 +444,7 @@ function evalListMode(source: StructureMapGroupRuleSource, sourceValue: TypedVal
     case 'last':
       return [sourceValue.at(-1) as TypedValue];
     case 'not_last':
-      return sourceValue.slice(0, sourceValue.length - 1);
+      return sourceValue.slice(0, - 1);
     case 'only_one':
       if (sourceValue.length !== 1) {
         throw new Error('Expected only one value');
@@ -474,15 +474,7 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   // If the target property is an array, then we need to append to the array
   const isArray = isArrayProperty(targetContext, target.element as string) || Array.isArray(originalValue);
 
-  if (!target.transform) {
-    const elementTypes = tryGetPropertySchema(targetContext, target.element as string)?.type;
-    const elementType = elementTypes?.length === 1 ? elementTypes[0].code : undefined;
-    if (isArray || originalValue === undefined) {
-      targetValue = [elementType ? { type: elementType, value: {} } : toTypedValue({})];
-    } else {
-      targetValue = [elementType ? { type: elementType, value: originalValue } : toTypedValue(originalValue)];
-    }
-  } else {
+  if (target.transform) {
     switch (target.transform) {
       case 'append':
         targetValue = evalAppend(ctx, target);
@@ -513,6 +505,14 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
         break;
       default:
         throw new Error(`Unsupported transform: ${target.transform}`);
+    }
+  } else {
+    const elementTypes = tryGetPropertySchema(targetContext, target.element as string)?.type;
+    const elementType = elementTypes?.length === 1 ? elementTypes[0].code : undefined;
+    if (isArray || originalValue === undefined) {
+      targetValue = [elementType ? { type: elementType, value: {} } : toTypedValue({})];
+    } else {
+      targetValue = [elementType ? { type: elementType, value: originalValue } : toTypedValue(originalValue)];
     }
   }
 

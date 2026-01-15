@@ -364,7 +364,7 @@ describe('ConditionList', () => {
           );
           expect(choleraCall).toBeDefined();
         },
-        { timeout: 10000 }
+        { timeout: 10_000 }
       );
 
       // Select cholera option using keyboard navigation (select second option A00.9)
@@ -417,7 +417,7 @@ describe('ConditionList', () => {
           );
           expect(clinicalStatusCall).toBeDefined();
         },
-        { timeout: 10000 }
+        { timeout: 10_000 }
       );
 
       // Select active status using keyboard navigation
@@ -443,7 +443,7 @@ describe('ConditionList', () => {
       () => {
         expect(medplum.createResource).toHaveBeenCalled();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     // Verify the condition was created with correct values
@@ -458,7 +458,7 @@ describe('ConditionList', () => {
         expect(setConditions).toHaveBeenCalled();
         expect(onDiagnosisChange).toHaveBeenCalled();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
-  }, 15000);
+  }, 15_000);
 });

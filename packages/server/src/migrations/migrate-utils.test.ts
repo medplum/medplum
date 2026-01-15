@@ -37,7 +37,7 @@ describe('migration-utils', () => {
 
   test('doubleEscapeSingleQuotes', () => {
     expect(doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)")).toEqual(
-      "to_tsvector(\\'simple\\'::regconfig, value)"
+      String.raw`to_tsvector(\'simple\'::regconfig, value)`
     );
   });
 
@@ -60,11 +60,11 @@ describe('migration-utils', () => {
     expect(escapeUnicode('lighthouse')).toEqual('lighthouse');
     expect(escapeUnicode('\t')).toEqual('\t');
     expect(escapeUnicode('apple\tbanana\tcherry')).toEqual('apple\tbanana\tcherry');
-    expect(escapeUnicode('\x01')).toEqual('\\x01');
-    expect(escapeUnicode('\x7F')).toEqual('\\x7f');
-    expect(escapeUnicode('🦄')).toEqual('\\ud83e\\udd84');
-    expect(escapeUnicode('\u{1F984}')).toEqual('\\ud83e\\udd84');
-    expect(escapeUnicode('\ud83e\udd84')).toEqual('\\ud83e\\udd84');
+    expect(escapeUnicode('\x01')).toEqual(String.raw`\x01`);
+    expect(escapeUnicode('\x7F')).toEqual(String.raw`\x7f`);
+    expect(escapeUnicode('🦄')).toEqual(String.raw`\ud83e\udd84`);
+    expect(escapeUnicode('\u{1F984}')).toEqual(String.raw`\ud83e\udd84`);
+    expect(escapeUnicode('\ud83e\udd84')).toEqual(String.raw`\ud83e\udd84`);
   });
 
   test('getColumns', async () => {

@@ -11,7 +11,7 @@ import type {
   MedicationRequest,
   Patient,
 } from '@medplum/fhirtypes';
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import type { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 

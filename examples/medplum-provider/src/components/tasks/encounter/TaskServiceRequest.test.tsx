@@ -294,7 +294,7 @@ describe('TaskServiceRequest', () => {
     await waitFor(() => {
       expect(setTestsSpy).toHaveBeenCalled();
       const calls = setTestsSpy.mock.calls;
-      const testsPassed = calls[calls.length - 1][0];
+      const testsPassed = calls.at(-1)?.at(0);
       // Should only have 2 tests, not 3 (diagnostic report code filtered out)
       expect(testsPassed).toHaveLength(2);
       expect(testsPassed.every((test: { code: string }) => test.code !== SNOMED_DIAGNOSTIC_REPORT_CODE)).toBe(true);

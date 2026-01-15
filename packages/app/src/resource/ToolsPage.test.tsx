@@ -263,7 +263,7 @@ describe('ToolsPage', () => {
           assets: [
             {
               url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
+              id: 193_665_170,
               name: 'medplum-agent-3.2.14-linux',
               browser_download_url:
                 'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
@@ -346,7 +346,7 @@ describe('ToolsPage', () => {
           assets: [
             {
               url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
+              id: 193_665_170,
               name: 'medplum-agent-3.2.14-linux',
               browser_download_url:
                 'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
@@ -425,7 +425,7 @@ describe('ToolsPage', () => {
           assets: [
             {
               url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
+              id: 193_665_170,
               name: 'medplum-agent-3.2.14-linux',
               browser_download_url:
                 'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
@@ -502,7 +502,7 @@ describe('ToolsPage', () => {
           assets: [
             {
               url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
-              id: 193665170,
+              id: 193_665_170,
               name: 'medplum-agent-3.2.14-linux',
               browser_download_url:
                 'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',

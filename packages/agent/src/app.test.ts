@@ -1222,7 +1222,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57099);
+    await hl7Server.start(57_099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -1347,7 +1347,7 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57099);
+    await hl7Server.start(57_099);
 
     // At this point, we expect the websocket to be connected
     expect(state.mySocket).toBeDefined();
@@ -3389,14 +3389,14 @@ describe('App', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server1.start(57100);
+    await hl7Server1.start(57_100);
 
     const hl7Server2 = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server2.start(57101);
+    await hl7Server2.start(57_101);
 
     // Wait for servers to start listening
     while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
@@ -3512,7 +3512,7 @@ describe('App', () => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58100);
+      await hl7Server.start(58_100);
 
       // Send a message
       const hl7MessageBody =
@@ -3601,7 +3601,7 @@ describe('App', () => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58101);
+      await hl7Server.start(58_101);
 
       // Send a message
       const hl7MessageBody =
@@ -3698,14 +3698,14 @@ describe('App', () => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server1.start(58102);
+      await hl7Server1.start(58_102);
 
       const hl7Server2 = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server2.start(58103);
+      await hl7Server2.start(58_103);
 
       // Wait for servers to start listening
       while (!hl7Server1.server?.listening || !hl7Server2.server?.listening) {
@@ -3840,7 +3840,7 @@ describe('App', () => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58104);
+      await hl7Server.start(58_104);
 
       // Send a message
       const hl7MessageBody =
@@ -3951,7 +3951,7 @@ describe('App', () => {
           conn.send(message.buildAck());
         });
       });
-      await hl7Server.start(58105);
+      await hl7Server.start(58_105);
 
       // Send a message
       const hl7MessageBody =

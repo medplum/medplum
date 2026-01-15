@@ -127,7 +127,7 @@ export function ColumnStatistics(): JSX.Element {
             w="100"
             min={0}
             step={100}
-            max={10000}
+            max={10_000}
             onChange={(value) => {
               if (typeof value === 'number') {
                 setNewStatisticsTarget(value);

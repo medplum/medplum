@@ -532,7 +532,10 @@ async function getSearchIncludeEntries(
     throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
+  const fhirPathResult = evalFhirPathTyped(
+    searchParam.expression as string,
+    resources.map((r) => toTypedValue(r))
+  );
   const references: Reference[] = [];
   const canonicalReferences: string[] = [];
   for (const result of fhirPathResult) {
@@ -600,7 +603,7 @@ async function getSearchRevIncludeEntries(
   const references =
     getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
       ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
-      : resources.map(getReferenceString);
+      : resources.map((r) => getReferenceString(r));
   const searchRequest = {
     resourceType: resourceType as ResourceType,
     filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],

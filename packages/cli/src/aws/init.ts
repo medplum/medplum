@@ -178,7 +178,7 @@ export async function initStackCommand(): Promise<void> {
   print('The default is 512 MB, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096, 8192, 16384], 512);
+  config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096, 8192, 16_384], 512);
   writeConfig(configFileName, config);
 
   header('SERVER CPU');
@@ -187,7 +187,7 @@ export async function initStackCommand(): Promise<void> {
   print('The default is 256, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048, 4096, 8192, 16384], 256);
+  config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048, 4096, 8192, 16_384], 256);
   writeConfig(configFileName, config);
 
   header('SERVER IMAGE');

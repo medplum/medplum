@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { LOINC } from '../constants';
 import type { TypedValue } from '../types';
 import type { InternalSchemaElement, InternalTypeSchema, SlicingRules } from './types';

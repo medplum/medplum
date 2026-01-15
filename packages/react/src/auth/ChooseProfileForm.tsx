@@ -43,7 +43,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   }
 
   const options = props.memberships
-    .filter(filterMembership)
+    .filter((m) => filterMembership(m))
     .slice(0, 10)
     .map((item) => (
       <Combobox.Option value={item.id as string} key={item.id} className={classes.option}>

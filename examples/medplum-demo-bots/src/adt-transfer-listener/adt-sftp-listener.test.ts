@@ -20,8 +20,8 @@ import type {
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import type { ReadStream } from 'ssh2';
-import { default as SftpClient } from 'ssh2-sftp-client';
-import { Readable } from 'stream';
+import SftpClient from 'ssh2-sftp-client';
+import { Readable } from 'node:stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler, processAdtMessage } from './adt-sftp-listener';
 
@@ -680,6 +680,7 @@ describe('ADT SFTP Listener', () => {
     expect(messageHeadersAfter).toHaveLength(messageHeadersBefore.length);
   });
 
+  // Test skipped
   test.skip('Test SFTP Connection', async (ctx: any) => {
     await handler(ctx.medplum, {
       bot: { reference: 'Bot/123' },
@@ -687,7 +688,7 @@ describe('ADT SFTP Listener', () => {
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
     } as BotEvent<any>);
-  }, 10000);
+  }, 10_000);
 
   // Test that the bot gracefully handles errors when reading files from SFTP
   test.skip('Handle file reading errors', async (ctx: any) => {
@@ -697,6 +698,7 @@ describe('ADT SFTP Listener', () => {
       .createReadStream.mockImplementationOnce(() => {
         const readable = new Readable();
         readable.push(ADT_A01_MESSAGE_1);
+        // eslint-disable-next-line unicorn/prefer-single-call -- This is Readable#push(), not Array#push()
         readable.push(null);
 
         return readable as ReadStream;
@@ -727,13 +729,13 @@ describe('ADT SFTP Listener', () => {
   });
 });
 
-const ADT_A01_MESSAGE_WITH_COMPLEX_PRACTITIONER_NAME = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A01|127|T|2.3|||AL||44|ASCII
+const ADT_A01_MESSAGE_WITH_COMPLEX_PRACTITIONER_NAME = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A01|127|T|2.3|||AL||44|ASCII
 EVN|A01|20200508130736|||DOC123^Smith^John^Michael^Jr^Dr^^^DRNBR^PRSNL^^^ORGDR|
 PID|1|1234567890^^^SIMULATOR MRN^MRN|1234567890^^^SIMULATOR MRN^MRN||Test^Patient||19710320000000|F|||123 Main St^^City^^12345^USA|||||||||||||||||||||||||||
 PD1|||FAMILY PRACTICE^^12345|
 PV1|1|I|TestWard^MainRoom^Bed 1^Simulated Hospital^^BED^Main Building^1|28b|||DOC123^Smith^John^Michael^Jr^Dr^^^DRNBR^PRSNL^^^ORGDR|||SUR|||||||||1234567890^^^^visitid||||||||||||||||||||||ARRIVED|||20200508130736||`;
 
-const ADT_A01_MESSAGE_1 = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A01|127|T|2.3|||AL||44|ASCII
+const ADT_A01_MESSAGE_1 = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A01|127|T|2.3|||AL||44|ASCII
 EVN|A01|20200508130736|||C007^Litherland^Natasha^^^Dr^^^DRNBR^PRSNL^^^ORGDR|
 PID|1|4093140347^^^SIMULATOR MRN^MRN|4093140347^^^SIMULATOR MRN^MRN~6621905637^^^NHSNBR^NHSNMBR||Young^AKI Scenario 8^Gladys^^Miss^Ed.D.^CURRENT||19710320000000|F|||18 Forebear House^Latency Place^Westerham^^US98 6HD^GBR^HOME||079 5571 8211^HOME|||||||||P^Black or Black British - Other^^^||||||||
 PD1|||FAMILY PRACTICE^^12345|
@@ -742,26 +744,26 @@ AL1|0|MC|414285001^Food allergy (disorder)^SNM3^^|SV|Swollen face|20190818130736
 AL1|1|FA|418471000^Propensity to adverse reactions to food (disorder)^SNM3^^|MO|Feeling sick|20191129130736
 AL1|2|MA|419199007^Allergy to substance (disorder)^SNM3^^|MI|Vomiting|20191230130736`;
 
-const ADT_A01_MESSAGE_2 = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130742||ADT^A01|138|T|2.3|||AL||44|ASCII
+const ADT_A01_MESSAGE_2 = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130742||ADT^A01|138|T|2.3|||AL||44|ASCII
 EVN|A01|20200508130742|||C004^Walsh^Joyce^^^Dr^^^DRNBR^PRSNL^^^ORGDR|
 PID|1|3220604768^^^SIMULATOR MRN^MRN|3220604768^^^SIMULATOR MRN^MRN~0869582828^^^NHSNBR^NHSNMBR||Woolridge^Gabrielle^Joanne^^Miss^^CURRENT||20020718000000|F|||159 Spasm Lane^^Westerham^^TR37 5LO^GBR^HOME||020 1023 8796^HOME|||||||||A^White - British^^^||||||||
 PD1|||FAMILY PRACTICE^^12345|
 PV1|1|I|OtherWard^MainRoom^Bed 49^Simulated Hospital^^BED^Main Building^4|28b|||C004^Walsh^Joyce^^^Dr^^^DRNBR^PRSNL^^^ORGDR|||PUL|||||||||2939217843441610509^^^^visitid||||||||||||||||||||||ARRIVED|||20200508130742||`;
 
-const ADT_A01_MESSAGE_3 = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130734||ADT^A01|119|T|2.3|||AL||44|ASCII
+const ADT_A01_MESSAGE_3 = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130734||ADT^A01|119|T|2.3|||AL||44|ASCII
 EVN|A01|20200508130734|||C006^Woolfson^Kathleen^^^Dr^^^DRNBR^PRSNL^^^ORGDR|
 PID|1|2451929988^^^SIMULATOR MRN^MRN|2451929988^^^SIMULATOR MRN^MRN~3229465571^^^NHSNBR^NHSNMBR||Fleet^Ivan^Cameron^^Mr^^CURRENT||19320423000000|M|||190 Notify Avenue^^Westerham^^HV20 2QG^GBR^HOME||020 2883 8342^HOME|||||||||N^Black or Black British - African^^^||||||||
 PD1|||FAMILY PRACTICE^^12345|
 PV1|1|I|OtherWard^MainRoom^Bed 43^Simulated Hospital^^BED^Main Building^4|28b|||C006^Woolfson^Kathleen^^^Dr^^^DRNBR^PRSNL^^^ORGDR|||MED|||||||||13852201969791978666^^^^visitid||||||||||||||||||||||ARRIVED|||20200508130734||`;
 
-const ADT_A08_MESSAGE = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508140744||ADT^A08|143|T|2.3|||AL||44|ASCII
+const ADT_A08_MESSAGE = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508140744||ADT^A08|143|T|2.3|||AL||44|ASCII
 EVN|A08|20200508140744|||C003^Cuddy^Kevin^^^Dr^^^DRNBR^PRSNL^^^ORGDR|
 PID|1|3740313415^^^SIMULATOR MRN^MRN|3740313415^^^SIMULATOR MRN^MRN~5871435831^^^NHSNBR^NHSNMBR||Barnes^Lisa^^B.Sc^Mrs^^CURRENT||19841121000000|F|||42 Beetle Lane^^Wembley^^TO91 1FY^GBR^HOME||020 1070 0783^HOME|||||||||A^White - British^^^||||||||
 PD1|||FAMILY PRACTICE^^12345|
 PV1|1|O|OtherWard^MainRoom^Bed 51^Simulated Hospital^^BED^Main Building^4|28b|||C003^Cuddy^Kevin^^^Dr^^^DRNBR^PRSNL^^^ORGDR|||URO|||||||||16450960227094948484^^^^visitid||||||||||||||||||||||ARRIVED|||20200508140744||`;
 
-const INVALID_MESSAGE_TYPE = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ORU^R01|127|T|2.3|||AL||44|ASCII
+const INVALID_MESSAGE_TYPE = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ORU^R01|127|T|2.3|||AL||44|ASCII
 PID|1|4093140347^^^SIMULATOR MRN^MRN|4093140347^^^SIMULATOR MRN^MRN||Young^Test^Patient||19710320000000|F|||123 Main St^^City^^12345^USA|||||||||||||||||||||||||||`;
 
-const INVALID_MESSAGE_SUBTYPE = `MSH|^~\\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A02|127|T|2.3|||AL||44|ASCII
+const INVALID_MESSAGE_SUBTYPE = String.raw`MSH|^~\&|SIMHOSP|SFAC|RAPP|RFAC|20200508130736||ADT^A02|127|T|2.3|||AL||44|ASCII
 PID|1|4093140347^^^SIMULATOR MRN^MRN|4093140347^^^SIMULATOR MRN^MRN||Young^Test^Patient||19710320000000|F|||123 Main St^^City^^12345^USA|||||||||||||||||||||||||||`;

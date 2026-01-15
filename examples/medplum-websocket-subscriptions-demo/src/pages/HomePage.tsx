@@ -192,7 +192,7 @@ export function HomePage(): JSX.Element {
       </Title>
       <Group justify="center" pt="xl">
         <Button
-          onClick={!subscriptions ? () => createSubscriptions().catch(console.error) : undefined}
+          onClick={subscriptions ? undefined : () => createSubscriptions().catch(console.error)}
           disabled={working || !!subscriptions}
         >
           Create Subscriptions

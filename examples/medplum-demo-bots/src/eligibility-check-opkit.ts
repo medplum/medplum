@@ -136,7 +136,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       (benefit: any) => benefit.service === service && benefit.network === network && benefit.coverage === coverage
     );
 
-    filteredBenefits.forEach((benefit: any) => {
+    for (const benefit of filteredBenefits) {
       if (benefit.period === 'remaining' || !typeToBenefitTypeMap[benefit.type]) {
         // Skip in these states
       } else if (['service_year', 'calendar_year'].includes(benefit.period)) {
@@ -193,7 +193,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
             : {}),
         });
       }
-    });
+    }
 
     return fhirBenefits.length > 0 ? fhirBenefits : undefined;
   };
@@ -214,7 +214,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const filteredBenefits = benefits.filter((value: any) => {
       return allowableBenefitTypes.includes(value?.type);
     });
-    filteredBenefits.forEach((benefit: any) => {
+    for (const benefit of filteredBenefits) {
       const category = serviceTypeCodeToCategoryDisplayMap[benefit?.service]
         ? {
             coding: [
@@ -271,7 +271,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           benefit: fhirBenefit,
         });
       }
-    });
+    }
 
     return item;
   };

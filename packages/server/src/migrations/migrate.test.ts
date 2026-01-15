@@ -336,8 +336,8 @@ describe('Generator', () => {
       const actual: ColumnDefinition[] = toSorted(table.columns, sortFn);
       const expected = toSorted(expectedColumns, sortFn);
       expect(actual.map((c) => c.name)).toStrictEqual(expected.map((c) => c.name));
-      for (let i = 0; i < actual.length; i++) {
-        expect(columnDefinitionsEqual(table, actual[i], expected[i])).toBe(true);
+      for (const [i, element] of actual.entries()) {
+        expect(columnDefinitionsEqual(table, element, expected[i])).toBe(true);
       }
     });
 

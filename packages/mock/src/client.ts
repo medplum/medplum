@@ -813,7 +813,9 @@ export class MockFetchClient {
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
-    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
+    for (const slot of makeDrAliceSmithSlots()) {
+      await this.repo.createResource(slot);
+    }
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
@@ -866,7 +868,7 @@ export function createFakeJwt(claims: Record<string, string | number>): string {
 }
 
 function base64Encode(str: string): string {
-  return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
+  return typeof window === 'undefined' ? Buffer.from(str).toString('base64') : window.btoa(str);
 }
 
 // even though it's just a type, avoid importing IncomingHttpHeaders from node:http

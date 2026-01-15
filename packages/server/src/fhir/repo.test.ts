@@ -39,10 +39,10 @@ import type {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { randomBytes, randomUUID } from 'crypto';
-import { readFileSync } from 'fs';
+import { randomBytes, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
@@ -213,7 +213,7 @@ describe('FHIR Repo', () => {
     ];
     const results = await systemRepo.readReferences(references);
     if (!Array.isArray(results)) {
-      throw new Error('Should have returned an array');
+      throw new TypeError('Should have returned an array');
     }
 
     expect(results).toHaveLength(6);
@@ -260,9 +260,9 @@ describe('FHIR Repo', () => {
       ['offset', { offset: 1 }, ['v1']],
       ['limit and offset', { limit: 1, offset: 1 }, ['v1']],
       ['negative offset', { offset: -1 }, ['v2', 'v1']],
-      ['large offset', { offset: 10000 }, []],
+      ['large offset', { offset: 10_000 }, []],
       ['negative limit', { limit: -1 }, ['v2', 'v1']],
-      ['large limit', { limit: 100000 }, ['v2', 'v1']],
+      ['large limit', { limit: 100_000 }, ['v2', 'v1']],
     ])('options: %s', async (_, options, expected) => {
       const history = await systemRepo.readHistory('Patient', versions.v1.id, options);
       if (expected.length === 0) {
@@ -271,8 +271,8 @@ describe('FHIR Repo', () => {
       } else {
         expect(history).toBeDefined();
         expect(history.entry?.length).toBe(expected.length);
-        for (let i = 0; i < expected.length; i++) {
-          expect(history.entry?.[i]?.resource?.id).toBe(versions[expected[i]].id);
+        for (const [i, element] of expected.entries()) {
+          expect(history.entry?.[i]?.resource?.id).toBe(versions[element].id);
         }
       }
     });

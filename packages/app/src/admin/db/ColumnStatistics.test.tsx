@@ -40,7 +40,7 @@ describe('ColumnStatistics', () => {
             part: [
               { name: 'name', valueString: 'id' },
               { name: 'statisticsTarget', valueInteger: 200 },
-              { name: 'nullFraction', valueDecimal: 0.0 },
+              { name: 'nullFraction', valueDecimal: 0 },
               { name: 'avgWidth', valueInteger: 36 },
               { name: 'nDistinct', valueDecimal: -1 },
               { name: 'correlation', valueDecimal: 0.5 },
@@ -758,7 +758,7 @@ describe('ColumnStatistics', () => {
                     part: [
                       { name: 'name', valueString: 'longColumn' },
                       { name: 'statisticsTarget', valueInteger: 100 },
-                      { name: 'nullFraction', valueDecimal: 0.0 },
+                      { name: 'nullFraction', valueDecimal: 0 },
                       { name: 'avgWidth', valueInteger: 36 },
                       { name: 'nDistinct', valueDecimal: -1 },
                       { name: 'correlation', valueDecimal: 0.5 },

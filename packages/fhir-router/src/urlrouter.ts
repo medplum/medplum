@@ -59,7 +59,8 @@ function tryMatch<T, U>(route: Route<T, U>, method: HttpMethod, path: string[]):
     return -1;
   }
   let score = 0;
-  for (let i = 0; i < path.length; i++) {
+  const len = path.length;
+  for (let i = 0; i < len; i++) {
     if (!route.path[i].param) {
       if (path[i] !== route.path[i].value) {
         return -1;
@@ -72,9 +73,9 @@ function tryMatch<T, U>(route: Route<T, U>, method: HttpMethod, path: string[]):
 
 function buildParams<T, U>(route: Route<T, U>, path: string[]): Record<string, string> {
   const params: Record<string, string> = Object.create(null);
-  for (let i = 0; i < path.length; i++) {
+  for (const [i, element] of path.entries()) {
     if (route.path[i].param) {
-      params[route.path[i].value] = path[i];
+      params[route.path[i].value] = element;
     }
   }
   return params;

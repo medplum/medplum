@@ -112,6 +112,7 @@ async function getCandidTasks(candidCodedEncounter: any, apiKey: string, apiSecr
   // Send the CodedEncounter
   const taskResponse = await fetch(CANDID_API_URL + '/tasks', {
     method: 'get',
+    // eslint-disable-next-line unicorn/no-invalid-fetch-options
     body: JSON.stringify(candidCodedEncounter),
     headers: { 'Content-Type': 'application/json', authorization: `Bearer ${bearerToken}` },
   });

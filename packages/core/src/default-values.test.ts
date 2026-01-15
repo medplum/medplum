@@ -11,7 +11,7 @@ import {
 } from './default-values';
 import type { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import { indexStructureDefinitionBundle, tryGetProfile } from './typeschema/types';
-import { isPopulated } from './utils';
+import { flatMapFilter, isPopulated } from './utils';
 
 function isStructureDefinition(sd: any): sd is StructureDefinition {
   if (!isPopulated<StructureDefinition>(sd)) {
@@ -54,12 +54,10 @@ describe('apply default values', () => {
   });
 
   function loadProfiles(profileUrls: string[]): void {
-    const sds: StructureDefinition[] = profileUrls
-      .map((profileUrl) => {
-        return USCoreStructureDefinitions.find((sd) => sd.url === profileUrl);
-      })
-      .filter(isStructureDefinition);
-
+    const sds = flatMapFilter(profileUrls, (url) => {
+      const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
+      return isStructureDefinition(sd) ? sd : undefined;
+    });
     expect(sds.length).toStrictEqual(profileUrls.length);
 
     indexStructureDefinitionBundle(sds);
@@ -183,7 +181,7 @@ describe('apply default values', () => {
 
       // Prepare expected value
       // Expect stub values for a slice named 'text' to have been added for race and ethnicity extensions
-      [ethnicityExtensionUrl, raceExtensionUrl].forEach((extUrl) => {
+      for (const extUrl of [ethnicityExtensionUrl, raceExtensionUrl]) {
         const ext = expected.extension?.find((e) => e.url === extUrl);
         if (ext?.extension === undefined) {
           fail(`expected ${extUrl} extensions to exist`);
@@ -192,7 +190,7 @@ describe('apply default values', () => {
         const textExt = ext.extension?.find((e) => e.url === 'text');
         expect(textExt).toBeUndefined();
         ext.extension.push({ url: 'text' });
-      });
+      }
 
       expect(withDefaults).toEqual(expected);
     });

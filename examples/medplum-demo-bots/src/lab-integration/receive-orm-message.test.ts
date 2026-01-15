@@ -116,7 +116,7 @@ describe('Send to Partner Lab', () => {
   });
 });
 
-const TEST_MESSAGE = `MSH|^~\\&|FooGen|NG|LabX|LX|200307250948||ORM^O01|1059140905|T|2.5|||AL
+const TEST_MESSAGE = String.raw`MSH|^~\&|FooGen|NG|LabX|LX|200307250948||ORM^O01|1059140905|T|2.5|||AL
 PID|1|200|||Patient^Test||19901017|M|||||(610)123-4567||||||23456788
 PV1|1|O|4747^^^4747||||UP2666^Smith MD^Alice|||||||||||||||||||||||||||||||||||||200307240000
 IN1|1|HM0|BLUE|Blue Cross|AddressLine 1^AddressLine 2^City^Sta^99999|||543879|||||||HM|Family Name^Given Name^M|1||AddressLine 1^AddressLine 2^City^Sta^99999||||||||||||N|||||1234567|||||||||||T

@@ -36,12 +36,12 @@ describe('HL7 commands', () => {
     // Send a message from file
     jest.spyOn(fs, 'readFileSync').mockImplementation(() => generateSampleHl7Message());
     await main(['node', 'index.js', 'hl7', 'send', 'localhost', '56999', '--file', 'sample.hl7']);
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('MSH|^~\\&|ADTSYS|HOSPITAL|RECEIVER|DEST|'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(String.raw`MSH|^~\&|ADTSYS|HOSPITAL|RECEIVER|DEST|`));
     (console.log as unknown as jest.Mock).mockClear();
 
     // Send a generated message
     await main(['node', 'index.js', 'hl7', 'send', 'localhost', '56999', '--generate-example']);
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('MSH|^~\\&|ADTSYS|HOSPITAL|RECEIVER|DEST|'));
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(String.raw`MSH|^~\&|ADTSYS|HOSPITAL|RECEIVER|DEST|`));
     (console.log as unknown as jest.Mock).mockClear();
 
     expect(createServerSpy).toHaveBeenCalled();

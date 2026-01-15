@@ -115,7 +115,7 @@ export function resolveAvailability(
           return intersectIntervals(availableInterval, interval);
         })
       )
-      .filter(isDefined);
+      .filter((i) => isDefined(i));
   });
 }
 
@@ -243,7 +243,7 @@ export function applyExistingSlots(params: {
     .filter((slot) => slot.status === 'free')
     .filter((slot) => hasMatchingServiceType(slot, params.serviceType))
     .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, params.range))
-    .filter(isDefined);
+    .filter((i) => isDefined(i));
 
   const busySlotIntervals = normalizeIntervals(
     params.slots

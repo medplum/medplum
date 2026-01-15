@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
+import { EMPTY } from '@medplum/core';
+import type { BundleEntry, ExplanationOfBenefit, Resource } from '@medplum/fhirtypes';
 import { createReadStream, writeFile } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
@@ -34,7 +35,7 @@ bulkExportCommand
     const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
-    response.output?.forEach(async ({ type, url }) => {
+    for (const { type, url } of response.output ?? EMPTY) {
       const fileUrl = new URL(url);
       const data = await medplum.download(url);
       const fileName = `${type}_${fileUrl.pathname}`.replaceAll(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
@@ -43,7 +44,7 @@ bulkExportCommand
       writeFile(`${path}`, await data.text(), () => {
         console.log(`${path} is created`);
       });
-    });
+    }
   });
 
 bulkImportCommand
@@ -105,9 +106,11 @@ async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient):
     entry: entries,
   });
 
-  result.entry?.forEach((resultEntry) => {
-    prettyPrint(resultEntry.response);
-  });
+  if (result.entry) {
+    for (const resultEntry of result.entry) {
+      prettyPrint(resultEntry.response);
+    }
+  }
 }
 
 function parseResource(jsonString: string, addExtensionsForMissingValues: boolean): Resource {
@@ -132,11 +135,10 @@ function addExtensionsForMissingValuesExplanationOfBenefits(resource: Explanatio
     resource.provider = getUnsupportedExtension();
   }
 
-  resource.item?.forEach((item: ExplanationOfBenefitItem) => {
+  for (const item of resource.item ?? EMPTY) {
     if (!item?.productOrService) {
       item.productOrService = getUnsupportedExtension();
     }
-  });
-
+  }
   return resource;
 }

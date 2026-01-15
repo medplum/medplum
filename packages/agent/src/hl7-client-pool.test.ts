@@ -73,7 +73,7 @@ function createFakeClient({
 
 describe('Hl7ClientPool', () => {
   let server: Hl7Server;
-  const port = 57200;
+  const port = 57_200;
 
   beforeAll(async () => {
     server = new Hl7Server((connection) => {

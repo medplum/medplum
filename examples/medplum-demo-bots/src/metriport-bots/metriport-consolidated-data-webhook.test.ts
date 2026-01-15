@@ -9,7 +9,7 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
 import {
@@ -206,7 +206,7 @@ describe('convertToTransactionBundle', () => {
     expect(transactionBundle.resourceType).toBe('Bundle');
     expect(transactionBundle.entry).toBeDefined();
 
-    transactionBundle.entry?.forEach((entry) => {
+    if (transactionBundle.entry) {for (const entry of transactionBundle.entry) {
       expect(entry.request).toBeDefined();
 
       if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
@@ -217,9 +217,9 @@ describe('convertToTransactionBundle', () => {
       } else if (entry.resource) {
         expect(entry.request?.method).toBe('PUT');
         expect(entry.resource?.id).toBeUndefined();
-        expect(entry.request?.url).toMatch(new RegExp(`^${entry.resource.resourceType}\\?identifier=.+$`));
+        expect(entry.request?.url).toMatch(new RegExp(String.raw`^${entry.resource.resourceType}\?identifier=.+$`));
       }
-    });
+    }}
   });
 
   test('replaces references with fullUrls', () => {

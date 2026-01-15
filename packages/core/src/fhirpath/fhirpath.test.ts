@@ -959,7 +959,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testLiteralUnicode', () => {
-      expect(evalFhirPath("Patient.name.given.first() = 'P\\u0065ter'", patient)).toStrictEqual([true]);
+      expect(evalFhirPath(String.raw`Patient.name.given.first() = 'P\u0065ter'`, patient)).toStrictEqual([true]);
     });
 
     test('testCollectionNotEmpty', () => {
@@ -1231,7 +1231,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testStringQuantityWeekConvertsToQuantity', () => {
-      expect(evalFhirPath("'1 \\'wk\\''.convertsToQuantity()", patient)).toStrictEqual([true]);
+      expect(evalFhirPath(String.raw`'1 \'wk\''.convertsToQuantity()`, patient)).toStrictEqual([true]);
     });
 
     test.skip('testStringQuantityWeekConvertsToQuantityFalse', () => {
@@ -1279,7 +1279,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testStringQuantityWeekLiteralToQuantity', () => {
-      expect(evalFhirPath("'1 \\'wk\\''.toQuantity() = 1 'wk'", patient)).toStrictEqual([true]);
+      expect(evalFhirPath(String.raw`'1 \'wk\''.toQuantity() = 1 'wk'`, patient)).toStrictEqual([true]);
     });
 
     test('testStringDecimalLiteralToQuantity', () => {
@@ -3620,13 +3620,13 @@ describe('FHIRPath Test Suite', () => {
     test('testReplaceMatches3', () => {
       // See base StructureDefinition invariant sdf-8a:
       // https://hl7.org/fhir/R4/structuredefinition-definitions.html#StructureDefinition.differential
-      expect(evalFhirPath("'Extension.url'.replaceMatches('\\\\..*', '')", {})).toStrictEqual(['Extension']);
+      expect(evalFhirPath(String.raw`'Extension.url'.replaceMatches('\\..*', '')`, {})).toStrictEqual(['Extension']);
     });
 
     test('testReplaceMatches4', () => {
       expect(
         evalFhirPath(
-          `'\\"wrapped in double quotes\\"'.replaceMatches('\\"', '\\'').replaceMatches('double', 'single')`,
+          String.raw`'\"wrapped in double quotes\"'.replaceMatches('\"', '\'').replaceMatches('double', 'single')`,
           {}
         )
       ).toStrictEqual(["'wrapped in single quotes'"]);

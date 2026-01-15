@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import express from 'express';
 import { authenticator } from 'otplib';
 import request from 'supertest';
