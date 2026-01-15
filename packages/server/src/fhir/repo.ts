@@ -2888,11 +2888,19 @@ function getArrayPaddingConfig(
   resourceType: string
 ): ArrayColumnPaddingConfig | undefined {
   const paddingConfigEntry = getConfig().arrayColumnPadding?.[searchParam.code];
-  if (
-    paddingConfigEntry &&
-    (paddingConfigEntry.resourceType === undefined || paddingConfigEntry.resourceType.includes(resourceType))
-  ) {
-    return paddingConfigEntry.config;
+  if (paddingConfigEntry) {
+    if (Array.isArray(paddingConfigEntry)) {
+      for (const entry of paddingConfigEntry) {
+        if (entry.resourceType === undefined || entry.resourceType.includes(resourceType)) {
+          return entry.config;
+        }
+      }
+      return undefined;
+    }
+
+    if (paddingConfigEntry.resourceType === undefined || paddingConfigEntry.resourceType.includes(resourceType)) {
+      return paddingConfigEntry.config;
+    }
   }
   return undefined;
 }
