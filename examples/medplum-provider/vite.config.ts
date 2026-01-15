@@ -10,17 +10,15 @@ import { defineConfig } from 'vitest/config';
 dns.setDefaultResultOrder('verbatim');
 
 // Resolve aliases to local packages when working within the monorepo
-const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
-  Object.entries({
-    '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
-    '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
-    '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
-    '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
-    '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
-    '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
-    '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
-  }).filter(([, relPath]) => existsSync(relPath))
-);
+const alias: NonNullable<UserConfig['resolve']>['alias'] = [
+  { find: '@medplum/react/styles.css', replacement: path.resolve(__dirname, '../../packages/react/dist/esm/index.css') },
+  { find: '@medplum/react', replacement: path.resolve(__dirname, '../../packages/react/src/index.ts') },
+  { find: '@medplum/core', replacement: path.resolve(__dirname, '../../packages/core/src/index.ts') },
+  { find: '@medplum/react-hooks', replacement: path.resolve(__dirname, '../../packages/react-hooks/src/index.ts') },
+  { find: '@medplum/dosespot-react', replacement: path.resolve(__dirname, '../../packages/dosespot-react/src/index.ts') },
+  { find: '@medplum/health-gorilla-core', replacement: path.resolve(__dirname, '../../packages/health-gorilla-core/src/index.ts') },
+  { find: '@medplum/health-gorilla-react', replacement: path.resolve(__dirname, '../../packages/health-gorilla-react/src/index.ts') },
+].filter(({ replacement }) => existsSync(replacement));
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -35,6 +33,9 @@ export default defineConfig({
   },
   resolve: {
     alias,
+  },
+  optimizeDeps: {
+    exclude: ['@medplum/core', '@medplum/react', '@medplum/react-hooks'],
   },
   test: {
     globals: true,
