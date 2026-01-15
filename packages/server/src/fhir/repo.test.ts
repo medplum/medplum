@@ -1268,6 +1268,72 @@ describe('FHIR Repo', () => {
         },
         false,
       ],
+      [
+        'array with entry with no resourceType array in second element',
+        [
+          {
+            resourceType: ['Task'],
+            config: {
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+          {
+            config: {
+              // ensure a padding element is chosen
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+        ],
+        true,
+      ],
+      [
+        'array with resourceType in first entry resourceType array',
+        [
+          {
+            resourceType: ['Patient'],
+            config: {
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+          {
+            resourceType: ['Observation'],
+            config: {
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+        ],
+        true,
+      ],
+      [
+        'array with resourceType NOT in any resourceType array',
+        [
+          {
+            resourceType: ['Patient'],
+            config: {
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+          {
+            resourceType: ['Task'],
+            config: {
+              m: 1,
+              lambda: 300,
+              statisticsTarget: 1,
+            },
+          },
+        ],
+        false,
+      ],
     ])('with %s', async (desc, identifierArrayColumnPadding, shouldPad) =>
       withTestContext(async () => {
         const config = getConfig();
