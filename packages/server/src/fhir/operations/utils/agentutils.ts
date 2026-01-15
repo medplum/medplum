@@ -177,7 +177,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
     message.callback = getReferenceString(agent) + '-' + randomUUID();
 
-    const redisSubscriber = getRedisSubscriber();
+    const redisSubscriber = getRedisSubscriber(repo.shardId);
     await redisSubscriber.subscribe(message.callback);
 
     const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {

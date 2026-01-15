@@ -721,7 +721,7 @@ describe('FHIRcast routes', () => {
     const contentBundleId = generateId();
 
     // Setup the key as if we have already opened this resource
-    await setTopicCurrentContext(project.id, topic, {
+    await setTopicCurrentContext(projectShardId, project.id, topic, {
       'context.type': 'DiagnosticReport',
       'context.versionId': generateId(),
       context: [
@@ -808,7 +808,7 @@ describe('FHIRcast routes', () => {
     const versionId = generateId();
 
     // Setup the key as if we have already opened this resource
-    await setTopicCurrentContext(project.id, topic, {
+    await setTopicCurrentContext(projectShardId, project.id, topic, {
       'context.type': 'DiagnosticReport',
       'context.versionId': versionId,
       context: [

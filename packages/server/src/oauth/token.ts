@@ -637,7 +637,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     const userId = resolveId(login.user) as string;
     let topic: string;
     try {
-      topic = await getTopicForUser(userId);
+      topic = await getTopicForUser(globalSystemRepo.shardId, userId);
     } catch (err: unknown) {
       sendTokenError(res, normalizeErrorString(err));
       return;

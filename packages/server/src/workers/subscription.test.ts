@@ -1780,7 +1780,7 @@ describe('Subscription Worker', () => {
     let rejectNotExpected: ((err: Error) => void) | undefined;
 
     beforeAll(async () => {
-      subscriber = getRedisSubscriber();
+      subscriber = getRedisSubscriber(repo.shardId);
       subscriber.on('message', (_channel, argsArr) => {
         const parsedArgsArr = JSON.parse(argsArr) as [Resource, string, SubEventsOptions][];
         if (resolveExpected) {

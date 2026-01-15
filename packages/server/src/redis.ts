@@ -7,9 +7,7 @@ import { getLogger } from './logger';
 import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 
 let globalRedis: Redis | undefined = undefined;
-let redisSubscribers: Set<Redis> | undefined = undefined;
-
-const redisShards: Record<string, Redis> = {};
+const redisShards: Record<string, { redis: Redis; subscribers: Set<Redis> }> = {};
 
 export function initRedis(config: MedplumServerConfig): void {
   globalRedis = new Redis({
@@ -25,13 +23,13 @@ export function initRedis(config: MedplumServerConfig): void {
       return false; // Do not reconnect on other errors
     },
   });
-  redisShards[GLOBAL_SHARD_ID] = globalRedis;
+  redisShards[GLOBAL_SHARD_ID] = { redis: globalRedis, subscribers: new Set() };
 
   for (const [shardId, shardConfig] of Object.entries(config.shards ?? {})) {
     if (shardId === GLOBAL_SHARD_ID) {
       continue;
     }
-    redisShards[shardId] = initRedisConnection(shardConfig.redis);
+    redisShards[shardId] = { redis: initRedisConnection(shardConfig.redis), subscribers: new Set() };
   }
 }
 
@@ -53,20 +51,16 @@ function initRedisConnection(config: MedplumRedisConfig): Redis {
 
 export async function closeRedis(): Promise<void> {
   const tmpRedisShards: Redis[] = [];
-  for (const [shardId, redis] of Object.entries(redisShards)) {
-    tmpRedisShards.push(redis);
+  for (const [shardId, redisShard] of Object.entries(redisShards)) {
+    for (const subscriber of redisShard.subscribers) {
+      subscriber.disconnect();
+    }
+    tmpRedisShards.push(redisShard.redis);
     delete redisShards[shardId];
   }
 
   if (globalRedis) {
-    const tmpSubscribers = redisSubscribers;
     globalRedis = undefined;
-    redisSubscribers = undefined;
-    if (tmpSubscribers) {
-      for (const subscriber of tmpSubscribers) {
-        subscriber.disconnect();
-      }
-    }
     // globalRedis is included in tmpRedisShards, so don't need to quit it again
     await Promise.all(tmpRedisShards.map((r) => r.quit()));
     await sleep(100);
@@ -90,11 +84,11 @@ export function getRedis(shardId: string): Redis & { duplicate: never } {
   }
   const redisShard = redisShards[shardId];
   if (!redisShard) {
-    throw new Error('Redis not initialized');
+    throw new Error('Redis shard not initialized', { cause: { shardId } });
   }
   // @ts-expect-error We don't want anyone to call `duplicate on the redis global instance
   // This is because we want to gracefully `quit` and duplicated Redis instances will
-  return redisShard;
+  return redisShard.redis;
 }
 
 export function getGlobalRedis(): ReturnType<typeof getRedis> {
@@ -106,26 +100,32 @@ export function getGlobalRedis(): ReturnType<typeof getRedis> {
  *
  * The synchronous `.disconnect()` on this instance should be called instead of `.quit()` when you want to disconnect.
  *
+ * @param shardId - The shard ID to use.
  * @returns A `Redis` instance to use as a subscriber client.
  */
-export function getRedisSubscriber(): Redis & { quit: never } {
-  if (!globalRedis) {
-    throw new Error('Redis not initialized');
+export function getRedisSubscriber(shardId: string): Redis & { quit: never } {
+  const redisShard = redisShards[shardId];
+  if (!redisShard) {
+    throw new Error('Redis shard not initialized', { cause: { shardId } });
   }
-  const subscriber = globalRedis.duplicate();
-  redisSubscribers ??= new Set();
-  redisSubscribers.add(subscriber);
+  const subscriber = redisShard.redis.duplicate();
+  redisShard.subscribers.add(subscriber);
 
   subscriber.on('end', () => {
-    redisSubscribers?.delete(subscriber);
+    redisShard.subscribers?.delete(subscriber);
   });
 
   return subscriber as Redis & { quit: never };
 }
 
 /**
+ * @param shardId - The shard ID to use.
  * @returns The amount of active `Redis` subscriber instances.
  */
-export function getRedisSubscriberCount(): number {
-  return redisSubscribers?.size ?? 0;
+export function getRedisSubscriberCount(shardId: string): number {
+  const redisShard = redisShards[shardId];
+  if (!redisShard) {
+    return 0;
+  }
+  return redisShard.subscribers.size;
 }

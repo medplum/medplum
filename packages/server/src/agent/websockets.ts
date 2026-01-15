@@ -160,7 +160,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
-    redisSubscriber = getRedisSubscriber();
+    redisSubscriber = getRedisSubscriber(repo.shardId);
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent

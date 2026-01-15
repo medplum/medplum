@@ -264,7 +264,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
   >;
   const projectId = ctx.project.id;
 
-  const currentContext = await getCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic']);
+  const currentContext = await getCurrentContext(ctx.repo.shardId, projectId, event['hub.topic']);
   // If the current context is a DiagnosticReport anchor context, then store it for later
   if (currentContext?.['context.type'] === 'DiagnosticReport') {
     const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource;
@@ -288,7 +288,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
       anchorReport.id as string
     );
     if (storedContext) {
-      await setTopicCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], storedContext);
+      await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], storedContext);
       event['context.versionId'] = storedContext['context.versionId'];
       await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
       return;
@@ -299,7 +299,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
 
   const anchorResourceType = extractAnchorResourceType(event['hub.event']);
   if (anchorResourceType === 'DiagnosticReport') {
-    await setTopicCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], {
+    await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], {
       'context.type': 'DiagnosticReport',
       context: [
         ...(event as FhircastEventPayload<'DiagnosticReport-open'>).context,
@@ -315,7 +315,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
       'context.versionId': event['context.versionId'],
     });
   } else {
-    await setTopicCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], {
+    await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], {
       'context.type': anchorResourceType,
       context: event.context,
       'context.versionId': event['context.versionId'],
@@ -347,11 +347,7 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   const { event } = req.body as FhircastMessagePayload;
   const projectId = ctx.project.id;
 
-  const currentContext = await getCurrentContext<'DiagnosticReport'>(
-    getRedis(ctx.repo.shardId),
-    projectId,
-    event['hub.topic']
-  );
+  const currentContext = await getCurrentContext<'DiagnosticReport'>(ctx.repo.shardId, projectId, event['hub.topic']);
   if (!currentContext) {
     sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
     return;
@@ -384,7 +380,7 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   event['context.priorVersionId'] = priorVersionId;
   currentContext['context.versionId'] = event['context.versionId'] = generateId();
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html
-  await setTopicCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], currentContext);
+  await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], currentContext);
   await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
 }
 
@@ -515,9 +511,9 @@ async function closeCurrentContext(redis: Redis, projectId: string, topic: strin
 
 // Get the current subscription status
 protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
+  const { project, repo } = getAuthenticatedContext();
   const topic = singularize(req.params.topic) ?? '';
-  const currentContext = await getCurrentContext(project.id, topic);
+  const currentContext = await getCurrentContext(repo.shardId, project.id, topic);
   // Non-standard FHIRcast extension to support Nuance PowerCast Hub
   if (!currentContext) {
     res.status(200).json([]);
@@ -527,9 +523,9 @@ protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
 });
 
 protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
+  const { project, repo } = getAuthenticatedContext();
   const topic = singularize(req.params.topic) ?? '';
-  const currentContext = await getCurrentContext(project.id, topic);
+  const currentContext = await getCurrentContext(repo.shardId, project.id, topic);
   if (!currentContext) {
     // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
     res.status(200).json({
