@@ -62,6 +62,7 @@ export function App(): JSX.Element | null {
       logo={<Logo size={24} />}
       pathname={location.pathname}
       searchParams={searchParams}
+      layoutVersion="v2"
       menus={
         profile
           ? [
