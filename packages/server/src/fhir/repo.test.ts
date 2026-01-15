@@ -1291,7 +1291,7 @@ describe('FHIR Repo', () => {
         true,
       ],
       [
-        'array with resourceType in first entry resourceType array',
+        'array with resourceType in second entry resourceType array',
         [
           {
             resourceType: ['Patient'],
@@ -1302,7 +1302,7 @@ describe('FHIR Repo', () => {
             },
           },
           {
-            resourceType: ['Observation'],
+            resourceType: ['Task', 'Observation'],
             config: {
               m: 1,
               lambda: 300,
