@@ -299,9 +299,9 @@ export class SubscriptionManager {
     }
 
     // Get binding token
-    const { parameter } = (await this.medplum.get(
+    const { parameter } = await this.medplum.get<Parameters>(
       `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`
-    )) as Parameters;
+    );
     const token = parameter?.find((param) => param.name === 'token')?.valueString;
     const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
 

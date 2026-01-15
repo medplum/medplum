@@ -1207,7 +1207,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
-          url: (url as string).replace(this.fhirBaseUrl, ''),
+          url: url.replace(this.fhirBaseUrl, ''),
           options,
           resolve,
           reject,

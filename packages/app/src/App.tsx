@@ -60,8 +60,8 @@ function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
       links:
         menu.link?.map((link) => ({
           label: link.name,
-          href: link.target as string,
-          icon: getIcon(link.target as string),
+          href: link.target,
+          icon: getIcon(link.target),
         })) || [],
     })) || [];
 

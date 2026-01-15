@@ -134,7 +134,7 @@ async function submitCandidEncounter(candidCodedEncounter: any, apiKey: string, 
     headers: { 'Content-Type': 'application/json' },
   });
 
-  const bearerToken = ((await authResponse.json()) as any).access_token;
+  const bearerToken = (await authResponse.json()).access_token;
 
   // Send the CodedEncounter
   const encounterResponse = await fetch(CANDID_API_URL + '/coded_encounters', {

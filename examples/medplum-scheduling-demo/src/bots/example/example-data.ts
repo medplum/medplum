@@ -17,7 +17,7 @@ import type {
 import { randomUUID } from 'crypto';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Practitioner>): Promise<Bundle> {
-  const practitioner = event.input as Practitioner;
+  const practitioner = event.input;
 
   // Note that the Schedule resource is created in the App.tsx file
   const schedule = await medplum.searchOne('Schedule', { actor: getReferenceString(practitioner) });

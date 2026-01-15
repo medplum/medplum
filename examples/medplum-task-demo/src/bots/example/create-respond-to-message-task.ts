@@ -61,7 +61,7 @@ export async function handler(medplum: MedplumClient): Promise<boolean> {
     // Check if there is already an existing task to respond to this message
     if (await checkNoExistingTask(medplum, threadHeader)) {
       // Get the most recent employee to respond to this thread, if anyone has
-      const sender = getMostRecentResponder(messages) as Reference<Practitioner> | undefined;
+      const sender = getMostRecentResponder(messages);
 
       // Define a task to respond to the message
       const task: Task = {

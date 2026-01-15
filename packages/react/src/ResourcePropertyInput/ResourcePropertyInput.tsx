@@ -94,7 +94,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
         defaultValue={defaultValue}
         onChange={(newValue: any) => {
           if (props.onChange) {
-            const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
+            const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code));
             props.onChange(newValue, newPropName);
           }
         }}
@@ -140,8 +140,8 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
           );
         }}
         data={propertyTypes.map((type: ElementDefinitionType) => ({
-          value: type.code as string,
-          label: type.code as string,
+          value: type.code,
+          label: type.code,
         }))}
       />
       <ElementDefinitionTypeInput
@@ -151,7 +151,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         elementDefinitionType={selectedType}
         onChange={(newValue: any) => {
           if (props.onChange) {
-            props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
+            props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code)));
           }
         }}
         min={props.property.min}

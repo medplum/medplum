@@ -52,7 +52,7 @@ export async function handler(
     return undefined;
   }
 
-  const input = event.input as Event;
+  const input = event.input;
 
   switch (input.endpoint) {
     case 'get_lab_tests':

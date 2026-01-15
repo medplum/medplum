@@ -397,7 +397,7 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const input = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const input = screen.getByPlaceholderText('ProjectMembership');
 
       await act(async () => {
         fireEvent.change(input, {
@@ -500,9 +500,9 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const projectInput = screen.getByPlaceholderText('Project') as HTMLInputElement;
-      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient') as HTMLInputElement;
-      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const projectInput = screen.getByPlaceholderText('Project');
+      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient');
+      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership');
 
       // project input
       await act(async () => {

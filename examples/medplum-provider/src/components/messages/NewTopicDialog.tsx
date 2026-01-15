@@ -3,7 +3,6 @@
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
-import type { ProfileResource } from '@medplum/core';
 import type {
   Communication,
   Patient,
@@ -28,7 +27,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   const { subject, opened, onClose, onSubmit } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
+  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
 
   const [topic, setTopic] = useState('');
   const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>(

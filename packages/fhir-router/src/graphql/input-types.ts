@@ -64,7 +64,7 @@ function buildInputPropertyField(
   elementDefinitionType: ElementDefinitionType,
   nameSuffix: string
 ): void {
-  let typeName = elementDefinitionType.code as string;
+  let typeName = elementDefinitionType.code;
   if (typeName === 'Resource') {
     // GraphQL does not support union types on input, so bailing here
     // That means we do not support Resource.contained on GraphQL input
@@ -86,10 +86,7 @@ function buildInputPropertyField(
     fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 
-  const propertyName = (key.split('.').pop() as string).replace(
-    '[x]',
-    capitalize(elementDefinitionType.code as string)
-  );
+  const propertyName = (key.split('.').pop() as string).replace('[x]', capitalize(elementDefinitionType.code));
   fields[propertyName] = fieldConfig;
 }
 

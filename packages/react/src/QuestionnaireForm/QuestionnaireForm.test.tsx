@@ -525,7 +525,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    const input = screen.getByLabelText<HTMLInputElement>('q1');
     expect(input).toBeInTheDocument();
     if (inputType !== 'date' && inputType !== 'datetime-local') {
       // JSDOM does not support date or datetime-local
@@ -555,7 +555,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    const input = screen.getByLabelText<HTMLInputElement>('q1');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
@@ -1199,10 +1199,10 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText<HTMLInputElement>(visibleQuestion + ' *');
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
-    const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
+    const updatedQuestion2StringInput = screen.getByLabelText<HTMLInputElement>('visible question 2');
     expect(updatedQuestion2StringInput.value).toBe('Test Value for Question2-String');
   });
 
@@ -1307,7 +1307,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
@@ -2434,7 +2434,7 @@ describe('QuestionnaireForm', () => {
     const searchResources = jest.spyOn(medplum, 'searchResources');
 
     // Get the search input
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Simpson"
     await act(async () => {

@@ -32,12 +32,12 @@ describe('Set Availability', async () => {
     });
     // Delete all existing slots
     const slots = await medplum.searchResources('Slot');
-    await Promise.all(slots.map((slot) => medplum.deleteResource('Slot', slot.id as string)));
+    await Promise.all(slots.map((slot) => medplum.deleteResource('Slot', slot.id)));
   });
 
   test('Successfully create free slots', async () => {
     const input: SetAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       startDate: '2024-08-19',
       endDate: '2024-08-21',
       startTime: '09:00:00',
@@ -64,7 +64,7 @@ describe('Set Availability', async () => {
 
   test('Invalid duration', async () => {
     const input: SetAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       startDate: '2024-08-19',
       endDate: '2024-08-21',
       startTime: '09:00:00',
@@ -81,7 +81,7 @@ describe('Set Availability', async () => {
 
   test('End date before start date', async () => {
     const input: SetAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       startDate: '2024-08-21',
       endDate: '2024-08-19',
       startTime: '09:00:00',

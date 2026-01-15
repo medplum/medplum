@@ -697,7 +697,7 @@ export class BackEnd extends Construct {
         tier: ssm.ParameterTier.STANDARD,
         parameterName: `/medplum/${name}/databaseProxyEndpoint`,
         description: 'Database proxy endpoint',
-        stringValue: this.rdsProxy?.endpoint as string,
+        stringValue: this.rdsProxy?.endpoint,
       });
     }
 

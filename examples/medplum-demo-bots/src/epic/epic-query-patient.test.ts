@@ -176,9 +176,9 @@ describe('Epic Query Patient Bot', () => {
 
     expect(patient).toBeDefined();
     expect(patient?.resourceType).toStrictEqual('Patient');
-    expect(
-      getIdentifier(patient as Patient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id')
-    ).toStrictEqual('epic-patient-123');
+    expect(getIdentifier(patient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id')).toStrictEqual(
+      'epic-patient-123'
+    );
 
     // managingOrganization
     expect(patient?.managingOrganization).toBeDefined();

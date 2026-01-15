@@ -54,7 +54,7 @@ describe('AsyncAutocomplete', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
     await selectOption(input, 'Display', 1);
     const selected = within(screen.getByTestId('selected-items'));
@@ -74,7 +74,7 @@ describe('AsyncAutocomplete', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
     await selectOption(input, 'Display', 1);
     const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
@@ -131,7 +131,7 @@ describe('AsyncAutocomplete', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
 
     await enterSearchString(input, '');
     const options = screen.getByTestId(AsyncAutocompleteTestIds.options);

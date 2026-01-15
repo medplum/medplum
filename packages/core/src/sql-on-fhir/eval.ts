@@ -4,6 +4,7 @@ import type { Resource, ViewDefinition, ViewDefinitionSelect } from '@medplum/fh
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
+import { EMPTY } from '../utils';
 
 /**
  * Represents a "selection structure" in the SQL-on-FHIR specification.
@@ -125,7 +126,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
     const parts: OutputRow[][] = [];
 
     // Process Columns:
-    for (const col of s.column ?? []) {
+    for (const col of s.column ?? EMPTY) {
       // For each Column col of S.column, define val as fhirpath(col.path, f)
       const val = evalFhirPathTyped(col.path, [f], variables);
 
@@ -153,7 +154,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
 
     // Process Selects:
     // For each selection structure sel of S.select
-    for (const sel of s.select ?? []) {
+    for (const sel of s.select ?? EMPTY) {
       // Define rows as the collection of all rows emitted by Process(sel, f)
       const rows = process(sel, f, variables);
 
@@ -194,7 +195,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
     const r: OutputRow = {};
 
     // For each Column c in ValidateColumns(V, [])
-    for (const c of s.column ?? []) {
+    for (const c of s.column ?? EMPTY) {
       // Bind the column c.name to null in the row r
       r[c.name] = null;
     }

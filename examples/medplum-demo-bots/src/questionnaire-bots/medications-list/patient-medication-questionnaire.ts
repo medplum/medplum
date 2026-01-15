@@ -13,7 +13,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
         resourceType: 'MedicationStatement',
         subject: event.input.subject as Reference<Patient>,
         status: 'active',
-        derivedFrom: [createReference(event.input as QuestionnaireResponse)],
+        derivedFrom: [createReference(event.input)],
         informationSource: event.input.subject as Reference<Patient>, // This indicates that the patient reported this medication
         medicationCodeableConcept: {
           coding: [

@@ -7,6 +7,7 @@ import {
   badRequest,
   crawlTypedValue,
   deepClone,
+  EMPTY,
   evalFhirPathTyped,
   flatMapFilter,
   getExtension,
@@ -187,7 +188,7 @@ class TemplateExtractor implements CrawlerVisitor {
 
     // Gather template resources from Questionnaire by internal reference ID
     this.templates = Object.create(null);
-    for (const resource of questionnaire.contained ?? []) {
+    for (const resource of questionnaire.contained ?? EMPTY) {
       this.templates['#' + resource.id] = toTypedValue(resource);
       resource.id = undefined;
     }
