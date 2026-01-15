@@ -49,11 +49,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
 
   // Load conversation when topic changes
   useEffect(() => {
     const topicId = topic?.id;
     if (topicId) {
+      // Skip loading if we're actively sending (we just created this topic)
+      if (isSendingRef.current) {
+        return;
+      }
       const loadTopic = async (): Promise<void> => {
         try {
           setLoading(true);
@@ -119,6 +124,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setInput('');
     setCurrentFhirRequest(undefined);
     setLoading(true);
+    isSendingRef.current = true;
 
     try {
       // Create topic on first message
@@ -241,23 +247,22 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       }
 
       const content = response.parameter?.find((p: any) => p.name === 'content')?.valueString;
-      if (content) {
-        const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content,
-          resources: uniqueRefs,
-        };
-        setMessages([...currentMessages, assistantMessage]);
+      const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: content || 'I received your message but was unable to generate a response. Please try again.',
+        resources: uniqueRefs,
+      };
+      setMessages([...currentMessages, assistantMessage]);
 
-        // Save assistant message
-        if (activeTopicId) {
-          await saveMessage(medplum, activeTopicId, assistantMessage, currentMessages.length);
-        }
+      // Save assistant message
+      if (activeTopicId) {
+        await saveMessage(medplum, activeTopicId, assistantMessage, currentMessages.length);
       }
     } catch (error: any) {
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${error.message}` }]);
     } finally {
+      isSendingRef.current = false;
       setLoading(false);
     }
   };
