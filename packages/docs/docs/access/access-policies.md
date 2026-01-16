@@ -463,9 +463,6 @@ Binary resources cannot use compartment-based access controls. They require expl
   "resourceType": "AccessPolicy",
   "name": "Patient Access Policy Template",
   "id": "patient-access-policy-template",
-  "compartment": {
-    "reference": "%patient"
-  },
   "resource": [
     {
       "resourceType": "Patient",
