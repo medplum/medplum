@@ -47,6 +47,7 @@ import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
+import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../config/types';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
@@ -1230,16 +1231,19 @@ describe('FHIR Repo', () => {
       }
     });
 
+    const ENSURE_PADDING: ArrayColumnPaddingConfig = {
+      m: 1,
+      lambda: 300,
+      statisticsTarget: 1,
+    };
+
     test.each([
       ['no config', undefined, false], // off by default
       [
         'no resourceType array',
         {
-          config: {
-            // ensure a padding element is chosen
-            m: 1,
-            lambda: 300,
-            statisticsTarget: 1,
+          identifier: {
+            config: ENSURE_PADDING,
           },
         },
         true,
@@ -1247,11 +1251,9 @@ describe('FHIR Repo', () => {
       [
         'resourceType in the resourceType array',
         {
-          resourceType: ['Patient', 'Observation'],
-          config: {
-            m: 1,
-            lambda: 300,
-            statisticsTarget: 1,
+          identifier: {
+            resourceType: ['Patient', 'Observation'],
+            config: ENSURE_PADDING,
           },
         },
         true,
@@ -1259,112 +1261,91 @@ describe('FHIR Repo', () => {
       [
         'resourceType NOT in the resourceType array',
         {
-          resourceType: ['Patient'],
-          config: {
-            m: 1,
-            lambda: 300,
-            statisticsTarget: 1,
+          identifier: {
+            resourceType: ['Patient'],
+            config: ENSURE_PADDING,
           },
         },
         false,
       ],
       [
         'array with entry with no resourceType array in second element',
-        [
-          {
-            resourceType: ['Task'],
-            config: {
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+        {
+          identifier: [
+            {
+              resourceType: ['Task'],
+              config: ENSURE_PADDING,
             },
-          },
-          {
-            config: {
-              // ensure a padding element is chosen
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+            {
+              config: ENSURE_PADDING,
             },
-          },
-        ],
+          ],
+        },
         true,
       ],
       [
         'array with resourceType in second entry resourceType array',
-        [
-          {
-            resourceType: ['Patient'],
-            config: {
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+        {
+          identifier: [
+            {
+              resourceType: ['Patient'],
+              config: ENSURE_PADDING,
             },
-          },
-          {
-            resourceType: ['Task', 'Observation'],
-            config: {
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+            {
+              resourceType: ['Task', 'Observation'],
+              config: ENSURE_PADDING,
             },
-          },
-        ],
+          ],
+        },
         true,
       ],
       [
         'array with resourceType NOT in any resourceType array',
-        [
-          {
-            resourceType: ['Patient'],
-            config: {
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+        {
+          identifier: [
+            {
+              resourceType: ['Patient'],
+              config: ENSURE_PADDING,
             },
-          },
-          {
-            resourceType: ['Task'],
-            config: {
-              m: 1,
-              lambda: 300,
-              statisticsTarget: 1,
+            {
+              resourceType: ['Task'],
+              config: ENSURE_PADDING,
             },
-          },
-        ],
+          ],
+        },
         false,
       ],
-    ])('with %s', async (desc, identifierArrayColumnPadding, shouldPad) =>
-      withTestContext(async () => {
-        const config = getConfig();
-        if (identifierArrayColumnPadding) {
-          config.arrayColumnPadding = {
-            identifier: identifierArrayColumnPadding,
-          };
-        }
-        const res = await systemRepo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'unknown',
-          code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
-        });
+    ])(
+      'with %s',
+      async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
+        withTestContext(async () => {
+          const config = getConfig();
+          if (arrayColumnPadding) {
+            config.arrayColumnPadding = arrayColumnPadding;
+          }
+          const res = await systemRepo.createResource<Observation>({
+            resourceType: 'Observation',
+            status: 'unknown',
+            code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
+          });
 
-        const db = getDatabasePool(DatabaseMode.READER);
-        const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
-        if (shouldPad) {
-          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-        } else {
-          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-        }
+          const db = getDatabasePool(DatabaseMode.READER);
+          const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
+          if (shouldPad) {
+            expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+          } else {
+            expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+          }
 
-        // deleted rows also get padded
-        await systemRepo.deleteResource(res.resourceType, res.id);
+          // deleted rows also get padded
+          await systemRepo.deleteResource(res.resourceType, res.id);
 
-        if (shouldPad) {
-          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-        } else {
-          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-        }
-      })
+          if (shouldPad) {
+            expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+          } else {
+            expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+          }
+        })
     );
   });
 
