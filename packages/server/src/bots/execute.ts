@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { runInLambda, runInLambdaStreaming } from '../cloud/aws/execute';
+import { runInLambda } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
@@ -94,7 +94,7 @@ export async function executeBotStreaming(
     };
 
     if (bot.runtimeVersion === 'awslambda') {
-      result = await runInLambdaStreaming(context);
+      result = { streaming: true, success: false, logResult: 'AWS Lambda runtime does not support streaming' };
     } else if (bot.runtimeVersion === 'vmcontext') {
       result = await runInVmContextStreaming(context);
     } else if (bot.runtimeVersion === 'fission') {

@@ -31,18 +31,18 @@ const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.cjs");
 
-exports.handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
+exports.handler = async (event, context) => {
 `;
 
 const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
 import * as userCode from './user.mjs';
 
-export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
+export const handler = async (event, context) => {
 `;
 
 const WRAPPER_CODE = `
-  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
+  const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
@@ -59,26 +59,11 @@ const WRAPPER_CODE = `
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-
-    // Create event data for bot handler
-    const eventData = { bot, requester, input, contentType, secrets, traceId, headers };
-
-    // Add onChunk callback for streaming mode
-    if (streaming) {
-      eventData.onChunk = async (chunk) => {
-        // Write chunks directly to responseStream for Lambda response streaming
-        responseStream.write(JSON.stringify({ __medplum_chunk__: chunk }) + "\\n");
-      };
-    }
-
-    let result = await userCode.handler(medplum, eventData);
+    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }
-
-    // Write final result to responseStream
-    responseStream.write(JSON.stringify({ __medplum_result__: result }) + "\\n");
-    responseStream.end();
+    return result;
   } catch (err) {
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
@@ -87,11 +72,9 @@ const WRAPPER_CODE = `
     } else {
       console.log("Unhandled error: " + err);
     }
-    // Write error to responseStream before ending
-    responseStream.write(JSON.stringify({ __medplum_error__: err instanceof Error ? err.message : String(err) }) + "\\n");
-    responseStream.end();
+    throw err;
   }
-})
+}
 
 function createPdf(docDefinition, tableLayouts, fonts) {
   if (!fonts) {
