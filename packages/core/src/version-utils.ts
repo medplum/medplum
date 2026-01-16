@@ -3,7 +3,8 @@
 import { MEDPLUM_VERSION } from './client';
 import { normalizeErrorString } from './outcomes';
 
-export const MEDPLUM_RELEASES_URL = 'https://meta.medplum.com/releases';
+// export const MEDPLUM_RELEASES_URL = 'https://meta.medplum.com/releases';
+export const MEDPLUM_RELEASES_URL = 'http://10.211.55.2:5001/releases';
 
 export type ReleaseManifest = { tag_name: string; assets: { name: string; browser_download_url: string }[] };
 
