@@ -17,7 +17,7 @@ import {
 import type { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { executeBot, executeBotStreaming } from '../../bots/execute';
-import type { BotExecutionResult, StreamingCallback } from '../../bots/types';
+import type { BotExecutionResult, StreamingCallback, StreamingChunk } from '../../bots/types';
 import {
   getBotDefaultHeaders,
   getBotProjectMembership,
@@ -171,7 +171,7 @@ async function executeOperationStreaming(req: Request, res: Response): Promise<v
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Create streaming callback
-  const streamingCallback: StreamingCallback = async (chunk: any) => {
+  const streamingCallback: StreamingCallback = async (chunk: StreamingChunk) => {
     try {
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
       if (typeof (res as any).flush === 'function') {
