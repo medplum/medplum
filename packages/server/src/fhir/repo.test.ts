@@ -39,9 +39,9 @@ import type {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import assert from 'node:assert';
 import { resolve } from 'node:path';
 import { initAppServices, shutdownApp } from '../app';
 import type { RegisterRequest } from '../auth/register';

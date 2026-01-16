@@ -525,7 +525,9 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this._ws.binaryType = this._binaryType;
 
     // send enqueued messages (messages sent before websocket open event)
-    for (const message of this._messageQueue) {this._ws?.send(message);}
+    for (const message of this._messageQueue) {
+      this._ws?.send(message);
+    }
     this._messageQueue = [];
 
     if (this.onopen) {

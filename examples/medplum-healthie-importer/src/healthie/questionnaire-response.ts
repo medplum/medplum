@@ -93,17 +93,16 @@ export function convertHealthieFormAnswerGroupToFhir(
   // Group answers by custom_module.id to handle multiple answers for the same question
   const answerGroups = new Map<string, HealthieFormAnswer[]>();
 
-  for (const answer of formAnswerGroup.form_answers
-    .filter((answer) => answer.answer && answer.answer.trim() !== '')) {
-      const moduleId = answer.custom_module.id;
-      if (!answerGroups.has(moduleId)) {
-        answerGroups.set(moduleId, []);
-      }
-      const moduleAnswers = answerGroups.get(moduleId);
-      if (moduleAnswers) {
-        moduleAnswers.push(answer);
-      }
+  for (const answer of formAnswerGroup.form_answers.filter((answer) => answer.answer && answer.answer.trim() !== '')) {
+    const moduleId = answer.custom_module.id;
+    if (!answerGroups.has(moduleId)) {
+      answerGroups.set(moduleId, []);
     }
+    const moduleAnswers = answerGroups.get(moduleId);
+    if (moduleAnswers) {
+      moduleAnswers.push(answer);
+    }
+  }
 
   // Convert each group to FHIR items
   const items: QuestionnaireResponseItem[] = [];

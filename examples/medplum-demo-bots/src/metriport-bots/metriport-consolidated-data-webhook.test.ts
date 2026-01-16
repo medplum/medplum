@@ -206,20 +206,22 @@ describe('convertToTransactionBundle', () => {
     expect(transactionBundle.resourceType).toBe('Bundle');
     expect(transactionBundle.entry).toBeDefined();
 
-    if (transactionBundle.entry) {for (const entry of transactionBundle.entry) {
-      expect(entry.request).toBeDefined();
+    if (transactionBundle.entry) {
+      for (const entry of transactionBundle.entry) {
+        expect(entry.request).toBeDefined();
 
-      if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
-        expect(entry.request?.method).toBe('PATCH');
-        expect(entry.request?.url).toBe(`Patient/${medplumPatientId}`);
-        expect(entry.resource.contentType).toBe(ContentType.JSON_PATCH);
-        expect(entry.resource.data).toBeDefined();
-      } else if (entry.resource) {
-        expect(entry.request?.method).toBe('PUT');
-        expect(entry.resource?.id).toBeUndefined();
-        expect(entry.request?.url).toMatch(new RegExp(String.raw`^${entry.resource.resourceType}\?identifier=.+$`));
+        if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
+          expect(entry.request?.method).toBe('PATCH');
+          expect(entry.request?.url).toBe(`Patient/${medplumPatientId}`);
+          expect(entry.resource.contentType).toBe(ContentType.JSON_PATCH);
+          expect(entry.resource.data).toBeDefined();
+        } else if (entry.resource) {
+          expect(entry.request?.method).toBe('PUT');
+          expect(entry.resource?.id).toBeUndefined();
+          expect(entry.request?.url).toMatch(new RegExp(String.raw`^${entry.resource.resourceType}\?identifier=.+$`));
+        }
       }
-    }}
+    }
   });
 
   test('replaces references with fullUrls', () => {

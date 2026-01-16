@@ -23,7 +23,8 @@ describe('HL7 Bots', async () => {
   test('Hello HL7 Message', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
-    const input = Hl7Message.parse(String.raw`MSH|^~\&|Primary||CL|PDMT|20200312081842|168866|ADT^A28|203598|T|2.3|||||||||||
+    const input =
+      Hl7Message.parse(String.raw`MSH|^~\&|Primary||CL|PDMT|20200312081842|168866|ADT^A28|203598|T|2.3|||||||||||
 EVN|A28|20200312081842||REG_UPDATE|168866^GLOVER^JASMIN^^^^^^PHC^^^^^10010||
 PID|1||E3866011^^^EPIC^MRN~900093259^^^EPI^MR||TESTING^UGA||20000312|M|||^^^^^USA^P||||||||123-54-8888|||||N||||||N||
 PD1|||PHYSICIANS ATLANTIC STATION^^10010|||||||||||||||
@@ -88,7 +89,8 @@ ZVN|A05`);
   test('ADT 01 create patient and encounter', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
-    const input = Hl7Message.parse(String.raw`MSH|^~\&|ADT1|HOSPITAL|LABADT|DH|202305231530|SECURITY|ADT^A01|MSG00001|P|2.3
+    const input =
+      Hl7Message.parse(String.raw`MSH|^~\&|ADT1|HOSPITAL|LABADT|DH|202305231530|SECURITY|ADT^A01|MSG00001|P|2.3
 EVN|A01|202305231530
 PID|||123456^^^HOSPITAL^MR||DOE^JOHN^A||19610615|M||C|123 MAIN ST^^METROPOLIS^IL^60060^USA||(555)555-1212||(555)555-1234||S||123456789|987654^NC
 NK1|1|DOE^JANE|WIFE|123 MAIN ST^^METROPOLIS^IL^60060^USA||(555)555-5678

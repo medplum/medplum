@@ -72,10 +72,9 @@ async function nextUpdateVersion(currentVersion: string, targetVersion?: string)
   // Then pop the last entry from the list
   const allVersions = await getServerVersions(currentVersion);
   const latestVersion = allVersions[0];
-  return allVersions
-    .findLast(
-      (v) => v === latestVersion || v === targetVersion || semver.gte(v, semver.inc(currentVersion, 'minor') as string)
-    );
+  return allVersions.findLast(
+    (v) => v === latestVersion || v === targetVersion || semver.gte(v, semver.inc(currentVersion, 'minor') as string)
+  );
 }
 
 function deployServerUpdate(tag: string, config: MedplumInfraConfig): void {

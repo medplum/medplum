@@ -13,9 +13,9 @@ import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhir
 import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'node:crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
+import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import type { AppLevelAckMode } from './hl7';
 import {

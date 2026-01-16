@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
-import { Duplex , Readable, Writable } from 'node:stream';
+import { Duplex, Readable, Writable } from 'node:stream';
 import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import pg from 'pg';
 import { loadConfig, loadTestConfig } from './config/loader';

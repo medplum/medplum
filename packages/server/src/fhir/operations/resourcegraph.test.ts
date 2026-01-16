@@ -17,8 +17,8 @@ import type {
   ServiceRequest,
   SpecimenDefinition,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';

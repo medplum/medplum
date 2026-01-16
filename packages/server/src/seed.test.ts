@@ -90,7 +90,9 @@ describe('Seed', () => {
       const postDeployVersion = await getPostDeployVersion(pool);
       // only show log messages if post-deploy migrations did not run successfully
       if (getLatestPostDeployMigrationVersion() !== postDeployVersion) {
-        for (const call of consoleLogSpy.mock.calls) {originalConsoleLog(...call);}
+        for (const call of consoleLogSpy.mock.calls) {
+          originalConsoleLog(...call);
+        }
       }
       expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 

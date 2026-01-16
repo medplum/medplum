@@ -3,9 +3,9 @@
 import type { ProfileResource, WithId } from '@medplum/core';
 import { ContentType, encodeBase64Url, getReferenceString } from '@medplum/core';
 import type { Practitioner } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import express from 'express';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';

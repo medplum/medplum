@@ -444,7 +444,7 @@ function evalListMode(source: StructureMapGroupRuleSource, sourceValue: TypedVal
     case 'last':
       return [sourceValue.at(-1) as TypedValue];
     case 'not_last':
-      return sourceValue.slice(0, - 1);
+      return sourceValue.slice(0, -1);
     case 'only_one':
       if (sourceValue.length !== 1) {
         throw new Error('Expected only one value');

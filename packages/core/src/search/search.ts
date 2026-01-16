@@ -480,7 +480,9 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.filters) {
-    for (const filter of definition.filters) {params.push(formatFilter(filter));}
+    for (const filter of definition.filters) {
+      params.push(formatFilter(filter));
+    }
   }
 
   if (definition.sortRules && definition.sortRules.length > 0) {
@@ -508,11 +510,15 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.include) {
-    for (const target of definition.include) {params.push(formatIncludeTarget('_include', target));}
+    for (const target of definition.include) {
+      params.push(formatIncludeTarget('_include', target));
+    }
   }
 
   if (definition.revInclude) {
-    for (const target of definition.revInclude) {params.push(formatIncludeTarget('_revinclude', target));}
+    for (const target of definition.revInclude) {
+      params.push(formatIncludeTarget('_revinclude', target));
+    }
   }
 
   if (params.length === 0) {

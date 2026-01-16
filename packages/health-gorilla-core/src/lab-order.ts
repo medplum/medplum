@@ -348,11 +348,14 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       : undefined,
   };
 
-  bundleEntry.push({
-    fullUrl: labOrder.id,
-    resource: labOrder,
-    request: { method: 'POST', url: 'ServiceRequest' },
-  }, ...testEntries);
+  bundleEntry.push(
+    {
+      fullUrl: labOrder.id,
+      resource: labOrder,
+      request: { method: 'POST', url: 'ServiceRequest' },
+    },
+    ...testEntries
+  );
 
   // Remove resource.id to avoid breaking the transaction processing of the urn:uuid:<uuid> temp IDs.
   for (const entry of bundleEntry) {

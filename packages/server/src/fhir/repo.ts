@@ -1197,7 +1197,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
-     
+
     for (const resource of resources) {
       const meta = resource.meta as Meta;
       meta.compartment = this.getCompartments(resource);

@@ -515,7 +515,7 @@ function extractResponseItem(item: QuestionnaireResponseItem, linkId: string): T
 function asJsonPath(path: string): string {
   const pathStart = path.indexOf('.') + 1;
   const result = '/' + path.slice(pathStart).replaceAll(/[.[\]]+/g, '/');
-  return result.endsWith('/') ? result.slice(0, - 1) : result;
+  return result.endsWith('/') ? result.slice(0, -1) : result;
 }
 
 function replacePathIndex(path: string, offset: number, before?: number): string {

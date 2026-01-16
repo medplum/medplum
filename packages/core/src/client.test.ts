@@ -12,9 +12,9 @@ import type {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'node:crypto';
+import { TextEncoder } from 'node:util';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
-import { TextEncoder } from 'node:util';
 import { encodeBase64 } from './base64';
 import type { CdsRequest } from './cds';
 import type {

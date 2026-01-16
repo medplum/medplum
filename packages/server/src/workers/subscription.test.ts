@@ -2327,7 +2327,9 @@ describe('Subscription Worker Event Handling', () => {
     const activeHandlers = handlers.get('active');
     expect(activeHandlers).toBeDefined();
     if (activeHandlers) {
-      for (const handler of activeHandlers) {handler(firstAttemptJob);}
+      for (const handler of activeHandlers) {
+        handler(firstAttemptJob);
+      }
 
       // Verify recordHistogramValue was called for queuedDuration on first attempt
       expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.queuedDuration', expect.any(Number));
@@ -2337,7 +2339,9 @@ describe('Subscription Worker Event Handling', () => {
     // Test 'active' handler with a subsequent attempt job
     const subsequentAttemptJob = createTestJob('job-123', 1);
     if (activeHandlers) {
-      for (const handler of activeHandlers) {handler(subsequentAttemptJob);}
+      for (const handler of activeHandlers) {
+        handler(subsequentAttemptJob);
+      }
 
       // Verify recordHistogramValue was NOT called for subsequent attempts
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
@@ -2349,7 +2353,9 @@ describe('Subscription Worker Event Handling', () => {
     const completedHandlers = handlers.get('completed');
     expect(completedHandlers).toBeDefined();
     if (completedHandlers) {
-      for (const handler of completedHandlers) {handler(completedJob);}
+      for (const handler of completedHandlers) {
+        handler(completedJob);
+      }
 
       // Verify completed job logging and metrics
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
@@ -2366,7 +2372,9 @@ describe('Subscription Worker Event Handling', () => {
     const failedHandlers = handlers.get('failed');
     expect(failedHandlers).toBeDefined();
     if (failedHandlers) {
-      for (const handler of failedHandlers) {handler(failedJob, error);}
+      for (const handler of failedHandlers) {
+        handler(failedJob, error);
+      }
 
       // Verify failed job logging and metrics
       expect(recordHistogramValueSpy).toHaveBeenCalledWith(
@@ -2376,7 +2384,9 @@ describe('Subscription Worker Event Handling', () => {
       recordHistogramValueSpy.mockClear();
 
       // Test 'failed' handler with undefined job
-      for (const handler of failedHandlers) {handler(undefined, error);}
+      for (const handler of failedHandlers) {
+        handler(undefined, error);
+      }
 
       // Verify logging for undefined job (no metrics)
       expect(recordHistogramValueSpy).not.toHaveBeenCalled();
