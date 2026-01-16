@@ -174,8 +174,12 @@ async function executeOperationStreaming(req: Request, res: Response): Promise<v
   const streamingCallback: StreamingCallback = async (chunk: StreamingChunk) => {
     try {
       res.write(`data: ${JSON.stringify(chunk)}\n\n`);
-      if (typeof (res as any).flush === 'function') {
-        (res as any).flush();
+      try {
+        if (typeof (res as any).flush === 'function') {
+          (res as any).flush();
+        }
+      } catch (err) {
+        ctx.logger.debug('Flush failed', { error: err });
       }
     } catch (err) {
       ctx.logger.error('Error writing stream chunk', { error: err });
