@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { capitalize, getExtension } from '@medplum/core';
+import { capitalize, EMPTY, getExtension } from '@medplum/core';
 import type {
   Address,
   ContactPoint,
@@ -269,12 +269,9 @@ export function mapIdentifiers(id: string | undefined, identifiers: Identifier[]
     result.push({ '@_root': id });
   }
 
-  if (identifiers) {
-    for (const id of identifiers) {
-      const root = mapFhirSystemToCcda(id.system);
-      if (!root) {
-        continue;
-      }
+  for (const id of identifiers ?? EMPTY) {
+    const root = mapFhirSystemToCcda(id.system);
+    if (root) {
       result.push({ '@_root': root, '@_extension': id.value });
     }
   }

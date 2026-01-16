@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getTypedPropertyValueWithoutSchema, isPopulated, toTypedValue } from '@medplum/core';
+import { EMPTY, getTypedPropertyValueWithoutSchema, isPopulated, toTypedValue } from '@medplum/core';
 import type { Observation, ObservationComponent, ObservationReferenceRange } from '@medplum/fhirtypes';
 import { mapFhirPeriodOrDateTimeToCcda, mapFhirToCcdaDateTime } from '../../datetime';
 import {
@@ -70,32 +70,28 @@ export function createObservationEntry(converter: FhirToCcdaConverter, observati
 export function createVitalSignsOrganizer(converter: FhirToCcdaConverter, observation: Observation): CcdaOrganizer {
   const components: CcdaOrganizerComponent[] = [];
 
-  if (observation.component) {
-    for (const component of observation.component) {
-      components.push({
-        observation: [createCcdaObservation(converter, observation, component)],
-      });
-    }
+  for (const component of observation.component ?? EMPTY) {
+    components.push({
+      observation: [createCcdaObservation(converter, observation, component)],
+    });
   }
 
-  if (observation.hasMember) {
-    for (const member of observation.hasMember) {
-      const child = converter.findResourceByReference(member);
-      if (child?.resourceType !== 'Observation') {
-        continue;
-      }
+  for (const member of observation.hasMember ?? EMPTY) {
+    const child = converter.findResourceByReference(member);
+    if (child?.resourceType !== 'Observation') {
+      continue;
+    }
 
-      if (child.component) {
-        for (const component of child.component) {
-          components.push({
-            observation: [createCcdaObservation(converter, child, component)],
-          });
-        }
-      } else {
+    if (child.component) {
+      for (const component of child.component) {
         components.push({
-          observation: [createCcdaObservation(converter, child)],
+          observation: [createCcdaObservation(converter, child, component)],
         });
       }
+    } else {
+      components.push({
+        observation: [createCcdaObservation(converter, child)],
+      });
     }
   }
 
@@ -130,18 +126,16 @@ export function createCcdaObservation(
 
   const entryRelationship: CcdaEntryRelationship[] = [];
 
-  if (observation.hasMember) {
-    for (const member of observation.hasMember) {
-      const child = converter.findResourceByReference(member);
-      if (child?.resourceType !== 'Observation') {
-        continue;
-      }
-
-      entryRelationship.push({
-        '@_typeCode': 'COMP',
-        observation: [createCcdaObservation(converter, child)],
-      });
+  for (const member of observation.hasMember ?? EMPTY) {
+    const child = converter.findResourceByReference(member);
+    if (child?.resourceType !== 'Observation') {
+      continue;
     }
+
+    entryRelationship.push({
+      '@_typeCode': 'COMP',
+      observation: [createCcdaObservation(converter, child)],
+    });
   }
 
   const result: CcdaObservation = {

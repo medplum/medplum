@@ -14,6 +14,7 @@ import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
+  append,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -26,6 +27,7 @@ import {
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
+  EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
   flatMapFilter,
@@ -2042,10 +2044,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // When examining a Patient resource, we only look at the individual patient
       // We should not call `getPatients` and `readReference`
       const existingAccounts = extractAccountReferences(existing?.meta);
-      if (existingAccounts?.length) {
-        for (const account of existingAccounts) {
-          accounts.add(account.reference as string);
-        }
+      for (const account of existingAccounts ?? EMPTY) {
+        accounts.add(account.reference as string);
       }
     } else {
       const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
@@ -2058,23 +2058,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // If the patient has an account, then use it as the resource account.
         const patientAccounts = extractAccountReferences(patient.meta);
-        if (patientAccounts?.length) {
-          for (const account of patientAccounts) {
-            if (account.reference) {
-              accounts.add(account.reference);
-            }
+        for (const account of patientAccounts ?? EMPTY) {
+          if (account.reference) {
+            accounts.add(account.reference);
           }
         }
       }
     }
 
-    if (accounts.size < 1) {
-      return undefined;
-    }
-
-    const result: Reference[] = [];
+    let result: Reference[] | undefined;
     for (const reference of accounts) {
-      result.push({ reference });
+      result = append(result, { reference });
     }
     return result;
   }
@@ -2200,10 +2194,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   removeHiddenFields<T extends Resource>(input: T): T {
     const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
-    if (policy?.hiddenFields) {
-      for (const field of policy.hiddenFields) {
-        this.removeField(input, field);
-      }
+    for (const field of policy?.hiddenFields ?? EMPTY) {
+      this.removeField(input, field);
     }
     if (!this.context.extendedMode && input.meta) {
       const meta = input.meta;

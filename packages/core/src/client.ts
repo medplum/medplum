@@ -85,6 +85,7 @@ import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
 import type { CodeChallengeMethod, ProfileResource, QueryTypes, WithId } from './utils';
 import {
+  EMPTY,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -1172,11 +1173,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   invalidateSearches(resourceType: ResourceType): void {
     const url = concatUrls(this.fhirBaseUrl, resourceType);
-    if (this.requestCache) {
-      for (const key of this.requestCache.keys()) {
-        if (key.endsWith(url) || key.includes(url + '?')) {
-          this.requestCache.delete(key);
-        }
+    for (const key of this.requestCache?.keys() ?? EMPTY) {
+      if (key.endsWith(url) || key.includes(url + '?')) {
+        this.requestCache?.delete(key);
       }
     }
   }
@@ -3364,10 +3363,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return new ReadablePromise(
       (async () => {
         const bundle = await this.get<Bundle<T>>(url, options);
-        if (bundle.entry) {
-          for (const entry of bundle.entry) {
-            this.cacheResource(entry.resource, options);
-          }
+        for (const entry of bundle.entry ?? EMPTY) {
+          this.cacheResource(entry.resource, options);
         }
         return bundle;
       })()

@@ -4,6 +4,7 @@ import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
 import {
   buildTypeName,
   capitalize,
+  EMPTY,
   escapeHtml,
   FileBuilder,
   getAllDataTypes,
@@ -142,12 +143,10 @@ function writeInterface(b: FileBuilder, fhirType: InternalTypeSchema): void {
   writeChoiceOfTypeDefinitions(b, fhirType);
 
   const subTypes = fhirType.innerTypes;
-  if (subTypes) {
-    subTypes.sort((t1, t2) => t1.name.localeCompare(t2.name));
+  subTypes?.sort((t1, t2) => t1.name.localeCompare(t2.name));
 
-    for (const subType of subTypes) {
-      writeInterface(b, subType);
-    }
+  for (const subType of subTypes ?? EMPTY) {
+    writeInterface(b, subType);
   }
 }
 
@@ -192,10 +191,8 @@ function buildImports(fhirType: InternalTypeSchema, includedTypes: Set<string>, 
   }
 
   const subTypes = fhirType.innerTypes;
-  if (subTypes) {
-    for (const subType of subTypes) {
-      buildImports(subType, includedTypes, referencedTypes);
-    }
+  for (const subType of subTypes ?? EMPTY) {
+    buildImports(subType, includedTypes, referencedTypes);
   }
 
   if (typeName === 'Reference') {
@@ -344,7 +341,7 @@ function getTypeScriptTypeForProperty(
       break;
 
     case 'Reference':
-      if (typeDefinition.targetProfile && typeDefinition.targetProfile.length > 0) {
+      if (typeDefinition.targetProfile?.length) {
         baseType += '<';
         for (const targetProfile of typeDefinition.targetProfile) {
           if (!baseType.endsWith('<')) {

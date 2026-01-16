@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { TypedValue } from '@medplum/core';
 import {
+  EMPTY,
   HTTP_HL7_ORG,
   PropertyType,
+  append,
   capitalize,
   deepClone,
   evalFhirPathTyped,
@@ -295,11 +297,7 @@ function getByLinkId(
   responseItems: QuestionnaireResponseItem[] | undefined,
   linkId: string
 ): QuestionnaireResponseItemAnswer[] | undefined {
-  if (!responseItems) {
-    return undefined;
-  }
-
-  for (const response of responseItems) {
+  for (const response of responseItems ?? EMPTY) {
     if (response.linkId === linkId) {
       return response.answer;
     }
@@ -310,7 +308,6 @@ function getByLinkId(
       }
     }
   }
-
   return undefined;
 }
 
@@ -463,30 +460,26 @@ function buildInitialResponseItems(
   items: QuestionnaireItem[] | undefined,
   responseItems: QuestionnaireResponseItem[] | undefined
 ): QuestionnaireResponseItem[] | undefined {
-  if (!items) {
-    return undefined;
-  }
-
-  const result = [];
-  for (const item of items) {
+  let result: QuestionnaireResponseItem[] | undefined;
+  for (const item of items ?? EMPTY) {
     if (item.type === QuestionnaireItemType.display) {
       // Display items do not have response items, so we skip them.
       continue;
     }
 
     const existingResponseItems = responseItems?.filter((responseItem) => responseItem.linkId === item.linkId);
-    if (existingResponseItems && existingResponseItems?.length > 0) {
+    if (existingResponseItems?.length) {
       for (const existingResponseItem of existingResponseItems) {
         // Update existing response item
         existingResponseItem.id = existingResponseItem.id ?? generateId();
         existingResponseItem.text = existingResponseItem.text ?? item.text;
         existingResponseItem.item = buildInitialResponseItems(item.item, existingResponseItem.item);
         existingResponseItem.answer = buildInitialResponseAnswer(item, existingResponseItem);
-        result.push(existingResponseItem);
+        result = append(result, existingResponseItem);
       }
     } else {
       // Add new response item
-      result.push(buildInitialResponseItem(item));
+      result = append(result, buildInitialResponseItem(item));
     }
   }
 

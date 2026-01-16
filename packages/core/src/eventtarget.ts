@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { EMPTY } from './utils';
+
 /*
  * Based on: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget
  */
@@ -41,10 +43,8 @@ export class EventTarget {
 
   dispatchEvent(event: Event): boolean {
     const array = this.listeners[event.type];
-    if (array) {
-      for (const listener of array) {
-        listener.call(this, event);
-      }
+    for (const listener of array ?? EMPTY) {
+      listener.call(this, event);
     }
     return !event.defaultPrevented;
   }

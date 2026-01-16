@@ -5,6 +5,7 @@ import {
   allOk,
   concatUrls,
   createReference,
+  EMPTY,
   evalFhirPathTyped,
   getExtension,
   getReferenceString,
@@ -85,21 +86,19 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   }
 
   const actions: RequestGroupAction[] = [];
-  if (planDefinition.action) {
-    for (const action of planDefinition.action) {
-      actions.push(
-        await createAction(
-          ctx.repo,
-          planDefinition,
-          ctx.profile,
-          subjectRef,
-          action,
-          encounterRef,
-          practitionerRef,
-          organizationRef
-        )
-      );
-    }
+  for (const action of planDefinition.action ?? EMPTY) {
+    actions.push(
+      await createAction(
+        ctx.repo,
+        planDefinition,
+        ctx.profile,
+        subjectRef,
+        action,
+        encounterRef,
+        practitionerRef,
+        organizationRef
+      )
+    );
   }
 
   const requestGroup = await ctx.repo.createResource<RequestGroup>({

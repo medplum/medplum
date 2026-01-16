@@ -9,6 +9,7 @@
 import {
   ContentType,
   deepClone,
+  EMPTY,
   OAuthGrantType,
   OAuthSigningAlgorithm,
   OAuthTokenAuthMethod,
@@ -128,12 +129,10 @@ export function smartStylingHandler(_req: Request, res: Response): void {
 export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   const result: SmartScope[] = [];
 
-  if (scope) {
-    for (const scopeTerm of scope.split(' ')) {
-      const parsed = parseSmartScopeString(scopeTerm);
-      if (parsed) {
-        result.push(parsed);
-      }
+  for (const scopeTerm of scope?.split(' ') ?? EMPTY) {
+    const parsed = parseSmartScopeString(scopeTerm);
+    if (parsed) {
+      result.push(parsed);
     }
   }
 

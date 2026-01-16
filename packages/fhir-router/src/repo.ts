@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { SearchRequest, SortRule, WithId } from '@medplum/core';
 import {
+  EMPTY,
   OperationOutcomeError,
   Operator,
   allOk,
@@ -541,10 +542,8 @@ export class MemoryRepository extends FhirRepository<undefined> {
       }
     }
     let entry = result.map((resource) => ({ resource: deepClone(resource) }));
-    if (searchRequest.sortRules) {
-      for (const sortRule of searchRequest.sortRules) {
-        entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
-      }
+    for (const sortRule of searchRequest.sortRules ?? EMPTY) {
+      entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));
     }
     if (searchRequest.offset !== undefined) {
       entry = entry.slice(searchRequest.offset);
@@ -571,7 +570,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
       searchRequest.filters.push({ code: referenceField, operator: Operator.EQUALS, value: reference });
       const bundle = await this.search(searchRequest);
       results[reference] = [];
-      for (const entry of bundle.entry ?? []) {
+      for (const entry of bundle.entry ?? EMPTY) {
         if (entry.resource) {
           results[reference].push(entry.resource);
         }

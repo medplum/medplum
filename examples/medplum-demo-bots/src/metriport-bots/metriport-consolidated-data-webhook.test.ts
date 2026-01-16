@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
+  EMPTY,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -206,7 +207,7 @@ describe('convertToTransactionBundle', () => {
     expect(transactionBundle.resourceType).toBe('Bundle');
     expect(transactionBundle.entry).toBeDefined();
 
-    transactionBundle.entry?.forEach((entry) => {
+    for (const entry of transactionBundle.entry ?? EMPTY) {
       expect(entry.request).toBeDefined();
 
       if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
@@ -217,9 +218,9 @@ describe('convertToTransactionBundle', () => {
       } else if (entry.resource) {
         expect(entry.request?.method).toBe('PUT');
         expect(entry.resource?.id).toBeUndefined();
-        expect(entry.request?.url).toMatch(new RegExp(`^${entry.resource.resourceType}\\?identifier=.+$`));
+        expect(entry.request?.url).toMatch(new RegExp(String.raw`^${entry.resource.resourceType}\?identifier=.+$`));
       }
-    });
+    }
   });
 
   test('replaces references with fullUrls', () => {

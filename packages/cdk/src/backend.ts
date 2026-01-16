@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumInfraConfig } from '@medplum/core';
+import { EMPTY } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -502,17 +503,15 @@ export class BackEnd extends Construct {
       hostPort: config.apiPort,
     });
 
-    if (config.additionalContainers) {
-      for (const container of config.additionalContainers) {
-        this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
-          containerName: container.name,
-          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
-          command: container.command,
-          environment: container.environment,
-          logging: this.logDriver,
-          essential: container.essential ?? false, // Default to false
-        });
-      }
+    for (const container of config.additionalContainers ?? EMPTY) {
+      this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
+        containerName: container.name,
+        image: this.getContainerImage(config, container.image, containerRegistryCredentials),
+        command: container.command,
+        environment: container.environment,
+        logging: this.logDriver,
+        essential: container.essential ?? false, // Default to false
+      });
     }
 
     if (config.fireLens?.enabled) {
