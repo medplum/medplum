@@ -290,11 +290,11 @@ Optional flag whether new user registration is enabled. See [Open Patient Regist
 
 Optional TOTP authenticator window for MFA token validation. This controls how many time steps (each 30 seconds) are accepted before and after the current time. A higher value is more lenient but less secure.
 
-| Value | Time Tolerance                     |
-| ----- | ---------------------------------- |
-| 0     | Only current 30-second window      |
-| 1     | ±30 seconds (~90 sec total)        |
-| 2     | ±60 seconds (~150 sec total)       |
+| Value | Time Tolerance                |
+| ----- | ----------------------------- |
+| 0     | Only current 30-second window |
+| 1     | ±30 seconds (~90 sec total)   |
+| 2     | ±60 seconds (~150 sec total)  |
 
 **Default:** `1`
 
@@ -438,6 +438,58 @@ This removes personal information such as patient names and clinical description
 for storage, while retaining the opaque, machine-readable identifiers.
 
 **Default:** `false`
+
+### arrayColumnPadding
+
+Optional configuration for array column padding to mitigate PostgreSQL statistics issues with array columns. This addresses cases where array columns containing mostly unique values alongside common values result in poor query planning.
+
+When PostgreSQL's `ANALYZE` command processes array columns, elements must exceed a cutoff frequency to be included in the most_common_elements (MCE) statistics. For columns with many unique values, this can result in empty or incomplete MCE statistics, causing the query planner to use a default selectivity estimate of 0.005 (0.5%), which often leads to sequential scans.
+
+Array column padding adds well-known, artificial UUID values to a small percentage of rows, ensuring at least one padding element qualifies for the MCE list. This provides the query planner with more accurate frequency estimates for unique array elements.
+
+**Configuration structure:**
+
+```json
+{
+  "arrayColumnPadding": {
+    "identifier": {
+      "resourceType": ["Patient", "Observation"],
+      "config": {
+        "m": 20,
+        "lambda": 150,
+        "statisticsTarget": 100
+      }
+    }
+  }
+}
+```
+
+**Parameters:**
+
+- **searchParamCode** (key): The search parameter code (e.g., "identifier")
+- **resourceType** (optional): Array of resource types to apply padding to. If omitted, applies to all resources for this search parameter
+- **config.m**: Number of distinct padding elements (UUID values) to choose from
+- **config.lambda**: Poisson distribution parameter that determines padding frequency
+- **config.statisticsTarget**: The PostgreSQL statistics target for the array column (should match your database configuration)
+
+**Impact:**
+
+Padding elements are added to approximately (m × lambda) / (statisticsTarget × 300) of all rows. For example, with m=20, lambda=150, statisticsTarget=100: padding is added to ~0.25% of rows (250 rows per 100,000).
+
+**Calculator:**
+
+Use the interactive calculator below to determine optimal values for your use case:
+
+import ArrayColumnPaddingCalculator from '@site/src/components/ArrayColumnPaddingCalculator';
+
+<ArrayColumnPaddingCalculator />
+
+**Default:** None (disabled by default)
+
+**Related links:**
+
+- [GitHub Issue #7539](https://github.com/medplum/medplum/issues/7539)
+- [PostgreSQL Array Statistics Discussion](https://www.postgresql.org/message-id/flat/PH3PPF1C905D6E6F24A5C1A1A1D8345B593E16FA%40PH3PPF1C905D6E6.namprd15.prod.outlook.com)
 
 ### introspectUrl
 

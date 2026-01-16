@@ -1,0 +1,294 @@
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 16px;
+  background-color: #fbfbfb;
+  margin: 2rem 0;
+}
+
+[data-theme='dark'] .calculator {
+  border-color: #333333;
+  background: #1a1a1a;
+}
+
+.modeToggle {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background-color: #e6e6e6;
+  border-radius: 8px;
+  width: fit-content;
+}
+
+[data-theme='dark'] .modeToggle {
+  background-color: #2a2a2a;
+}
+
+.modeToggle button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 200ms ease;
+  color: #666;
+}
+
+[data-theme='dark'] .modeToggle button {
+  color: #999;
+}
+
+.modeToggle button:hover {
+  color: #333;
+}
+
+[data-theme='dark'] .modeToggle button:hover {
+  color: #ddd;
+}
+
+.activeMode {
+  background-color: white !important;
+  color: #333 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme='dark'] .activeMode {
+  background-color: #333 !important;
+  color: #fff !important;
+}
+
+.inputSection,
+.outputSection,
+.configSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inputSection h4,
+.outputSection h4,
+.configSection h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inputGroup label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.inputGroup label strong {
+  color: var(--ifm-font-color-base);
+  font-weight: 600;
+}
+
+.helpText {
+  font-size: 0.8125rem;
+  color: #666;
+  font-style: italic;
+}
+
+[data-theme='dark'] .helpText {
+  color: #999;
+}
+
+.inputGroup input {
+  padding: 0.625rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  background-color: white;
+  color: var(--ifm-font-color-base);
+  max-width: 300px;
+}
+
+[data-theme='dark'] .inputGroup input {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.inputGroup input:focus {
+  outline: none;
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 2px var(--ifm-color-primary-lightest);
+}
+
+.inputWithUnit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 300px;
+}
+
+.inputWithUnit input {
+  flex: 1;
+  max-width: none;
+}
+
+.inputWithUnit span {
+  font-weight: 600;
+  color: var(--ifm-font-color-base);
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border: 1px solid #e6e6e6;
+  border-radius: 8px;
+}
+
+[data-theme='dark'] .resultGrid {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.resultItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resultLabel {
+  font-size: 0.8125rem;
+  color: #666;
+  font-weight: 500;
+}
+
+[data-theme='dark'] .resultLabel {
+  color: #999;
+}
+
+.resultValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ifm-color-primary);
+}
+
+.explanation {
+  padding: 1rem;
+  background-color: #f0f7ff;
+  border-left: 4px solid var(--ifm-color-primary);
+  border-radius: 4px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+[data-theme='dark'] .explanation {
+  background-color: #1a2332;
+}
+
+.explanation p {
+  margin: 0;
+}
+
+.configOutput {
+  position: relative;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+[data-theme='dark'] .configOutput {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+.configOutput pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.copyButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--ifm-color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.copyButton:hover {
+  background-color: var(--ifm-color-primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.copyButton:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calculator {
+    padding: 1.5rem;
+  }
+
+  .resultGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .modeToggle {
+    width: 100%;
+  }
+
+  .modeToggle button {
+    flex: 1;
+  }
+
+  .inputGroup input,
+  .inputWithUnit {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .calculator {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .modeToggle button {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .copyButton {
+    position: static;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .configOutput {
+    padding-top: 1rem;
+  }
+}
