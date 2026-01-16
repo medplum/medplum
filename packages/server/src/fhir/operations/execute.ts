@@ -184,7 +184,7 @@ async function executeOperationStreaming(req: Request, res: Response): Promise<v
 
   try {
     // Execute the bot with streaming
-    await executeBotStreaming(
+    const result = await executeBotStreaming(
       {
         bot,
         runAs: await getBotProjectMembership(ctx, bot),
@@ -198,6 +198,17 @@ async function executeOperationStreaming(req: Request, res: Response): Promise<v
       streamingCallback
     );
 
+    // Check if execution failed and send error event
+    if (!result.success) {
+      res.write(
+        `data: ${JSON.stringify({
+          error: true,
+          message: result.logResult,
+        })}\n\n`
+      );
+      return;
+    }
+
     // Send completion event
     res.write('data: [DONE]\n\n');
   } catch (err) {
@@ -208,6 +219,5 @@ async function executeOperationStreaming(req: Request, res: Response): Promise<v
         message: normalizeErrorString(err),
       })}\n\n`
     );
-    res.write('data: [DONE]\n\n');
   }
 }
