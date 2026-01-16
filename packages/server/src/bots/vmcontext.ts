@@ -21,6 +21,89 @@ import type { BotExecutionContext, BotExecutionResult, BotStreamingResult, Strea
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
 /**
+ * Validates the bot's executable code URL.
+ * @param bot - The bot to validate.
+ * @returns The code URL if valid, or an error message string starting with 'Error:'.
+ */
+function getCodeUrl(bot: BotExecutionContext['bot']): { url: string } | { error: string } {
+  const codeUrl = bot.executableCode?.url;
+  if (!codeUrl) {
+    return { error: 'No executable code' };
+  }
+  if (!codeUrl.startsWith('Binary/')) {
+    return { error: 'Executable code is not a Binary' };
+  }
+  return { url: codeUrl };
+}
+
+/**
+ * Loads the bot's executable code from storage.
+ * @param codeUrl - The URL of the executable code Binary.
+ * @returns The code string.
+ */
+async function loadBotCode(codeUrl: string): Promise<string> {
+  const systemRepo = getSystemRepo();
+  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
+  const stream = await getBinaryStorage().readBinary(binary);
+  return readStreamToString(stream);
+}
+
+/**
+ * Creates VM running script options for bot execution.
+ * @param bot - The bot to execute.
+ * @returns The VM running script options.
+ */
+function createVmOptions(bot: BotExecutionContext['bot']): vm.RunningScriptOptions {
+  return {
+    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
+  };
+}
+
+interface SandboxEvent {
+  bot: ReturnType<typeof createReference>;
+  baseUrl: string;
+  accessToken: string;
+  requester: BotExecutionContext['requester'];
+  input: unknown;
+  contentType: string;
+  secrets: BotExecutionContext['secrets'];
+  traceId: string | undefined;
+  headers: BotExecutionContext['headers'];
+  defaultHeaders: BotExecutionContext['defaultHeaders'];
+  onChunk?: (chunk: StreamingChunk) => Promise<void>;
+}
+
+/**
+ * Creates the VM sandbox object for bot execution.
+ * @param botConsole - The mock console for the bot.
+ * @param event - The event object to expose to the bot.
+ * @returns The sandbox object.
+ */
+function createSandbox(botConsole: MockConsole, event: SandboxEvent): vm.Context {
+  return {
+    console: botConsole,
+    fetch: globalThis.fetch,
+    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
+    ContentType,
+    Hl7Message,
+    MedplumClient,
+    TextDecoder,
+    TextEncoder,
+    TextDecoderStream,
+    TextEncoderStream,
+    ReadableStream,
+    WritableStream,
+    TransformStream,
+    URL,
+    URLSearchParams,
+    Headers,
+    Request,
+    Response,
+    event,
+  };
+}
+
+/**
  * Generates the wrapped code template for VM execution.
  * @param code - The bot's executable code.
  * @param streaming - Whether to include streaming support (onChunk).
@@ -93,58 +176,29 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     return { success: false, logResult: 'VM Context bots not enabled on this server' };
   }
 
-  const codeUrl = bot.executableCode?.url;
-  if (!codeUrl) {
-    return { success: false, logResult: 'No executable code' };
-  }
-  if (!codeUrl.startsWith('Binary/')) {
-    return { success: false, logResult: 'Executable code is not a Binary' };
+  const codeUrlResult = getCodeUrl(bot);
+  if ('error' in codeUrlResult) {
+    return { success: false, logResult: codeUrlResult.error };
   }
 
-  const systemRepo = getSystemRepo();
-  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
-  const stream = await getBinaryStorage().readBinary(binary);
-  const code = await readStreamToString(stream);
+  const code = await loadBotCode(codeUrlResult.url);
   const botConsole = new MockConsole();
 
-  const sandbox = {
-    console: botConsole,
-    fetch: globalThis.fetch,
-    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
-    ContentType,
-    Hl7Message,
-    MedplumClient,
-    TextDecoder,
-    TextEncoder,
-    TextDecoderStream,
-    TextEncoderStream,
-    ReadableStream,
-    WritableStream,
-    TransformStream,
-    URL,
-    URLSearchParams,
-    Headers,
-    Request,
-    Response,
-    event: {
-      bot: createReference(bot),
-      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
-      accessToken: request.accessToken,
-      requester: request.requester,
-      input: input instanceof Hl7Message ? input.toString() : input,
-      contentType,
-      secrets: request.secrets,
-      traceId,
-      headers,
-      defaultHeaders: request.defaultHeaders,
-    },
-  };
-
-  const options: vm.RunningScriptOptions = {
-    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
-  };
+  const sandbox = createSandbox(botConsole, {
+    bot: createReference(bot),
+    baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
+    accessToken: request.accessToken,
+    requester: request.requester,
+    input: input instanceof Hl7Message ? input.toString() : input,
+    contentType,
+    secrets: request.secrets,
+    traceId,
+    headers,
+    defaultHeaders: request.defaultHeaders,
+  });
 
   const wrappedCode = generateWrappedCode(code, false);
+  const options = createVmOptions(bot);
 
   // Return the result of the code execution
   try {
@@ -177,63 +231,34 @@ export async function runInVmContextStreaming(request: BotExecutionContext): Pro
     return { streaming: true, success: false, logResult: 'VM Context bots not enabled on this server' };
   }
 
-  const codeUrl = bot.executableCode?.url;
-  if (!codeUrl) {
-    return { streaming: true, success: false, logResult: 'No executable code' };
-  }
-  if (!codeUrl.startsWith('Binary/')) {
-    return { streaming: true, success: false, logResult: 'Executable code is not a Binary' };
+  const codeUrlResult = getCodeUrl(bot);
+  if ('error' in codeUrlResult) {
+    return { streaming: true, success: false, logResult: codeUrlResult.error };
   }
 
-  const systemRepo = getSystemRepo();
-  const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
-  const stream = await getBinaryStorage().readBinary(binary);
-  const code = await readStreamToString(stream);
+  const code = await loadBotCode(codeUrlResult.url);
   const botConsole = new MockConsole();
 
-  const sandbox = {
-    console: botConsole,
-    fetch: globalThis.fetch,
-    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
-    ContentType,
-    Hl7Message,
-    MedplumClient,
-    TextDecoder,
-    TextEncoder,
-    TextDecoderStream,
-    TextEncoderStream,
-    ReadableStream,
-    WritableStream,
-    TransformStream,
-    URL,
-    URLSearchParams,
-    Headers,
-    Request,
-    Response,
-    event: {
-      bot: createReference(bot),
-      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
-      accessToken: request.accessToken,
-      requester: request.requester,
-      input: input instanceof Hl7Message ? input.toString() : input,
-      contentType,
-      secrets: request.secrets,
-      traceId,
-      headers,
-      defaultHeaders: request.defaultHeaders,
-      onChunk: async (chunk: StreamingChunk) => {
-        if (streamingCallback) {
-          await streamingCallback(chunk);
-        }
-      },
+  const sandbox = createSandbox(botConsole, {
+    bot: createReference(bot),
+    baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
+    accessToken: request.accessToken,
+    requester: request.requester,
+    input: input instanceof Hl7Message ? input.toString() : input,
+    contentType,
+    secrets: request.secrets,
+    traceId,
+    headers,
+    defaultHeaders: request.defaultHeaders,
+    onChunk: async (chunk: StreamingChunk) => {
+      if (streamingCallback) {
+        await streamingCallback(chunk);
+      }
     },
-  };
-
-  const options: vm.RunningScriptOptions = {
-    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
-  };
+  });
 
   const wrappedCode = generateWrappedCode(code, true);
+  const options = createVmOptions(bot);
 
   // Return the result of the code execution
   try {
