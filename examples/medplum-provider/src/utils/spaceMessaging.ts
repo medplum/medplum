@@ -35,10 +35,7 @@ export interface ExecuteToolCallsResult {
   resourceRefs: string[];
 }
 
-async function executeFhirRequest(
-  medplum: ReturnType<typeof useMedplum>,
-  args: FhirRequestArgs
-): Promise<Resource> {
+async function executeFhirRequest(medplum: ReturnType<typeof useMedplum>, args: FhirRequestArgs): Promise<Resource> {
   const { method, path, body } = args;
   switch (method) {
     case 'GET':
