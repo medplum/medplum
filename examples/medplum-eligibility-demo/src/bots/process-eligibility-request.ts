@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Coding, CoverageEligibilityRequest, CoverageEligibilityResponse } from '@medplum/fhirtypes';
 
 /**
@@ -55,9 +55,7 @@ function processRequest(
     purpose: request.purpose,
     patient: request.patient,
     created: new Date().toISOString(),
-    request: {
-      reference: getReferenceString(request),
-    },
+    request: createReference(request),
     outcome: 'complete',
     insurer: request.insurer,
     insurance: [

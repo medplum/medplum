@@ -79,12 +79,8 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
     const media: Media = {
       resourceType: 'Media',
       status: 'completed',
-      subject: {
-        reference: getReferenceString(claim.patient),
-      },
-      operator: {
-        reference: getReferenceString(claim.provider),
-      },
+      subject: claim.patient,
+      operator: claim.provider,
       issued: new Date().toISOString(),
       content: {
         contentType: 'application/pdf',

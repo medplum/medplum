@@ -1,23 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { ClinicalImpression, Encounter, Practitioner, Provenance, Task } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EncounterChart } from './EncounterChart';
-import { createReference } from '@medplum/core';
 
-const mockPractitioner: Practitioner = {
+const mockPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'practitioner-123',
   name: [{ given: ['Dr.'], family: 'Test' }],
 };
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
@@ -302,7 +303,7 @@ describe('EncounterChart', () => {
   });
 
   describe('signing functionality', () => {
-    const finishedEncounter: Encounter = {
+    const finishedEncounter: WithId<Encounter> = {
       ...mockEncounter,
       status: 'finished',
     };

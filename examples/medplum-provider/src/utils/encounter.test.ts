@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
-import type { Coding, Encounter, Patient, PlanDefinition, Practitioner, Appointment, Task } from '@medplum/fhirtypes';
+import type { Appointment, Coding, Encounter, Patient, PlanDefinition, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter, updateEncounterStatus } from './encounter';
 
 describe('encounter utils', () => {
@@ -84,7 +85,7 @@ describe('encounter utils', () => {
       };
 
       const encounter = await createEncounter(
-        medplum as any,
+        medplum,
         new Date('2020-01-01T10:00:00Z'),
         new Date('2020-01-01T10:30:00Z'),
         classification,
@@ -107,13 +108,13 @@ describe('encounter utils', () => {
 
   describe('updateEncounterStatus', () => {
     test('updates encounter period and appointment status', async () => {
-      const encounter: Encounter = {
+      const encounter: WithId<Encounter> = {
         resourceType: 'Encounter',
         id: 'enc-1',
         status: 'planned',
         class: classification,
       };
-      const appointment: Appointment = {
+      const appointment: WithId<Appointment> = {
         resourceType: 'Appointment',
         id: 'appt-1',
         status: 'booked',
@@ -126,7 +127,7 @@ describe('encounter utils', () => {
       };
       const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
 
-      const updatedEncounter = await updateEncounterStatus(medplum as any, encounter, appointment, 'in-progress');
+      const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, 'in-progress');
 
       expect(updateSpy).toHaveBeenCalledWith(
         expect.objectContaining({ resourceType: 'Appointment', status: 'checked-in' })
@@ -137,18 +138,18 @@ describe('encounter utils', () => {
       expect(updatedEncounter.period?.start).toBeDefined();
 
       // Move to finished state
-      await updateEncounterStatus(medplum as any, updatedEncounter, appointment, 'finished');
+      await updateEncounterStatus(medplum, updatedEncounter, appointment, 'finished');
       expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'fulfilled' }));
     });
 
     test('updates appointment status for cancellation', async () => {
-      const encounter: Encounter = {
+      const encounter: WithId<Encounter> = {
         resourceType: 'Encounter',
         id: 'enc-2',
         status: 'in-progress',
         class: classification,
       };
-      const appointment: Appointment = {
+      const appointment: WithId<Appointment> = {
         resourceType: 'Appointment',
         id: 'appt-2',
         status: 'booked',
@@ -161,7 +162,7 @@ describe('encounter utils', () => {
       };
       const updateSpy = vi.spyOn(medplum, 'updateResource').mockImplementation(async (resource) => resource as any);
 
-      await updateEncounterStatus(medplum as any, encounter, appointment, 'cancelled');
+      await updateEncounterStatus(medplum, encounter, appointment, 'cancelled');
 
       expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ status: 'cancelled' }));
     });
