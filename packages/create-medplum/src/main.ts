@@ -62,8 +62,8 @@ async function promptForConfig(): Promise<ProjectConfig> {
 
   // Display the list of starter projects
   console.log('Which starter project would you like to use?');
-  for (let i = 0; i < STARTER_PROJECTS.length; i++) {
-    console.log(`${i + 1}) ${STARTER_PROJECTS[i].name} - ${STARTER_PROJECTS[i].description}`);
+  for (const [i, STARTER_PROJECT] of STARTER_PROJECTS.entries()) {
+    console.log(`${i + 1}) ${STARTER_PROJECT.name} - ${STARTER_PROJECT.description}`);
   }
 
   // Prompt the user to select a project
