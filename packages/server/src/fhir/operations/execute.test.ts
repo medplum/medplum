@@ -950,7 +950,7 @@ describe('Execute', () => {
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBeGreaterThanOrEqual(3); 
+      expect(events.length).toBeGreaterThanOrEqual(3);
 
       const chunk1 = JSON.parse(events[0].replace('data: ', ''));
       expect(chunk1).toMatchObject({ type: 'chunk', content: 'Hello ' });
@@ -989,6 +989,5 @@ describe('Execute', () => {
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
       expect(events[events.length - 1]).toBe('data: [DONE]');
     });
-
   });
 });
