@@ -62,20 +62,22 @@ describe('LinkTabs', () => {
     expect(timelineTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('initializes with first tab when current path does not match any tab', () => {
+  test('initializes with first tab when current path does not match any tab and redirects', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/unknown');
     setup();
 
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview', { replace: true });
   });
 
-  test('initializes with first tab when path is empty', () => {
+  test('initializes with first tab when path is empty and redirects', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123');
     setup();
 
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview', { replace: true });
   });
 
   test('navigates when tab is clicked', async () => {
