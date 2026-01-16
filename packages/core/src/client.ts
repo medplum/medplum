@@ -3566,7 +3566,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (delayMs > maxRetryTime) {
           return response;
         }
-        await sleep(delayMs);
+        await sleep(delayMs, { signal: options.signal });
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
@@ -3668,7 +3668,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } else {
       // Subsequent requests - wait and retry
       const retryDelay = options.pollStatusPeriod ?? 1000;
-      await sleep(retryDelay);
+      await sleep(retryDelay, { signal: options.signal });
       state.pollCount++;
     }
     return this.request('GET', statusUrl, statusOptions, state);

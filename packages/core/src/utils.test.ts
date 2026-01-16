@@ -67,6 +67,7 @@ import {
   setCodeBySystem,
   setIdentifier,
   singularize,
+  sleep,
   sortStringArray,
   splitN,
   stringify,
@@ -1322,6 +1323,15 @@ describe('Core Utils', () => {
     const result = findResourceByCode(observations, codeToFindAsString, system);
     expect(result).toStrictEqual(observations[0]);
   });
+
+  test('sleep with abort signal', async () => {
+    const controller = new AbortController();
+    const promise = sleep(100, { signal: controller.signal });
+
+    controller.abort();
+
+    await expect(promise).rejects.toThrow('The operation was aborted');
+  })
 
   test('splitN', () => {
     expect(
