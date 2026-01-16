@@ -263,6 +263,16 @@ export class AgentHl7ChannelConnection {
         this.channel.channelLog.info(`Setting sequence number for message control ID '${msgControlId}': ${seqNo}`);
       }
 
+      // Check if queue is ready before storing (safety check for edge cases like shutdown)
+      if (!this.channel.app.isQueueReady()) {
+        this.channel.channelLog.error(
+          `Queue not ready, cannot store message ID: ${msgControlId}. Sending error ACK to client.`
+        );
+        const errorAck = event.message.buildAck({ ackCode: 'AE' });
+        this.hl7Connection.send(errorAck);
+        return;
+      }
+
       // Store in durable queue first, then trigger processing
       this.channel.app.hl7DurableQueue.addMessage(
         event.message,

@@ -55,10 +55,21 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
-import { AgentHl7DurableQueue } from './queue';
+import { AgentHl7DurableQueue, waitForQueueRelease } from './queue';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
+import { join } from 'node:path';
+
+// Handoff coordination files for zero-downtime upgrades
+const HANDOFF_READY_PATH = join(__dirname, '.handoff-ready');
+const HANDOFF_GO_PATH = join(__dirname, '.handoff-go');
+
+// Minimum version that supports the new handoff protocol for queue coordination.
+// Versions before this use the installer-based coordination (Windows) which doesn't
+// require the handoff signal. When upgrading FROM a version >= this, we require
+// the handoff signal and abort if we don't receive it.
+const MIN_HANDOFF_PROTOCOL_VERSION = '5.1.0';
 
 async function execAsync(
   command: string,
@@ -113,11 +124,62 @@ export class App {
     this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
 
     // Initialize durable queue
-    this.hl7DurableQueue = new AgentHl7DurableQueue();
+    this.hl7DurableQueue = new AgentHl7DurableQueue(this.log);
   }
 
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
+
+    const isUpgrade = existsSync(UPGRADE_MANIFEST_PATH);
+    let previousVersionSupportsHandoff = false;
+
+    if (isUpgrade) {
+      // Read upgrade manifest to check previous version
+      const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+      const upgradeDetails = JSON.parse(upgradeFile) as {
+        previousVersion: string;
+        targetVersion: string;
+        callback: string | null;
+      };
+
+      this.log.info(`Upgrade detected from version ${upgradeDetails.previousVersion} to ${upgradeDetails.targetVersion}`);
+
+      // Check if the previous version supports the handoff protocol
+      // If previousVersion is "UNKNOWN" (set by installer) or older than MIN_HANDOFF_PROTOCOL_VERSION,
+      // we skip the handoff coordination and rely on installer-based coordination
+      previousVersionSupportsHandoff =
+        upgradeDetails.previousVersion !== 'UNKNOWN' &&
+        semver.valid(upgradeDetails.previousVersion) !== null &&
+        semver.gte(upgradeDetails.previousVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+
+      if (previousVersionSupportsHandoff) {
+        this.log.info('Previous version supports handoff protocol, coordinating with old agent...');
+
+        // Signal to old agent: "I'm ready to take over"
+        writeFileSync(HANDOFF_READY_PATH, process.pid.toString());
+        this.log.info('Handoff ready signal sent');
+
+        // Wait for old agent to signal "go" (means it has stopped channels)
+        // If we don't receive it, abort - the old agent should have sent it
+        const receivedSignal = await this.waitForHandoffGo();
+        if (!receivedSignal) {
+          this.log.error('Failed to receive handoff signal from old agent, aborting upgrade');
+          this.cleanupHandoffFiles();
+          throw new Error('Upgrade aborted: handoff signal not received from old agent');
+        }
+      } else {
+        this.log.info(
+          `Previous version (${upgradeDetails.previousVersion}) does not support handoff protocol, ` +
+            'relying on installer-based coordination'
+        );
+      }
+    }
+
+    // Initialize the queue - during upgrades from versions that support handoff, wait for release
+    if (isUpgrade && previousVersionSupportsHandoff) {
+      await waitForQueueRelease(this.log);
+    }
+    this.hl7DurableQueue.init();
 
     await this.startWebSocket();
 
@@ -126,6 +188,9 @@ export class App {
     // We do this after starting WebSockets so that we can send a message if we finished upgrading
     // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
     await this.maybeFinalizeUpgrade();
+
+    // Clean up handoff files if they exist
+    this.cleanupHandoffFiles();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -138,6 +203,46 @@ export class App {
     });
 
     this.log.info('Medplum service started successfully');
+  }
+
+  /**
+   * Wait for the old agent to signal that it has stopped its channels and is ready for handoff.
+   *
+   * @param timeoutMs - Maximum time to wait in milliseconds (default 30 seconds).
+   * @returns True if the handoff signal was received, false if timeout occurred.
+   */
+  private async waitForHandoffGo(timeoutMs = 30000): Promise<boolean> {
+    const startTime = Date.now();
+    this.log.info('Waiting for handoff signal from old agent...');
+
+    while (!existsSync(HANDOFF_GO_PATH)) {
+      if (Date.now() - startTime > timeoutMs) {
+        this.log.warn(`Timeout waiting for handoff signal after ${timeoutMs}ms`);
+        return false;
+      }
+      await sleep(10); // Check every 10ms for fast handoff
+    }
+
+    // Small delay to ensure old agent has fully stopped channels
+    await sleep(50);
+    this.log.info('Handoff signal received from old agent');
+    return true;
+  }
+
+  /**
+   * Clean up handoff coordination files.
+   */
+  private cleanupHandoffFiles(): void {
+    try {
+      if (existsSync(HANDOFF_READY_PATH)) {
+        unlinkSync(HANDOFF_READY_PATH);
+      }
+      if (existsSync(HANDOFF_GO_PATH)) {
+        unlinkSync(HANDOFF_GO_PATH);
+      }
+    } catch (err) {
+      this.log.warn(`Error cleaning up handoff files: ${normalizeErrorString(err)}`);
+    }
   }
 
   private async maybeFinalizeUpgrade(): Promise<void> {
@@ -654,6 +759,12 @@ export class App {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
+    // Check if a new agent is waiting for handoff
+    const isUpgradeHandoff = existsSync(HANDOFF_READY_PATH);
+    if (isUpgradeHandoff) {
+      this.log.info('New agent is waiting for handoff');
+    }
+
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
@@ -684,7 +795,26 @@ export class App {
     }
     await Promise.all(channelStopPromises);
 
+    // Signal new agent: "channels stopped, GO!"
+    // This allows the new agent to start its channels immediately
+    if (isUpgradeHandoff) {
+      writeFileSync(HANDOFF_GO_PATH, Date.now().toString());
+      this.log.info('Handoff signal sent to new agent');
+    }
+
+    // Close the durable queue AFTER signaling handoff
+    // New agent can start channels while we close the queue
+    this.hl7DurableQueue.close();
+
     this.log.info('Medplum service stopped successfully');
+  }
+
+  /**
+   * Check if the durable queue is ready for use.
+   * @returns True if the queue is initialized and not closed.
+   */
+  isQueueReady(): boolean {
+    return this.hl7DurableQueue.isReady();
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
