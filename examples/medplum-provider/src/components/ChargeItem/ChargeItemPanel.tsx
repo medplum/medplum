@@ -62,7 +62,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
   };
 
   const deleteChargeItem = async (): Promise<void> => {
-    await medplum.deleteResource('ChargeItem', chargeItem.id as string);
+    await medplum.deleteResource('ChargeItem', chargeItem.id);
     onDelete(chargeItem);
   };
 

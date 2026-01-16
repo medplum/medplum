@@ -219,7 +219,7 @@ interface ObservationRowProps {
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   const observation = useResource(props.value);
 
-  if (!observation || props.ancestorIds?.includes(observation.id as string)) {
+  if (!observation || props.ancestorIds?.includes(observation.id)) {
     return null;
   }
 
@@ -268,7 +268,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         <ObservationRowGroup
           value={observation.hasMember as Reference<Observation>[]}
           ancestorIds={
-            props.ancestorIds ? [...props.ancestorIds, observation.id as string] : [observation.id as string]
+            props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]
           }
           hideObservationNotes={props.hideObservationNotes}
         />
