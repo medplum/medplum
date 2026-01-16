@@ -12,7 +12,7 @@ import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { normalizeErrorString } from '@medplum/core';
+import { EMPTY, normalizeErrorString } from '@medplum/core';
 import fetch from 'node-fetch';
 import { readdirSync } from 'node:fs';
 import * as semver from 'semver';
@@ -75,10 +75,8 @@ export async function getAllStacks(): Promise<(StackSummary & { StackName: strin
   );
 
   for await (const page of paginator) {
-    if (page.StackSummaries) {
-      for (const stack of page.StackSummaries) {
-        listResult.push(stack);
-      }
+    for (const stack of page.StackSummaries ?? EMPTY) {
+      listResult.push(stack);
     }
   }
 

@@ -992,12 +992,12 @@ export class UpdateQuery extends BaseQuery {
       sql.appendIdentifier(this._from.name);
     }
 
-    if (this.predicate.expressions.length > 0) {
+    if (this.predicate.expressions.length) {
       sql.append(' WHERE ');
       sql.appendExpression(this.predicate);
     }
 
-    if (this.returning && this.returning.length > 0) {
+    if (this.returning?.length) {
       sql.append(' RETURNING ');
       let first = true;
       for (const column of this.returning) {

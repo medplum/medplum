@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { checkForNull, createStructureIssue, OperationOutcomeError, validationError } from '@medplum/core';
+import { checkForNull, createStructureIssue, EMPTY, OperationOutcomeError, validationError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import type { JSONSchema4, JSONSchema6 } from 'json-schema';
@@ -111,11 +111,9 @@ function checkAdditionalProperties(
 
 function checkRequiredProperties(resource: Resource, definition: any, issues: OperationOutcomeIssue[]): void {
   const requiredProperties = definition.required;
-  if (requiredProperties) {
-    for (const key of requiredProperties) {
-      if (!(key in resource)) {
-        issues.push(createStructureIssue(key, `Missing required property "${key}"`));
-      }
+  for (const key of requiredProperties ?? EMPTY) {
+    if (!(key in resource)) {
+      issues.push(createStructureIssue(key, `Missing required property "${key}"`));
     }
   }
 }

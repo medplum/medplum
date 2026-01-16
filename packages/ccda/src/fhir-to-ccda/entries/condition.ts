@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { generateId } from '@medplum/core';
+import { EMPTY, generateId } from '@medplum/core';
 import type { CompositionSection, Condition } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from '../../datetime';
 import {
@@ -111,47 +111,43 @@ export function createProblemEntry(converter: FhirToCcdaConverter, problem: Cond
 export function createHealthConcernEntry(converter: FhirToCcdaConverter, healthConcern: Condition): CcdaEntry {
   const entryRelationship: CcdaEntryRelationship[] = [];
 
-  if (healthConcern.evidence) {
-    for (const evidence of healthConcern.evidence) {
-      if (evidence.detail) {
-        for (const detailRef of evidence.detail) {
-          const detail = converter.findResourceByReference(detailRef);
-          if (detail?.resourceType === 'Observation') {
-            entryRelationship.push({
-              '@_typeCode': 'REFR',
-              observation: [
-                {
-                  '@_classCode': 'OBS',
-                  '@_moodCode': 'EVN',
-                  templateId: [
-                    { '@_root': OID_PROBLEM_OBSERVATION },
-                    { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
-                  ],
-                  id: mapIdentifiers(detail.id, detail.identifier) as CcdaId[],
-                  text: createTextFromExtensions(detail.extension),
-                  code: {
-                    '@_code': '404684003',
-                    '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                    '@_codeSystemName': 'SNOMED CT',
-                    '@_displayName': 'Clinical finding (finding)',
-                    translation: [
-                      {
-                        '@_code': LOINC_CLINICAL_FINDING,
-                        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-                        '@_codeSystemName': 'LOINC',
-                        '@_displayName': 'Clinical finding',
-                      },
-                    ],
-                  },
-                  statusCode: { '@_code': 'completed' },
-                  effectiveTime: mapEffectivePeriod(detail.effectivePeriod?.start, detail.effectivePeriod?.end, true),
-                  value: mapCodeableConceptToCcdaValue(detail.valueCodeableConcept),
-                  author: converter.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
-                },
+  for (const evidence of healthConcern.evidence ?? EMPTY) {
+    for (const detailRef of evidence.detail ?? EMPTY) {
+      const detail = converter.findResourceByReference(detailRef);
+      if (detail?.resourceType === 'Observation') {
+        entryRelationship.push({
+          '@_typeCode': 'REFR',
+          observation: [
+            {
+              '@_classCode': 'OBS',
+              '@_moodCode': 'EVN',
+              templateId: [
+                { '@_root': OID_PROBLEM_OBSERVATION },
+                { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
               ],
-            });
-          }
-        }
+              id: mapIdentifiers(detail.id, detail.identifier) as CcdaId[],
+              text: createTextFromExtensions(detail.extension),
+              code: {
+                '@_code': '404684003',
+                '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                '@_codeSystemName': 'SNOMED CT',
+                '@_displayName': 'Clinical finding (finding)',
+                translation: [
+                  {
+                    '@_code': LOINC_CLINICAL_FINDING,
+                    '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                    '@_codeSystemName': 'LOINC',
+                    '@_displayName': 'Clinical finding',
+                  },
+                ],
+              },
+              statusCode: { '@_code': 'completed' },
+              effectiveTime: mapEffectivePeriod(detail.effectivePeriod?.start, detail.effectivePeriod?.end, true),
+              value: mapCodeableConceptToCcdaValue(detail.valueCodeableConcept),
+              author: converter.mapAuthor(detail.performer?.[0], detail.effectiveDateTime),
+            },
+          ],
+        });
       }
     }
   }

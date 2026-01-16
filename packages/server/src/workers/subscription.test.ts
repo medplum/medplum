@@ -567,6 +567,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
     }));
 
+  // Skip test
   test.skip('Ignore subscriptions with missing criteria', () =>
     withTestContext(async () => {
       const subscription = await repo.createResource<Subscription>({

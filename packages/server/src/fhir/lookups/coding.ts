@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { append } from '@medplum/core';
+import { append, EMPTY } from '@medplum/core';
 import type {
   CodeSystem,
   CodeSystemConcept,
@@ -151,10 +151,8 @@ export class CodingTable extends LookupTable {
     designations: Designation[];
   } {
     const result = Object.create(null);
-    if (codeSystem.concept) {
-      for (const concept of codeSystem.concept) {
-        this.addCodeSystemConcepts(codeSystem, concept, result);
-      }
+    for (const concept of codeSystem.concept ?? EMPTY) {
+      this.addCodeSystemConcepts(codeSystem, concept, result);
     }
     return result;
   }
@@ -177,32 +175,26 @@ export class CodingTable extends LookupTable {
     const { code, display } = concept;
     result.concepts = append(result.concepts, { code, display });
 
-    if (concept.property) {
-      for (const prop of concept.property) {
-        result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
-      }
+    for (const prop of concept.property ?? EMPTY) {
+      result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
     }
 
-    if (concept.concept) {
-      for (const child of concept.concept) {
-        this.addCodeSystemConcepts(codeSystem, child, result);
-        result.properties = append(result.properties, {
-          code: child.code,
-          property:
-            codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
-          value: code,
-        });
-      }
+    for (const child of concept.concept ?? EMPTY) {
+      this.addCodeSystemConcepts(codeSystem, child, result);
+      result.properties = append(result.properties, {
+        code: child.code,
+        property:
+          codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
+        value: code,
+      });
     }
 
-    if (concept.designation) {
-      for (const designation of concept.designation) {
-        result.designations = append(result.designations, {
-          code: concept.code,
-          language: designation.language,
-          value: designation.value,
-        });
-      }
+    for (const designation of concept.designation ?? EMPTY) {
+      result.designations = append(result.designations, {
+        code: concept.code,
+        language: designation.language,
+        value: designation.value,
+      });
     }
   }
 }

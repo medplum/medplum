@@ -27,7 +27,7 @@ import { isQuantity, toPeriod } from '../fhirpath/utils';
 import { typedValueToString } from '../format';
 import type { TypedValue } from '../types';
 import { isReference, PropertyType } from '../types';
-import { getReferenceString, isResourceWithId, isString } from '../utils';
+import { EMPTY, getReferenceString, isResourceWithId, isString } from '../utils';
 
 export interface SearchableToken {
   readonly system: string | undefined;
@@ -189,10 +189,8 @@ function buildCodeableConceptToken(
   if (codeableConcept?.text) {
     buildSimpleToken(result, context, context.textSearchSystem, codeableConcept.text);
   }
-  if (codeableConcept?.coding) {
-    for (const coding of codeableConcept.coding) {
-      buildCodingToken(result, context, coding);
-    }
+  for (const coding of codeableConcept?.coding ?? EMPTY) {
+    buildCodingToken(result, context, coding);
   }
 }
 
