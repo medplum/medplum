@@ -81,6 +81,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/smart" element={<SmartSearchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin/super/asyncjob/:tab" element={<SuperAdminAsyncDashboardPage />} />
         <Route path="/admin/super/asyncjob" element={<SuperAdminAsyncDashboardPage />} />
         <Route path="/admin/super/db/:tab" element={<DatabaseToolsPage />} />
         <Route path="/admin/super/db" element={<DatabaseToolsPage />} />
