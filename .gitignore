@@ -99,3 +99,17 @@ playwright/.cache/
 
 # 0x profiling data
 *.0x
+
+# Agent config / lock / testing files
+.queue-owner
+agent.properties
+medplum-agent-main-*.log
+medplum-agent-main-*.log.*
+medplum-agent-channels-*.log
+medplum-agent-channels-*.log.*
+.*-audit.json
+*.sqlite3
+
+# Temporary JS/TS scripts that shouldn't get committed
+scripts/*-tmp.js
+scripts/*-tmp.ts

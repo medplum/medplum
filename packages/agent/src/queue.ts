@@ -7,6 +7,9 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { checkProcessExists } from './pid';
 
+// Type alias for prepared statements
+type PreparedStatement = ReturnType<DatabaseSync['prepare']>;
+
 export const CURRENT_SQLITE_FILE_VERSION = 1;
 export const MESSAGE_DB_PATH = join(__dirname, `messages-v${CURRENT_SQLITE_FILE_VERSION}.sqlite3`);
 export const QUEUE_OWNER_PATH = join(__dirname, '.queue-owner');
@@ -23,6 +26,34 @@ export const MESSAGE_STATUSES = [
   'response_timed_out',
   'response_error',
 ] as const;
+
+// Queue message types for query results
+export interface QueueMessage {
+  id: number;
+  raw_message: string;
+  sender: string;
+  receiver: string;
+  message_ctrl_id: string;
+  channel: string;
+}
+
+export interface QueueMessageWithRemote extends QueueMessage {
+  remote: string;
+  callback: string;
+}
+
+export interface QueueResponseMessage {
+  id: number;
+  raw_message: string;
+  response_message: string;
+  channel: string;
+  remote: string;
+  callback: string;
+}
+
+export interface QueueMessageWithStatus extends QueueMessageWithRemote {
+  status: (typeof MESSAGE_STATUSES)[number];
+}
 
 export const MIGRATIONS = [
   [
@@ -356,7 +387,7 @@ export class AgentHl7DurableQueue {
     const receiver = msh?.getField(5)?.toString() ?? '';
     const messageId = msh?.getField(10)?.toString() ?? '';
 
-    const result = this.insertMessageStmt!.run(
+    const result = (this.insertMessageStmt as PreparedStatement).run(
       receivedTime,
       rawMessage,
       sender,
@@ -376,27 +407,9 @@ export class AgentHl7DurableQueue {
    * @param channel - The channel to get the next message for.
    * @returns The next message to process, or undefined if none available.
    */
-  getNextMessage(channel: string):
-    | {
-        id: number;
-        raw_message: string;
-        sender: string;
-        receiver: string;
-        message_ctrl_id: string;
-        channel: string;
-      }
-    | undefined {
+  getNextMessage(channel: string): QueueMessage | undefined {
     this.assertReady();
-    return this.getNextMessageStmt!.get(channel) as
-      | {
-          id: number;
-          raw_message: string;
-          sender: string;
-          receiver: string;
-          message_ctrl_id: string;
-          channel: string;
-        }
-      | undefined;
+    return (this.getNextMessageStmt as PreparedStatement).get(channel) as QueueMessage | undefined;
   }
 
   /**
@@ -405,7 +418,7 @@ export class AgentHl7DurableQueue {
    */
   markAsSent(messageId: number): void {
     this.assertReady();
-    this.markSentStmt!.run(Date.now(), messageId);
+    (this.markSentStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -414,7 +427,7 @@ export class AgentHl7DurableQueue {
    */
   markAsCommitAcked(messageId: number): void {
     this.assertReady();
-    this.markCommitAckedStmt!.run(Date.now(), messageId);
+    (this.markCommitAckedStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -423,7 +436,7 @@ export class AgentHl7DurableQueue {
    */
   markAsAppAcked(messageId: number): void {
     this.assertReady();
-    this.markAppAckedStmt!.run(Date.now(), messageId);
+    (this.markAppAckedStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -432,7 +445,7 @@ export class AgentHl7DurableQueue {
    */
   markAsError(messageId: number): void {
     this.assertReady();
-    this.markErrorStmt!.run(Date.now(), messageId);
+    (this.markErrorStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -441,7 +454,7 @@ export class AgentHl7DurableQueue {
    */
   markAsTimedOut(messageId: number): void {
     this.assertReady();
-    this.markTimedOutStmt!.run(Date.now(), messageId);
+    (this.markTimedOutStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -451,7 +464,7 @@ export class AgentHl7DurableQueue {
    */
   markAsResponseQueued(messageId: number, responseMessage: string): void {
     this.assertReady();
-    this.markResponseQueuedStmt!.run(responseMessage, Date.now(), messageId);
+    (this.markResponseQueuedStmt as PreparedStatement).run(responseMessage, Date.now(), messageId);
   }
 
   /**
@@ -460,7 +473,7 @@ export class AgentHl7DurableQueue {
    */
   markAsResponseSent(messageId: number): void {
     this.assertReady();
-    this.markResponseSentStmt!.run(Date.now(), messageId);
+    (this.markResponseSentStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -469,7 +482,7 @@ export class AgentHl7DurableQueue {
    */
   markAsResponseTimedOut(messageId: number): void {
     this.assertReady();
-    this.markResponseTimedOutStmt!.run(Date.now(), messageId);
+    (this.markResponseTimedOutStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
@@ -478,38 +491,16 @@ export class AgentHl7DurableQueue {
    */
   markAsResponseError(messageId: number): void {
     this.assertReady();
-    this.markResponseErrorStmt!.run(Date.now(), messageId);
+    (this.markResponseErrorStmt as PreparedStatement).run(Date.now(), messageId);
   }
 
   /**
    * Get the next message with status 'received'.
    * @returns The next received message, or undefined if none available.
    */
-  getNextReceivedMessage():
-    | {
-        id: number;
-        raw_message: string;
-        sender: string;
-        receiver: string;
-        message_ctrl_id: string;
-        channel: string;
-        remote: string;
-        callback: string;
-      }
-    | undefined {
+  getNextReceivedMessage(): QueueMessageWithRemote | undefined {
     this.assertReady();
-    return this.getNextReceivedMessageStmt!.get() as
-      | {
-          id: number;
-          raw_message: string;
-          sender: string;
-          receiver: string;
-          message_ctrl_id: string;
-          channel: string;
-          remote: string;
-          callback: string;
-        }
-      | undefined;
+    return (this.getNextReceivedMessageStmt as PreparedStatement).get() as QueueMessageWithRemote | undefined;
   }
 
   /**
@@ -517,54 +508,18 @@ export class AgentHl7DurableQueue {
    * @param limit - Maximum number of messages to return (default 1000).
    * @returns Array of received messages.
    */
-  getAllReceivedMessages(limit: number = 1000): {
-    id: number;
-    raw_message: string;
-    sender: string;
-    receiver: string;
-    message_ctrl_id: string;
-    channel: string;
-    remote: string;
-    callback: string;
-  }[] {
+  getAllReceivedMessages(limit: number = 1000): QueueMessageWithRemote[] {
     this.assertReady();
-    return this.getAllReceivedMessagesStmt!.all(limit) as {
-      id: number;
-      raw_message: string;
-      sender: string;
-      receiver: string;
-      message_ctrl_id: string;
-      channel: string;
-      remote: string;
-      callback: string;
-    }[];
+    return (this.getAllReceivedMessagesStmt as PreparedStatement).all(limit) as unknown as QueueMessageWithRemote[];
   }
 
   /**
    * Get the next message with status 'response_queued'.
    * @returns The next response queued message, or undefined if none available.
    */
-  getNextResponseQueuedMessage():
-    | {
-        id: number;
-        raw_message: string;
-        response_message: string;
-        channel: string;
-        remote: string;
-        callback: string;
-      }
-    | undefined {
+  getNextResponseQueuedMessage(): QueueResponseMessage | undefined {
     this.assertReady();
-    return this.getNextResponseQueuedMessageStmt!.get() as
-      | {
-          id: number;
-          raw_message: string;
-          response_message: string;
-          channel: string;
-          remote: string;
-          callback: string;
-        }
-      | undefined;
+    return (this.getNextResponseQueuedMessageStmt as PreparedStatement).get() as QueueResponseMessage | undefined;
   }
 
   /**
@@ -572,33 +527,9 @@ export class AgentHl7DurableQueue {
    * @param callback - The callback ID to search for.
    * @returns The message, or undefined if not found.
    */
-  getMessageByCallback(callback: string):
-    | {
-        id: number;
-        raw_message: string;
-        sender: string;
-        receiver: string;
-        message_ctrl_id: string;
-        channel: string;
-        remote: string;
-        callback: string;
-        status: (typeof MESSAGE_STATUSES)[number];
-      }
-    | undefined {
+  getMessageByCallback(callback: string): QueueMessageWithStatus | undefined {
     this.assertReady();
-    return this.getMessageByCallbackStmt!.get(callback) as
-      | {
-          id: number;
-          raw_message: string;
-          sender: string;
-          receiver: string;
-          message_ctrl_id: string;
-          channel: string;
-          remote: string;
-          callback: string;
-          status: (typeof MESSAGE_STATUSES)[number];
-        }
-      | undefined;
+    return (this.getMessageByCallbackStmt as PreparedStatement).get(callback) as QueueMessageWithStatus | undefined;
   }
 
   /**
@@ -606,33 +537,9 @@ export class AgentHl7DurableQueue {
    * @param remote - The remote identifier to search for.
    * @returns The message, or undefined if not found.
    */
-  getMessageByRemote(remote: string):
-    | {
-        id: number;
-        raw_message: string;
-        sender: string;
-        receiver: string;
-        message_ctrl_id: string;
-        channel: string;
-        remote: string;
-        callback: string;
-        status: (typeof MESSAGE_STATUSES)[number];
-      }
-    | undefined {
+  getMessageByRemote(remote: string): QueueMessageWithStatus | undefined {
     this.assertReady();
-    return this.getMessageByRemoteStmt!.get(remote) as
-      | {
-          id: number;
-          raw_message: string;
-          sender: string;
-          receiver: string;
-          message_ctrl_id: string;
-          channel: string;
-          remote: string;
-          callback: string;
-          status: (typeof MESSAGE_STATUSES)[number];
-        }
-      | undefined;
+    return (this.getMessageByRemoteStmt as PreparedStatement).get(remote) as QueueMessageWithStatus | undefined;
   }
 
   /**
@@ -642,7 +549,7 @@ export class AgentHl7DurableQueue {
    */
   countByStatus(status: (typeof MESSAGE_STATUSES)[number]): number {
     this.assertReady();
-    const result = this.countByStatusStmt!.get(status) as { count: number };
+    const result = (this.countByStatusStmt as PreparedStatement).get(status) as { count: number };
     return result?.count ?? 0;
   }
 }
