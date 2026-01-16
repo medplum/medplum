@@ -726,8 +726,8 @@ function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
   if (array1.length !== array2.length) {
     return false;
   }
-  for (let i = 0; i < array1.length; i++) {
-    if (!deepEquals(array1[i], array2[i])) {
+  for (const [i, element] of array1.entries()) {
+    if (!deepEquals(element, array2[i])) {
       return false;
     }
   }
@@ -840,7 +840,7 @@ export function isObject(obj: unknown): obj is Record<string, unknown> {
  * @returns True if the input array is an array of strings.
  */
 export function isStringArray(arr: any[]): arr is string[] {
-  return arr.every(isString);
+  return arr.every((el) => isString(el));
 }
 
 /**
@@ -869,7 +869,7 @@ export function isCoding(value: unknown): value is Coding & { code: string } {
  * @returns True if the input value is a CodeableConcept.
  */
 export function isCodeableConcept(value: unknown): value is CodeableConcept & { coding: Coding[] } {
-  return isObject(value) && 'coding' in value && Array.isArray(value.coding) && value.coding.every(isCoding);
+  return isObject(value) && 'coding' in value && Array.isArray(value.coding) && value.coding.every((v) => isCoding(v));
 }
 
 /**
@@ -922,8 +922,8 @@ export function arrayBufferToHex(arrayBuffer: ArrayBufferLike | ArrayBufferView)
   const buffer = normalizeArrayBufferView(arrayBuffer);
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    result[i] = byteToHex[bytes[i]];
+  for (const [i, byte] of bytes.entries()) {
+    result[i] = byteToHex[byte];
   }
   return result.join('');
 }
@@ -937,8 +937,8 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   const buffer = normalizeArrayBufferView(arrayBuffer);
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCodePoint(bytes[i]);
+  for (const [i, byte] of bytes.entries()) {
+    result[i] = String.fromCodePoint(byte);
   }
   return window.btoa(result.join(''));
 }
@@ -1466,8 +1466,8 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
     return result;
   }
 
-  for (let i = 0; i < arr.length; i++) {
-    const resultValue = fn(arr[i], i);
+  for (const [i, element] of arr.entries()) {
+    const resultValue = fn(element, i);
     if (Array.isArray(resultValue)) {
       result.push(...resultValue);
     } else if (resultValue !== undefined) {

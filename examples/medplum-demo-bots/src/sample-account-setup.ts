@@ -45,26 +45,29 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   await createCompletedCarePlan(medplum, patient);
   await createActiveCarePlan(medplum, patient);
 
-  const entries: BundleEntry[] = [];
-  entries.push(createEntry(createDiagnosticReport(patient, a1c)));
-  entries.push(createEntry(createActiveMedicationRequest(patient, practitioner)));
-  entries.push(createEntry(createStoppedMedicationRequest(patient, practitioner)));
-  entries.push(createEntry(createAllergyIntolerance(patient, practitioner)));
-  entries.push(createEntry(createMedicalCondition(patient, practitioner)));
-  entries.push(createEntry(createCompletedImmunization(patient)));
-  entries.push(createEntry(createIncompleteImmunization(patient)));
+  const entries: BundleEntry[] = [
+    createEntry(createDiagnosticReport(patient, a1c)),
+    createEntry(createActiveMedicationRequest(patient, practitioner)),
+    createEntry(createStoppedMedicationRequest(patient, practitioner)),
+    createEntry(createAllergyIntolerance(patient, practitioner)),
+    createEntry(createMedicalCondition(patient, practitioner)),
+    createEntry(createCompletedImmunization(patient)),
+    createEntry(createIncompleteImmunization(patient)),
+  ];
 
   // Simulate 10 visits
   for (let i = 0; i < 10; i++) {
     // Date is 10 days ago
     const date = new Date();
     date.setDate(date.getDate() - 10 + i);
-    entries.push(createEntry(createBloodPressureObservation(patient, date)));
-    entries.push(createEntry(createTemperatureObservation(patient, date)));
-    entries.push(createEntry(createHeightObservation(patient, date)));
-    entries.push(createEntry(createWeightObservation(patient, date)));
-    entries.push(createEntry(createRespiratoryRateObservation(patient, date)));
-    entries.push(createEntry(createHeartRateObservation(patient, date)));
+    entries.push(
+      createEntry(createBloodPressureObservation(patient, date)),
+      createEntry(createTemperatureObservation(patient, date)),
+      createEntry(createHeightObservation(patient, date)),
+      createEntry(createWeightObservation(patient, date)),
+      createEntry(createRespiratoryRateObservation(patient, date)),
+      createEntry(createHeartRateObservation(patient, date))
+    );
   }
 
   entries.push(createEntry(createWelcomeMessage(patient, practitioner)));
@@ -362,7 +365,7 @@ function createA1CObservation(patient: Patient): Observation {
     referenceRange: [
       {
         high: {
-          value: 7.0,
+          value: 7,
         },
       },
     ],

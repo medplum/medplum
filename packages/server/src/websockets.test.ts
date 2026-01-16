@@ -3,8 +3,8 @@
 import { sleep } from '@medplum/core';
 import type { Express } from 'express';
 import express from 'express';
-import type { Server } from 'http';
-import type { AddressInfo } from 'net';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';

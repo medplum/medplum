@@ -555,7 +555,10 @@ export class Hl7Field {
       }
     }
 
-    if (subcomponent !== undefined) {
+    if (subcomponent === undefined) {
+      // Handle regular component setting
+      this.components[repetition][component - 1] = value;
+    } else {
       if (subcomponent < 0) {
         return false;
       }
@@ -570,9 +573,6 @@ export class Hl7Field {
 
       subcomponents[subcomponent] = value;
       this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
-    } else {
-      // Handle regular component setting
-      this.components[repetition][component - 1] = value;
     }
 
     return true;

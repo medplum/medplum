@@ -222,7 +222,6 @@ describe('worker utils', () => {
   describe('addVerboseQueueLogging', () => {
     test('logs appropriate messages for each worker event', () => {
       const queueName = 'TestLoggingQueue';
-      // const queue = new Queue(queueName);
       const queue = { name: queueName } as Queue;
       const worker = new EventEmitter() as unknown as Worker;
 

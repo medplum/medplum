@@ -108,7 +108,7 @@ export function Measurement(): JSX.Element | null {
           {description}
         </Alert>
       </Box>
-      {observations?.length && (
+      {!!observations?.length && (
         <Table>
           <Table.Thead>
             <Table.Tr>

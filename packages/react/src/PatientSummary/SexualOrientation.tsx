@@ -27,9 +27,9 @@ const CodesToText: Record<SexualOrientationCode, string> = {
 };
 
 const CodesToSystem: Record<SexualOrientationCode, string> = {
-  38628009: SNOMED,
-  20430005: SNOMED,
-  42035005: SNOMED,
+  38_628_009: SNOMED,
+  20_430_005: SNOMED,
+  42_035_005: SNOMED,
   OTH: NULLFLAVOR,
   UNK: NULLFLAVOR,
   ASKU: NULLFLAVOR,

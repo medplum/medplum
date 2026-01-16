@@ -3,7 +3,7 @@
 import type { Coding, Identifier, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import { ResourceHeader } from './ResourceHeader';

@@ -53,7 +53,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   for (const candidate of candidateMatches) {
     // Check if "Do Not Match" list contains the candidate match
     const blockedIds = doNotMatchList?.entry?.map((entry) => resolveId(entry.item)) ?? [];
-    const shouldMatch = !blockedIds.some((blockedId) => blockedId === candidate.id);
+    const shouldMatch = !blockedIds.includes(candidate.id);
 
     // If there are no lists marked with 'doNotMatch' for the potential duplicate patient, create a RiskAssessment and Task.
     if (shouldMatch) {

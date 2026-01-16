@@ -331,8 +331,7 @@ describe('Post-Deploy Migration Worker', () => {
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
         return runCustomMigration(repo, job, jobData, async (_client, results) => {
-          results.push({ name: 'first', durationMs: 111 });
-          results.push({ name: 'second', durationMs: 222 });
+          results.push({ name: 'first', durationMs: 111 }, { name: 'second', durationMs: 222 });
         });
       }),
     };
@@ -396,8 +395,7 @@ describe('Post-Deploy Migration Worker', () => {
         prepareJobData: jest.fn(),
         run: jest.fn().mockImplementation(async (repo, job, jobData) => {
           return runCustomMigration(repo, job, jobData, async (_client, results) => {
-            results.push({ name: 'first', durationMs: 111 });
-            results.push({ name: 'second', durationMs: 222 });
+            results.push({ name: 'first', durationMs: 111 }, { name: 'second', durationMs: 222 });
           });
         }),
       };
@@ -464,8 +462,7 @@ describe('Post-Deploy Migration Worker', () => {
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
         return runCustomMigration(repo, job, jobData, async (_client, results) => {
-          results.push({ name: 'first', durationMs: 111 });
-          results.push({ name: 'second', durationMs: 222 });
+          results.push({ name: 'first', durationMs: 111 }, { name: 'second', durationMs: 222 });
         });
       }),
     };
@@ -512,8 +509,7 @@ describe('Post-Deploy Migration Worker', () => {
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
         return runCustomMigration(repo, job, jobData, async (_client, results) => {
-          results.push({ name: 'first', durationMs: 111 });
-          results.push({ name: 'second', durationMs: 222 });
+          results.push({ name: 'first', durationMs: 111 }, { name: 'second', durationMs: 222 });
         });
       }),
     };

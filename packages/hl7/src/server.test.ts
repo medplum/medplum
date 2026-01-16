@@ -151,7 +151,7 @@ describe('HL7 Server', () => {
     await client.close().catch(() => {
       // Client might already be closed by the server, ignore errors
     });
-  }, 10000);
+  }, 10_000);
 
   test('When forceDrainTimeoutMs is -1, server waits for client to close gracefully', async () => {
     let connectionCloseCalled = false;
@@ -201,7 +201,7 @@ describe('HL7 Server', () => {
 
     // The connection should have closed gracefully
     expect(connectionCloseCalled).toBe(true);
-  }, 10000);
+  }, 10_000);
 
   test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
     const state = {
@@ -266,7 +266,7 @@ describe('HL7 Server', () => {
     await client.close().catch(() => {
       // Client might already be closed by the server, ignore errors
     });
-  }, 10000);
+  }, 10_000);
 
   describe('Server configuration setters and getters', () => {
     test('setEncoding and getEncoding work correctly', () => {
@@ -666,9 +666,9 @@ describe('HL7 Server', () => {
       const totalTimeMs = Date.now() - startTime;
 
       // Verify all responses were received
-      responses.forEach(({ response }) => {
+      for (const { response } of responses) {
         expect(response).toBeDefined();
-      });
+      }
 
       // First message should complete quickly (no rate limiting)
       const firstMessage = responses[0];
@@ -683,9 +683,9 @@ describe('HL7 Server', () => {
 
       // Subsequent messages (2nd and 3rd) should respect the rate limit
       const subsequentMessages = responses.slice(1);
-      subsequentMessages.forEach(({ sendTime }) => {
+      for (const { sendTime } of subsequentMessages) {
         expect(sendTime).toBeGreaterThanOrEqual(expectedMinIntervalMs - toleranceMs);
-      });
+      }
 
       await client.close();
       await server.stop();

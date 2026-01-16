@@ -29,9 +29,6 @@ describe('ExtensionDisplay', () => {
   }
 
   test('Renders simple value', async () => {
-    // const extensionType = getDataType('Extension');
-    // extensionType.elements['value[x]'];
-
     await setup({
       ...defaultProps,
       value: { url: 'https://example.com', valueString: 'extension str value' },

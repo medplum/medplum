@@ -64,6 +64,7 @@ async function execAsync(
   options: ExecOptionsWithStringEncoding
 ): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    // eslint-disable-next-line sonarjs/os-command
     exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
       if (ex) {
         const err = ex as Error;
@@ -125,12 +126,12 @@ export class App {
     await this.maybeFinalizeUpgrade();
 
     this.medplum.addEventListener('change', () => {
-      if (!this.webSocket) {
+      if (this.webSocket) {
+        this.startWebSocketWorker();
+      } else {
         this.connectWebSocket().catch((err) => {
           this.log.error(normalizeErrorString(err));
         });
-      } else {
-        this.startWebSocketWorker();
       }
     });
 
@@ -188,7 +189,7 @@ export class App {
       try {
         createPidFile('medplum-agent');
         success = true;
-      } catch (_err) {
+      } catch {
         this.log.info('Unable to create agent PID file, trying again...');
         attempt++;
         if (attempt === maxAttempts) {
@@ -294,11 +295,11 @@ export class App {
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
-            } else if (!(command.statusCode && command.statusCode >= 400)) {
-              this.addToHl7Queue(command);
-            } else {
+            } else if (command.statusCode && command.statusCode >= 400) {
               // Log error
               this.log.error(`Error during handling transmit request: ${command.body}`);
+            } else {
+              this.addToHl7Queue(command);
             }
             break;
           }
@@ -483,8 +484,7 @@ export class App {
     const filteredChannels = [] as AgentChannel[];
     const filteredEndpoints = [] as Endpoint[];
 
-    for (let i = 0; i < channels.length; i++) {
-      const definition = channels[i];
+    for (const [i, definition] of channels.entries()) {
       const endpoint = endpoints[i];
 
       // If the endpoint for this channel is turned off, we're going to skip over this channel
@@ -516,8 +516,7 @@ export class App {
     // Either start them or reload their config if already present
     const errors = [] as Error[];
 
-    for (let i = 0; i < filteredChannels.length; i++) {
-      const definition = filteredChannels[i];
+    for (const [i, definition] of filteredChannels.entries()) {
       const endpoint = filteredEndpoints[i];
 
       if (!endpoint.address) {
@@ -568,8 +567,7 @@ export class App {
   private validateAgentEndpoints(channels: AgentChannel[], endpoints: Endpoint[]): void {
     const seenPorts = new Set<string>();
     const portToChannelMap = new Map<string, [string, string]>();
-    for (let i = 0; i < channels.length; i++) {
-      const channel = channels[i];
+    for (const [i, channel] of channels.entries()) {
       const endpoint = endpoints[i];
 
       if (!endpoint.address) {
@@ -753,7 +751,7 @@ export class App {
       if (pingCountAsStr !== '') {
         pingCount = Number.parseInt(pingCountAsStr, 10);
         if (Number.isNaN(pingCount)) {
-          throw new Error(
+          throw new TypeError(
             `Unable to ping ${message.remote} "${pingCountAsStr}" times. "${pingCountAsStr}" is not a number.`
           );
         }
@@ -899,7 +897,7 @@ export class App {
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
-          15000
+          15_000
         );
         child.on('message', (msg: { type: string }) => {
           clearTimeout(childTimeout);

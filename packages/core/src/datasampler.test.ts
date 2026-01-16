@@ -11,7 +11,7 @@ function sum(x: number, y: number): number {
 describe('DataSampler', () => {
   test('Empty summary', () => {
     const sample = new DataSampler({ code: { text: 'Data' } });
-    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce(sum, 0));
+    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce((n, x) => sum(n, x), 0));
 
     expect(result).toStrictEqual<Observation>(
       expect.objectContaining({
@@ -36,7 +36,7 @@ describe('DataSampler', () => {
   test('Single data point', () => {
     const sample = new DataSampler({ code: { text: 'Data' } });
     sample.addData(2);
-    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce(sum, 0));
+    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce((n, x) => sum(n, x), 0));
 
     expect(result).toStrictEqual<Observation>(
       expect.objectContaining({
@@ -62,7 +62,7 @@ describe('DataSampler', () => {
   test('Sum of two data points', () => {
     const sample = new DataSampler({ code: { text: 'Data' } });
     sample.addData(1, 1);
-    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce(sum, 0));
+    const result = sample.summarize({ text: 'Test' }, (data) => data.reduce((n, x) => sum(n, x), 0));
 
     expect(result).toStrictEqual<Observation>(
       expect.objectContaining({
@@ -101,7 +101,7 @@ describe('DataSampler', () => {
     });
     const result = sample.summarize(
       { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
-      (data) => data.reduce(sum, 0) / data.length
+      (data) => data.reduce((n, x) => sum(n, x), 0) / data.length
     );
 
     expect(result).toStrictEqual(
@@ -141,7 +141,7 @@ describe('DataSampler', () => {
     });
     const result = sample.summarize(
       { coding: [{ system: 'http://loinc.org', code: '41920-0', display: 'Heart rate 1h Mean' }] },
-      (data) => data.reduce(sum, 0) / data.length
+      (data) => data.reduce((n, x) => sum(n, x), 0) / data.length
     );
 
     expect(result).toStrictEqual(
@@ -215,7 +215,9 @@ describe('DataSampler', () => {
   test('Requires code for data points', () => {
     const sample = new DataSampler();
     sample.addData(1, 2, 3);
-    expect(() => sample.summarize({ text: 'Summary' }, (data) => data.reduce(sum, 0))).toThrow(/code .* required/i);
+    expect(() => sample.summarize({ text: 'Summary' }, (data) => data.reduce((n, x) => sum(n, x), 0))).toThrow(
+      /code .* required/i
+    );
   });
 
   test('Computed value with unit different from data points', () => {
@@ -271,7 +273,7 @@ describe('DataSampler', () => {
     });
     const result = sample.summarize(
       { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
-      (data) => data.reduce(sum, 0) / data.length
+      (data) => data.reduce((n, x) => sum(n, x), 0) / data.length
     );
 
     expect(result).toStrictEqual(
@@ -316,7 +318,7 @@ describe('DataSampler', () => {
     });
     const result = sample.summarize(
       { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
-      (data) => data.reduce(sum, 0) / data.length
+      (data) => data.reduce((n, x) => sum(n, x), 0) / data.length
     );
 
     expect(result).toStrictEqual(
@@ -362,7 +364,7 @@ describe('DataSampler', () => {
     });
     const result = sample.summarize(
       { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
-      (data) => data.reduce(sum, 0) / data.length
+      (data) => data.reduce((n, x) => sum(n, x), 0) / data.length
     );
 
     expect(result).toStrictEqual(

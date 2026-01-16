@@ -51,8 +51,8 @@ import { Link } from 'react-router';
 interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
-  subject?: Reference<Patient> | Patient | undefined;
-  showPatientSummary?: boolean | undefined;
+  subject?: Reference<Patient> | Patient;
+  showPatientSummary?: boolean;
   onNew: (message: Communication) => void;
   getThreadUri: (topic: Communication) => string;
   onChange: (search: SearchRequest) => void;
@@ -60,7 +60,7 @@ interface ThreadInboxProps {
   completedUri: string;
 }
 
-export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
+export function ThreadInbox(props: Readonly<ThreadInboxProps>): JSX.Element {
   const {
     query,
     threadId,
@@ -273,13 +273,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         </Menu.Target>
 
                         {selectedThread.status !== 'completed' && (
-                          <>
-                            <Menu.Dropdown>
-                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
-                                Completed
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
+                              Completed
+                            </Menu.Item>
+                          </Menu.Dropdown>
                         )}
                       </Menu>
                     </Flex>

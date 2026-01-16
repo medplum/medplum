@@ -166,7 +166,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
   // By convention, the resource type is the last non-empty part of the path
   let resourceType: ResourceType;
   if (pathname.includes('/')) {
-    resourceType = pathname.split('/').filter(Boolean).pop() as ResourceType;
+    resourceType = pathname.split('/').findLast(Boolean) as ResourceType;
   } else {
     resourceType = pathname as ResourceType;
   }
@@ -480,7 +480,9 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.filters) {
-    definition.filters.forEach((filter) => params.push(formatFilter(filter)));
+    for (const filter of definition.filters) {
+      params.push(formatFilter(filter));
+    }
   }
 
   if (definition.sortRules && definition.sortRules.length > 0) {
@@ -508,11 +510,15 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.include) {
-    definition.include.forEach((target) => params.push(formatIncludeTarget('_include', target)));
+    for (const target of definition.include) {
+      params.push(formatIncludeTarget('_include', target));
+    }
   }
 
   if (definition.revInclude) {
-    definition.revInclude.forEach((target) => params.push(formatIncludeTarget('_revinclude', target)));
+    for (const target of definition.revInclude) {
+      params.push(formatIncludeTarget('_revinclude', target));
+    }
   }
 
   if (params.length === 0) {

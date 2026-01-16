@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM } from '@medplum/core';
+import { createReference, flatMapFilter, generateId, LOINC, RXNORM, SNOMED, UCUM } from '@medplum/core';
 import type { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda/convert';
 import {
@@ -1142,6 +1142,7 @@ describe('Reason for Referral', () => {
   });
 });
 
+const compositionExcludedTypes = ['Device', 'Location', 'Practitioner'];
 function createCompositionBundle(patient: Patient, code?: string, ...resources: Partial<Resource>[]): Bundle {
   for (const resource of resources) {
     resource.id = resource.id ?? generateId();
@@ -1166,9 +1167,9 @@ function createCompositionBundle(patient: Patient, code?: string, ...resources: 
                 },
               ],
             },
-            entry: (resources as WithId<Resource>[])
-              .filter((r) => !['Device', 'Location', 'Practitioner'].includes(r.resourceType as string))
-              .map(createReference),
+            entry: flatMapFilter(resources as WithId<Resource>[], (r) =>
+              compositionExcludedTypes.includes(r.resourceType) ? undefined : createReference(r)
+            ),
           },
         ]
       : [],

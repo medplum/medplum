@@ -18,9 +18,9 @@ import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import JSZip from 'jszip';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config/loader';
@@ -179,6 +179,7 @@ describe('Deploy', () => {
     const createCall = mockLambdaClient.commandCall(0, CreateFunctionCommand);
     const createCodeBytes = createCall.args[0].input.Code?.ZipFile;
     expect(createCodeBytes).toBeInstanceOf(Uint8Array);
+    // eslint-disable-next-line sonarjs/no-unsafe-unzip
     const createZip = await new JSZip().loadAsync(createCodeBytes as Uint8Array);
     expect(Object.keys(createZip.files)).toEqual(expect.arrayContaining(['index.cjs', 'user.cjs']));
 
@@ -210,6 +211,7 @@ describe('Deploy', () => {
     const updateCall = mockLambdaClient.commandCall(0, UpdateFunctionCodeCommand);
     const updateCodeBytes = updateCall.args[0].input?.ZipFile;
     expect(updateCodeBytes).toBeInstanceOf(Uint8Array);
+    // eslint-disable-next-line sonarjs/no-unsafe-unzip
     const updateZip = await new JSZip().loadAsync(updateCodeBytes as Uint8Array);
     expect(Object.keys(updateZip.files)).toEqual(expect.arrayContaining(['index.mjs', 'user.mjs']));
   });
@@ -380,7 +382,6 @@ describe('Deploy', () => {
       }
       `,
       });
-    // expect(res4.status).toBe(200);
     expect(res4.body).toMatchObject(allOk);
 
     // Make sure that timeout was updated

@@ -25,11 +25,13 @@ export interface GoogleButtonProps {
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line unicorn/no-typeof-undefined
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
   const initializedRef = useRef(false);
   const buttonRenderedRef = useRef(false);
 
   useEffect(() => {
+    // eslint-disable-next-line unicorn/no-typeof-undefined
     if (typeof google === 'undefined') {
       createScriptTag('https://accounts.google.com/gsi/client', () => setScriptLoaded(true));
       return;

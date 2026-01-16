@@ -103,7 +103,9 @@ function getName(obj: any): string {
 function processTests(tests: any): void {
   if (tests.group) {
     if (Array.isArray(tests.group)) {
-      tests.group.forEach(processGroup);
+      for (const group of tests.group) {
+        processGroup(group);
+      }
     } else {
       processGroup(tests.group);
     }
@@ -113,7 +115,9 @@ function processTests(tests: any): void {
 function processGroup(group: any): void {
   if (group.test) {
     if (Array.isArray(group.test)) {
-      group.test.forEach(processTest);
+      for (const test of group.test) {
+        processTest(test);
+      }
     } else {
       processTest(group.test);
     }
@@ -128,8 +132,7 @@ function processTest(test: any): void {
   }
 
   const name = getName(test);
-  lines.push('<tr>');
-  lines.push(`<td>${escapeXml(name)}</td>`);
+  lines.push('<tr>', `<td>${escapeXml(name)}</td>`);
 
   let expr = '';
   let valid = true;
@@ -198,9 +201,11 @@ function processTest(test: any): void {
     lines.push(`<td><pre>${escapeXml(specOutput)}</pre></td>`);
   }
 
-  lines.push(`<td class="${fhirpathClassName}"><pre>${escapeXml(fhirpathOutput)}</pre></td>`);
-  lines.push(`<td class="${medplumClassName}"><pre>${escapeXml(medplumOutput)}</pre></td>`);
-  lines.push('</tr>');
+  lines.push(
+    `<td class="${fhirpathClassName}"><pre>${escapeXml(fhirpathOutput)}</pre></td>`,
+    `<td class="${medplumClassName}"><pre>${escapeXml(medplumOutput)}</pre></td>`,
+    '</tr>'
+  );
 }
 
 function getFhirpathOutput(resource: Resource, expr: string): string {
@@ -247,8 +252,13 @@ function unescapeXml(str: string): string {
 }
 
 processTests(jsonObj.tests);
-lines.push(`<tr><td></td><td></td><td>Good</td><td>${counts[0][0]}</td><td>${counts[1][0]}</td></tr>`);
-lines.push(`<tr><td></td><td></td><td>Mixed</td><td>${counts[0][1]}</td><td>${counts[1][1]}</td></tr>`);
-lines.push(`<tr><td></td><td></td><td>Bad</td><td>${counts[0][2]}</td><td>${counts[1][2]}</td></tr>`);
-lines.push('</tbody', '</table', '</body', '</html>');
+lines.push(
+  `<tr><td></td><td></td><td>Good</td><td>${counts[0][0]}</td><td>${counts[1][0]}</td></tr>`,
+  `<tr><td></td><td></td><td>Mixed</td><td>${counts[0][1]}</td><td>${counts[1][1]}</td></tr>`,
+  `<tr><td></td><td></td><td>Bad</td><td>${counts[0][2]}</td><td>${counts[1][2]}</td></tr>`,
+  '</tbody',
+  '</table',
+  '</body',
+  '</html>'
+);
 writeFileSync('compare.html', lines.join('\n'));

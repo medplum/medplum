@@ -35,13 +35,7 @@ export function MultiSelectAsyncAutocomplete(): JSX.Element {
               return;
             }
 
-            resolve(
-              options.filter(
-                (o) =>
-                  o.code.toLowerCase().includes(input.toLowerCase()) ||
-                  o.display.toLowerCase().includes(input.toLowerCase())
-              )
-            );
+            resolve(matchingOptions(options, input));
           }, 50);
         });
       }}
@@ -53,4 +47,9 @@ export function MultiSelectAsyncAutocomplete(): JSX.Element {
       onChange={console.log}
     />
   );
+}
+
+function matchingOptions(opts: Option[], input: string): Option[] {
+  input = input.toLowerCase();
+  return opts.filter((opt) => opt.code.toLowerCase().includes(input) || opt.display.toLowerCase().includes(input));
 }

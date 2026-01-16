@@ -241,7 +241,7 @@ const generalBenefitsCheckResponse: CoverageEligibilityResponse =
                   ],
                 },
                 allowedMoney: {
-                  value: 100000,
+                  value: 100_000,
                   currency: 'USD',
                 },
                 usedMoney: {

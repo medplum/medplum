@@ -716,7 +716,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (typeof value === 'number') {
       return [{ type: PropertyType.integer, value }];
     }
-    if (typeof value === 'string' && /^[+-]?\d+$/.exec(value)) {
+    if (typeof value === 'string' && /^[+-]?\d+$/.test(value)) {
       return [{ type: PropertyType.integer, value: Number.parseInt(value, 10) }];
     }
     if (typeof value === 'boolean') {
@@ -774,7 +774,7 @@ export const functions: Record<string, FhirPathFunction> = {
       return [];
     }
     const [{ value }] = validateInput(input, 1);
-    if (typeof value === 'string' && /^\d{4}(-\d{2}(-\d{2})?)?/.exec(value)) {
+    if (typeof value === 'string' && /^\d{4}(-\d{2}(-\d{2})?)?/.test(value)) {
       return [{ type: PropertyType.date, value: parseDateString(value) }];
     }
     return [];
@@ -832,7 +832,7 @@ export const functions: Record<string, FhirPathFunction> = {
       return [];
     }
     const [{ value }] = validateInput(input, 1);
-    if (typeof value === 'string' && /^\d{4}(-\d{2}(-\d{2})?)?/.exec(value)) {
+    if (typeof value === 'string' && /^\d{4}(-\d{2}(-\d{2})?)?/.test(value)) {
       return [{ type: PropertyType.dateTime, value: parseDateString(value) }];
     }
     return [];
@@ -888,7 +888,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (typeof value === 'number') {
       return [{ type: PropertyType.decimal, value }];
     }
-    if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?$/.exec(value)) {
+    if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?$/.test(value)) {
       return [{ type: PropertyType.decimal, value: Number.parseFloat(value) }];
     }
     if (typeof value === 'boolean') {
@@ -946,7 +946,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (typeof value === 'number') {
       return [{ type: PropertyType.Quantity, value: { value, unit: '1' } }];
     }
-    if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?/.exec(value)) {
+    if (typeof value === 'string' && /^-?\d{1,9}(\.\d{1,9})?/.test(value)) {
       return [{ type: PropertyType.Quantity, value: { value: Number.parseFloat(value), unit: '1' } }];
     }
     if (typeof value === 'boolean') {
@@ -1282,7 +1282,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns True if the input string matches the given regular expression.
    */
   matches: (context: AtomContext, input: TypedValue[], regexAtom: Atom): TypedValue[] => {
-    return applyStringFunc((str, regex) => !!new RegExp(regex as string).exec(str), context, input, regexAtom);
+    return applyStringFunc((str, regex) => !!new RegExp(regex as string).test(str), context, input, regexAtom);
   },
 
   /**
@@ -1913,7 +1913,7 @@ function applyStringFunc<T>(
     return [];
   }
   if (Array.isArray(result)) {
-    return result.map(toTypedValue);
+    return result.map((element) => toTypedValue(element));
   }
   return [toTypedValue(result)];
 }

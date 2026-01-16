@@ -79,9 +79,9 @@ describe('Agent/$reload-config', () => {
   // This could unintentionally cause service degradation for busy agents that are not meant to be reloaded
   test('Reload configs for all agents', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:reloadconfig:request',
         { type: 'agent:reloadconfig:response', statusCode: 200 }
@@ -127,9 +127,9 @@ describe('Agent/$reload-config', () => {
   test('Agent error during reload', async () => {
     // Multi agent example
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentReloadConfigRequest, AgentReloadConfigResponse | AgentError>(
-        agents[i],
+        agent,
         accessToken,
         'agent:reloadconfig:request',
         i === 0
@@ -172,12 +172,12 @@ describe('Agent/$reload-config', () => {
   test('Invalid response from agent during reload', async () => {
     // Multi agent example
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<
         AgentReloadConfigRequest,
         AgentReloadConfigResponse | AgentTransmitResponse
       >(
-        agents[i],
+        agent,
         accessToken,
         'agent:reloadconfig:request',
         i === 0

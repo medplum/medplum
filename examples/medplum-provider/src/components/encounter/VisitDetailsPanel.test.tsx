@@ -146,8 +146,7 @@ describe('VisitDetailsPanel', () => {
     await waitFor(
       () => {
         expect(onEncounterChange).toHaveBeenCalled();
-        const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
-        const updatedEncounter = call[0] as Encounter;
+        const updatedEncounter = onEncounterChange.mock.calls.at(-1)?.at(0) as Encounter;
         expect(updatedEncounter.participant).toBeDefined();
         expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
       },

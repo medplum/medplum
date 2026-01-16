@@ -18,7 +18,7 @@ import type {
   User,
 } from '@medplum/fhirtypes';
 import { DelayedError, Job } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -112,7 +112,7 @@ describe('Reindex Worker', () => {
     });
 
     // with request context
-    await withTestContext(() => {
+    withTestContext(() => {
       const jobData2 = prepareReindexJobData(['Patient'], 'asyncJobId1');
       expect(jobData2).toMatchObject<Partial<ReindexJobData>>({
         resourceTypes: ['Patient'],

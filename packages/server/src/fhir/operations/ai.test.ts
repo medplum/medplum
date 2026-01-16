@@ -854,7 +854,7 @@ describe('AI Operation', () => {
         if (data.content) {
           contentChunks.push(data.content);
         }
-      } catch (_e) {
+      } catch {
         // Skip malformed lines
       }
     }
@@ -946,7 +946,7 @@ describe('AI Operation', () => {
         if (data.content) {
           contentChunks.push(data.content);
         }
-      } catch (_e) {
+      } catch {
         // Skip malformed lines
       }
     }

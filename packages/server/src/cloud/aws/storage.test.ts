@@ -15,8 +15,8 @@ import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import type { Request } from 'express';
-import type internal from 'stream';
-import { Readable } from 'stream';
+import type internal from 'node:stream';
+import { Readable } from 'node:stream';
 import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
@@ -84,6 +84,7 @@ describe('Storage', () => {
     } as Binary;
     const req = new Readable();
     req.push('foo');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
 
@@ -121,6 +122,7 @@ describe('Storage', () => {
     } as Binary;
     const req = new Readable();
     req.push('foo');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
 
@@ -191,6 +193,7 @@ describe('Storage', () => {
     } as Binary;
     const req = new Readable();
     req.push('foo');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
 

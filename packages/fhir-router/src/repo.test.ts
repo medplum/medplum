@@ -13,7 +13,7 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { randomInt, randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { MemoryRepository } from './repo';
 
 const repo = new MemoryRepository();
@@ -181,13 +181,13 @@ describe('MemoryRepository', () => {
     const resourcesListBefore = await Promise.all(
       resourceTypes.map((rt) => repo.searchResources({ resourceType: rt }))
     );
-    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => (count += resources.length), 0);
+    const actualResourceCountBefore = resourcesListBefore.reduce((count, resources) => count + resources.length, 0);
     expect(actualResourceCountBefore).toBe(expectedTotalResourceCount);
 
     repo.clear();
 
     const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
-    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
+    const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => count + resources.length, 0);
     expect(actualResourceCountAfter).toBe(0);
   });
 

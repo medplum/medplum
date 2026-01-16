@@ -196,12 +196,12 @@ describe('CoverageInput', () => {
 
     await waitFor(() => {
       const calls = mockUpdateBillingInformation.mock.calls;
-      const lastCall = calls[calls.length - 1];
-      expect(lastCall[0].patientCoverage).toHaveLength(3);
+      const lastCall = calls.at(-1)?.at(0);
+      expect(lastCall.patientCoverage).toHaveLength(3);
     });
 
-    const lastCall = mockUpdateBillingInformation.mock.calls[mockUpdateBillingInformation.mock.calls.length - 1];
-    expect(lastCall[0].patientCoverage).toEqual([coverages[0], coverages[1], coverages[2]]);
+    const lastCall = mockUpdateBillingInformation.mock.calls.at(-1)?.at(0);
+    expect(lastCall.patientCoverage).toEqual([coverages[0], coverages[1], coverages[2]]);
   });
 
   test('Calls updateBillingInformation with empty array when no coverages', async () => {
@@ -321,12 +321,12 @@ describe('CoverageInput', () => {
     const moveUpButtons = screen.getAllByLabelText('Move up');
     const moveDownButtons = screen.getAllByLabelText('Move down');
 
-    moveUpButtons.forEach((button) => {
+    for (const button of moveUpButtons) {
       expect(button).toBeDisabled();
-    });
-    moveDownButtons.forEach((button) => {
+    }
+    for (const button of moveDownButtons) {
       expect(button).toBeDisabled();
-    });
+    }
   });
 
   test('Displays error message when error prop is provided', async () => {
@@ -424,8 +424,8 @@ describe('CoverageInput', () => {
       expect(mockUpdateBillingInformation).toHaveBeenCalled();
     });
 
-    const lastCall = mockUpdateBillingInformation.mock.calls[mockUpdateBillingInformation.mock.calls.length - 1];
-    expect(lastCall[0].patientCoverage).toHaveLength(3);
-    expect(lastCall[0].patientCoverage[0].id).toBe('coverage-2');
+    const lastCall = mockUpdateBillingInformation.mock.calls.at(-1)?.at(0);
+    expect(lastCall.patientCoverage).toHaveLength(3);
+    expect(lastCall.patientCoverage[0].id).toBe('coverage-2');
   });
 });

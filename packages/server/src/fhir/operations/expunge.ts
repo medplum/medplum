@@ -44,7 +44,7 @@ export class Expunger {
   readonly compartment: string;
   readonly maxResultsPerPage: number;
 
-  constructor(repo: Repository, compartment: string, maxResultsPerPage = 10000) {
+  constructor(repo: Repository, compartment: string, maxResultsPerPage = 10_000) {
     this.repo = repo;
     this.compartment = compartment;
     this.maxResultsPerPage = maxResultsPerPage;

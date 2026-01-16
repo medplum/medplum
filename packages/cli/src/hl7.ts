@@ -61,7 +61,7 @@ addSubcommand(hl7, listen);
 export function generateSampleHl7Message(): string {
   const now = formatHl7DateTime(new Date());
   const controlId = Date.now().toString();
-  return `MSH|^~\\&|ADTSYS|HOSPITAL|RECEIVER|DEST|${now}||ADT^A01|${controlId}|P|2.5|
+  return String.raw`MSH|^~\&|ADTSYS|HOSPITAL|RECEIVER|DEST|${now}||ADT^A01|${controlId}|P|2.5|
 EVN|A01|${now}||
 PID|1|12345|12345^^^HOSP^MR|123456|DOE^JOHN^MIDDLE^SUFFIX|19800101|M|||123 STREET^APT 4B^CITY^ST^12345-6789||555-555-5555||S|
 PV1|1|I|2000^2012^01||||12345^DOCTOR^DOC||||||||||1234567^DOCTOR^DOC||AMB|||||||||||||||||||||||||202309280900|`;

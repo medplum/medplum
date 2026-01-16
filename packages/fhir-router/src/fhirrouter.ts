@@ -330,6 +330,8 @@ export class FhirRouter extends EventTarget {
   }
 
   find(method: HttpMethod, url: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
+    /* eslint-disable-next-line unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument --
+      Not Array#find() */
     return this.router.find(method, url);
   }
 
@@ -339,6 +341,7 @@ export class FhirRouter extends EventTarget {
     if (req.pathname) {
       throw new OperationOutcomeError(badRequest('FhirRequest must specify url instead of pathname'));
     }
+    // eslint-disable-next-line unicorn/no-array-method-this-argument -- Not Array#find()
     const result = this.find(req.method, url);
     if (!result) {
       return [notFound];

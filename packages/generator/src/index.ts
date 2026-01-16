@@ -6,6 +6,7 @@ import {
   capitalize,
   escapeHtml,
   FileBuilder,
+  flatMapFilter,
   getAllDataTypes,
   indexStructureDefinitionBundle,
   isLowerCase,
@@ -14,8 +15,8 @@ import {
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinitionType } from '@medplum/fhirtypes';
-import { mkdirSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getValueSetValues } from './valuesets';
 
 export function main(): void {
@@ -50,10 +51,8 @@ function writeIndexFile(): void {
 }
 
 function writeResourceFile(): void {
-  const names = Object.values(getAllDataTypes())
-    .filter(isResourceTypeSchema)
-    .map((t) => t.name)
-    .sort();
+  const names = flatMapFilter(Object.values(getAllDataTypes()), (t) => (isResourceTypeSchema(t) ? t.name : undefined));
+  names.sort();
 
   const b = new FileBuilder();
   for (const resourceType of names) {
@@ -64,10 +63,10 @@ function writeResourceFile(): void {
     if (i === 0) {
       b.append('export type Resource = ' + names[0]);
       b.indentCount++;
-    } else if (i !== names.length - 1) {
-      b.append('| ' + names[i]);
-    } else {
+    } else if (i === names.length - 1) {
       b.append('| ' + names[i] + ';');
+    } else {
+      b.append('| ' + names[i]);
     }
   }
   writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
@@ -187,7 +186,9 @@ function buildImports(fhirType: InternalTypeSchema, includedTypes: Set<string>, 
 
   for (const [path, property] of Object.entries(fhirType.elements)) {
     for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType.name)) {
-      cleanReferencedType(typeScriptProperty.typeName).forEach((cleanName) => referencedTypes.add(cleanName));
+      for (const cleanName of cleanReferencedType(typeScriptProperty.typeName)) {
+        referencedTypes.add(cleanName);
+      }
     }
   }
 

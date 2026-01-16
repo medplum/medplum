@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, streamToBuffer, normalizeErrorString, createReference } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import { default as SftpClient } from 'ssh2-sftp-client';
+import SftpClient from 'ssh2-sftp-client';
 import type { ReadStream } from 'ssh2';
 import type { MessageHeader, Patient, Encounter, AllergyIntolerance, Practitioner } from '@medplum/fhirtypes';
 
@@ -31,7 +31,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
     // read .adt files from sftp
     const fileContents = await readSFTPDirectory(sftp, 'adt');
 
-    const messages = fileContents.map(Hl7Message.parse);
+    const messages = fileContents.map((m) => Hl7Message.parse(m));
 
     for (const message of messages) {
       try {

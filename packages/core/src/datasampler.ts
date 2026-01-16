@@ -159,8 +159,7 @@ function convertSampleToObservations(sample: SampledData, startTime: number, tem
   const values = expandSampledData(sample);
   const parentObservation = getReferenceString(template);
 
-  for (let i = 0; i < values.length; i++) {
-    const value = values[i];
+  for (const [i, value] of values.entries()) {
     const dataPointTime = startTime + Math.floor(i / sample.dimensions) * sample.period;
     results.push({
       ...template,

@@ -230,7 +230,7 @@ function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartSc
     result.criteria = result.criteria.replace('*', scope.resourceType);
   }
 
-  if (readOnlyScope.exec(scope.scope)) {
+  if (readOnlyScope.test(scope.scope)) {
     result.readonly = true;
   }
   if (scope.criteria) {

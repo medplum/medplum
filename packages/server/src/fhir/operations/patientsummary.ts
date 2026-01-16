@@ -849,9 +849,7 @@ function createTable(headings: string[], body: (string | undefined)[][]): string
 
   const html = ['<table border="1" width="100%"><thead><tr>'];
   for (const h of headings) {
-    html.push('<th>');
-    html.push(escapeHtml(h));
-    html.push('</th>');
+    html.push('<th>', escapeHtml(h), '</th>');
   }
   html.push('</tr></thead><tbody>');
   for (const row of body) {
@@ -874,6 +872,6 @@ function createSection(code: string, title: string, html: string, entry: Resourc
     title,
     code: { coding: [{ system: LOINC, code }] },
     text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>` },
-    entry: entry.map(createReference),
+    entry: entry.map((e) => createReference(e)),
   };
 }

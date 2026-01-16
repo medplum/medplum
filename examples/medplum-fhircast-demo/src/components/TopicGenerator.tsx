@@ -26,10 +26,10 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
   }, [onTopicChange, prevTopic, topic]);
 
   useEffect(() => {
-    if (!syncing) {
-      setTopic(undefined);
-    } else {
+    if (syncing) {
       setTopic(crypto.randomUUID());
+    } else {
+      setTopic(undefined);
     }
   }, [syncing]);
 
@@ -40,7 +40,7 @@ export default function TopicGenerator(props: TopicGeneratorProps): JSX.Element 
   return (
     <Stack align="center">
       <Button onClick={toggleSyncing} mb={20}>
-        {!syncing ? 'Sync subscribers' : 'Stop syncing subscribers'}
+        {syncing ? 'Stop syncing subscribers' : 'Sync subscribers'}
       </Button>
       {topic ? <TextInput label="Topic" value={topic ?? 'No topic'} readOnly w={350} /> : null}
     </Stack>

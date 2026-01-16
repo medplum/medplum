@@ -234,11 +234,11 @@ export function LabsPage(): JSX.Element {
 function filterOpenOrders(orders: ServiceRequest[]): ServiceRequest[] {
   const filteredOutStatuses = ['completed', 'draft', 'entered-in-error'];
   const completedServiceRequestIds = new Set<string>();
-  orders.forEach((order) => {
+  for (const order of orders) {
     if (order.status === 'completed' && order.id) {
       completedServiceRequestIds.add(order.id);
     }
-  });
+  }
 
   const completedRequisitionNumbers = new Set<string>();
   const filtered = orders.filter((order) => {

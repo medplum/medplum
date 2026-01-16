@@ -3,6 +3,11 @@
 import { fc, test } from '@fast-check/jest';
 import { evalFhirPath, parseFhirPath } from './parse';
 
+// Dummy test to satisfy linter, which doesn't recognize the test.prop() expressions below as tests
+test('', () => {
+  expect(true).toBe(true);
+});
+
 describe('FHIRPath parser fuzz tests', () => {
   const arithmeticExpressionArb = fc.oneof(
     fc.integer({ min: -100, max: 100 }).map(String),
@@ -28,7 +33,7 @@ describe('FHIRPath parser fuzz tests', () => {
     birthDate: fc.date().map((d) => {
       try {
         return d.toISOString().split('T')[0];
-      } catch (_err) {
+      } catch {
         return undefined;
       }
     }),

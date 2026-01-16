@@ -4,7 +4,7 @@ import type { Span } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import type { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
 
 describe('Instrumentation', () => {

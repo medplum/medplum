@@ -11,7 +11,7 @@ export const FISSION_PACKAGE_JSON = `{
 }
 `;
 
-export const FISSION_INDEX_CODE = `
+export const FISSION_INDEX_CODE = String.raw`
 const { ContentType, Hl7Message, MedplumClient, normalizeOperationOutcome } = require('@medplum/core');
 const fetch = require('node-fetch');
 const PdfPrinter = require('pdfmake');
@@ -62,12 +62,12 @@ module.exports = async function (context) {
       status: 200,
       body: JSON.stringify({
         returnValue,
-        logResult: logOutput.join('\\n'),
+        logResult: logOutput.join('\n'),
       }),
     };
   } catch (err) {
     if (err instanceof Error) {
-      console.error('Unhandled error: ' + err.message + '\\n' + err.stack);
+      console.error('Unhandled error: ' + err.message + '\n' + err.stack);
     } else if (typeof err === 'object') {
       console.error('Unhandled error: ' + JSON.stringify(err, undefined, 2));
     } else {
@@ -77,7 +77,7 @@ module.exports = async function (context) {
       status: 400,
       body: JSON.stringify({
         returnValue: normalizeOperationOutcome(err),
-        logResult: logOutput.join('\\n'),
+        logResult: logOutput.join('\n'),
       }),
     };
   }

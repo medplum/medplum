@@ -7,6 +7,7 @@ import type { Appointment, Extension } from '@medplum/fhirtypes';
 // Zoom extension URLs
 const ZOOM_MEETING_EXTENSION_URL = 'https://medplum.com/zoom';
 const ZOOM_MEETING_ID_URL = 'meeting-id';
+// eslint-disable-next-line sonarjs/no-hardcoded-passwords
 const ZOOM_MEETING_PASSWORD_URL = 'meeting-password';
 const ZOOM_MEETING_START_URL = 'meeting-start-url';
 const ZOOM_MEETING_JOIN_URL = 'meeting-join-url';

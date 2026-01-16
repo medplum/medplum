@@ -11,7 +11,7 @@ export interface DoseSpotNotificationsOptions {
   readonly onError?: (err: unknown) => void;
 }
 
-const DEFAULT_REFRESH_INTERVAL_MILLISECONDS = 10000;
+const DEFAULT_REFRESH_INTERVAL_MILLISECONDS = 10_000;
 
 export function useDoseSpotNotifications(options?: DoseSpotNotificationsOptions): number | undefined {
   const medplum = useMedplum();

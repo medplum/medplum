@@ -10,7 +10,7 @@ import {
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import type { Bot, Bundle, ClientApplication, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { handler } from './setup-medplum-agent';
 import response from './setup-medplum-agent.questionnaireresponse.json';
 
@@ -27,14 +27,14 @@ describe('Setup Medplum Agent', () => {
   test('Set up Agent', async () => {
     const medplum = new MockClient();
     vi.spyOn(medplum, 'post').mockImplementation(async (path: string | URL, body: any): Promise<any> => {
-      if (path.toString().match(/admin\/projects\/.*\/bot/)) {
+      if (/admin\/projects\/.*\/bot/.test(path.toString())) {
         const bot: Bot = {
           resourceType: 'Bot',
           name: body.name,
         };
         return medplum.repo.createResource(bot);
       }
-      if (path.toString().match(/admin\/projects\/.*\/client/)) {
+      if (/admin\/projects\/.*\/client/.test(path.toString())) {
         const clientApp: ClientApplication = {
           resourceType: 'ClientApplication',
           name: body.name,

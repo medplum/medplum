@@ -6,8 +6,8 @@ import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
-const DEFAULT_UPGRADE_TIMEOUT = 45000;
-const MAX_UPGRADE_TIMEOUT = 56000;
+const DEFAULT_UPGRADE_TIMEOUT = 45_000;
+const MAX_UPGRADE_TIMEOUT = 56_000;
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',

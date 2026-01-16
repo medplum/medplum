@@ -85,17 +85,16 @@ export function createOrmMessage(
     collectedDateString = formatDate(new Date(serviceRequest.meta.lastUpdated));
   }
 
-  const segments: Hl7Segment[] = [];
   // Set the delimiter character for the HL7 message
   const context = new Hl7Context('\n');
 
-  // Message Header
-  // Note: This may differ between HL7v2 versions
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/MSH
-  segments.push(
+  const segments: Hl7Segment[] = [
+    // Message Header
+    // Note: This may differ between HL7v2 versions
+    // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/MSH
     new Hl7Segment([
       'MSH', // MSH
-      '^~\\&', // Separators
+      String.raw`^~\&`, // Separators
       '', // Sending App
       FACILITY_CODE, // Sending Facility
       '', // Receiving Application
@@ -106,13 +105,11 @@ export function createOrmMessage(
       '', // Message Control ID
       'P', // Production/Test
       '2.3', // Version Id
-      ...Array(7).fill(''),
-    ])
-  );
+      ...new Array(7).fill(''),
+    ]),
 
-  // PID Segment
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/PID
-  segments.push(
+    // PID Segment
+    // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/PID
     new Hl7Segment([
       'PID', // PID
       '1', // Section id
@@ -126,13 +123,11 @@ export function createOrmMessage(
       '', // Patient Alias (N/A)
       '', // Race (N/A)
       '', // Patient Address
-      ...Array(8).fill(''), // Unused fields
-    ])
-  );
+      ...new Array(8).fill(''), // Unused fields
+    ]),
 
-  // Common Order (ORC) segment
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/ORC
-  segments.push(
+    // Common Order (ORC) segment
+    // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/ORC
     new Hl7Segment([
       'ORC', // ORC
       'NW', // Order Control
@@ -149,12 +144,10 @@ export function createOrmMessage(
       '', // Ordering Provider
       FACILITY_CODE, // Enterer's Location,
       ...new Array(6).fill(''),
-    ])
-  );
+    ]),
 
-  // OBR- Observation Request
-  // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/OBR
-  segments.push(
+    // OBR- Observation Request
+    // See: https://hl7-definition.caristix.com/v2/HL7v2.3/Segments/OBR
     new Hl7Segment([
       'OBR', // OBR
       '1', // Set ID
@@ -167,8 +160,8 @@ export function createOrmMessage(
       ...new Array(19).fill(''), // unused fields
       '^^^^^R',
       ...new Array(6).fill(''),
-    ])
-  );
+    ]),
+  ];
 
   return new Hl7Message(segments, context);
 }

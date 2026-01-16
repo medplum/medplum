@@ -39,7 +39,10 @@ for (const patient of allPatients) {
   // Run the validation operation on each patient
   const res = validateResource(patient, { profile: updatedProfile });
   // If the patient passes validation, update the profile and the patient
-  if (res.length !== 0) {
+  if (res.length === 0) {
+    // If the patient does not pass validation, implement custom logic to notify the relevant users to update.
+    console.log(patient, res);
+  } else {
     if (patient.meta) {
       patient.meta.profile = [updatedProfile.url];
     } else {
@@ -48,9 +51,6 @@ for (const patient of allPatients) {
       };
     }
     await medplum.updateResource(patient);
-  } else {
-    // If the patient does not pass validation, implement custom logic to notify the relevant users to update.
-    console.log(patient, res);
   }
 }
 // end-block profileMigration

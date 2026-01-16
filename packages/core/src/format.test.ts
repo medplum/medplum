@@ -366,18 +366,18 @@ test('Format Range', () => {
   expect(formatRange({ low: { value: 20, unit: 'mg/dL' } })).toBe('>= 20 mg/dL');
   expect(formatRange({ low: { value: 20, unit: '%' } })).toBe('>= 20%');
   expect(formatRange({ low: { value: 20, unit: '%' } }, 1)).toBe('>= 20.0%');
-  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 0, true)).toBe('> 19%');
-  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 1, true)).toBe('> 19.9%');
-  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 2, true)).toBe('> 19.99%');
+  expect(formatRange({ low: { value: 20, unit: '%' } }, 0, true)).toBe('> 19%');
+  expect(formatRange({ low: { value: 20, unit: '%' } }, 1, true)).toBe('> 19.9%');
+  expect(formatRange({ low: { value: 20, unit: '%' } }, 2, true)).toBe('> 19.99%');
 
   expect(formatRange({ high: { unit: 'mg/dL' } })).toBe('');
   expect(formatRange({ high: { value: 20 } })).toBe('<= 20');
   expect(formatRange({ high: { value: 20, unit: 'mg/dL' } })).toBe('<= 20 mg/dL');
   expect(formatRange({ high: { value: 20, unit: '%' } })).toBe('<= 20%');
   expect(formatRange({ high: { value: 20, unit: '%' } }, 1)).toBe('<= 20.0%');
-  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 0, true)).toBe('< 21%');
-  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 1, true)).toBe('< 20.1%');
-  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 2, true)).toBe('< 20.01%');
+  expect(formatRange({ high: { value: 20, unit: '%' } }, 0, true)).toBe('< 21%');
+  expect(formatRange({ high: { value: 20, unit: '%' } }, 1, true)).toBe('< 20.1%');
+  expect(formatRange({ high: { value: 20, unit: '%' } }, 2, true)).toBe('< 20.01%');
 
   expect(formatRange({ low: { unit: 'mg/dL' }, high: { unit: 'mg/dL' } })).toBe('');
   expect(formatRange({ low: { value: 20 }, high: { value: 30 } })).toBe('20 - 30');
@@ -414,7 +414,7 @@ test('Format Money', () => {
   expect(formatMoney({ value: 10.1 })).toBe('$10.10');
   expect(formatMoney({ value: 10.1, currency: 'USD' })).toBe('$10.10');
   expect(formatMoney({ value: 10.1, currency: 'EUR' })).toBe('€10.10');
-  expect(formatMoney({ value: 1234567.89, currency: 'USD' })).toBe('$1,234,567.89');
+  expect(formatMoney({ value: 1_234_567.89, currency: 'USD' })).toBe('$1,234,567.89');
 });
 
 test('Format CodeableConcept', () => {

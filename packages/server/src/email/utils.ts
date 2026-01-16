@@ -41,7 +41,7 @@ export function buildAddresses(input: string | Address | (string | Address)[] | 
     return undefined;
   }
   if (Array.isArray(input)) {
-    return input.map(addressToString) as string[];
+    return input.map((addr) => addressToString(addr)) as string[];
   }
   return [addressToString(input) as string];
 }

@@ -13,7 +13,7 @@ import type {
   Practitioner,
   Reference,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type {
   PhotonAddress,
   PhotonPatient,

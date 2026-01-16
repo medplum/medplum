@@ -196,7 +196,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 }
 
 function escapeRegex(str: string): string {
-  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+  return str.replaceAll(/[/\-\\^$*+?.()|[\]{}]/g, String.raw`\$&`);
 }
 
 /**
@@ -287,7 +287,7 @@ export async function jwtBearerLogin(medplum: MedplumClient, profile: Profile): 
     sub: profile.subject,
     nbf: currentTimestamp,
     iat: currentTimestamp,
-    exp: currentTimestamp + 604800, // expiry time is 7 days from time of creation
+    exp: currentTimestamp + 604_800, // expiry time is 7 days from time of creation
   };
   const encodedHeader = encodeBase64(JSON.stringify(header));
   const encodedData = encodeBase64(JSON.stringify(data));

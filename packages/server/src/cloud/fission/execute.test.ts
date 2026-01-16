@@ -25,7 +25,7 @@ describe('Execute Fission bots', () => {
       fieldManager: 'medplum-fission-example',
       environmentName: 'nodejs',
       routerHost: 'localhost',
-      routerPort: 31314,
+      routerPort: 31_314,
     };
     await initApp(app, config);
     accessToken = await initTestAuth();

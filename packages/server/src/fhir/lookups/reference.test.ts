@@ -84,7 +84,7 @@ describe('ReferenceTable', () => {
 
       const createRows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
       expect(createRows).toHaveLength(2);
-      expect(createRows.sort(sortFn)).toStrictEqual([
+      expect(createRows.toSorted(sortFn)).toStrictEqual([
         {
           resourceId: obs.id,
           code: 'patient',
@@ -105,7 +105,7 @@ describe('ReferenceTable', () => {
 
       const updateRows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
       expect(updateRows).toHaveLength(3);
-      expect(updateRows.sort(sortFn)).toStrictEqual([
+      expect(updateRows.toSorted(sortFn)).toStrictEqual([
         {
           resourceId: obs.id,
           code: 'encounter',
@@ -164,7 +164,7 @@ describe('ReferenceTable', () => {
 
       const rows = await refTable.getExistingRows(systemRepo.getDatabaseClient(DatabaseMode.WRITER), [obs]);
       expect(rows).toHaveLength(2);
-      expect(rows.sort(sortFn)).toStrictEqual([
+      expect(rows.toSorted(sortFn)).toStrictEqual([
         {
           resourceId: obs.id,
           code: 'patient',

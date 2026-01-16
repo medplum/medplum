@@ -80,6 +80,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.readonlyDatabase = {
     ...config.database,
     username: 'medplum_test_readonly',
+    // eslint-disable-next-line sonarjs/no-hardcoded-passwords
     password: 'medplum_test_readonly',
   };
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.

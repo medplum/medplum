@@ -174,7 +174,7 @@ export function Header(): JSX.Element {
         padding="md"
         title="Navigation"
         className={classes.hiddenDesktop}
-        zIndex={1000000}
+        zIndex={1_000_000}
       >
         <ScrollArea style={{ height: 'calc(100vh - 60px)' }} mx="-md">
           <Divider my="sm" />

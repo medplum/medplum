@@ -52,11 +52,11 @@ function upsertCommunications(
   let foundNew = false;
   for (const comm of received) {
     const existingIdx = newCommunications.findIndex((c) => c.id === comm.id);
-    if (existingIdx !== -1) {
-      newCommunications[existingIdx] = comm;
-    } else {
+    if (existingIdx === -1) {
       newCommunications.push(comm);
       foundNew = true;
+    } else {
+      newCommunications[existingIdx] = comm;
     }
   }
 
@@ -157,7 +157,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         return;
       }
       // If this communication already exists, call `onMessageUpdated`
-      if (communicationsRef.current.find((c) => c.id === communication.id)) {
+      if (communicationsRef.current.some((c) => c.id === communication.id)) {
         onMessageUpdated?.(communication);
       } else {
         // Else a new message was created
@@ -317,7 +317,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                         radius="xl"
                         color="orange"
                         value={c.sender}
-                        mb={!showDelivered ? 'sm' : undefined}
+                        mb={showDelivered ? undefined : 'sm'}
                       />
                     </Group>
                   ) : (
@@ -337,12 +337,12 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           <TextInput
             ref={inputRef}
             name="message"
-            placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
+            placeholder={inputDisabled ? 'Replies are disabled' : 'Type a message...'}
             radius="xl"
             rightSectionWidth={42}
             disabled={inputDisabled}
             rightSection={
-              !inputDisabled ? (
+              inputDisabled ? undefined : (
                 <ActionIcon
                   type="submit"
                   size="1.5rem"
@@ -353,7 +353,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                 >
                   <IconArrowRight size="1rem" stroke={1.5} />
                 </ActionIcon>
-              ) : undefined
+              )
             }
           />
         </Form>

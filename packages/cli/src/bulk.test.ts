@@ -237,7 +237,7 @@ describe('CLI Bulk Commands', () => {
     test('success', async () => {
       await main(['node', 'index.js', 'bulk', 'import', 'Patient.json']);
 
-      testLineOutput.forEach((line) => {
+      for (const line of testLineOutput) {
         const resource = JSON.parse(line);
         expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
@@ -253,7 +253,7 @@ describe('CLI Bulk Commands', () => {
             ),
           })
         );
-      });
+      }
       expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`"status": "201"`));
       expect(console.log).toHaveBeenCalledWith(expect.stringMatching(`"text": "Created"`));
     });
@@ -261,7 +261,7 @@ describe('CLI Bulk Commands', () => {
     test('success with option --num-resources-per-request', async () => {
       await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
 
-      testLineOutput.forEach((line) => {
+      for (const line of testLineOutput) {
         const resource = JSON.parse(line);
         expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
@@ -277,7 +277,7 @@ describe('CLI Bulk Commands', () => {
             ),
           })
         );
-      });
+      }
 
       expect(fetch).toHaveBeenCalled();
     });
@@ -285,7 +285,7 @@ describe('CLI Bulk Commands', () => {
     test('success with option --target-directory', async () => {
       await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--target-directory', 'testdirectory']);
 
-      testLineOutput.forEach((line) => {
+      for (const line of testLineOutput) {
         const resource = JSON.parse(line);
         expect(fetch).toHaveBeenCalledWith(
           expect.stringMatching(`/fhir/R4`),
@@ -301,7 +301,7 @@ describe('CLI Bulk Commands', () => {
             ),
           })
         );
-      });
+      }
 
       expect(fetch).toHaveBeenCalled();
     });

@@ -3,7 +3,7 @@
 import { createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
 import type { BotEvent } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
-import { createPrivateKey, randomBytes } from 'crypto';
+import { createPrivateKey, randomBytes } from 'node:crypto';
 import { SignJWT } from 'jose';
 import fetch from 'node-fetch';
 
@@ -22,7 +22,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   }
 
   // Handles unknown issue with newlines in private key
-  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replaceAll('\\n', '\n');
+  const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replaceAll(String.raw`\n`, '\n');
   if (!privateKeyString) {
     throw new Error('Missing EPIC_PRIVATE_KEY');
   }
@@ -59,14 +59,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const medplumPatient = event.input;
   const epicPatientId = getIdentifier(medplumPatient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id');
 
-  if (!epicPatientId) {
-    console.log('No Epic Patient ID found, creating patient in Epic');
-    // If no Epic patient ID exists, create the patient in Epic
-    return createEpicPatient(medplum, epic, medplumPatient);
-  } else {
+  if (epicPatientId) {
     console.log('Epic Patient ID found, syncing data from Epic to Medplum');
     // If an Epic patient ID exists, sync data from Epic to Medplum
     return syncEpicPatient(medplum, epic, medplumPatient, epicPatientId);
+  } else {
+    console.log('No Epic Patient ID found, creating patient in Epic');
+    // If no Epic patient ID exists, create the patient in Epic
+    return createEpicPatient(medplum, epic, medplumPatient);
   }
 }
 

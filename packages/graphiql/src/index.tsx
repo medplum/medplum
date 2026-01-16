@@ -128,7 +128,7 @@ function tryEncodeBase64(value: string | null | undefined): string {
   }
   try {
     return encodeBase64(value);
-  } catch (_err) {
+  } catch {
     return '';
   }
 }
@@ -139,7 +139,7 @@ function tryDecodeBase64(value: string | null): string {
   }
   try {
     return decodeBase64(value);
-  } catch (_err) {
+  } catch {
     return '';
   }
 }

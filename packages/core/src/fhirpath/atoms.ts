@@ -457,7 +457,7 @@ export class IndexerAtom implements Atom {
     }
     const index = evalResult[0].value;
     if (typeof index !== 'number') {
-      throw new Error(`Invalid indexer expression: should return integer}`);
+      throw new TypeError(`Invalid indexer expression: should return integer}`);
     }
     const leftResult = this.left.eval(context, input);
     if (!(index in leftResult)) {

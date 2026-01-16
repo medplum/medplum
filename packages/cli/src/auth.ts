@@ -117,6 +117,7 @@ async function openBrowser(url: string): Promise<void> {
       throw new Error('Unsupported platform: ' + os);
   }
   return new Promise((resolve, reject) => {
+    // eslint-disable-next-line sonarjs/os-command
     exec(cmd, (error, _, stderr) => {
       if (error) {
         reject(error);

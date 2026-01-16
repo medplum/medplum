@@ -28,16 +28,13 @@ export class FileBuilder {
   }
 
   appendNoWrap(line: string): void {
-    this.b.push(this.indent.repeat(this.indentCount));
-    this.b.push(line);
-    this.b.push('\n');
+    this.b.push(this.indent.repeat(this.indentCount), line, '\n');
   }
 
   append(line: string): void {
     const nowrap = this.indent.repeat(this.indentCount) + line;
     if (nowrap.length < 160) {
-      this.b.push(nowrap);
-      this.b.push('\n');
+      this.b.push(nowrap, '\n');
     } else {
       let first = true;
       for (const wrappedLine of wordWrap(nowrap, 120 - this.indent.length * this.indentCount)) {
@@ -46,8 +43,7 @@ export class FileBuilder {
         } else {
           this.b.push(this.indent.repeat(this.indentCount + 2));
         }
-        this.b.push(wrappedLine.trim());
-        this.b.push('\n');
+        this.b.push(wrappedLine.trim(), '\n');
         first = false;
       }
     }
@@ -69,7 +65,7 @@ export function wordWrap(text: string, maxLength: number): string[] {
   const result = [];
   let line: string[] = [];
   let length = 0;
-  text.split(' ').forEach(function (word) {
+  for (const word of text.split(' ')) {
     if (length + word.length > maxLength) {
       result.push(line.join(' ').trim());
       line = [];
@@ -77,7 +73,7 @@ export function wordWrap(text: string, maxLength: number): string[] {
     }
     length += word.length + 1;
     line.push(word);
-  });
+  }
   if (line.length > 0) {
     result.push(line.join(' ').trim());
   }

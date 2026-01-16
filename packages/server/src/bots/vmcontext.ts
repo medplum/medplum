@@ -19,7 +19,7 @@ import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
 import type { BotExecutionContext, BotExecutionResult } from './types';
 
-export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
+export const DEFAULT_VM_CONTEXT_TIMEOUT = 10_000;
 
 /**
  * Executes a Bot on the server in a separate Node.js VM.
@@ -78,7 +78,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   };
 
   // Wrap code in an async block for top-level await support
-  const wrappedCode = `
+  const wrappedCode = String.raw`
   const exports = {};
   const module = {exports};
 
@@ -111,7 +111,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       return result;
     } catch (err) {
       if (err instanceof Error) {
-        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+        console.log("Unhandled error: " + err.message + "\n" + err.stack);
       } else if (typeof err === "object") {
         console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
       } else {

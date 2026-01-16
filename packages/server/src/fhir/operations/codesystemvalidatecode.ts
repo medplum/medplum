@@ -86,8 +86,7 @@ export async function validateCodings(
 ): Promise<(Coding | undefined)[]> {
   const eligible: boolean[] = new Array(codings.length);
   const codesToQuery = new Set<string>();
-  for (let i = 0; i < codings.length; i++) {
-    const c = codings[i];
+  for (const [i, c] of codings.entries()) {
     if (c.system && c.system !== codeSystem.url) {
       continue;
     }

@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';

@@ -247,29 +247,25 @@ async function resolveProperty(
     }
   }
 
-  const knownProp = (
-    await new SelectQuery('CodeSystem_Property')
-      .column('id')
-      .where('system', '=', codeSystem.id)
-      .where('code', '=', code)
-      .execute(db)
-  )[0];
+  const [knownProp] = await new SelectQuery('CodeSystem_Property')
+    .column('id')
+    .where('system', '=', codeSystem.id)
+    .where('code', '=', code)
+    .execute(db);
   if (knownProp) {
     return [knownProp.id, prop];
   }
 
-  const newProp = (
-    await new InsertQuery('CodeSystem_Property', [
-      {
-        system: codeSystem.id,
-        code,
-        type: prop.type,
-        uri: prop.uri,
-        description: prop.description,
-      },
-    ])
-      .returnColumn('id')
-      .execute(db)
-  )[0];
+  const [newProp] = await new InsertQuery('CodeSystem_Property', [
+    {
+      system: codeSystem.id,
+      code,
+      type: prop.type,
+      uri: prop.uri,
+      description: prop.description,
+    },
+  ])
+    .returnColumn('id')
+    .execute(db);
   return [newProp.id, prop];
 }

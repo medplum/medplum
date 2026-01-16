@@ -37,14 +37,14 @@ listProfiles.description('List all profiles saved').action(async () => {
   const dir = resolve(homedir(), '.medplum');
   const files = readdirSync(dir);
   const allProfiles: any[] = [];
-  files.forEach((file) => {
+  for (const file of files) {
     const fileName = file.split('.')[0];
     const storage = new FileSystemStorage(fileName);
     const profile = storage.getObject('options');
     if (profile) {
       allProfiles.push({ profileName: fileName, profile });
     }
-  });
+  }
   console.log(allProfiles);
 });
 

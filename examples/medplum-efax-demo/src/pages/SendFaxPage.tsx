@@ -38,7 +38,7 @@ export function SendFaxPage(): JSX.Element {
       return;
     }
 
-    const digits = formData.faxNumber.replace(/\D/g, '');
+    const digits = formData.faxNumber.replaceAll(/\D/g, '');
     if (digits.length < 10) {
       showNotification({ title: 'Error', message: 'Fax number must have at least 10 digits', color: 'red' });
       return;

@@ -41,8 +41,7 @@ async function validateReferences(
   const paths = Object.keys(references);
 
   const validated = await repo.readReferences(toValidate);
-  for (let i = 0; i < validated.length; i++) {
-    const reference = validated[i];
+  for (const [i, reference] of validated.entries()) {
     if (reference instanceof Error) {
       const path = paths[i];
       issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(reference)})`));
@@ -72,8 +71,8 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
         }
 
         if (Array.isArray(propertyValue)) {
-          for (let i = 0; i < propertyValue.length; i++) {
-            const reference = propertyValue[i].value as Reference;
+          for (const [i, element] of propertyValue.entries()) {
+            const reference = element.value as Reference;
             if (!shouldValidateReference(reference)) {
               continue;
             }
@@ -145,8 +144,8 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
         }
 
         if (Array.isArray(propertyValue)) {
-          for (let i = 0; i < propertyValue.length; i++) {
-            const reference = propertyValue[i].value as Reference;
+          for (const [i, element] of propertyValue.entries()) {
+            const reference = element.value as Reference;
             const replacement = await resolveReplacementReference(repo, reference, path + '[' + i + ']');
 
             if (replacement) {

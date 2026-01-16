@@ -64,7 +64,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
           end: appointment.end,
         },
         length: {
-          value: Math.floor(duration / 60000),
+          value: Math.floor(duration / 60_000),
           unit: 'minutes',
         },
         participant: participant.map((p) => ({

@@ -189,14 +189,14 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
               }
 
               if (result?.resourceType === 'Bundle' && result?.entry) {
-                result.entry.forEach((entry: any) => {
+                for (const entry of result.entry) {
                   if (entry.resource) {
                     const ref = getReferenceString(entry.resource);
                     if (ref) {
                       allResourceRefs.push(ref);
                     }
                   }
-                });
+                }
               } else if (result) {
                 const ref = getReferenceString(result);
                 if (ref) {
@@ -316,19 +316,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         </div>
 
         <div className={classes.messagesArea}>
-          {!hasStarted ? (
-            <div className={classes.emptyState}>
-              <ThemeIcon size={64} radius="xl" variant="light" color="gray" className={classes.emptyStateIcon}>
-                <IconRobot size={32} />
-              </ThemeIcon>
-              <Text size="xl" fw={500} mb="sm">
-                How can I help you today?
-              </Text>
-              <Text c="dimmed" size="sm" maw={400}>
-                I can help you search for patients, create resources, or answer clinical questions.
-              </Text>
-            </div>
-          ) : (
+          {hasStarted ? (
             <ScrollArea style={{ flex: 1 }} offsetScrollbars viewportRef={scrollViewportRef}>
               <Stack gap="xl" p="xs">
                 {visibleMessages.map((message, index) => (
@@ -377,6 +365,18 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 )}
               </Stack>
             </ScrollArea>
+          ) : (
+            <div className={classes.emptyState}>
+              <ThemeIcon size={64} radius="xl" variant="light" color="gray" className={classes.emptyStateIcon}>
+                <IconRobot size={32} />
+              </ThemeIcon>
+              <Text size="xl" fw={500} mb="sm">
+                How can I help you today?
+              </Text>
+              <Text c="dimmed" size="sm" maw={400}>
+                I can help you search for patients, create resources, or answer clinical questions.
+              </Text>
+            </div>
           )}
         </div>
 

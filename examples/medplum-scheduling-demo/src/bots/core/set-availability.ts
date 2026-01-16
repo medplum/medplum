@@ -54,7 +54,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SetAvailab
 
       // Create slots within the specified time window
       while (currentSlotTime < dayEndTime) {
-        const slotEndTime = new Date(currentSlotTime.getTime() + duration * 60000);
+        const slotEndTime = new Date(currentSlotTime.getTime() + duration * 60_000);
 
         // Ensure that the slot does not exceed the end time
         if (slotEndTime <= dayEndTime) {
@@ -63,7 +63,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SetAvailab
         }
 
         // Move to the next slot
-        currentSlotTime = new Date(currentSlotTime.getTime() + duration * 60000);
+        currentSlotTime = new Date(currentSlotTime.getTime() + duration * 60_000);
       }
     }
     // Move to the next day
@@ -104,7 +104,7 @@ export function createFreeSlot(schedule: Reference<Schedule>, start: Date, durat
     resourceType: 'Slot',
     schedule: schedule,
     start: start.toISOString(),
-    end: new Date(start.getTime() + duration * 60000).toISOString(),
+    end: new Date(start.getTime() + duration * 60_000).toISOString(),
     status: 'free',
   };
 }

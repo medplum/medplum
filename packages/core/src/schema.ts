@@ -69,11 +69,11 @@ export function checkForNull(value: unknown, path: string, issues: OperationOutc
 }
 
 function checkArrayForNull(array: unknown[], path: string, issues: OperationOutcomeIssue[]): void {
-  for (let i = 0; i < array.length; i++) {
-    if (array[i] === undefined) {
+  for (const [i, element] of array.entries()) {
+    if (element === undefined) {
       issues.push(createStructureIssue(`${path}[${i}]`, 'Invalid undefined value'));
     } else {
-      checkForNull(array[i], `${path}[${i}]`, issues);
+      checkForNull(element, `${path}[${i}]`, issues);
     }
   }
 }

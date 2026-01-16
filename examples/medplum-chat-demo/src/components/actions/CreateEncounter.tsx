@@ -88,8 +88,8 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       });
 
       const period: Period = {
-        start: messages[0].sent,
-        end: messages[messages.length - 1].sent,
+        start: messages[0]?.sent,
+        end: messages.at(-1)?.sent,
       };
 
       return period;

@@ -15,7 +15,7 @@ describe('useDoubleNumber', () => {
   });
 
   test('Query string only', () => {
-    const url = createUrl('', '123', '456', 1234567890);
+    const url = createUrl('', '123', '456', 1_234_567_890);
     const { result } = renderHook(() => useCachedBinaryUrl(url));
     expect(result.current).toBe(url);
   });

@@ -38,7 +38,7 @@ jest.mock('pg', () => {
   class MockPoolClient {
     async query(sql: string): Promise<any> {
       if (sql === mockQueries.GetVersionSql) {
-        return { rows: [{ version: 1000000 }] };
+        return { rows: [{ version: 1_000_000 }] };
       }
       if (sql === mockQueries.GetDataVersionSql) {
         return { rows: [{ dataVersion: mockLatestVersion }] };

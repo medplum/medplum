@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import fs from 'fs';
+import fs from 'node:fs';
 import { getConfig, loadConfig } from './loader';
 
 describe('Config', () => {

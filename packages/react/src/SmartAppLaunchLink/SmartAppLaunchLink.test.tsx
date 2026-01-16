@@ -20,7 +20,6 @@ describe('SmartAppLaunchLink', () => {
   }
 
   test('Happy path', async () => {
-    // const assignSpy = jest.spyOn(locationUtils, 'assign').mockImplementation(() => undefined);
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 

@@ -27,7 +27,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
   let invoice = (await medplum.searchOne('Invoice', 'identifier=' + id)) as Invoice;
 
-  if (!invoice) {
+  if (invoice) {
+    invoice.status = getInvoiceStatus(stripeInvoiceStatus);
+    invoice = await medplum.updateResource(invoice);
+  } else {
     console.log('No invoice found, creating new invoice');
     invoice = await medplum.createResourceIfNoneExist<Invoice>(
       {
@@ -53,9 +56,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
     );
 
     console.log('Created invoice');
-  } else {
-    invoice.status = getInvoiceStatus(stripeInvoiceStatus);
-    invoice = await medplum.updateResource(invoice);
   }
 
   const accountId = stripeInvoice.customer as string;

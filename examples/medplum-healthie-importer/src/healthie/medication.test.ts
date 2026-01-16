@@ -256,7 +256,7 @@ describe('parseDosage', () => {
   });
 
   test('handles invalid or missing input', () => {
-    expect(parseDosage(undefined)).toBeUndefined();
+    expect(parseDosage()).toBeUndefined();
     expect(parseDosage('')).toBeUndefined();
     expect(parseDosage('invalid')).toBeUndefined();
     expect(parseDosage('10')).toBeUndefined();
@@ -287,7 +287,7 @@ describe('parseDosage', () => {
 
     // Many decimal places
     expect(parseDosage('10.123456 MG')).toEqual({
-      value: 10.123456,
+      value: 10.123_456,
       unit: 'MG',
       system: 'http://unitsofmeasure.org',
     });
@@ -395,13 +395,13 @@ describe('parseDosage', () => {
 
   test('handles large numbers', () => {
     expect(parseDosage('1000000 MG')).toEqual({
-      value: 1000000,
+      value: 1_000_000,
       unit: 'MG',
       system: 'http://unitsofmeasure.org',
     });
 
     expect(parseDosage('999999.999 MG')).toEqual({
-      value: 999999.999,
+      value: 999_999.999,
       unit: 'MG',
       system: 'http://unitsofmeasure.org',
     });

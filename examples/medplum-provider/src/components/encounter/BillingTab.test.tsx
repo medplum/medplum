@@ -670,7 +670,7 @@ describe('BillingTab', () => {
       },
       { timeout: 5000 }
     );
-  }, 15000);
+  }, 15_000);
 
   test('updates claim when practitioner is changed and claim already exists', async () => {
     const setEncounter = vi.fn();
@@ -843,7 +843,7 @@ describe('BillingTab', () => {
       },
       { timeout: 5000 }
     );
-  }, 15000);
+  }, 15_000);
 
   test('handles export when claim id is missing', async () => {
     const user = userEvent.setup();

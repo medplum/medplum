@@ -26,13 +26,13 @@ export function useResourceType(
         medplum
           .requestSchema(resourceType)
           .then(() => {
-            if (!tryGetDataType(resourceType)) {
+            if (tryGetDataType(resourceType)) {
+              setValidatedResourceType(resourceType as ResourceType);
+            } else {
               setValidatedResourceType(undefined);
               if (options?.onInvalidResourceType) {
                 options.onInvalidResourceType(resourceType);
               }
-            } else {
-              setValidatedResourceType(resourceType as ResourceType);
             }
           })
           .catch(console.error);

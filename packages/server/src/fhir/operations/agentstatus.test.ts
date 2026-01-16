@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { Agent, OperationOutcome, OperationOutcomeIssue, Parameters } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';

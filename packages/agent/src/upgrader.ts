@@ -61,12 +61,14 @@ export async function upgraderMain(argv: string[]): Promise<void> {
 
       // We use this command to create a mock 'MedplumAgent' service, which allows us to preserve the agent.properties file by opting into the 'Upgrade' installer path
       globalLogger.info('Creating mock MedplumAgent service to opt into "Upgrade" path in installer...');
+      // eslint-disable-next-line sonarjs/no-os-command-from-path
       execSync('sc.exe create MedplumAgent binPath=cmd.exe');
       globalLogger.info('Successfully created mock service');
     }
 
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
+    // eslint-disable-next-line sonarjs/os-command
     spawnSync(`"${binPath}" /S`, { windowsHide: true, shell: true });
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
@@ -74,9 +76,10 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     globalLogger.error(`Error while attempting to run installer: ${normalizeErrorString(err)}`);
     globalLogger.error('Failed to run installer, attempting to restart agent service...');
     try {
+      // eslint-disable-next-line sonarjs/no-os-command-from-path
       execSync('net start "Medplum Agent"');
       globalLogger.info('Successfully restarted agent service');
-    } catch (_err: unknown) {
+    } catch {
       globalLogger.info('Medplum agent already started, skipping restart');
     }
     return;

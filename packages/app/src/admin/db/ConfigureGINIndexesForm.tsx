@@ -114,7 +114,7 @@ export function ConfigureGINIndexesForm({
                 size="sm"
                 w="100"
                 min={64}
-                max={2147483647}
+                max={2_147_483_647}
                 onChange={(value) => {
                   if (typeof value === 'number') {
                     setGinPendingListLimitValue(value);

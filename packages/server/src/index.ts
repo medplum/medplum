@@ -37,7 +37,7 @@ export async function main(configName: string): Promise<void> {
 
   const app = await initApp(express(), config);
   const server = app.listen(config.port);
-  server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
+  server.keepAliveTimeout = config.keepAliveTimeout ?? 90_000;
   globalLogger.info('Server started', { port: config.port });
   gracefulShutdown(server, {
     timeout: config.shutdownTimeoutMilliseconds,

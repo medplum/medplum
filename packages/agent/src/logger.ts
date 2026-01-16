@@ -72,13 +72,13 @@ export interface FetchLogsOptions {
 export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPathRoot: string = 'config'): string[] {
   const warnings = [];
 
-  if (typeof config.logDir !== 'undefined' && !(typeof config.logDir === 'string' && config.logDir.length > 0)) {
+  if (config.logDir !== undefined && !(typeof config.logDir === 'string' && config.logDir.length > 0)) {
     warnings.push(`${configPathRoot}.logDir must be a valid filepath string`);
     // Cleanup invalid logger config prop
     config.logDir = undefined;
   }
   if (
-    typeof config.maxFileSizeMb !== 'undefined' &&
+    config.maxFileSizeMb !== undefined &&
     !(typeof config.maxFileSizeMb === 'number' && config.maxFileSizeMb > 0 && Number.isInteger(config.maxFileSizeMb))
   ) {
     warnings.push(`${configPathRoot}.maxFileSizeMb must be a valid integer`);
@@ -86,7 +86,7 @@ export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPa
     config.maxFileSizeMb = undefined;
   }
   if (
-    typeof config.filesToKeep !== 'undefined' &&
+    config.filesToKeep !== undefined &&
     !(typeof config.filesToKeep === 'number' && config.filesToKeep > 0 && Number.isInteger(config.filesToKeep))
   ) {
     warnings.push(`${configPathRoot}.filesToKeep must be a valid integer`);
@@ -94,7 +94,7 @@ export function cleanupLoggerConfig(config: Partial<AgentLoggerConfig>, configPa
     config.filesToKeep = undefined;
   }
   if (
-    typeof config.logLevel !== 'undefined' &&
+    config.logLevel !== undefined &&
     !(typeof config.logLevel === 'number' && LogLevelNames[config.logLevel] !== undefined)
   ) {
     warnings.push(`${configPathRoot}.logLevel must be a valid log level between LogLevel.NONE and LogLevel.DEBUG`);
@@ -169,7 +169,7 @@ export function parseLoggerConfigFromArgs(args: AgentArgs): [AgentMultiLoggerCon
     } else if (LOGGER_CONFIG_INTEGER_KEYS.includes(settingName as LoggerConfigIntegerKey)) {
       try {
         configValue = Number.parseInt(propVal, 10);
-      } catch (_err) {
+      } catch {
         warnings.push(`Error while parsing ${propName}: ${propVal} is not a valid integer`);
       }
     } else {

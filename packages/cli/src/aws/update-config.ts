@@ -51,6 +51,7 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
         {
           ...serverConfig,
           signingKey: '****',
+          // eslint-disable-next-line sonarjs/no-hardcoded-passwords
           signingKeyPassphrase: '****',
         },
         null,

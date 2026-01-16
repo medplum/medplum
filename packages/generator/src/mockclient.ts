@@ -162,7 +162,7 @@ function writeSearchParameters(): void {
 }
 
 function keyReplacer(key: string, value: any): any {
-  if (key !== '' && !/\d+/.exec(key) && !resourceTypes.includes(key) && !properties.includes(key)) {
+  if (key !== '' && !/\d+/.test(key) && !resourceTypes.includes(key) && !properties.includes(key)) {
     return undefined;
   }
   return value;

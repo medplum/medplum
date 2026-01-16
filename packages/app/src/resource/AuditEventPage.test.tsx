@@ -47,7 +47,7 @@ describe('AuditEventPage', () => {
       fireEvent.click(screen.getByText(`${auditEvent.id}`));
     });
 
-    expect(screen.getByLabelText(`Actions for AuditEvent/${auditEvent.id}`));
+    expect(screen.getByLabelText(`Actions for AuditEvent/${auditEvent.id}`)).toBeInTheDocument();
   });
 
   test('Renders test changes', async () => {

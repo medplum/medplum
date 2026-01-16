@@ -77,9 +77,9 @@ describe('Agent/$upgrade', () => {
 
   test('Upgrade all agents', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         { type: 'agent:upgrade:response', statusCode: 200 }
@@ -105,9 +105,9 @@ describe('Agent/$upgrade', () => {
 
   test('Upgrade all agents -- set timeout', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         { type: 'agent:upgrade:response', statusCode: 200 }
@@ -133,9 +133,9 @@ describe('Agent/$upgrade', () => {
 
   test('Upgrade all agents -- set timeout greater than max', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         { type: 'agent:upgrade:response', statusCode: 200 }
@@ -180,9 +180,9 @@ describe('Agent/$upgrade', () => {
 
   test('Upgrade all agents -- invalid timeout', async () => {
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         { type: 'agent:upgrade:response', statusCode: 200 }
@@ -214,9 +214,9 @@ describe('Agent/$upgrade', () => {
   test('Agent error during upgrade', async () => {
     // Multi agent example
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse | AgentError>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         i === 0
@@ -259,9 +259,9 @@ describe('Agent/$upgrade', () => {
   test('Invalid response from agent upgrade', async () => {
     // Multi agent example
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse | AgentTransmitResponse>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         i === 0
@@ -304,9 +304,9 @@ describe('Agent/$upgrade', () => {
   test('Agent force upgrade', async () => {
     // Multi agent example
     const handlePromises = [] as Promise<MockAgentResponseHandle>[];
-    for (let i = 0; i < agents.length; i++) {
+    for (const [i, agent] of agents.entries()) {
       handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse | AgentError>(
-        agents[i],
+        agent,
         accessToken,
         'agent:upgrade:request',
         { type: 'agent:upgrade:response', statusCode: 200 }

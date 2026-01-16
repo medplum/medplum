@@ -4,9 +4,9 @@ import type { InternalSchemaElement, InternalTypeSchema } from '@medplum/core';
 import { capitalize, getAllDataTypes, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, ElementDefinitionType, StructureDefinition } from '@medplum/fhirtypes';
-import { writeFileSync } from 'fs';
 import type { JSONSchema6, JSONSchema6Definition } from 'json-schema';
-import { resolve } from 'path';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { getValueSetValues } from './valuesets';
 
 // Generate fhir.schema.json
@@ -68,10 +68,10 @@ export function main(): void {
   writeFileSync(
     resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/fhir.schema.json'),
     JSON.stringify(fhirSchema, undefined, 2)
-      .replaceAll("'", '\\u0027')
-      .replaceAll('<', '\\u003c')
-      .replaceAll('=', '\\u003d')
-      .replaceAll('>', '\\u003e'),
+      .replaceAll("'", String.raw`\u0027`)
+      .replaceAll('<', String.raw`\u003c`)
+      .replaceAll('=', String.raw`\u003d`)
+      .replaceAll('>', String.raw`\u003e`),
     'utf8'
   );
 }
@@ -81,11 +81,11 @@ function addSchemaDefinition(fhirSchema: FhirSchema, typeSchema: InternalTypeSch
   if (!fhirSchema.discriminator.mapping[typeName]) {
     fhirSchema.discriminator.mapping[typeName] = `#/definitions/${typeName}`;
   }
-  if (!fhirSchema.oneOf.find((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
+  if (!fhirSchema.oneOf.some((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
     fhirSchema.oneOf.push({ $ref: `#/definitions/${typeName}` });
   }
   if (
-    !fhirSchema.definitions.ResourceList.oneOf.find(
+    !fhirSchema.definitions.ResourceList.oneOf.some(
       (x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`
     )
   ) {
@@ -126,9 +126,7 @@ function buildProperties(typeSchema: InternalTypeSchema): {
     }
 
     if (!path.includes('[x]') && elementDefinition?.min) {
-      if (!required) {
-        required = [];
-      }
+      required ??= [];
       required.push(path);
     }
   }
@@ -176,7 +174,7 @@ function buildTypeName(components: string[]): string {
   if (components.length === 1) {
     return components[0];
   }
-  return components.map(capitalize).join('_');
+  return components.map((c) => capitalize(c)).join('_');
 }
 
 const excludedValueSets = [

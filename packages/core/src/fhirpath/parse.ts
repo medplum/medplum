@@ -99,7 +99,7 @@ const INDEXER_PARSELET: InfixParselet = {
 const FUNCTION_CALL_PARSELET: InfixParselet = {
   parse(parser: Parser, left: Atom) {
     if (!(left instanceof SymbolAtom)) {
-      throw new Error('Unexpected parentheses');
+      throw new TypeError('Unexpected parentheses');
     }
 
     const args = [];

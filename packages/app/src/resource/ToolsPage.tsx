@@ -171,7 +171,7 @@ export function ToolsPage(): JSX.Element | null {
       setFetchingLogs(true);
       const limit = formData.logLimit || 20;
       medplum
-        .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit !== undefined ? `?limit=${limit}` : ''}`), {
+        .get(medplum.fhirUrl('Agent', id, `$fetch-logs${limit === undefined ? '' : `?limit=${limit}`}`), {
           cache: 'reload',
         })
         .then((result: Parameters) => {

@@ -218,7 +218,7 @@ describe('TaskQuestionnaireForm', () => {
       expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
+    const callArgs = onChangeResponse.mock.calls.at(-1)?.at(0);
     expect(callArgs.resourceType).toBe('QuestionnaireResponse');
     expect(callArgs.status).toBe('in-progress');
     expect(callArgs.item).toBeDefined();
@@ -262,7 +262,7 @@ describe('TaskQuestionnaireForm', () => {
       expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
+    const callArgs = onChangeResponse.mock.calls.at(-1)?.at(0);
     expect(callArgs.encounter).toBeDefined();
     expect(callArgs.encounter?.reference).toBe('Encounter/encounter-123');
   });
@@ -299,7 +299,7 @@ describe('TaskQuestionnaireForm', () => {
       expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
+    const callArgs = onChangeResponse.mock.calls.at(-1)?.at(0);
     // When task has no encounter, encounter should be undefined
     expect(callArgs.encounter).toBeUndefined();
   });
@@ -447,7 +447,7 @@ describe('TaskQuestionnaireForm', () => {
       expect(onChangeResponse).toHaveBeenCalled();
     });
 
-    const callArgs = onChangeResponse.mock.calls[onChangeResponse.mock.calls.length - 1][0];
+    const callArgs = onChangeResponse.mock.calls.at(-1)?.at(0);
     expect(callArgs.resourceType).toBe('QuestionnaireResponse');
     expect(callArgs.status).toBe('in-progress');
     expect(callArgs.item).toBeDefined();

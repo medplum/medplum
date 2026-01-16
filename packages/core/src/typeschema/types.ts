@@ -599,10 +599,10 @@ function pathsCompatible(parent: string | undefined, child: string | undefined):
 function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | undefined {
   if (Array.isArray(obj) && obj.length > 0) {
     return obj[0];
-  } else if (!isEmpty(obj)) {
-    return obj as TypedValue;
-  } else {
+  } else if (isEmpty(obj)) {
     return undefined;
+  } else {
+    return obj as TypedValue;
   }
 }
 

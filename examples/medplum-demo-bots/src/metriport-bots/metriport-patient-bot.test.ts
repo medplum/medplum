@@ -127,11 +127,11 @@ describe('validatePatientResource', () => {
     },
   ];
 
-  requiredFields.forEach(({ field, test, message }) => {
+  for (const { field, test, message } of requiredFields) {
     it(`should throw error when ${field} is missing`, () => {
       expect(() => validatePatientResource(test())).toThrow(message);
     });
-  });
+  }
 
   test('validates patient with all fields present', () => {
     const answers = validatePatientResource(JaneSmithMedplumPatient);
@@ -271,11 +271,11 @@ describe('buildMetriportPatientPayload', () => {
       { input: 'unknown', expected: 'U' },
     ];
 
-    genderMappings.forEach(({ input, expected }) => {
+    for (const { input, expected } of genderMappings) {
       const testData = { ...patientData, genderAtBirth: input };
       const result = buildMetriportPatientPayload(testData);
       expect(result.genderAtBirth).toStrictEqual(expected);
-    });
+    }
   });
 });
 

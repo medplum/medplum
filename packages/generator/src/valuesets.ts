@@ -98,10 +98,10 @@ function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined,
 
 export async function generateCodeSystems(): Promise<(CodeSystem | ValueSet)[]> {
   const valueSets: (CodeSystem | ValueSet)[] = [];
+  const countryCodeSystems = await generateCountryCodes();
+  const currencyCodeSystem = await generateCurrencyCodes();
 
-  valueSets.push(...(await generateCountryCodes()));
-  valueSets.push(await generateCurrencyCodes());
-
+  valueSets.push(...countryCodeSystems, currencyCodeSystem);
   return valueSets;
 }
 
@@ -267,10 +267,10 @@ async function main(): Promise<void> {
   };
 
   const json = JSON.stringify(bundle, undefined, 2)
-    .replaceAll("'", '\\u0027')
-    .replaceAll('<', '\\u003c')
-    .replaceAll('=', '\\u003d')
-    .replaceAll('>', '\\u003e');
+    .replaceAll("'", String.raw`\u0027`)
+    .replaceAll('<', String.raw`\u003c`)
+    .replaceAll('=', String.raw`\u003d`)
+    .replaceAll('>', String.raw`\u003e`);
 
   writeFileSync(
     resolve(import.meta.dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'),

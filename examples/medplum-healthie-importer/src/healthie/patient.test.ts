@@ -97,7 +97,7 @@ describe('mapHealthieGender', () => {
   });
 
   test('handles invalid or missing input', () => {
-    expect(mapHealthieGender(undefined)).toBe('unknown');
+    expect(mapHealthieGender()).toBe('unknown');
     expect(mapHealthieGender('')).toBe('unknown');
     expect(mapHealthieGender('other')).toBe('other');
     expect(mapHealthieGender('non-binary')).toBe('other');
@@ -153,7 +153,7 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
       test('should validate patient data structure', async () => {
         const patients = await fetchHealthiePatients(healthieClient);
 
-        patients.forEach((patient) => {
+        for (const patient of patients) {
           expect(typeof patient.id).toBe('string');
           expect(typeof patient.active).toBe('boolean');
           expect(typeof patient.name).toBe('string');
@@ -165,7 +165,7 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
             expect(location).toHaveProperty('city');
             expect(location).toHaveProperty('state');
           }
-        });
+        }
       });
     });
 
@@ -193,10 +193,10 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
 
         // If there are patient IDs, validate they are strings
         if (patientIds.length > 0) {
-          patientIds.forEach((id) => {
+          for (const id of patientIds) {
             expect(typeof id).toBe('string');
             expect(id.length).toBeGreaterThan(0);
-          });
+          }
         }
       });
 
@@ -219,7 +219,7 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
         }
 
         // Step 3: Find a timestamp in the middle of the results
-        const sortedUsers = firstPageResult.users.sort(
+        const sortedUsers = firstPageResult.users.toSorted(
           (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
         );
 
@@ -236,9 +236,9 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
         expect(filteredPatientIds.length).toBeLessThanOrEqual(allPatientIds.length);
 
         // All IDs should be strings
-        filteredPatientIds.forEach((id) => {
+        for (const id of filteredPatientIds) {
           expect(typeof id).toBe('string');
-        });
+        }
 
         console.log(
           `Filter test: All patients: ${allPatientIds.length}, Filtered: ${filteredPatientIds.length}, Middle timestamp: ${middleTimestamp}`

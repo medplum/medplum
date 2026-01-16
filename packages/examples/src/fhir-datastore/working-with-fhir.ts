@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 // end-block core-imports
 // start-block patient-imports
 import type { Patient } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 // end-block patient-imports
 // start-block service-request-imports
@@ -177,7 +177,7 @@ const reportData: DiagnosticReport = {
       },
     ],
   },
-  result: observations.map(createReference), // Create an array of references to the relevant observations
+  result: observations.map((o) => createReference(o)), // Create an array of references to the relevant observations
 };
 const report = await medplum.createResource(reportData);
 console.log('Created Report', report.id);

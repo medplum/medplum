@@ -78,7 +78,7 @@ describe('Sync formulary', async () => {
         secrets,
       })
     ).rejects.toThrow('No catalog found in Photon Health');
-  }, 10000);
+  }, 10_000);
 
   test.skip('List includes resource that is not a MedicationKnowledge', async () => {
     const medplum = new MockClient();
@@ -126,7 +126,7 @@ describe('Sync formulary', async () => {
     });
 
     expect(result.length).toBe(0);
-  }, 20000);
+  }, 20_000);
 
   test.skip('Skip already synced medications', async () => {
     const medplum = new MockClient();
@@ -212,7 +212,7 @@ describe('Sync formulary', async () => {
     expect(medicationsUpdated?.length).toBe(1);
     expect(medicationsUpdated?.[0]?.coding?.[0]).toStrictEqual({ system: 'https://neutron.health', code: 'synced' });
     expect(result.length).toBe(0);
-  }, 10000);
+  }, 10_000);
 
   test('Add photon ID to MedicationKnowledge', async () => {
     const medplum = new MockClient();

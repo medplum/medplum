@@ -13,7 +13,7 @@ export type TestMetadataCardInputProps = {
   error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
 };
 
-export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCardInputProps): JSX.Element {
+export function TestMetadataCardInput({ test, metadata, error }: Readonly<TestMetadataCardInputProps>): JSX.Element {
   const { updateTestMetadata } = useHealthGorillaLabOrderContext();
 
   if (!metadata) {
@@ -29,9 +29,7 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
     <Card key={test.code} withBorder shadow="none">
       <Stack gap="xs">
         <Text fw={500}>{test.display}</Text>
-        {!metadata ? (
-          <div>Missing metadata</div>
-        ) : (
+        {metadata ? (
           <>
             <Radio.Group
               value={metadata.priority}
@@ -80,6 +78,8 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
               </>
             )}
           </>
+        ) : (
+          <div>Missing metadata</div>
         )}
       </Stack>
     </Card>

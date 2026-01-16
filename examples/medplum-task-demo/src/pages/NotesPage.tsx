@@ -45,14 +45,13 @@ export function NotesPage(props: NotesPageProps): JSX.Element {
   );
 }
 
+function compareTimes(a: Annotation, b: Annotation): number {
+  const timeA = new Date(a.time || 0).getTime();
+  const timeB = new Date(b.time || 0).getTime();
+
+  return timeB - timeA;
+}
+
 function sortNotesByTime(notes: Annotation[]): Annotation[] {
-  const compareTimes = (a: Annotation, b: Annotation): number => {
-    const timeA = new Date(a.time || 0).getTime();
-    const timeB = new Date(b.time || 0).getTime();
-
-    return timeB - timeA;
-  };
-
-  const sortedNotes = notes.sort(compareTimes);
-  return sortedNotes;
+  return notes.toSorted(compareTimes);
 }

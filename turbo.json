@@ -22,10 +22,12 @@
       "inputs": ["src/**/*.tsx", "src/**/*.ts"]
     },
     "lint": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "cache": false
     },
     "lint:fix": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build"],
+      "cache": false
     }
   }
 }

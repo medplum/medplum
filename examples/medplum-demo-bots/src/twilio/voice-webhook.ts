@@ -54,17 +54,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<any>): Pro
 
   const twiml = new VoiceResponse();
 
-  if (params.To !== systemNumber) {
+  if (params.To === systemNumber) {
+    // This is an inbound call
+    twiml.say('Thanks for calling Medplum. Please hold while we connect you.');
+    const dial = twiml.dial();
+    dial.client(systemNumber);
+  } else {
     // This is an outbound call
     const dial = twiml.dial({
       callerId: systemNumber,
     });
     dial.number(params.To as string);
-  } else {
-    // This is an inbound call
-    twiml.say('Thanks for calling Medplum. Please hold while we connect you.');
-    const dial = twiml.dial();
-    dial.client(systemNumber);
   }
 
   // By returning a Binary resource we can control the content type of the response and return a TwiML response

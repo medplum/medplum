@@ -333,6 +333,7 @@ export class MockClient extends MedplumClient {
       if (!this.agentAvailable) {
         throw new OperationOutcomeError(badRequest('Timeout'));
       }
+      // eslint-disable-next-line sonarjs/no-hardcoded-ip
       if (typeof destination !== 'string' || (destination !== '8.8.8.8' && destination !== 'localhost')) {
         // Exception for test case
         if (destination !== 'abc123') {
@@ -566,6 +567,7 @@ export class MockFetchClient {
               id: '123',
               lastUpdated: new Date().toISOString(),
               authMethod: 'password',
+              // eslint-disable-next-line sonarjs/no-hardcoded-ip
               remoteAddress: '5.5.5.5',
               browser: 'Chrome',
               os: 'Linux',
@@ -574,6 +576,7 @@ export class MockFetchClient {
               id: '456',
               lastUpdated: new Date().toISOString(),
               authMethod: 'password',
+              // eslint-disable-next-line sonarjs/no-hardcoded-ip
               remoteAddress: '6.6.6.6',
               browser: 'Chrome',
               os: 'Android',
@@ -810,7 +813,9 @@ export class MockFetchClient {
       await this.repo.createResource(searchParameter as SearchParameter);
     }
 
-    makeDrAliceSmithSlots().forEach((slot) => this.repo.createResource(slot));
+    for (const slot of makeDrAliceSmithSlots()) {
+      await this.repo.createResource(slot);
+    }
   }
 
   private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
@@ -826,7 +831,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (_err) {
+      } catch {
         body = options.body;
       }
     }
@@ -863,7 +868,7 @@ export function createFakeJwt(claims: Record<string, string | number>): string {
 }
 
 function base64Encode(str: string): string {
-  return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
+  return typeof window === 'undefined' ? Buffer.from(str).toString('base64') : window.btoa(str);
 }
 
 // even though it's just a type, avoid importing IncomingHttpHeaders from node:http

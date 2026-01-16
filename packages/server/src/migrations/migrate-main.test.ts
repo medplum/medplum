@@ -38,7 +38,7 @@ describe('addDataMigrationToManifest', () => {
       if (typeof data === 'string') {
         updatedManifest = data.toString();
       } else {
-        throw new Error(`Data type ${typeof data} not yet handled in writeFileSync test stub`);
+        throw new TypeError(`Data type ${typeof data} not yet handled in writeFileSync test stub`);
       }
     });
   });
@@ -52,7 +52,7 @@ describe('addDataMigrationToManifest', () => {
 
     addDataMigrationToManifest(testVersion);
     if (typeof updatedManifest !== 'string') {
-      throw new Error('Manifest was not updated');
+      throw new TypeError('Manifest was not updated');
     }
     const result = JSON.parse(updatedManifest);
 
@@ -72,7 +72,7 @@ describe('addDataMigrationToManifest', () => {
 
     addDataMigrationToManifest('v9999');
     if (typeof updatedManifest !== 'string') {
-      throw new Error('Manifest was not updated');
+      throw new TypeError('Manifest was not updated');
     }
     const result = JSON.parse(updatedManifest);
 
@@ -85,7 +85,7 @@ describe('addDataMigrationToManifest', () => {
   test('writes file with proper JSON formatting and trailing newline', () => {
     addDataMigrationToManifest('v9999');
     if (typeof updatedManifest !== 'string') {
-      throw new Error('Manifest was not updated');
+      throw new TypeError('Manifest was not updated');
     }
 
     // Should end with newline
@@ -98,7 +98,7 @@ describe('addDataMigrationToManifest', () => {
   test('appends new entry at end of manifest object', () => {
     addDataMigrationToManifest('v9999');
     if (typeof updatedManifest !== 'string') {
-      throw new Error('Manifest was not updated');
+      throw new TypeError('Manifest was not updated');
     }
 
     const places = {

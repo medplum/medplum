@@ -50,7 +50,7 @@ describe('Bundle tests', () => {
       .mockReturnValueOnce(0.7)
       .mockReturnValueOnce(0.8)
       .mockReturnValueOnce(0.9)
-      .mockReturnValueOnce(0.0);
+      .mockReturnValueOnce(0);
   });
 
   afterEach(() => {

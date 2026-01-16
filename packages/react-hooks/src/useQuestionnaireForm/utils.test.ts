@@ -1485,7 +1485,7 @@ describe('evaluateCalculatedExpressionsInQuestionnaire', () => {
       {
         linkId: 'q4',
         text: 'Half of 98',
-        answer: [{ valueDecimal: 49.0 }],
+        answer: [{ valueDecimal: 49 }],
       },
     ]);
   });

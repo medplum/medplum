@@ -98,7 +98,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Encounter>
         procedure_code: encounter.type?.[0] && getCodeBySystem(encounter.type?.[0], CPT),
         quantity: '1',
         units: 'MJ',
-        charge_amount_cents: 10000,
+        charge_amount_cents: 10_000,
         diagnosis_pointers: [0],
       },
     ],

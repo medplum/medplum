@@ -20,7 +20,7 @@ describe('DFT Message Tests', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
     const input =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00001|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00001|P|2.3
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
@@ -63,7 +63,7 @@ IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
     const input =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
@@ -94,7 +94,7 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
     const input =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00004|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00004|P|2.3
 EVN|A01|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`);
     const contentType = 'x-application/hl7-v2+er7';

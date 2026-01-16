@@ -208,9 +208,9 @@ describe('FHIR Patient utils', () => {
   test('getPatientResourceTypes', () => {
     const resourceTypes = getPatientResourceTypes();
     expect(resourceTypes.length).toBeGreaterThan(1);
-    resourceTypes.forEach((resourceType) => {
+    for (const resourceType of resourceTypes) {
       expect(isResourceType(resourceType)).toBe(true);
-    });
+    }
   });
 });
 

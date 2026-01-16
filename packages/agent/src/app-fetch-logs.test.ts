@@ -37,16 +37,16 @@ describe('Fetch Logs', () => {
   });
 
   afterAll(() => {
-    if (originalNodeEnv !== undefined) {
-      process.env.NODE_ENV = originalNodeEnv;
-    } else {
+    if (originalNodeEnv === undefined) {
       delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
     }
 
     for (const cleanup of cleanupFns) {
       try {
         cleanup();
-      } catch (_err) {
+      } catch {
         /* We don't care if cleanup throws, it's best effort */
       }
     }
@@ -338,7 +338,7 @@ describe('Fetch Logs', () => {
     });
   });
 
-  test.each(['invalid_limit', -1, 200000] as const)(
+  test.each(['invalid_limit', -1, 200_000] as const)(
     'should return an error when sending an invalid limit',
     async (limit) => {
       const state = {

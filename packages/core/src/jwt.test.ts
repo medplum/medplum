@@ -23,7 +23,7 @@ describe('JWT utils', () => {
   });
 
   test('parseJWTPayload', () => {
-    const claims = { exp: 1234567890, login_id: 'test-login-id' };
+    const claims = { exp: 1_234_567_890, login_id: 'test-login-id' };
     const payload = parseJWTPayload(createFakeJwt(claims));
     expect(payload).toMatchObject(claims);
   });

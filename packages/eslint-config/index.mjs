@@ -8,6 +8,8 @@ import jsdoc from 'eslint-plugin-jsdoc';
 import noOnlyTestsPlugin from 'eslint-plugin-no-only-tests';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import sonarJs from 'eslint-plugin-sonarjs';
+import unicornPlugin from 'eslint-plugin-unicorn';
 import tseslint from 'typescript-eslint';
 
 // Workaround for eslint-plugin-header ESLint 9 compatibility issue.
@@ -140,17 +142,16 @@ export const tsConfig = {
     tseslint.configs.recommended,
     {
       languageOptions: {
-        parserOptions: {
-          projectService: true,
-        },
+        parserOptions: { projectService: true },
       },
     },
     tseslint.configs.strict,
     reactHooks.configs.flat.recommended,
     reactRefresh.configs.recommended,
+    sonarJs.configs.recommended,
   ],
   plugins: {
-    'no-only-tests': noOnlyTestsPlugin,
+    unicorn: unicornPlugin,
   },
   rules: {
     // TypeScript+ESLint
@@ -258,8 +259,149 @@ export const tsConfig = {
     '@typescript-eslint/no-dynamic-delete': 'off',
     '@typescript-eslint/no-empty-object-type': 'off',
 
+    // SonarJS
+    'sonarjs/cognitive-complexity': 'off',
+    'sonarjs/todo-tag': 'off',
+    'sonarjs/deprecation': 'off',
+    'sonarjs/no-clear-text-protocols': 'off',
+    'sonarjs/sql-queries': 'off',
+    'sonarjs/no-nested-template-literals': 'warn', // Should try to turn on
+    'sonarjs/function-return-type': 'off',
+    'sonarjs/use-type-alias': 'off',
+    'sonarjs/no-unused-vars': 'off', // Already caught by TypeScript in actually bad cases; this rule is too strict
+    'sonarjs/regex-complexity': 'warn',
+    'sonarjs/different-types-comparison': 'off',
+    'sonarjs/no-alphabetical-sort': 'off', // ?
+    'sonarjs/pseudo-random': 'warn',
+    'sonarjs/no-small-switch': 'off',
+    'sonarjs/prefer-read-only-props': 'warn', // ?
+    'sonarjs/no-duplicated-branches': 'warn',
+    'sonarjs/no-nested-functions': 'warn',
+    'sonarjs/public-static-readonly': 'warn',
+
+    // Unicorn (included by SonarQube)
+    // https://github.com/SonarSource/SonarJS/blob/master/packages/jsts/src/rules/README.md#eslint-rules
+    'unicorn/catch-error-name': ['error', { ignore: ['err', 'e'] }],
+    'unicorn/consistent-date-clone': 'error',
+    'unicorn/consistent-empty-array-spread': 'error',
+    'unicorn/consistent-function-scoping': 'warn',
+    'unicorn/error-message': 'error',
+    'unicorn/new-for-builtins': 'error',
+    'unicorn/no-abusive-eslint-disable': 'error',
+    'unicorn/no-accessor-recursion': 'error',
+    'unicorn/no-anonymous-default-export': 'error',
+    'unicorn/no-array-method-this-argument': 'error',
+    'unicorn/no-await-expression-member': 'warn',
+    'unicorn/no-for-loop': 'error',
+    'unicorn/no-instanceof-builtins': 'error',
+    'unicorn/no-invalid-fetch-options': 'error',
+    'unicorn/no-named-default': 'error',
+    'unicorn/no-negated-condition': 'warn',
+    'unicorn/no-negation-in-equality-check': 'warn',
+    'unicorn/no-object-as-default-parameter': 'error',
+    'unicorn/no-single-promise-in-promise-methods': 'error',
+    'unicorn/no-thenable': 'error',
+    'unicorn/no-this-assignment': 'error',
+    'unicorn/no-typeof-undefined': 'error',
+    'unicorn/no-unnecessary-polyfills': 'error',
+    'unicorn/no-unreadable-iife': 'error',
+    'unicorn/no-useless-fallback-in-spread': 'error',
+    'unicorn/no-useless-length-check': 'error',
+    'unicorn/no-useless-promise-resolve-reject': 'error',
+    'unicorn/no-useless-spread': 'error',
+    'unicorn/no-zero-fractions': 'error',
+    'unicorn/numeric-separators-style': 'error',
+    'unicorn/prefer-array-find': 'error',
+    'unicorn/prefer-array-flat': 'error',
+    'unicorn/prefer-array-flat-map': 'error',
+    'unicorn/prefer-array-index-of': 'error',
+    'unicorn/prefer-array-some': 'error',
+    'unicorn/prefer-class-fields': 'error',
+    'unicorn/prefer-code-point': 'error',
+    'unicorn/prefer-date-now': 'error',
+    'unicorn/prefer-default-parameters': 'error',
+    'unicorn/prefer-dom-node-dataset': 'error',
+    'unicorn/prefer-dom-node-remove': 'error',
+    'unicorn/prefer-export-from': 'error',
+    'unicorn/prefer-global-this': 'off', // ?
+    'unicorn/prefer-includes': 'error',
+    'unicorn/prefer-math-min-max': 'error',
+    'unicorn/prefer-math-trunc': 'error',
+    'unicorn/prefer-modern-dom-apis': 'error',
+    'unicorn/prefer-modern-math-apis': 'error',
+    'unicorn/prefer-native-coercion-functions': 'error',
+    'unicorn/prefer-negative-index': 'error',
+    'unicorn/prefer-node-protocol': 'error',
+    'unicorn/prefer-number-properties': 'error',
+    'unicorn/prefer-prototype-methods': 'error',
+    'unicorn/prefer-regexp-test': 'error',
+    'unicorn/prefer-set-has': 'off', // Array.includes() is often faster in practice for small arrays; too strict
+    'unicorn/prefer-set-size': 'error',
+    'unicorn/prefer-single-call': 'error',
+    'unicorn/prefer-string-raw': 'warn',
+    'unicorn/prefer-string-replace-all': 'error',
+    'unicorn/prefer-string-trim-start-end': 'error',
+    'unicorn/prefer-structured-clone': 'warn', // ?
+    'unicorn/prefer-top-level-await': 'off', // ?
+    'unicorn/prefer-type-error': 'warn',
+    'unicorn/require-module-specifiers': 'error',
+    'unicorn/no-array-callback-reference': 'error',
+    'unicorn/no-array-for-each': 'error',
+    'unicorn/prefer-at': 'error',
+  },
+};
+
+/**
+ * Test config applies to all TypeScript test files.
+ * These are test-specific rules that don't apply to regular source files.
+ * @type {import("@eslint/config-helpers").ConfigWithExtends}
+ */
+export const testConfig = {
+  files: ['**/*.test.ts', '**/*.test.tsx'],
+  extends: [
+    {
+      languageOptions: {
+        parserOptions: { projectService: true },
+      },
+    },
+  ],
+  plugins: {
+    'no-only-tests': noOnlyTestsPlugin,
+  },
+  rules: {
     // No Only Tests
     'no-only-tests/no-only-tests': ['error', { fix: true }],
+
+    // SonarJS
+    'sonarjs/no-hardcoded-passwords': 'off',
+    'sonarjs/no-hardcoded-ip': 'off',
+    'sonarjs/no-hardcoded-secrets': 'off',
+    'sonarjs/slow-regex': 'off',
+    'sonarjs/no-duplicated-branches': 'off',
+    'sonarjs/no-identical-functions': 'off',
+    'sonarjs/publicly-writable-directories': 'off',
+    'sonarjs/no-nested-functions': 'off',
+    'unicorn/prefer-dom-node-dataset': 'off',
+  },
+};
+
+export const examplesConfig = {
+  files: ['packages/examples/**/*.ts', 'packages/examples/**/*.tsx'],
+  extends: [
+    {
+      languageOptions: {
+        parserOptions: { projectService: true },
+      },
+    },
+  ],
+  rules: {
+    // SonarJS
+    'sonarjs/no-hardcoded-passwords': 'off',
+    'sonarjs/no-hardcoded-ip': 'off',
+    'sonarjs/no-hardcoded-secrets': 'off',
+    'sonarjs/no-duplicated-branches': 'off',
+    'sonarjs/no-identical-functions': 'off',
+    'sonarjs/no-commented-code': 'off',
   },
 };
 
@@ -295,4 +437,6 @@ export const medplumEslintConfig = [
   },
   coreConfig,
   tsConfig,
+  testConfig,
+  examplesConfig,
 ];

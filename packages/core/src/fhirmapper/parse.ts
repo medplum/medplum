@@ -319,7 +319,7 @@ class StructureMapParser {
     const transformAtom = this.parser.consumeAndParse(OperatorPrecedence.As);
     if (transformAtom instanceof FunctionAtom) {
       result.transform = transformAtom.name as 'append' | 'truncate';
-      result.parameter = transformAtom.args?.map(atomToParameter);
+      result.parameter = transformAtom.args?.map((atom) => atomToParameter(atom));
     } else if (transformAtom instanceof LiteralAtom || transformAtom instanceof SymbolAtom) {
       result.transform = 'copy';
       result.parameter = [atomToParameter(transformAtom)];

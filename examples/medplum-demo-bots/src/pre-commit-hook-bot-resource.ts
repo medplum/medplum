@@ -110,15 +110,15 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Pat
         (id) => id.system === 'https://hapi-server.com/patient-id'
       );
 
-      if (!existingHapiIdentifier) {
+      if (existingHapiIdentifier) {
+        // Update existing identifier value
+        existingHapiIdentifier.value = hapiPatientId;
+      } else {
         // Add new HAPI identifier
         updatedIdentifiers.push({
           system: 'https://hapi-server.com/patient-id',
           value: hapiPatientId,
         } as Identifier);
-      } else {
-        // Update existing identifier value
-        existingHapiIdentifier.value = hapiPatientId;
       }
 
       // Return updated patient object with HAPI server ID

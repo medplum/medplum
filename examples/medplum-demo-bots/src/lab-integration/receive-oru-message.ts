@@ -26,7 +26,7 @@ import type {
   Specimen,
 } from '@medplum/fhirtypes';
 import type { ReadStream } from 'ssh2';
-import { default as SftpClient } from 'ssh2-sftp-client';
+import SftpClient from 'ssh2-sftp-client';
 
 // Timezone offset of partner lab
 const PARTNER_TIMEZONE = '-05:00';
@@ -71,7 +71,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const fileContents = await readSFTPDirectory(sftp, 'out');
 
     // Parse file contents into structured Hl7Message objects
-    const messages = fileContents.map(Hl7Message.parse);
+    const messages = fileContents.map((c) => Hl7Message.parse(c));
 
     for (const message of messages) {
       try {
@@ -127,9 +127,8 @@ export async function processOruMessage(
 
   if (!serviceRequest) {
     throw new Error(`Could not find ServiceRequest with id ${orderId}`);
-  } else {
-    console.log(`Processing order with id ${orderId}...`);
   }
+  console.log(`Processing order with id ${orderId}...`);
 
   // Find any existing `Observation`, `DiagnosticReport`, and `Specimen` resources associated with this order
   const existingObservations = await medplum.searchResources('Observation', {
@@ -182,7 +181,7 @@ export async function processOruMessage(
   );
 
   // Update the DiagnosticReport in medplum
-  report.result = observations.map(createReference);
+  report.result = observations.map((o) => createReference(o));
   if (existingReport) {
     await medplum.updateResource(report);
   } else {
@@ -493,7 +492,7 @@ async function uploadEmbeddedPdfs(
 
   if (media.length > 0) {
     if (!report.presentedForm) {
-      report.presentedForm = [];
+      report.presentedForm ??= [];
     }
     report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content));
   }
@@ -504,7 +503,7 @@ async function uploadEmbeddedPdfs(
 /* Parsing Utilities */
 
 function parseValueWithComparator(value: string): Quantity | undefined {
-  const match = value.match(/([<>][=]?)(\d+(\.\d+)?)/);
+  const match = /([<>]=?)(\d+(\.\d+)?)/.exec(value);
   if (match) {
     return {
       comparator: match[1] as Quantity['comparator'],

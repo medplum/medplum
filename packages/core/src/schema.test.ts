@@ -36,7 +36,7 @@ describe('FHIR schema', () => {
       const issues = [] as OperationOutcomeIssue[];
       checkForNull(input, '', issues);
       if (issues.length > 0) {
-        throw new Error();
+        throw new Error('=(');
       }
     }
 

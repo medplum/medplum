@@ -3,7 +3,7 @@
 import type { OperationOutcomeError, WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';

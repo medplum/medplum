@@ -225,9 +225,5 @@ function checkQuestionnairesUploaded(medplum: MedplumClient): boolean {
 
 function checkBotsUploaded(medplum: MedplumClient): boolean {
   const exampleBots = medplum.searchResources('Bot', { name: 'intake-form' }).read();
-
-  if (exampleBots.length === 1) {
-    return true;
-  }
-  return false;
+  return exampleBots.length === 1;
 }

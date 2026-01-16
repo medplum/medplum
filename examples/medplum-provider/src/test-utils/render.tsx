@@ -5,16 +5,16 @@
 // See: https://mantine.dev/guides/vitest/
 
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
+import { render as testingLibraryRender } from '@testing-library/react';
 import type { RenderResult } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import type { UserEvent } from '@testing-library/user-event';
-
-export type { RenderResult, UserEvent };
-export { act, fireEvent, screen, userEvent, waitFor };
 
 export function render(ui: React.ReactNode): RenderResult {
   return testingLibraryRender(<>{ui}</>, {
     wrapper: ({ children }: { children: React.ReactNode }) => <MantineProvider>{children}</MantineProvider>,
   });
 }
+
+export { act, fireEvent, screen, waitFor } from '@testing-library/react';
+export type { RenderResult } from '@testing-library/react';
+export { default as userEvent } from '@testing-library/user-event';
+export type { UserEvent } from '@testing-library/user-event';

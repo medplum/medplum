@@ -10,7 +10,7 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { getServiceDisplayString, getServiceFee, handler } from './superbill';
 import { testData } from './superbill-test-data';
 

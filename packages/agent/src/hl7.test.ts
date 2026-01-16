@@ -13,9 +13,9 @@ import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhir
 import type { Hl7Connection } from '@medplum/hl7';
 import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
-import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
+import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import type { AppLevelAckMode } from './hl7';
 import {
@@ -127,7 +127,7 @@ describe('HL7', () => {
 
     const client = new Hl7Client({
       host: 'localhost',
-      port: 57000,
+      port: 57_000,
     });
 
     const response = await client.sendAndWait(
@@ -211,7 +211,7 @@ describe('HL7', () => {
 
     const client = new Hl7Client({
       host: 'localhost',
-      port: 57000,
+      port: 57_000,
     });
 
     await client.send(
@@ -298,7 +298,7 @@ describe('HL7', () => {
 
     const client = new Hl7Client({
       host: 'localhost',
-      port: 57000,
+      port: 57_000,
     });
 
     await client.send(
@@ -385,7 +385,7 @@ describe('HL7', () => {
 
     const client = new Hl7Client({
       host: 'localhost',
-      port: 57000,
+      port: 57_000,
     });
 
     const response = await client.sendAndWait(
@@ -476,7 +476,7 @@ describe('HL7', () => {
 
     const client = new Hl7Client({
       host: 'localhost',
-      port: 57010,
+      port: 57_010,
     });
 
     const startTime = Date.now();
@@ -606,7 +606,7 @@ describe('HL7', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57001);
+    await hl7Server.start(57_001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -696,7 +696,7 @@ describe('HL7', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57001);
+    await hl7Server.start(57_001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -993,7 +993,7 @@ describe('HL7', () => {
         conn.socket.destroy();
       });
     });
-    await hl7Server.start(57001);
+    await hl7Server.start(57_001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -1114,7 +1114,7 @@ describe('HL7', () => {
         });
       }
     });
-    await hl7Server.start(57001);
+    await hl7Server.start(57_001);
 
     // Start the app
     const app = new App(medplum, agent.id, LogLevel.INFO);
@@ -1252,7 +1252,7 @@ describe('HL7', () => {
         });
       });
     });
-    await hl7Server.start(57002);
+    await hl7Server.start(57_002);
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
@@ -1387,7 +1387,7 @@ describe('HL7', () => {
         });
       });
     });
-    await hl7Server.start(57003);
+    await hl7Server.start(57_003);
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
@@ -1504,7 +1504,7 @@ describe('HL7', () => {
         });
       });
     });
-    await hl7Server.start(57004);
+    await hl7Server.start(57_004);
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
@@ -1612,16 +1612,14 @@ describe('HL7', () => {
     });
 
     const releaseMessages: (() => void)[] = [];
-    const hl7Messages: Hl7Message[] = [];
     const hl7Server = new Hl7Server((conn) => {
       conn.addEventListener('message', ({ message }) => {
-        hl7Messages.push(message);
         releaseMessages.push(() => {
           conn.send(message.buildAck());
         });
       });
     });
-    await hl7Server.start(57005);
+    await hl7Server.start(57_005);
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
@@ -1742,7 +1740,7 @@ describe('HL7', () => {
         conn.send(message.buildAck());
       });
     });
-    await hl7Server.start(57006);
+    await hl7Server.start(57_006);
 
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
@@ -1911,7 +1909,7 @@ describe('HL7', () => {
 
       const client = new Hl7Client({
         host: 'localhost',
-        port: 57100,
+        port: 57_100,
       });
 
       // Send multiple messages in sequence
@@ -2027,7 +2025,7 @@ describe('HL7', () => {
 
       const client = new Hl7Client({
         host: 'localhost',
-        port: 57101,
+        port: 57_101,
       });
 
       // Send 3 messages before reload
@@ -2182,7 +2180,7 @@ describe('HL7', () => {
 
       const client = new Hl7Client({
         host: 'localhost',
-        port: 57102,
+        port: 57_102,
       });
 
       // Send 3 messages before reload
@@ -2359,7 +2357,7 @@ describe('HL7', () => {
 
       const client = new Hl7Client({
         host: 'localhost',
-        port: 57090,
+        port: 57_090,
       });
 
       // Disable ACKs temporarily so we can check pending state
@@ -3000,7 +2998,7 @@ describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
     return {
       socket: {
         remoteAddress: '127.0.0.1',
-        remotePort: 12345,
+        remotePort: 12_345,
       },
       addEventListener: jest.fn((event: string, listener: (...args: any[]) => void) => {
         const listeners = eventListeners.get(event) ?? [];

@@ -147,6 +147,7 @@ class AsyncCrawler {
   private readonly initialPath: string;
   private readonly excludeMissingProperties?: boolean;
 
+  // eslint-disable-next-line sonarjs/no-identical-functions
   constructor(root: TypedValue, visitor: AsyncCrawlerVisitor, options?: CrawlerOptions) {
     this.root = root;
     this.visitor = visitor;

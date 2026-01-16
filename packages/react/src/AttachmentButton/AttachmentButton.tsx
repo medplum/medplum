@@ -30,7 +30,9 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
     killEvent(e);
     const files = (e.target as HTMLInputElement).files;
     if (files) {
-      Array.from(files).forEach(processFile);
+      for (const file of Array.from(files)) {
+        processFile(file);
+      }
     }
   }
 

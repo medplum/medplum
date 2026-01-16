@@ -221,7 +221,7 @@ describe('TaskDetailsModal', () => {
       expect(medplum.updateResource).toHaveBeenCalled();
       const calls = (medplum.updateResource as any).mock.calls;
       expect(calls.length).toBeGreaterThan(0);
-      const updatedTask = calls[calls.length - 1][0] as Task;
+      const updatedTask = calls.at(-1)[0] as Task;
       expect(updatedTask.note).toBeDefined();
       expect(updatedTask.note?.[0].text).toBe('Comprehensive update');
     });
@@ -247,7 +247,7 @@ describe('TaskDetailsModal', () => {
       expect(medplum.updateResource).toHaveBeenCalled();
       const calls = (medplum.updateResource as any).mock.calls;
       if (calls.length > 0) {
-        const updatedTask = calls[calls.length - 1][0] as Task;
+        const updatedTask = calls.at(-1)[0] as Task;
         expect(updatedTask.note).toBeUndefined();
       }
     });

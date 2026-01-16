@@ -28,7 +28,8 @@ export async function main(): Promise<void> {
     port: 5432,
     database: 'medplum',
     user: 'medplum',
-    password: 'medplum',
+    // eslint-disable-next-line sonarjs/no-hardcoded-passwords
+    password: 'medplum', // Development environment password
   });
   const options: BuildMigrationOptions = {
     dbClient,
@@ -83,7 +84,7 @@ export async function main(): Promise<void> {
 
 function getNextVersion(dir: string = SCHEMA_DIR): number {
   const [lastVersion] = getMigrationFilenames(dir)
-    .map(getVersionFromFilename)
+    .map((name) => getVersionFromFilename(name))
     .sort((a, b) => b - a);
 
   return lastVersion + 1;
@@ -96,7 +97,7 @@ function rewriteMigrationExports(dir: string): void {
   );
   b.newLine();
   const filenamesWithoutExt = getMigrationFilenames(dir)
-    .map(getVersionFromFilename)
+    .map((name) => getVersionFromFilename(name))
     .sort((a, b) => a - b)
     .map((version) => `v${version}`);
   for (const filename of filenamesWithoutExt) {
@@ -127,8 +128,8 @@ function getVersionFromFilename(filename: string): number {
 }
 
 if (import.meta.main) {
-  main().catch((reason) => {
-    console.error(reason);
+  main().catch((err) => {
+    console.error(err);
     process.exit(1);
   });
 }

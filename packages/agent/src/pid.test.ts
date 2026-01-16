@@ -121,7 +121,7 @@ describe('PID File Manager', () => {
     const originalKill = process.kill;
     process.kill = jest.fn().mockImplementation(() => {
       // This is the Error thrown from Node when a process does not exist
-      const esrchError = new Error();
+      const esrchError = new Error('=(');
       (esrchError as Error & { code: string }).code = 'ESRCH';
       throw esrchError;
     });
@@ -154,7 +154,7 @@ describe('PID File Manager', () => {
     // Mock process.kill to simulate non-existent process
     const originalKill = process.kill;
     process.kill = jest.fn().mockImplementation(() => {
-      const epermError = new Error();
+      const epermError = new Error('=(');
       (epermError as Error & { code: string }).code = 'EPERM';
       throw epermError;
     });

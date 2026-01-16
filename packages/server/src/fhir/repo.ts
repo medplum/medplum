@@ -1197,9 +1197,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
-    // eslint-disable-next-line @typescript-eslint/prefer-for-of
-    for (let i = 0; i < resources.length; i++) {
-      const resource = resources[i];
+
+    for (const resource of resources) {
       const meta = resource.meta as Meta;
       meta.compartment = this.getCompartments(resource);
 
@@ -2649,8 +2648,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // their indices in the original array so that the result array
     // is constructed in the correct order.
     const referenceKeyIndices: number[] = new Array(references.length);
-    for (let i = 0; i < references.length; i++) {
-      const r = references[i];
+    for (const [i, r] of references.entries()) {
       if (r.reference) {
         referenceKeys.push(r.reference);
         referenceKeyIndices[i] = referenceKeys.length - 1;

@@ -109,10 +109,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
       location: location ? [{ location: createReference(location) }] : undefined,
     });
   } else if (messageSubtype === 'A08') {
-    let encounter = await medplum.searchOne('Encounter', 'subject=Patient/' + patient.id + '&status=arrived');
+    const encounter = await medplum.searchOne('Encounter', 'subject=Patient/' + patient.id + '&status=arrived');
     if (encounter) {
       encounter.status = 'finished';
-      encounter = await medplum.updateResource<Encounter>(encounter);
+      await medplum.updateResource<Encounter>(encounter);
     }
   }
   // Return Ack

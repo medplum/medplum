@@ -9,17 +9,17 @@ export function getVersionUrl(resource: Resource, versionId: string): string {
 export function getTimeString(lastUpdated: string): string {
   const seconds = Math.floor((Date.now() - Date.parse(lastUpdated)) / 1000);
 
-  const years = Math.floor(seconds / 31536000);
+  const years = Math.floor(seconds / 31_536_000);
   if (years > 0) {
     return pluralizeTime(years, 'year');
   }
 
-  const months = Math.floor(seconds / 2592000);
+  const months = Math.floor(seconds / 2_592_000);
   if (months > 0) {
     return pluralizeTime(months, 'month');
   }
 
-  const days = Math.floor(seconds / 86400);
+  const days = Math.floor(seconds / 86_400);
   if (days > 0) {
     return pluralizeTime(days, 'day');
   }

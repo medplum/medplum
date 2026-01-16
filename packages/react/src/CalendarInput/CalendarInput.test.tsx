@@ -47,7 +47,7 @@ describe('CalendarInput', () => {
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     // Add a slot on the 15th of next month
-    const startTime = new Date(nextMonth.getTime());
+    const startTime = new Date(nextMonth);
     startTime.setDate(15);
     startTime.setHours(12, 0, 0, 0);
 

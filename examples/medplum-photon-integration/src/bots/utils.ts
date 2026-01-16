@@ -11,7 +11,7 @@ import type {
   MedicationRequest,
   Patient,
 } from '@medplum/fhirtypes';
-import { createHmac } from 'crypto';
+import { createHmac } from 'node:crypto';
 import type { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 
@@ -127,17 +127,7 @@ export async function handlePhotonAuth(clientId?: string, clientSecret?: string)
 }
 
 export function checkForDuplicateEvent(event: PhotonEvent, medicationRequest?: MedicationRequest): boolean {
-  if (!medicationRequest) {
-    return false;
-  }
-
-  const dupe = medicationRequest.identifier?.find((id) => id.value === event.id);
-
-  if (dupe) {
-    return true;
-  } else {
-    return false;
-  }
+  return medicationRequest?.identifier?.some((id) => id.value === event.id) ?? false;
 }
 
 export function verifyEvent(photonEvent: PhotonWebhook, secret: string): boolean {

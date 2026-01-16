@@ -3,9 +3,9 @@
 import { ContentType } from '@medplum/core';
 import type { DocumentReference, Media } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
-import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
-import { Readable } from 'stream';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
@@ -54,6 +54,7 @@ describe('Download Worker', () => {
 
         const body = new Readable();
         body.push('foo');
+        // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
         body.push(null);
 
         (fetch as unknown as jest.Mock).mockImplementation(() => ({
@@ -165,7 +166,7 @@ describe('Download Worker', () => {
       expect(queue.add).toHaveBeenCalled();
 
       (fetch as unknown as jest.Mock).mockImplementation(() => {
-        throw new Error();
+        throw new Error('=(');
       });
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
@@ -454,10 +455,12 @@ describe('Download Worker', () => {
 
       const body1 = new Readable();
       body1.push('foo1');
+      // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
       body1.push(null);
 
       const body2 = new Readable();
       body2.push('foo2');
+      // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
       body2.push(null);
 
       (fetch as unknown as jest.Mock).mockImplementation((url: string) =>

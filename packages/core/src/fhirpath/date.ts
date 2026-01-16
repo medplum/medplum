@@ -16,7 +16,7 @@ export function parseDateString(str: string): string {
   try {
     // Try to normalize to UTC
     return new Date(str).toISOString();
-  } catch (_err) {
+  } catch {
     // Fallback to original input
     // This happens on unsupported time formats such as "2021-01-01T12"
     return str;

@@ -76,7 +76,7 @@ export class Tokenizer {
   }
 
   private prevToken(): Token | undefined {
-    return this.result.slice(-1)[0];
+    return this.result.at(-1);
   }
 
   private peekToken(): Token | undefined {
@@ -114,15 +114,15 @@ export class Tokenizer {
       return this.consumeDateTime();
     }
 
-    if (/\d/.exec(c)) {
+    if (/\d/.test(c)) {
       return this.consumeNumber();
     }
 
-    if (/\w/.exec(c)) {
+    if (/\w/.test(c)) {
       return this.consumeSymbol();
     }
 
-    if ((c === '$' || c === '%') && /\w/.exec(next)) {
+    if ((c === '$' || c === '%') && /\w/.test(next)) {
       return this.consumeSymbol();
     }
 
@@ -225,7 +225,7 @@ export class Tokenizer {
       this.advance();
       this.consumeWhile(() => /[\d:]/.exec(this.curr()));
 
-      if (this.curr() === '.' && /\d/.exec(this.peek())) {
+      if (this.curr() === '.' && /\d/.test(this.peek())) {
         this.advance();
         this.consumeWhile(() => /\d/.exec(this.curr()));
       }
@@ -263,7 +263,7 @@ export class Tokenizer {
     let id = 'Number';
     this.consumeWhile(() => /\d/.exec(this.curr()));
 
-    if (this.curr() === '.' && /\d/.exec(this.peek())) {
+    if (this.curr() === '.' && /\d/.test(this.peek())) {
       this.advance();
       this.consumeWhile(() => /\d/.exec(this.curr()));
     }

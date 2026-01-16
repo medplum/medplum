@@ -4,7 +4,7 @@ import type { OperationOutcomeError } from '@medplum/core';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 

@@ -10,8 +10,8 @@ import {
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import {
   HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,

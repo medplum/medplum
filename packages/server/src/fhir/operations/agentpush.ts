@@ -18,8 +18,8 @@ export interface AgentPushParameters {
   waitTimeout?: number;
 }
 
-const DEFAULT_WAIT_TIMEOUT = 10000;
-const MAX_WAIT_TIMEOUT = 55000;
+const DEFAULT_WAIT_TIMEOUT = 10_000;
+const MAX_WAIT_TIMEOUT = 55_000;
 
 /**
  * Handles HTTP requests for the Agent $push operation.

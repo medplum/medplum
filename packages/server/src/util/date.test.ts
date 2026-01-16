@@ -109,6 +109,7 @@ describe('areIntervalsOverlapping', () => {
       start: new Date('2026-01-15'),
       end: new Date('2026-01-25'),
     };
+    // eslint-disable-next-line sonarjs/arguments-order
     expect(areIntervalsOverlapping(left, right)).toBe(areIntervalsOverlapping(right, left));
   });
 });

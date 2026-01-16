@@ -4,8 +4,8 @@ import { getReferenceString, MedplumClient, resolveId } from '@medplum/core';
 import type { WithId } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { Command } from 'commander';
-import { readFileSync } from 'fs';
-import path from 'path';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 // Define the import-healthie-patients bot
 const IMPORTER_BOT = {
@@ -81,7 +81,9 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
   });
 
   // If bot already exists, return it without creating a new one
-  if (!existing) {
+  if (existing) {
+    console.log(`Found existing Bot/${existing.id}`);
+  } else {
     console.log('No existing connector found. Creating...');
     // Create the bot resource in the project
     existing = await medplum
@@ -101,8 +103,6 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
         throw new Error(e);
       });
     console.log(`Successfully created Bot/${existing.id}`);
-  } else {
-    console.log(`Found existing Bot/${existing.id}`);
   }
 
   // Update the bot with additional fields and runAsUser flag

@@ -6,13 +6,13 @@ import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplu
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import { authenticator } from 'otplib';
-import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -1122,7 +1122,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Welcome to Medplum');
 
-    const setPasswordUrl = parsed.text?.match(/http[s]?:\/\/[^\s]+/)?.[0];
+    const setPasswordUrl = parsed.text?.match(/https?:\/\/[^\s]+/)?.[0];
     expect(setPasswordUrl).toBeDefined();
 
     const setPasswordUrlParts = setPasswordUrl?.split('/') as string[];

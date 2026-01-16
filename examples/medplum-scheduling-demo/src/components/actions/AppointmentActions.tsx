@@ -83,17 +83,17 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
         </Button>
       ) : null}
       {/* Only show "Reschedule" if not already completed */}
-      {appointment.status !== 'fulfilled' ? (
+      {appointment.status === 'fulfilled' ? null : (
         <Button leftSection={<IconCircleCheck size={16} />} onClick={() => rescheduleHandlers.open()}>
           Reschedule
         </Button>
-      ) : null}
+      )}
       {/* Only show "Cancel" if not already cancelled */}
-      {appointment.status !== 'cancelled' ? (
+      {appointment.status === 'cancelled' ? null : (
         <Button leftSection={<IconCancel size={16} />} onClick={() => handleCancelAppointment()}>
           Cancel
         </Button>
-      ) : null}
+      )}
     </Stack>
   );
 }

@@ -222,7 +222,7 @@ async function getBotCode(medplum: MedplumClient, bot: Bot): Promise<string> {
     // So instead, we have to use the FHIR Binary API to fetch the source code.
     // Example: https://storage.staging.medplum.com/binary/272a11dc-5b01-4c05-a14e-5bf53117e1e9/69303e8d-36f2-4417-b09b-60c15f221b09?Expires=...
     // The Binary ID is the first UUID in the URL.
-    const binaryId = bot.sourceCode.url?.split('/')?.find(isUUID) as string;
+    const binaryId = bot.sourceCode.url?.split('/')?.find((el) => isUUID(el)) as string;
     const blob = await medplum.download(medplum.fhirUrl('Binary', binaryId));
     return blob.text();
   }

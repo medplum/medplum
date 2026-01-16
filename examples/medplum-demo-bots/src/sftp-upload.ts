@@ -15,6 +15,7 @@ export async function handler(): Promise<Client.FileInfo[] | boolean> {
     await sftp.connect({
       host: 'test.rebex.net',
       username: 'demo',
+      // eslint-disable-next-line sonarjs/no-hardcoded-passwords
       password: 'password',
     });
     data = await sftp.list('.');

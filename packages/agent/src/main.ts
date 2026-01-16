@@ -26,8 +26,10 @@ export async function main(argv: string[]): Promise<void> {
     const currentServiceName = `MedplumAgent_${MEDPLUM_VERSION}`;
 
     while (!allAgentServices.includes(currentServiceName)) {
+      // eslint-disable-next-line sonarjs/no-os-command-from-path
       const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
       appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
+      // eslint-disable-next-line sonarjs/os-command
       allAgentServices = output
         .toString()
         .trim()
@@ -47,6 +49,7 @@ export async function main(argv: string[]): Promise<void> {
     for (const serviceName of servicesToRemove) {
       // We try to stop the service and continue even if it fails
       try {
+        // eslint-disable-next-line sonarjs/os-command
         execSync(`net stop ${serviceName}`);
         appendFileSync(logFileFd, `${serviceName} stopped\r\n`, { encoding: 'utf-8' });
         console.log(`${serviceName} stopped`);
@@ -58,6 +61,7 @@ export async function main(argv: string[]): Promise<void> {
       }
       // We try to delete the service even if stopping it failed
       try {
+        // eslint-disable-next-line sonarjs/os-command
         execSync(`sc.exe delete ${serviceName}`);
         appendFileSync(logFileFd, `${serviceName} deleted\r\n`, { encoding: 'utf-8' });
         console.log(`${serviceName} deleted`);

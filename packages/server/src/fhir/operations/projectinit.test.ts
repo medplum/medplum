@@ -3,10 +3,10 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference, isUUID } from '@medplum/core';
 import type { Practitioner, Project } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';

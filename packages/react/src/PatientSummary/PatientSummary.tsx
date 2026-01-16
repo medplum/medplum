@@ -159,7 +159,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       medplum
         .readHistory('Patient', patient.id)
         .then((history) => {
-          const firstEntry = history.entry?.[history.entry.length - 1];
+          const firstEntry = history.entry?.at(-1);
           const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
           setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
         })

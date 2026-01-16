@@ -12,7 +12,7 @@ export const RESOURCE_TYPE_CREATION_PATHS: Partial<Record<ResourceType, string>>
 export function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(resourceType);
-  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
+  const filters = search.filters ?? (search.resourceType ? undefined : getDefaultFilters(resourceType));
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
   const offset = search.offset ?? 0;
   const count = search.count ?? DEFAULT_SEARCH_COUNT;

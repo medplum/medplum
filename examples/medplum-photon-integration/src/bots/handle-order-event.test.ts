@@ -70,7 +70,7 @@ describe('Order event handler', async () => {
     expect(dispenses?.length).toBe(1);
     expect(dispenses?.[0].status).toBe('in-progress');
     expect(updatedPrescription.status).toBe('active');
-  }, 10000);
+  }, 10_000);
 
   test.skip('Fill with no authorizing prescription', async () => {
     const medplum = new MockClient();

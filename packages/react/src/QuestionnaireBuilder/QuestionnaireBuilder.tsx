@@ -408,14 +408,14 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
   const options = props.item.answerOption ?? [];
   return (
     <div>
-      {props.item.answerValueSet !== undefined ? (
+      {props.item.answerValueSet === undefined ? (
+        <AnswerOptionsInput options={options} property={property} item={props.item} onChange={props.onChange} />
+      ) : (
         <TextInput
           placeholder="Enter Value Set"
           defaultValue={props.item.answerValueSet}
           onChange={(e) => props.onChange({ ...props.item, answerValueSet: e.target.value })}
         />
-      ) : (
-        <AnswerOptionsInput options={options} property={property} item={props.item} onChange={props.onChange} />
       )}
       <Box display="flex">
         <Anchor
@@ -614,14 +614,14 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   if (!items) {
     return undefined;
   }
-  items.forEach((item) => {
+  for (const item of items) {
     if (item.id?.match(/^id-\d+$/)) {
       nextId = Math.max(nextId, Number.parseInt(item.id.substring(3), 10) + 1);
     }
-    if (item.linkId?.match(/^q\d+$/)) {
+    if (/^q\d+$/.test(item.linkId)) {
       nextLinkId = Math.max(nextLinkId, Number.parseInt(item.linkId.substring(1), 10) + 1);
     }
-  });
+  }
   return items.map((item) => ({
     ...item,
     id: item.id || generateId(),

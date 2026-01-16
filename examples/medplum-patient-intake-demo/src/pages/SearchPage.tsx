@@ -64,7 +64,7 @@ export function SearchPage(): JSX.Element {
 function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(search.resourceType);
-  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
+  const filters = search.filters ?? (search.resourceType ? undefined : getDefaultFilters(resourceType));
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
 
   return {

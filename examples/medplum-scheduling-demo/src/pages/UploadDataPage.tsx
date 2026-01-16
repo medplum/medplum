@@ -159,7 +159,6 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 
 function checkBotsUploaded(medplum: MedplumClient): boolean {
   const bots = medplum.searchResources('Bot').read();
-
   const exampleBots = bots.filter(
     (bot) =>
       bot.name &&
@@ -167,11 +166,7 @@ function checkBotsUploaded(medplum: MedplumClient): boolean {
         bot.name
       )
   );
-
-  if (exampleBots.length === 5) {
-    return true;
-  }
-  return false;
+  return exampleBots.length === 5;
 }
 
 async function uploadExampleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {

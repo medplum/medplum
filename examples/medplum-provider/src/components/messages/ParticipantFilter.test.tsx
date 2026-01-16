@@ -373,6 +373,7 @@ describe('ParticipantFilter', () => {
 
     const closeButtons = document.querySelectorAll('button[class*="CloseButton"]');
     expect(closeButtons.length).toBeGreaterThan(0);
+    // eslint-disable-next-line unicorn/prefer-at -- NodeList doesn't support at()
     const participantCloseButton = closeButtons[closeButtons.length - 1];
     await user.click(participantCloseButton);
 

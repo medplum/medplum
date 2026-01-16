@@ -33,8 +33,8 @@ import type {
   Timing,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { generateId } from '../crypto';
@@ -1085,7 +1085,7 @@ describe('FHIR resource validation', () => {
       'Invalid JSON type: expected number, but got string (Media.duration)'
     );
 
-    media.duration = NaN;
+    media.duration = Number.NaN;
     expect(() => validateResource(media)).toThrow('Invalid numeric value (Media.duration)');
 
     media.duration = Infinity;
@@ -1145,7 +1145,7 @@ describe('FHIR resource validation', () => {
       'Invalid JSON type: expected number, but got string (SubstanceProtein.numberOfSubunits)'
     );
 
-    sp.numberOfSubunits = NaN;
+    sp.numberOfSubunits = Number.NaN;
     expect(() => validateResource(sp)).toThrow('Invalid numeric value (SubstanceProtein.numberOfSubunits)');
 
     sp.numberOfSubunits = Infinity;
@@ -1196,7 +1196,7 @@ describe('FHIR resource validation', () => {
       'Invalid JSON type: expected number, but got string (Appointment.minutesDuration)'
     );
 
-    appt.minutesDuration = NaN;
+    appt.minutesDuration = Number.NaN;
     expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.minutesDuration)');
 
     appt.minutesDuration = Infinity;
@@ -1231,7 +1231,7 @@ describe('FHIR resource validation', () => {
       'Invalid JSON type: expected number, but got string (Appointment.priority)'
     );
 
-    appt.priority = NaN;
+    appt.priority = Number.NaN;
     expect(() => validateResource(appt)).toThrow('Invalid numeric value (Appointment.priority)');
 
     appt.priority = Infinity;

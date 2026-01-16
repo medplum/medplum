@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { HeaderSearchInput } from './HeaderSearchInput';

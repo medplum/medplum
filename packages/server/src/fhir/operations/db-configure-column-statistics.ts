@@ -56,7 +56,7 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
       throw new OperationOutcomeError(badRequest('Missing newStatisticsTarget'));
     }
 
-    if (params.newStatisticsTarget < 100 || params.newStatisticsTarget > 10000) {
+    if (params.newStatisticsTarget < 100 || params.newStatisticsTarget > 10_000) {
       throw new OperationOutcomeError(badRequest('newStatisticsTarget must be between 100 and 10000'));
     }
 

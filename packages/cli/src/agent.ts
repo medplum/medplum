@@ -113,7 +113,7 @@ agentPingCommand
 
     const count = Number.parseInt(options.count, 10);
     if (Number.isNaN(count)) {
-      throw new Error('--count <count> must be an integer if specified');
+      throw new TypeError('--count <count> must be an integer if specified');
     }
 
     try {
@@ -460,7 +460,7 @@ export function extractValueFromParametersParameter(paramName: string, paramsPar
 
 export function parseEitherIdsOrCriteria(agentIds: string[], options: { criteria: string }): ValidIdsOrCriteria {
   if (!Array.isArray(agentIds)) {
-    throw new Error('Invalid agent IDs array');
+    throw new TypeError('Invalid agent IDs array');
   }
   if (agentIds.length) {
     // Check that options.criteria is not defined
@@ -488,7 +488,7 @@ function assertValidAgentCriteria(criteria: string): void {
   const invalidCriteriaMsg =
     "Criteria must be formatted as a string containing the resource type (Agent) followed by a '?' and valid URL search query params, eg. `Agent?name=Test Agent`";
   if (typeof criteria !== 'string') {
-    throw new Error(invalidCriteriaMsg);
+    throw new TypeError(invalidCriteriaMsg);
   }
   const [resourceType, queryStr] = criteria.split('?');
   if (resourceType !== 'Agent' || !queryStr) {

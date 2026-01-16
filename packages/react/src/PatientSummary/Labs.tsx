@@ -31,12 +31,12 @@ export function Labs(props: LabsProps): JSX.Element {
   const filteredDiagnosticReports = diagnosticReports.filter((report) => {
     const flag = isLaboratoryReport(report);
     if (flag && report.basedOn) {
-      report.basedOn.forEach((basedOn) => {
+      for (const basedOn of report.basedOn) {
         if (basedOn.reference?.startsWith('ServiceRequest/')) {
           const [, id] = basedOn.reference.split('/');
           diagnosticReportsRequests.add(id);
         }
-      });
+      }
     }
     return flag;
   });

@@ -194,11 +194,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     const newSelected = {} as { [id: string]: boolean };
     const searchResponse = stateRef.current.searchResponse;
     if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach((entry) => {
+      for (const entry of searchResponse.entry) {
         if (entry.resource?.id) {
           newSelected[entry.resource.id] = true;
         }
-      });
+      }
     }
     setState({ ...stateRef.current, selected: newSelected });
   }

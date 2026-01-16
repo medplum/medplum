@@ -81,11 +81,11 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     const newSelected = {} as { [id: string]: boolean };
     const resources = responseRef.current?.data.ResourceList;
     if (checked && resources) {
-      resources.forEach((resource) => {
+      for (const resource of resources) {
         if (resource.id) {
           newSelected[resource.id] = true;
         }
-      });
+      }
     }
     setSelected(newSelected);
   }

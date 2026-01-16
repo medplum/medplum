@@ -33,7 +33,7 @@ export function SensitiveTextarea(props: Omit<SensitiveTextareaProps, 'ref'>): J
         styles={{
           ...styles,
           root: {
-            ...(styles.root ?? {}),
+            ...styles.root,
             flexGrow: 1,
           },
         }}

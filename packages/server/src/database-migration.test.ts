@@ -4,8 +4,8 @@ import type { WithId } from '@medplum/core';
 import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
@@ -53,7 +53,7 @@ const mockMarkPostDeployMigrationCompleted = jest
   >()
   .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
     if (!Number.isInteger(dataVersion)) {
-      throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
+      throw new TypeError('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
     }
     return dataVersion;
   });

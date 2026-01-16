@@ -127,7 +127,7 @@ async function getCountsByResourceType(
 
   // Extract counts from the response
   const counts = (response.entry as BundleEntry[]).map((entry: BundleEntry) => {
-    return ((entry.resource as Bundle)?.total as number) ?? NaN;
+    return ((entry.resource as Bundle)?.total as number) ?? Number.NaN;
   });
 
   console.log('Successfully retrieved resource counts');

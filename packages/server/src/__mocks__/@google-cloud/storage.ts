@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { PassThrough } from 'stream';
+import { PassThrough } from 'node:stream';
 
 /**
  * This is a Jest mock for the Google Cloud Storage client library.

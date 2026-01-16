@@ -299,8 +299,7 @@ async function validateAccessPolicies(
   const results = await systemRepo.readReferences<AccessPolicy>(references);
 
   // Validate each result
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
+  for (const [i, result] of results.entries()) {
     const reference = references[i];
     const policyRefString = getReferenceString(reference);
 

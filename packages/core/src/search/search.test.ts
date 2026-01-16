@@ -33,7 +33,7 @@ describe('Search Utils', () => {
     ],
     [
       // Should ignore _ query parameter in query string
-      `Patient?name=Alice&_=${new Date().getTime()}`,
+      `Patient?name=Alice&_=${Date.now()}`,
       {
         resourceType: 'Patient',
         filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
@@ -513,9 +513,9 @@ describe('Search Utils', () => {
     expect(splitSearchOnComma('x,')).toStrictEqual(['x', '']);
     expect(splitSearchOnComma(',y')).toStrictEqual(['', 'y']);
     expect(splitSearchOnComma('x,,y')).toStrictEqual(['x', '', 'y']);
-    expect(splitSearchOnComma('x\\,y')).toStrictEqual(['x,y']);
-    expect(splitSearchOnComma('x\\,')).toStrictEqual(['x,']);
-    expect(splitSearchOnComma('\\,y')).toStrictEqual([',y']);
-    expect(splitSearchOnComma('x\\,,y')).toStrictEqual(['x,', 'y']);
+    expect(splitSearchOnComma(String.raw`x\,y`)).toStrictEqual(['x,y']);
+    expect(splitSearchOnComma(String.raw`x\,`)).toStrictEqual(['x,']);
+    expect(splitSearchOnComma(String.raw`\,y`)).toStrictEqual([',y']);
+    expect(splitSearchOnComma(String.raw`x\,,y`)).toStrictEqual(['x,', 'y']);
   });
 });

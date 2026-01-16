@@ -167,8 +167,8 @@ export function getTypedPropertyValueWithSchema(
       }
     } else if (!resultValue && Array.isArray(primitiveExtension)) {
       resultValue = primitiveExtension.slice();
-      for (let i = 0; i < primitiveExtension.length; i++) {
-        resultValue[i] = assignPrimitiveExtension(undefined, primitiveExtension[i]);
+      for (const [i, element_] of primitiveExtension.entries()) {
+        resultValue[i] = assignPrimitiveExtension(undefined, element_);
       }
     } else {
       resultValue = assignPrimitiveExtension(resultValue, primitiveExtension);
@@ -219,7 +219,7 @@ export function getTypedPropertyValueWithoutSchema(
   if (path in input) {
     const propertyValue = (input as { [key: string]: unknown })[path];
     if (Array.isArray(propertyValue)) {
-      result = propertyValue.map(toTypedValue);
+      result = propertyValue.map((value) => toTypedValue(value));
     } else {
       result = toTypedValue(propertyValue);
     }
@@ -458,7 +458,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'DateTime':
       return isDateTimeString(value);
     case 'Time':
-      return typeof value === 'string' && !!/^T\d/.exec(value);
+      return typeof value === 'string' && !!/^T\d/.test(value);
     case 'Period':
       return isPeriod(value);
     case 'Quantity':
@@ -474,7 +474,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
  * @returns True if the input is a date string.
  */
 export function isDateString(input: unknown): input is string {
-  return typeof input === 'string' && !!validationRegexes.date.exec(input);
+  return typeof input === 'string' && validationRegexes.date.test(input);
 }
 
 /**
@@ -483,7 +483,7 @@ export function isDateString(input: unknown): input is string {
  * @returns True if the input is a date/time string.
  */
 export function isDateTimeString(input: unknown): input is string {
-  return typeof input === 'string' && !!validationRegexes.dateTime.exec(input);
+  return typeof input === 'string' && validationRegexes.dateTime.test(input);
 }
 
 /**
@@ -596,7 +596,7 @@ function isObject(obj: unknown): obj is object {
 function assignPrimitiveExtension(target: any, primitiveExtension: any): any {
   if (primitiveExtension) {
     if (typeof primitiveExtension !== 'object') {
-      throw new Error('Primitive extension must be an object');
+      throw new TypeError('Primitive extension must be an object');
     }
     return safeAssign(target ?? {}, primitiveExtension);
   }

@@ -61,15 +61,17 @@ function CodeSystemPropertyList(props: CodeSystemPropertyListProps): JSX.Element
     let description = '';
     let value = '';
 
-    param.part?.forEach((part) => {
-      if (part.name === 'code') {
-        code = part.valueCode || '';
-      } else if (part.name === 'description') {
-        description = part.valueString || '';
-      } else if (part.name === 'value') {
-        value = formatPropertyValue(part);
+    if (param.part) {
+      for (const part of param.part) {
+        if (part.name === 'code') {
+          code = part.valueCode || '';
+        } else if (part.name === 'description') {
+          description = part.valueString || '';
+        } else if (part.name === 'value') {
+          value = formatPropertyValue(part);
+        }
       }
-    });
+    }
 
     return { code, description, value };
   });

@@ -306,8 +306,8 @@ describe('Patient Summary Operation', () => {
 
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
-      for (let i = 0; i < categories.length; i++) {
-        expectSectionToContain(composition, categories[i][1], 'Result', `Observation/obs${i}`);
+      for (const [i, category] of categories.entries()) {
+        expectSectionToContain(composition, category[1], 'Result', `Observation/obs${i}`);
       }
     });
 

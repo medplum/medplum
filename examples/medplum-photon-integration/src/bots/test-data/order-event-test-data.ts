@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PhotonWebhook } from '../../photon-types';
 
+/* eslint-disable sonarjs/no-hardcoded-ip */
+
 export const createdWebhook: PhotonWebhook = {
   method: 'POST',
   path: '/',

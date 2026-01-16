@@ -48,7 +48,7 @@ import type {
   StructureDefinition,
   Task,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
@@ -921,7 +921,7 @@ describe('project-scoped Repository', () => {
           {
             code: 'name',
             operator: Operator.EXACT,
-            value: name.replaceAll(',', '\\,'),
+            value: name.replaceAll(',', String.raw`\,`),
           },
         ],
       });
@@ -3317,20 +3317,17 @@ describe('project-scoped Repository', () => {
   test('_filter search', () =>
     withTestContext(async () => {
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const statuses: ('preliminary' | 'final')[] = ['preliminary', 'final'];
+      const statuses: Observation['status'][] = ['preliminary', 'final'];
       const codes = ['123', '456'];
-      const observations = [];
 
       for (const status of statuses) {
         for (const code of codes) {
-          observations.push(
-            await repo.createResource<Observation>({
-              resourceType: 'Observation',
-              subject: createReference(patient),
-              status,
-              code: { coding: [{ code }] },
-            })
-          );
+          await repo.createResource<Observation>({
+            resourceType: 'Observation',
+            subject: createReference(patient),
+            status,
+            code: { coding: [{ code }] },
+          });
         }
       }
 
@@ -3861,14 +3858,14 @@ describe('project-scoped Repository', () => {
         prediction: [
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000168,
+            probabilityDecimal: 0.000_168,
             whenRange: {
               high: { value: 53, unit: 'years' },
             },
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000368,
+            probabilityDecimal: 0.000_368,
             whenRange: {
               low: { value: 54, unit: 'years' },
               high: { value: 57, unit: 'years' },
@@ -3876,7 +3873,7 @@ describe('project-scoped Repository', () => {
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000594,
+            probabilityDecimal: 0.000_594,
             whenRange: {
               low: { value: 58, unit: 'years' },
               high: { value: 62, unit: 'years' },
@@ -3884,7 +3881,7 @@ describe('project-scoped Repository', () => {
           },
           {
             outcome: { text: 'Breast Cancer' },
-            probabilityDecimal: 0.000838,
+            probabilityDecimal: 0.000_838,
             whenRange: {
               low: { value: 63, unit: 'years' },
               high: { value: 67, unit: 'years' },
@@ -4503,8 +4500,7 @@ describe('project-scoped Repository', () => {
       // All children are accounted for as well
       expect(childrenByParent).toHaveLength(parents.length);
 
-      for (let i = 0; i < parents.length; i++) {
-        const parent = parents[i];
+      for (const [i, parent] of parents.entries()) {
         const children = childrenByParent[i];
         const result = results[getReferenceString(parent)];
         expect(result).toBeDefined();
@@ -4686,15 +4682,13 @@ describe('project-scoped Repository', () => {
 
     test('Cursor pagination', () =>
       withTestContext(async () => {
-        const tasks: Task[] = [];
         for (let i = 0; i < 50; i++) {
-          const task = await repo.createResource<Task>({
+          await repo.createResource<Task>({
             resourceType: 'Task',
             status: 'accepted',
             intent: 'order',
             code: { text: 'cursor_test' },
           });
-          tasks.push(task);
         }
 
         let url = 'Task?code=cursor_test&_sort=_lastUpdated';
@@ -4721,16 +4715,14 @@ describe('project-scoped Repository', () => {
         const lastUpdated = new Date();
         lastUpdated.setMilliseconds(0);
 
-        const tasks: Task[] = [];
         for (let i = 0; i < 50; i++) {
-          const task = await systemRepo.createResource<Task>({
+          await systemRepo.createResource<Task>({
             resourceType: 'Task',
             status: 'accepted',
             intent: 'unknown',
             identifier: [{ value: identifier }],
             meta: { lastUpdated: lastUpdated.toISOString() },
           });
-          tasks.push(task);
 
           if (i % 7 === 6) {
             lastUpdated.setMilliseconds(lastUpdated.getMilliseconds() + 33);

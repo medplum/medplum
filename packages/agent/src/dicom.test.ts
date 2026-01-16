@@ -103,5 +103,5 @@ describe('DICOM', () => {
     client.clearRequests();
     await app.stop();
     mockServer.stop();
-  }, 10000);
+  }, 10_000);
 });

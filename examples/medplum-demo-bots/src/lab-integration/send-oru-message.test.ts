@@ -156,10 +156,8 @@ describe('Send ORU Message to Partner', () => {
     });
 
     // Create observations (lab results)
-    const observations = [];
-
-    // Glucose observation
-    observations.push(
+    const observations = [
+      // Glucose observation
       await medplum.createResource({
         resourceType: 'Observation',
         status: 'final',
@@ -211,11 +209,9 @@ describe('Send ORU Message to Partner', () => {
           },
         ],
         issued: '2023-04-16T10:00:00Z',
-      })
-    );
+      }),
 
-    // BUN observation
-    observations.push(
+      // BUN observation
       await medplum.createResource({
         resourceType: 'Observation',
         status: 'final',
@@ -267,11 +263,9 @@ describe('Send ORU Message to Partner', () => {
           },
         ],
         issued: '2023-04-16T10:00:00Z',
-      })
-    );
+      }),
 
-    // Cholesterol observation with high value
-    observations.push(
+      // Cholesterol observation with high value
       await medplum.createResource({
         resourceType: 'Observation',
         status: 'final',
@@ -334,8 +328,8 @@ describe('Send ORU Message to Partner', () => {
             text: 'Levels above 200 mg/dL may indicate increased risk of heart disease.',
           },
         ],
-      })
-    );
+      }),
+    ];
 
     // Create diagnostic report
     const diagnosticReport = await medplum.createResource({
@@ -355,7 +349,7 @@ describe('Send ORU Message to Partner', () => {
       resultsInterpreter: [createReference(orderer)],
       basedOn: [createReference(serviceRequest)],
       specimen: [createReference(specimen)],
-      result: observations.map(createReference),
+      result: observations.map((o) => createReference(o)),
       issued: '2023-04-16T10:30:00Z',
       performer: [
         {
@@ -390,6 +384,7 @@ describe('Send ORU Message to Partner', () => {
     vi.clearAllMocks();
   });
 
+  // Skip test
   test.skip('Test Connection', async (ctx: any) => {
     try {
       await handler(ctx.medplum, {
@@ -411,14 +406,7 @@ describe('Send ORU Message to Partner', () => {
     const specimen = ctx.specimen as Specimen;
     const orderer = ctx.orderer as Practitioner;
 
-    const oruMessage = await createOruMessage(
-      diagnosticReport,
-      serviceRequest,
-      observations,
-      specimen,
-      patient,
-      orderer
-    );
+    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, orderer);
 
     // Verify message exists
     expect(oruMessage).toBeDefined();
@@ -713,7 +701,7 @@ describe('Send ORU Message to Partner', () => {
   });
 });
 
-const TEST_MESSAGE = `MSH|^~\\&|MEDPLUM_LAB|MEDPLUM_LAB||RECEIVING_FACILITY|20230416120000||ORU^R01|MEDPLUM_1681646400000|P|2.5|||||||
+const TEST_MESSAGE = String.raw`MSH|^~\&|MEDPLUM_LAB|MEDPLUM_LAB||RECEIVING_FACILITY|20230416120000||ORU^R01|MEDPLUM_1681646400000|P|2.5|||||||
 PID|1|PT12345|||Doe^Jane^^^||1985-08-01|F|||123 Main Street^^Springfield^MA^12345^||(555) 123-4567|(555) 987-6543||||||
 OBR|1|ORD98765||PANEL-CHEM^Comprehensive Chemistry Panel^https://lab.medplum.com/orderCode|||20230415091500|||||||||||||||20230416103000|||F
 OBX|1|NM|2339-0^Glucose^http://loinc.org||95|mg/dL|70-99||||F|||20230416100000|||

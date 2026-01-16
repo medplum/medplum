@@ -227,8 +227,8 @@ describe('IntegrationsPage', () => {
       'Healthie',
     ];
 
-    integrationNames.forEach((name) => {
+    for (const name of integrationNames) {
       expect(screen.getByText(name)).toBeInTheDocument();
-    });
+    }
   });
 });

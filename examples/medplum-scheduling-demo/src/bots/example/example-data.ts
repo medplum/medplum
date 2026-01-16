@@ -14,7 +14,7 @@ import type {
   Schedule,
   Slot,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Practitioner>): Promise<Bundle> {
   const practitioner = event.input;
@@ -96,7 +96,7 @@ function createWeekSlots(
   friday.setDate(friday.getDate() + 4);
 
   // Create free slots and appointments for Monday and Wednesday
-  [monday, wednesday].forEach((day, index) => {
+  for (const [index, day] of [monday, wednesday].entries()) {
     for (let hour = 9; hour < 17; hour++) {
       // Skip lunch hour
       if (hour === 12) {
@@ -113,8 +113,8 @@ function createWeekSlots(
       if (weekOffset === -1 && index === 0 && hour === 9) {
         // Create a cancelled routine appointment on Monday at 9am + a replacement free slot
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
-        entries.push(busySlotEntry);
         entries.push(
+          busySlotEntry,
           createAppointment(
             practitionerReference,
             routinePatient,
@@ -122,13 +122,12 @@ function createWeekSlots(
             'cancelled',
             appointmentTypeMap.routine,
             [serviceTypeMap.consultation]
-          )
+          ),
+          freeSlotEntry
         );
-        entries.push(freeSlotEntry);
       } else if (weekOffset === 0 && index === 0 && hour === 10) {
         // Create a fulfilled routine appointment on Monday at 10am
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
-        entries.push(busySlotEntry);
         const fulfilledAppointment = createAppointment(
           practitionerReference,
           routinePatient,
@@ -137,13 +136,16 @@ function createWeekSlots(
           appointmentTypeMap.routine,
           [serviceTypeMap.consultation]
         );
-        entries.push(fulfilledAppointment);
-        entries.push(createEncounter(practitionerReference, routinePatient, fulfilledAppointment));
+        entries.push(
+          busySlotEntry,
+          fulfilledAppointment,
+          createEncounter(practitionerReference, routinePatient, fulfilledAppointment)
+        );
       } else if (weekOffset === 0 && index === 1 && hour === 15) {
         // Create an emergency appointment on Wednesday at 3pm
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
-        entries.push(busySlotEntry);
         entries.push(
+          busySlotEntry,
           createAppointment(
             practitionerReference,
             emergencyPatient,
@@ -156,8 +158,8 @@ function createWeekSlots(
       } else if (weekOffset === 1 && index === 0 && hour === 11) {
         // Create an upcoming followup appointment on Monday at 11am
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
-        entries.push(busySlotEntry);
         entries.push(
+          busySlotEntry,
           createAppointment(
             practitionerReference,
             routinePatient,
@@ -171,8 +173,8 @@ function createWeekSlots(
       } else if (weekOffset === 1 && index === 1 && hour === 15) {
         // Create an upcoming routine checkup appointment on Wednesday at 3pm
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
-        entries.push(busySlotEntry);
         entries.push(
+          busySlotEntry,
           createAppointment(
             practitionerReference,
             emergencyPatient,
@@ -188,7 +190,7 @@ function createWeekSlots(
         entries.push(freeSlotEntry);
       }
     }
-  });
+  }
 
   // Create busy-unavailable slot for Friday from 9am to 5pm
   const busyUnavailableSlot = createSlot(
@@ -285,7 +287,7 @@ function createEncounter(
         end: appointment.end,
       },
       length: {
-        value: Math.floor(duration / 60000),
+        value: Math.floor(duration / 60_000),
         unit: 'minutes',
       },
       participant: [

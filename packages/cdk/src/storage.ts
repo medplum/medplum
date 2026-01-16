@@ -113,7 +113,7 @@ export class Storage extends Construct {
             override: true,
           },
           strictTransportSecurity: {
-            accessControlMaxAge: Duration.seconds(63072000),
+            accessControlMaxAge: Duration.seconds(63_072_000),
             includeSubdomains: true,
             preload: true,
             override: true,

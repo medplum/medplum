@@ -93,7 +93,7 @@ export async function fetchHealthiePatientIds(
 
     // Prevent infinite loop
     loopCount++;
-    if (loopCount > 10000) {
+    if (loopCount > 10_000) {
       throw new Error('Exiting fetchHealthiePatientIds due to too many pages');
     }
   }

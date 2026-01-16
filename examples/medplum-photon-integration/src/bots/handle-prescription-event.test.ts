@@ -71,7 +71,7 @@ describe('Prescription webhooks', async () => {
 
     expect(prescription).toBeDefined();
     expect(prescription.status).toBe('draft');
-  }, 10000);
+  }, 10_000);
 
   test.skip('Handle a prescription created event and create a new medication', async () => {
     const medplum = new MockClient();

@@ -27,7 +27,7 @@ export function deriveIdentifierSearchParameter(inputParam: SearchParameter): Se
 }
 
 export function getInnerDerivedIdentifierExpression(expression: string): string | undefined {
-  return expression.match(/^\((.+)\)\.identifier$/)?.[1];
+  return /^\((.+)\)\.identifier$/.exec(expression)?.[1];
 }
 
 export function getParsedDerivedIdentifierExpression(originalExpression: string, atom: FhirPathAtom): FhirPathAtom {

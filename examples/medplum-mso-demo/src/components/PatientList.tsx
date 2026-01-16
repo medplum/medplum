@@ -168,7 +168,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
 
         showNotification({
           title: 'Success',
-          message: `${successCount} patient${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
+          message: `${successCount} patient${successCount === 1 ? '' : 's'} enrolled in ${organization.name}`,
           color: 'green',
         });
       }

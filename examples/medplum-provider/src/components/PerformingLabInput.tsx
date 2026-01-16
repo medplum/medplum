@@ -11,11 +11,11 @@ import type { JSX } from 'react';
 
 export type PractitionerInputProps = {
   patient: Patient | undefined;
-  performingLab?: LabOrganization | undefined;
+  performingLab?: LabOrganization;
   error?: NonNullable<LabOrderInputErrors['performingLab']>;
 };
 
-export function PerformingLabInput({ patient, performingLab, error }: PractitionerInputProps): JSX.Element {
+export function PerformingLabInput({ patient, performingLab, error }: Readonly<PractitionerInputProps>): JSX.Element {
   const { searchAvailableLabs, setPerformingLab } = useHealthGorillaLabOrderContext();
   useEffect(() => {
     if (performingLab) {

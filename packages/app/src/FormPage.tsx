@@ -53,11 +53,11 @@ export function FormPage(): JSX.Element {
     medplum
       .executeBatch(requestBundle)
       .then((bundle) => {
-        if (bundle.entry?.[0]?.response?.status !== '200') {
-          setError(bundle.entry?.[0]?.response?.outcome as OperationOutcome);
-        } else {
+        if (bundle.entry?.[0]?.response?.status === '200') {
           setQuestionnaire(bundle.entry[0]?.resource as Questionnaire);
           setSubject(bundle.entry[1]?.resource as Resource);
+        } else {
+          setError(bundle.entry?.[0]?.response?.outcome as OperationOutcome);
         }
         setLoading(false);
       })

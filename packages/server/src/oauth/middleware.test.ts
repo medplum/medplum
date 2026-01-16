@@ -3,8 +3,8 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type { ClientApplication, Login } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';

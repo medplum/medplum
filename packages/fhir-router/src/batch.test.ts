@@ -27,7 +27,7 @@ import type {
   ServiceRequest,
   Subscription,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { processBatch } from './batch';
 import type { FhirRequest } from './fhirrouter';
 import { FhirRouter } from './fhirrouter';

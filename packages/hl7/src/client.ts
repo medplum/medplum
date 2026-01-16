@@ -41,7 +41,7 @@ export class Hl7Client extends Hl7Base {
     this.port = this.options.port;
     this.encoding = this.options.encoding;
     this.keepAlive = this.options.keepAlive ?? false;
-    this.connectTimeout = this.options.connectTimeout ?? 30000; // Default 30 seconds
+    this.connectTimeout = this.options.connectTimeout ?? 30_000; // Default 30 seconds
   }
 
   connect(): Promise<Hl7Connection> {
