@@ -21,6 +21,66 @@ import type { BotExecutionContext, BotExecutionResult, BotStreamingResult, Strea
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
 /**
+ * Generates the wrapped code template for VM execution.
+ * @param code - The bot's executable code.
+ * @param streaming - Whether to include streaming support (onChunk).
+ * @returns The wrapped code string.
+ */
+function generateWrappedCode(code: string, streaming: boolean): string {
+  const eventDestructure = streaming
+    ? 'const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, onChunk } = event;'
+    : 'const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders } = event;';
+
+  const handlerCall = streaming
+    ? 'let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, onChunk });'
+    : 'let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });';
+
+  return `
+  const exports = {};
+  const module = {exports};
+
+  // Start user code
+  ${code}
+  // End user code
+
+  (async () => {
+    ${eventDestructure}
+    const medplum = new MedplumClient({
+      baseUrl,
+      defaultHeaders,
+      fetch: function(url, options = {}) {
+        options.headers ||= {};
+        options.headers['X-Trace-Id'] = traceId;
+        options.headers['traceparent'] = traceId;
+        return fetch(url, options);
+      },
+    });
+    medplum.setAccessToken(accessToken);
+    try {
+      let input = event.input;
+      if (contentType === ContentType.HL7_V2 && input) {
+        input = Hl7Message.parse(input);
+      }
+      ${handlerCall}
+      if (contentType === ContentType.HL7_V2 && result) {
+        result = result.toString();
+      }
+      return result;
+    } catch (err) {
+      if (err instanceof Error) {
+        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      } else if (typeof err === "object") {
+        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      } else {
+        console.log("Unhandled error: " + err);
+      }
+      throw err;
+    }
+  })();
+  `;
+}
+
+/**
  * Executes a Bot on the server in a separate Node.js VM.
  * @param request - The bot request.
  * @returns The bot execution result.
@@ -84,50 +144,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
   };
 
-  // Wrap code in an async block for top-level await support
-  const wrappedCode = `
-  const exports = {};
-  const module = {exports};
-
-  // Start user code
-  ${code}
-  // End user code
-
-  (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders } = event;
-    const medplum = new MedplumClient({
-      baseUrl,
-      defaultHeaders,
-      fetch: function(url, options = {}) {
-        options.headers ||= {};
-        options.headers['X-Trace-Id'] = traceId;
-        options.headers['traceparent'] = traceId;
-        return fetch(url, options);
-      },
-    });
-    medplum.setAccessToken(accessToken);
-    try {
-      let input = event.input;
-      if (contentType === ContentType.HL7_V2 && input) {
-        input = Hl7Message.parse(input);
-      }
-      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
-      if (contentType === ContentType.HL7_V2 && result) {
-        result = result.toString();
-      }
-      return result;
-    } catch (err) {
-      if (err instanceof Error) {
-        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-      } else if (typeof err === "object") {
-        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-      } else {
-        console.log("Unhandled error: " + err);
-      }
-      throw err;
-    }
-  })();
-  `;
+  const wrappedCode = generateWrappedCode(code, false);
 
   // Return the result of the code execution
   try {
@@ -216,50 +233,7 @@ export async function runInVmContextStreaming(request: BotExecutionContext): Pro
     timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
   };
 
-  // Wrap code in an async block for top-level await support
-  const wrappedCode = `
-  const exports = {};
-  const module = {exports};
-
-  // Start user code
-  ${code}
-  // End user code
-
-  (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, onChunk } = event;
-    const medplum = new MedplumClient({
-      baseUrl,
-      defaultHeaders,
-      fetch: function(url, options = {}) {
-        options.headers ||= {};
-        options.headers['X-Trace-Id'] = traceId;
-        options.headers['traceparent'] = traceId;
-        return fetch(url, options);
-      },
-    });
-    medplum.setAccessToken(accessToken);
-    try {
-      let input = event.input;
-      if (contentType === ContentType.HL7_V2 && input) {
-        input = Hl7Message.parse(input);
-      }
-      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, onChunk });
-      if (contentType === ContentType.HL7_V2 && result) {
-        result = result.toString();
-      }
-      return result;
-    } catch (err) {
-      if (err instanceof Error) {
-        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-      } else if (typeof err === "object") {
-        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-      } else {
-        console.log("Unhandled error: " + err);
-      }
-      throw err;
-    }
-  })();
-  `;
+  const wrappedCode = generateWrappedCode(code, true);
 
   // Return the result of the code execution
   try {
