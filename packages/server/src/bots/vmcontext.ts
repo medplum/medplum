@@ -16,7 +16,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { MockConsole } from '../util/console';
 import { readStreamToString } from '../util/streams';
-import type { BotExecutionContext, BotExecutionResult, BotStreamingResult } from './types';
+import type { BotExecutionContext, BotExecutionResult, BotStreamingResult, StreamingChunk } from './types';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
@@ -177,7 +177,7 @@ export async function runInVmContextStreaming(request: BotExecutionContext): Pro
   const sandbox = {
     console: botConsole,
     fetch: globalThis.fetch,
-    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
+    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
     ContentType,
     Hl7Message,
     MedplumClient,
@@ -204,8 +204,7 @@ export async function runInVmContextStreaming(request: BotExecutionContext): Pro
       traceId,
       headers,
       defaultHeaders: request.defaultHeaders,
-      // Add streaming callback
-      onChunk: async (chunk: any) => {
+      onChunk: async (chunk: StreamingChunk) => {
         if (streamingCallback) {
           await streamingCallback(chunk);
         }

@@ -34,7 +34,12 @@ export interface BotExecutionRequest {
   readonly defaultHeaders?: Record<string, string>;
 }
 
-export type StreamingCallback = (chunk: any) => Promise<void>;
+export interface StreamingChunk {
+  type: string;
+  content: string;
+}
+
+export type StreamingCallback = (chunk: StreamingChunk) => Promise<void>;
 
 export interface BotExecutionContext extends BotExecutionRequest {
   readonly accessToken: string;
