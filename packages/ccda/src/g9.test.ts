@@ -1168,7 +1168,7 @@ function createCompositionBundle(patient: Patient, code?: string, ...resources: 
               ],
             },
             entry: flatMapFilter(resources as WithId<Resource>[], (r) =>
-              compositionExcludedTypes.includes(r.resourceType) ? createReference(r) : undefined
+              compositionExcludedTypes.includes(r.resourceType) ? undefined : createReference(r)
             ),
           },
         ]
