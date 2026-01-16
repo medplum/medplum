@@ -316,7 +316,6 @@ export const tsConfig = {
     'unicorn/prefer-array-flat-map': 'error',
     'unicorn/prefer-array-index-of': 'error',
     'unicorn/prefer-array-some': 'error',
-    'unicorn/prefer-blob-reading-methods': 'error',
     'unicorn/prefer-class-fields': 'error',
     'unicorn/prefer-code-point': 'error',
     'unicorn/prefer-date-now': 'error',
