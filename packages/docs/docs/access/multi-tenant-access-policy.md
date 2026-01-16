@@ -766,7 +766,7 @@ In your design, you should decide which resource types you want to restrict acce
 
 ### Configure ProjectMemberships to Reference Tenants
 
-The User's ProjectMembership references their enrolled tenants via the `access.parameter` array. Each parameter name must match the variable name used in the AccessPolicy (e.g., if your AccessPolicy uses `%organization`, the User's ProjectMembership `access.parameter` should be named `"organization"`).
+The User's `ProjectMembership` references their enrolled tenants via the `access.parameter` array. Each parameter name must match the variable name used in the `AccessPolicy` (e.g., if your AccessPolicy uses `%organization`, the User's ProjectMembership `access.parameter` should be named `"organization"`).
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
