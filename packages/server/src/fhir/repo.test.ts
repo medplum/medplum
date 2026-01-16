@@ -1315,37 +1315,35 @@ describe('FHIR Repo', () => {
         },
         false,
       ],
-    ])(
-      'with %s',
-      async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
-        withTestContext(async () => {
-          const config = getConfig();
-          if (arrayColumnPadding) {
-            config.arrayColumnPadding = arrayColumnPadding;
-          }
-          const res = await systemRepo.createResource<Observation>({
-            resourceType: 'Observation',
-            status: 'unknown',
-            code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
-          });
+    ])('with %s', async (_desc, arrayColumnPadding: MedplumServerConfig['arrayColumnPadding'] | undefined, shouldPad) =>
+      withTestContext(async () => {
+        const config = getConfig();
+        if (arrayColumnPadding) {
+          config.arrayColumnPadding = arrayColumnPadding;
+        }
+        const res = await systemRepo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'unknown',
+          code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
+        });
 
-          const db = getDatabasePool(DatabaseMode.READER);
-          const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
-          if (shouldPad) {
-            expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-          } else {
-            expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-          }
+        const db = getDatabasePool(DatabaseMode.READER);
+        const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
 
-          // deleted rows also get padded
-          await systemRepo.deleteResource(res.resourceType, res.id);
+        // deleted rows also get padded
+        await systemRepo.deleteResource(res.resourceType, res.id);
 
-          if (shouldPad) {
-            expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
-          } else {
-            expect(results.rows).toStrictEqual([{ __identifier: [] }]);
-          }
-        })
+        if (shouldPad) {
+          expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
+        } else {
+          expect(results.rows).toStrictEqual([{ __identifier: [] }]);
+        }
+      })
     );
   });
 
