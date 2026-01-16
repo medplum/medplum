@@ -381,6 +381,7 @@ export const testConfig = {
     'sonarjs/no-identical-functions': 'off',
     'sonarjs/publicly-writable-directories': 'off',
     'sonarjs/no-nested-functions': 'off',
+    'unicorn/prefer-dom-node-dataset': 'off',
   },
 };
 
