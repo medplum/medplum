@@ -662,9 +662,9 @@ describe('BillingTab', () => {
       () => {
         expect(claimsUtils.createClaimFromEncounter).toHaveBeenCalledWith(
           medplum,
-          mockPatient.id,
-          mockEncounter.id,
-          mockPractitioner2.id,
+          mockPatient,
+          updatedEncounter,
+          mockPractitioner2,
           [appliedChargeItem]
         );
         expect(setClaim).toHaveBeenCalledWith(newClaim);
