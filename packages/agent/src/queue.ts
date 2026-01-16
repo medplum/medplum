@@ -111,7 +111,7 @@ export async function waitForQueueRelease(log: ILogger, timeoutMs = 30000): Prom
       return;
     }
 
-    await sleep(100);
+    await sleep(50);
   }
 
   log.info('Queue released by previous owner');
