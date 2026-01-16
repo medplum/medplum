@@ -34,7 +34,7 @@ export interface SleepOptions {
   /**
    * Optional `AbortSignal` that can be used to cancel the scheduled sleep.
    */
-  readonly signal?: AbortSignal | null
+  readonly signal?: AbortSignal | null;
 }
 
 /**
@@ -1266,14 +1266,18 @@ export function singularize<T>(value: T | T[] | undefined): T | undefined {
  */
 export const sleep = (ms: number, options?: SleepOptions): Promise<void> =>
   new Promise((resolve, reject) => {
-    options?.signal?.throwIfAborted()
+    options?.signal?.throwIfAborted();
 
     const timeout = setTimeout(resolve, ms);
 
-    options?.signal?.addEventListener('abort', () => {
-      clearTimeout(timeout);
-      reject(options.signal?.reason);
-    }, { once: true });
+    options?.signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout);
+        reject(options.signal?.reason);
+      },
+      { once: true }
+    );
   });
 
 /**

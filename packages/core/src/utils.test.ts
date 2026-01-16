@@ -1331,7 +1331,7 @@ describe('Core Utils', () => {
     controller.abort();
 
     await expect(promise).rejects.toThrow('The operation was aborted');
-  })
+  });
 
   test('splitN', () => {
     expect(
