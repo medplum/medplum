@@ -267,9 +267,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       {observation.hasMember && (
         <ObservationRowGroup
           value={observation.hasMember as Reference<Observation>[]}
-          ancestorIds={
-            props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]
-          }
+          ancestorIds={props.ancestorIds ? [...props.ancestorIds, observation.id] : [observation.id]}
           hideObservationNotes={props.hideObservationNotes}
         />
       )}
