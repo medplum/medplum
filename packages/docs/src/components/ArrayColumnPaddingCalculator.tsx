@@ -5,6 +5,8 @@ type CalculationMode = 'forward' | 'reverse';
 
 /**
  * Calculate Poisson CDF: P(X ≤ k) for X ~ Poisson(λ)
+ * Formula: e^(-λ) * Σ (λ^i / i!) for i = 0 to k
+ * See: https://en.wikipedia.org/wiki/Poisson_distribution#Cumulative_distribution_function
  */
 function poissonCDF(k: number, lambda: number): number {
   let sum = 0;
@@ -25,7 +27,7 @@ function poissonCDF(k: number, lambda: number): number {
 function findLambda(m: number, p: number): number {
   const targetCDF = Math.pow(1 - p, 1 / m);
   let low = 0.1;
-  let high = 20;
+  let high = 50;
 
   while (high - low > 0.01) {
     const mid = (low + high) / 2;
