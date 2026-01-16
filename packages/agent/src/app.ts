@@ -35,6 +35,7 @@ import { exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import { join } from 'node:path';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
@@ -59,7 +60,6 @@ import { AgentHl7DurableQueue, waitForQueueRelease } from './queue';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
-import { join } from 'node:path';
 
 // Handoff coordination files for zero-downtime upgrades
 const HANDOFF_READY_PATH = join(__dirname, '.handoff-ready');
@@ -142,7 +142,9 @@ export class App {
         callback: string | null;
       };
 
-      this.log.info(`Upgrade detected from version ${upgradeDetails.previousVersion} to ${upgradeDetails.targetVersion}`);
+      this.log.info(
+        `Upgrade detected from version ${upgradeDetails.previousVersion} to ${upgradeDetails.targetVersion}`
+      );
 
       // Check if the previous version supports the handoff protocol
       // If previousVersion is "UNKNOWN" (set by installer) or older than MIN_HANDOFF_PROTOCOL_VERSION,
