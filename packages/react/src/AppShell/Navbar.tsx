@@ -88,6 +88,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               onClick={props.navbarToggle}
               aria-expanded={opened}
               aria-controls="navbar"
+              aria-label="Medplum Logo"
             >
               {props.logo}
             </UnstyledButton>
