@@ -20,10 +20,7 @@
           {
             "use": "official",
             "family": "Williams",
-            "given": [
-              "David",
-              "James"
-            ]
+            "given": ["David", "James"]
           }
         ],
         "gender": "male",
@@ -79,9 +76,7 @@
         },
         "onsetDateTime": "1980-01-13T10:22:21",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance"
-          ],
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance"],
           "versionId": "3b38aaa3-e859-44f2-b548-4f1c02d994bc",
           "lastUpdated": "2026-01-13T18:22:33.619Z",
           "author": {
@@ -109,9 +104,7 @@
       "resource": {
         "resourceType": "Observation",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/ValueSet/us-core-sexual-orientation"
-          ],
+          "profile": ["http://hl7.org/fhir/us/core/ValueSet/us-core-sexual-orientation"],
           "versionId": "cf41ea2b-fc6d-4855-9a80-cd7ae04e4ad8",
           "lastUpdated": "2026-01-13T18:23:56.160Z",
           "author": {
@@ -235,9 +228,7 @@
           "display": "David James Williams"
         },
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
-          ],
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"],
           "versionId": "30a55573-ba8f-4d54-963f-ccc4f3cc17fb",
           "lastUpdated": "2026-01-13T18:23:50.506Z",
           "author": {
@@ -300,9 +291,7 @@
         },
         "onsetDateTime": "2026-01-13T18:23:33.000Z",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns"
-          ],
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns"],
           "versionId": "03f42d61-ecb9-41c6-9866-4187e14f442f",
           "lastUpdated": "2026-01-13T18:23:36.986Z",
           "author": {
@@ -330,9 +319,7 @@
       "resource": {
         "resourceType": "Observation",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"
-          ],
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus"],
           "versionId": "df7df3ca-5741-4374-afe8-409031eab4c9",
           "lastUpdated": "2026-01-13T18:24:00.426Z",
           "author": {
@@ -408,9 +395,7 @@
         },
         "name": [
           {
-            "given": [
-              "David"
-            ],
+            "given": ["David"],
             "family": "Yanez"
           }
         ],
@@ -445,9 +430,7 @@
         },
         "name": [
           {
-            "given": [
-              "Kevin"
-            ],
+            "given": ["Kevin"],
             "family": "Shaw"
           }
         ],
@@ -476,4 +459,3 @@
     }
   ]
 }
-
