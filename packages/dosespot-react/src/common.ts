@@ -44,6 +44,18 @@ export const DOSESPOT_NOTIFICATION_COUNTS_BOT: Identifier = {
   value: 'dosespot-notification-counts-bot',
 };
 
+export const DOSESPOT_SEARCH_PHARMACY_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-search-pharmacy-bot',
+};
+
+export const DOSESPOT_ADD_PATIENT_PHARMACY_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-add-patient-pharmacy-bot',
+};
+
+export const DOSESPOT_PHARMACY_ID_SYSTEM = 'https://dosespot.com/pharmacy-id';
+
 export interface DoseSpotNotificationCountsResponse {
   PendingPrescriptionsCount: number;
   PendingRxChangeCount: number;
