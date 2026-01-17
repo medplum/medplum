@@ -970,5 +970,17 @@ describe('Execute', () => {
       expect(events[0]).toStrictEqual('data: Hello ');
       expect(events[1]).toStrictEqual('data: World!');
     });
+
+    test('Streaming execution error handling', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingErrorBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+      expect(res.text).toStrictEqual('');
+    });
   });
 });
