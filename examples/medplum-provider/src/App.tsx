@@ -232,7 +232,19 @@ export function App(): JSX.Element | null {
                 <Route index element={<SpacesPage />} />
                 <Route path=":topicId" element={<SpacesPage />} />
               </Route>
-              <Route path="/" element={<Navigate to="/getstarted" replace />} />
+              <Route
+                path="/"
+                element={
+                  <Navigate
+                    to={
+                      setupDismissed
+                        ? '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated'
+                        : '/getstarted'
+                    }
+                    replace
+                  />
+                }
+              />
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
