@@ -44,14 +44,22 @@ export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 export const executeHandler = async (req: Request, res: Response): Promise<void> => {
   if (req.header('Prefer') === 'respond-async') {
     await sendAsyncResponse(req, res, async () => {
-      const result = await executeOperation(req);
+      const result = await executeOperation(req, res);
       if (isOperationOutcome(result) && !isOk(result)) {
         throw new OperationOutcomeError(result);
       }
       return getOutParametersFromResult(result);
     });
   } else {
-    const result = await executeOperation(req);
+    const result = await executeOperation(req, res);
+
+    if (res.headersSent) {
+      if (!res.writableEnded) {
+        res.end();
+      }
+      return;
+    }
+
     if (isOperationOutcome(result)) {
       sendOutcome(res, result);
       return;
@@ -71,8 +79,9 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
   }
 };
 
-async function executeOperation(req: Request): Promise<OperationOutcome | BotExecutionResult> {
+async function executeOperation(req: Request, res: Response): Promise<OperationOutcome | BotExecutionResult> {
   const ctx = getAuthenticatedContext();
+
   // First read the bot as the user to verify access
   const userBot = await getBotForRequest(req);
   if (!userBot) {
@@ -82,6 +91,17 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   // Then read the bot as system user to load extended metadata
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+
+  // Check if client accepts streaming
+  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+  let responseStream: NodeJS.WritableStream | undefined = undefined;
+  if (acceptsStreaming) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    responseStream = res;
+  }
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
@@ -95,6 +115,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     headers: req.headers,
     traceId: ctx.traceId,
     defaultHeaders: getBotDefaultHeaders(req, bot),
+    responseStream,
   });
 
   return result;

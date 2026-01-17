@@ -32,6 +32,8 @@ export interface BotExecutionRequest {
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
+  /** Optional response stream when invoked with SSE (Server Side Events) */
+  readonly responseStream?: NodeJS.WritableStream;
 }
 
 export interface BotExecutionContext extends BotExecutionRequest {
