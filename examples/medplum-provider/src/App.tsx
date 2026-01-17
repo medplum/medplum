@@ -1,14 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import {
-  AppShell,
-  Loading,
-  Logo,
-  NotificationIcon,
-  useMedplum,
-  useMedplumProfile,
-} from '@medplum/react';
+import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import { Tooltip } from '@mantine/core';
 import {
   IconApps,
@@ -84,7 +77,9 @@ function DismissableNavIcon({ icon, onDismiss }: DismissableNavIconProps): JSX.E
 
   return (
     <>
-      <span ref={wrapperRef} style={{ display: 'contents' }}>{icon}</span>
+      <span ref={wrapperRef} style={{ display: 'contents' }}>
+        {icon}
+      </span>
       {showX && (
         <Tooltip label="Dismiss" openDelay={500}>
           <div
@@ -209,12 +204,7 @@ export function App(): JSX.Element | null {
                   ...(!setupDismissed
                     ? [
                         {
-                          icon: (
-                            <DismissableNavIcon
-                              icon={<IconSettingsAutomation />}
-                              onDismiss={handleDismissSetup}
-                            />
-                          ),
+                          icon: <DismissableNavIcon icon={<IconSettingsAutomation />} onDismiss={handleDismissSetup} />,
                           label: 'Get Started',
                           href: '/getstarted',
                         },
@@ -242,10 +232,7 @@ export function App(): JSX.Element | null {
                 <Route index element={<SpacesPage />} />
                 <Route path=":topicId" element={<SpacesPage />} />
               </Route>
-              <Route
-                path="/"
-                element={<Navigate to="/getstarted" replace />}
-              />
+              <Route path="/" element={<Navigate to="/getstarted" replace />} />
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
