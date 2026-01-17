@@ -27,10 +27,11 @@ export interface AppShellProps {
   readonly resourceTypeSearchDisabled?: boolean;
   readonly notifications?: ReactNode;
   readonly layoutVersion?: 'v1' | 'v2';
+  readonly showLayoutToggle?: boolean;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
-  const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
+  const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] !== 'false');
   const [layoutVersion] = useState(
     props.layoutVersion ?? (localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1'
   );
@@ -87,6 +88,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         spotlightEnabled={true}
         userMenuEnabled={true}
         version={props.version}
+        showLayoutToggle={props.showLayoutToggle}
       />
     ) : undefined;
   } else {
