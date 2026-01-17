@@ -32,19 +32,13 @@ export interface BotExecutionRequest {
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
+  /** Optional response stream when invoked with SSE (Server Side Events) */
+  readonly responseStream?: NodeJS.WritableStream;
 }
-
-export interface StreamingChunk {
-  type: string;
-  content: string;
-}
-
-export type StreamingCallback = (chunk: StreamingChunk) => Promise<void>;
 
 export interface BotExecutionContext extends BotExecutionRequest {
   readonly accessToken: string;
   readonly secrets: Record<string, ProjectSetting>;
-  readonly streamingCallback?: StreamingCallback;
 }
 
 export interface BotExecutionResult {
@@ -52,11 +46,3 @@ export interface BotExecutionResult {
   readonly logResult: string;
   readonly returnValue?: any;
 }
-
-export interface BotStreamingResult {
-  readonly streaming: true;
-  readonly success: boolean;
-  readonly logResult: string;
-}
-
-export type BotExecutionResponse = BotExecutionResult | BotStreamingResult;

@@ -96,19 +96,19 @@ exports.handler = async function (medplum, event) {
   [
     `
 export async function handler(medplum, event) {
-  if (event.onChunk) {
-    await event.onChunk({ type: 'chunk', content: 'Hello ' });
-    await event.onChunk({ type: 'chunk', content: 'World!' });
-  }
+  const { responseStream } = event;
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
   return 'done';
 }
   `,
     `
 exports.handler = async function (medplum, event) {
-  if (event.onChunk) {
-    await event.onChunk({ type: 'chunk', content: 'Hello ' });
-    await event.onChunk({ type: 'chunk', content: 'World!' });
-  }
+  const { responseStream } = event;
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
   return 'done';
 };
 `,
@@ -950,15 +950,9 @@ describe('Execute', () => {
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBeGreaterThanOrEqual(3);
-
-      const chunk1 = JSON.parse(events[0].replace('data: ', ''));
-      expect(chunk1).toMatchObject({ type: 'chunk', content: 'Hello ' });
-
-      const chunk2 = JSON.parse(events[1].replace('data: ', ''));
-      expect(chunk2).toMatchObject({ type: 'chunk', content: 'World!' });
-
-      expect(events[events.length - 1]).toBe('data: [DONE]');
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
     });
 
     test('Streaming execution with JSON input', async () => {
@@ -972,8 +966,9 @@ describe('Execute', () => {
       expect(res.headers['content-type']).toBe('text/event-stream');
 
       const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBeGreaterThanOrEqual(3);
-      expect(events[events.length - 1]).toBe('data: [DONE]');
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
     });
 
     test('Streaming execution error handling', async () => {
@@ -985,138 +980,7 @@ describe('Execute', () => {
         .send('input');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('text/event-stream');
-
-      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBe(1);
-      const errorEvent = JSON.parse(events[0].replace('data: ', ''));
-      expect(errorEvent).toMatchObject({ error: true, message: expect.stringContaining('Streaming error test') });
-    });
-
-    test('Streaming with missing bot ID returns error', async () => {
-      const res = await request(app)
-        .post('/fhir/R4/Bot/$execute')
-        .set('Content-Type', ContentType.TEXT)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send('input');
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('text/event-stream');
-
-      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBe(1);
-      const errorEvent = JSON.parse(events[0].replace('data: ', ''));
-      expect(errorEvent).toMatchObject({ error: true, message: 'Must specify bot ID or identifier' });
-      // No [DONE] after error - connection just closes
-    });
-
-    test('Streaming with bots not enabled', async () => {
-      // Create a project without bots enabled
-      const { project, accessToken } = await withTestContext(() =>
-        registerNew({
-          firstName: 'StreamTest',
-          lastName: 'User',
-          projectName: 'Stream Test Project',
-          email: `streamtest${randomUUID()}@example.com`,
-          password: 'password!@#',
-        })
-      );
-
-      // Create a bot in the project
-      const res1 = await request(app)
-        .post('/admin/projects/' + project.id + '/bot')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .type('json')
-        .send({
-          name: 'Stream test bot',
-          description: 'Test bot for streaming',
-        });
-      expect(res1.status).toBe(201);
-
-      // Try to execute with streaming - should fail because bots not enabled
-      const res2 = await request(app)
-        .post(`/fhir/R4/Bot/${res1.body.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send('input');
-      expect(res2.status).toBe(200);
-      expect(res2.headers['content-type']).toBe('text/event-stream');
-
-      const events = res2.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBe(1);
-      const errorEvent = JSON.parse(events[0].replace('data: ', ''));
-      expect(errorEvent).toMatchObject({ error: true, message: 'Bots not enabled' });
-    });
-
-    test('Streaming with AWS Lambda runtime returns error', async () => {
-      const systemRepo = getSystemRepo();
-      const res1 = await request(app)
-        .post('/fhir/R4/Bot')
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send({
-          resourceType: 'Bot',
-          name: 'Lambda Streaming Test Bot',
-          runtimeVersion: 'awslambda',
-        });
-      expect(res1.status).toBe(201);
-      const bot = res1.body as Bot;
-
-      await systemRepo.updateResource({
-        ...bot,
-        identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'fake-lambda-arn' }],
-      });
-
-      const res2 = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send('input');
-      expect(res2.status).toBe(200);
-      expect(res2.headers['content-type']).toBe('text/event-stream');
-
-      const events = res2.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBe(1);
-      const errorEvent = JSON.parse(events[0].replace('data: ', ''));
-      expect(errorEvent).toMatchObject({ error: true, message: 'AWS Lambda runtime does not support streaming' });
-    });
-
-    test('Streaming with unsupported runtime returns error', async () => {
-      const res1 = await request(app)
-        .post('/fhir/R4/Bot')
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send({
-          resourceType: 'Bot',
-          name: 'Unsupported Runtime Streaming Test Bot',
-          runtimeVersion: 'unsupported',
-        });
-      expect(res1.status).toBe(201);
-      const bot = res1.body as Bot;
-
-      const res2 = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send({
-          code: `exports.handler = async function () { return 'test'; };`,
-        });
-      expect(res2.status).toBe(200);
-
-      const res3 = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken1)
-        .send('input');
-      expect(res3.status).toBe(200);
-      expect(res3.headers['content-type']).toBe('text/event-stream');
-
-      const events = res3.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toBe(1);
-      const errorEvent = JSON.parse(events[0].replace('data: ', ''));
-      expect(errorEvent).toMatchObject({ error: true, message: 'Unsupported bot runtime' });
+      expect(res.text).toStrictEqual('');
     });
   });
 });
