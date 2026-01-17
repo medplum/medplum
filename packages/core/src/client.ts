@@ -538,6 +538,8 @@ export interface BotEvent<T = unknown> {
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
+  /** Optional response stream when invoked with SSE (Server Side Events) */
+  readonly responseStream?: NodeJS.WritableStream;
 }
 
 export interface InviteRequest {
