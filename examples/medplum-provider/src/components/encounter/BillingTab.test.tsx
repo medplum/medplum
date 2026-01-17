@@ -623,7 +623,7 @@ describe('BillingTab', () => {
       expect(screen.getByText('Practitioner')).toBeInTheDocument();
     });
 
-    const practitionerInput = screen.getByPlaceholderText('Search for practitioner') as HTMLInputElement;
+    const practitionerInput = screen.getByPlaceholderText('Search for practitioner');
     expect(practitionerInput).toBeDefined();
 
     await act(async () => {
@@ -798,7 +798,7 @@ describe('BillingTab', () => {
       { timeout: 3000 }
     );
 
-    const practitionerInput = screen.getByPlaceholderText('Search for practitioner') as HTMLInputElement;
+    const practitionerInput = screen.getByPlaceholderText('Search for practitioner');
 
     await act(async () => {
       fireEvent.change(practitionerInput, { target: { value: 'Smith' } });

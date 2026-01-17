@@ -137,7 +137,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
             toOption={toOption}
             onChange={(medications) => {
               if (medications.length > 0) {
-                setSelectedMedication(medications[0] as CodeableConcept);
+                setSelectedMedication(medications[0]);
               } else {
                 setSelectedMedication(undefined);
               }

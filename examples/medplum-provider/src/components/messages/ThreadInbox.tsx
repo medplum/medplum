@@ -16,16 +16,18 @@ import {
   Skeleton,
   Box,
   Pagination,
+  Group,
 } from '@mantine/core';
-import type { Communication, Patient, Reference } from '@medplum/fhirtypes';
+import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import type { JSX } from 'react';
 import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
-import { getReferenceString, parseSearchRequest } from '@medplum/core';
+import { getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
 import { ChatList } from './ChatList';
 import { NewTopicDialog } from './NewTopicDialog';
+import { ParticipantFilter } from './ParticipantFilter';
 import { useThreadInbox } from '../../hooks/useThreadInbox';
 import classes from './ThreadInbox.module.css';
 import { useDisclosure } from '@mantine/hooks';
@@ -73,15 +75,25 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
+  const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
+
   const searchParams = useMemo(() => new URLSearchParams(query), [query]);
   const itemsPerPage = Number.parseInt(searchParams.get('_count') || '20', 10);
   const currentOffset = Number.parseInt(searchParams.get('_offset') || '0', 10);
   const currentPage = Math.floor(currentOffset / itemsPerPage) + 1;
   const status = (searchParams.get('status') as Communication['status']) || 'in-progress';
 
-  const effectiveQuery = query;
-
-  const currentSearch = useMemo(() => parseSearchRequest(`Communication?${effectiveQuery}`), [effectiveQuery]);
+  // Extract participants from parsed search request filters (comma-separated)
+  const selectedParticipants = useMemo((): Reference<Patient | Practitioner>[] => {
+    const recipientFilters = currentSearch.filters?.filter((f) => f.code === 'recipient') ?? [];
+    // Split comma-separated values and flatten
+    return recipientFilters.flatMap((f) =>
+      f.value
+        .split(',')
+        .filter(Boolean)
+        .map((ref) => ({ reference: ref }) as Reference<Patient | Practitioner>)
+    );
+  }, [currentSearch]);
 
   const {
     loading,
@@ -93,9 +105,30 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     addThreadMessage,
     refreshThreadMessages,
   } = useThreadInbox({
-    query: effectiveQuery,
+    query,
     threadId,
   });
+
+  const handleParticipantsChange = useCallback(
+    (participants: Reference<Patient | Practitioner>[]) => {
+      // Remove existing recipient filters
+      const otherFilters = currentSearch.filters?.filter((f) => f.code !== 'recipient') ?? [];
+
+      // Add recipient filter with comma-separated values (OR logic in FHIR)
+      const participantRefs = participants.map((p) => p.reference).filter(Boolean) as string[];
+      const newFilters =
+        participantRefs.length > 0
+          ? [...otherFilters, { code: 'recipient', operator: Operator.EQUALS, value: participantRefs.join(',') }]
+          : otherFilters;
+
+      onChange({
+        ...currentSearch,
+        filters: newFilters,
+        offset: 0, // Reset to first page when filter changes
+      });
+    },
+    [currentSearch, onChange]
+  );
 
   useEffect(() => {
     if (error) {
@@ -125,38 +158,37 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       <div className={classes.container}>
         <Flex direction="row" h="100%" w="100%">
           {/* Left sidebar - Messages list */}
-          <Flex direction="column" w={300} h="100%" className={classes.rightBorder}>
+          <Flex direction="column" w={380} h="100%" className={classes.rightBorder}>
             <Paper h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }} scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
-                  <Text fz="h4" fw={800} truncate>
-                    Messages
-                  </Text>
+                  <Group gap="xs">
+                    <Button
+                      component={Link}
+                      to={inProgressUri}
+                      className={cx(classes.button, { [classes.selected]: status === 'in-progress' })}
+                      h={32}
+                      radius="xl"
+                    >
+                      In progress
+                    </Button>
+                    <Button
+                      component={Link}
+                      to={completedUri}
+                      className={cx(classes.button, { [classes.selected]: status === 'completed' })}
+                      h={32}
+                      radius="xl"
+                    >
+                      Completed
+                    </Button>
+                    <ParticipantFilter
+                      selectedParticipants={selectedParticipants}
+                      onFilterChange={handleParticipantsChange}
+                    />
+                  </Group>
                   <ActionIcon radius="50%" variant="filled" color="blue" onClick={openModal}>
                     <IconPlus size={16} />
                   </ActionIcon>
-                </Flex>
-                <Divider />
-                <Flex p="md" gap="xs">
-                  <Button
-                    component={Link}
-                    to={inProgressUri}
-                    className={cx(classes.button, { [classes.selected]: status === 'in-progress' })}
-                    h={32}
-                    radius="xl"
-                  >
-                    In progress
-                  </Button>
-
-                  <Button
-                    component={Link}
-                    to={completedUri}
-                    className={cx(classes.button, { [classes.selected]: status === 'completed' })}
-                    h={32}
-                    radius="xl"
-                  >
-                    Completed
-                  </Button>
                 </Flex>
                 <Divider />
                 {loading ? (

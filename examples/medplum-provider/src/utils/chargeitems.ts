@@ -27,20 +27,17 @@ export async function applyChargeItemDefinition(medplum: MedplumClient, chargeIt
   }
 
   const chargeItemDefinition = searchResult[0];
-  const applyResult = await medplum.post(
-    medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id as string, '$apply'),
-    {
-      resourceType: 'Parameters',
-      parameter: [
-        {
-          name: 'chargeItem',
-          valueReference: {
-            reference: getReferenceString(chargeItem),
-          },
+  const applyResult = await medplum.post(medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id, '$apply'), {
+    resourceType: 'Parameters',
+    parameter: [
+      {
+        name: 'chargeItem',
+        valueReference: {
+          reference: getReferenceString(chargeItem),
         },
-      ],
-    }
-  );
+      },
+    ],
+  });
 
   return applyResult as ChargeItem;
 }

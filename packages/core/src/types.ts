@@ -15,7 +15,7 @@ import { formatHumanName } from './format';
 import type { SearchParameterDetails } from './search/details';
 import type { InternalSchemaElement, InternalTypeSchema } from './typeschema/types';
 import { getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, getReferenceString, isResourceWithId } from './utils';
+import { capitalize, EMPTY, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -152,7 +152,7 @@ export interface TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
-  for (const entry of bundle.entry ?? []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     const resource = entry.resource as SearchParameter;
     if (resource.resourceType === 'SearchParameter') {
       indexSearchParameter(resource);
@@ -236,14 +236,14 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
-  for (const resourceType of searchParam.base ?? []) {
+  for (const resourceType of searchParam.base ?? EMPTY) {
     const typeSchema = getOrInitTypeSchema(resourceType);
 
     if (!typeSchema.searchParams) {
       typeSchema.searchParams = {};
     }
 
-    typeSchema.searchParams[searchParam.code as string] = searchParam;
+    typeSchema.searchParams[searchParam.code] = searchParam;
   }
 }
 
@@ -255,7 +255,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 export function getElementDefinitionTypeName(elementDefinition: ElementDefinition): string {
   const code = elementDefinition.type?.[0]?.code as string;
   return code === 'BackboneElement' || code === 'Element'
-    ? buildTypeName((elementDefinition.base?.path ?? elementDefinition.path)?.split('.') as string[])
+    ? buildTypeName((elementDefinition.base?.path ?? elementDefinition.path)?.split('.'))
     : code;
 }
 

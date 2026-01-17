@@ -296,7 +296,7 @@ export class FhirToCcdaConverter {
       resources.length === 1 &&
       resources[0].resourceType === 'ClinicalImpression'
     ) {
-      return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
+      return this.createClinicalImpressionSection(section, resources[0]);
     }
 
     if (
@@ -304,7 +304,7 @@ export class FhirToCcdaConverter {
       resources.length === 1 &&
       resources[0].resourceType === 'ServiceRequest'
     ) {
-      return this.createReasonForReferralSection(section, resources[0] as ServiceRequest);
+      return this.createReasonForReferralSection(section, resources[0]);
     }
 
     return {

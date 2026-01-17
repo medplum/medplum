@@ -201,7 +201,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {

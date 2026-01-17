@@ -14,7 +14,6 @@ import {
 } from '@medplum/core';
 import type { BotEvent, Hl7Segment, MedplumClient } from '@medplum/core';
 import type {
-  Attachment,
   CodeableConcept,
   DiagnosticReport,
   Media,
@@ -449,11 +448,7 @@ function createOrUpdateObservation(
   updatedObservation: Observation,
   existingObservations: Observation[]
 ): Promise<Observation> {
-  const existingObservation = findResourceByCode(
-    existingObservations,
-    updatedObservation.code as CodeableConcept,
-    LOINC
-  );
+  const existingObservation = findResourceByCode(existingObservations, updatedObservation.code, LOINC);
   if (existingObservation) {
     return medplum.updateResource({
       ...(existingObservation as Observation),
@@ -500,7 +495,7 @@ async function uploadEmbeddedPdfs(
     if (!report.presentedForm) {
       report.presentedForm = [];
     }
-    report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content as Attachment));
+    report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content));
   }
 
   return media;

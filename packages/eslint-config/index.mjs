@@ -178,6 +178,7 @@ export const tsConfig = {
     '@typescript-eslint/no-redundant-type-constituents': 'error',
     '@typescript-eslint/no-unnecessary-boolean-literal-compare': 'error',
     '@typescript-eslint/no-unnecessary-type-arguments': 'error',
+    '@typescript-eslint/no-unnecessary-type-assertion': 'error',
     '@typescript-eslint/no-unsafe-declaration-merging': 'error',
     '@typescript-eslint/no-unsafe-enum-comparison': 'error',
     '@typescript-eslint/prefer-for-of': 'error',

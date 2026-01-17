@@ -5,7 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { buildMigration } from '../../migrations/migrate';
+import { generateMigrationActions, writePreDeployActionsToBuilder } from '../../migrations/migrate';
 import { buildOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -36,10 +36,13 @@ export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirRespon
   const b = new FileBuilder('  ', false);
   b.append('// The schema migration needed to match the expected schema');
   b.append('');
-  await buildMigration(b, {
+
+  const actions = await generateMigrationActions({
     dbClient,
     dropUnmatchedIndexes: true,
-    allowPostDeployActions: true,
   });
+
+  writePreDeployActionsToBuilder(b, [...actions.preDeploy, ...actions.postDeploy]);
+
   return [allOk, buildOutputParameters(operation, { migrationString: b.toString() })];
 }

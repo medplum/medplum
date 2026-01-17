@@ -77,9 +77,14 @@ describe('ThreadInbox', () => {
     });
   };
 
-  test('renders messages header', async () => {
+  test('renders filter buttons and new message button', async () => {
     await setup();
-    expect(screen.getByText('Messages')).toBeInTheDocument();
+    // Status filter buttons
+    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+    // Participant filter and new message buttons
+    const iconButtons = screen.getAllByRole('button', { name: '' });
+    expect(iconButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   test('renders status filter buttons', async () => {
@@ -287,7 +292,9 @@ describe('ThreadInbox', () => {
     const user = userEvent.setup();
     await setup();
 
-    const plusButton = screen.getByRole('button', { name: '' }); // Icon button
+    // Get all icon buttons and select the plus button (second one, after participant filter)
+    const iconButtons = screen.getAllByRole('button', { name: '' });
+    const plusButton = iconButtons[iconButtons.length - 1]; // Plus button is last
     await user.click(plusButton);
 
     await waitFor(() => {
@@ -299,8 +306,9 @@ describe('ThreadInbox', () => {
     const user = userEvent.setup();
     await setup();
 
-    // Open dialog first
-    const plusButton = screen.getByRole('button', { name: '' });
+    // Open dialog first - get all icon buttons and select the plus button (last one)
+    const iconButtons = screen.getAllByRole('button', { name: '' });
+    const plusButton = iconButtons[iconButtons.length - 1];
     await user.click(plusButton);
 
     await waitFor(() => {

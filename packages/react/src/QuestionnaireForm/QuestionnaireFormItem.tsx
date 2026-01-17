@@ -393,7 +393,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
     if (item.answerOption) {
       for (const option of item.answerOption) {
         const optionValue = getItemAnswerOptionValue(option);
-        data.push(typedValueToString(optionValue) as string);
+        data.push(typedValueToString(optionValue));
       }
     }
     return (

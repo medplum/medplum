@@ -139,7 +139,7 @@ export function convertToCompactXml(obj: any): string {
     suppressBooleanAttributes: false,
     suppressEmptyNode: true,
   });
-  const xml = builder.build(obj) as string;
+  const xml = builder.build(obj);
   return xml
     .split('\n')
     .map((line: string) => line.trim())

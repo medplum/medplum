@@ -11,7 +11,7 @@ import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 export const loginValidator = makeValidationMiddleware([
   body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
+  body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
 ]);
 
 export async function loginHandler(req: Request, res: Response): Promise<void> {

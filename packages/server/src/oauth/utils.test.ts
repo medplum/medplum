@@ -442,7 +442,7 @@ describe('OAuth utils', () => {
       await withTestContext(async () => {
         const result = await createTestProject({ withRepo: true });
         project = result.project;
-        repo = result.repo as Repository;
+        repo = result.repo;
       });
     });
 

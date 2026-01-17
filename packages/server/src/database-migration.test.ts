@@ -104,7 +104,7 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
 }
 
 async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
-  const jobs = (await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'))) as WithId<AsyncJob>[];
+  const jobs = await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'));
   await repo.expungeResources(
     'AsyncJob',
     jobs.map((job) => job.id)
@@ -729,7 +729,7 @@ describe('Database migrations', () => {
       });
 
       test('Nothing to do', async () => {
-        generateMigrationActionsSpy.mockResolvedValueOnce([]);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: [], postDeploy: [] });
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         const res1 = await request(app)
@@ -750,7 +750,7 @@ describe('Database migrations', () => {
             tableName: 'AsyncJob',
           },
         ];
-        generateMigrationActionsSpy.mockResolvedValueOnce(pendingActions);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: pendingActions, postDeploy: [] });
 
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
@@ -764,7 +764,10 @@ describe('Database migrations', () => {
         const jobData = queueAddSpy.mock.calls[0][1];
         expect(jobData).toMatchObject({
           type: 'dynamic',
-          migrationActions: pendingActions,
+          migrationActions: {
+            preDeploy: pendingActions,
+            postDeploy: [],
+          },
         });
 
         expect(res1.status).toStrictEqual(202);
