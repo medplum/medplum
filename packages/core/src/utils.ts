@@ -28,6 +28,16 @@ import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference, isResource } from './types';
 
 /**
+ * Sleep options.
+ */
+export interface SleepOptions {
+  /**
+   * Optional `AbortSignal` that can be used to cancel the scheduled sleep.
+   */
+  readonly signal?: AbortSignal | null;
+}
+
+/**
  * QueryTypes defines the different ways to specify FHIR search parameters.
  *
  * Can be any valid input to the URLSearchParams() constructor.
@@ -1250,12 +1260,24 @@ export function singularize<T>(value: T | T[] | undefined): T | undefined {
 
 /**
  * Sleeps for the specified number of milliseconds.
- * @param ms - Time delay in milliseconds
+ * @param ms - Time delay in milliseconds.
+ * @param options - Optional sleep options.
  * @returns A promise that resolves after the specified number of milliseconds.
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
+export const sleep = (ms: number, options?: SleepOptions): Promise<void> =>
+  new Promise((resolve, reject) => {
+    options?.signal?.throwIfAborted();
+
+    const timeout = setTimeout(resolve, ms);
+
+    options?.signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout);
+        reject(options.signal?.reason);
+      },
+      { once: true }
+    );
   });
 
 /**
