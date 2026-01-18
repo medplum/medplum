@@ -64,13 +64,12 @@ test.describe('Medplum App Smoke Tests', () => {
   test('Search for patient via searchbar', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
-    // Click the Search button in the navbar to open Spotlight
-    await page.getByRole('button', { name: 'Search' }).click();
-    // Spotlight uses a different placeholder
-    await page.getByPlaceholder('Start typing to search…').fill('Frodo Baggins');
-    // Wait for the options dropdown to become visible
-    await expect(page.getByText('FBFrodo Baggins').first()).toBeVisible({ timeout: 10000 });
-    await page.getByText('FBFrodo Baggins').first().click();
+    // In v1 layout, search is in the header with placeholder "Search"
+    await page.getByPlaceholder('Search').fill('Frodo Baggins');
+    // Wait for the patient text to appear (avoid waiting for hidden options dropdowns)
+    // The display format may include initials like "FBFrodo Baggins"
+    await expect(page.getByText(/Frodo Baggins/i).first()).toBeVisible({ timeout: 10000 });
+    await page.getByText(/Frodo Baggins/i).first().click();
 
     await page.getByTestId('timeline-item').getByText('Frodo Baggins').click();
   });
