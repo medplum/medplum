@@ -2,13 +2,13 @@
 sidebar_position: 100
 ---
 
-# Getting Started
+# Adding Practitioners & Data
 
-This section covers the initial setup process for your Medplum system, including how to add practitioners and import existing data through the Medplum App.
+This section covers how to add practitioners and import existing data through the Medplum App ([app.medplum.com](https://app.medplum.com/)).
 
 ## Adding Practitioners
 
-Setting up practitioners is one of the first steps in configuring your Medplum system and will need to be completed using the Medplum App ([app.medplum.com](https://app.medplum.com/)). Practitioners represent healthcare providers, clinicians, and other staff members who will be using the system.
+Practitioners represent healthcare providers, clinicians, and other staff members who will be using your Medplum project.
 
 ### Prerequisites
 
