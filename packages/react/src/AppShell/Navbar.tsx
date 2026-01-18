@@ -99,7 +99,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
             {props.spotlightEnabled && (
               <Box mb={2}>
                 <Tooltip label="Search" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
-                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()}>
+                  <UnstyledButton
+                    className={classes.link}
+                    onClick={() => spotlight.open()}
+                    aria-label="Search"
+                  >
                     <IconSearch size="1.2rem" />
                     <span className={classes.linkLabel} data-opened={opened || undefined}>
                       Search
