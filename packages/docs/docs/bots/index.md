@@ -14,8 +14,6 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 
 Bots are a [project level setting](/docs/access/projects#settings) that must be enabled by a Super Admin user.
 
-For users on the [Medplum Hosted Service](/pricing), bots are a paid features. Contact info@medplum.com or reach out in our [Discord channel](https://discord.gg/medplum) to have Bots enabled on your project.
-
 Super administrators can enable bots via the Medplum App:
 
 - Navigate to https://app.your-medplum-domain.com/Project/:projectId
@@ -58,6 +56,11 @@ Manage sensitive credentials and control what actions your bots can perform.
 ## Monitoring & Operations
 Track bot performance and troubleshoot issues in production environments.
 - [Monitoring Bots](/docs/bots/monitoring-bots)
+
+## Development and Operations
+
+1. [CI/CD for Medplum Bots](/docs/bots/ci-cd-bots) - Automated testing, deployment, and subscription management
+2. [Code Sharing in Medplum Bots](/docs/bots/code-sharing) - Reusable utilities, helpers, and patterns for bot development
 
 ## Reference
 

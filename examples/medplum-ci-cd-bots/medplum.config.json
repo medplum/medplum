@@ -1,0 +1,16 @@
+{
+  "bots": [
+    {
+      "name": "hapi-sync-bot",
+      "id": "",
+      "source": "src/bots/hapi-sync-bot.ts",
+      "dist": "dist/bots/hapi-sync-bot.js"
+    },
+    {
+      "name": "hapi-sync-simple-bot",
+      "id": "",
+      "source": "src/bots/hapi-sync-simple-bot.ts",
+      "dist": "dist/bots/hapi-sync-simple-bot.js"
+    }
+  ]
+}
