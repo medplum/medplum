@@ -69,7 +69,10 @@ test.describe('Medplum App Smoke Tests', () => {
     // Wait for the patient text to appear (avoid waiting for hidden options dropdowns)
     // The display format may include initials like "FBFrodo Baggins"
     await expect(page.getByText(/Frodo Baggins/i).first()).toBeVisible({ timeout: 10000 });
-    await page.getByText(/Frodo Baggins/i).first().click();
+    await page
+      .getByText(/Frodo Baggins/i)
+      .first()
+      .click();
 
     await page.getByTestId('timeline-item').getByText('Frodo Baggins').click();
   });
