@@ -65,6 +65,41 @@ curl 'https://api.medplum.com/fhir/R4/Patient' \
   --data-raw '{"resourceType":"Patient","name":[{"given":["Homer"],"family":"Simpson"}]}'
 ```
 
+Here is the same example using the Medplum SDK:
+
+```ts
+import { MedplumClient } from '@medplum/core';
+
+const medplum = new MedplumClient({
+  clientId: MY_CLIENT_ID,
+  clientSecret: MY_CLIENT_SECRET,
+});
+
+await medplum.createResource(
+  {
+    resourceType: 'Patient',
+    name: [{ given: ['Homer'], family: 'Simpson' }],
+  },
+  {
+    headers: {
+      'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
+    },
+  }
+);
+```
+
+If you want to apply the header to all requests, set a default header when constructing the client:
+
+```ts
+const medplum = new MedplumClient({
+  clientId: MY_CLIENT_ID,
+  clientSecret: MY_CLIENT_SECRET,
+  defaultHeaders: {
+    'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
+  },
+});
+```
+
 Note the two extra HTTP request headers:
 
 1. `X-Medplum: extended` - This is required to enable the extended Medplum API features, such as `meta.author` and `meta.onBehalfOf`.
