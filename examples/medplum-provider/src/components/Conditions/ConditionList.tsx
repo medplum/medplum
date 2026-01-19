@@ -42,11 +42,11 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
           diagnosisReferences.includes(getReferenceString(condition))
         );
 
-        encounter.diagnosis.forEach((diagnosis, index) => {
+        for (const [index, diagnosis] of encounter.diagnosis.entries()) {
           if (diagnosis.condition?.reference) {
             diagnosisMap.set(diagnosis.condition.reference, diagnosis.rank || index);
           }
-        });
+        }
 
         conditionsInDiagnosis.sort((a, b) => {
           const aRef = getReferenceString(a);

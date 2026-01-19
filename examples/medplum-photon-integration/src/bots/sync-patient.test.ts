@@ -143,7 +143,7 @@ describe('Sync patient', async () => {
     const result = await handler(medplum, { bot, contentType, secrets, input: patient });
     expect(result.allergies?.length).toBe(1);
     expect(result.allergies?.[0].allergen.id).toBeDefined();
-  }, 10000);
+  }, 10_000);
 
   test.skip('Create patient with medication history', async () => {
     const medplum = new MockClient();
@@ -178,7 +178,7 @@ describe('Sync patient', async () => {
 
     const result = await handler(medplum, { bot, contentType, secrets, input: patient });
     expect(result.medicationHistory?.length).toBe(1);
-  }, 10000);
+  }, 10_000);
 });
 
 const allergies: Bundle = {

@@ -20,6 +20,7 @@ class BulkFileWriter {
 
     const filename = `export.ndjson`;
     this.stream = new PassThrough();
+    // eslint-disable-next-line sonarjs/no-async-constructor
     this.writerPromise = getBinaryStorage().writeBinary(binary, filename, NDJSON_CONTENT_TYPE, this.stream);
   }
 

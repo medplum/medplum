@@ -33,7 +33,9 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   function addConcept(key: string, concept: CodeableConcept[] | CodeableConcept | string[] | string | undefined): void {
     if (Array.isArray(concept)) {
-      concept.forEach((c) => addConcept(key, c));
+      for (const c of concept) {
+        addConcept(key, c);
+      }
     } else if (typeof concept === 'string') {
       addEntry(key, concept);
     } else if (concept) {
@@ -62,7 +64,9 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   if ('identifier' in resource) {
     if (Array.isArray(resource.identifier)) {
-      resource.identifier.forEach(addIdentifier);
+      for (const identifier of resource.identifier) {
+        addIdentifier(identifier);
+      }
     } else {
       addIdentifier(resource.identifier);
     }

@@ -46,6 +46,7 @@ export class CloudTrailAlarms extends Construct {
     if (config.cloudTrailAlarms.snsTopicArn) {
       this.alarmTopic = sns.Topic.fromTopicArn(this, 'AlarmTopic', config.cloudTrailAlarms.snsTopicArn);
     } else {
+      // eslint-disable-next-line sonarjs/aws-sns-unencrypted-topics
       this.alarmTopic = new sns.Topic(this, 'AlarmTopic', { topicName: config.cloudTrailAlarms.snsTopicName });
     }
     const alarmDefinitions = [

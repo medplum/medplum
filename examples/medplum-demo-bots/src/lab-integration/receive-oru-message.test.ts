@@ -21,8 +21,8 @@ import type {
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import type { ReadStream } from 'ssh2';
-import { default as SftpClient } from 'ssh2-sftp-client';
-import { Readable } from 'stream';
+import SftpClient from 'ssh2-sftp-client';
+import { Readable } from 'node:stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler, processOruMessage } from './receive-oru-message';
 
@@ -124,6 +124,7 @@ describe('Read from Partner Lab', () => {
     vi.resetAllMocks();
   });
 
+  // Test skipped
   test.skip('Test Connection', async (ctx: any) => {
     await handler(ctx.medplum, {
       bot: { reference: 'Bot/123' },
@@ -131,7 +132,7 @@ describe('Read from Partner Lab', () => {
       contentType: 'string',
       secrets: { ...CONNECTION_DETAILS },
     } as BotEvent<QuestionnaireResponse>);
-  }, 10000);
+  }, 10_000);
 
   test('Parse Input', async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
@@ -283,9 +284,9 @@ describe('Read from Partner Lab', () => {
       'HBA1C',
     ]);
 
-    expect(checkObservations?.map((o) => o.status)).toMatchObject(Array(8).fill('cancelled'));
+    expect(checkObservations?.map((o) => o.status)).toMatchObject(new Array(8).fill('cancelled'));
     expect(checkObservations?.map((o) => o.dataAbsentReason)).toMatchObject(
-      Array(8).fill({
+      new Array(8).fill({
         text: 'Expired',
         coding: [
           {
@@ -358,6 +359,7 @@ describe('Read from Partner Lab', () => {
       .createReadStream.mockImplementationOnce(() => {
         const readable = new Readable();
         readable.push(TEST_MESSAGE);
+        // eslint-disable-next-line unicorn/prefer-single-call -- This is Readable#push(), not Array#push()
         readable.push(null);
 
         return readable as ReadStream;
@@ -388,7 +390,7 @@ describe('Read from Partner Lab', () => {
   });
 });
 
-const TEST_MESSAGE = `MSH|^~\\&|Acme_Lims|ACME_LAB||52054|20230209145442||ORU^R01|SSH^41440165|P|2.3|
+const TEST_MESSAGE = String.raw`MSH|^~\&|Acme_Lims|ACME_LAB||52054|20230209145442||ORU^R01|SSH^41440165|P|2.3|
 PID|1|456450|456450|||Smith^Bob||19740108|F|||123 Main Street #403^^Springfield^MA^12345||||||||
 NTE|1||COLLECTED 2/4/2023, 7:23:20 AM  FRIDGED 2/6/2023 4:30 PM PST
 PV1|||0||||0^^^|||||||||||||||||||||||||||||||||||||||||||||
@@ -409,7 +411,7 @@ NTE|1||ACCORDING TO ADA GUIDELINE HEMOGLOBIN A1c CAN BE USED FOR THE PURPOSE OF 
 NTE|2||HEMOLYTIC ANEMIAS ARE CHARACTERIZED BY ERYTHROCYTES OF SHORTENED LIFESPAN. PREMATURE ERYTHROCYTE DESTRUCTION CAN RESULT IN NORMAL OR LOW VALUES OF GLYCOLATED HEMOGLOBIN, EVEN THOUGH THE TIME AVERAGE BLOOD GLUCOSE LEVEL MAY BE ELEVATED.
 OBX|2|ED|PDF^PDFBASE64|1|^^PDF^Base64^JVBERi0xLjQNCiW0tba3DQ`;
 
-const CANCELLED_MESSAGE = `MSH|^~\\&|Acme_Lims|ACME_LAB||52054|20230217165917||ORU^R01|SSH^41659279|P|2.3|
+const CANCELLED_MESSAGE = String.raw`MSH|^~\&|Acme_Lims|ACME_LAB||52054|20230217165917||ORU^R01|SSH^41659279|P|2.3|
 PID|1|456450|456450|||Smith^Bob||19740108|F|||123 Main Street #403^^Springfield^MA^12345||||||||
 NTE|1||Sample Stability Expired
 PV1|||0||||0^^^|||||||||||||||||||||||||||||||||||||||||||||
@@ -430,7 +432,7 @@ NTE|1||ACCORDING TO ADA GUIDELINE HEMOGLOBIN A1c CAN BE USED FOR THE PURPOSE OF 
 NTE|2||HEMOLYTIC ANEMIAS ARE CHARACTERIZED BY ERYTHROCYTES OF SHORTENED LIFESPAN. PREMATURE ERYTHROCYTE DESTRUCTION CAN RESULT IN NORMAL OR LOW VALUES OF GLYCOLATED HEMOGLOBIN, EVEN THOUGH THE TIME AVERAGE BLOOD GLUCOSE LEVEL MAY BE ELEVATED.
 OBX|9|ED|PDF^PDFBASE64|1|^^PDF^Base64^JVBERi0xLjQNCiW`;
 
-const NOT_CALCULATED_MESSAGE = `MSH|^~\\&|Acme_Lims|ACME_LAB||52054|20230317084423||ORU^R01|SSH^42583295|P|2.3|
+const NOT_CALCULATED_MESSAGE = String.raw`MSH|^~\&|Acme_Lims|ACME_LAB||52054|20230317084423||ORU^R01|SSH^42583295|P|2.3|
 PID|1|456450|456450|||Smith^Bob||19740108|F|||123 Main Street #403^^Springfield^MA^12345||||||||
 PV1|||0||||0^^^|||||||||||||||||||||||||||||||||||||||||||||
 ORC|RE|456450|12510666|17316155|CM||||202302281704|10129^30^AutoComm||0^^^|52054^ACME HEALTH VENTURES

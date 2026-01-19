@@ -13,7 +13,7 @@ export type PractitionerInputProps = {
   error?: NonNullable<LabOrderInputErrors['performingLab']>;
 };
 
-export function PerformingLabInput({ patient, error }: PractitionerInputProps): JSX.Element {
+export function PerformingLabInput({ patient, error }: Readonly<PractitionerInputProps>): JSX.Element {
   const { searchAvailableLabs, setPerformingLab } = useHealthGorillaLabOrderContext();
   return (
     <AsyncAutocomplete<LabOrganization>

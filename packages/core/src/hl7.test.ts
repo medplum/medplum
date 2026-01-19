@@ -13,7 +13,7 @@ describe('HL7', () => {
   });
 
   test('Minimal', () => {
-    const text = 'MSH|^~\\&';
+    const text = String.raw`MSH|^~\&`;
     const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(1);
@@ -24,7 +24,7 @@ describe('HL7', () => {
     const msh = msg.header;
     expect(msh.getField(0)?.toString()).toBe('MSH');
     expect(msh.getField(1)?.toString()).toBe('|');
-    expect(msh.getField(2)?.toString()).toBe('^~\\&');
+    expect(msh.getField(2)?.toString()).toBe(String.raw`^~\&`);
 
     const ack = msg.buildAck();
     expect(ack).toBeDefined();
@@ -36,8 +36,8 @@ describe('HL7', () => {
     expect(header.name).toBe('MSH');
     expect(header.getField(0)?.toString()).toBe('MSH');
     expect(header.getField(1)?.toString()).toBe('|');
-    expect(header.getField(2)?.toString()).toBe('^~\\&');
-    expect(header.toString().substring(0, 9)).toBe('MSH|^~\\&|');
+    expect(header.getField(2)?.toString()).toBe(String.raw`^~\&`);
+    expect(header.toString().substring(0, 9)).toBe(String.raw`MSH|^~\&|`);
   });
 
   test('ACK', () => {
@@ -118,7 +118,7 @@ describe('HL7', () => {
   });
 
   test('ADT', () => {
-    const text = `MSH|^~\\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
+    const text = String.raw`MSH|^~\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
 PID||0493575^^^2^ID 1|454721||DOE^JOHN^^^^|DOE^JOHN^^^^|19480203|M||B|254 MYSTREET AVE^^MYTOWN^OH^44123^USA||(216)123-4567|||M|NON|400003403~1129086|
 NK1||ROE^MARIE^^^^|SPO||(216)123-4567||EC|||||||||||||||||||||||||||
 PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||2688684|||||||||||||||||||||||||199912271408||||||002376853`;
@@ -155,7 +155,7 @@ PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||26
   });
 
   test('QBP_Q11', () => {
-    const text = `MSH|^~\\&|cobas® pro||host||20160724080600+0200||QBP^Q11^QBP_Q11|1233|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-27R^ROCHE
+    const text = String.raw`MSH|^~\&|cobas® pro||host||20160724080600+0200||QBP^Q11^QBP_Q11|1233|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-27R^ROCHE
 QPD|INISEQ^^99ROC|query1233|123|50001|1|||||SERPLAS^^99ROC|SC^^99ROC|R
 RCP|I|1|R^^HL70394`;
 
@@ -173,7 +173,7 @@ RCP|I|1|R^^HL70394`;
   });
 
   test('OUL_R22', () => {
-    const text = `MSH|^~\\&|cobas pro||host||20180222150842+0100||OUL^R22^OUL_R22|97|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-29^IHE
+    const text = String.raw`MSH|^~\&|cobas pro||host||20180222150842+0100||OUL^R22^OUL_R22|97|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-29^IHE
 PID|||||^^^^^^U|||U
 SPM|1|022&BARCODE||SERPLAS^^99ROC|||||||P^^HL70369|||~~~~||||||||||PSCO^^99ROC|||SC^^99ROC
 SAC|||022^BARCODE|||||||50120|2||||||||||||||||||^1^:^1
@@ -293,14 +293,14 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
     // Create a message with MSH and PID segments
     const msg = new Hl7Message([
       new Hl7Segment(
-        ['MSH', '^~\\&', 'SENDING_APP', 'SENDING_FACILITY', 'RECEIVING_APP', 'RECEIVING_FACILITY'],
+        ['MSH', String.raw`^~\&`, 'SENDING_APP', 'SENDING_FACILITY', 'RECEIVING_APP', 'RECEIVING_FACILITY'],
         new Hl7Context()
       ),
       new Hl7Segment(['PID', '1', 'PATIENT_ID'], new Hl7Context()),
     ]);
 
     // Test A: MSH segments can only replace MSH segments
-    const newMsh = new Hl7Segment(['MSH', '^~\\&', 'NEW_APP', 'NEW_FACILITY'], new Hl7Context());
+    const newMsh = new Hl7Segment(['MSH', String.raw`^~\&`, 'NEW_APP', 'NEW_FACILITY'], new Hl7Context());
     expect(msg.setSegment(0, newMsh)).toBe(true); // Can replace MSH with MSH at index 0
     expect(msg.setSegment(1, newMsh)).toBe(false); // Cannot place MSH at non-zero index
     expect(msg.setSegment('PID', newMsh)).toBe(false); // Cannot replace non-MSH segment with MSH
@@ -314,7 +314,7 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
 describe('Legacy HL7 getters', () => {
   test('ADT', () => {
-    const text = `MSH|^~\\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
+    const text = String.raw`MSH|^~\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
 PID||0493575^^^2^ID 1|454721||DOE^JOHN^^^^|DOE^JOHN^^^^|19480203|M||B|254 MYSTREET AVE^^MYTOWN^OH^44123^USA||(216)123-4567|||M|NON|400003403~1129086|
 NK1||ROE^MARIE^^^^|SPO||(216)123-4567||EC|||||||||||||||||||||||||||
 PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||2688684|||||||||||||||||||||||||199912271408||||||002376853`;
@@ -350,7 +350,7 @@ PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||26
   });
 
   test('QBP_Q11', () => {
-    const text = `MSH|^~\\&|cobas® pro||host||20160724080600+0200||QBP^Q11^QBP_Q11|1233|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-27R^ROCHE
+    const text = String.raw`MSH|^~\&|cobas® pro||host||20160724080600+0200||QBP^Q11^QBP_Q11|1233|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-27R^ROCHE
 QPD|INISEQ^^99ROC|query1233|123|50001|1|||||SERPLAS^^99ROC|SC^^99ROC|R
 RCP|I|1|R^^HL70394`;
 
@@ -368,7 +368,7 @@ RCP|I|1|R^^HL70394`;
   });
 
   test('OUL_R22', () => {
-    const text = `MSH|^~\\&|cobas pro||host||20180222150842+0100||OUL^R22^OUL_R22|97|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-29^IHE
+    const text = String.raw`MSH|^~\&|cobas pro||host||20180222150842+0100||OUL^R22^OUL_R22|97|P|2.5.1|||NE|AL||UNICODE UTF-8|||LAB-29^IHE
 PID|||||^^^^^^U|||U
 SPM|1|022&BARCODE||SERPLAS^^99ROC|||||||P^^HL70369|||~~~~||||||||||PSCO^^99ROC|||SC^^99ROC
 SAC|||022^BARCODE|||||||50120|2||||||||||||||||||^1^:^1
@@ -564,7 +564,7 @@ describe('HL7 Setter Functions', () => {
   describe('Hl7Message.setSegment', () => {
     it('should set segment by numeric index', () => {
       const message = new Hl7Message([
-        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+        new Hl7Segment(['MSH', '|', String.raw`^~\&`], context),
         new Hl7Segment(['PID', '1', '2'], context),
       ]);
 
@@ -575,7 +575,7 @@ describe('HL7 Setter Functions', () => {
 
     it('should set segment by name', () => {
       const message = new Hl7Message([
-        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+        new Hl7Segment(['MSH', '|', String.raw`^~\&`], context),
         new Hl7Segment(['PID', '1', '2'], context),
       ]);
 
@@ -585,7 +585,7 @@ describe('HL7 Setter Functions', () => {
     });
 
     it('should return append segment to end of message if index is larger than the length of the segments array', () => {
-      const message = new Hl7Message([new Hl7Segment(['MSH', '|', '^~\\&'], context)]);
+      const message = new Hl7Message([new Hl7Segment(['MSH', '|', String.raw`^~\&`], context)]);
 
       const newSegment = new Hl7Segment(['PID', '1', '2'], context);
       expect(message.setSegment(5, newSegment)).toBe(true);
@@ -593,7 +593,7 @@ describe('HL7 Setter Functions', () => {
     });
 
     it('should return false for non-existent segment name', () => {
-      const message = new Hl7Message([new Hl7Segment(['MSH', '|', '^~\\&'], context)]);
+      const message = new Hl7Message([new Hl7Segment(['MSH', '|', String.raw`^~\&`], context)]);
 
       const newSegment = new Hl7Segment(['PID', '1', '2'], context);
       expect(message.setSegment('NONEXISTENT', newSegment)).toBe(false);
@@ -608,22 +608,22 @@ describe('HL7 Setter Functions', () => {
     });
 
     it('should handle MSH segment field indexing offset correctly', () => {
-      const segment = new Hl7Segment(['MSH', '|', '^~\\&', 'SENDING_APP'], context);
+      const segment = new Hl7Segment(['MSH', '|', String.raw`^~\&`, 'SENDING_APP'], context);
       // Field 3 is actually the first field after MSH.1 and MSH.2
       expect(segment.setField(3, 'NEW_APP')).toBe(true);
       expect(segment.getField(3).toString()).toBe('NEW_APP');
       // Verify MSH.1 and MSH.2 are preserved
       expect(segment.getField(1).toString()).toBe('|');
-      expect(segment.getField(2).toString()).toBe('^~\\&');
+      expect(segment.getField(2).toString()).toBe(String.raw`^~\&`);
     });
 
     it('should not allow changing MSH.1', () => {
-      const segment = new Hl7Segment(['MSH', '|', '^~\\&'], context);
+      const segment = new Hl7Segment(['MSH', '|', String.raw`^~\&`], context);
       expect(segment.setField(1, 'new value')).toBe(false);
     });
 
     it('should not allow changing MSH.2', () => {
-      const segment = new Hl7Segment(['MSH', '|', '^~\\&'], context);
+      const segment = new Hl7Segment(['MSH', '|', String.raw`^~\&`], context);
       expect(segment.setField(2, 'new value')).toBe(false);
     });
 

@@ -50,7 +50,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         entry: [],
       };
 
-      const healthiePatient = (await fetchHealthiePatients(healthie, [healthiePatientId]))[0];
+      const [healthiePatient] = await fetchHealthiePatients(healthie, [healthiePatientId]);
       if (!healthiePatient) {
         console.log(`Healthie patient ${healthiePatientId} not found`);
         continue;
@@ -124,6 +124,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
       if (patientBundle.entry && patientBundle.entry.length > 0) {
         const result = await medplum.executeBatch(patientBundle);
         console.log(
+          // eslint-disable-next-line unicorn/no-array-for-each
           result.entry?.forEach((e, index) => {
             if (!e.response?.status.startsWith('2')) {
               console.log(JSON.stringify(e.response, null, 2));

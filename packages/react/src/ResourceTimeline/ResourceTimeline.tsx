@@ -236,7 +236,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   }
 
   // TODO: Handle null history items for deleted versions.
-  const itemsToShow = items.filter((item) => item).slice(0, countToShow);
+  const itemsToShow = items.filter(Boolean).slice(0, countToShow);
 
   return (
     <Timeline>

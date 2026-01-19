@@ -3,7 +3,7 @@
 import { locationUtils } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 import type { UserEvent } from './test-utils/render';

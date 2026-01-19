@@ -5,13 +5,13 @@ import { ContentType, getReferenceString } from '@medplum/core';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 import { simpleParser } from 'mailparser';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import type { Transporter } from 'nodemailer';
 import nodemailer from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
-import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
@@ -219,6 +219,7 @@ describe('Email', () => {
     // Emulate upload
     const req = new Readable();
     req.push('hello world');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
     await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);

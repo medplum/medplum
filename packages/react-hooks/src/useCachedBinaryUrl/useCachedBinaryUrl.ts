@@ -29,7 +29,7 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
     let binaryUrlSearchParams: URLSearchParams;
     try {
       binaryUrlSearchParams = new URLSearchParams(new URL(binaryUrl).search);
-    } catch (_err) {
+    } catch {
       return binaryUrl;
     }
 
@@ -53,7 +53,7 @@ export const useCachedBinaryUrl = (binaryUrl: string | undefined): string | unde
 
       // `expires` is in seconds, Date.now() is in ms
       // Add padding to mitigate expiration between time of check and time of use
-      if (expires && Number.parseInt(expires, 10) * 1000 - 5_000 > Date.now()) {
+      if (expires && Number.parseInt(expires, 10) * 1000 - 5000 > Date.now()) {
         return cachedUrl;
       }
     }

@@ -311,22 +311,18 @@ describe('SubscriptionManager', () => {
       const criteriaEmitter1 = manager1.addCriteria('Communication');
 
       const [masterEvent1, criteriaEvent1] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
-        const promises = [];
-        promises.push(
+        const promises = [
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             manager1.getMasterEmitter().addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
-        promises.push(
+          }),
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             criteriaEmitter1.addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
-
+          }),
+        ];
         Promise.all(promises).then(resolve).catch(reject);
       });
 
@@ -357,22 +353,18 @@ describe('SubscriptionManager', () => {
       const criteriaEmitter2 = manager2.addCriteria('Communication');
 
       const [masterEvent2, criteriaEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
-        const promises = [];
-        promises.push(
+        const promises = [
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             manager2.getMasterEmitter().addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
-        promises.push(
+          }),
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             criteriaEmitter2.addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
-
+          }),
+        ];
         Promise.all(promises).then(resolve).catch(reject);
       });
 
@@ -670,21 +662,18 @@ describe('SubscriptionManager', () => {
       const criteriaEmitter = defaultManager.addCriteria('Communication');
 
       const [masterEvent, criteriaEvent] = await new Promise<SubscriptionEventMap['close'][]>((resolve, reject) => {
-        const promises = [];
-        promises.push(
+        const promises = [
           new Promise<SubscriptionEventMap['close']>((resolve) => {
             defaultManager.getMasterEmitter().addEventListener('close', (event) => {
               resolve(event);
             });
-          })
-        );
-        promises.push(
+          }),
           new Promise<SubscriptionEventMap['close']>((resolve) => {
             criteriaEmitter.addEventListener('close', (event) => {
               resolve(event);
             });
-          })
-        );
+          }),
+        ];
 
         expect(() => defaultManager.closeWebSocket()).not.toThrow();
         Promise.all(promises).then(resolve).catch(reject);
@@ -868,21 +857,18 @@ describe('SubscriptionManager', () => {
 
       const emitter = defaultManager.addCriteria('Communication');
       const [receivedEvent1, receivedEvent2] = await new Promise<SubscriptionEventMap['error'][]>((resolve, reject) => {
-        const promises = [];
-        promises.push(
+        const promises = [
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             defaultManager.getMasterEmitter().addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
-        promises.push(
+          }),
           new Promise<SubscriptionEventMap['error']>((resolve) => {
             emitter.addEventListener('error', (event) => {
               resolve(event);
             });
-          })
-        );
+          }),
+        ];
 
         wsServer.send('invalid_json');
         Promise.all(promises).then(resolve).catch(reject);
@@ -1002,7 +988,7 @@ describe('SubscriptionManager', () => {
       await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, again!');
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toStrictEqual('message');
-    }, 30000);
+    }, 30_000);
 
     test('should emit close when pong not received from server within time limit', async () => {
       const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
@@ -1419,10 +1405,10 @@ describe('resourceMatchesSubscriptionCriteria', () => {
       });
 
       expect(matches).toStrictEqual(shouldMatch);
-      if (!shouldMatch) {
-        expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
-      } else {
+      if (shouldMatch) {
         expect(log).not.toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed'));
+      } else {
+        expect(log).toHaveBeenCalledWith(expect.stringContaining('Subscription suppressed due to mismatched accounts'));
       }
     });
   });

@@ -390,7 +390,7 @@ function formatTimingRepeat(builder: string[], repeat: TimingRepeat | undefined)
   }
 
   if (repeat.dayOfWeek) {
-    builder.push('on ' + repeat.dayOfWeek.map(capitalize).join(', '));
+    builder.push('on ' + repeat.dayOfWeek.map((d) => capitalize(d)).join(', '));
   }
 
   if (repeat.timeOfDay) {
@@ -455,15 +455,14 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   const result = [];
 
   if (quantity.comparator) {
-    result.push(quantity.comparator);
-    result.push(' ');
+    result.push(quantity.comparator, ' ');
   }
 
   if (quantity.value !== undefined) {
-    if (precision !== undefined) {
-      result.push(quantity.value.toFixed(precision));
-    } else {
+    if (precision === undefined) {
       result.push(quantity.value);
+    } else {
+      result.push(quantity.value.toFixed(precision));
     }
   }
 

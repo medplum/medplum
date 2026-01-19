@@ -127,7 +127,7 @@ export function getRequestContext(): IRequestContext {
 export function getAuthenticatedContext(): AuthenticatedRequestContext {
   const ctx = getRequestContext();
   if (!(ctx instanceof AuthenticatedRequestContext)) {
-    throw new Error('Request is not authenticated');
+    throw new TypeError('Request is not authenticated');
   }
   return ctx;
 }

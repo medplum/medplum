@@ -112,9 +112,9 @@ export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
-const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
+const DEFAULT_BROWSER_CACHE_TIME = 60_000; // 60 seconds
 const DEFAULT_NODE_CACHE_TIME = 0;
-const DEFAULT_REFRESH_GRACE_PERIOD = 300000; // 5 minutes
+const DEFAULT_REFRESH_GRACE_PERIOD = 300_000; // 5 minutes
 const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = {
@@ -940,6 +940,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private keyValueClient?: MedplumKeyValueClient;
   private logLevel: ClientLogLevel;
 
+  /* eslint-disable sonarjs/no-async-constructor */
   constructor(options?: MedplumClientOptions) {
     super();
 
@@ -968,7 +969,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.logLevel = this.initializeLogLevel(options);
 
     this.cacheTime =
-      options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
+      options?.cacheTime ?? (isBrowserEnvironment() ? DEFAULT_BROWSER_CACHE_TIME : DEFAULT_NODE_CACHE_TIME);
     if (this.cacheTime > 0) {
       this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     } else {
@@ -1013,6 +1014,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     this.setupStorageListener();
   }
+  /* eslint-enable sonarjs/no-async-constructor */
 
   /**
    * @returns Whether the client has been fully initialized or not. Should always be true unless a custom asynchronous `ClientStorage` was passed into the constructor.
@@ -2935,7 +2937,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         body,
         contentType,
         waitForResponse,
-        ...(waitTimeout !== undefined ? { waitTimeout } : undefined),
+        ...(waitTimeout === undefined ? undefined : { waitTimeout }),
       },
       ContentType.FHIR_JSON,
       requestOptions
@@ -3561,7 +3563,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
-        const maxRetryTime = options.maxRetryTime ?? 2_000;
+        const maxRetryTime = options.maxRetryTime ?? 2000;
         // Return to user immediately if delay would be very long
         if (delayMs > maxRetryTime) {
           return response;
@@ -3596,6 +3598,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private logResponse(response: Response): void {
     console.log(`< ${response.status} ${response.statusText}`);
     if (this.logLevel === 'verbose' && response.headers) {
+      // eslint-disable-next-line unicorn/no-array-for-each -- Not Array#forEach()
       response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
   }
@@ -3721,8 +3724,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const response = (await this.post(this.fhirBaseUrl, batch)) as Bundle;
 
     // Process the response
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
+    for (const [i, entry] of entries.entries()) {
       const responseEntry = response.entry?.[i];
       if (responseEntry?.response?.outcome && !isOk(responseEntry.response.outcome)) {
         entry.reject(new OperationOutcomeError(responseEntry.response.outcome));
@@ -3738,9 +3740,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
     // Apply default headers
-    Object.entries(this.defaultHeaders).forEach(([name, value]) => {
+    for (const [name, value] of Object.entries(this.defaultHeaders)) {
       this.setRequestHeader(options, name, value);
-    });
+    }
 
     this.setRequestHeader(options, 'Accept', DEFAULT_ACCEPT, true);
 
@@ -4433,7 +4435,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           }
         }
       });
-    } catch (_err) {
+    } catch {
       // Silently ignore if this environment does not support storage events
     }
   }

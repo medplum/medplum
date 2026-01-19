@@ -3,11 +3,11 @@
 import type { WithId } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
+import { URL, URLSearchParams } from 'node:url';
 import setCookieParser from 'set-cookie-parser';
 import request from 'supertest';
-import { URL, URLSearchParams } from 'url';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';

@@ -100,7 +100,7 @@ describe('TestMetadataCardInput', () => {
   function setup(
     props: {
       test?: TestCoding;
-      metadata?: TestMetadata | undefined;
+      metadata?: TestMetadata;
       error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
     } = {}
   ): ReturnType<typeof render> {
@@ -298,7 +298,7 @@ describe('TestMetadataCardInput', () => {
     });
 
     const calls = mockUpdateTestMetadata.mock.calls;
-    const lastCall = calls[calls.length - 1];
+    const lastCall = calls.at(-1) as any[];
     expect(lastCall[0]).toBe(mockTest);
     expect(lastCall[1]).toHaveProperty('aoeResponses');
     expect(lastCall[1].aoeResponses).toHaveProperty('resourceType', 'QuestionnaireResponse');

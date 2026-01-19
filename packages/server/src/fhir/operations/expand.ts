@@ -148,6 +148,7 @@ export async function expandValueSet(
     valueSet.expansion = {
       total: expandedSet.length,
       timestamp: new Date().toISOString(),
+      // eslint-disable-next-line sonarjs/argument-type
       contains: expandedSet.slice(0, params.count),
     };
   }

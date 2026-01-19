@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+/* eslint-disable sonarjs/os-command, sonarjs/no-os-command-from-path -- This runs on a dev's local machine */
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,8 +62,8 @@ async function promptForConfig(): Promise<ProjectConfig> {
 
   // Display the list of starter projects
   console.log('Which starter project would you like to use?');
-  for (let i = 0; i < STARTER_PROJECTS.length; i++) {
-    console.log(`${i + 1}) ${STARTER_PROJECTS[i].name} - ${STARTER_PROJECTS[i].description}`);
+  for (const [i, STARTER_PROJECT] of STARTER_PROJECTS.entries()) {
+    console.log(`${i + 1}) ${STARTER_PROJECT.name} - ${STARTER_PROJECT.description}`);
   }
 
   // Prompt the user to select a project

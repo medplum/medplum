@@ -175,16 +175,20 @@ export type FhircastReferenceContext =
   | FhircastSelectContext;
 
 export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastPatientCloseContext = FhircastPatientOpenContext;
 export type FhircastImagingStudyOpenContext = FhircastStudyContext | FhircastEncounterContext | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastImagingStudyCloseContext = FhircastImagingStudyOpenContext;
 export type FhircastEncounterOpenContext = FhircastEncounterContext | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastEncounterCloseContext = FhircastEncounterOpenContext;
 export type FhircastDiagnosticReportOpenContext =
   | FhircastReportContext
   | FhircastEncounterContext
   | FhircastStudyContext
   | FhircastPatientContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastDiagnosticReportCloseContext = FhircastDiagnosticReportOpenContext;
 export type FhircastDiagnosticReportUpdateContext =
   | FhircastReportReferenceContext
@@ -194,6 +198,7 @@ export type FhircastDiagnosticReportSelectContext =
   | FhircastReportReferenceContext
   | FhircastPatientReferenceContext
   | FhircastSelectContext;
+// eslint-disable-next-line sonarjs/redundant-type-aliases
 export type FhircastSyncErrorContext = FhircastOperationOutcomeContext;
 
 // This is the one key that only exists within a GetCurrentContext
@@ -449,14 +454,14 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
     FhircastEventContext['key'],
     FhircastEventContextDetails
   >;
-  for (let i = 0; i < contexts.length; i++) {
-    const key = contexts[i].key as FhircastEventContext['key'];
+  for (const [i, context] of contexts.entries()) {
+    const key = context.key as FhircastEventContext['key'];
     if (!eventSchema[key]) {
       throw new OperationOutcomeError(
         validationError(`Key '${key}' not found for event '${event}'. Make sure to add only valid keys.`)
       );
     }
-    validateFhircastContext(event, contexts[i], i, eventSchema[key], keysSeen);
+    validateFhircastContext(event, context, i, eventSchema[key], keysSeen);
   }
   // Iterate each key, if conditions for keys are not met as confirmed by `keysSeen` map, throw an error
   for (const [key, details] of Object.entries(eventSchema) as [

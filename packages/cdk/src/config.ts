@@ -78,8 +78,8 @@ export class InfraConfigNormalizer {
     let newArray: ExternalSecretPrimitive[] | Record<string, any>[];
     if ((typeof firstEle !== 'object' && firstEle !== null) || isExternalSecretLike(firstEle)) {
       newArray = new Array(currentVal.length) as ExternalSecretPrimitive[];
-      for (let i = 0; i < currentVal.length; i++) {
-        const currIdxVal = currentVal[i] as unknown as ExternalSecretPrimitive | ExternalSecret;
+      for (const [i, element] of currentVal.entries()) {
+        const currIdxVal = element as unknown as ExternalSecretPrimitive | ExternalSecret;
         if (typeof currIdxVal !== 'object') {
           newArray[i] = currIdxVal;
           continue;
@@ -91,8 +91,8 @@ export class InfraConfigNormalizer {
     // ------ case 3b: other objects (recurse)
     else {
       newArray = new Array(currentVal.length) as Record<string, any>[];
-      for (let i = 0; i < currentVal.length; i++) {
-        newArray[i] = await this.normalizeObjectInInfraConfig(currentVal[i]);
+      for (const [i, element] of currentVal.entries()) {
+        newArray[i] = await this.normalizeObjectInInfraConfig(element);
       }
     }
     return newArray;

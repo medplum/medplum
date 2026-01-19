@@ -17,7 +17,7 @@ import type {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { generateKeyPairSync } from 'crypto';
+import { generateKeyPairSync } from 'node:crypto';
 import fetch from 'node-fetch';
 import type { Mock } from 'vitest';
 import { handler } from './epic-query-patient';

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Resource, SearchParameter, ViewDefinition } from '@medplum/fhirtypes';
-import { readFileSync, readdirSync, writeFileSync } from 'fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalSqlOnFhir } from './eval';
@@ -63,7 +63,7 @@ describe('SQL on FHIR', () => {
           } else {
             expect(evalSqlOnFhir(view, resources)).toMatchObject(expected);
           }
-        } catch (_err) {
+        } catch {
           // For now, we're just going to log the error and continue
           // Once we have stabilized the tests, we can throw the error
           passed = false;

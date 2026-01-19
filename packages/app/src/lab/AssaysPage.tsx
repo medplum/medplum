@@ -97,6 +97,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
   return (
     <>
       {ranges.map((range: ObservationDefinitionQualifiedInterval) => (
+        // eslint-disable-next-line sonarjs/table-header
         <table key={`range-${range.condition}`}>
           <tbody>
             <tr>

@@ -978,7 +978,7 @@ describe('SearchControl', () => {
         resourceType: 'Bundle',
         type: 'searchset',
         total: 5,
-        entry: [{ resource: HomerSimpson }, ...Array(4).fill({ resourceType: 'Patient' })],
+        entry: [{ resource: HomerSimpson }, ...new Array(4).fill({ resourceType: 'Patient' })],
       });
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
@@ -994,7 +994,7 @@ describe('SearchControl', () => {
         resourceType: 'Bundle',
         type: 'searchset',
         total: 40,
-        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+        entry: [{ resource: HomerSimpson }, ...new Array(19).fill({ resourceType: 'Patient' })],
       });
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
@@ -1010,8 +1010,8 @@ describe('SearchControl', () => {
       await setup(props, {
         resourceType: 'Bundle',
         type: 'searchset',
-        total: 403091,
-        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+        total: 403_091,
+        entry: [{ resource: HomerSimpson }, ...new Array(19).fill({ resourceType: 'Patient' })],
       });
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       const element = screen.getByTestId('count-display');
@@ -1020,15 +1020,15 @@ describe('SearchControl', () => {
 
     test('Large Estimated Count w/ High Offset', async () => {
       const props: SearchControlProps = {
-        search: { ...search, offset: 200000, count: 20 },
+        search: { ...search, offset: 200_000, count: 20 },
         onLoad,
       };
 
       await setup(props, {
         resourceType: 'Bundle',
         type: 'searchset',
-        total: 403091,
-        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resourceType: 'Patient' })],
+        total: 403_091,
+        entry: [{ resource: HomerSimpson }, ...new Array(19).fill({ resourceType: 'Patient' })],
         link: [
           {
             relation: 'next',

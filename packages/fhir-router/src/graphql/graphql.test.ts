@@ -23,7 +23,7 @@ import type {
   SearchParameter,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { FhirRouter, makeSimpleRequest } from '../fhirrouter';
 import { MemoryRepository } from '../repo';
 import { getRootSchema, graphqlHandler } from './graphql';

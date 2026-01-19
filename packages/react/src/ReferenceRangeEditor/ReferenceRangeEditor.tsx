@@ -386,7 +386,7 @@ function ensureQualifiedIntervalKeys(
     Math.max(
       ...intervals.map((interval) => {
         const existingNum = Number.parseInt(interval.id?.substring(3) || '', 10);
-        return !Number.isNaN(existingNum) ? existingNum : Number.NEGATIVE_INFINITY;
+        return Number.isNaN(existingNum) ? Number.NEGATIVE_INFINITY : existingNum;
       })
     ) + 1;
 

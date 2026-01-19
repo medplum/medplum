@@ -4,7 +4,7 @@ import { allOk } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { Loading, MedplumProvider } from '@medplum/react';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';

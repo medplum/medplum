@@ -303,14 +303,14 @@ function expectBundleToContainStatusEntry(bundle: Bundle<Parameters>, agent: Age
                 name: 'version',
                 valueString: info.version,
               }),
-              ...(info.lastUpdated !== undefined
-                ? [
+              ...(info.lastUpdated === undefined
+                ? []
+                : [
                     expect.objectContaining<ParametersParameter>({
                       name: 'lastUpdated',
                       valueInstant: info.lastUpdated,
                     }),
-                  ]
-                : []),
+                  ]),
             ]),
           }),
         }),

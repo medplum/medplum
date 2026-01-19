@@ -652,7 +652,7 @@ describe('BaseChat', () => {
 
     expect(mockScrollTo).toHaveBeenCalled();
 
-    const lastCall = mockScrollTo.mock.calls[mockScrollTo.mock.calls.length - 1];
+    const lastCall = mockScrollTo.mock.calls.at(-1);
     expect(lastCall[0]).toEqual(
       expect.objectContaining({
         top: expect.any(Number),

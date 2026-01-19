@@ -3,8 +3,8 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, getReferenceString } from '@medplum/core';
 import type { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';

@@ -51,6 +51,7 @@ export type UseDebouncedValueOptions = {
 export function useDebouncedValue<T = any>(
   value: T,
   waitMs: number,
+  // eslint-disable-next-line unicorn/no-object-as-default-parameter
   options: UseDebouncedValueOptions = { leading: false }
 ): [T, () => void] {
   const [debouncedValue, setDebouncedValue] = useState(value);

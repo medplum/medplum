@@ -38,6 +38,13 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
   );
 }
 
+function displayGenericError(error: unknown): React.ReactNode {
+  if (error instanceof Error) {
+    return error.toString();
+  }
+  return String(error);
+}
+
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>();
@@ -79,13 +86,6 @@ export function HomePage(): JSX.Element {
       }
     }
   };
-
-  function displayGenericError(error: unknown): React.ReactNode {
-    if (error instanceof Error) {
-      return error.toString();
-    }
-    return String(error);
-  }
 
   return (
     <HealthGorillaLabOrderProvider {...labOrderReturn}>

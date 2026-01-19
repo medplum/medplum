@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 /// <reference types="vite/client" />
 import react from '@vitejs/plugin-react';
-import { execSync } from 'child_process';
-import { copyFileSync, existsSync } from 'fs';
-import path from 'path';
+import { execSync } from 'node:child_process';
+import { copyFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' with { type: 'json' };
 
@@ -14,8 +14,9 @@ if (!existsSync(path.join(__dirname, '.env'))) {
 
 let gitHash;
 try {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path
   gitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
-} catch (_err) {
+} catch {
   gitHash = 'unknown'; // Default value when not in a git repository
 }
 

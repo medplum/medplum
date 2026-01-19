@@ -12,9 +12,9 @@ describe('EnhancedHl7Client', () => {
 
   // Helper function to get a random port number
   function getRandomPort(): number {
-    let port = Math.floor(Math.random() * 10000) + 40000;
+    let port = Math.floor(Math.random() * 10_000) + 40_000;
     while (usedPorts.includes(port)) {
-      port = Math.floor(Math.random() * 10000) + 40000;
+      port = Math.floor(Math.random() * 10_000) + 40_000;
     }
     usedPorts.push(port);
     return port;

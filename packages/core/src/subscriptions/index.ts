@@ -14,7 +14,7 @@ import { deepEquals, extractAccountReferences, getExtension, getReferenceString,
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
-const DEFAULT_PING_INTERVAL_MS = 5_000;
+const DEFAULT_PING_INTERVAL_MS = 5000;
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -120,7 +120,7 @@ export class SubscriptionManager {
     let url: string;
     try {
       url = new URL(wsUrl).toString();
-    } catch (_err) {
+    } catch {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
     const ws = options?.ReconnectingWebSocket
@@ -350,19 +350,19 @@ export class SubscriptionManager {
   private addCriteriaEntry(criteriaEntry: CriteriaEntry): void {
     const { criteria, subscriptionProps } = criteriaEntry;
     let mapEntry: CriteriaMapEntry;
-    if (!this.criteriaEntries.has(criteria)) {
+    if (this.criteriaEntries.has(criteria)) {
+      mapEntry = this.criteriaEntries.get(criteria) as CriteriaMapEntry;
+    } else {
       mapEntry = { criteriaWithProps: [] as CriteriaEntry[] };
       this.criteriaEntries.set(criteria, mapEntry);
-    } else {
-      mapEntry = this.criteriaEntries.get(criteria) as CriteriaMapEntry;
     }
     // We can assume because this will be "guarded" by `maybeGetCriteriaEntry()`,
     // that we don't need to check if a matching `CriteriaEntry` exists
     // We just need to put the given one into the right spot
-    if (!subscriptionProps) {
-      mapEntry.bareCriteria = criteriaEntry;
-    } else {
+    if (subscriptionProps) {
       mapEntry.criteriaWithProps.push(criteriaEntry);
+    } else {
+      mapEntry.bareCriteria = criteriaEntry;
     }
   }
 
@@ -372,13 +372,13 @@ export class SubscriptionManager {
       return;
     }
     const mapEntry = this.criteriaEntries.get(criteria) as CriteriaMapEntry;
-    if (!subscriptionProps) {
-      mapEntry.bareCriteria = undefined;
-    } else {
+    if (subscriptionProps) {
       mapEntry.criteriaWithProps = mapEntry.criteriaWithProps.filter((otherEntry): boolean => {
         const otherProps = otherEntry.subscriptionProps as Partial<Subscription>;
         return !deepEquals(subscriptionProps, otherProps);
       });
+    } else {
+      mapEntry.bareCriteria = undefined;
     }
     if (!mapEntry.bareCriteria && mapEntry.criteriaWithProps.length === 0) {
       this.criteriaEntries.delete(criteria);
@@ -582,7 +582,6 @@ export async function resourceMatchesSubscriptionCriteria({
  */
 function matchesChannelType(subscription: Subscription, logger?: Logger): boolean {
   const channelType = subscription.channel?.type;
-
   if (channelType === 'rest-hook') {
     const url = subscription.channel?.endpoint;
     if (!url) {
@@ -593,11 +592,7 @@ function matchesChannelType(subscription: Subscription, logger?: Logger): boolea
     return true;
   }
 
-  if (channelType === 'websocket') {
-    return true;
-  }
-
-  return false;
+  return channelType === 'websocket';
 }
 
 export async function isFhirCriteriaMet(

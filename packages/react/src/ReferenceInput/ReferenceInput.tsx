@@ -79,13 +79,13 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
           if (!profile) {
             console.error(`StructureDefinition not found for ${tt.value}`);
             newTargetType.error = 'StructureDefinition not found';
-          } else if (!isPopulated(profile.type)) {
-            console.error(`StructureDefinition.type missing for ${tt.value}`);
-            newTargetType.error = 'StructureDefinition.type missing';
-          } else {
+          } else if (isPopulated(profile.type)) {
             newTargetType.resourceType = profile.type;
             newTargetType.name = profile.name;
             newTargetType.title = profile.title;
+          } else {
+            console.error(`StructureDefinition.type missing for ${tt.value}`);
+            newTargetType.error = 'StructureDefinition.type missing';
           }
 
           return newTargetType;

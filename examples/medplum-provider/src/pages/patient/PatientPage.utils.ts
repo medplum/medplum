@@ -9,7 +9,7 @@ export function patientPathPrefix(patientId: string): string {
 
 export function prependPatientPath(patient: Patient | undefined, path: string): string {
   if (patient?.id) {
-    return `${patientPathPrefix(patient.id)}${!path.startsWith('/') ? '/' : ''}${path}`;
+    return `${patientPathPrefix(patient.id)}${path.startsWith('/') ? '' : '/'}${path}`;
   }
 
   return path;

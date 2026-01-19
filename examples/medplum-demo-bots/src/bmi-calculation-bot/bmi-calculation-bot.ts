@@ -137,11 +137,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   } else if (weightUnit?.toLowerCase() === 'g' || weightUnit?.toLowerCase() === 'grams') {
     weightKg = weightValue / 1000; // grams to kg
   } else if (weightUnit?.toLowerCase() === 'mg' || weightUnit?.toLowerCase() === 'milligrams') {
-    weightKg = weightValue / 1000000; // mg to kg
+    weightKg = weightValue / 1_000_000; // mg to kg
   } else if (weightUnit?.toLowerCase().includes('lb') || weightUnit?.toLowerCase().includes('pound')) {
-    weightKg = weightValue * 0.453592; // pounds to kg
+    weightKg = weightValue * 0.453_592; // pounds to kg
   } else if (weightUnit?.toLowerCase().includes('oz') || weightUnit?.toLowerCase().includes('ounce')) {
-    weightKg = weightValue * 0.0283495; // ounces to kg
+    weightKg = weightValue * 0.028_349_5; // ounces to kg
   } else if (!weightUnit?.toLowerCase().includes('kg') && !weightUnit?.toLowerCase().includes('kilogram')) {
     // If unit is not recognized and not already kg, assume it might be in a different format
     // Log a warning but try to proceed

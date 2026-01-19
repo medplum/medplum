@@ -100,15 +100,15 @@ export function TaskBoard({
   const selectedStatuses = useMemo(() => {
     const statusFilters = currentSearch.filters?.filter((f) => f.code === 'status') || [];
     const statuses: Task['status'][] = [];
-    statusFilters.forEach((filter) => {
+    for (const filter of statusFilters) {
       const values = filter.value.split(',');
-      values.forEach((value) => {
+      for (const value of values) {
         const trimmedValue = value.trim();
         if (trimmedValue && !statuses.includes(trimmedValue as Task['status'])) {
           statuses.push(trimmedValue as Task['status']);
         }
-      });
-    });
+      }
+    }
     return statuses;
   }, [currentSearch]);
 
@@ -116,15 +116,15 @@ export function TaskBoard({
   const selectedPriorities = useMemo(() => {
     const priorityFilters = currentSearch.filters?.filter((f) => f.code === 'priority') || [];
     const priorities: Task['priority'][] = [];
-    priorityFilters.forEach((filter) => {
+    for (const filter of priorityFilters) {
       const values = filter.value.split(',');
-      values.forEach((value) => {
+      for (const value of values) {
         const trimmedValue = value.trim();
         if (trimmedValue && !priorities.includes(trimmedValue as Task['priority'])) {
           priorities.push(trimmedValue as Task['priority']);
         }
-      });
-    });
+      }
+    }
     return priorities;
   }, [currentSearch]);
 
@@ -280,7 +280,7 @@ export function TaskBoard({
         const valueCode = (value as CodeableConcept)?.coding?.[0]?.code;
         setFilters((prev) => ({
           ...prev,
-          performerType: performerTypeCode !== valueCode ? (value as CodeableConcept) : undefined,
+          performerType: performerTypeCode === valueCode ? undefined : (value as CodeableConcept),
         }));
         break;
       }

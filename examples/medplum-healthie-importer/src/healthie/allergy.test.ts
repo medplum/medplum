@@ -198,7 +198,7 @@ describe('mapHealthieStatusToClinicalStatus', () => {
   });
 
   test('handles invalid or missing status', () => {
-    expect(mapHealthieStatusToClinicalStatus(undefined)).toBe('active');
+    expect(mapHealthieStatusToClinicalStatus()).toBe('active');
     expect(mapHealthieStatusToClinicalStatus('unknown')).toBe('active');
   });
 });
@@ -223,7 +223,7 @@ describe('mapHealthieCategoryTypeToCategory', () => {
   });
 
   test('handles invalid or missing category_type', () => {
-    expect(mapHealthieCategoryTypeToCategory(undefined)).toBe('environment');
+    expect(mapHealthieCategoryTypeToCategory()).toBe('environment');
     expect(mapHealthieCategoryTypeToCategory('unknown')).toBe('environment');
   });
 });
@@ -237,7 +237,7 @@ describe('mapHealthieSeverityToCriticality', () => {
   });
 
   test('handles missing severity', () => {
-    expect(mapHealthieSeverityToCriticality(undefined)).toBe('low');
+    expect(mapHealthieSeverityToCriticality()).toBe('low');
   });
 });
 
@@ -250,6 +250,6 @@ describe('mapHealthieSeverityToReactionSeverity', () => {
   });
 
   test('handles missing severity', () => {
-    expect(mapHealthieSeverityToReactionSeverity(undefined)).toBeUndefined();
+    expect(mapHealthieSeverityToReactionSeverity()).toBeUndefined();
   });
 });

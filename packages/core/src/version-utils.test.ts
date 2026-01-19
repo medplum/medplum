@@ -78,12 +78,12 @@ describe('checkIfValidMedplumVersion', () => {
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 404,
           json: async () => {
             return { message: 'Not Found' };
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
 
@@ -94,12 +94,12 @@ describe('checkIfValidMedplumVersion', () => {
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 404,
           json: async () => {
             return { message: 'Not Found' };
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
@@ -109,7 +109,7 @@ describe('checkIfValidMedplumVersion', () => {
   test('Network error - fetch throws', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.reject(new Error('Network error'));
+        throw new Error('Network error');
       })
     );
     await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
@@ -134,12 +134,12 @@ describe('fetchVersionManifest', () => {
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 200,
           json: async () => {
             return manifest;
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
@@ -164,12 +164,12 @@ describe('fetchVersionManifest', () => {
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 200,
           json: async () => {
             return manifest;
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
@@ -185,7 +185,7 @@ describe('fetchVersionManifest', () => {
   test('Fetch throws -- Network error', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.reject(new Error('Network request failed'));
+        throw new Error('Network request failed');
       })
     );
     await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow('Network request failed');
@@ -195,12 +195,12 @@ describe('fetchVersionManifest', () => {
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 404,
           json: async () => {
             return { message: 'Not Found' };
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow(
@@ -227,12 +227,12 @@ describe('fetchLatestVersionString', () => {
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 200,
           json: async () => {
             return manifest;
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString('test')).resolves.toStrictEqual('3.1.6');
@@ -251,12 +251,12 @@ describe('fetchLatestVersionString', () => {
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
       jest.fn(async () => {
-        return Promise.resolve({
+        return {
           status: 200,
           json: async () => {
             return manifest;
           },
-        });
+        };
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString('test')).rejects.toThrow(

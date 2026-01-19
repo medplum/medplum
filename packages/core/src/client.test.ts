@@ -11,10 +11,10 @@ import type {
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { randomUUID, webcrypto } from 'crypto';
+import { randomUUID, webcrypto } from 'node:crypto';
+import { TextEncoder } from 'node:util';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
-import { TextEncoder } from 'util';
 import { encodeBase64 } from './base64';
 import type { CdsRequest } from './cds';
 import type {
@@ -1322,7 +1322,7 @@ describe('Client', () => {
         }
         throw new Error('UNREACHABLE');
       };
-      return Promise.resolve({
+      return {
         ok: true,
         status: 201,
         headers: new Map<string, string>([
@@ -1332,7 +1332,7 @@ describe('Client', () => {
         blob: () => streamReader('blob'),
         json: () => streamReader('json'),
         text: () => streamReader('text'),
-      });
+      };
     };
     const client = new MedplumClient({ fetch });
     await expect(client.post('Practitioner/123', { resourceType: 'Practitioner' })).resolves.toStrictEqual(undefined);
@@ -2801,7 +2801,7 @@ describe('Client', () => {
       'XYZ',
       ContentType.HL7_V2,
       true,
-      { waitTimeout: 20000 }
+      { waitTimeout: 20_000 }
     );
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
@@ -4054,7 +4054,7 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(client.rateLimitStatus()).toStrictEqual(
       expect.arrayContaining([
-        { name: 'requests', remainingUnits: 59539, secondsUntilReset: 4, resetsAfter: expect.any(Number) },
+        { name: 'requests', remainingUnits: 59_539, secondsUntilReset: 4, resetsAfter: expect.any(Number) },
         { name: 'fhirInteractions', remainingUnits: 0, secondsUntilReset: 3, resetsAfter: expect.any(Number) },
       ])
     );

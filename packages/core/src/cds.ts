@@ -256,6 +256,7 @@ const userProfileTokens = new Set([
  * @returns The prefetch query with variables replaced.
  */
 export function replaceQueryVariables(user: CdsUserResource, context: Record<string, unknown>, query: string): string {
+  // eslint-disable-next-line sonarjs/slow-regex
   return query.replaceAll(/\{\{([^}]+)\}\}/g, (substring, varName) => {
     varName = varName.trim();
 

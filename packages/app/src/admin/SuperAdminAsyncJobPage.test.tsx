@@ -78,9 +78,8 @@ const COMPLETED_BUNDLE_ENTRY: BundleEntry[] = [
 let asyncJobBundleEntry: BundleEntry[] = [];
 
 function mockFetch(url: string, options: { method: string; body: string }): Promise<any> {
-  let status = 404;
+  let status: number;
   let result: any;
-
   if (options.method === 'GET' && url.startsWith(BASE_URL + MIGRATION_INFO_URL)) {
     status = 200;
     result = { postDeployMigrations: [1, 2, 3], pendingPostDeployMigration: 2 };
@@ -104,7 +103,6 @@ function mockFetch(url: string, options: { method: string; body: string }): Prom
 
 async function setup(medplum: MedplumClient): Promise<void> {
   await act(async () => {
-    // renderAppRoutes(medplum, '/admin/super/asyncjob');
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super/asyncjob']} initialIndex={0}>

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import type { Constraint } from './typeschema/types';
+import { EMPTY } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -500,7 +501,7 @@ export function normalizeErrorString(error: unknown): string {
  * @returns The string representation of the operation outcome.
  */
 export function operationOutcomeToString(outcome: OperationOutcome): string {
-  const strs = outcome.issue?.map(operationOutcomeIssueToString) ?? [];
+  const strs = outcome.issue?.map((iss) => operationOutcomeIssueToString(iss)) ?? EMPTY;
   return strs.length > 0 ? strs.join('; ') : 'Unknown error';
 }
 

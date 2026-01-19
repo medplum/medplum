@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
-import { unlink, writeFile } from 'fs/promises';
-import { resolve } from 'path';
+import { unlink, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { normalizeInfraConfig } from './config';
 import { main, MedplumStack } from './index';
 

@@ -3,10 +3,10 @@
 import { ContentType } from '@medplum/core';
 import type { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
-import type { Duplex } from 'stream';
-import { Readable } from 'stream';
+import type { Duplex } from 'node:stream';
+import { Readable } from 'node:stream';
+import zlib from 'node:zlib';
 import request from 'supertest';
-import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getBinaryStorage } from '../storage/loader';
@@ -304,6 +304,7 @@ describe('Binary', () => {
 async function createBufferForStream(message: string, stream: Duplex): Promise<Buffer> {
   const input = new Readable();
   input.push(message);
+  // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
   input.push(null);
 
   input.pipe(stream);

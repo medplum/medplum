@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import type { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { LOINC } from '../constants';
 import type { TypedValue } from '../types';
 import type { InternalSchemaElement, InternalTypeSchema, SlicingRules } from './types';
@@ -201,7 +201,7 @@ describe('FHIR resource and data type representations', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'capability-statement.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
-    expect(profile.innerTypes.map((t) => t.name).sort()).toStrictEqual([
+    expect(profile.innerTypes.map((t) => t.name).toSorted()).toStrictEqual([
       'CapabilityStatementDocument',
       'CapabilityStatementImplementation',
       'CapabilityStatementMessaging',
@@ -219,7 +219,7 @@ describe('FHIR resource and data type representations', () => {
 
     const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
     const restProperties = Object.keys(rest?.elements ?? {});
-    expect(restProperties.sort()).toStrictEqual([
+    expect(restProperties.toSorted()).toStrictEqual([
       'compartment',
       'documentation',
       'extension',

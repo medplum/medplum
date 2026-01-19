@@ -208,9 +208,9 @@ describe('ChannelStatsTracker', () => {
 
       // Add samples with known RTT values: 100, 200, 300, 400, 500
       const expectedRtts = [100, 200, 300, 400, 500];
-      for (let i = 0; i < expectedRtts.length; i++) {
+      for (const [i, expectedRtt] of expectedRtts.entries()) {
         tracker.recordMessageSent(`msg${i}`);
-        jest.advanceTimersByTime(expectedRtts[i]);
+        jest.advanceTimersByTime(expectedRtt);
         tracker.recordAckReceived(`msg${i}`);
       }
 
@@ -243,7 +243,7 @@ describe('ChannelStatsTracker', () => {
   describe('Pending messages timeout', () => {
     test('Cleans up old pending messages via heartbeat', () => {
       const maxPendingAge = 5000; // 5 seconds
-      const gcIntervalMs = 60000; // 1 minute
+      const gcIntervalMs = 60_000; // 1 minute
       const tracker = new ChannelStatsTracker({
         heartbeatEmitter: mockHeartbeatEmitter,
         maxPendingAge,

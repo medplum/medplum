@@ -233,11 +233,11 @@ export function createOruMessage(
   const context = new Hl7Context('\n');
   const now = new Date();
 
-  // Message Header (MSH)
   segments.push(
+    // Message Header (MSH)
     new Hl7Segment([
       'MSH', // MSH
-      '^~\\&', // Field separator and encoding characters
+      String.raw`^~\&`, // Field separator and encoding characters
       'MEDPLUM_LAB', // Sending application
       FACILITY_CODE, // Sending facility
       '', // Receiving application
@@ -248,12 +248,11 @@ export function createOruMessage(
       generateMessageId(), // Message control ID
       'P', // Processing ID (P = Production)
       '2.5', // HL7 version
-      ...Array(7).fill(''), // Additional optional fields
-    ])
+      ...new Array(7).fill(''), // Additional optional fields
+    ]),
+    // Patient Identification (PID)
+    createPidSegment(patient)
   );
-
-  // Patient Identification (PID)
-  segments.push(createPidSegment(patient));
 
   // Patient Visit (PV1)
   if (serviceRequest.encounter) {
@@ -264,28 +263,26 @@ export function createOruMessage(
   segments.push(createObrSegment(diagnosticReport, serviceRequest, specimen));
 
   // Add observations (OBX segments)
-  observations.forEach((observation, index) => {
+  for (const [index, observation] of observations.entries()) {
     const obxSegments = createObxSegments(observation, index + 1);
     segments.push(...obxSegments);
 
     // Add notes as NTE segments if present
     if (observation.note && observation.note.length > 0) {
-      observation.note.forEach((note, noteIndex) => {
+      for (const [noteIndex, note] of observation.note.entries()) {
         if (note.text) {
           segments.push(createNteSegment(note.text, noteIndex + 1));
         }
-      });
+      }
     }
-  });
+  }
 
   // Add diagnostic report presented for as OBX segment, with base64 encoded contents
   if (presentedFormAttachments) {
     const obxIndex = observations.length;
-    presentedFormAttachments.map((form, index) => {
-      const segment = createObxPdfSegment(form, obxIndex + index + 1);
-      segments.push(segment);
-      return segment;
-    });
+    for (const [i, form] of presentedFormAttachments.entries()) {
+      segments.push(createObxPdfSegment(form, obxIndex + i + 1));
+    }
   }
 
   return new Hl7Message(segments, context);

@@ -85,7 +85,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]); // STX + "Hello" + ETX
 
     await new Promise<void>((resolve, reject) => {
-      client = net.createConnection({ port: 58000 }, () => {
+      client = net.createConnection({ port: 58_000 }, () => {
         client.write(testData);
       });
 
@@ -160,7 +160,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(58_000, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -235,7 +235,7 @@ describe('Byte Stream', () => {
     const testData = Buffer.from([0x02, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x03]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(58_000, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -310,7 +310,7 @@ describe('Byte Stream', () => {
     ]);
 
     await new Promise<void>((resolve, reject) => {
-      client.connect(58000, 'localhost', () => {
+      client.connect(58_000, 'localhost', () => {
         client.write(testData);
         resolve();
       });
@@ -382,7 +382,7 @@ describe('Byte Stream', () => {
 
     // Send partial message first
     const partialData = Buffer.from([0x02, 0x48, 0x65]); // STX + "He"
-    client.connect(58000, 'localhost', () => {
+    client.connect(58_000, 'localhost', () => {
       client.write(partialData);
     });
 

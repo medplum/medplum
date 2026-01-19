@@ -96,8 +96,8 @@ describe('FHIRPath utils', () => {
     expect(fhirPathArrayEquals([TYPED_1], [TYPED_2])).toStrictEqual([TYPED_FALSE]);
 
     // Acceptable threshold
-    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_FALSE]);
-    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([toTypedValue(1)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([toTypedValue(1)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
 
     // Sort order does matter
     expect(fhirPathArrayEquals([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toStrictEqual([TYPED_FALSE]);
@@ -125,8 +125,8 @@ describe('FHIRPath utils', () => {
     expect(fhirPathArrayEquivalent([TYPED_1], [TYPED_2])).toStrictEqual([TYPED_FALSE]);
 
     // Acceptable threshold
-    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_TRUE]);
-    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquivalent([toTypedValue(1)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathArrayEquivalent([toTypedValue(1)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
 
     // Sort order does not matter
     expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toStrictEqual([TYPED_TRUE]);

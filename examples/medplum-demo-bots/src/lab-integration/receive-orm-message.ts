@@ -83,10 +83,10 @@ function parsePatient(message: Hl7Message): Patient {
   };
 
   const patientId = pid.getField(2); // PID-2: Patient ID
-  if (!patientId) {
-    console.warn('Missing Patient Id');
-  } else {
+  if (patientId) {
     setIdentifier(patient, FACILITY_PATIENT_ID, patientId.toString());
+  } else {
+    console.warn('Missing Patient Id');
   }
 
   const ssn = pid.getComponent(19, 1); // PID-19: Social Security Number
@@ -218,7 +218,7 @@ function parseObrSegment(
   if (!obr) {
     throw new Error('Could not find OBR segment');
   }
-  const notes = segments.filter((s) => s.getComponent(0, 1) === 'NTE').map(parseHl7Note);
+  const notes = segments.filter((s) => s.getComponent(0, 1) === 'NTE').map((c) => parseHl7Note(c));
   const orderingProviderId = obr.getComponent(16, 1);
   const orderingProvider = practitioners.find(
     (practitioner) => getIdentifier(practitioner, FACILITY_PRACTITIONER_ID) === orderingProviderId

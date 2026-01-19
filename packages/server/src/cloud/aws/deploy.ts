@@ -41,7 +41,7 @@ import * as userCode from './user.mjs';
 export const handler = async (event, context) => {
 `;
 
-const WRAPPER_CODE = `
+const WRAPPER_CODE = String.raw`
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
@@ -66,7 +66,7 @@ const WRAPPER_CODE = `
     return result;
   } catch (err) {
     if (err instanceof Error) {
-      console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      console.log("Unhandled error: " + err.message + "\n" + err.stack);
     } else if (typeof err === "object") {
       console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
     } else {

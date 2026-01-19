@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 import express from 'express';
-import { Readable } from 'stream';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -34,6 +34,7 @@ describe('Storage Routes', () => {
 
     const req = new Readable();
     req.push('hello world');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
     await getBinaryStorage().writeBinary(binary, 'hello.txt', ContentType.TEXT, req as Request);

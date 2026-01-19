@@ -14,11 +14,11 @@ import type {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
-import { Readable } from 'stream';
+import { randomUUID } from 'node:crypto';
+import { Readable } from 'node:stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';

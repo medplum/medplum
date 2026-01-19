@@ -319,7 +319,7 @@ describe('Operation Input/Output Parameters', () => {
         method: 'GET',
         query: parse('requiredIn=true&numeric=100&fractional=3.14159'),
       } as unknown as Request;
-      expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, numeric: 100, fractional: 3.14159 });
+      expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, numeric: 100, fractional: 3.141_59 });
     });
 
     test('Allows passing multiple instances of same query parameter', () => {

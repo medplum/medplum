@@ -44,7 +44,7 @@ describe('HL7 Connection', () => {
     expect(mockSocket.handlers.data).toBeDefined();
 
     const msg =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
@@ -79,7 +79,7 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     expect(mockSocket.handlers.data).toBeDefined();
 
     const msg =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
@@ -110,7 +110,7 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
 
   describe('Hl7EnhancedAckSentEvent', () => {
     const testMessage =
-      Hl7Message.parse(`MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
+      Hl7Message.parse(String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||DFT^P03|MSG00002|P|2.3
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`);
 
@@ -210,13 +210,13 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA`)
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
 
-      const msg1 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
+      const msg1 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
-      const msg2 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
+      const msg2 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
 PID|1||67890^^^MRN^MR||SMITH^JANE^B||19900101|F`;
 
-      const msg3 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153046||ADT^A03|MSG00003|P|2.3
+      const msg3 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153046||ADT^A03|MSG00003|P|2.3
 PID|1||11111^^^MRN^MR||JONES^BOB^C||19700101|M`;
 
       // Create buffer with all three messages
@@ -241,7 +241,7 @@ PID|1||11111^^^MRN^MR||JONES^BOB^C||19700101|M`;
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
 
-      const msg = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
+      const msg = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
       const fullBuffer = encodeMessage(msg);
@@ -266,7 +266,7 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
 
-      const msg = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
+      const msg = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
       // Add random bytes before the message
@@ -290,10 +290,10 @@ PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
 
-      const msg1 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
+      const msg1 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
-      const msg2 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
+      const msg2 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
 PID|1||67890^^^MRN^MR||SMITH^JANE^B||19900101|F`;
 
       // Add random bytes between messages
@@ -317,13 +317,13 @@ PID|1||67890^^^MRN^MR||SMITH^JANE^B||19900101|F`;
       const connection = new Hl7Connection(mockSocket as any);
       connection.addEventListener('message', listener);
 
-      const msg1 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
+      const msg1 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153044||ADT^A01|MSG00001|P|2.3
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M`;
 
-      const msg2 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
+      const msg2 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153045||ADT^A02|MSG00002|P|2.3
 PID|1||67890^^^MRN^MR||SMITH^JANE^B||19900101|F`;
 
-      const msg3 = `MSH|^~\\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153046||ADT^A03|MSG00003|P|2.3
+      const msg3 = String.raw`MSH|^~\&|SENDING_APP|SENDING_FAC|REC_APP|REC_FAC|20240218153046||ADT^A03|MSG00003|P|2.3
 PID|1||11111^^^MRN^MR||JONES^BOB^C||19700101|M`;
 
       // Add random bytes at the end

@@ -28,7 +28,7 @@ const clientApplication = {
   accessTokenLifetime: 7200,
 
   // Set refresh token lifetime to 180 days
-  refreshTokenLifetime: 15552000,
+  refreshTokenLifetime: 15_552_000,
 };
 // end-block tokenLifetimes
 console.log(clientApplication);
@@ -37,11 +37,11 @@ console.log(clientApplication);
 // start-block graceCustomization
 // Initialize client with a 10-minute grace period
 const customMedplum = new MedplumClient({
-  refreshGracePeriod: 600000, // 10 minutes in milliseconds
+  refreshGracePeriod: 600_000, // 10 minutes in milliseconds
 });
 
 // You can also check authentication status with a custom grace period
-if (!customMedplum.isAuthenticated(300000)) {
+if (!customMedplum.isAuthenticated(300_000)) {
   // Token will expire within 5 minutes
   await customMedplum.refreshIfExpired();
 }
@@ -50,7 +50,7 @@ if (!customMedplum.isAuthenticated(300000)) {
 // Example of best practices
 // start-block bestPractices
 const bestPracticesMedplum = new MedplumClient({
-  refreshGracePeriod: 300000, // 5 minute grace period (default)
+  refreshGracePeriod: 300_000, // 5 minute grace period (default)
 });
 // end-block bestPractices
 console.log(bestPracticesMedplum);

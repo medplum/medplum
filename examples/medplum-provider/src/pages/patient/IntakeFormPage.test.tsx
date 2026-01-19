@@ -123,7 +123,7 @@ describe('IntakeFormPage', () => {
       () => {
         expect(screen.getByText('Simple Test Questionnaire')).toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
@@ -131,7 +131,7 @@ describe('IntakeFormPage', () => {
         expect(screen.getByText('Demographics')).toBeInTheDocument();
         expect(screen.getByText('Emergency Contact')).toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
   });
 
@@ -152,7 +152,7 @@ describe('IntakeFormPage', () => {
       () => {
         expect(screen.getByText('Simple Test Questionnaire')).toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
@@ -162,7 +162,7 @@ describe('IntakeFormPage', () => {
           expect(alert).toBeInTheDocument();
         }
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
   });
 
@@ -173,14 +173,14 @@ describe('IntakeFormPage', () => {
       () => {
         expect(screen.getByText('Simple Test Questionnaire')).toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
       () => {
         expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
@@ -188,7 +188,7 @@ describe('IntakeFormPage', () => {
         const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
         expect(firstNameInputs.length).toBeGreaterThan(0);
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
@@ -210,14 +210,14 @@ describe('IntakeFormPage', () => {
       () => {
         expect(screen.getByText('Demographics')).toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
       () => {
         expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     await waitFor(
@@ -225,7 +225,7 @@ describe('IntakeFormPage', () => {
         const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });
         expect(firstNameInputs.length).toBeGreaterThan(0);
       },
-      { timeout: 10000 }
+      { timeout: 10_000 }
     );
 
     const firstNameInputs = screen.getAllByRole('textbox', { name: /First Name/i });

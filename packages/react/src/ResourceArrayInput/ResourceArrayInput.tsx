@@ -151,8 +151,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
 }
 
 function addPlaceholderValues(slicedValues: any[][], slices: SliceDefinitionWithTypes[]): void {
-  for (let sliceIndex = 0; sliceIndex < slices.length; sliceIndex++) {
-    const slice = slices[sliceIndex];
+  for (const [sliceIndex, slice] of slices.entries()) {
     const sliceValues = slicedValues[sliceIndex];
 
     while (sliceValues.length < slice.min) {

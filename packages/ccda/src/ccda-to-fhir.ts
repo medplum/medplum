@@ -297,7 +297,7 @@ class CcdaToFhirConverter {
     }
 
     if (name.prefix) {
-      result.prefix = name.prefix.map(nodeToString)?.filter(Boolean) as string[];
+      result.prefix = name.prefix.map((n) => nodeToString(n))?.filter(Boolean) as string[];
     }
 
     if (name.family) {
@@ -305,18 +305,18 @@ class CcdaToFhirConverter {
     }
 
     if (name.given) {
-      result.given = name.given.map(nodeToString)?.filter(Boolean) as string[];
+      result.given = name.given.map((n) => nodeToString(n))?.filter(Boolean) as string[];
     }
 
     if (name.suffix) {
-      result.suffix = name.suffix.map(nodeToString)?.filter(Boolean) as string[];
+      result.suffix = name.suffix.map((n) => nodeToString(n))?.filter(Boolean) as string[];
     }
 
     return result;
   }
 
   private mapAddresses(addresses: CcdaAddr[] | undefined): Address[] | undefined {
-    if (!addresses || addresses.length === 0 || addresses.every((addr) => addr['@_nullFlavor'] === 'UNK')) {
+    if (!addresses || addresses.every((addr) => addr['@_nullFlavor'] === 'UNK')) {
       return undefined;
     }
     return addresses?.map((addr) => ({
@@ -330,7 +330,7 @@ class CcdaToFhirConverter {
   }
 
   private mapTelecom(telecoms: CcdaTelecom[] | undefined): ContactPoint[] | undefined {
-    if (!telecoms || telecoms.length === 0 || telecoms.every((tel) => tel['@_nullFlavor'] === 'UNK')) {
+    if (!telecoms || telecoms.every((tel) => tel['@_nullFlavor'] === 'UNK')) {
       return undefined;
     }
     return telecoms?.map((tel) => ({
@@ -354,7 +354,7 @@ class CcdaToFhirConverter {
             status: 'generated',
             div: `<div xmlns="http://www.w3.org/1999/xhtml">${convertToCompactXml(section.text)}</div>`,
           },
-          entry: resources.map(createReference),
+          entry: resources.map((r) => createReference(r)),
         });
         this.resources.push(...resources);
       }

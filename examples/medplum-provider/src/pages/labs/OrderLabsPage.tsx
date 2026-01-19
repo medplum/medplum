@@ -44,14 +44,14 @@ async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: Ser
 }
 
 export interface OrderLabsPageProps {
-  encounter?: Encounter | Reference<Encounter> | undefined;
-  task?: Task | Reference<Task> | undefined;
-  tests?: TestCoding[] | undefined;
-  performingLab?: LabOrganization | undefined;
+  encounter?: Encounter | Reference<Encounter>;
+  task?: Task | Reference<Task>;
+  tests?: TestCoding[];
+  performingLab?: LabOrganization;
   onSubmitLabOrder: (serviceRequest?: ServiceRequest) => void;
 }
 
-export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
+export function OrderLabsPage(props: Readonly<OrderLabsPageProps>): JSX.Element {
   const { encounter, task, tests, performingLab, onSubmitLabOrder } = props;
   const medplum = useMedplum();
   const { patientId } = useParams();

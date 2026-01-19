@@ -306,6 +306,7 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   );
 }
 
+// eslint-disable-next-line sonarjs/no-identical-functions
 function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
   return (

@@ -3,9 +3,9 @@
 import type { MedplumClient } from '@medplum/core';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+import { TextEncoder } from 'node:util';
 import { MemoryRouter } from 'react-router';
-import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
 import { act, fireEvent, render, screen } from './test-utils/render';

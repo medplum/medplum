@@ -146,7 +146,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         return;
       }
 
-      if (!claim) {
+      if (claim) {
+        const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(currentPractitioner);
+        if (providerRefNeedsUpdate) {
+          const updatedClaim: Claim = await medplum.updateResource({
+            ...claim,
+            provider: { reference: getReferenceString(currentPractitioner) },
+          });
+          setClaim(updatedClaim);
+        }
+      } else {
         const newClaim = await createClaimFromEncounter(
           medplum,
           patient.id,
@@ -156,15 +165,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         );
         if (newClaim) {
           setClaim(newClaim);
-        }
-      } else {
-        const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(currentPractitioner);
-        if (providerRefNeedsUpdate) {
-          const updatedClaim: Claim = await medplum.updateResource({
-            ...claim,
-            provider: { reference: getReferenceString(currentPractitioner) },
-          });
-          setClaim(updatedClaim);
         }
       }
     } catch (err) {

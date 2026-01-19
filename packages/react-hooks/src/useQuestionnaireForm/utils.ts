@@ -263,7 +263,7 @@ function evaluateCalculatedExpression(
     if (expression) {
       const value = toTypedValue(response);
       const result = evalFhirPathTyped(expression, [value], { '%resource': value });
-      return result.length !== 0 ? result[0] : undefined;
+      return result.length === 0 ? undefined : result[0];
     }
   }
   return undefined;
@@ -320,9 +320,7 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
     // if actualAnswer is not undefined, then exists: true passes
     // if actualAnswer is undefined, then exists: false passes
     return !!actualAnswer === expectedAnswer.value;
-  } else if (!actualAnswer) {
-    return false;
-  } else {
+  } else if (actualAnswer) {
     // `=` and `!=` should be treated as the FHIRPath `~` and `!~`
     // All other operators should be unmodified
     const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
@@ -331,6 +329,8 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
       '%expectedAnswer': expectedAnswer,
     });
     return value;
+  } else {
+    return false;
   }
 }
 

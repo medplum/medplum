@@ -17,9 +17,9 @@ describe('Hl7Client', () => {
   // Helper function to get a random port number
   // This helps avoid conflicts when running tests in parallel
   function getRandomPort(): number {
-    let port = Math.floor(Math.random() * 10000) + 30000;
+    let port = Math.floor(Math.random() * 10_000) + 30_000;
     while (usedPorts.includes(port)) {
-      port = Math.floor(Math.random() * 10000) + 30000;
+      port = Math.floor(Math.random() * 10_000) + 30_000;
     }
 
     // Once we have an unused port, add it to used ports and return it

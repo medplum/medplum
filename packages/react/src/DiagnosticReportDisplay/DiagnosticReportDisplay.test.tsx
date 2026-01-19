@@ -112,7 +112,9 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(8);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
-    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
+    for (const badge of screen.getAllByText('final')) {
+      expect(badge).toHaveClass('mantine-Badge-label');
+    }
   });
 
   test('Renders by value with hideSubject', async () => {
@@ -131,7 +133,9 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
     expect(screen.getAllByText('final')).toHaveLength(8);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
-    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
+    for (const badge of screen.getAllByText('final')) {
+      expect(badge).toHaveClass('mantine-Badge-label');
+    }
   });
 
   test('Renders by reference', async () => {

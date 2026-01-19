@@ -33,8 +33,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const postalCode = input.getSegment('PID')?.getField(11).getComponent(5) as string;
   const country = input.getSegment('PID')?.getField(11).getComponent(6) as string;
 
-  let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
-
+  const patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
   if (patient) {
     console.log('Patient already in the system');
     // Update patient information
@@ -53,9 +52,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         country: country,
       },
     ];
-    patient = await medplum.updateResource<Patient>(patient);
+    await medplum.updateResource<Patient>(patient);
   } else {
-    patient = await medplum.createResource<Patient>({
+    await medplum.createResource<Patient>({
       resourceType: 'Patient',
       name: [
         {

@@ -27,7 +27,7 @@ export function ProfileTabs({ resource, currentProfile, onChange }: ProfileTabsP
     medplum
       .searchResources('StructureDefinition', { type: resourceType, derivation: 'constraint', _count: 50 })
       .then((results) => {
-        setAvailableProfiles(results.filter(isSupportedProfileStructureDefinition));
+        setAvailableProfiles(results.filter((r) => isSupportedProfileStructureDefinition(r)));
       })
       .catch(console.error);
   }, [medplum, onChange, resourceType]);

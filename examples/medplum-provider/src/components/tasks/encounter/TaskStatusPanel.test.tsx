@@ -169,10 +169,10 @@ describe('TaskStatusPanel', () => {
         expect(menuItems.length).toBe(5);
 
         const statusOptions = ['Completed', 'Ready', 'In Progress', 'On Hold', 'Cancelled'];
-        statusOptions.forEach((status) => {
+        for (const status of statusOptions) {
           const menuItem = menuItems.find((item) => item.textContent?.includes(status));
           expect(menuItem).toBeInTheDocument();
-        });
+        }
       },
       { timeout: 5000 }
     );

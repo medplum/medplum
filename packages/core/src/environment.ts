@@ -28,7 +28,7 @@ export function isNodeEnvironment(): boolean {
  * @returns The window object or undefined.
  */
 export function getWindow(): Window | undefined {
-  return typeof window !== 'undefined' ? window : undefined;
+  return typeof window === 'undefined' ? undefined : window;
 }
 
 /**
@@ -36,7 +36,7 @@ export function getWindow(): Window | undefined {
  * @returns The Buffer constructor or undefined.
  */
 export function getBuffer(): typeof Buffer | undefined {
-  return typeof Buffer !== 'undefined' ? Buffer : undefined;
+  return typeof Buffer === 'undefined' ? undefined : Buffer;
 }
 
 /**

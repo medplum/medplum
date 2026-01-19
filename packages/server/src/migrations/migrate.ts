@@ -1114,7 +1114,9 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
   }
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
-    createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
+    createTableLines.push(
+      `  PRIMARY KEY (${tableDef.compositePrimaryKey.map((k) => escapeMixedCaseIdentifier(k)).join(', ')})`
+    );
   }
 
   for (const constraint of tableDef.constraints ?? EMPTY) {

@@ -71,8 +71,7 @@ export async function prepareSlices({
 
     Promise.all(promises)
       .then(() => {
-        for (let i = 0; i < supportedSlices.length; i++) {
-          const slice = supportedSlices[i];
+        for (const [i, slice] of supportedSlices.entries()) {
           const profileUrl = profileUrls[i];
           if (profileUrl) {
             const typeSchema = tryGetProfile(profileUrl);

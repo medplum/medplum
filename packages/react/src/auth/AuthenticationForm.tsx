@@ -32,10 +32,10 @@ export interface AuthenticationFormProps extends BaseLoginRequest {
 export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   const [email, setEmail] = useState<string>();
 
-  if (!email) {
-    return <EmailForm setEmail={setEmail} {...props} />;
-  } else {
+  if (email) {
     return <PasswordForm email={email} resetEmail={() => setEmail(undefined)} {...props} />;
+  } else {
+    return <EmailForm setEmail={setEmail} {...props} />;
   }
 }
 

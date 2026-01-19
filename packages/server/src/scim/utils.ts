@@ -58,8 +58,8 @@ export async function searchScimUsers(
   const users = await systemRepo.readReferences(memberships.map((m) => m.user as Reference<User>));
   const result = [];
 
-  for (let i = 0; i < memberships.length; i++) {
-    result.push(convertToScimUser(users[i] as User, memberships[i]));
+  for (const [i, membership] of memberships.entries()) {
+    result.push(convertToScimUser(users[i] as User, membership));
   }
 
   return convertToScimListResponse(result);

@@ -4,8 +4,8 @@ import type { BaseSchema, InternalTypeSchema } from '@medplum/core';
 import { compressElement, getAllDataTypes, indexStructureDefinitionBundle, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle } from '@medplum/fhirtypes';
-import { writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 export function main(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);

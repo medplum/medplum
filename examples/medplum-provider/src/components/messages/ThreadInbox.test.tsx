@@ -294,8 +294,10 @@ describe('ThreadInbox', () => {
 
     // Get all icon buttons and select the plus button (second one, after participant filter)
     const iconButtons = screen.getAllByRole('button', { name: '' });
-    const plusButton = iconButtons[iconButtons.length - 1]; // Plus button is last
-    await user.click(plusButton);
+    const plusButton = iconButtons.at(-1); // Plus button is last
+    if (plusButton) {
+      await user.click(plusButton);
+    }
 
     await waitFor(() => {
       expect(screen.getByText('New Message')).toBeInTheDocument();
@@ -308,8 +310,10 @@ describe('ThreadInbox', () => {
 
     // Open dialog first - get all icon buttons and select the plus button (last one)
     const iconButtons = screen.getAllByRole('button', { name: '' });
-    const plusButton = iconButtons[iconButtons.length - 1];
-    await user.click(plusButton);
+    const plusButton = iconButtons.at(-1);
+    if (plusButton) {
+      await user.click(plusButton);
+    }
 
     await waitFor(() => {
       expect(screen.getByText('New Message')).toBeInTheDocument();

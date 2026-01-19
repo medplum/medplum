@@ -371,10 +371,7 @@ describe('Vital API', () => {
 function createFetchResponse(data: any, status = 200): Response {
   return {
     status,
-    json: () =>
-      new Promise((resolve) => {
-        resolve(data);
-      }),
+    json: () => Promise.resolve(data),
     ok: status >= 200 && status < 300,
   } as Response;
 }
@@ -394,7 +391,7 @@ function buildQuestionnaire(markers: Partial<Marker>[]): Questionnaire {
         type: (question.type === 'numeric' ? 'decimal' : question.type) as QuestionnaireItem['type'],
         required: question.required,
         answerOption: question.answers?.map<QuestionnaireItemAnswerOption>((answer) => ({
-          valueString: question.type !== 'numeric' ? answer.value : undefined,
+          valueString: question.type === 'numeric' ? undefined : answer.value,
           valueInteger: question.type === 'numeric' ? Number.parseFloat(answer.value) : undefined,
         })),
       })),

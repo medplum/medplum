@@ -174,7 +174,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
         showNotification({
           title: 'Success',
-          message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
+          message: `${successCount} clinician${successCount === 1 ? '' : 's'} enrolled in ${organization.name}`,
           color: 'green',
         });
 

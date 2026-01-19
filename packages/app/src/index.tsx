@@ -21,7 +21,7 @@ export async function initApp(): Promise<void> {
     baseUrl: config.baseUrl,
     clientId: config.clientId,
     storagePrefix: '@medplum:',
-    cacheTime: 60000,
+    cacheTime: 60_000,
     autoBatchTime: 100,
     onUnauthenticated: () => {
       if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {

@@ -3,7 +3,7 @@
 import { ContentType } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request } from 'express';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 import { loadTestConfig } from '../config/loader';
 import { streamToString } from '../test.setup';
 import { getBinaryStorage, initBinaryStorage } from './loader';
@@ -36,6 +36,7 @@ describe('FileSystemStorage', () => {
     // Create a request
     const req = new Readable();
     req.push('foo');
+    // eslint-disable-next-line unicorn/prefer-single-call -- Readable#push(), not Array#push()
     req.push(null);
     (req as any).headers = {};
     await storage.writeBinary(binary, 'test.txt', ContentType.TEXT, req as Request);

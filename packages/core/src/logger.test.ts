@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { LogLevel, Logger, parseLogLevel, serializeError } from './logger';
 
 describe('Logger', () => {
@@ -325,6 +325,7 @@ describe('serializeError', () => {
     });
 
     test('should handle error with empty message', () => {
+      // eslint-disable-next-line unicorn/error-message
       const error = new Error('');
       const result = serializeError(error);
 
@@ -339,7 +340,7 @@ describe('serializeError', () => {
     test('should handle error with very long stack trace', () => {
       const error = new Error('Long stack');
       // Simulate a very long stack
-      error.stack = Array(1000).fill('at someFunction()').join('\n');
+      error.stack = new Array(1000).fill('at someFunction()').join('\n');
 
       const result = serializeError(error);
 

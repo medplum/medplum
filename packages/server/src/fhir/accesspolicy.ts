@@ -54,8 +54,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     }
 
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
-    for (let i = 0; i < linkedProjectsOrError.length; i++) {
-      const linkedProjectOrError = linkedProjectsOrError[i];
+    for (const [i, linkedProjectOrError] of linkedProjectsOrError.entries()) {
       if (isResource(linkedProjectOrError)) {
         allowedProjects.push(linkedProjectOrError);
       } else {

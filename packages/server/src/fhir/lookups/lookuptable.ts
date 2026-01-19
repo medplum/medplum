@@ -26,7 +26,7 @@ import {
   SqlFunction,
 } from '../sql';
 
-const lookupTableBatchSize = 5_000;
+const lookupTableBatchSize = 5000;
 
 export interface LookupTableRow {
   resourceId: string;
