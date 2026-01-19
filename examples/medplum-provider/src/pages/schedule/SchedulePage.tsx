@@ -53,10 +53,10 @@ export function SchedulePage(): JSX.Element | null {
               active: true,
             })
             .then(setSchedule)
-            .catch(console.error);
+            .catch(showErrorNotification);
         }
       })
-      .catch(console.error);
+      .catch(showErrorNotification);
   }, [medplum, profile]);
 
   // Find slots visible in the current range

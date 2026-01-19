@@ -41,13 +41,13 @@ export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element
           {props.view === 'day' && dayjs(props.date).format('MMMM D YYYY')}
         </Title>
         <Button.Group>
-          <Button variant="default" size="xs" onClick={() => props.onNavigate('PREV')}>
+          <Button variant="default" size="xs" aria-label="Previous" onClick={() => props.onNavigate('PREV')}>
             <IconChevronLeft size={12} />
           </Button>
           <Button variant="default" size="xs" onClick={() => props.onNavigate('TODAY')}>
             Today
           </Button>
-          <Button variant="default" size="xs" onClick={() => props.onNavigate('NEXT')}>
+          <Button variant="default" size="xs" aria-label="Next" onClick={() => props.onNavigate('NEXT')}>
             <IconChevronRight size={12} />
           </Button>
         </Button.Group>
@@ -68,10 +68,10 @@ export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element
 
 function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
   return appointments
-    .filter((appointment) => appointment.status !== 'cancelled')
+    .filter((appointment) => appointment.status !== 'cancelled' && appointment.start && appointment.end)
     .map((appointment) => {
       // Find the patient among the participants to use as title
-      const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
+      const patientParticipant = appointment.participant.find((p) => p.actor?.reference?.startsWith('Patient/'));
       const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
         ? ` (${appointment.status})`
         : '';
@@ -96,6 +96,7 @@ function slotsToEvents(slots: Slot[]): SlotEvent[] {
     resource: slot,
     start: new Date(slot.start),
     end: new Date(slot.end),
+    title: slot.status === 'free' ? 'Available' : 'Blocked',
   }));
 }
 
@@ -146,7 +147,9 @@ export function Calendar(props: {
       if (Array.isArray(newRange)) {
         // Week view passes the range as an array of dates
         newStart = newRange[0];
-        newEnd = new Date(newRange[newRange.length - 1].getTime() + 24 * 60 * 60 * 1000);
+        newEnd = dayjs(newRange[newRange.length - 1])
+          .add(1, 'day')
+          .toDate();
       } else {
         // Other views pass the range as an object
         newStart = newRange.start;
@@ -182,7 +185,8 @@ export function Calendar(props: {
       date={date}
       localizer={dayjsLocalizer(dayjs)}
       events={appointmentsToEvents(props.appointments)}
-      backgroundEvents={slotsToEvents(props.slots)} // Background events don't show in the month view
+      // Background events don't show in the month view
+      backgroundEvents={slotsToEvents(props.slots)}
       onNavigate={(newDate: Date, newView: View) => {
         setDate(newDate);
         setView(newView);
@@ -190,7 +194,9 @@ export function Calendar(props: {
       onRangeChange={handleRangeChange}
       onSelectSlot={props.onSelectInterval}
       onSelectEvent={handleSelectEvent}
-      scrollToTime={date} // Default scroll to current time
+      onView={setView}
+      // Default scroll to current time
+      scrollToTime={date}
       selectable
       eventPropGetter={eventPropGetter}
       style={props.style}
