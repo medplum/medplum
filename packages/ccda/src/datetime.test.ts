@@ -28,6 +28,26 @@ describe('mapCcdaToFhirDateTime', () => {
   test('should handle YYYYMMDDHHMM', () => {
     expect(mapCcdaToFhirDateTime('202401011234')).toBe('2024-01-01T12:34:00Z');
   });
+
+  test('should handle YYYYMMDDHHMMSSzzzzz with timezone offset', () => {
+    expect(mapCcdaToFhirDateTime('20241001090000-0500')).toBe('2024-10-01T09:00:00-05:00');
+  });
+
+  test('should handle positive timezone offset', () => {
+    expect(mapCcdaToFhirDateTime('20241001090000+0530')).toBe('2024-10-01T09:00:00+05:30');
+  });
+
+  test('should handle negative timezone offset', () => {
+    expect(mapCcdaToFhirDateTime('20241005120000-0500')).toBe('2024-10-05T12:00:00-05:00');
+  });
+
+  test('should convert +0000 timezone to Z', () => {
+    expect(mapCcdaToFhirDateTime('20241001090000+0000')).toBe('2024-10-01T09:00:00Z');
+  });
+
+  test('should convert -0000 timezone to Z', () => {
+    expect(mapCcdaToFhirDateTime('20241001090000-0000')).toBe('2024-10-01T09:00:00Z');
+  });
 });
 
 describe('mapFhirToCcdaDateTime', () => {
