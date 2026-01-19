@@ -47,6 +47,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
+import { populateHandler } from './operations/populate';
 import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
@@ -333,6 +334,12 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/:id/$extract', extractHandler);
   router.add('POST', '/QuestionnaireResponse/$extract', extractHandler);
+
+  // Questionnaire $populate operation
+  router.add('GET', '/Questionnaire/$populate', populateHandler);
+  router.add('POST', '/Questionnaire/$populate', populateHandler);
+  router.add('GET', '/Questionnaire/:id/$populate', populateHandler);
+  router.add('POST', '/Questionnaire/:id/$populate', populateHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
