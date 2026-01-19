@@ -18,7 +18,7 @@
     "@medplum/eslint-config": "5.0.10",
     "@medplum/fhirtypes": "5.0.10",
     "@medplum/react-hooks": "5.0.10",
-    "@types/react": "19.2.7",
+    "@types/react": "19.2.8",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.2",
     "react": "19.2.3",

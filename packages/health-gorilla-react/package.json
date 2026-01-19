@@ -68,15 +68,15 @@
     "@medplum/react": "5.0.10",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.1",
-    "@types/node": "22.19.3",
-    "@types/react": "19.2.7",
+    "@types/node": "22.19.7",
+    "@types/react": "19.2.8",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.2",
     "jsdom": "27.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-router": "7.12.0",
-    "vitest": "4.0.16"
+    "vitest": "4.0.17"
   },
   "peerDependencies": {
     "@medplum/core": "5.0.10",
