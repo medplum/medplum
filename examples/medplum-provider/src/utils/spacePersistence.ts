@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
 import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
@@ -59,7 +59,19 @@ export async function saveMessage(
   message: Message,
   sequenceNumber: number
 ): Promise<Communication> {
-  const communication: Communication = {
+  const communication = buildMessageCommunication(topicId, message, sequenceNumber);
+  return medplum.createResource(communication);
+}
+
+/**
+ * Builds a Communication resource for a message (without saving)
+ * @param topicId - The ID of the conversation topic
+ * @param message - The message to convert
+ * @param sequenceNumber - The sequence number of the message
+ * @returns The Communication resource (not saved)
+ */
+function buildMessageCommunication(topicId: string, message: Message, sequenceNumber: number): Communication {
+  return {
     resourceType: 'Communication',
     status: 'completed',
     identifier: [
@@ -86,8 +98,86 @@ export async function saveMessage(
       },
     ],
   };
+}
 
-  return medplum.createResource(communication);
+/**
+ * Saves multiple messages atomically using a FHIR transaction bundle.
+ * This ensures all messages are saved together or none are saved (preventing corrupted state).
+ * @param medplum - The Medplum client instance
+ * @param topicId - The ID of the conversation topic
+ * @param messages - Array of messages with their sequence numbers
+ */
+export async function saveMessagesAtomic(
+  medplum: MedplumClient,
+  topicId: string,
+  messages: { message: Message; sequenceNumber: number }[]
+): Promise<void> {
+  if (messages.length === 0) {
+    return;
+  }
+
+  const bundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: messages.map(({ message, sequenceNumber }) => ({
+      resource: buildMessageCommunication(topicId, message, sequenceNumber),
+      request: {
+        method: 'POST',
+        url: 'Communication',
+      },
+    })),
+  };
+
+  await medplum.executeBatch(bundle);
+}
+
+/**
+ * Repairs corrupted message history by adding missing tool responses.
+ * OpenAI requires that every tool_call_id has a corresponding tool response message.
+ * @param messages - The array of messages to repair
+ * @returns Repaired array of messages
+ */
+function repairMessageHistory(messages: Message[]): Message[] {
+  const repairedMessages: Message[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const message = messages[i];
+    repairedMessages.push(message);
+
+    // Check if this is an assistant message with tool_calls
+    if (message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0) {
+      // Collect all tool_call_ids that need responses
+      const requiredToolCallIds = new Set(message.tool_calls.map((tc: { id: string }) => tc.id));
+
+      // Look ahead for tool responses
+      const foundToolCallIds = new Set<string>();
+      for (let j = i + 1; j < messages.length; j++) {
+        const nextMessage = messages[j];
+        if (nextMessage.role === 'tool' && nextMessage.tool_call_id) {
+          foundToolCallIds.add(nextMessage.tool_call_id);
+        } else if (nextMessage.role !== 'tool') {
+          // Stop looking when we hit a non-tool message
+          break;
+        }
+      }
+
+      // Add placeholder responses for any missing tool_call_ids
+      for (const toolCallId of requiredToolCallIds) {
+        if (!foundToolCallIds.has(toolCallId)) {
+          repairedMessages.push({
+            role: 'tool',
+            tool_call_id: toolCallId,
+            content: JSON.stringify({
+              error: true,
+              message: 'Tool response was not recorded. The operation may have failed or been interrupted.',
+            }),
+          });
+        }
+      }
+    }
+  }
+
+  return repairedMessages;
 }
 
 /**
@@ -127,7 +217,13 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
     }
   }
 
-  return messages.map((m) => m.message);
+  // Sort by sequenceNumber to ensure correct message order for OpenAI
+  messages.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+
+  const sortedMessages = messages.map((m) => m.message);
+
+  // Repair any corrupted message history (missing tool responses)
+  return repairMessageHistory(sortedMessages);
 }
 
 /**
