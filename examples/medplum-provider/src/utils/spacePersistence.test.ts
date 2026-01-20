@@ -213,6 +213,7 @@ describe('spacePersistence', () => {
       expect(medplum.searchResources).toHaveBeenCalledWith('Communication', {
         'part-of': 'Communication/topic-1',
         _sort: '_lastUpdated',
+        _count: '100',
       });
       expect(messages).toEqual([
         {
