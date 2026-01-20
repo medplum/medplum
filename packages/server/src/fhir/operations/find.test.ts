@@ -24,6 +24,7 @@ type AvailabilityOptions = {
   alignmentOffset?: number;
   duration?: number;
   availability: Timing['repeat'];
+  timezone?: string;
 };
 
 const fourDayWorkWeek: Timing['repeat'] = {
@@ -77,7 +78,7 @@ describe('Schedule/:id/$find', () => {
     opts?: { actor?: Schedule['actor'] }
   ): Promise<Schedule> {
     const extension = Object.entries(availability).map(([serviceType, options]) => {
-      const { availability, ...durations } = options;
+      const { availability, timezone, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
@@ -88,6 +89,13 @@ describe('Schedule/:id/$find', () => {
           },
         ] as Extension[],
       } satisfies Extension;
+
+      if (timezone) {
+        extension.extension.push({
+          url: 'timezone',
+          valueCode: timezone,
+        });
+      }
 
       if (serviceType !== wildcard) {
         extension.extension.push({
@@ -464,6 +472,51 @@ describe('Schedule/:id/$find', () => {
             resourceType: 'Slot',
             start: new Date('2025-12-01T11:00:00.000-07:00').toISOString(),
             end: new Date('2025-12-01T11:20:00.000-07:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+      ],
+    });
+  });
+
+  test("timezone in scheduling parameters overrides the schedule's actor's timezone", async () => {
+    // `location` has timezone set to America/Phoenix, which is always at offset -07:00
+    // scheduling params have timezone set to Pacific/Honolulu, which is always at offset -10:00
+    const schedule = await makeSchedule(
+      {
+        [wildcard]: { availability: fourDayWorkWeek, duration: 20, timezone: 'Pacific/Honolulu' },
+      },
+      { actor: [createReference(location)] }
+    );
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-10:00').toISOString(),
+        end: new Date('2025-12-01T12:00:00.000-10:00').toISOString(),
+      });
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject<Bundle>({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T10:00:00.000-10:00').toISOString(),
+            end: new Date('2025-12-01T10:20:00.000-10:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2025-12-01T11:00:00.000-10:00').toISOString(),
+            end: new Date('2025-12-01T11:20:00.000-10:00').toISOString(),
             status: 'free',
             schedule: createReference(schedule),
           },
