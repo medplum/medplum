@@ -148,8 +148,10 @@ export function GetStartedPage(): JSX.Element {
             Get Started with Medplum Provider
           </Title>
           <Text size="lg" mt=".25rem" style={{ color: 'var(--text-secondary)' }}>
-            Below are our recommended first steps to get set up and familiar with the available features and workflows in Provider. Please note: if you are using the free version of Provider, some services may not be available—lab ordering, prescriptions, billing, and
-            access to code systems (such as CPT and ICD-10) require a paid plan.{' '}
+            Below are our recommended first steps to get set up and familiar with the available features and workflows
+            in Provider. Please note: if you are using the free version of Provider, some services may not be
+            available—lab ordering, prescriptions, billing, and access to code systems (such as CPT and ICD-10) require
+            a paid plan.{' '}
             <Text
               component="a"
               href="https://www.medplum.com/pricing"
