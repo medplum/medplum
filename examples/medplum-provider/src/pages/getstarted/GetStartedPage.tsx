@@ -482,7 +482,7 @@ export function GetStartedPage(): JSX.Element {
                     </Stack>
                   </Group>
                   <Divider />
-                  <Text size="md" style={{ flex: 1, color: 'var(--text-secondary)' }} >
+                  <Text size="md" style={{ flex: 1, color: 'var(--text-secondary)' }}>
                     A simple note template for a first patient visit that includes tasks and questionnaires.
                   </Text>
                   <Text size="xs" c="dimmed" mb="sm">
