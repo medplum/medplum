@@ -84,7 +84,7 @@ Medplum supports the following first party integrations.
       <td><a href="https://www.labcorp.com/">Labcorp</a></td>
       <td>Diagnostics</td>
       <td>Lab orders and results</td>
-      <td><a href="https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo">Bot and setup</a></td>
+      <td><a href="/docs/integration/health-gorilla">Bot and setup</a></td>
     </tr>
     <tr>
       <td><a href="https://www.questdiagnostics.com/">Quest</a></td>
