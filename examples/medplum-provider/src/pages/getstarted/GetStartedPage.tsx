@@ -474,7 +474,7 @@ export function GetStartedPage(): JSX.Element {
                     <IconFileText size={24} color="var(--icon-secondary)" />
                     <Stack gap={0}>
                       <Text size="11px" fw={500} style={{ color: 'var(--text-label)' }}>
-                        Sample Note Template
+                        Sample Care Template
                       </Text>
                       <Text fw={600} size="lg">
                         Simple Initial Visit
@@ -482,9 +482,11 @@ export function GetStartedPage(): JSX.Element {
                     </Stack>
                   </Group>
                   <Divider />
-                  <Text size="md" style={{ flex: 1, color: 'var(--text-secondary)' }} mb="sm">
-                    A simple visit note template for a initial visit, including vital signs, physical exam, and health
-                    maintenance screening.
+                  <Text size="md" style={{ flex: 1, color: 'var(--text-secondary)' }} >
+                    A simple note template for a first patient visit that includes tasks and questionnaires.
+                  </Text>
+                  <Text size="xs" c="dimmed" mb="sm">
+                    Note: a Care Template (aka PlanDefinition FHIR resource) is required for creating visits.
                   </Text>
                 </Stack>
                 <Button
@@ -497,7 +499,7 @@ export function GetStartedPage(): JSX.Element {
                   leftSection={<IconDownload size={14} />}
                   mt="sm"
                 >
-                  {importingVisit ? 'Importing...' : 'Import Visit Template'}
+                  {importingVisit ? 'Importing...' : 'Import Care Template'}
                 </Button>
               </Paper>
               <Paper radius="md" withBorder p="lg" shadow="sm" style={{ display: 'flex', flexDirection: 'column' }}>
