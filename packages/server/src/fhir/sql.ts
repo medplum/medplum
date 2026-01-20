@@ -1274,10 +1274,8 @@ export function isValidColumnName(columnName: string): boolean {
 
 export function replaceNullWithUndefinedInRows(rows: any[]): void {
   for (const row of rows) {
-    for (const k in row) {
-      if ((row as any)[k] === null) {
-        (row as any)[k] = undefined;
-      }
+    for (const k of Object.keys(row)) {
+      row[k] ??= undefined;
     }
   }
 }

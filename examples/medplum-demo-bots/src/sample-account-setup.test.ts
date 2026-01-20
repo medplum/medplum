@@ -37,7 +37,7 @@ describe('Sample Account Setup', async () => {
     };
     await handler(medplum, event);
 
-    const check = await medplum.readResource('Patient', patient.id as string);
+    const check = await medplum.readResource('Patient', patient.id);
     expect(check.generalPractitioner).toBeDefined();
     expect(check.generalPractitioner).toHaveLength(1);
 

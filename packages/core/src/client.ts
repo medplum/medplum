@@ -719,7 +719,7 @@ interface SchemaGraphQLResponse {
   };
 }
 
-interface RequestCacheEntry {
+export interface RequestCacheEntry {
   readonly requestTime: number;
   readonly value: ReadablePromise<any>;
 }
@@ -826,9 +826,10 @@ export interface ValueSetExpandParams {
   date?: string;
   offset?: number;
   count?: number;
+  displayLanguage?: string;
 }
 
-export interface RequestProfileSchemaOptions {
+export interface RequestProfileSchemaOptions extends MedplumRequestOptions {
   /** (optional) Whether to include nested profiles, e.g. from extensions. Defaults to false. */
   expandProfile?: boolean;
 }
@@ -907,7 +908,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
   private readonly storage: IClientStorage;
-  private readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
+  protected readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
   private readonly cacheTime: number;
   private readonly baseUrl: string;
   private readonly fhirBaseUrl: string;
@@ -1204,7 +1205,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
-          url: (url as string).replace(this.fhirBaseUrl, ''),
+          url: url.replace(this.fhirBaseUrl, ''),
           options,
           resolve,
           reject,
@@ -1218,7 +1219,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     const readablePromise = new ReadablePromise(promise);
-    this.setCacheEntry(url, readablePromise);
+    this.setCacheEntry(url, readablePromise, options);
     return readablePromise;
   }
 
@@ -1639,7 +1640,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = this.getBundle<WithId<ExtractResource<RT>>>(url, options);
-    this.setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
 
@@ -1681,7 +1682,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const promise = new ReadablePromise(
       this.search<RT>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
-    this.setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
 
@@ -1719,7 +1720,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = new ReadablePromise(this.search<RT>(resourceType, query, options).then(bundleToResourceArray));
-    this.setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
 
@@ -1903,9 +1904,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * If the schema is already cached, the promise is resolved immediately.
    * @category Schema
    * @param resourceType - The FHIR resource type.
+   * @param options - Optional fetch options.
    * @returns Promise to a schema with the requested resource type.
    */
-  requestSchema(resourceType: string): Promise<void> {
+  requestSchema(resourceType: string, options?: MedplumRequestOptions): Promise<void> {
     if (isDataTypeLoaded(resourceType)) {
       return Promise.resolve();
     }
@@ -1969,7 +1971,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
       })()
     );
-    this.setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
 
@@ -2016,7 +2018,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
       })()
     );
-    this.setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise, options);
     return promise;
   }
 
@@ -2212,7 +2214,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.setRequestHeader(options, 'If-None-Exist', query);
 
     const result = await this.post(url, resource, undefined, options);
-    this.cacheResource(result);
+    this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     return result;
@@ -2240,7 +2242,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // Return the user input instead
       result = resource;
     }
-    this.cacheResource(result);
+    this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
     return result;
@@ -2617,7 +2619,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // Return the user input instead
       result = resource;
     }
-    this.cacheResource(result);
+    this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id, '_history'));
     this.invalidateSearches(resource.resourceType);
     return result;
@@ -2655,7 +2657,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     options?: MedplumRequestOptions
   ): Promise<WithId<ExtractResource<RT>>> {
     const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
-    this.cacheResource(result);
+    this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
     return result;
@@ -3364,12 +3366,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         const bundle = await this.get<Bundle<T>>(url, options);
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            this.cacheResource(entry.resource);
+            this.cacheResource(entry.resource, options);
           }
         }
         return bundle;
       })()
     );
+  }
+
+  /**
+   * Returns true if caching is enabled for the given request options.
+   * @param options - Optional fetch options for cache settings.
+   * @returns True if caching is enabled.
+   */
+  private isCacheEnabled(
+    options: MedplumRequestOptions | undefined
+  ): this is this & { requestCache: LRUCache<RequestCacheEntry> } {
+    return !!this.requestCache && !this.getRequestHeader(options, 'x-medplum-on-behalf-of');
   }
 
   /**
@@ -3379,7 +3392,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The cached entry if found.
    */
   private getCacheEntry(key: string, options: MedplumRequestOptions | undefined): RequestCacheEntry | undefined {
-    if (!this.requestCache || options?.cache === 'no-cache' || options?.cache === 'reload') {
+    if (!this.isCacheEnabled(options) || options?.cache === 'no-cache' || options?.cache === 'reload') {
       return undefined;
     }
     const entry = this.requestCache.get(key);
@@ -3393,9 +3406,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Adds a readable promise to the cache.
    * @param key - The cache key to store.
    * @param value - The readable promise to store.
+   * @param options - Optional fetch options for cache settings.
    */
-  private setCacheEntry(key: string, value: ReadablePromise<any>): void {
-    if (this.requestCache) {
+  private setCacheEntry(key: string, value: ReadablePromise<any>, options: MedplumRequestOptions | undefined): void {
+    if (this.isCacheEnabled(options)) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
     }
   }
@@ -3405,12 +3419,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * This is used in cases where the resource is loaded indirectly.
    * For example, when a resource is loaded as part of a Bundle.
    * @param resource - The resource to cache.
+   * @param options - Optional fetch options for cache settings.
    */
-  private cacheResource(resource: Resource | undefined): void {
+  private cacheResource(resource: Resource | undefined, options: MedplumRequestOptions | undefined): void {
     if (resource?.id && !resource.meta?.tag?.some((t) => t.code === 'SUBSETTED')) {
       this.setCacheEntry(
         this.fhirUrl(resource.resourceType, resource.id).toString(),
-        new ReadablePromise(Promise.resolve(resource))
+        new ReadablePromise(Promise.resolve(resource)),
+        options
       );
     }
   }
@@ -3550,7 +3566,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (delayMs > maxRetryTime) {
           return response;
         }
-        await sleep(delayMs);
+        await sleep(delayMs, { signal: options.signal });
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
@@ -3652,7 +3668,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } else {
       // Subsequent requests - wait and retry
       const retryDelay = options.pollStatusPeriod ?? 1000;
-      await sleep(retryDelay);
+      await sleep(retryDelay, { signal: options.signal });
       state.pollCount++;
     }
     return this.request('GET', statusUrl, statusOptions, state);
@@ -3758,6 +3774,27 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private setRequestContentType(options: MedplumRequestOptions, contentType: string): void {
     this.setRequestHeader(options, 'Content-Type', contentType);
+  }
+
+  /**
+   * Returns a header from fetch options.
+   * @param options - The fetch options.
+   * @param key - The header key.
+   * @returns The header value if found.
+   */
+  private getRequestHeader(options: MedplumRequestOptions | undefined, key: string): string | undefined {
+    const headers = options?.headers;
+    if (!headers) {
+      return undefined;
+    } else if (Array.isArray(headers)) {
+      const header = headers.find(([k]) => k.toLowerCase() === key.toLowerCase());
+      return header ? header[1] : undefined;
+    } else if (headers instanceof Headers) {
+      return headers.get(key) ?? undefined;
+    } else if (isObject(headers)) {
+      return headers[key] ?? undefined;
+    }
+    return undefined;
   }
 
   /**
@@ -4245,6 +4282,34 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
+  private async handleTokenError(response: Response): Promise<never> {
+    try {
+      const error = await response.json();
+
+      // An error from any endpoint can be an OperationOutcome (example: rate
+      // limiting errors are an HTTP 429 with an OperationOutcome in the
+      // response body)
+      if (isOperationOutcome(error)) {
+        throw new OperationOutcomeError(error);
+      }
+
+      // An error from the OAuth endpoints can be an OAuth 2.0 error type
+      // https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1
+      if (error.error_description) {
+        throw new OperationOutcomeError(badRequest(error.error_description));
+      }
+
+      // Handle unknown error type by stringifying it
+      throw new Error(JSON.stringify(error));
+    } catch (err) {
+      if (err instanceof OperationOutcomeError) {
+        err.message = `Failed to fetch tokens: ${err.message}`;
+        throw err;
+      }
+      throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
+    }
+  }
+
   /**
    * Makes a POST request to the tokens endpoint.
    * See {@link https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint | OpenID Connect Core 1.0 TokenEndpoint} for full details.
@@ -4284,12 +4349,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!response.ok) {
       this.clearActiveLogin();
       this.onUnauthenticated?.();
-      try {
-        const error = await response.json();
-        throw new OperationOutcomeError(badRequest(error.error_description));
-      } catch (err) {
-        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), { cause: err });
-      }
+      await this.handleTokenError(response);
     }
     const tokens = await response.json();
     await this.verifyTokens(tokens);

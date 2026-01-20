@@ -79,7 +79,7 @@ describe('ProfilesPage', () => {
 
     expect(screen.getByText('Success')).toBeInTheDocument();
 
-    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    const updatedPatient = await medplum.readResource('Patient', patient.id);
     expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(true);
   });
 
@@ -104,7 +104,7 @@ describe('ProfilesPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
 
-    const updatedPatient = await medplum.readResource('Patient', patient.id as string);
+    const updatedPatient = await medplum.readResource('Patient', patient.id);
     expect(updatedPatient.meta?.profile).toEqual(undefined);
   });
 });

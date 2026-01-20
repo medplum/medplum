@@ -51,7 +51,7 @@ export function EditPage(): JSX.Element | null {
   const handlePatch = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);
-      const patchOperations = createPatch(original, newResource);
+      const patchOperations = createPatch(original, cleanResource(newResource));
       medplum
         .patchResource(resourceType, id, patchOperations)
         .then(() => {

@@ -70,11 +70,8 @@ export function getRedisSubscriber(): Redis & { quit: never } {
   if (!redis) {
     throw new Error('Redis not initialized');
   }
-  if (!redisSubscribers) {
-    redisSubscribers = new Set();
-  }
-
   const subscriber = redis.duplicate();
+  redisSubscribers ??= new Set();
   redisSubscribers.add(subscriber);
 
   subscriber.on('end', () => {

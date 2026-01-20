@@ -234,7 +234,7 @@ describe('SignInForm', () => {
 
   test('Renders', async () => {
     await setup();
-    const input = screen.getByText('Sign in to Medplum') as HTMLButtonElement;
+    const input = screen.getByText('Sign in to Medplum');
     expect(input.innerHTML).toBe('Sign in to Medplum');
   });
 

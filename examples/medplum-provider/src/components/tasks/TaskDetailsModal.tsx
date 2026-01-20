@@ -3,7 +3,7 @@
 import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import type { Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -135,7 +135,7 @@ export const TaskDetailsModal = (): JSX.Element => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Text>View Patient</Text>
                         <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                          {formatHumanName(patient.name?.[0] as HumanName)}
+                          {formatHumanName(patient.name?.[0])}
                         </Button>
                       </div>
                     )}

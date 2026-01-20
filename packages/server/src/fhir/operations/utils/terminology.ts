@@ -177,12 +177,9 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
       badRequest(`Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`)
     );
   }
-  let property = codeSystem.property?.find((p) => p.uri === parentProperty);
-  if (!property) {
-    // Implicit parent property for hierarchical CodeSystems
-    property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
-  }
-  return property;
+  const property = codeSystem.property?.find((p) => p.uri === parentProperty);
+  // Implicit parent property for hierarchical CodeSystems
+  return property ?? { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
 }
 
 export async function resolveProperty(

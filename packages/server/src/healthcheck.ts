@@ -3,7 +3,7 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import type { Request, Response } from 'express';
 import os from 'node:os';
-import type { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
@@ -13,21 +13,23 @@ const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
 const METRIC_IN_SECS_OPTIONS = { ...BASE_METRIC_OPTIONS, options: { unit: 's' } } satisfies RecordMetricOptions;
 
-export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
-  const writerPool = getDatabasePool(DatabaseMode.WRITER);
-  const readerPool = getDatabasePool(DatabaseMode.READER);
+let readerConn: PoolClient | undefined;
+let writerConn: PoolClient | undefined;
 
+export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
+  writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
   let startTime = Date.now();
-  const postgresWriterOk = await testPostgres(writerPool);
+  const postgresWriterOk = await testPostgres(writerConn);
   const writerRoundtripMs = Date.now() - startTime;
   setGauge('medplum.db.healthcheckRTT', writerRoundtripMs / 1000, {
     ...METRIC_IN_SECS_OPTIONS,
     attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, dbInstanceType: 'writer' },
   });
 
-  if (writerPool !== readerPool) {
+  if (hasSeparateReaderPool()) {
+    readerConn ??= await getReservedDatabaseConnection(DatabaseMode.READER);
     startTime = Date.now();
-    await testPostgres(readerPool);
+    await testPostgres(readerConn);
     const readerRoundtripMs = Date.now() - startTime;
     setGauge('medplum.db.healthcheckRTT', readerRoundtripMs / 1000, {
       ...METRIC_IN_SECS_OPTIONS,
@@ -50,7 +52,22 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   });
 }
 
-async function testPostgres(pool: Pool): Promise<boolean> {
+async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
+  return getDatabasePool(mode).connect();
+}
+
+export function cleanupReservedDatabaseConnections(): void {
+  writerConn?.release(true);
+  writerConn = undefined;
+  readerConn?.release(true);
+  readerConn = undefined;
+}
+
+function hasSeparateReaderPool(): boolean {
+  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+}
+
+async function testPostgres(pool: PoolClient): Promise<boolean> {
   return (await pool.query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 

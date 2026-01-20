@@ -5,7 +5,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Provenance } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { SignAddendum } from './SignAddendum';
@@ -37,7 +37,6 @@ describe('SignAddendumCard', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(DrAliceSmith);
     vi.clearAllMocks();
   });
 

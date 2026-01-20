@@ -38,7 +38,7 @@ export function main(): void {
 function writeIndexFile(): void {
   const names = Object.values(getAllDataTypes())
     .filter((t) => t.name !== 'DomainResource' && !t.parentType && !isLowerCase(t.name.charAt(0)))
-    .map((t) => t.name as string);
+    .map((t) => t.name);
   names.push('ResourceType');
   names.sort();
 
@@ -52,7 +52,7 @@ function writeIndexFile(): void {
 function writeResourceFile(): void {
   const names = Object.values(getAllDataTypes())
     .filter(isResourceTypeSchema)
-    .map((t) => t.name as string)
+    .map((t) => t.name)
     .sort();
 
   const b = new FileBuilder();
@@ -245,7 +245,7 @@ function getTypeScriptProperties(
     const baseName = name.replace('[x]', '');
     const propertyTypes = property.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
-      const code = propertyType.code as string;
+      const code = propertyType.code;
       result.push({
         name: baseName + capitalize(code),
         typeName: getTypeScriptTypeForProperty(property, propertyType, path),
@@ -283,7 +283,7 @@ function getTypeScriptTypeForProperty(
   typeDefinition: ElementDefinitionType,
   path: string
 ): string {
-  let baseType = typeDefinition.code as string;
+  let baseType = typeDefinition.code;
   let binding: string | undefined;
 
   switch (baseType) {

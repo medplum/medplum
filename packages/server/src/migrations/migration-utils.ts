@@ -57,7 +57,7 @@ export function getPreDeployMigration(migrationNumber: number): PreDeployMigrati
     throw new Error(`run function not defined for pre-deploy migration v${migrationNumber}`);
   }
 
-  return migration as PreDeployMigration;
+  return migration;
 }
 
 export class MigrationDefinitionNotFoundError extends Error {

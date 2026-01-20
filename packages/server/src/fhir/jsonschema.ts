@@ -19,11 +19,8 @@ import { randomUUID } from 'node:crypto';
  */
 
 let schema: JSONSchema4 | undefined = undefined;
-
 function getJsonSchema(): JSONSchema4 {
-  if (!schema) {
-    schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
-  }
+  schema ??= readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
   return schema;
 }
 

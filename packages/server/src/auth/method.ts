@@ -52,14 +52,14 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
   }
 
   try {
-    const url = new URL(idp.authorizeUrl as string);
-    url.searchParams.set('client_id', idp.clientId as string);
+    const url = new URL(idp.authorizeUrl);
+    url.searchParams.set('client_id', idp.clientId);
     url.searchParams.set('redirect_uri', getConfig().baseUrl + 'auth/external');
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid profile email');
     return { domain, authorizeUrl: url.toString() };
-  } catch (_err) {
-    globalLogger.error(`Error constructing URL for domain ${domain}:`);
+  } catch (err) {
+    globalLogger.error(`Error constructing URL for domain ${domain}: ${err}`);
     throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
   }
 }

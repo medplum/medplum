@@ -21,7 +21,7 @@ export async function handler(
   event: BotEvent<CoverageEligibilityRequest>
 ): Promise<CoverageEligibilityResponse> {
   // Get the request from the input
-  const request = event.input as CoverageEligibilityRequest;
+  const request = event.input;
   const serviceType = request.item?.[0].category?.coding?.[0];
 
   // Process the request. This is a dummy function that represents sending the request to a coverage clearinghouse

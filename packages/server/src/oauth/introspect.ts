@@ -35,7 +35,7 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
     }
 
     writeActiveResponse(res, decodedToken.payload, login, launch);
-  } catch (_) {
+  } catch {
     writeInactiveResponse(res);
   }
 };

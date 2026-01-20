@@ -7,7 +7,7 @@ import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, Query
 import pg from 'pg';
 import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
-import type { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
+import type { MedplumDatabaseSslConfig } from './config/types';
 import {
   acquireAdvisoryLock,
   closeDatabase,
@@ -147,7 +147,7 @@ describe('Database config', () => {
     expect(config.database).toBeDefined();
 
     const configCopy = deepClone(config);
-    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
+    const databaseConfig = configCopy.database;
     const sslConfig = {
       rejectUnauthorized: true,
       require: true,
@@ -178,7 +178,7 @@ describe('Database config', () => {
     const configCopy = deepClone(config);
     configCopy.databaseProxyEndpoint = 'test';
 
-    const databaseConfig = configCopy.database as MedplumDatabaseConfig;
+    const databaseConfig = configCopy.database;
 
     await initDatabase(configCopy);
     expect(poolSpy).toHaveBeenCalledTimes(1);

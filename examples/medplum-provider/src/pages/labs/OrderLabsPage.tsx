@@ -24,8 +24,8 @@ import {
 } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
 import { PerformingLabInput } from '../../components/PerformingLabInput';
-import { TestMetadataCardInput } from '../../components/TestMetadataCardInput';
-import { CoverageInput } from '../../components/CoverageInput';
+import { TestMetadataCardInput } from '../../components/labs/TestMetadataCardInput';
+import { CoverageInput } from '../../components/labs/CoverageInput';
 import { useState, useEffect, useRef } from 'react';
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
@@ -84,8 +84,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     // Compare by checking if arrays have different lengths or different test codes
     const testsChanged =
       tests &&
-      (prevTestsRef.current === undefined ||
-        prevTestsRef.current.length !== tests.length ||
+      (prevTestsRef.current?.length !== tests.length ||
         prevTestsRef.current.some((prevTest, index) => prevTest.code !== tests[index]?.code));
 
     if (testsChanged) {
@@ -202,7 +201,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
             <div>
               <ValueSetAutocomplete
                 label="Diagnoses"
-                binding="http://hl7.org/fhir/sid/icd-10-cm"
+                binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
                 name="diagnoses"
                 maxValues={10}
                 onChange={(items) => {

@@ -26,7 +26,7 @@ describe('ResourceAvatar', () => {
 
   test('Avatar renders image', async () => {
     await setup({ src: 'https://example.com/profile.jpg', alt: 'Profile' });
-    expect((screen.getByAltText('Profile') as HTMLImageElement).src).toEqual('https://example.com/profile.jpg');
+    expect(screen.getByAltText<HTMLImageElement>('Profile').src).toEqual('https://example.com/profile.jpg');
   });
 
   test('Avatar renders system', async () => {

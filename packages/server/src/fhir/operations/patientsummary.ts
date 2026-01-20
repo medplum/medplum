@@ -161,7 +161,7 @@ export async function getPatientSummary(
   params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
   const repo = ctx.repo;
-  const authorRef = (params.author ? params.author : ctx.profile) as Reference<CompositionAuthorResource>;
+  const authorRef = (params.author ?? ctx.profile) as Reference<CompositionAuthorResource>;
   const author = await repo.readReference(authorRef);
   const patient = await repo.readReference(patientRef);
   params._type = resourceTypes;

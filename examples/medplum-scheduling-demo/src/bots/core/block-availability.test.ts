@@ -74,7 +74,7 @@ describe('Block Availability', async () => {
     });
 
     const input: BlockAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       start: '2024-08-16T09:00:00.000Z',
       end: '2024-08-16T21:00:00.000Z',
     };
@@ -142,7 +142,7 @@ describe('Block Availability', async () => {
     });
 
     const input: BlockAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       start: '2024-08-16T09:00:00.000Z',
       end: '2024-08-16T21:00:00.000Z',
     };
@@ -177,7 +177,7 @@ describe('Block Availability', async () => {
     });
 
     const input: BlockAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       start: '2024-08-16T09:00:00.000Z',
       end: '2024-08-16T21:00:00.000Z',
     };
@@ -214,7 +214,7 @@ describe('Block Availability', async () => {
     });
 
     const input: BlockAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       start: '2024-08-16T09:00:00.000Z',
       end: '2024-08-16T21:00:00.000Z',
     };
@@ -240,7 +240,7 @@ describe('Block Availability', async () => {
 
   test('End date before start date', async () => {
     const input: BlockAvailabilityEvent = {
-      schedule: createReference(schedule as Schedule),
+      schedule: createReference(schedule),
       start: '2024-08-16T21:00:00.000Z',
       end: '2024-08-16T17:00:00.000Z',
     };
