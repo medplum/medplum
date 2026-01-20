@@ -6,7 +6,7 @@
 services:
   postgres:
     image: postgres:16
-    restart: always
+    restart: unless-stopped # for production usage, consider using 'always'
     environment:
       - POSTGRES_USER=medplum
       - POSTGRES_PASSWORD=medplum
@@ -18,7 +18,7 @@ services:
       - '5432:5432'
   redis:
     image: redis:7
-    restart: always
+    restart: unless-stopped # for production usage, consider using 'always'
     command: redis-server --requirepass medplum
     ports:
       - '6379:6379'
