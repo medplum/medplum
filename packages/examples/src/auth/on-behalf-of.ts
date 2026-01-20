@@ -50,4 +50,3 @@ curl 'https://api.medplum.com/fhir/R4/Patient' \
   --data-raw '{"resourceType":"Patient","name":[{"given":["Homer"],"family":"Simpson"}]}'
 // end-block curlExample
 */
-
