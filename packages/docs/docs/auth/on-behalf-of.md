@@ -3,6 +3,9 @@ sidebar_position: 30
 tags: [auth]
 ---
 
+import ExampleCode from '!!raw-loader!@site/..//examples/src/auth/on-behalf-of.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # On-Behalf-Of
 
 The Medplum API supports an "On-Behalf-Of" feature to enable a Customer Server Side App to act on behalf of a Medplum user.
@@ -56,51 +59,21 @@ When the Medplum Server receives a request with the `X-Medplum-On-Behalf-Of` hea
 
 Here is a curl example of using the `X-Medplum-On-Behalf-Of` header:
 
-```bash
-curl 'https://api.medplum.com/fhir/R4/Patient' \
-  --user $MY_CLIENT_ID:$MY_CLIENT_SECRET \
-  -H 'content-type: application/fhir+json' \
-  -H 'x-medplum: extended' \
-  -H 'x-medplum-on-behalf-of: ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87' \
-  --data-raw '{"resourceType":"Patient","name":[{"given":["Homer"],"family":"Simpson"}]}'
-```
+<MedplumCodeBlock language="bash" selectBlocks="curlExample">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Here is the same example using the Medplum SDK:
 
-```ts
-import { MedplumClient } from '@medplum/core';
-
-const medplum = new MedplumClient({
-  clientId: MY_CLIENT_ID,
-  clientSecret: MY_CLIENT_SECRET,
-});
-
-await medplum.createResource(
-  {
-    resourceType: 'Patient',
-    name: [{ given: ['Homer'], family: 'Simpson' }],
-  },
-  {
-    headers: {
-      'X-Medplum': 'extended',
-      'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
-    },
-  }
-);
-```
+<MedplumCodeBlock language="ts" selectBlocks="createResourceOnBehalfOf">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 If you want to apply the header to all requests, set a default header when constructing the client:
 
-```ts
-const medplum = new MedplumClient({
-  clientId: MY_CLIENT_ID,
-  clientSecret: MY_CLIENT_SECRET,
-  defaultHeaders: {
-    'X-Medplum': 'extended',
-    'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
-  },
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="defaultHeadersOnBehalfOf">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 Note the two extra HTTP request headers:
 
