@@ -4,7 +4,7 @@ import type { useMedplum } from '@medplum/react';
 import type { Identifier, Communication, Resource, Bundle } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
 import type { Message } from '../types/spaces';
-import { createConversationTopic, saveMessage, saveMessagesAtomic } from './spacePersistence';
+import { createConversationTopic, saveMessage } from './spacePersistence';
 
 const fhirRequestToolsId: Identifier = {
   value: 'ai-fhir-request-tools',
@@ -222,15 +222,14 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     currentMessages.push(...toolMessages);
     allResourceRefs.push(...resourceRefs);
 
-    // Save assistant message with tool_calls AND all tool responses atomically
+    // Save assistant message with tool_calls AND all tool responses AFTER execution completes
     // This prevents corrupted state where tool_calls exist without responses
     if (activeTopicId) {
       const baseSequence = currentMessages.length - 1 - toolMessages.length;
-      const messagesToSave = [
-        { message: assistantMessageWithToolCalls, sequenceNumber: baseSequence },
-        ...toolMessages.map((msg, i) => ({ message: msg, sequenceNumber: baseSequence + 1 + i })),
-      ];
-      await saveMessagesAtomic(medplum, activeTopicId, messagesToSave);
+      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, baseSequence);
+      for (let i = 0; i < toolMessages.length; i++) {
+        await saveMessage(medplum, activeTopicId, toolMessages[i], baseSequence + 1 + i);
+      }
     }
 
     // Get summary response after tool execution

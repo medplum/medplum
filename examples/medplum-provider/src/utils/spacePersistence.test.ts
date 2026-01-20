@@ -3,13 +3,7 @@
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
-import {
-  createConversationTopic,
-  saveMessage,
-  saveMessagesAtomic,
-  loadConversationMessages,
-  loadRecentTopics,
-} from './spacePersistence';
+import { createConversationTopic, saveMessage, loadConversationMessages, loadRecentTopics } from './spacePersistence';
 import type { Message } from '../types/spaces';
 
 describe('spacePersistence', () => {
@@ -473,80 +467,6 @@ describe('spacePersistence', () => {
       const topics = await loadRecentTopics(medplum);
 
       expect(topics).toEqual([]);
-    });
-  });
-
-  describe('saveMessagesAtomic', () => {
-    test('saves multiple messages in a transaction bundle', async () => {
-      const executeBatchSpy = vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'transaction-response',
-        entry: [],
-      });
-
-      const messages = [
-        {
-          message: { role: 'assistant' as const, content: null, tool_calls: [{ id: 'call-1' }] },
-          sequenceNumber: 1,
-        },
-        {
-          message: { role: 'tool' as const, content: '{"result": "success"}', tool_call_id: 'call-1' },
-          sequenceNumber: 2,
-        },
-      ];
-
-      await saveMessagesAtomic(medplum, 'topic-1', messages);
-
-      expect(executeBatchSpy).toHaveBeenCalledTimes(1);
-      const bundle = executeBatchSpy.mock.calls[0][0];
-      expect(bundle.type).toBe('transaction');
-      expect(bundle.entry).toHaveLength(2);
-      expect(bundle.entry?.[0]?.request?.method).toBe('POST');
-      expect(bundle.entry?.[0]?.request?.url).toBe('Communication');
-      expect(bundle.entry?.[1]?.request?.method).toBe('POST');
-    });
-
-    test('handles empty messages array', async () => {
-      const executeBatchSpy = vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'transaction-response',
-        entry: [],
-      });
-
-      await saveMessagesAtomic(medplum, 'topic-1', []);
-
-      expect(executeBatchSpy).not.toHaveBeenCalled();
-    });
-
-    test('includes correct message data in bundle entries', async () => {
-      const executeBatchSpy = vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'transaction-response',
-        entry: [],
-      });
-
-      const messages = [
-        {
-          message: {
-            role: 'assistant' as const,
-            content: 'Hello',
-            resources: ['Patient/123'],
-          },
-          sequenceNumber: 5,
-        },
-      ];
-
-      await saveMessagesAtomic(medplum, 'topic-1', messages);
-
-      const bundle = executeBatchSpy.mock.calls[0][0];
-      const resource = bundle.entry?.[0]?.resource as Communication;
-      const payload = JSON.parse(resource.payload?.[0]?.contentString ?? '{}');
-
-      expect(payload.role).toBe('assistant');
-      expect(payload.content).toBe('Hello');
-      expect(payload.resources).toEqual(['Patient/123']);
-      expect(payload.sequenceNumber).toBe(5);
-      expect(resource.partOf?.[0]?.reference).toBe('Communication/topic-1');
     });
   });
 

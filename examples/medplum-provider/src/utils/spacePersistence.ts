@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Bundle, Communication } from '@medplum/fhirtypes';
+import type { Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
 import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
@@ -98,37 +98,6 @@ function buildMessageCommunication(topicId: string, message: Message, sequenceNu
       },
     ],
   };
-}
-
-/**
- * Saves multiple messages atomically using a FHIR transaction bundle.
- * This ensures all messages are saved together or none are saved (preventing corrupted state).
- * @param medplum - The Medplum client instance
- * @param topicId - The ID of the conversation topic
- * @param messages - Array of messages with their sequence numbers
- */
-export async function saveMessagesAtomic(
-  medplum: MedplumClient,
-  topicId: string,
-  messages: { message: Message; sequenceNumber: number }[]
-): Promise<void> {
-  if (messages.length === 0) {
-    return;
-  }
-
-  const bundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: messages.map(({ message, sequenceNumber }) => ({
-      resource: buildMessageCommunication(topicId, message, sequenceNumber),
-      request: {
-        method: 'POST',
-        url: 'Communication',
-      },
-    })),
-  };
-
-  await medplum.executeBatch(bundle);
 }
 
 /**
