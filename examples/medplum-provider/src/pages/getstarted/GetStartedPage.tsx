@@ -148,18 +148,22 @@ export function GetStartedPage(): JSX.Element {
             Get Started with Medplum Provider
           </Title>
           <Text size="lg" mt=".25rem" style={{ color: 'var(--text-secondary)' }}>
-            Below are some first steps to get set up and familiar with the available features and workflows.
-          </Text>
-          <Text size="lg" mt="0rem" style={{ color: 'var(--text-secondary)' }}>
-            Please note: if you are using the free version of Provider, some services such as labs, prescriptions, and
-            access to code systems (required for US healthcare regulations) are not included.{' '}
-            <a href="https://www.medplum.com/pricing" style={{ color: 'var(--mantine-color-blue-6)' }} target="_blank">
+            Below are our recommended first steps to get set up and familiar with the available features and workflows in Provider. Please note: if you are using the free version of Provider, some services may not be available—lab ordering, prescriptions, billing, and
+            access to code systems (such as CPT and ICD-10) require a paid plan.{' '}
+            <Text
+              component="a"
+              href="https://www.medplum.com/pricing"
+              target="_blank"
+              c="blue.6"
+              style={{ textDecoration: 'none' }}
+              span
+            >
               Subscribe
-            </a>{' '}
-            to a paid plan or{' '}
-            <a href="mailto:support@medplum.com" style={{ color: 'var(--mantine-color-blue-6)' }}>
+            </Text>{' '}
+            or{' '}
+            <Text component="a" href="mailto:support@medplum.com" c="blue.6" style={{ textDecoration: 'none' }} span>
               contact us
-            </a>{' '}
+            </Text>{' '}
             to integrate these services.
           </Text>
         </Box>
