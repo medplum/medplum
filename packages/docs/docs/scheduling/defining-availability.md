@@ -18,7 +18,7 @@ The following FHIR resources work together to define availability:
 The other key entity is the **Service Type**, which is a [codeable concept](/docs/api/fhir/datatypes/codeableconcept) that defines a specific service type (appointment type). Service types are used to group appointments into categories, such as `office visit`, `telephone visit`, and `emergency room visit`. FHIR's recommendation is to use codes from https://build.fhir.org/valueset-procedure-code.html.
 
 ### Appointment Booking FHIR Operations
-- `$find` - Find available appointment slots **[In Development - Coming Soon]**
+- `$find` - Find available appointment slots **[Beta]**
 - `$hold` - Temporarily hold a slot **[In Development - Coming Soon]**
 - `$book` - Book an appointment **[In Development - Coming Soon]**
 - `$cancel` - Cancel an appointment **[In Development - Coming Soon]**
@@ -391,7 +391,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
   "actor": [{"reference": "Practitioner/dr-smith"}],
   "extension": [
     {
-      "url": "http://medplum.com/fhir/StructureDefinition/scheduling-parameters",
+      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
         {
           "url": "serviceType",
@@ -417,7 +417,7 @@ Here is an example of a Schedule with multiple service types, each with its own 
       ]
     },
     {
-      "url": "http://medplum.com/fhir/StructureDefinition/scheduling-parameters",
+      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
       "extension": [
         {
           "url": "timezone",
