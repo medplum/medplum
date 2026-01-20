@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { EMPTY } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { DiagnosticReport } from '@medplum/fhirtypes';
 
@@ -15,13 +16,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     await medplum.updateResource(report);
   }
 
-  if (report.result) {
-    for (const observationRef of report.result) {
-      const observation = await medplum.readReference(observationRef);
-      if (observation.status !== 'final') {
-        observation.status = 'final';
-        await medplum.updateResource(observation);
-      }
+  for (const observationRef of report.result ?? EMPTY) {
+    const observation = await medplum.readReference(observationRef);
+    if (observation.status !== 'final') {
+      observation.status = 'final';
+      await medplum.updateResource(observation);
     }
   }
 }

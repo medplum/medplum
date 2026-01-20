@@ -926,19 +926,17 @@ export function buildSearchExpression(
   searchRequest: SearchRequest
 ): Expression | undefined {
   const expressions: Expression[] = [];
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      let expr: Expression | undefined;
-      if (isChainedSearchFilter(filter)) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter);
-        expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
-      } else {
-        expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-      }
+  for (const filter of searchRequest.filters ?? EMPTY) {
+    let expr: Expression | undefined;
+    if (isChainedSearchFilter(filter)) {
+      const chain = parseChainedParameter(searchRequest.resourceType, filter);
+      expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
+    } else {
+      expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    }
 
-      if (expr) {
-        expressions.push(expr);
-      }
+    if (expr) {
+      expressions.push(expr);
     }
   }
   if (expressions.length === 0) {

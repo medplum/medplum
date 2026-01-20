@@ -63,27 +63,23 @@ function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
   }
 
   const variables: Record<string, TypedValue> = {};
-  if (v.constant) {
-    for (const c of v.constant) {
-      const typedConstant = { type: 'ViewDefinitionConstant', value: c };
-      variables['%' + c.name] = getTypedPropertyValue(typedConstant, 'value') as TypedValue;
-    }
+  for (const c of v.constant ?? EMPTY) {
+    const typedConstant = { type: 'ViewDefinitionConstant', value: c };
+    variables['%' + c.name] = getTypedPropertyValue(typedConstant, 'value') as TypedValue;
   }
 
   const typedResource = toTypedValue(r);
 
-  if (v.where) {
-    for (const where of v.where) {
-      const whereResult = evalFhirPathTyped(where.path, [typedResource], variables);
-      if (whereResult.length !== 1) {
-        return [];
-      }
-      if (whereResult[0].type !== 'boolean') {
-        throw new Error('WHERE clause must evaluate to a boolean');
-      }
-      if (!whereResult[0].value) {
-        return [];
-      }
+  for (const where of v.where ?? EMPTY) {
+    const whereResult = evalFhirPathTyped(where.path, [typedResource], variables);
+    if (whereResult.length !== 1) {
+      return [];
+    }
+    if (whereResult[0].type !== 'boolean') {
+      throw new Error('WHERE clause must evaluate to a boolean');
+    }
+    if (!whereResult[0].value) {
+      return [];
     }
   }
 

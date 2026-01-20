@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { Operator } from '@medplum/core';
+import { EMPTY, Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
@@ -49,10 +49,8 @@ async function deleteExisting(
       { code: '_project', operator: Operator.EQUALS, value: projectId },
     ],
   });
-  if (bundle.entry && bundle.entry.length > 0) {
-    for (const entry of bundle.entry) {
-      const existing = entry.resource as WithId<CodeSystem | ValueSet>;
-      await systemRepo.deleteResource(existing.resourceType, existing.id);
-    }
+  for (const entry of bundle.entry ?? EMPTY) {
+    const existing = entry.resource as WithId<CodeSystem | ValueSet>;
+    await systemRepo.deleteResource(existing.resourceType, existing.id);
   }
 }

@@ -16,7 +16,7 @@ import {
 } from '../outcomes';
 import type { TypedValue } from '../types';
 import { PropertyType, isReference, isResource } from '../types';
-import { append, arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { EMPTY, append, arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
 import type { CrawlerVisitor, TypedValueWithPath } from './crawler';
 import { crawlTypedValue, getNestedProperty } from './crawler';
 import type {
@@ -365,10 +365,7 @@ class ResourceValidator implements CrawlerVisitor {
 
   private constraintsCheck(value: TypedValueWithPath, field: InternalTypeSchema | InternalSchemaElement): void {
     const constraints = field.constraints;
-    if (!constraints) {
-      return;
-    }
-    for (const constraint of constraints) {
+    for (const constraint of constraints ?? EMPTY) {
       if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value);
         if (!expression) {
@@ -471,11 +468,9 @@ class ResourceValidator implements CrawlerVisitor {
         }
       }
     }
-    if (tokens?.length) {
-      for (const token of tokens) {
-        if (token.path === value.path) {
-          return; // Token already exists
-        }
+    for (const token of tokens ?? EMPTY) {
+      if (token.path === value.path) {
+        return; // Token already exists
       }
     }
     this.collect.tokens[url] = append(tokens, value);
@@ -705,12 +700,9 @@ export function matchDiscriminant(
 }
 
 function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
-  if (!slicingRules) {
-    return undefined;
-  }
-  for (const slice of slicingRules.slices) {
+  for (const slice of slicingRules?.slices ?? EMPTY) {
     if (
-      slicingRules.discriminator.every((discriminator) =>
+      slicingRules?.discriminator?.every((discriminator) =>
         arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
       )
     ) {

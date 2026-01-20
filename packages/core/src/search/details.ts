@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import type { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
@@ -15,7 +15,7 @@ import {
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
-import { lazy } from '../utils';
+import { EMPTY, lazy } from '../utils';
 import { getInnerDerivedIdentifierExpression, getParsedDerivedIdentifierExpression } from './derived';
 
 export const SearchParameterType = {
@@ -203,7 +203,7 @@ function crawlSearchParameterDetails(
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
-    for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
+    for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
       details.propertyTypes.add(elementDefinitionType.code);
     }
     return;
@@ -212,7 +212,7 @@ function crawlSearchParameterDetails(
   // This is in the middle of the expression, so we need to keep crawling.
   // "code" is only missing when using "contentReference"
   // "contentReference" is handled whe parsing StructureDefinition into InternalTypeSchema
-  for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
+  for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
     let propertyType = elementDefinitionType.code;
     if (isBackboneElement(propertyType)) {
       propertyType = elementDefinition.type[0].code;

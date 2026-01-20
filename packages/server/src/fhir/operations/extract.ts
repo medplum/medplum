@@ -303,11 +303,9 @@ class TemplateExtractor implements CrawlerVisitor {
   ): void {
     // Scan for extensions throughout the resource that could contain SDC annotations
     const extensions = this.getTopLevelExtensions(path, propertyValues);
-    if (extensions?.length) {
-      for (const extension of extensions) {
-        this.checkCurrentContext(parent.path);
-        this.extensionHandler(extension.value as Extension)?.(extension, parent);
-      }
+    for (const extension of extensions ?? EMPTY) {
+      this.checkCurrentContext(parent.path);
+      this.extensionHandler(extension.value as Extension)?.(extension, parent);
     }
   }
 

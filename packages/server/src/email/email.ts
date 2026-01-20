@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { EMPTY } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import type Mail from 'nodemailer/lib/mailer';
@@ -48,10 +49,8 @@ export async function sendEmail(repo: Repository, options: Mail.Options): Promis
  * @param attachments - Optional array of nodemailer attachments.
  */
 async function processAttachments(repo: Repository, attachments: Mail.Attachment[] | undefined): Promise<void> {
-  if (attachments) {
-    for (const attachment of attachments) {
-      await processAttachment(repo, attachment);
-    }
+  for (const attachment of attachments ?? EMPTY) {
+    await processAttachment(repo, attachment);
   }
 }
 
