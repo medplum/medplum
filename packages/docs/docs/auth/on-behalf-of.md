@@ -82,6 +82,7 @@ await medplum.createResource(
   },
   {
     headers: {
+      'X-Medplum': 'extended',
       'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
     },
   }
@@ -95,6 +96,7 @@ const medplum = new MedplumClient({
   clientId: MY_CLIENT_ID,
   clientSecret: MY_CLIENT_SECRET,
   defaultHeaders: {
+    'X-Medplum': 'extended',
     'X-Medplum-On-Behalf-Of': 'ProjectMembership/00000000-001a-4722-afa1-0581d2c52a87',
   },
 });
