@@ -543,6 +543,12 @@
       "type": "token",
       "description": "The identifier of the project membership",
       "expression": "ProjectMembership.identifier"
+    },
+    {
+      "name": "active",
+      "type": "token",
+      "description": "If this ProjectMembership is active",
+      "expression": "ProjectMembership.active"
     }
   ]
 }
