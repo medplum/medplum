@@ -66,6 +66,13 @@ export const executeHandler = async (req: Request, res: Response): Promise<void>
     }
 
     const responseBody = getResponseBodyFromResult(result);
+
+    // If the bot returned an error OperationOutcome, send it with proper HTTP status
+    if (isOperationOutcome(responseBody) && !isOk(responseBody)) {
+      sendOutcome(res, responseBody);
+      return;
+    }
+
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody, 'Binary')) {
@@ -96,11 +103,22 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
   let responseStream: NodeJS.WritableStream | undefined = undefined;
   if (acceptsStreaming) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.flushHeaders();
-    responseStream = res;
+    // Create a proxy that delays SSE header flushing until first write
+    // This allows bots to return errors with proper HTTP status codes before streaming starts
+    responseStream = {
+      write: (chunk: string): boolean => {
+        if (!res.headersSent) {
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.flushHeaders();
+        }
+        return res.write(chunk);
+      },
+      end: (): void => {
+        res.end();
+      },
+    } as NodeJS.WritableStream;
   }
 
   // Execute the bot

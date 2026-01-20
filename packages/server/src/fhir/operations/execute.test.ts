@@ -972,15 +972,16 @@ describe('Execute', () => {
     });
 
     test('Streaming execution error handling', async () => {
+      // Errors thrown before writing to responseStream return HTTP 400
+      // because headers are not flushed until first write
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bots.streamingErrorBot.id}/$execute`)
         .set('Content-Type', ContentType.TEXT)
         .set('Accept', 'text/event-stream')
         .set('Authorization', 'Bearer ' + accessToken1)
         .send('input');
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('text/event-stream');
-      expect(res.text).toStrictEqual('');
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });
   });
 });
