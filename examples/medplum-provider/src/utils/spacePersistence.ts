@@ -159,6 +159,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
   const communications = await medplum.searchResources('Communication', {
     'part-of': `Communication/${topicId}`,
     _sort: '_lastUpdated',
+    _count: '100',
   });
 
   const messages: { message: Message; sequenceNumber: number }[] = [];
