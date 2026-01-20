@@ -38,6 +38,7 @@ const medplumWithDefaults = new MedplumClient({
   },
 });
 // end-block defaultHeadersOnBehalfOf
+console.log(medplumWithDefaults);
 
 /*
 // start-block curlExample
