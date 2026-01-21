@@ -218,7 +218,7 @@ Once you've chosen your tenant resource type, use it consistently throughout you
 
 Once you've decided on your tenant resource type and created your tenant resources, you need to associate your data (patients, observations, encounters, etc.) with those tenants. This is done using compartments and the `$set-accounts` operation.
 
-Most implementations will be able to just assign Patients to tenants. This is because Patient is the only resource where _"propagation"_ is supported to the Patient's _"related"_ resources. See [Why Patient is a special case?](#why-patient-is-a-special-case) for more details.
+Most implementations will be able to just assign Patients to tenants. This is because Patient is the only resource where _"propagation"_ is supported to the Patient's _"related"_ resources. See [Why is Patient a special case?](#why-is-patient-a-special-case) for more details.
 
 :::info
 If your Patient is also a User that can log in, this will not impact what that Patient User can access. Instead, this impacts who can access that Patient.
