@@ -128,6 +128,7 @@ export async function createProject(
   profile?: WithId<ProfileResource>;
   membership?: WithId<ProjectMembership>;
 }> {
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   const log = getLogger();
   const systemRepo = getSystemRepo();
   const config = getConfig();
