@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
-import type { Patient, Organization, Reference, Parameters, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import type { Organization, Parameters, Patient, Practitioner, ProjectMembership, Reference } from '@medplum/fhirtypes';
 
 // start-block enroll-patient
 /**
@@ -75,9 +75,9 @@ await medplum1.post(`fhir/R4/Patient/${patientId1}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    }
-  ]
+      valueReference: { reference: 'Organization/clinic-a' },
+    },
+  ],
 });
 // end-block set-accounts-organization
 
@@ -90,9 +90,9 @@ await medplum2.post(`fhir/R4/Patient/${patientId2}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    }
-  ]
+      valueReference: { reference: 'HealthcareService/cardiology-service' },
+    },
+  ],
 });
 // end-block set-accounts-healthcare-service
 
@@ -105,9 +105,9 @@ await medplum3.post(`fhir/R4/Patient/${patientId3}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    }
-  ]
+      valueReference: { reference: 'CareTeam/diabetes-care-team' },
+    },
+  ],
 });
 // end-block set-accounts-careteam
 
@@ -120,9 +120,9 @@ await medplum4.post(`fhir/R4/Questionnaire/${questionnaireId1}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    }
-  ]
+      valueReference: { reference: 'Organization/clinic-a' },
+    },
+  ],
 });
 // end-block set-accounts-questionnaire-organization
 
@@ -135,9 +135,9 @@ await medplum5.post(`fhir/R4/Questionnaire/${questionnaireId2}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    }
-  ]
+      valueReference: { reference: 'HealthcareService/cardiology-service' },
+    },
+  ],
 });
 // end-block set-accounts-questionnaire-healthcare-service
 
@@ -150,9 +150,9 @@ await medplum6.post(`fhir/R4/Questionnaire/${questionnaireId3}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    }
-  ]
+      valueReference: { reference: 'CareTeam/diabetes-care-team' },
+    },
+  ],
 });
 // end-block set-accounts-questionnaire-careteam
 
@@ -165,13 +165,13 @@ await medplum7.post(`fhir/R4/Patient/${patientId4}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
+      valueReference: { reference: 'Organization/clinic-a' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-propagate-organization
 
@@ -184,13 +184,13 @@ await medplum8.post(`fhir/R4/Patient/${patientId5}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
+      valueReference: { reference: 'HealthcareService/cardiology-service' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-propagate-healthcare-service
 
@@ -203,13 +203,13 @@ await medplum9.post(`fhir/R4/Patient/${patientId6}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
+      valueReference: { reference: 'CareTeam/diabetes-care-team' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-propagate-careteam
 
@@ -222,17 +222,17 @@ await medplum10.post(`fhir/R4/Patient/${patientId7}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
+      valueReference: { reference: 'Organization/clinic-a' },
     },
     {
       name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-b' }
+      valueReference: { reference: 'Organization/clinic-b' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-multiple-organization
 
@@ -245,17 +245,17 @@ await medplum11.post(`fhir/R4/Patient/${patientId8}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
+      valueReference: { reference: 'HealthcareService/cardiology-service' },
     },
     {
       name: 'accounts',
-      valueReference: { reference: 'HealthcareService/neurology-service' }
+      valueReference: { reference: 'HealthcareService/neurology-service' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-multiple-healthcare-service
 
@@ -268,17 +268,17 @@ await medplum12.post(`fhir/R4/Patient/${patientId9}/$set-accounts`, {
   parameter: [
     {
       name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
+      valueReference: { reference: 'CareTeam/diabetes-care-team' },
     },
     {
       name: 'accounts',
-      valueReference: { reference: 'CareTeam/hypertension-care-team' }
+      valueReference: { reference: 'CareTeam/hypertension-care-team' },
     },
     {
       name: 'propagate',
-      valueBoolean: true
-    }
-  ]
+      valueBoolean: true,
+    },
+  ],
 });
 // end-block set-accounts-multiple-careteam
 
@@ -289,22 +289,22 @@ export const _accessPolicyOrg = {
   resource: [
     {
       resourceType: 'Patient',
-      criteria: 'Patient?_compartment=%organization'
+      criteria: 'Patient?_compartment=%organization',
     },
     {
       resourceType: 'Observation',
-      criteria: 'Observation?_compartment=%organization'
+      criteria: 'Observation?_compartment=%organization',
     },
     {
       resourceType: 'Encounter',
-      criteria: 'Encounter?_compartment=%organization'
+      criteria: 'Encounter?_compartment=%organization',
     },
     {
       resourceType: 'Communication',
-      criteria: 'Communication?_compartment=%organization'
-    }
+      criteria: 'Communication?_compartment=%organization',
+    },
     //...
-  ]
+  ],
 } as const;
 // end-block access-policy-organization
 
@@ -315,22 +315,22 @@ export const _accessPolicyHS = {
   resource: [
     {
       resourceType: 'Patient',
-      criteria: 'Patient?_compartment=%healthcare_service'
+      criteria: 'Patient?_compartment=%healthcare_service',
     },
     {
       resourceType: 'Observation',
-      criteria: 'Observation?_compartment=%healthcare_service'
+      criteria: 'Observation?_compartment=%healthcare_service',
     },
     {
       resourceType: 'Encounter',
-      criteria: 'Encounter?_compartment=%healthcare_service'
+      criteria: 'Encounter?_compartment=%healthcare_service',
     },
     {
       resourceType: 'Communication',
-      criteria: 'Communication?_compartment=%healthcare_service'
+      criteria: 'Communication?_compartment=%healthcare_service',
     },
     //...
-  ]
+  ],
 } as const;
 // end-block access-policy-healthcare-service
 
@@ -341,22 +341,22 @@ export const _accessPolicyCT = {
   resource: [
     {
       resourceType: 'Patient',
-      criteria: 'Patient?_compartment=%care_team'
+      criteria: 'Patient?_compartment=%care_team',
     },
     {
       resourceType: 'CarePlan',
-      criteria: 'CarePlan?_compartment=%care_team'
+      criteria: 'CarePlan?_compartment=%care_team',
     },
     {
       resourceType: 'Encounter',
-      criteria: 'Encounter?_compartment=%care_team'
+      criteria: 'Encounter?_compartment=%care_team',
     },
     {
       resourceType: 'Communication',
-      criteria: 'Communication?_compartment=%care_team'
+      criteria: 'Communication?_compartment=%care_team',
     },
     //...
-  ]
+  ],
 } as const;
 // end-block access-policy-careteam
 
@@ -374,12 +374,12 @@ await medplum13.post('admin/projects/:projectId/invite', {
         parameter: [
           {
             name: 'care_team',
-            valueReference: { reference: 'CareTeam/hypertension-care-team' }
-          }
-        ]
-      }
-    ]
-  }
+            valueReference: { reference: 'CareTeam/hypertension-care-team' },
+          },
+        ],
+      },
+    ],
+  },
 });
 // end-block invite-practitioner
 
@@ -472,21 +472,21 @@ export const _accessPolicyMixed = {
     //Tenant level restricted resources
     {
       resourceType: 'Patient',
-      criteria: 'Patient?_compartment=%organization'
+      criteria: 'Patient?_compartment=%organization',
     },
     {
       resourceType: 'Observation',
-      criteria: 'Observation?_compartment=%organization'
+      criteria: 'Observation?_compartment=%organization',
     },
     {
       resourceType: 'Encounter',
-      criteria: 'Encounter?_compartment=%organization'
+      criteria: 'Encounter?_compartment=%organization',
     },
     {
       resourceType: 'Communication',
-      criteria: 'Communication?_compartment=%organization'
+      criteria: 'Communication?_compartment=%organization',
     },
     //...
-  ]
+  ],
 } as const;
 // end-block access-policy-mixed
