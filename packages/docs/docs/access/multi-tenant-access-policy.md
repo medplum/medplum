@@ -695,5 +695,5 @@ Multi-tenant access control in Medplum enables you to securely partition healthc
 
 3. **Grant user access** through ProjectMembership configuration, using parameterized AccessPolicies that reference tenant compartments to restrict access appropriately.
 
-By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/docs/blog/2025-04-22-multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
+By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/blog/multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
 
