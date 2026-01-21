@@ -347,7 +347,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   type="submit"
                   size="1.5rem"
                   radius="xl"
-                  color="blue"
+                  color="primary"
                   variant="filled"
                   aria-label="Send message"
                 >
