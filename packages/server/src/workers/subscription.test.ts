@@ -1449,6 +1449,9 @@ describe('Subscription Worker', () => {
   test('Subscription AuditEvent destination - log only', () =>
     withTestContext(async () => {
       const project = (await createTestProject()).project.id;
+      const config = await loadTestConfig();
+      config.logAuditEvents = true;
+      
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -1520,6 +1523,9 @@ describe('Subscription Worker', () => {
   test('Subscription AuditEvent destination - resource and log', () =>
     withTestContext(async () => {
       const project = (await createTestProject()).project.id;
+      const config = await loadTestConfig();
+      config.logAuditEvents = true;
+      
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
