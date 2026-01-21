@@ -13,9 +13,15 @@ Navigate to "Project Admin" and then "Clients".
 
 Find your Client Application.
 
-Set `ClientApplication.identityProvider.useSubject` to `true`
+Set `ClientApplication.identityProvider.useSubject` to `true`. When this flag is enabled:
+
+- Medplum will use the external IdP `sub` (subject) claim as the primary identifier.
+- The subject value is matched against `ProjectMembership.externalId` for the project associated with the login.
+- Email is no longer required on the external token, but can still be present and used for profiles.
 
 ## Invite user
+
+To associate an external subject with a Medplum user and project membership, you must invite the user to your project.
 
 Prepare JSON payload:
 

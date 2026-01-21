@@ -38,12 +38,57 @@ Note the following details:
 - Client ID
 - Client secret
 
-Setup your Medplum account:
+## Setup your Medplum account
 
 - [Register for a Medplum account](/docs/tutorials/register)
 - Create a `ClientApplication`
 - Set the "Redirect URI" to "http://localhost:8000/"
 - Add an external identity provider with the details from above
+
+## User accounts and project membership
+
+External identity providers authenticate users, but **Medplum still requires a user and project membership** before the login can succeed. Medplum will not automatically create users from external IdP tokens.
+
+When an external token is verified, Medplum:
+
+- Looks up the user by **email** (default), or
+- Looks up the user by **external ID** (when `ClientApplication.identityProvider.useSubject` is `true`), matching the IdP `sub` claim to `ProjectMembership.externalId`.
+
+To prepare users for external login:
+
+1. Decide how users will be identified:
+   - **By email** (default): make sure your IdP issues an `email` claim and you request the `email` scope.
+   - **By external ID/subject**: set `ClientApplication.identityProvider.useSubject` to `true` and ensure you know the IdP subject that will be used for each user (for example, the portion after a prefix like `google-oauth2|`).
+2. Invite users to your project using the `/admin/projects/{projectId}/invite` endpoint:
+   - Email-based invite:
+
+     ```bash
+     curl "https://${baseUrl}/admin/projects/${projectId}/invite" \
+       -H "Authorization: Bearer ${accessToken}" \
+       -H "Content-Type: application/json" \
+       --data-raw '{
+         "resourceType": "Patient",
+         "firstName": "Alice",
+         "lastName": "Example",
+         "email": "alice@example.com"
+       }'
+     ```
+
+   - External ID-based invite (for `useSubject: true`):
+
+     ```bash
+     curl "https://${baseUrl}/admin/projects/${projectId}/invite" \
+       -H "Authorization: Bearer ${accessToken}" \
+       -H "Content-Type: application/json" \
+       --data-raw '{
+         "resourceType": "Patient",
+         "firstName": "Alice",
+         "lastName": "Example",
+         "externalId": "IDP_SUBJECT_VALUE"
+       }'
+     ```
+
+See [Using External IDs](/docs/user-management/external-ids) for more details on `useSubject` and how `externalId` is stored on the project membership.
 
 ## Start the flow
 
@@ -64,6 +109,37 @@ The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a [`
 </MedplumCodeBlock>
 
 After the code is processed, the Medplum access token will be stored in the browser's local storage. The `MedplumClient` will automatically use the access token for all subsequent API calls.
+
+## PKCE configuration
+
+External IdP flows can use [PKCE](https://datatracker.ietf.org/doc/html/rfc7636) on either or both of:
+
+- The **Medplum** authorization code flow (`/oauth2/authorize` → `/oauth2/token`), and
+- The **external IdP** authorization code flow (`authorizeUrl` → `tokenUrl`).
+
+Medplum has three relevant knobs:
+
+- `MedplumClient.signInWithExternalAuth(authorizeUrl, clientId, redirectUri, baseLogin, pkceEnabled?)`
+  - When `pkceEnabled` is omitted or `true`, Medplum generates a `code_challenge` / `code_verifier` pair and stores the verifier in `sessionStorage`.
+- `ClientApplication.identityProvider.usePkce`
+  - When `true`, Medplum will include `code_verifier` when exchanging the external IdP code at `tokenUrl`.
+  - When `false`, Medplum uses a simple client-secret–based code exchange against the external IdP.
+- `ClientApplication.pkceOptional`
+  - When `true`, Medplum’s own `/oauth2/token` endpoint will accept authorization codes **with or without** PKCE context.
+  - When `false`, PKCE is required for the Medplum code exchange.
+
+Common configurations:
+
+- **Simple external IdP (no PKCE at IdP)**:
+  - `signInWithExternalAuth(..., false)` (no PKCE sent to the IdP).
+  - `identityProvider.usePkce = false`.
+  - `ClientApplication.pkceOptional = true` (Medplum will not require PKCE for the internal `/oauth2/token` step).
+- **End‑to‑end PKCE**:
+  - `signInWithExternalAuth(... /* pkceEnabled defaults to true */)`.
+  - `identityProvider.usePkce = true` (if your IdP supports PKCE on the token endpoint).
+  - `ClientApplication.pkceOptional = false` (Medplum will enforce PKCE for `/oauth2/token`).
+
+If you see errors such as `"Missing verification context"` or `"Missing code verifier"` from `/oauth2/token`, check that your `pkceEnabled` flag, `identityProvider.usePkce`, and `ClientApplication.pkceOptional` settings are consistent.
 
 ## FAQ
 
