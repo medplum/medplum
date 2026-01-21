@@ -1,5 +1,7 @@
 # Multi-Tenant Access Control
 
+import ExampleCode from '!!raw-loader!@site/..//examples/src/access/multi-tenant-access-policy.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
@@ -7,7 +9,7 @@ import TabItem from '@theme/TabItem';
 
 
 ### What is a tenant?
-In healthcare applications, Practitioners often work across multiple organizational boundaries. A doctor might work at multiple clinics, a nurse might be part of several care teams, or a care coordinator might manage patients across different healthcare services. Each of these logical groupings represents a distinct **tenant** in your system: a collection of FHIR resources (Patients, Observations, Encounters, etc.) that should be logically grouped together. 
+In healthcare applications, Practitioners often work across multiple organizational boundaries. A doctor might work at multiple clinics, a nurse might be part of several care teams, or a care coordinator might manage patients across different healthcare services. Each of these logical groupings represents a distinct **tenant** in your system: a collection of FHIR resources (Patients, Observations, Encounters, etc.) that make sense to be grouped together. 
 
 Using this model will allow you to restrict Users' access to only the resources that are part of the tenant(s) that you assign them to. This diagram shows how your User's access is determined by the tenant(s) that you assign them to and the Patients that belong to those tenants.
 
@@ -118,7 +120,6 @@ Here's how the multi-tenancy model organizes resources when using different tena
 %%{init: {'theme': 'neutral' }}%%
 graph TB
     subgraph OrgSection[" "]
-        PracOrg[Practitioner/practitioner-1]
         UserOrg[User/user-1]
         PMOrg[ProjectMembership/membership-1]
         Org1[Organization/clinic-a]
@@ -126,7 +127,6 @@ graph TB
         PatOrg1[Patient/patient-1]
         PatOrg2[Patient/patient-2]
         PatOrgShared[Patient/patient-3<br/>Shared]
-        PracOrg --> UserOrg
         UserOrg --> PMOrg
         PMOrg --> Org1
         PMOrg --> Org2
@@ -136,7 +136,6 @@ graph TB
         Org2 --> PatOrgShared
     end
     
-    style PracOrg fill:#e8f5e9
     style UserOrg fill:#e8f5e9
     style PMOrg fill:#fff4e1
     style Org1 fill:#e1f5ff
@@ -153,7 +152,6 @@ graph TB
 %%{init: {'theme': 'neutral' }}%%
 graph TB
     subgraph HSSection[" "]
-        PracHS[Practitioner/practitioner-1]
         UserHS[User/user-1]
         PMHS[ProjectMembership/membership-1]
         HS1[HealthcareService/cardiology-service]
@@ -161,7 +159,6 @@ graph TB
         PatHS1[Patient/patient-1]
         PatHS2[Patient/patient-2]
         PatHSShared[Patient/patient-3<br/>Shared]
-        PracHS --> UserHS
         UserHS --> PMHS
         PMHS --> HS1
         PMHS --> HS2
@@ -171,7 +168,6 @@ graph TB
         HS2 --> PatHSShared
     end
     
-    style PracHS fill:#e8f5e9
     style UserHS fill:#e8f5e9
     style PMHS fill:#fff4e1
     style HS1 fill:#e1f5ff
@@ -188,7 +184,6 @@ graph TB
 %%{init: {'theme': 'neutral' }}%%
 graph TB
     subgraph CTSection[" "]
-        PracCT[Practitioner/practitioner-1]
         UserCT[User/user-1]
         PMCT[ProjectMembership/membership-1]
         CT1[CareTeam/diabetes-care-team]
@@ -196,7 +191,6 @@ graph TB
         PatCT1[Patient/patient-1]
         PatCT2[Patient/patient-2]
         PatCTShared[Patient/patient-3<br/>Shared]
-        PracCT --> UserCT
         UserCT --> PMCT
         PMCT --> CT1
         PMCT --> CT2
@@ -206,7 +200,6 @@ graph TB
         CT2 --> PatCTShared
     end
     
-    style PracCT fill:#e8f5e9
     style UserCT fill:#e8f5e9
     style PMCT fill:#fff4e1
     style CT1 fill:#e1f5ff
@@ -234,70 +227,9 @@ If your Patient is also a User that can log in, this will not impact what that P
 <details>
   <summary>Example Method: Assigning a Patient to an Organization Tenant</summary>
 
-```ts
-import { createReference, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
-import { Patient, Organization } from '@medplum/fhirtypes';
-
-/**
- * Enrolls a patient in an organization. This is done by adding a reference to the organization to the patient using the $set-accounts operation.
- *
- *  1. Get the patient's pre-existing accounts
- *  2. Check if already enrolled, and if so, return
- *  3. Construct the Parameters resource with the existing accounts and the new organization
- *  4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
- *     See docs: https://www.medplum.com/docs/api/fhir/operations/patient-set-accounts
- *
- * @param medplum - The Medplum client.
- * @param patient - The patient to enroll.
- * @param organization - The organization to enroll the patient in.
- */
-export async function enrollPatient(
-  medplum: MedplumClient,
-  patient: Patient,
-  organization: Organization
-): Promise<void> {
-  // 1. Get the patient's pre-existing accounts
-  const accounts = patient.meta?.accounts || [];
-  const orgReference = getReferenceString(organization);
-
-  // 2. Check if already enrolled, and if so, return
-  if (accounts.some((a: Reference) => a.reference === orgReference)) {
-    return;
-  }
-
-  // 3. Construct the Parameters resource with the existing accounts and the new organization
-  const parameters: Parameters = {
-    resourceType: 'Parameters',
-    parameter: [
-      // Include all existing accounts
-      ...accounts.map((account) => ({
-        name: 'accounts',
-        valueReference: {
-          reference: account.reference,
-        },
-      })),
-      // Add the new organization
-      {
-        name: 'accounts',
-        valueReference: createReference(organization),
-      },
-      // Propagate changes to all resources in the Patient compartment
-      {
-        name: 'propagate',
-        valueBoolean: true,
-      },
-    ],
-  };
-
-  try {
-    // 4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
-    await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
-  } catch (error) {
-    throw new Error(normalizeErrorString(error));
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="enroll-patient">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -366,18 +298,9 @@ In all resources, the `meta.compartment` field is **readonly**. You cannot modif
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
 
-```ts
-//Assigning a specific Patient to the clinic-a tenant
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-organization">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the Organization. Here is what the updated Patient resource will look like:
 
@@ -396,18 +319,9 @@ This will update the **meta.compartment** field of the Patient resource to inclu
   </TabItem>
   <TabItem value="healthcare-service" label="HealthcareService">
 
-```ts
-//Assigning a specific Patient to the cardiology-service tenant
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-healthcare-service">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the HealthcareService. Here is what the updated Patient resource will look like:
 
@@ -426,18 +340,9 @@ This will update the **meta.compartment** field of the Patient resource to inclu
   </TabItem>
   <TabItem value="careteam" label="CareTeam">
 
-```ts
-//Assigning a specific Patient to the diabetes-care-team tenant
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-careteam">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 This will update the **meta.compartment** field of the Patient resource to include the reference to the CareTeam. Here is what the updated Patient resource will look like:
 
@@ -455,60 +360,33 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 </TabItem>
 </Tabs>
 
-Any resource can be assigned to a tenant with this model. For example you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation on that specific resource.
+Any resource can be assigned to a tenant with this model. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation on that specific resource.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
 
-```ts
-//Assigning a specific Questionnaire to the clinic-a tenant
-await medplum.post(`fhir/R4/Questionnaire/${questionnaireId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-organization">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="healthcare-service" label="HealthcareService">
 
-```ts
-//Assigning a specific Questionnaire to the cardiology-service tenant
-await medplum.post(`fhir/R4/Questionnaire/${questionnaireId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-healthcare-service">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="careteam" label="CareTeam">
 
-```ts
-//Assigning a specific Questionnaire to the diabetes-care-team tenant
-await medplum.post(`fhir/R4/Questionnaire/${questionnaireId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-questionnaire-careteam">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
 </Tabs>
 
-### Why Patient is a special case?
+### Why is Patient a special case?
 
 **Patient is unique because it is the only resource where propagation is supported**. This means that you can assign a Patient to a tenant and all resources that _"belong"_ to that Patient will automatically be assigned to the same tenant as well. **A resource is determined to _"belong"_ to a Patient based on the resource relationships defined by the [Patient CompartmentDefinition](https://hl7.org/fhir/R4/compartmentdefinition-patient.html)**.
 
@@ -519,62 +397,23 @@ For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireres
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
 
-```ts
-//Assigning a specific Patient to the clinic-a tenant and propagating to all resources that _"belong"_ to that Patient
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-organization">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="healthcare-service" label="HealthcareService">
 
-```ts
-//Assigning a specific Patient to the cardiology-service tenant and propagating to all resources that _"belong"_ to that Patient
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-healthcare-service">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="careteam" label="CareTeam">
 
-```ts
-//Assigning a specific Patient to the diabetes-care-team tenant and propagating to all resources that _"belong"_ to that Patient
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-propagate-careteam">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
 </Tabs>
@@ -590,74 +429,23 @@ To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
 
-```ts
-//Assigning a specific Patient to the clinic-a and clinic-b tenants
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-a' }
-    },
-    {
-      name: 'accounts',
-      valueReference: { reference: 'Organization/clinic-b' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-organization">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="healthcare-service" label="HealthcareService">
 
-```ts
-//Assigning a specific Patient to the cardiology-service and neurology-service tenants
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/cardiology-service' }
-    },
-    {
-      name: 'accounts',
-      valueReference: { reference: 'HealthcareService/neurology-service' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-healthcare-service">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="careteam" label="CareTeam">
 
-```ts
-//Assigning a specific Patient to the diabetes-care-team and hypertension-care-team tenants
-await medplum.post(`fhir/R4/Patient/${patientId}/$set-accounts`, {
-  resourceType: 'Parameters',
-  parameter: [
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/diabetes-care-team' }
-    },
-    {
-      name: 'accounts',
-      valueReference: { reference: 'CareTeam/hypertension-care-team' }
-    },
-    {
-      name: 'propagate',
-      valueBoolean: true
-    }
-  ]
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="set-accounts-multiple-careteam">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
 </Tabs>
@@ -672,94 +460,28 @@ More specifically, it leverages [Parameterized Access Policies](/docs/access/acc
 
 Your AccessPolicy uses parameterized variables (like `%organization`, `%healthcare_service`, or `%care_team`) that get replaced at runtime with the tenant references from the user's ProjectMembership. These variables are used in the [compartment](/docs/access/access-policies#compartments) section and for [Criteria-based Access Control](/docs/access/access-policies#compartments).
 
-In your design, you should decide which resource types you want to restrict access to within your tenents versus which resource types you want to allow access to.
+In your design, you should decide which resource types you want to restrict access to within your tenants versus which resource types you want to allow access to.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
 
-```ts
-{
-  "resourceType": "AccessPolicy",
-  "name": "Organization Based Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%organization"
-    },
-    {
-      "resourceType": "Observation",
-      "criteria": "Observation?_compartment=%organization"
-    },
-    {
-      "resourceType": "Encounter",
-      "criteria": "Encounter?_compartment=%organization"
-    },
-    {
-      "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%organization"
-    }
-    //...
-  ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="access-policy-organization">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="healthcare-service" label="HealthcareService">
 
-```ts
-{
-  "resourceType": "AccessPolicy",
-  "name": "HealthcareService Based Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%healthcare_service"
-    },
-    {
-      "resourceType": "Observation",
-      "criteria": "Observation?_compartment=%healthcare_service"
-    },
-    {
-      "resourceType": "Encounter",
-      "criteria": "Encounter?_compartment=%healthcare_service"
-    },
-    {
-      "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%healthcare_service"
-    },
-    //...
-    ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="access-policy-healthcare-service">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="careteam" label="CareTeam">
 
-```ts
-{
-  "resourceType": "AccessPolicy",
-  "name": "Care Team Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%care_team"
-    },
-    {
-      "resourceType": "CarePlan",
-      "criteria": "CarePlan?_compartment=%care_team"
-    },
-    {
-      "resourceType": "Encounter",
-      "criteria": "Encounter?_compartment=%care_team"
-    },
-    {
-      "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%care_team"
-    },
-    //...
-    ]
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="access-policy-careteam">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
 </Tabs>
@@ -831,7 +553,7 @@ The User's `ProjectMembership` references their enrolled tenants via the `access
   </TabItem>
 </Tabs>
 
-### When to assign a User to a tenant?
+### When should you assign a User to a tenant?
 
 You can assign a User to a tenant at **invite time** or **after they have been invited**.
 
@@ -841,27 +563,9 @@ Invite `Practitioner` Users associated with their respective tenants via the [`/
 <details>
   <summary>Example: Inviting a Practitioner User with Tenant Access</summary>
 
-```ts
-await medplum.post('admin/projects/:projectId/invite', {
-  resourceType: 'Practitioner',
-  firstName: 'Jane',
-  lastName: 'Smith',
-  email: 'dr.smith@example.com',
-  membership: {
-    access: [
-      {
-        policy: { reference: 'AccessPolicy/careteam-policy' },
-        parameter: [
-          {
-            name: 'care_team',
-            valueReference: { reference: 'CareTeam/hypertension-care-team' }
-          }
-        ]
-      }
-    ]
-  }
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="invite-practitioner">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -871,82 +575,9 @@ Here is an example method for updating a User's ProjectMembership to add a new t
 <details>
   <summary>Example Method: Enrolling a Practitioner in an Organization Tenant After Invite</summary>
 
-```ts
-
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
-import type {
-  Organization,
-  Practitioner,
-  ProjectMembership,
-} from '@medplum/fhirtypes';
-
-/**
- * Enrolls a practitioner in an organization by adding the organization to the access array of the practitioner's project membership.
- *
- *  1. Search for the practitioner's project membership, if there is no project membership, throw an error
- *  2. Check if the organization reference already exists in any access array
- *  3. If the organization reference does not exist, add the organization to the ProjectMembership.access array
- *  4. Update the ProjectMembership resource
- *
- * @param medplum - The Medplum client.
- * @param practitioner - The practitioner to enroll.
- * @param organization - The organization to enroll the practitioner in.
- * @returns The updated project membership resource
- */
-export async function enrollPractitioner(
-  medplum: MedplumClient,
-  practitioner: Practitioner,
-  organization: Organization
-): Promise<ProjectMembership> {
-  // 1. Search for the practitioner's project membership, if there is no project membership, throw an error
-  const projectMembershipSearch = await medplum.searchOne('ProjectMembership', {
-    profile: getReferenceString(practitioner),
-  });
-
-  if (projectMembershipSearch) {
-    const membershipResource = projectMembershipSearch;
-    const existingAccess = membershipResource.access || [];
-
-    // 2. Check if this organization reference already exists in any access array
-    const organizationExists = existingAccess.some((access) =>
-      access.parameter?.some(
-        (param) => param.name === 'organization' && param.valueReference?.reference === getReferenceString(organization)
-      )
-    );
-
-    // 3. If the organization reference does not exist, add the organization to the ProjectMembership.access array
-    if (!organizationExists) {
-      const policy = await medplum.searchOne('AccessPolicy', {
-        name: 'Your Access Policy Name',
-      });
-
-      if (existingAccess.length > 0) {
-        existingAccess.push({
-          parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-          policy: { reference: getReferenceString(policy) },
-        });
-      } else {
-        membershipResource.access = [
-          {
-            parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-            policy: { reference: getReferenceString(policy) },
-          },
-        ];
-      }
-    }
-
-    // 4. Update the ProjectMembership resource
-    try {
-      const updatedResource = await medplum.updateResource(membershipResource);
-      return updatedResource;
-    } catch (error) {
-      throw new Error(normalizeErrorString(error));
-    }
-  }
-  throw new Error(`No project membership found for practitioner ${practitioner.id}`);
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="enroll-practitioner">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 </details>
 
@@ -1050,38 +681,19 @@ A good thing to consider is that your application may need to allow some resourc
 
 To do this, do not include the `_compartment` check in resource type criteria for the resource types you want to allow access to.
 
-```ts
-{
-  "resourceType": "AccessPolicy",
-  "name": "Questionnaire Access Policy",
-  "resource": [
-    //Non tenant level restricted resources
-    {
-      "resourceType": "Questionnaire",
-    },
-    {
-      "resourceType": "Practitioner",
-    },
-    //...
+<MedplumCodeBlock language="ts" selectBlocks="access-policy-mixed">
+  {ExampleCode}
+</MedplumCodeBlock>
 
-    //Tenant level restricted resources
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?_compartment=%organization"
-    },
-    {
-      "resourceType": "Observation",
-      "criteria": "Observation?_compartment=%organization"
-    },
-    {
-      "resourceType": "Encounter",
-      "criteria": "Encounter?_compartment=%organization"
-    },
-    {
-      "resourceType": "Communication",
-      "criteria": "Communication?_compartment=%organization"
-    },
-    //...
-  ]
-}
-```
+## Conclusion
+
+Multi-tenant access control in Medplum enables you to securely partition healthcare data within a single project by leveraging FHIR compartments and parameterized access policies. The implementation follows three key steps:
+
+1. **Model your tenants** using appropriate FHIR resource types (Organization, HealthcareService, CareTeam, or others) that accurately represent your organizational structure.
+
+2. **Assign data to tenants** using the `$set-accounts` operation to populate the `meta.compartment` field, which labels the resource with the tenant(s) it belongs to. Remember that Patient resources support propagation, automatically assigning related resources to the same tenant(s).
+
+3. **Grant user access** through ProjectMembership configuration, using parameterized AccessPolicies that reference tenant compartments to restrict access appropriately.
+
+By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/docs/blog/2025-04-22-multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
+
