@@ -16,7 +16,7 @@ To use Medplum Provider, you'll need a Medplum account.
 
 1. Register a new account and create a new Project on the Medplum App at [app.medplum.com](http://app.medplum.com)
 2. Navigate to Medplum Provider at [provider.medplum.com](http://provider.medplum.com) and sign in with the same credentials
-3. After signing in, review the "[Get Started](http://provider.medplum.com)" page to import sample data and more
+3. After signing in, review the "[Get Started](http://provider.medplum.com/getstarted)" page to import sample data and more
 
 
 Occasionally, you may need to use the Medplum App for administrative and other tasks which we note explicitly in this documentation.
