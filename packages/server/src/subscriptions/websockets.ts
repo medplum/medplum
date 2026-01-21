@@ -239,6 +239,16 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       await setupSubscriptionHandler();
     }
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken);
+    const cacheEntryStr = (await redis.get(`Subscription/${verifiedToken.subscription_id}`)) as string | null;
+    if (!cacheEntryStr) {
+      globalLogger.warn('[WS] Failed to retrieve subscription cache entry on WebSocket connect');
+      return;
+    }
+    const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<WithId<Subscription>>;
+    // Historically we used to add the subscription to the active set immediately after creation
+    // However, since there is a chance a Subscription will never be bound to, we do it here now
+    await markInMemorySubscriptionActive(cacheEntry.projectId, cacheEntry.resource);
+
     ensureHeartbeatHandler();
     // Send a handshake to notify client that this subscription is active for this connection
     socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
@@ -406,6 +416,24 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
+export async function markInMemorySubscriptionActive(
+  projectId: string,
+  subscription: WithId<Subscription>
+): Promise<void> {
+  let redis: Redis | undefined;
+  try {
+    redis = getRedis();
+  } catch {
+    redis = undefined;
+    globalLogger.debug('Attempted to mark subscription as active when Redis is closed');
+  }
+  await redis?.hset(
+    `medplum:subscriptions:r4:project:${projectId}:active`,
+    `Subscription/${subscription.id}`,
+    subscription.criteria
+  );
+}
+
 export async function markInMemorySubscriptionsInactive(
   projectId: string,
   subscriptionIds: Set<string>
@@ -421,5 +449,9 @@ export async function markInMemorySubscriptionsInactive(
     redis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  await redis?.multi().srem(`medplum:subscriptions:r4:project:${projectId}:active`, refStrs).del(refStrs).exec();
+  await redis
+    ?.multi()
+    .hdel(`medplum:subscriptions:r4:project:${projectId}:active`, ...refStrs)
+    .del(refStrs)
+    .exec();
 }

@@ -14,7 +14,10 @@ import {
   isGone,
   isNotFound,
   isString,
+  matchesSearchRequest,
+  normalizeErrorString,
   normalizeOperationOutcome,
+  parseSearchRequest,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   stringify,
@@ -284,7 +287,10 @@ export async function addSubscriptionJobs(
   }
 
   const requestTime = new Date().toISOString();
-  const subscriptions = await getSubscriptions(resource, project);
+
+  const dbSubscriptions = await getDbSubscriptions(resource, project);
+  const wsSubscriptions = await getWsSubscriptions(resource, project, logFn);
+  const subscriptions = [...dbSubscriptions, ...wsSubscriptions];
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
@@ -379,12 +385,12 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
 }
 
 /**
- * Loads the list of all subscriptions in this repository.
- * @param resource - The resource that was created or updated.
+ * Loads the list of all database subscriptions in this repository.
+ * @param _resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+async function getDbSubscriptions(_resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
   const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
@@ -403,39 +409,93 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
-  const setKey = `medplum:subscriptions:r4:project:${projectId}:active`;
-  const redisOnlySubRefStrs = await redis.smembers(setKey);
-  if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
-    if (project.features?.includes('websocket-subscriptions')) {
-      const activeSubStrs = redisOnlySubStrs.filter(Boolean);
-      if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
-        getLogger().warn('Excessive subscription cache miss', {
-          numKeys: redisOnlySubRefStrs.length,
-          hitRate: activeSubStrs.length / redisOnlySubStrs.length,
-          projectId,
-        });
-        const inactiveSubs: string[] = [];
-        for (let i = 0; i < redisOnlySubStrs.length; i++) {
-          if (!redisOnlySubStrs[i]) {
-            inactiveSubs.push(redisOnlySubRefStrs[i]);
-          }
-        }
-        await redis.srem(setKey, inactiveSubs);
-      }
-      const subArrStr = '[' + activeSubStrs.join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
-      for (const { resource } of inMemorySubs) {
-        subscriptions.push(resource);
-      }
-    } else {
-      globalLogger.debug(
-        `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
-      );
-    }
-  }
   return subscriptions;
+}
+
+/**
+ * Loads the list of all WebSocket (in-memory) subscriptions in this repository.
+ * @param resource - The resource that was created or updated.
+ * @param project - The project that contains this resource.
+ * @param logFn - The function to call for logging.
+ * @returns The list of all WebSocket subscriptions for this project that should be evaluated for the resource.
+ */
+async function getWsSubscriptions(
+  resource: WithId<Resource>,
+  project: WithId<Project>,
+  logFn: (msg: string, data?: Record<string, any> | Error) => void
+): Promise<WithId<Subscription>[]> {
+  const wsSubscriptions: WithId<Subscription>[] = [];
+
+  try {
+    const redis = getRedis();
+    const hashKey = `medplum:subscriptions:r4:project:${project.id}:active`;
+
+    // Get all the active subscription IDs and their criteria for this project
+    const subIdToCriteria = await redis.hgetall(hashKey);
+
+    const subRefsToGet: string[] = [];
+    for (const [subId, criteria] of Object.entries(subIdToCriteria)) {
+      try {
+        // Check if criteria matches first
+        if (!matchesSearchRequest(resource, parseSearchRequest(criteria))) {
+          logFn(`WebSocket subscription does not match search request`, {
+            subscriptionId: subId,
+            criteria,
+            resource: getReferenceString(resource),
+          });
+          continue;
+        }
+        subRefsToGet.push(`Subscription/${subId}`);
+      } catch (err) {
+        // If we throw when evaluating the criteria, log and continue
+        logFn('Error when evaluating matchesSearchRequest for resource against Subscription', {
+          resource: getReferenceString(resource),
+          subscriptionId: subId,
+          criteria,
+          err,
+        });
+        continue;
+      }
+    }
+
+    if (subRefsToGet.length) {
+      const redisOnlySubStrs = await redis.mget(subRefsToGet);
+      if (project.features?.includes('websocket-subscriptions')) {
+        const activeSubStrs = redisOnlySubStrs.filter(Boolean);
+        if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
+          getLogger().warn('Excessive subscription cache miss', {
+            numKeys: subRefsToGet.length,
+            hitRate: activeSubStrs.length / redisOnlySubStrs.length,
+            projectId: project.id,
+          });
+          const inactiveSubs: string[] = [];
+          for (let i = 0; i < redisOnlySubStrs.length; i++) {
+            if (!redisOnlySubStrs[i]) {
+              inactiveSubs.push(subRefsToGet[i]);
+            }
+          }
+          await redis.hdel(hashKey, ...inactiveSubs);
+        }
+        const subArrStr = '[' + activeSubStrs.join(',') + ']';
+        const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
+        for (const { resource } of inMemorySubs) {
+          wsSubscriptions.push(resource);
+        }
+      } else {
+        globalLogger.debug(
+          `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
+        );
+      }
+    }
+  } catch (err) {
+    logFn('Error while evaluating WebSocket subscriptions for resource', {
+      resource,
+      project,
+      error: normalizeErrorString(err),
+    });
+  }
+
+  return wsSubscriptions;
 }
 
 /**

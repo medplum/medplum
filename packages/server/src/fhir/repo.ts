@@ -57,7 +57,6 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   SearchParameterType,
-  serverError,
   sleep,
   stringify,
   toPeriod,
@@ -901,16 +900,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.deleteCacheEntry(resource.resourceType, resource.id);
     }
 
-    // Handle special cases for resource caching
-    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const redis = getRedis();
-      const project = resource?.meta?.project;
-      if (!project) {
-        throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
-      }
-      // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
-    }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
     }
