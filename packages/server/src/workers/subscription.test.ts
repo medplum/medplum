@@ -1446,157 +1446,160 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.length).toStrictEqual(1);
     }));
 
-  test('Subscription AuditEvent destination - log only', () =>
-    withTestContext(async () => {
+  describe('Subscription AuditEvent destination with logging', () => {
+    let originalConsoleLog: typeof console.log;
+
+    beforeEach(async () => {
       const config = await loadTestConfig();
       config.logAuditEvents = true;
-
-      const project = (await createTestProject()).project.id;
-      const originalConsoleLog = console.log;
+      originalConsoleLog = console.log;
       console.log = jest.fn();
+    });
 
-      const subscription = await systemRepo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        meta: {
-          project,
-        },
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'https://example.com/subscription',
-        },
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
-            valueCode: 'log',
-          },
-        ],
-      });
-
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
-
-      await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: {
-          project,
-        },
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
-
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
-
-      const bundle = await systemRepo.search<AuditEvent>({
-        resourceType: 'AuditEvent',
-        filters: [
-          {
-            code: 'entity',
-            operator: Operator.EQUALS,
-            value: getReferenceString(subscription),
-          },
-        ],
-      });
-
-      // Should NOT create AuditEvent resource in DB
-      expect(bundle.entry?.length).toStrictEqual(0);
-
-      // Should log AuditEvent to console
-      expect(console.log).toHaveBeenCalled();
-      const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
-        try {
-          const parsed = JSON.parse(call[0]);
-          return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
-        } catch {
-          return false;
-        }
-      });
-      expect(loggedCall).toBeDefined();
-
+    afterEach(async () => {
       console.log = originalConsoleLog;
-    }));
-
-  test('Subscription AuditEvent destination - resource and log', () =>
-    withTestContext(async () => {
       const config = await loadTestConfig();
-      config.logAuditEvents = true;
+      config.logAuditEvents = false;
+    });
 
-      const project = (await createTestProject()).project.id;
-      const originalConsoleLog = console.log;
-      console.log = jest.fn();
+    test('log only', () =>
+      withTestContext(async () => {
+        const project = (await createTestProject()).project.id;
 
-      const subscription = await systemRepo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        reason: 'test',
-        meta: {
-          project,
-        },
-        status: 'active',
-        criteria: 'Patient',
-        channel: {
-          type: 'rest-hook',
-          endpoint: 'https://example.com/subscription',
-        },
-        extension: [
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
-            valueCode: 'resource',
+        const subscription = await systemRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          meta: {
+            project,
           },
-          {
-            url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
-            valueCode: 'log',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/subscription',
           },
-        ],
-      });
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
+              valueCode: 'log',
+            },
+          ],
+        });
 
-      const queue = getSubscriptionQueue() as any;
-      queue.add.mockClear();
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
 
-      await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: {
-          project,
-        },
-        name: [{ given: ['Alice'], family: 'Smith' }],
-      });
-
-      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
-
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      await execSubscriptionJob(job);
-
-      const bundle = await systemRepo.search<AuditEvent>({
-        resourceType: 'AuditEvent',
-        filters: [
-          {
-            code: 'entity',
-            operator: Operator.EQUALS,
-            value: getReferenceString(subscription),
+        await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            project,
           },
-        ],
-      });
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
 
-      // Should create AuditEvent resource in DB
-      expect(bundle.entry?.length).toStrictEqual(1);
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      // Should also log AuditEvent to console
-      expect(console.log).toHaveBeenCalled();
-      const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
-        try {
-          const parsed = JSON.parse(call[0]);
-          return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
-        } catch {
-          return false;
-        }
-      });
-      expect(loggedCall).toBeDefined();
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
 
-      console.log = originalConsoleLog;
-    }));
+        const bundle = await systemRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+
+        // Should NOT create AuditEvent resource in DB
+        expect(bundle.entry?.length).toStrictEqual(0);
+
+        // Should log AuditEvent to console
+        expect(console.log).toHaveBeenCalled();
+        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+          try {
+            const parsed = JSON.parse(call[0]);
+            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
+          } catch {
+            return false;
+          }
+        });
+        expect(loggedCall).toBeDefined();
+      }));
+
+    test('resource and log', () =>
+      withTestContext(async () => {
+        const project = (await createTestProject()).project.id;
+
+        const subscription = await systemRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          meta: {
+            project,
+          },
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/subscription',
+          },
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
+              valueCode: 'resource',
+            },
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination',
+              valueCode: 'log',
+            },
+          ],
+        });
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: {
+            project,
+          },
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+        const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+        await execSubscriptionJob(job);
+
+        const bundle = await systemRepo.search<AuditEvent>({
+          resourceType: 'AuditEvent',
+          filters: [
+            {
+              code: 'entity',
+              operator: Operator.EQUALS,
+              value: getReferenceString(subscription),
+            },
+          ],
+        });
+
+        // Should create AuditEvent resource in DB
+        expect(bundle.entry?.length).toStrictEqual(1);
+
+        // Should also log AuditEvent to console
+        expect(console.log).toHaveBeenCalled();
+        const loggedCall = (console.log as jest.Mock).mock.calls.find((call) => {
+          try {
+            const parsed = JSON.parse(call[0]);
+            return parsed.resourceType === 'AuditEvent' && parsed.type?.code === 'transmit';
+          } catch {
+            return false;
+          }
+        });
+        expect(loggedCall).toBeDefined();
+      }));
+  });
 
   test('FhirPathCriteria extension', () =>
     withTestContext(async () => {
