@@ -9,12 +9,9 @@ import { prepareReindexJobData, ReindexJob } from '../../workers/reindex';
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
   prepareJobData(asyncJob: WithId<AsyncJob>) {
-    return prepareReindexJobData(
-      getResourceTypes().filter((rt) => rt !== 'Binary'),
-      asyncJob.id,
-      undefined,
-      0 // maxResourceVersion of zero makes the filter __version === NULL which is more precise
-    );
+    return prepareReindexJobData(getResourceTypes().filter((rt) => rt !== 'Binary'), asyncJob.id, {
+      maxResourceVersion: 0, // maxResourceVersion of zero makes the filter __version === NULL which is more precise
+    });
   },
   run: async (repo, job, jobData) => {
     return new ReindexJob(repo).execute(job, jobData);

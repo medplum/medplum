@@ -38,6 +38,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
+import type { ReindexJobOptions } from '../workers/reindex';
 import { addReindexJob } from '../workers/reindex';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
@@ -103,6 +104,30 @@ superAdminRouter.post(
       .if(body('reindexType').not().equals('specific'))
       .isEmpty()
       .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
+    body('batchSize')
+      .optional()
+      .isInt({ min: 1, max: 1_000 })
+      .withMessage('batchSize must be an integer from 1 to 1000'),
+    body('searchStatementTimeout')
+      .optional()
+      .isInt({ min: 1_000 })
+      .withMessage('searchStatementTimeout must be at least 1000 milliseconds'),
+    body('upsertStatementTimeout')
+      .optional()
+      .isInt({ min: 1_000 })
+      .withMessage('upsertStatementTimeout must be at least 1000 milliseconds'),
+    body('delayBetweenBatches')
+      .optional()
+      .isInt({ min: 0, max: 60_000 })
+      .withMessage('delayBetweenBatches must be an integer from 0 to 60000 milliseconds'),
+    body('progressLogThreshold')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('progressLogThreshold must be a positive integer'),
+    body('endTimestampBufferMinutes')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('endTimestampBufferMinutes must be a positive integer'),
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
@@ -150,6 +175,20 @@ superAdminRouter.post(
         return;
     }
 
+    // Build reindex job options
+    const opts: ReindexJobOptions = {
+      searchFilter,
+      maxResourceVersion,
+      batchSize: req.body.batchSize ? Number(req.body.batchSize) : undefined,
+      searchStatementTimeout: req.body.searchStatementTimeout ? Number(req.body.searchStatementTimeout) : undefined,
+      upsertStatementTimeout: req.body.upsertStatementTimeout ? Number(req.body.upsertStatementTimeout) : undefined,
+      delayBetweenBatches: req.body.delayBetweenBatches ? Number(req.body.delayBetweenBatches) : undefined,
+      progressLogThreshold: req.body.progressLogThreshold ? Number(req.body.progressLogThreshold) : undefined,
+      endTimestampBufferMinutes: req.body.endTimestampBufferMinutes
+        ? Number(req.body.endTimestampBufferMinutes)
+        : undefined,
+    };
+
     // construct a representation of the inputs/parameters for the reindex job
     // for human consumption in `AsyncJob.request`
     const queryForUrl: Record<string, string> = {
@@ -157,6 +196,12 @@ superAdminRouter.post(
       filter: req.body.filter,
       reindexType,
       maxResourceVersion: maxResourceVersion?.toString() ?? '',
+      batchSize: opts.batchSize?.toString() ?? '',
+      searchStatementTimeout: opts.searchStatementTimeout?.toString() ?? '',
+      upsertStatementTimeout: opts.upsertStatementTimeout?.toString() ?? '',
+      delayBetweenBatches: opts.delayBetweenBatches?.toString() ?? '',
+      progressLogThreshold: opts.progressLogThreshold?.toString() ?? '',
+      endTimestampBufferMinutes: opts.endTimestampBufferMinutes?.toString() ?? '',
     };
 
     const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
@@ -166,7 +211,7 @@ superAdminRouter.post(
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, opts);
     });
 
     const { baseUrl } = getConfig();

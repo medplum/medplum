@@ -8,6 +8,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
+  sleep,
 } from '@medplum/core';
 import type { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
@@ -48,6 +49,13 @@ export interface ReindexJobData extends PostDeployJobData {
   readonly count?: number;
   readonly searchFilter?: SearchRequest;
   readonly results: Record<string, ReindexResult>;
+
+  // Configurable job settings
+  readonly batchSize?: number;
+  readonly searchStatementTimeout?: number;
+  readonly upsertStatementTimeout?: number;
+  readonly delayBetweenBatches?: number;
+  readonly progressLogThreshold?: number;
 }
 
 export type ReindexResult =
@@ -60,8 +68,13 @@ export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJ
 
 const ReindexQueueName = 'ReindexQueue';
 
-const defaultBatchSize = 500;
-const defaultProgressLogThreshold = 50_000;
+const defaultSettings: ReindexJobSettings = {
+  batchSize: 500,
+  progressLogThreshold: 50_000,
+  searchStatementTimeout: 3_600_000, // 1 hour
+  upsertStatementTimeout: 'DEFAULT',
+  delayBetweenBatches: 0,
+};
 
 // Version that can be bumped when the worker code changes, typically for bug fixes,
 // to prevent workers running older versions of the reindex worker from processing jobs
@@ -108,18 +121,32 @@ export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
 
 export type ReindexExecuteResult = 'finished' | 'ineligible' | 'interrupted';
 
+interface ReindexJobSettings {
+  readonly batchSize: number;
+  readonly progressLogThreshold: number;
+  readonly searchStatementTimeout: number;
+  readonly upsertStatementTimeout: number | 'DEFAULT';
+  readonly delayBetweenBatches: number;
+}
+
 export class ReindexJob {
   private readonly systemRepo: Repository;
-  private readonly batchSize: number;
-  private readonly progressLogThreshold: number;
   private readonly logger = globalLogger;
-  private readonly defaultStatementTimeout: number | 'DEFAULT';
+  private settings: ReindexJobSettings;
 
-  constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
+  constructor(systemRepo?: Repository) {
     this.systemRepo = systemRepo ?? getSystemRepo();
-    this.batchSize = batchSize ?? defaultBatchSize;
-    this.progressLogThreshold = progressLogThreshold ?? defaultProgressLogThreshold;
-    this.defaultStatementTimeout = getDefaultStatementTimeout(getConfig());
+    this.settings = { ...defaultSettings, upsertStatementTimeout: getDefaultStatementTimeout(getConfig()) };
+  }
+
+  private initSettings(jobData: ReindexJobData): void {
+    this.settings = {
+      batchSize: jobData.batchSize ?? defaultSettings.batchSize,
+      progressLogThreshold: jobData.progressLogThreshold ?? defaultSettings.progressLogThreshold,
+      searchStatementTimeout: jobData.searchStatementTimeout ?? defaultSettings.searchStatementTimeout,
+      upsertStatementTimeout: jobData.upsertStatementTimeout ?? getDefaultStatementTimeout(getConfig()),
+      delayBetweenBatches: jobData.delayBetweenBatches ?? defaultSettings.delayBetweenBatches,
+    };
   }
 
   private async refreshAsyncJob(repo: Repository, asyncJobOrId: string | WithId<AsyncJob>): Promise<WithId<AsyncJob>> {
@@ -163,6 +190,7 @@ export class ReindexJob {
   }
 
   async execute(job: Job<ReindexJobData> | undefined, inputJobData: ReindexJobData): Promise<ReindexExecuteResult> {
+    this.initSettings(inputJobData);
     const asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
     if (inputJobData.minReindexWorkerVersion && inputJobData.minReindexWorkerVersion > REINDEX_WORKER_VERSION) {
@@ -212,6 +240,9 @@ export class ReindexJob {
         await new AsyncJobExecutor(this.systemRepo, asyncJob).failJob(this.systemRepo);
       } else {
         nextJobData = finishedOrNextIterationData;
+        if (this.settings.delayBetweenBatches > 0) {
+          await sleep(this.settings.delayBetweenBatches);
+        }
       }
     }
     return 'finished';
@@ -226,8 +257,9 @@ export class ReindexJob {
   async processIteration(systemRepo: Repository, jobData: ReindexJobData): Promise<ReindexResult> {
     const { resourceTypes, count, maxResourceVersion } = jobData;
     const resourceType = resourceTypes[0];
+    const { batchSize, searchStatementTimeout, upsertStatementTimeout } = this.settings;
 
-    const searchRequest = searchRequestForNextPage(jobData, this.batchSize);
+    const searchRequest = searchRequestForNextPage(jobData, batchSize);
     let newCount = count ?? 0;
     let cursor = '';
     let nextTimestamp = new Date(0).toISOString();
@@ -252,10 +284,10 @@ export class ReindexJob {
         */
         let bundle: Bundle<WithId<Resource>>;
         try {
-          await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
+          await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(searchStatementTimeout)]);
           bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
         } finally {
-          await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
+          await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(upsertStatementTimeout)]);
         }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
@@ -301,7 +333,7 @@ export class ReindexJob {
   getAsyncJobOutputFromIterationResults(result: ReindexResult, jobData: ReindexJobData): Parameters | undefined {
     if (isResultInProgress(result)) {
       // Skip update for most in-progress results
-      if (!shouldLogProgress(result, this.batchSize, this.progressLogThreshold)) {
+      if (!shouldLogProgress(result, this.settings.batchSize, this.settings.progressLogThreshold)) {
         return undefined;
       }
 
@@ -473,25 +505,35 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
   return queue.add('ReindexJobData', job);
 }
 
+export interface ReindexJobOptions {
+  searchFilter?: SearchRequest;
+  maxResourceVersion?: number;
+  batchSize?: number;
+  searchStatementTimeout?: number;
+  upsertStatementTimeout?: number;
+  delayBetweenBatches?: number;
+  progressLogThreshold?: number;
+  endTimestampBufferMinutes?: number;
+}
+
 export async function addReindexJob(
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
-  searchFilter?: SearchRequest,
-  maxResourceVersion?: number
+  options?: ReindexJobOptions
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter, maxResourceVersion);
+  const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, options);
   return addReindexJobData(jobData);
 }
 
 export function prepareReindexJobData(
   resourceTypes: ResourceType[],
   asyncJobId: string,
-  searchFilter?: SearchRequest,
-  maxResourceVersion?: number
+  options?: ReindexJobOptions
 ): ReindexJobData {
   const ctx = tryGetRequestContext();
   const startTime = Date.now();
-  const endTimestamp = new Date(startTime + 1000 * 60 * 5).toISOString(); // Five minutes in the future
+  const endTimestampBufferMinutes = options?.endTimestampBufferMinutes ?? 5;
+  const endTimestamp = new Date(startTime + 1000 * 60 * endTimestampBufferMinutes).toISOString();
 
   return {
     type: 'reindex',
@@ -500,8 +542,13 @@ export function prepareReindexJobData(
     endTimestamp,
     asyncJobId,
     startTime,
-    searchFilter,
-    maxResourceVersion,
+    searchFilter: options?.searchFilter,
+    maxResourceVersion: options?.maxResourceVersion,
+    batchSize: options?.batchSize,
+    searchStatementTimeout: options?.searchStatementTimeout,
+    upsertStatementTimeout: options?.upsertStatementTimeout,
+    delayBetweenBatches: options?.delayBetweenBatches,
+    progressLogThreshold: options?.progressLogThreshold,
     results: Object.create(null),
     requestId: ctx?.requestId,
     traceId: ctx?.traceId,

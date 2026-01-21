@@ -36,6 +36,7 @@ import {
   ReindexJob,
 } from './reindex';
 import { queueRegistry } from './utils';
+import * as workerUtils from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -147,13 +148,12 @@ describe('Reindex Worker', () => {
         });
       }
 
-      const jobData = prepareReindexJobData(
-        ['ImmunizationEvaluation'],
-        asyncJob.id,
-        parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`)
-      );
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+      });
       const systemRepo = getSystemRepo();
-      const reindexJob = new ReindexJob(systemRepo, batchSize);
+      const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
@@ -179,6 +179,98 @@ describe('Reindex Worker', () => {
           cursor: expect.stringContaining('-'),
         })
       );
+    }));
+
+  test('Applies delay between batches when configured', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const mrn = randomUUID();
+      const batchSize = 20;
+      const delayBetweenBatches = 1; // Use 1ms to keep test fast
+      // Create enough resources to require multiple iterations
+      for (let i = 0; i < batchSize + 1; i++) {
+        await repo.createResource<ImmunizationEvaluation>({
+          resourceType: 'ImmunizationEvaluation',
+          identifier: [{ system: idSystem, value: mrn }],
+          status: 'completed',
+          patient: { reference: 'Patient/123' },
+          targetDisease: { text: '1234567890' },
+          immunizationEvent: { reference: 'Immunization/123' },
+          doseStatus: { text: '1234567890' },
+        });
+      }
+
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+        delayBetweenBatches,
+      });
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+      jest.spyOn(reindexJob, 'processIteration');
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      // Verify multiple iterations occurred (which triggers sleep between batches)
+      expect(reindexJob.processIteration).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Logs progress when threshold is crossed', () =>
+    withTestContext(async () => {
+      const loggerSpy = jest.spyOn(globalLogger, 'info');
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const mrn = randomUUID();
+      const batchSize = 20;
+      const progressLogThreshold = 20; // Low threshold so we cross it
+      // Create enough resources to cross the progress threshold
+      for (let i = 0; i < batchSize + 1; i++) {
+        await repo.createResource<ImmunizationEvaluation>({
+          resourceType: 'ImmunizationEvaluation',
+          identifier: [{ system: idSystem, value: mrn }],
+          status: 'completed',
+          patient: { reference: 'Patient/123' },
+          targetDisease: { text: '1234567890' },
+          immunizationEvent: { reference: 'Immunization/123' },
+          doseStatus: { text: '1234567890' },
+        });
+      }
+
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+        progressLogThreshold,
+      });
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      // Verify progress was logged
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Reindex in progress',
+        expect.objectContaining({
+          resourceType: 'ImmunizationEvaluation',
+          currentCount: expect.any(Number),
+        })
+      );
+      loggerSpy.mockRestore();
     }));
 
   test('Proceeds to next resource type after exhausting initial one', () =>
@@ -359,7 +451,7 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['Patient', 'Practitioner'] as ResourceType[];
       const searchFilter = parseSearchRequest(`Person?identifier=${idSystem}|${mrn}&gender=unknown`);
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
 
       await new ReindexJob().execute(undefined, jobData);
 
@@ -423,7 +515,7 @@ describe('Reindex Worker', () => {
         `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=ge2000-01-01T00:00:00Z&_lastUpdated=lt2001-01-01T00:00:00Z`
       );
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
       await new ReindexJob().execute(undefined, jobData);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
@@ -485,12 +577,10 @@ describe('Reindex Worker', () => {
         ])
       );
 
-      const jobData = prepareReindexJobData(
-        ['Patient'],
-        asyncJob.id,
-        parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
-        maxResourceVersion
-      );
+      const jobData = prepareReindexJobData(['Patient'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
+        maxResourceVersion,
+      });
 
       await new ReindexJob().execute(undefined, jobData);
 
@@ -547,7 +637,7 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['User'] as ResourceType[];
       const searchFilter = parseSearchRequest(`User?identifier=${idSystem}|${mrn}`);
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
       await new ReindexJob().execute(undefined, jobData);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
@@ -807,5 +897,24 @@ describe('Job cancellation', () => {
       const finalJob = await repo.readResource<AsyncJob>('AsyncJob', originalJob.id);
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
+    }));
+
+  test('Throws error when updateAsyncJobOutput fails with non-412 error', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
+
+      // Mock updateAsyncJobOutput to throw a non-412 error
+      const testError = new Error('Database connection failed');
+      jest.spyOn(workerUtils, 'updateAsyncJobOutput').mockRejectedValue(testError);
+
+      const reindexJob = new ReindexJob();
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Database connection failed');
     }));
 });
