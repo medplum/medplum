@@ -200,6 +200,7 @@ export function Calendar(props: {
       selectable
       eventPropGetter={eventPropGetter}
       style={props.style}
+      dayLayoutAlgorithm="no-overlap"
     />
   );
 }

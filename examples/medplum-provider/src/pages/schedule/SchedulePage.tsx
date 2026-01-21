@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Drawer } from '@mantine/core';
+import { Box, Button, Drawer, Group, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, isDefined, formatDateTime, getExtensionValue, getReferenceString } from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { CodingDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
@@ -15,6 +15,136 @@ import { showErrorNotification } from '../../utils/notifications';
 import { Calendar } from '../../components/Calendar';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import type { Range } from '../../types/scheduling';
+import { IconChevronRight, IconX } from '@tabler/icons-react';
+import classes from './SchedulePage.module.css';
+import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
+
+type ScheduleFindPaneProps = {
+  schedule: WithId<Schedule>;
+  range: Range;
+  onChange: (slots: Slot[]) => void;
+  onSelectSlot: (slot: Slot) => void;
+  slots: Slot[] | undefined;
+};
+
+const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
+
+function parseSchedulingParameters(schedule: Schedule): (Coding | undefined)[] {
+  const extensions = schedule?.extension?.filter((ext) => ext.url === SchedulingParametersURI) ?? [];
+  const serviceTypes = extensions.map((ext) => getExtensionValue(ext, 'serviceType') as Coding | undefined);
+  return serviceTypes;
+}
+
+// Allows selection of a ServiceType found in the schedule's
+// SchedulingParameters extensions, and runs a `$find` operation to look for
+// upcoming slots that can be used to book an Appointment of that type.
+//
+// See https://www.medplum.com/docs/scheduling/defining-availability for details.
+export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
+  const { schedule, onChange, range } = props;
+  const serviceTypes = useMemo(() => parseSchedulingParameters(schedule), [schedule]);
+
+  const medplum = useMedplum();
+
+  // null: no selection made
+  // undefined: "wildcard" availability selected
+  // Coding: a specific service type was selected
+  const [serviceType, setServiceType] = useState<Coding | undefined | null>(
+    // If there is exactly one option, select it immediately instead of forcing user
+    // to select it
+    serviceTypes.length === 1 ? serviceTypes[0] : null
+  );
+
+  // Ensure that we are searching for slots in the future by at least 30 minutes.
+  const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
+  const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
+  const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + 1000 * 60 * 60 * 24 * 7);
+
+  const start = searchStart.toISOString();
+  const end = searchEnd.toISOString();
+
+  useEffect(() => {
+    if (!schedule || serviceType === null) {
+      return () => {};
+    }
+    const controller = new AbortController();
+    const signal = controller.signal;
+    const params = new URLSearchParams({ start, end });
+    if (serviceType) {
+      params.append('service-type', `${serviceType.system}|${serviceType.code}`);
+    }
+    medplum
+      .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
+      .then((bundle) => {
+        if (!signal.aborted) {
+          if (bundle.entry) {
+            onChange(bundle.entry.map((entry) => entry.resource).filter(isDefined));
+          } else {
+            onChange([]);
+          }
+        }
+      })
+      .catch((error) => {
+        if (!signal.aborted) {
+          showErrorNotification(error);
+        }
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [medplum, schedule, serviceType, start, end, onChange]);
+
+  const handleDismiss = useCallback(() => {
+    setServiceType(null);
+    onChange([]);
+  }, [onChange]);
+
+  if (serviceType !== null) {
+    return (
+      <Stack gap="sm" justify="flex-start">
+        <Title order={4}>
+          <Group justify="space-between">
+            <span>{serviceType ? <CodingDisplay value={serviceType} /> : 'Event'}</span>
+            {serviceTypes.length > 1 && (
+              <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
+                <IconX size={20} />
+              </Button>
+            )}
+          </Group>
+        </Title>
+        {(props.slots ?? []).map((slot) => (
+          <Button
+            key={slot.id ?? slot.start}
+            variant="outline"
+            color="gray.3"
+            styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
+            onClick={() => props.onSelectSlot(slot)}
+          >
+            {formatDateTime(slot.start)}
+          </Button>
+        ))}
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack gap="sm" justify="flex-start">
+      <Title order={4}>Schedule&hellip;</Title>
+      {serviceTypes.map((st, index) => (
+        <Button
+          key={st ? `${st.system}|${st.code}` : `wildcard-${index}`}
+          fullWidth
+          variant="outline"
+          rightSection={<IconChevronRight size={12} />}
+          justify="space-between"
+          onClick={() => setServiceType(st)}
+        >
+          {st ? <CodingDisplay value={st} /> : 'Other'}
+        </Button>
+      ))}
+    </Stack>
+  );
+}
 
 /**
  * Schedule page that displays the practitioner's schedule.
@@ -30,6 +160,7 @@ export function SchedulePage(): JSX.Element | null {
   const [range, setRange] = useState<Range | undefined>(undefined);
   const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
   const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
+  const [findSlots, setFindSlots] = useState<Slot[] | undefined>(undefined);
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
 
@@ -151,18 +282,36 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const height = window.innerHeight - 60;
+  const serviceTypes = useMemo(() => schedule && parseSchedulingParameters(schedule), [schedule]);
 
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
-      <Calendar
-        style={{ height: height - 150 }}
-        onSelectInterval={handleSelectInterval}
-        onSelectAppointment={handleSelectAppointment}
-        onSelectSlot={handleSelectSlot}
-        slots={slots ?? []}
-        appointments={appointments ?? []}
-        onRangeChange={setRange}
-      />
+      <div className={classes.container}>
+        <div className={classes.calendar}>
+          <Calendar
+            style={{ height: height - 150 }}
+            onSelectInterval={handleSelectInterval}
+            onSelectAppointment={handleSelectAppointment}
+            onSelectSlot={handleSelectSlot}
+            slots={[...(slots ?? []), ...(findSlots ?? [])]}
+            appointments={appointments ?? []}
+            onRangeChange={setRange}
+          />
+        </div>
+
+        {serviceTypes?.length && schedule && range && (
+          <div className={classes.findPane}>
+            <ScheduleFindPane
+              key={schedule.id}
+              schedule={schedule}
+              range={range}
+              onChange={setFindSlots}
+              onSelectSlot={(slot) => handleSelectSlot(slot)}
+              slots={findSlots}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       <Drawer
