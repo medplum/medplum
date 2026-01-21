@@ -37,6 +37,14 @@ function Footer(): ReactNode {
                 alt="HIPAA"
               />
             </Link>
+            <Link href="/security">
+              <img
+                src="/img/compliance/drummond-epcs.png"
+                className="medplum-drummond-compliance-image"
+                loading="lazy"
+                alt="Drummond Certified EPCS Integration 2025"
+              />
+            </Link>
           </div>
           <div className={styles.column}>
             <div className={styles.row}>
