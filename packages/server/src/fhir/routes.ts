@@ -22,6 +22,7 @@ import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { appointmentBookHandler } from './operations/book';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -353,6 +354,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Schedule $find operation
   router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
+
+  // Appointment $book operation
+  router.add('POST', '/Appointment/$book', appointmentBookHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
