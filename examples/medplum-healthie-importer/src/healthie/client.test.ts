@@ -210,7 +210,7 @@ describe('HealthieClient', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    test('does not retry on GraphQL errors', async () => {
+    test('does not retry on regular GraphQL errors', async () => {
       const clientWithRetry = new HealthieClient(mockBaseUrl, mockClientSecret, {
         maxRetries: 3,
         baseDelayMs: 10,
@@ -232,6 +232,87 @@ describe('HealthieClient', () => {
 
       await expect(clientWithRetry.query('{ invalid }')).rejects.toThrow('GraphQL Error: Invalid query');
       expect(mockFetch).toHaveBeenCalledTimes(1); // No retry
+    });
+
+    test('retries on TOO_MANY_REQUESTS GraphQL error and succeeds', async () => {
+      const clientWithRetry = new HealthieClient(mockBaseUrl, mockClientSecret, {
+        maxRetries: 2,
+        baseDelayMs: 10,
+      });
+
+      const mockRateLimitResponse = {
+        errors: [{ message: 'Too many requests. Please try again later.', code: 'TOO_MANY_REQUESTS' }],
+      };
+
+      const mockSuccessResponse = {
+        data: { users: [{ id: '123' }] },
+      };
+
+      // First call returns rate limit error, second succeeds
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve(mockRateLimitResponse),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve(mockSuccessResponse),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      const result = await clientWithRetry.query('{ users { id } }');
+
+      expect(result).toEqual(mockSuccessResponse.data);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    test('retries on TOO_MANY_REQUESTS in extensions.code', async () => {
+      const clientWithRetry = new HealthieClient(mockBaseUrl, mockClientSecret, {
+        maxRetries: 2,
+        baseDelayMs: 10,
+      });
+
+      const mockRateLimitResponse = {
+        errors: [{ message: 'Too many requests.', extensions: { code: 'TOO_MANY_REQUESTS' } }],
+      };
+
+      const mockSuccessResponse = {
+        data: { users: [{ id: '123' }] },
+      };
+
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve(mockRateLimitResponse),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve(mockSuccessResponse),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      const result = await clientWithRetry.query('{ users { id } }');
+
+      expect(result).toEqual(mockSuccessResponse.data);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     test('retries on network errors and succeeds', async () => {

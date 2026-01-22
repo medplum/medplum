@@ -19,6 +19,12 @@ const DEFAULT_MAX_DELAY_MS = 30000;
 const RETRYABLE_STATUS_CODES = [429, 500, 502, 503, 504];
 
 /**
+ * GraphQL error codes that warrant a retry.
+ * Healthie returns rate limit errors as GraphQL errors, not HTTP 429.
+ */
+const RETRYABLE_GRAPHQL_ERROR_CODES = ['TOO_MANY_REQUESTS'];
+
+/**
  * Options for the Healthie client.
  */
 export interface HealthieClientOptions {
@@ -121,6 +127,21 @@ export class HealthieClient {
         const result = (await response.json()) as HealthieGraphQLResponse<T>;
 
         if (result.errors && result.errors.length > 0) {
+          // Check if any errors are retryable (e.g., rate limits)
+          const hasRetryableError = result.errors.some((e) => {
+            const code = e.code ?? e.extensions?.code;
+            return code && RETRYABLE_GRAPHQL_ERROR_CODES.includes(code);
+          });
+
+          if (hasRetryableError && attempt < this.maxRetries) {
+            const delay = this.calculateBackoffDelay(attempt);
+            console.log(
+              `Healthie API rate limited (TOO_MANY_REQUESTS), retrying in ${delay}ms (attempt ${attempt + 1}/${this.maxRetries})`
+            );
+            await this.sleep(delay);
+            continue;
+          }
+
           throw new Error(`GraphQL Error: ${result.errors.map((e) => e.message).join(', ')}`);
         }
 
@@ -160,5 +181,17 @@ export class HealthieClient {
  */
 interface HealthieGraphQLResponse<T> {
   data?: T;
-  errors?: { message: string }[];
+  errors?: HealthieGraphQLError[];
+}
+
+/**
+ * Interface for Healthie GraphQL errors.
+ */
+interface HealthieGraphQLError {
+  message: string;
+  /** Error code - e.g., 'TOO_MANY_REQUESTS' for rate limits */
+  code?: string;
+  extensions?: {
+    code?: string;
+  };
 }

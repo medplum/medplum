@@ -271,16 +271,17 @@ When `includeClinicalUpdateDates` is `true`, the bot fetches the most recent upd
 
 The Healthie client includes automatic retry logic for transient failures:
 
-- **Rate Limits (429)**: Respects `Retry-After` header if present
+- **Rate Limits**: Healthie returns rate limits as GraphQL errors with code `TOO_MANY_REQUESTS` (not HTTP 429). These are automatically retried with exponential backoff.
+- **HTTP Rate Limits (429)**: Also handled, respects `Retry-After` header if present
 - **Server Errors (500, 502, 503, 504)**: Retries with exponential backoff
 - **Network Errors**: Retries connection failures
-- **GraphQL Errors**: Not retried (considered application-level errors)
+- **Other GraphQL Errors**: Not retried (considered application-level errors)
 
 Default retry configuration:
 - Max retries: 3
 - Base delay: 1000ms
 - Max delay: 30000ms
-- Jitter: ±10% randomization
+- Jitter: ±25% randomization
 
 ## Support
 
