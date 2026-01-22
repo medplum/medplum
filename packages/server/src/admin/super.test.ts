@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -494,9 +495,9 @@ describe('Super Admin routes', () => {
   });
 
   test.each([
-    ['batchSize', 0, 'batchSize must be an integer from 1 to 1000'],
-    ['batchSize', 1001, 'batchSize must be an integer from 1 to 1000'],
-    ['batchSize', 1.5, 'batchSize must be an integer from 1 to 1000'],
+    ['batchSize', 0, 'batchSize must be an integer from 20 to 1000'],
+    ['batchSize', 1001, 'batchSize must be an integer from 20 to 1000'],
+    ['batchSize', 1.5, 'batchSize must be an integer from 20 to 1000'],
     ['searchStatementTimeout', 999, 'searchStatementTimeout must be at least 1000 milliseconds'],
     ['searchStatementTimeout', 500, 'searchStatementTimeout must be at least 1000 milliseconds'],
     ['upsertStatementTimeout', 999, 'upsertStatementTimeout must be at least 1000 milliseconds'],
@@ -531,7 +532,7 @@ describe('Super Admin routes', () => {
   });
 
   test.each([
-    ['batchSize', 1],
+    ['batchSize', minCursorBasedSearchPageSize],
     ['batchSize', 1000],
     ['searchStatementTimeout', 1000],
     ['searchStatementTimeout', 3600000],
