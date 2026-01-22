@@ -71,49 +71,8 @@ describe('fetchMedications', () => {
     );
   });
 
-  test('handles cursor pagination across multiple pages', async () => {
-    // First page: 50 medications with cursor (full page)
-    const page1Meds = Array.from({ length: 50 }, (_, i) => ({
-      id: `med${i + 1}`,
-      name: `Medication ${i + 1}`,
-      active: true,
-      cursor: `cursor_${i + 1}`,
-    }));
-
-    // Second page: 20 medications (less than page size, indicates end)
-    const page2Meds = Array.from({ length: 20 }, (_, i) => ({
-      id: `med${i + 51}`,
-      name: `Medication ${i + 51}`,
-      active: true,
-    }));
-
-    mockFetch
-      .mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { medications: page1Meds } }),
-            ok: true,
-            status: 200,
-          })
-      )
-      .mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { medications: page2Meds } }),
-            ok: true,
-            status: 200,
-          })
-      );
-
-    const result = await fetchMedications(healthieClient, 'patient123');
-
-    expect(result).toHaveLength(70);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-
-    // Verify second call uses cursor from first page
-    const secondCallBody = JSON.parse(mockFetch.mock.calls[1][1].body);
-    expect(secondCallBody.variables.after).toBe('cursor_50');
-  });
+  // Note: Healthie's medications API doesn't support pagination,
+  // so all medications are fetched in a single request
 
   test('returns empty array when no medications found', async () => {
     mockFetch.mockImplementationOnce(

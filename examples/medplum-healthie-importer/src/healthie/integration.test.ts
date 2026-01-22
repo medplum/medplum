@@ -26,6 +26,7 @@ import {
 // Load .env file
 config();
 
+// Both HEALTHIE_API_URL and HEALTHIE_CLIENT_SECRET must be set
 const HEALTHIE_API_URL = process.env.HEALTHIE_API_URL;
 const HEALTHIE_CLIENT_SECRET = process.env.HEALTHIE_CLIENT_SECRET;
 

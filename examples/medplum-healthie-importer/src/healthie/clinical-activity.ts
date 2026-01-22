@@ -4,10 +4,8 @@ import type { HealthieClient } from './client';
 
 /**
  * Fetches the most recent medication update date for a patient.
- * Uses page_size=1 to minimize data transfer.
- * Note: Healthie medications API doesn't support order_by, so this returns the first
- * medication in default order. For accurate "most recent" tracking, consider fetching
- * all medications and finding the max date client-side if precision is critical.
+ * Note: Healthie medications API doesn't support pagination or ordering, so we
+ * fetch all medications and find the max date client-side.
  * @param healthie - The Healthie client instance.
  * @param patientId - The Healthie patient ID.
  * @returns The most recent update date (ISO 8601) or undefined if no medications.
@@ -16,12 +14,10 @@ export async function fetchMostRecentMedicationDate(
   healthie: HealthieClient,
   patientId: string
 ): Promise<string | undefined> {
+  // Healthie's medications query doesn't support pagination or ordering
   const query = `
-    query fetchMostRecentMedication($patientId: ID!) {
-      medications(
-        patient_id: $patientId,
-        page_size: 1
-      ) {
+    query fetchMedications($patientId: ID!) {
+      medications(patient_id: $patientId) {
         id
         created_at
         updated_at
@@ -38,8 +34,7 @@ export async function fetchMostRecentMedicationDate(
     return undefined;
   }
 
-  // Find the most recent date across all returned medications
-  // (in case the API returns multiple or sorted differently)
+  // Find the most recent date across all medications
   let mostRecent: Date | undefined;
   for (const med of medications) {
     const dateStr = med.updated_at ?? med.created_at;
