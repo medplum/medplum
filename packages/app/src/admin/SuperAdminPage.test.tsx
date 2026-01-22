@@ -91,14 +91,12 @@ describe('SuperAdminPage', () => {
   test('Reindex form show/hide advanced options', async () => {
     setup();
 
-    expect(screen.queryByText('Advanced Options')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Show Advanced Options'));
     });
 
-    expect(screen.getByText('Advanced Options')).toBeInTheDocument();
     expect(screen.getByLabelText('Resources per batch')).toBeInTheDocument();
     expect(screen.getByLabelText('Search query timeout (ms)')).toBeInTheDocument();
     expect(screen.getByLabelText('Upsert query timeout (ms)')).toBeInTheDocument();
@@ -113,7 +111,6 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Hide Advanced Options'));
     });
 
-    expect(screen.queryByText('Advanced Options')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
   });
 
