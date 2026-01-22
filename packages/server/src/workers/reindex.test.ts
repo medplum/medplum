@@ -552,6 +552,21 @@ describe('Reindex Worker', () => {
       expect(processIterationSpy).toHaveBeenCalledTimes(2);
     }));
 
+  test('Throws error when maxIterationAttempts is less than 1', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, { maxIterationAttempts: 0 });
+
+      const reindexJob = new ReindexJob();
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('maxIterationAttempts must be at least 1');
+    }));
+
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({

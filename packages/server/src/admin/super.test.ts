@@ -394,6 +394,249 @@ describe('Super Admin routes', () => {
     );
   });
 
+  test('Reindex with all optional opts parameters provided', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+        batchSize: 100,
+        searchStatementTimeout: 5000,
+        upsertStatementTimeout: 10000,
+        delayBetweenBatches: 500,
+        progressLogThreshold: 1000,
+        endTimestampBufferMinutes: 10,
+        maxIterationAttempts: 5,
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        batchSize: 100,
+        searchStatementTimeout: 5000,
+        upsertStatementTimeout: 10000,
+        delayBetweenBatches: 500,
+        progressLogThreshold: 1000,
+        maxIterationAttempts: 5,
+      })
+    );
+  });
+
+  test('Reindex with no optional opts parameters (all undefined)', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        batchSize: undefined,
+        searchStatementTimeout: undefined,
+        upsertStatementTimeout: undefined,
+        delayBetweenBatches: undefined,
+        progressLogThreshold: undefined,
+        maxIterationAttempts: undefined,
+      })
+    );
+  });
+
+  test('Reindex with partial opts parameters', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+        batchSize: 250,
+        delayBetweenBatches: 1000,
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        batchSize: 250,
+        searchStatementTimeout: undefined,
+        upsertStatementTimeout: undefined,
+        delayBetweenBatches: 1000,
+        progressLogThreshold: undefined,
+        maxIterationAttempts: undefined,
+      })
+    );
+  });
+
+  test.each([
+    ['batchSize', 0, 'batchSize must be an integer from 1 to 1000'],
+    ['batchSize', 1001, 'batchSize must be an integer from 1 to 1000'],
+    ['batchSize', 1.5, 'batchSize must be an integer from 1 to 1000'],
+    ['searchStatementTimeout', 999, 'searchStatementTimeout must be at least 1000 milliseconds'],
+    ['searchStatementTimeout', 500, 'searchStatementTimeout must be at least 1000 milliseconds'],
+    ['upsertStatementTimeout', 999, 'upsertStatementTimeout must be at least 1000 milliseconds'],
+    ['upsertStatementTimeout', 0, 'upsertStatementTimeout must be at least 1000 milliseconds'],
+    ['delayBetweenBatches', -1, 'delayBetweenBatches must be an integer from 0 to 60000 milliseconds'],
+    ['delayBetweenBatches', 60001, 'delayBetweenBatches must be an integer from 0 to 60000 milliseconds'],
+    ['progressLogThreshold', 0, 'progressLogThreshold must be a positive integer'],
+    ['progressLogThreshold', -1, 'progressLogThreshold must be a positive integer'],
+    ['endTimestampBufferMinutes', 0, 'endTimestampBufferMinutes must be a positive integer'],
+    ['endTimestampBufferMinutes', -5, 'endTimestampBufferMinutes must be a positive integer'],
+    ['maxIterationAttempts', 0, 'maxIterationAttempts must be an integer from 1 to 20'],
+    ['maxIterationAttempts', 21, 'maxIterationAttempts must be an integer from 1 to 20'],
+    ['maxIterationAttempts', -1, 'maxIterationAttempts must be an integer from 1 to 20'],
+  ])('Reindex with invalid %s value %s', async (paramName, paramValue, expectedError) => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+        [paramName]: paramValue,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe(expectedError);
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['batchSize', 1],
+    ['batchSize', 1000],
+    ['searchStatementTimeout', 1000],
+    ['searchStatementTimeout', 3600000],
+    ['upsertStatementTimeout', 1000],
+    ['upsertStatementTimeout', 60000],
+    ['delayBetweenBatches', 1],
+    ['delayBetweenBatches', 60000],
+    ['progressLogThreshold', 1],
+    ['progressLogThreshold', 100000],
+    ['maxIterationAttempts', 1],
+    ['maxIterationAttempts', 20],
+  ])('Reindex with valid %s boundary value %s', async (paramName, paramValue) => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+        [paramName]: paramValue,
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        [paramName]: paramValue,
+      })
+    );
+  });
+
+  test('Reindex with delayBetweenBatches=0 results in undefined (falsy value)', async () => {
+    // Note: delayBetweenBatches=0 becomes undefined due to truthy check in the opts construction
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'Patient',
+        reindexType: 'outdated',
+        delayBetweenBatches: 0,
+      });
+
+    expect(res.status).toStrictEqual(202);
+    expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        delayBetweenBatches: undefined,
+      })
+    );
+  });
+
+  test.each([
+    [1, 1],
+    [10, 10],
+    [60, 60],
+  ])(
+    'Reindex with endTimestampBufferMinutes=%s affects endTimestamp calculation',
+    async (endTimestampBufferMinutes, expectedMinutesOffset) => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      const beforeTime = Date.now();
+
+      const res = await request(app)
+        .post('/admin/super/reindex')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({
+          resourceType: 'Patient',
+          reindexType: 'outdated',
+          endTimestampBufferMinutes,
+        });
+
+      const afterTime = Date.now();
+
+      expect(res.status).toStrictEqual(202);
+      expect(res.headers['content-location']).toBeDefined();
+
+      // endTimestampBufferMinutes is consumed to calculate endTimestamp, not stored directly
+      const jobData = queue.add.mock.calls[0][1] as ReindexJobData;
+      expect(jobData.resourceTypes).toEqual(['Patient']);
+
+      const endTimestamp = new Date(jobData.endTimestamp).getTime();
+      const expectedMinTime = beforeTime + expectedMinutesOffset * 60 * 1000;
+      const expectedMaxTime = afterTime + expectedMinutesOffset * 60 * 1000;
+
+      expect(endTimestamp).toBeGreaterThanOrEqual(expectedMinTime);
+      expect(endTimestamp).toBeLessThanOrEqual(expectedMaxTime);
+    }
+  );
+
   test('Set password access denied', async () => {
     const res = await request(app)
       .post('/admin/super/setpassword')
