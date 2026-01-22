@@ -80,7 +80,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
 
   if (!config.disableConnectionConfiguration) {
     pool.on('connect', (client) => {
-      client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
+      client.query(`SET statement_timeout TO ${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT}`).catch((err) => {
         globalLogger.warn('Failed to set query timeout', err);
       });
       client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
@@ -92,11 +92,13 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   return pool;
 }
 
+const DEFAULT_STATEMENT_TIMEOUT = 60_000;
+
 export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): number | 'DEFAULT' {
   if (config.disableConnectionConfiguration) {
     return 'DEFAULT';
   }
-  return config.queryTimeout ?? 60000;
+  return config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT;
 }
 
 export async function closeDatabase(): Promise<void> {

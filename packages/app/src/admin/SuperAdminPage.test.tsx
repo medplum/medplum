@@ -87,6 +87,32 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
+  test('Reindex form show/hide advanced options', async () => {
+    setup();
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show Advanced Options'));
+    });
+
+    expect(screen.getByLabelText('Resources per batch')).toBeInTheDocument();
+    expect(screen.getByLabelText('Search query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Upsert query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Delay between batches (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Log progress every N resources')).toBeInTheDocument();
+    expect(screen.getByLabelText('End timestamp buffer (minutes)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Max iteration attempts')).toBeInTheDocument();
+
+    expect(screen.getByText('Hide Advanced Options')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Hide Advanced Options'));
+    });
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
+  });
+
   test('Purge resources', async () => {
     setup();
 
