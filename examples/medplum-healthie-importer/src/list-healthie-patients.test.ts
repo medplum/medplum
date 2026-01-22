@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent } from '@medplum/core';
+import type { Bot, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import type { ListHealthiePatientsInput, ListHealthiePatientsOutput } from './list-healthie-patients';
+import type { ListHealthiePatientsInput } from './list-healthie-patients';
 import { handler } from './list-healthie-patients';
 
 type MockResponse = {
@@ -13,13 +14,28 @@ type MockResponse = {
   headers: { get: (name: string) => string | null };
 };
 
+/**
+ * Creates a test event with required BotEvent properties.
+ */
+function createTestEvent(
+  input: ListHealthiePatientsInput,
+  secrets: Record<string, { name: string; valueString: string }>
+): BotEvent<ListHealthiePatientsInput> {
+  return {
+    input,
+    contentType: 'application/json',
+    secrets,
+    bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+  };
+}
+
 describe('list-healthie-patients handler', () => {
   let medplum: MockClient;
   let mockFetch: ReturnType<typeof vi.fn>;
 
   const mockSecrets = {
-    HEALTHIE_API_URL: { valueString: 'https://api.healthie.com/graphql' },
-    HEALTHIE_CLIENT_SECRET: { valueString: 'test-secret' },
+    HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.healthie.com/graphql' },
+    HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
   };
 
   beforeEach(() => {
@@ -41,20 +57,18 @@ describe('list-healthie-patients handler', () => {
   });
 
   test('throws error when HEALTHIE_API_URL is missing', async () => {
-    const event = {
-      input: {},
-      secrets: { HEALTHIE_CLIENT_SECRET: { valueString: 'secret' } },
-    } as BotEvent<ListHealthiePatientsInput>;
-
+    const event = createTestEvent(
+      {},
+      { HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'secret' } }
+    );
     await expect(handler(medplum, event)).rejects.toThrow('HEALTHIE_API_URL must be set');
   });
 
   test('throws error when HEALTHIE_CLIENT_SECRET is missing', async () => {
-    const event = {
-      input: {},
-      secrets: { HEALTHIE_API_URL: { valueString: 'https://api.example.com' } },
-    } as BotEvent<ListHealthiePatientsInput>;
-
+    const event = createTestEvent(
+      {},
+      { HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' } }
+    );
     await expect(handler(medplum, event)).rejects.toThrow('HEALTHIE_CLIENT_SECRET must be set');
   });
 
@@ -74,10 +88,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {},
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({}, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -108,12 +119,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        pagination: { page: 1, pageSize: 2 },
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ pagination: { page: 1, pageSize: 2 } }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -146,12 +152,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        pagination: { page: 2, pageSize: 2 },
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ pagination: { page: 2, pageSize: 2 } }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -184,12 +185,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        maxResults: 2,
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ maxResults: 2 }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -214,12 +210,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        filters: { sinceLastUpdated: '2024-01-10T00:00:00Z' },
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ filters: { sinceLastUpdated: '2024-01-10T00:00:00Z' } }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -244,13 +235,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        filters: { name: 'john' },
-        includeDemographics: true,
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ filters: { name: 'john' }, includeDemographics: true }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -275,13 +260,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        filters: { dateOfBirth: '1990-01-15' },
-        includeDemographics: true,
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ filters: { dateOfBirth: '1990-01-15' }, includeDemographics: true }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -310,12 +289,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {
-        includeDemographics: true,
-      },
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({ includeDemographics: true }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -337,10 +311,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = {
-      input: {},
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({}, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -388,15 +359,231 @@ describe('list-healthie-patients handler', () => {
           })
       );
 
-    const event = {
-      input: {},
-      secrets: mockSecrets,
-    } as BotEvent<ListHealthiePatientsInput>;
+    const event = createTestEvent({}, mockSecrets);
 
     const result = await handler(medplum, event);
 
     expect(result.patients).toHaveLength(75);
     expect(result.pagination.totalCount).toBe(75);
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  describe('includeClinicalUpdateDates', () => {
+    test('includes latestClinicalUpdate when flag is true', async () => {
+      const mockUsers = [{ id: '1', updated_at: '2024-01-01T00:00:00Z' }];
+
+      // Mock the users query
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
+      );
+
+      // Mock the clinical data queries (medications, allergies, forms)
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med1', created_at: '2024-02-01T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { allergy_sensitivities: [{ id: 'allergy1', created_at: '2024-03-01T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { formAnswerGroups: [{ id: 'form1', created_at: '2024-01-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      const event = createTestEvent({ includeClinicalUpdateDates: true }, mockSecrets);
+
+      const result = await handler(medplum, event);
+
+      expect(result.patients).toHaveLength(1);
+      expect(result.patients[0].latestClinicalUpdate).toBe('2024-03-01T00:00:00.000Z');
+    });
+
+    test('filters by sinceLastUpdated on clinical date when includeClinicalUpdateDates is true', async () => {
+      const mockUsers = [
+        { id: '1', updated_at: '2024-01-01T00:00:00Z' },
+        { id: '2', updated_at: '2024-01-02T00:00:00Z' },
+      ];
+
+      // Mock the users query
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
+      );
+
+      // Patient 1: clinical update from Jan 15 (before filter)
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med1', created_at: '2024-01-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      // Patient 2: clinical update from Feb 15 (after filter)
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () =>
+                Promise.resolve({
+                  data: { medications: [{ id: 'med2', created_at: '2024-02-15T00:00:00Z' }] },
+                }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      const event = createTestEvent(
+        {
+          includeClinicalUpdateDates: true,
+          filters: { sinceLastUpdated: '2024-02-01T00:00:00Z' },
+        },
+        mockSecrets
+      );
+
+      const result = await handler(medplum, event);
+
+      // Only patient 2 should be included (clinical update after Feb 1)
+      expect(result.patients).toHaveLength(1);
+      expect(result.patients[0].id).toBe('2');
+    });
+
+    test('excludes patients with no clinical data when filtering by sinceLastUpdated', async () => {
+      const mockUsers = [{ id: '1', updated_at: '2024-01-01T00:00:00Z' }];
+
+      // Mock the users query
+      mockFetch.mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { users: mockUsers } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
+      );
+
+      // No clinical data for patient
+      mockFetch
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { medications: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        )
+        .mockImplementationOnce(
+          (): Promise<MockResponse> =>
+            Promise.resolve({
+              json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+              ok: true,
+              status: 200,
+              headers: { get: () => null },
+            })
+        );
+
+      const event = createTestEvent(
+        {
+          includeClinicalUpdateDates: true,
+          filters: { sinceLastUpdated: '2024-02-01T00:00:00Z' },
+        },
+        mockSecrets
+      );
+
+      const result = await handler(medplum, event);
+
+      // Patient should be excluded (no clinical data)
+      expect(result.patients).toHaveLength(0);
+    });
   });
 });

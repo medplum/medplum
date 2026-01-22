@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import { HealthieClient } from './healthie/client';
+import { fetchLatestClinicalUpdate } from './healthie/clinical-activity';
 
 /**
  * Input interface for the List Healthie Patients bot.
@@ -33,6 +34,14 @@ export interface ListHealthiePatientsInput {
 
   /** Include name, DOB, and updatedAt in response */
   includeDemographics?: boolean;
+
+  /**
+   * Include clinical update dates in response.
+   * When true, fetches the most recent update date from medications, allergies, and form responses
+   * for each patient. This is expensive as it requires 3 additional API calls per patient.
+   * When combined with sinceLastUpdated filter, filters by clinical activity instead of patient record.
+   */
+  includeClinicalUpdateDates?: boolean;
 }
 
 /**
@@ -49,6 +58,11 @@ export interface ListHealthiePatientsEntry {
     lastName?: string;
     dateOfBirth?: string;
   };
+  /**
+   * Latest clinical update across all resource types (if includeClinicalUpdateDates is true).
+   * This is the max of the most recent medication, allergy, and form response update dates.
+   */
+  latestClinicalUpdate?: string;
 }
 
 /**
@@ -87,6 +101,8 @@ interface HealthiePatientWithDemographics {
   last_name?: string;
   dob?: string;
   cursor?: string;
+  /** Latest clinical update date (added after fetching clinical data) */
+  latest_clinical_update?: string;
 }
 
 /**
@@ -208,7 +224,8 @@ async function fetchAllPatientsWithCursor(
  */
 function toOutputEntry(
   patient: HealthiePatientWithDemographics,
-  includeDemographics?: boolean
+  includeDemographics?: boolean,
+  includeClinicalUpdateDates?: boolean
 ): ListHealthiePatientsEntry {
   const entry: ListHealthiePatientsEntry = {
     id: patient.id,
@@ -221,6 +238,10 @@ function toOutputEntry(
       lastName: patient.last_name,
       dateOfBirth: patient.dob,
     };
+  }
+
+  if (includeClinicalUpdateDates && patient.latest_clinical_update) {
+    entry.latestClinicalUpdate = patient.latest_clinical_update;
   }
 
   return entry;
@@ -238,7 +259,7 @@ export async function handler(
   event: BotEvent<ListHealthiePatientsInput>
 ): Promise<ListHealthiePatientsOutput> {
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
-  const { filters, pagination, maxResults, includeDemographics } = event.input;
+  const { filters, pagination, maxResults, includeDemographics, includeClinicalUpdateDates } = event.input;
 
   if (!HEALTHIE_API_URL?.valueString) {
     throw new Error('HEALTHIE_API_URL must be set');
@@ -249,8 +270,42 @@ export async function handler(
 
   const healthie = new HealthieClient(HEALTHIE_API_URL.valueString, HEALTHIE_CLIENT_SECRET.valueString);
 
+  // When includeClinicalUpdateDates is true, we need to:
+  // 1. Fetch patients without sinceLastUpdated filter (we'll filter after getting clinical dates)
+  // 2. Fetch clinical dates for each patient
+  // 3. Apply sinceLastUpdated filter on clinical dates
+  const filtersForPatientFetch = includeClinicalUpdateDates
+    ? { ...filters, sinceLastUpdated: undefined } // Exclude sinceLastUpdated for initial fetch
+    : filters;
+
   // Fetch ALL matching patients using cursor pagination internally
-  const allPatients = await fetchAllPatientsWithCursor(healthie, filters, includeDemographics);
+  let allPatients = await fetchAllPatientsWithCursor(healthie, filtersForPatientFetch, includeDemographics);
+
+  // If includeClinicalUpdateDates is true, fetch clinical dates for each patient
+  if (includeClinicalUpdateDates) {
+    // Fetch clinical dates in parallel (batched to avoid overwhelming the API)
+    const batchSize = 10; // Process 10 patients at a time
+    for (let i = 0; i < allPatients.length; i += batchSize) {
+      const batch = allPatients.slice(i, i + batchSize);
+      await Promise.all(
+        batch.map(async (patient) => {
+          patient.latest_clinical_update = await fetchLatestClinicalUpdate(healthie, patient.id);
+        })
+      );
+    }
+
+    // Apply sinceLastUpdated filter on clinical dates
+    if (filters?.sinceLastUpdated) {
+      const sinceDate = new Date(filters.sinceLastUpdated);
+      allPatients = allPatients.filter((patient) => {
+        if (!patient.latest_clinical_update) {
+          return false; // No clinical data, exclude
+        }
+        const clinicalDate = new Date(patient.latest_clinical_update);
+        return clinicalDate >= sinceDate;
+      });
+    }
+  }
 
   // Apply maxResults cap if specified
   const cappedPatients = maxResults ? allPatients.slice(0, maxResults) : allPatients;
@@ -258,7 +313,7 @@ export async function handler(
   // If no pagination requested, return all results
   if (!pagination) {
     return {
-      patients: cappedPatients.map((p) => toOutputEntry(p, includeDemographics)),
+      patients: cappedPatients.map((p) => toOutputEntry(p, includeDemographics, includeClinicalUpdateDates)),
       pagination: {
         page: 1,
         pageSize: cappedPatients.length,
@@ -276,7 +331,7 @@ export async function handler(
   const totalPages = Math.ceil(cappedPatients.length / pageSize);
 
   return {
-    patients: pagePatients.map((p) => toOutputEntry(p, includeDemographics)),
+    patients: pagePatients.map((p) => toOutputEntry(p, includeDemographics, includeClinicalUpdateDates)),
     pagination: {
       page,
       pageSize,
