@@ -48,6 +48,12 @@ describe('Reindex Worker', () => {
     repo = (await createTestProject({ withRepo: true })).repo;
   });
 
+  beforeEach(() => {
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => {
+      return true;
+    });
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
   });
@@ -341,7 +347,7 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, { maxIterationAttempts: 1 });
 
       const systemRepo = getSystemRepo();
       const reindexJob = new ReindexJob(systemRepo);
