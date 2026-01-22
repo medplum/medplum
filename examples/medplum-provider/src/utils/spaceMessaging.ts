@@ -74,7 +74,6 @@ function extractResourceRefs(result: Resource | Bundle): string[] {
 export async function executeToolCalls(
   medplum: ReturnType<typeof useMedplum>,
   toolCalls: ToolCall[],
-  activeTopicId: string | undefined,
   onFhirRequest: (request: string) => void
 ): Promise<ExecuteToolCallsResult> {
   const messages: Message[] = [];
@@ -99,10 +98,6 @@ export async function executeToolCalls(
           content: JSON.stringify(result),
         };
         messages.push(toolMessage);
-
-        if (activeTopicId) {
-          await saveMessage(medplum, activeTopicId, toolMessage, messages.length - 1);
-        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         const toolErrorMessage: Message = {
@@ -115,11 +110,18 @@ export async function executeToolCalls(
           }),
         };
         messages.push(toolErrorMessage);
-
-        if (activeTopicId) {
-          await saveMessage(medplum, activeTopicId, toolErrorMessage, messages.length - 1);
-        }
       }
+    } else {
+      // Handle unrecognized tool calls - OpenAI requires a response for every tool_call_id
+      const toolErrorMessage: Message = {
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({
+          error: true,
+          message: `Unrecognized tool: ${toolCall.function.name}`,
+        }),
+      };
+      messages.push(toolErrorMessage);
     }
   }
 
@@ -211,19 +213,24 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     };
     currentMessages.push(assistantMessageWithToolCalls);
 
-    if (activeTopicId) {
-      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, currentMessages.length - 1);
-    }
-
-    // Execute all tool calls
+    // Execute all tool calls first (don't save yet)
     const { messages: toolMessages, resourceRefs } = await executeToolCalls(
       medplum,
       initialResponse.toolCalls,
-      activeTopicId,
       setCurrentFhirRequest
     );
     currentMessages.push(...toolMessages);
     allResourceRefs.push(...resourceRefs);
+
+    // Save assistant message with tool_calls AND all tool responses AFTER execution completes
+    // This prevents corrupted state where tool_calls exist without responses
+    if (activeTopicId) {
+      const baseSequence = currentMessages.length - 1 - toolMessages.length;
+      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, baseSequence);
+      for (let i = 0; i < toolMessages.length; i++) {
+        await saveMessage(medplum, activeTopicId, toolMessages[i], baseSequence + 1 + i);
+      }
+    }
 
     // Get summary response after tool execution
     const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);

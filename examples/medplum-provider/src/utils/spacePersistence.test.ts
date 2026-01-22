@@ -213,6 +213,7 @@ describe('spacePersistence', () => {
       expect(medplum.searchResources).toHaveBeenCalledWith('Communication', {
         'part-of': 'Communication/topic-1',
         _sort: '_lastUpdated',
+        _count: '100',
       });
       expect(messages).toEqual([
         {
@@ -244,20 +245,42 @@ describe('spacePersistence', () => {
             },
           ],
         },
+        {
+          resourceType: 'Communication',
+          id: 'comm-2',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'tool',
+                content: '{"result": "success"}',
+                tool_call_id: 'call-1',
+                sequenceNumber: 2,
+              }),
+            },
+          ],
+        },
       ];
 
       vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
 
       const messages = await loadConversationMessages(medplum, 'topic-1');
 
-      expect(messages).toEqual([
-        {
-          role: 'assistant',
-          content: 'I can help',
-          tool_calls: [{ id: 'call-1', type: 'function' }],
-          resources: ['Patient/123'],
-        },
-      ]);
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toEqual({
+        role: 'assistant',
+        content: 'I can help',
+        tool_calls: [{ id: 'call-1', type: 'function' }],
+        tool_call_id: undefined,
+        resources: ['Patient/123'],
+      });
+      expect(messages[1]).toEqual({
+        role: 'tool',
+        content: '{"result": "success"}',
+        tool_call_id: 'call-1',
+        tool_calls: undefined,
+        resources: undefined,
+      });
     });
 
     test('handles messages without sequenceNumber', async () => {
@@ -445,6 +468,252 @@ describe('spacePersistence', () => {
       const topics = await loadRecentTopics(medplum);
 
       expect(topics).toEqual([]);
+    });
+  });
+
+  describe('loadConversationMessages - sorting and repair', () => {
+    test('sorts messages by sequenceNumber', async () => {
+      const mockCommunications: (Communication & { id: string })[] = [
+        {
+          resourceType: 'Communication',
+          id: 'comm-3',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: 'Third',
+                sequenceNumber: 3,
+              }),
+            },
+          ],
+        },
+        {
+          resourceType: 'Communication',
+          id: 'comm-1',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'user',
+                content: 'First',
+                sequenceNumber: 1,
+              }),
+            },
+          ],
+        },
+        {
+          resourceType: 'Communication',
+          id: 'comm-2',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: 'Second',
+                sequenceNumber: 2,
+              }),
+            },
+          ],
+        },
+      ];
+
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
+
+      const messages = await loadConversationMessages(medplum, 'topic-1');
+
+      expect(messages[0].content).toBe('First');
+      expect(messages[1].content).toBe('Second');
+      expect(messages[2].content).toBe('Third');
+    });
+
+    test('repairs corrupted history with missing tool responses', async () => {
+      // Simulates a corrupted conversation where tool_calls exist but tool response is missing
+      const mockCommunications: (Communication & { id: string })[] = [
+        {
+          resourceType: 'Communication',
+          id: 'comm-1',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'user',
+                content: 'Find patient',
+                sequenceNumber: 1,
+              }),
+            },
+          ],
+        },
+        {
+          resourceType: 'Communication',
+          id: 'comm-2',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: null,
+                tool_calls: [{ id: 'call-123', function: { name: 'fhir_request' } }],
+                sequenceNumber: 2,
+              }),
+            },
+          ],
+        },
+        // Note: Missing tool response for call-123
+        {
+          resourceType: 'Communication',
+          id: 'comm-3',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: 'Here is the patient',
+                sequenceNumber: 4,
+              }),
+            },
+          ],
+        },
+      ];
+
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
+
+      const messages = await loadConversationMessages(medplum, 'topic-1');
+
+      // Should have 4 messages: user, assistant with tool_calls, repaired tool response, final assistant
+      expect(messages).toHaveLength(4);
+      expect(messages[0].role).toBe('user');
+      expect(messages[1].role).toBe('assistant');
+      expect(messages[1].tool_calls).toBeDefined();
+      expect(messages[2].role).toBe('tool');
+      expect(messages[2].tool_call_id).toBe('call-123');
+      expect(messages[2].content).toContain('error');
+      expect(messages[3].role).toBe('assistant');
+    });
+
+    test('repairs multiple missing tool responses', async () => {
+      const mockCommunications: (Communication & { id: string })[] = [
+        {
+          resourceType: 'Communication',
+          id: 'comm-1',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: null,
+                tool_calls: [
+                  { id: 'call-1', function: { name: 'fhir_request' } },
+                  { id: 'call-2', function: { name: 'fhir_request' } },
+                ],
+                sequenceNumber: 1,
+              }),
+            },
+          ],
+        },
+        // Only one tool response exists
+        {
+          resourceType: 'Communication',
+          id: 'comm-2',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'tool',
+                content: '{"result": "success"}',
+                tool_call_id: 'call-1',
+                sequenceNumber: 2,
+              }),
+            },
+          ],
+        },
+      ];
+
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
+
+      const messages = await loadConversationMessages(medplum, 'topic-1');
+
+      // Should have 3 messages: assistant with tool_calls, existing tool response, repaired tool response
+      expect(messages).toHaveLength(3);
+      expect(messages[0].tool_calls).toHaveLength(2);
+
+      // Get all tool responses
+      const toolResponses = messages.filter((m) => m.role === 'tool');
+      expect(toolResponses).toHaveLength(2);
+
+      // Both tool_call_ids should have responses
+      const respondedIds = toolResponses.map((m) => m.tool_call_id);
+      expect(respondedIds).toContain('call-1');
+      expect(respondedIds).toContain('call-2');
+
+      // The repaired response should contain error
+      const repairedResponse = toolResponses.find((m) => m.tool_call_id === 'call-2');
+      expect(repairedResponse?.content).toContain('error');
+
+      // The existing response should contain success
+      const existingResponse = toolResponses.find((m) => m.tool_call_id === 'call-1');
+      expect(existingResponse?.content).toContain('success');
+    });
+
+    test('does not add duplicate responses when all tool responses exist', async () => {
+      const mockCommunications: (Communication & { id: string })[] = [
+        {
+          resourceType: 'Communication',
+          id: 'comm-1',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: null,
+                tool_calls: [{ id: 'call-1', function: { name: 'fhir_request' } }],
+                sequenceNumber: 1,
+              }),
+            },
+          ],
+        },
+        {
+          resourceType: 'Communication',
+          id: 'comm-2',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'tool',
+                content: '{"result": "success"}',
+                tool_call_id: 'call-1',
+                sequenceNumber: 2,
+              }),
+            },
+          ],
+        },
+        {
+          resourceType: 'Communication',
+          id: 'comm-3',
+          status: 'completed',
+          payload: [
+            {
+              contentString: JSON.stringify({
+                role: 'assistant',
+                content: 'Done',
+                sequenceNumber: 3,
+              }),
+            },
+          ],
+        },
+      ];
+
+      vi.spyOn(medplum, 'searchResources').mockResolvedValue(mockCommunications as any);
+
+      const messages = await loadConversationMessages(medplum, 'topic-1');
+
+      // Should have exactly 3 messages - no duplicates added
+      expect(messages).toHaveLength(3);
+      expect(messages[0].role).toBe('assistant');
+      expect(messages[1].role).toBe('tool');
+      expect(messages[1].tool_call_id).toBe('call-1');
+      expect(messages[1].content).toBe('{"result": "success"}');
+      expect(messages[2].role).toBe('assistant');
     });
   });
 });
