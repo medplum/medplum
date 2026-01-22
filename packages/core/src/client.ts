@@ -529,6 +529,20 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
+/**
+ * Response stream interface for bot streaming responses.
+ * Compatible with both VMContext and AWS Lambda runtimes.
+ */
+export interface BotResponseStream extends NodeJS.WritableStream {
+  /**
+   * Starts streaming with the given status code and headers.
+   * Must be called before write() to commit the HTTP response.
+   * @param statusCode - HTTP status code (e.g., 200)
+   * @param headers - HTTP headers to send
+   */
+  startStreaming(statusCode: number, headers: Record<string, string>): void;
+}
+
 export interface BotEvent<T = unknown> {
   readonly bot: Reference<Bot>;
   readonly contentType: string;
@@ -539,7 +553,7 @@ export interface BotEvent<T = unknown> {
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Optional response stream when invoked with SSE (Server Side Events) */
-  readonly responseStream?: NodeJS.WritableStream;
+  readonly responseStream?: BotResponseStream;
 }
 
 export interface InviteRequest {

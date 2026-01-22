@@ -97,6 +97,11 @@ exports.handler = async function (medplum, event) {
     `
 export async function handler(medplum, event) {
   const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
   responseStream.write('data: Hello \\n\\n');
   responseStream.write('data: World!\\n\\n');
   responseStream.end();
@@ -106,6 +111,11 @@ export async function handler(medplum, event) {
     `
 exports.handler = async function (medplum, event) {
   const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
   responseStream.write('data: Hello \\n\\n');
   responseStream.write('data: World!\\n\\n');
   responseStream.end();

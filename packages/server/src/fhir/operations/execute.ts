@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { BotResponseStream, WithId } from '@medplum/core';
 import {
   allOk,
   badRequest,
@@ -101,24 +101,21 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
 
   // Check if client accepts streaming
   const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
-  let responseStream: NodeJS.WritableStream | undefined = undefined;
+  let responseStream: BotResponseStream | undefined = undefined;
   if (acceptsStreaming) {
-    // Create a proxy that delays SSE header flushing until first write
-    // This allows bots to return errors with proper HTTP status codes before streaming starts
-    responseStream = {
-      write: (chunk: string): boolean => {
+    // Create a BotResponseStream that wraps the Express response.
+    // Bot must call startStreaming() before write() to commit headers.
+    responseStream = Object.assign(res, {
+      startStreaming: (statusCode: number, headers: Record<string, string>): void => {
         if (!res.headersSent) {
-          res.setHeader('Content-Type', 'text/event-stream');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.setHeader('Connection', 'keep-alive');
+          res.status(statusCode);
+          for (const [key, value] of Object.entries(headers)) {
+            res.setHeader(key, value);
+          }
           res.flushHeaders();
         }
-        return res.write(chunk);
       },
-      end: (): void => {
-        res.end();
-      },
-    } as NodeJS.WritableStream;
+    }) as BotResponseStream;
   }
 
   // Execute the bot
