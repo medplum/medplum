@@ -94,7 +94,7 @@ describe('list-healthie-patients handler', () => {
 
     expect(result.patients).toHaveLength(2);
     expect(result.pagination).toEqual({
-      page: 1,
+      page: 0,
       pageSize: 2,
       totalPages: 1,
       totalCount: 2,
@@ -119,7 +119,7 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = createTestEvent({ pagination: { page: 1, pageSize: 2 } }, mockSecrets);
+    const event = createTestEvent({ pagination: { page: 0, pageSize: 2 } }, mockSecrets);
 
     const result = await handler(medplum, event);
 
@@ -127,7 +127,7 @@ describe('list-healthie-patients handler', () => {
     expect(result.patients[0].id).toBe('1');
     expect(result.patients[1].id).toBe('2');
     expect(result.pagination).toEqual({
-      page: 1,
+      page: 0,
       pageSize: 2,
       totalPages: 2,
       totalCount: 3,
@@ -135,7 +135,7 @@ describe('list-healthie-patients handler', () => {
     });
   });
 
-  test('returns correct page when page > 1', async () => {
+  test('returns correct page when page > 0', async () => {
     const mockUsers = [
       { id: '1', updated_at: '2024-01-01T00:00:00Z' },
       { id: '2', updated_at: '2024-01-02T00:00:00Z' },
@@ -152,14 +152,14 @@ describe('list-healthie-patients handler', () => {
         })
     );
 
-    const event = createTestEvent({ pagination: { page: 2, pageSize: 2 } }, mockSecrets);
+    const event = createTestEvent({ pagination: { page: 1, pageSize: 2 } }, mockSecrets);
 
     const result = await handler(medplum, event);
 
     expect(result.patients).toHaveLength(1);
     expect(result.patients[0].id).toBe('3');
     expect(result.pagination).toEqual({
-      page: 2,
+      page: 1,
       pageSize: 2,
       totalPages: 2,
       totalCount: 3,
@@ -317,7 +317,7 @@ describe('list-healthie-patients handler', () => {
 
     expect(result.patients).toHaveLength(0);
     expect(result.pagination).toEqual({
-      page: 1,
+      page: 0,
       pageSize: 0,
       totalPages: 1,
       totalCount: 0,

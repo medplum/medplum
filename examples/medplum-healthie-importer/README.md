@@ -176,7 +176,7 @@ Content-Type: application/json
     "dateOfBirth": "1990-01-15"
   },
   "pagination": {
-    "page": 1,
+    "page": 0,
     "pageSize": 100
   },
   "maxResults": 500,
@@ -192,7 +192,7 @@ Content-Type: application/json
 | `filters.sinceLastUpdated` | string | ISO 8601 date - filter patients updated since this date | Yes |
 | `filters.name` | string | Partial match on first or last name | Yes |
 | `filters.dateOfBirth` | string | Filter by date of birth (YYYY-MM-DD) | Yes |
-| `pagination.page` | number | 1-indexed page number (default: 1) | Yes |
+| `pagination.page` | number | 0-indexed page number (default: 0) | Yes |
 | `pagination.pageSize` | number | Results per page (default: 100) | Yes |
 | `maxResults` | number | Cap on total results returned | Yes |
 | `includeDemographics` | boolean | Include name, DOB in response | Yes |
@@ -223,7 +223,7 @@ When `includeClinicalUpdateDates` is `true`, the bot fetches the most recent upd
     }
   ],
   "pagination": {
-    "page": 1,
+    "page": 0,
     "pageSize": 100,
     "totalPages": 5,
     "totalCount": 450,
@@ -260,7 +260,7 @@ When `includeClinicalUpdateDates` is `true`, the bot fetches the most recent upd
 ```json
 {
   "pagination": {
-    "page": 1,
+    "page": 0,
     "pageSize": 100
   },
   "includeDemographics": true

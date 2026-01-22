@@ -23,7 +23,7 @@ export interface ListHealthiePatientsInput {
    * If omitted, returns ALL matching results.
    */
   pagination?: {
-    /** 1-indexed page number (default: 1) */
+    /** 0-indexed page number (default: 0) */
     page?: number;
     /** Results per page (default: 100) */
     pageSize?: number;
@@ -69,7 +69,7 @@ export interface ListHealthiePatientsEntry {
  * Pagination metadata in the response.
  */
 export interface ListHealthiePatientsPagination {
-  /** Current page (1-indexed) */
+  /** Current page (0-indexed) */
   page: number;
   /** Results per page */
   pageSize: number;
@@ -315,7 +315,7 @@ export async function handler(
     return {
       patients: cappedPatients.map((p) => toOutputEntry(p, includeDemographics, includeClinicalUpdateDates)),
       pagination: {
-        page: 1,
+        page: 0,
         pageSize: cappedPatients.length,
         totalPages: 1,
         totalCount: cappedPatients.length,
@@ -325,8 +325,8 @@ export async function handler(
   }
 
   // Apply page/offset pagination on top of full results
-  const { page = 1, pageSize = 100 } = pagination;
-  const startIndex = (page - 1) * pageSize;
+  const { page = 0, pageSize = 100 } = pagination;
+  const startIndex = page * pageSize;
   const pagePatients = cappedPatients.slice(startIndex, startIndex + pageSize);
   const totalPages = Math.ceil(cappedPatients.length / pageSize);
 
@@ -337,7 +337,7 @@ export async function handler(
       pageSize,
       totalPages,
       totalCount: cappedPatients.length,
-      hasNextPage: page < totalPages,
+      hasNextPage: page < totalPages - 1,
     },
   };
 }
