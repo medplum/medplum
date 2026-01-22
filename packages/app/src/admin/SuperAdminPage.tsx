@@ -328,9 +328,6 @@ function ReindexForm({ onSubmit }: { readonly onSubmit: (formData: Record<string
 
         {showAdvanced && (
           <Stack gap="sm">
-            <Text size="sm" fw={500}>
-              Advanced Options
-            </Text>
             <Grid>
               <Grid.Col span={6}>
                 <NumberInput

@@ -179,7 +179,6 @@ superAdminRouter.post(
         return;
     }
 
-    // Build reindex job options
     const opts: ReindexJobOptions = {
       searchFilter,
       maxResourceVersion,
@@ -196,7 +195,7 @@ superAdminRouter.post(
 
     // construct a representation of the inputs/parameters for the reindex job
     // for human consumption in `AsyncJob.request`
-    const queryForUrl: Record<string, string> = {
+    const queryForUrl: Record<string, string> = removeEmptyStrings({
       resourceType: req.body.resourceType,
       filter: req.body.filter,
       reindexType,
@@ -208,7 +207,7 @@ superAdminRouter.post(
       progressLogThreshold: opts.progressLogThreshold?.toString() ?? '',
       endTimestampBufferMinutes: opts.endTimestampBufferMinutes?.toString() ?? '',
       maxIterationAttempts: opts.maxIterationAttempts?.toString() ?? '',
-    };
+    });
 
     const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     // replace the search, if any, with queryForUrl
@@ -556,4 +555,14 @@ function requireAsync(req: Request): void {
   if (req.header('Prefer') !== 'respond-async') {
     throw new OperationOutcomeError(badRequest('Operation requires "Prefer: respond-async"'));
   }
+}
+
+function removeEmptyStrings(record: Record<string, string>): Record<string, string> {
+  const cleaned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (value !== '') {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
 }
