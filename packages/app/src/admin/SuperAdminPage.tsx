@@ -296,7 +296,7 @@ function MaxResourceVersionInput(): JSX.Element {
   );
 }
 
-function ReindexForm({ onSubmit }: { onSubmit: (formData: Record<string, string>) => void }): JSX.Element {
+function ReindexForm({ onSubmit }: { readonly onSubmit: (formData: Record<string, string>) => void }): JSX.Element {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   function handleSubmit(formData: Record<string, string>): void {
