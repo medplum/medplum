@@ -16,6 +16,9 @@ type MockResponse = {
 
 /**
  * Creates a test event with required BotEvent properties.
+ * @param input - The input for the bot event.
+ * @param secrets - The secrets for the bot event.
+ * @returns A BotEvent with all required properties.
  */
 function createTestEvent(
   input: ListHealthiePatientsInput,

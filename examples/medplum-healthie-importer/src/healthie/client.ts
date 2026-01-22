@@ -63,9 +63,12 @@ export class HealthieClient {
   /**
    * Sleeps for the specified duration.
    * @param ms - Duration in milliseconds.
+   * @returns A promise that resolves after the specified duration.
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
   }
 
   /**

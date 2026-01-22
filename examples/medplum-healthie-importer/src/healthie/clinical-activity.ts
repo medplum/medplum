@@ -30,7 +30,7 @@ export async function fetchMostRecentMedicationDate(
   `;
 
   const result = await healthie.query<{
-    medications: Array<{ id: string; created_at: string; updated_at?: string }>;
+    medications: { id: string; created_at: string; updated_at?: string }[];
   }>(query, { patientId });
 
   const medications = result.medications ?? [];
@@ -80,7 +80,7 @@ export async function fetchMostRecentAllergyDate(
   `;
 
   const result = await healthie.query<{
-    allergy_sensitivities: Array<{ id: string; created_at: string; updated_at?: string }>;
+    allergy_sensitivities: { id: string; created_at: string; updated_at?: string }[];
   }>(query, { patientId });
 
   const allergies = result.allergy_sensitivities ?? [];
@@ -126,7 +126,7 @@ export async function fetchMostRecentFormAnswerGroupDate(
   `;
 
   const result = await healthie.query<{
-    formAnswerGroups: Array<{ id: string; created_at: string; updated_at?: string }>;
+    formAnswerGroups: { id: string; created_at: string; updated_at?: string }[];
   }>(query, { userId: patientId });
 
   const formGroups = result.formAnswerGroups ?? [];

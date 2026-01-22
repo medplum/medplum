@@ -221,6 +221,10 @@ async function fetchAllPatientsWithCursor(
 
 /**
  * Converts internal patient data to output format.
+ * @param patient - The internal patient data.
+ * @param includeDemographics - Whether to include demographics in the output.
+ * @param includeClinicalUpdateDates - Whether to include clinical update dates in the output.
+ * @returns The formatted output entry.
  */
 function toOutputEntry(
   patient: HealthiePatientWithDemographics,
