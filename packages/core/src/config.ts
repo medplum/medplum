@@ -69,6 +69,8 @@ export interface MedplumSourceInfraConfig {
   hostedZoneName?: ValueOrExternalSecret<string>;
   wafLogGroupName?: ValueOrExternalSecret<string>;
   wafLogGroupCreate?: ValueOrExternalSecret<boolean>;
+  mtlsDomainName?: ValueOrExternalSecret<string>;
+  mtlsSslCertArn?: ValueOrExternalSecret<string>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -172,6 +174,8 @@ export interface MedplumInfraConfig {
   hostedZoneName?: string;
   wafLogGroupName?: string;
   wafLogGroupCreate?: boolean;
+  mtlsDomainName?: string;
+  mtlsSslCertArn?: string;
   additionalContainers?: {
     name: string;
     image: string;
