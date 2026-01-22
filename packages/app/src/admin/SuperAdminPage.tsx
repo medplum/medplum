@@ -335,7 +335,7 @@ function ReindexForm({ onSubmit }: { readonly onSubmit: (formData: Record<string
                   label="Resources per batch"
                   description={<span>default: 500</span>}
                   placeholder="500"
-                  min={1}
+                  min={20}
                   max={1000}
                 />
               </Grid.Col>

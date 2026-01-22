@@ -19,6 +19,7 @@ import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../da
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
+import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
@@ -359,7 +360,7 @@ export class ReindexJob {
       return { count: newCount, durationMs: elapsedTime };
     } else {
       const elapsedTime = Date.now() - jobData.startTime;
-      this.logger.info('Reindex completed', { resourceType, count, durationMs: elapsedTime });
+      this.logger.info('Reindex completed', { resourceType, count: newCount, durationMs: elapsedTime });
       return { count: newCount, durationMs: elapsedTime };
     }
   }
@@ -469,6 +470,10 @@ function shouldLogProgress(result: ReindexResult, batchSize: number, progressLog
 }
 
 function searchRequestForNextPage(jobData: ReindexJobData, batchSize: number): SearchRequest {
+  if (batchSize < minCursorBasedSearchPageSize) {
+    throw new Error('batcheSize must be at least ' + minCursorBasedSearchPageSize);
+  }
+
   const { resourceTypes, cursor, endTimestamp, searchFilter } = jobData;
   const resourceType = resourceTypes[0];
   const searchRequest: SearchRequest = {

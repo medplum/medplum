@@ -25,6 +25,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
@@ -106,8 +107,8 @@ superAdminRouter.post(
       .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
     body('batchSize')
       .optional()
-      .isInt({ min: 1, max: 1_000 })
-      .withMessage('batchSize must be an integer from 1 to 1000'),
+      .isInt({ min: minCursorBasedSearchPageSize, max: 1_000 })
+      .withMessage(`batchSize must be an integer from ${minCursorBasedSearchPageSize} to 1000`),
     body('searchStatementTimeout')
       .optional()
       .isInt({ min: 1_000 })
