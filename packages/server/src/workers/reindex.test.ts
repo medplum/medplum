@@ -35,8 +35,8 @@ import {
   REINDEX_WORKER_VERSION,
   ReindexJob,
 } from './reindex';
-import { queueRegistry } from './utils';
 import * as workerUtils from './utils';
+import { queueRegistry } from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;

@@ -13,9 +13,13 @@ const maxResourceVersion = 2;
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
   prepareJobData(asyncJob: WithId<AsyncJob>) {
-    return prepareReindexJobData(getResourceTypes().filter((rt) => rt !== 'Binary'), asyncJob.id, {
-      maxResourceVersion,
-    });
+    return prepareReindexJobData(
+      getResourceTypes().filter((rt) => rt !== 'Binary'),
+      asyncJob.id,
+      {
+        maxResourceVersion,
+      }
+    );
   },
   run: async (repo, job, jobData) => {
     return new ReindexJob(repo).execute(job, jobData);
