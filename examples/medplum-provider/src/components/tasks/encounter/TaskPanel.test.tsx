@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient } from '@medplum/mock';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import * as reactRouter from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { TaskPanel } from './TaskPanel';
+import type { WithId } from '@medplum/core';
 import type { Questionnaire, QuestionnaireResponse, ServiceRequest, Task } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import * as reactRouter from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { TaskPanel } from './TaskPanel';
 
 describe('TaskPanel', () => {
   let medplum: MockClient;
@@ -23,7 +24,11 @@ describe('TaskPanel', () => {
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy as any);
   });
 
-  const setup = async (task: Task, onUpdateTask: (task: Task) => void, enabled = true): Promise<void> => {
+  const setup = async (
+    task: WithId<Task>,
+    onUpdateTask: (task: WithId<Task>) => void,
+    enabled = true
+  ): Promise<void> => {
     await act(async () => {
       render(
         <MemoryRouter initialEntries={['/Patient/123/Encounter/456']}>
@@ -47,7 +52,7 @@ describe('TaskPanel', () => {
     });
   };
 
-  const mockTask: Task = {
+  const mockTask: WithId<Task> = {
     resourceType: 'Task',
     id: 'task-123',
     status: 'in-progress',
@@ -66,7 +71,7 @@ describe('TaskPanel', () => {
     };
     await medplum.createResource(questionnaire);
 
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       focus: { reference: `Questionnaire/${questionnaireId}` },
       input: [{ type: { text: 'Questionnaire' }, valueReference: { reference: `Questionnaire/${questionnaireId}` } }],
@@ -81,7 +86,7 @@ describe('TaskPanel', () => {
   });
 
   test('renders TaskServiceRequest when focus is ServiceRequest', async () => {
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       focus: { reference: 'ServiceRequest/1234' },
       for: { reference: 'Patient/123' },
@@ -178,7 +183,7 @@ describe('TaskPanel', () => {
     };
     await medplum.createResource(existingResponse);
 
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       focus: { reference: 'Questionnaire/q-123' },
       output: [
@@ -204,7 +209,7 @@ describe('TaskPanel', () => {
     };
     await medplum.createResource(questionnaire);
 
-    const task: Task = {
+    const task: WithId<Task> = {
       ...mockTask,
       id: 'task-new-qr',
       focus: { reference: 'Questionnaire/q-new' },
@@ -253,7 +258,7 @@ describe('TaskPanel', () => {
   });
 
   test('handles task without focus reference', async () => {
-    const taskWithoutFocus: Task = {
+    const taskWithoutFocus: WithId<Task> = {
       resourceType: 'Task',
       id: 'task-no-focus',
       status: 'draft',
@@ -268,7 +273,7 @@ describe('TaskPanel', () => {
   });
 
   test('handles task with undefined focus reference', async () => {
-    const taskWithUndefinedFocus: Task = {
+    const taskWithUndefinedFocus: WithId<Task> = {
       resourceType: 'Task',
       id: 'task-undefined-focus',
       status: 'draft',

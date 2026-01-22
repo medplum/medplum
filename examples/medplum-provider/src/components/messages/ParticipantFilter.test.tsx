@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import type { Practitioner, Patient, Reference } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
+import type { WithId } from '@medplum/core';
+import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ParticipantFilter } from './ParticipantFilter';
-import type { WithId } from '@medplum/core';
 
 const mockPractitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -25,18 +26,18 @@ const mockPatient: Patient = {
 const mockOnFilterChange = vi.fn();
 
 describe('ParticipantFilter', () => {
-  let medplum: MockClient;
-
   beforeEach(async () => {
-    medplum = new MockClient();
     vi.clearAllMocks();
-
-    medplum.setProfile(mockPractitioner);
   });
 
   const setup = async (
+    medplum: MockClient = new MockClient(),
     selectedParticipants: Reference<Patient | Practitioner>[] = []
-  ): Promise<ReturnType<typeof userEvent.setup>> => {
+  ): Promise<UserEvent> => {
+    if (medplum.getProfile() === DrAliceSmith) {
+      medplum.setProfile(mockPractitioner);
+    }
+
     const user = userEvent.setup();
     await act(async () => {
       render(
@@ -57,13 +58,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('button shows light variant when no filter is active', async () => {
-    await setup([]);
+    await setup(undefined, []);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('data-variant', 'light');
   });
 
   test('button shows filled variant when filter is active', async () => {
-    await setup([{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
+    await setup(undefined, [{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
     const button = screen.getByRole('button');
     expect(button).toHaveAttribute('data-variant', 'filled');
   });
@@ -92,31 +93,27 @@ describe('ParticipantFilter', () => {
   });
 
   test('current user is not selected by default when no filter active', async () => {
-    const user = await setup([]);
+    const user = await setup(undefined, []);
 
     const button = screen.getByRole('button');
     await user.click(button);
 
-    await waitFor(() => {
-      const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes[0]).not.toBeChecked();
-    });
+    const checkboxes = await screen.findAllByRole('checkbox');
+    expect(checkboxes[0]).not.toBeChecked();
   });
 
   test('current user is selected when in selectedParticipants', async () => {
-    const user = await setup([{ reference: 'Practitioner/practitioner-123', display: 'John Doe' }]);
+    const user = await setup(undefined, [{ reference: 'Practitioner/practitioner-123', display: 'John Doe' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
 
-    await waitFor(() => {
-      const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes[0]).toBeChecked();
-    });
+    const checkboxes = await screen.findAllByRole('checkbox');
+    expect(checkboxes[0]).toBeChecked();
   });
 
   test('calls onFilterChange when participant is selected', async () => {
-    const user = await setup([]);
+    const user = await setup(undefined, []);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -136,7 +133,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('calls onFilterChange when participant is deselected', async () => {
-    const user = await setup([{ reference: 'Practitioner/practitioner-123', display: 'John Doe' }]);
+    const user = await setup(undefined, [{ reference: 'Practitioner/practitioner-123', display: 'John Doe' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -179,12 +176,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('searches for participants when typing in search input', async () => {
+    const medplum = new MockClient();
     const searchSpy = vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -206,12 +204,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('displays search results', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -229,12 +228,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('filters out current user from search results', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPractitioner as WithId<Practitioner> }],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -253,12 +253,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('shows "No results found" when search returns empty', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -276,12 +277,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('clears search input when clear button is clicked', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -305,12 +307,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('selecting a search result calls onFilterChange', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
     });
-    const user = await setup([]);
+    const user = await setup(medplum, []);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -335,7 +338,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('shows additional participants from props', async () => {
-    const user = await setup([{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
+    const user = await setup(undefined, [{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -346,7 +349,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('multiple participants can be selected', async () => {
-    const user = await setup([
+    const user = await setup(undefined, [
       { reference: 'Practitioner/practitioner-123', display: 'John Doe' },
       { reference: 'Patient/patient-456', display: 'Jane Smith' },
     ]);
@@ -354,15 +357,13 @@ describe('ParticipantFilter', () => {
     const button = screen.getByRole('button');
     await user.click(button);
 
-    await waitFor(() => {
-      const checkboxes = screen.getAllByRole('checkbox');
-      expect(checkboxes[0]).toBeChecked();
-      expect(checkboxes[1]).toBeChecked();
-    });
+    const checkboxes = await screen.findAllByRole('checkbox');
+    expect(checkboxes[0]).toBeChecked();
+    expect(checkboxes[1]).toBeChecked();
   });
 
   test('removes participant when X button is clicked', async () => {
-    const user = await setup([{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
+    const user = await setup(undefined, [{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -380,12 +381,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('clears search when clear button is clicked', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -429,9 +431,10 @@ describe('ParticipantFilter', () => {
   });
 
   test('handles no profile (logged out state)', async () => {
+    const medplum = new MockClient();
     medplum.setProfile(undefined as unknown as Practitioner);
 
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -444,7 +447,7 @@ describe('ParticipantFilter', () => {
   });
 
   test('shows participant reference when display is not available', async () => {
-    const user = await setup([{ reference: 'Patient/unknown-patient' }]);
+    const user = await setup(undefined, [{ reference: 'Patient/unknown-patient' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -456,8 +459,9 @@ describe('ParticipantFilter', () => {
 
   test('handles search error gracefully', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockRejectedValue(new Error('Search failed'));
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -477,12 +481,13 @@ describe('ParticipantFilter', () => {
   });
 
   test('handles search results with undefined resources', async () => {
+    const medplum = new MockClient();
     vi.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [{ resource: mockPatient as WithId<Patient> }, { resource: undefined as unknown as WithId<Patient> }, {}],
     });
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);
@@ -500,8 +505,9 @@ describe('ParticipantFilter', () => {
   });
 
   test('handles empty search query', async () => {
+    const medplum = new MockClient();
     const searchSpy = vi.spyOn(medplum, 'search');
-    const user = await setup();
+    const user = await setup(medplum);
 
     const button = screen.getByRole('button');
     await user.click(button);

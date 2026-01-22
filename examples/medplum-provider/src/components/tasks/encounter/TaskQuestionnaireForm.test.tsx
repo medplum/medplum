@@ -1,8 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type {
   Encounter,
   Practitioner,
@@ -12,10 +11,12 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
+import { MedplumProvider } from '@medplum/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 
 const mockQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
@@ -91,7 +92,7 @@ const mockTaskWithoutQuestionnaire: Task = {
   input: undefined,
 };
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
