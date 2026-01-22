@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AllergyIntolerance, Patient, Reference } from '@medplum/fhirtypes';
-import type { HealthieClient } from './client';
+import type { HealthieClient, WithCursor } from './client';
 import { HEALTHIE_ALLERGY_CODE_SYSTEM, HEALTHIE_ALLERGY_ID_SYSTEM, HEALTHIE_REACTION_CODE_SYSTEM } from './constants';
 
 /**
@@ -37,7 +37,7 @@ export interface HealthieAllergySensitivity {
 }
 
 /**
- * Fetches allergies/sensitivities for a specific patient.
+ * Fetches allergies/sensitivities for a specific patient using cursor pagination.
  * @param healthie - The Healthie client instance to use for API calls.
  * @param patientId - The ID of the patient.
  * @returns An array of allergy/sensitivity data.
@@ -46,32 +46,69 @@ export async function fetchAllergySensitivities(
   healthie: HealthieClient,
   patientId: string
 ): Promise<HealthieAllergySensitivity[]> {
+  type HealthieAllergyWithCursor = WithCursor<HealthieAllergySensitivity>;
+  const allAllergies: HealthieAllergySensitivity[] = [];
+  let cursor: string | undefined = undefined;
+  let loopCount = 0;
+  const pageSize = 50;
+
   const query = `
-    query fetchAllergySensitivities($patientId: ID!) {
-      user(id: $patientId) {
-        allergy_sensitivities {
-          id
-          category
-          category_type
-          created_at
-          mirrored
-          name
-          onset_date
-          reaction
-          reaction_type
-          requires_consolidation
-          severity
-          status
-          updated_at
-        }
+    query fetchAllergySensitivities($patientId: ID!, $after: Cursor, $pageSize: Int) {
+      allergy_sensitivities(
+        patient_id: $patientId,
+        should_paginate: true,
+        after: $after,
+        page_size: $pageSize
+      ) {
+        id
+        category
+        category_type
+        created_at
+        mirrored
+        name
+        onset_date
+        reaction
+        reaction_type
+        requires_consolidation
+        severity
+        status
+        updated_at
+        cursor
       }
     }
   `;
 
-  const result = await healthie.query<{ user: { allergy_sensitivities: HealthieAllergySensitivity[] } }>(query, {
-    patientId,
-  });
-  return result.user?.allergy_sensitivities ?? [];
+  while (true) {
+    const result: { allergy_sensitivities: HealthieAllergyWithCursor[] } = await healthie.query<{
+      allergy_sensitivities: HealthieAllergyWithCursor[];
+    }>(query, {
+      patientId,
+      after: cursor,
+      pageSize,
+    });
+
+    const allergies: HealthieAllergyWithCursor[] = result.allergy_sensitivities ?? [];
+    allAllergies.push(...allergies);
+
+    // Check if we've reached the end
+    if (allergies.length < pageSize) {
+      break;
+    }
+
+    // Get cursor for next page
+    cursor = allergies.at(-1)?.cursor;
+    if (!cursor) {
+      break;
+    }
+
+    // Prevent infinite loop
+    loopCount++;
+    if (loopCount > 10000) {
+      throw new Error('Exiting fetchAllergySensitivities due to too many pages');
+    }
+  }
+
+  return allAllergies;
 }
 
 /**

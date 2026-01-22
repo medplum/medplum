@@ -4,10 +4,138 @@ import {
   convertHealthieFormAnswerGroupToFhir,
   createSlug,
   convertHealthieTimestampToIso,
+  fetchHealthieFormAnswerGroups,
 } from './questionnaire-response';
 import type { HealthieFormAnswerGroup } from './questionnaire-response';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
 import type { Reference, Patient } from '@medplum/fhirtypes';
+import { HealthieClient } from './client';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+type MockResponse = {
+  json: () => Promise<any>;
+  ok: boolean;
+  status: number;
+  headers: { get: (name: string) => string | null };
+};
+
+describe('fetchHealthieFormAnswerGroups', () => {
+  let healthieClient: HealthieClient;
+  const mockBaseUrl = 'https://api.example.com/graphql';
+  const mockClientSecret = 'test-secret';
+  let mockFetch: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    healthieClient = new HealthieClient(mockBaseUrl, mockClientSecret);
+    mockFetch = vi.fn().mockImplementation(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
+    );
+    global.fetch = mockFetch as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  test('returns form answer groups for a patient', async () => {
+    const mockForms = [
+      {
+        id: 'form1',
+        user_id: 'patient123',
+        name: 'Test Form',
+        created_at: '2024-01-01 10:00:00 -0700',
+        finished: true,
+        form_answers: [],
+      },
+    ];
+
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: mockForms } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
+    );
+
+    const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);
+    expect(result).toEqual(mockForms);
+  });
+
+  test('returns empty array when no forms found', async () => {
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { formAnswerGroups: [] } }),
+          ok: true,
+          status: 200,
+          headers: { get: () => null },
+        })
+    );
+
+    const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);
+    expect(result).toEqual([]);
+  });
+
+  test('handles cursor pagination across multiple pages', async () => {
+    // First page: 100 forms with cursor (full page)
+    const page1Forms = Array.from({ length: 100 }, (_, i) => ({
+      id: `form${i + 1}`,
+      user_id: 'patient123',
+      name: `Form ${i + 1}`,
+      created_at: '2024-01-01 10:00:00 -0700',
+      finished: true,
+      form_answers: [],
+      cursor: `cursor_${i + 1}`,
+    }));
+
+    // Second page: 30 forms (less than page size, indicates end)
+    const page2Forms = Array.from({ length: 30 }, (_, i) => ({
+      id: `form${i + 101}`,
+      user_id: 'patient123',
+      name: `Form ${i + 101}`,
+      created_at: '2024-01-01 10:00:00 -0700',
+      finished: true,
+      form_answers: [],
+    }));
+
+    mockFetch
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: page1Forms } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
+      )
+      .mockImplementationOnce(
+        (): Promise<MockResponse> =>
+          Promise.resolve({
+            json: () => Promise.resolve({ data: { formAnswerGroups: page2Forms } }),
+            ok: true,
+            status: 200,
+            headers: { get: () => null },
+          })
+      );
+
+    const result = await fetchHealthieFormAnswerGroups('patient123', healthieClient);
+
+    expect(result).toHaveLength(130);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+
+    // Verify second call uses cursor from first page
+    const secondCallBody = JSON.parse(mockFetch.mock.calls[1][1].body);
+    expect(secondCallBody.variables.after).toBe('cursor_100');
+  });
+});
 
 // Test data for different mod_types
 const COVID_SCREENING_FORM: HealthieFormAnswerGroup = {

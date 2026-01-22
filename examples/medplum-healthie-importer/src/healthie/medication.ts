@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedicationRequest, Patient, Quantity, Reference } from '@medplum/fhirtypes';
-import type { HealthieClient } from './client';
+import type { HealthieClient, WithCursor } from './client';
 import {
   HEALTHIE_MEDICATION_CODE_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
@@ -47,15 +47,26 @@ export interface HealthieMedicationType {
 }
 
 /**
- * Fetches medications for a specific patient.
+ * Fetches medications for a specific patient using cursor pagination.
  * @param healthie - The Healthie client instance to use for API calls.
  * @param patientId - The ID of the patient.
  * @returns An array of medication data.
  */
 export async function fetchMedications(healthie: HealthieClient, patientId: string): Promise<HealthieMedicationType[]> {
+  type HealthieMedicationWithCursor = WithCursor<HealthieMedicationType>;
+  const allMedications: HealthieMedicationType[] = [];
+  let cursor: string | undefined = undefined;
+  let loopCount = 0;
+  const pageSize = 50;
+
   const query = `
-    query {
-      medications(patient_id: "${patientId}") {
+    query fetchMedications($patientId: ID!, $after: Cursor, $pageSize: Int) {
+      medications(
+        patient_id: $patientId,
+        should_paginate: true,
+        after: $after,
+        page_size: $pageSize
+      ) {
         id
         name
         active
@@ -72,12 +83,42 @@ export async function fetchMedications(healthie: HealthieClient, patientId: stri
         route
         updated_at
         user_id
+        cursor
       }
     }
   `;
 
-  const result = await healthie.query<{ medications: HealthieMedicationType[] }>(query);
-  return result.medications ?? [];
+  while (true) {
+    const result: { medications: HealthieMedicationWithCursor[] } = await healthie.query<{
+      medications: HealthieMedicationWithCursor[];
+    }>(query, {
+      patientId,
+      after: cursor,
+      pageSize,
+    });
+
+    const medications: HealthieMedicationWithCursor[] = result.medications ?? [];
+    allMedications.push(...medications);
+
+    // Check if we've reached the end
+    if (medications.length < pageSize) {
+      break;
+    }
+
+    // Get cursor for next page
+    cursor = medications.at(-1)?.cursor;
+    if (!cursor) {
+      break;
+    }
+
+    // Prevent infinite loop
+    loopCount++;
+    if (loopCount > 10000) {
+      throw new Error('Exiting fetchMedications due to too many pages');
+    }
+  }
+
+  return allMedications;
 }
 
 /**
