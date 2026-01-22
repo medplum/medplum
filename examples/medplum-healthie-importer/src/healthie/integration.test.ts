@@ -45,30 +45,34 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
     const clientSecret = HEALTHIE_CLIENT_SECRET as string;
     healthieClient = new HealthieClient(apiUrl, clientSecret);
 
-    // Fetch a small number of users to verify connectivity
+    // Fetch users to verify connectivity and find one with clinical data
     const query = `
       query fetchUsers {
-        users(page_size: 5) {
+        users(page_size: 20) {
           id
           first_name
           last_name
           updated_at
+          medications_count
         }
       }
     `;
 
     const result = await healthieClient.query<{
-      users: { id: string; first_name?: string; last_name?: string; updated_at: string }[];
+      users: { id: string; first_name?: string; last_name?: string; updated_at: string; medications_count?: number }[];
     }>(query);
 
     expect(result.users).toBeDefined();
     expect(Array.isArray(result.users)).toBe(true);
+    expect(result.users.length).toBeGreaterThan(0);
 
-    // Store a patient ID for subsequent tests
-    if (result.users.length > 0) {
-      testPatientId = result.users[0].id;
-      console.log(`Using test patient ID: ${testPatientId}`);
-    }
+    // Try to find a patient with medications, otherwise use the first one
+    const patientWithMeds = result.users.find((u) => (u.medications_count ?? 0) > 0);
+    testPatientId = patientWithMeds?.id ?? result.users[0].id;
+    console.log(
+      `Using test patient ID: ${testPatientId}` +
+        (patientWithMeds ? ` (has ${patientWithMeds.medications_count} medications)` : ' (no medications)')
+    );
   });
 
   test('can fetch medications for a patient', async () => {
@@ -87,6 +91,9 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       const med = medications[0];
       expect(med.id).toBeDefined();
       expect(typeof med.id).toBe('string');
+      expect(med.created_at).toBeDefined();
+      // Log details to help verify data looks correct
+      console.log(`  First medication: id=${med.id}, name=${med.name}, active=${med.active}`);
     }
   });
 
@@ -106,6 +113,9 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       const allergy = allergies[0];
       expect(allergy.id).toBeDefined();
       expect(typeof allergy.id).toBe('string');
+      expect(allergy.created_at).toBeDefined();
+      // Log details to help verify data looks correct
+      console.log(`  First allergy: id=${allergy.id}, name=${allergy.name}, category=${allergy.category}`);
     }
   });
 
@@ -125,6 +135,16 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       const form = forms[0];
       expect(form.id).toBeDefined();
       expect(typeof form.id).toBe('string');
+      expect(form.created_at).toBeDefined();
+      // Log details to help verify data looks correct
+      console.log(`  First form: id=${form.id}, name=${form.name}, finished=${form.finished}`);
+
+      // Verify form_answers structure if present
+      if (form.form_answers && form.form_answers.length > 0) {
+        const answer = form.form_answers[0];
+        expect(answer.id).toBeDefined();
+        console.log(`  First form has ${form.form_answers.length} answers`);
+      }
     }
   });
 
