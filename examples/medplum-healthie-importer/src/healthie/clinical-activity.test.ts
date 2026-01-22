@@ -98,15 +98,20 @@ describe('clinical-activity', () => {
 
   describe('fetchMostRecentAllergyDate', () => {
     test('returns updated_at when available', async () => {
+      // Allergies are queried through User.last_updated_allergy
       mockFetch.mockImplementationOnce(
         (): Promise<MockResponse> =>
           Promise.resolve({
             json: () =>
               Promise.resolve({
                 data: {
-                  allergy_sensitivities: [
-                    { id: 'allergy1', created_at: '2024-01-01T00:00:00Z', updated_at: '2024-02-01T00:00:00Z' },
-                  ],
+                  user: {
+                    last_updated_allergy: {
+                      id: 'allergy1',
+                      created_at: '2024-01-01T00:00:00Z',
+                      updated_at: '2024-02-01T00:00:00Z',
+                    },
+                  },
                 },
               }),
             ok: true,
@@ -123,7 +128,7 @@ describe('clinical-activity', () => {
       mockFetch.mockImplementationOnce(
         (): Promise<MockResponse> =>
           Promise.resolve({
-            json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+            json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
             ok: true,
             status: 200,
             headers: { get: () => null },
@@ -196,7 +201,9 @@ describe('clinical-activity', () => {
               json: () =>
                 Promise.resolve({
                   data: {
-                    allergy_sensitivities: [{ id: 'allergy1', created_at: '2024-02-15T00:00:00Z' }],
+                    user: {
+                      last_updated_allergy: { id: 'allergy1', created_at: '2024-02-15T00:00:00Z' },
+                    },
                   },
                 }),
               ok: true,
@@ -239,7 +246,7 @@ describe('clinical-activity', () => {
         .mockImplementationOnce(
           (): Promise<MockResponse> =>
             Promise.resolve({
-              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
               ok: true,
               status: 200,
               headers: { get: () => null },
@@ -278,7 +285,7 @@ describe('clinical-activity', () => {
         .mockImplementationOnce(
           (): Promise<MockResponse> =>
             Promise.resolve({
-              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
               ok: true,
               status: 200,
               headers: { get: () => null },

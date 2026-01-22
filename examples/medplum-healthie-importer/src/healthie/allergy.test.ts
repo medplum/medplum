@@ -57,10 +57,11 @@ describe('fetchAllergySensitivities', () => {
       },
     ];
 
+    // Allergies are queried through the User object
     mockFetch.mockImplementationOnce(
       (): Promise<MockResponse> =>
         Promise.resolve({
-          json: () => Promise.resolve({ data: { allergy_sensitivities: mockAllergies } }),
+          json: () => Promise.resolve({ data: { user: { allergy_sensitivities: mockAllergies } } }),
           ok: true,
           status: 200,
         })
@@ -74,7 +75,7 @@ describe('fetchAllergySensitivities', () => {
     mockFetch.mockImplementationOnce(
       (): Promise<MockResponse> =>
         Promise.resolve({
-          json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+          json: () => Promise.resolve({ data: { user: { allergy_sensitivities: [] } } }),
           ok: true,
           status: 200,
         })
@@ -84,52 +85,18 @@ describe('fetchAllergySensitivities', () => {
     expect(result).toEqual([]);
   });
 
-  test('handles cursor pagination across multiple pages', async () => {
-    // First page: 50 allergies with cursor (full page)
-    const page1Allergies = Array.from({ length: 50 }, (_, i) => ({
-      id: `allergy${i + 1}`,
-      category: 'allergy',
-      created_at: '2024-01-01T00:00:00Z',
-      mirrored: false,
-      name: `Allergy ${i + 1}`,
-      cursor: `cursor_${i + 1}`,
-    }));
-
-    // Second page: 15 allergies (less than page size, indicates end)
-    const page2Allergies = Array.from({ length: 15 }, (_, i) => ({
-      id: `allergy${i + 51}`,
-      category: 'allergy',
-      created_at: '2024-01-01T00:00:00Z',
-      mirrored: false,
-      name: `Allergy ${i + 51}`,
-    }));
-
-    mockFetch
-      .mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { allergy_sensitivities: page1Allergies } }),
-            ok: true,
-            status: 200,
-          })
-      )
-      .mockImplementationOnce(
-        (): Promise<MockResponse> =>
-          Promise.resolve({
-            json: () => Promise.resolve({ data: { allergy_sensitivities: page2Allergies } }),
-            ok: true,
-            status: 200,
-          })
-      );
+  test('returns empty array when user is null', async () => {
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: null } }),
+          ok: true,
+          status: 200,
+        })
+    );
 
     const result = await fetchAllergySensitivities(healthieClient, 'patient123');
-
-    expect(result).toHaveLength(65);
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-
-    // Verify second call uses cursor from first page
-    const secondCallBody = JSON.parse(mockFetch.mock.calls[1][1].body);
-    expect(secondCallBody.variables.after).toBe('cursor_50');
+    expect(result).toEqual([]);
   });
 });
 

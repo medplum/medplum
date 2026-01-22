@@ -54,10 +54,7 @@ export async function fetchMostRecentMedicationDate(
 
 /**
  * Fetches the most recent allergy update date for a patient.
- * Uses page_size=1 to minimize data transfer.
- * Note: Healthie allergy_sensitivities API may not support order_by, so this returns
- * the first allergy in default order. For accurate "most recent" tracking, consider
- * fetching all allergies and finding the max date client-side if precision is critical.
+ * Uses the User.last_updated_allergy field which returns the most recently updated allergy.
  * @param healthie - The Healthie client instance.
  * @param patientId - The Healthie patient ID.
  * @returns The most recent update date (ISO 8601) or undefined if no allergies.
@@ -66,38 +63,31 @@ export async function fetchMostRecentAllergyDate(
   healthie: HealthieClient,
   patientId: string
 ): Promise<string | undefined> {
+  // allergy_sensitivities must be queried through User, not directly.
+  // User.last_updated_allergy returns the most recently updated allergy.
   const query = `
     query fetchMostRecentAllergy($patientId: ID!) {
-      allergy_sensitivities(
-        patient_id: $patientId,
-        page_size: 1
-      ) {
-        id
-        created_at
-        updated_at
+      user(id: $patientId) {
+        last_updated_allergy {
+          id
+          created_at
+          updated_at
+        }
       }
     }
   `;
 
   const result = await healthie.query<{
-    allergy_sensitivities: { id: string; created_at: string; updated_at?: string }[];
+    user: { last_updated_allergy: { id: string; created_at: string; updated_at?: string } | null } | null;
   }>(query, { patientId });
 
-  const allergies = result.allergy_sensitivities ?? [];
-  if (allergies.length === 0) {
+  const allergy = result.user?.last_updated_allergy;
+  if (!allergy) {
     return undefined;
   }
 
-  let mostRecent: Date | undefined;
-  for (const allergy of allergies) {
-    const dateStr = allergy.updated_at ?? allergy.created_at;
-    const date = new Date(dateStr);
-    if (!mostRecent || date > mostRecent) {
-      mostRecent = date;
-    }
-  }
-
-  return mostRecent?.toISOString();
+  const dateStr = allergy.updated_at ?? allergy.created_at;
+  return new Date(dateStr).toISOString();
 }
 
 /**

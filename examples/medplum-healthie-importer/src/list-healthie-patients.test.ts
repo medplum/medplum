@@ -405,7 +405,7 @@ describe('list-healthie-patients handler', () => {
             Promise.resolve({
               json: () =>
                 Promise.resolve({
-                  data: { allergy_sensitivities: [{ id: 'allergy1', created_at: '2024-03-01T00:00:00Z' }] },
+                  data: { user: { last_updated_allergy: { id: 'allergy1', created_at: '2024-03-01T00:00:00Z' } } },
                 }),
               ok: true,
               status: 200,
@@ -467,7 +467,7 @@ describe('list-healthie-patients handler', () => {
         .mockImplementationOnce(
           (): Promise<MockResponse> =>
             Promise.resolve({
-              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
               ok: true,
               status: 200,
               headers: { get: () => null },
@@ -500,7 +500,7 @@ describe('list-healthie-patients handler', () => {
         .mockImplementationOnce(
           (): Promise<MockResponse> =>
             Promise.resolve({
-              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
               ok: true,
               status: 200,
               headers: { get: () => null },
@@ -559,7 +559,7 @@ describe('list-healthie-patients handler', () => {
         .mockImplementationOnce(
           (): Promise<MockResponse> =>
             Promise.resolve({
-              json: () => Promise.resolve({ data: { allergy_sensitivities: [] } }),
+              json: () => Promise.resolve({ data: { user: { last_updated_allergy: null } } }),
               ok: true,
               status: 200,
               headers: { get: () => null },
