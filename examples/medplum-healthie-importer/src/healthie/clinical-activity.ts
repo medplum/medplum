@@ -5,6 +5,9 @@ import type { HealthieClient } from './client';
 /**
  * Fetches the most recent medication update date for a patient.
  * Uses page_size=1 to minimize data transfer.
+ * Note: Healthie medications API doesn't support order_by, so this returns the first
+ * medication in default order. For accurate "most recent" tracking, consider fetching
+ * all medications and finding the max date client-side if precision is critical.
  * @param healthie - The Healthie client instance.
  * @param patientId - The Healthie patient ID.
  * @returns The most recent update date (ISO 8601) or undefined if no medications.
@@ -52,6 +55,9 @@ export async function fetchMostRecentMedicationDate(
 /**
  * Fetches the most recent allergy update date for a patient.
  * Uses page_size=1 to minimize data transfer.
+ * Note: Healthie allergy_sensitivities API may not support order_by, so this returns
+ * the first allergy in default order. For accurate "most recent" tracking, consider
+ * fetching all allergies and finding the max date client-side if precision is critical.
  * @param healthie - The Healthie client instance.
  * @param patientId - The Healthie patient ID.
  * @returns The most recent update date (ISO 8601) or undefined if no allergies.
@@ -96,7 +102,7 @@ export async function fetchMostRecentAllergyDate(
 
 /**
  * Fetches the most recent form answer group date for a patient.
- * Uses page_size=1 to minimize data transfer.
+ * Uses order_by: UPDATED_AT_DESC and page_size=1 to get the most recently updated form.
  * @param healthie - The Healthie client instance.
  * @param patientId - The Healthie patient ID.
  * @returns The most recent update date (ISO 8601) or undefined if no form responses.
@@ -109,6 +115,7 @@ export async function fetchMostRecentFormAnswerGroupDate(
     query fetchMostRecentFormAnswerGroup($userId: String!) {
       formAnswerGroups(
         user_id: $userId,
+        order_by: UPDATED_AT_DESC,
         page_size: 1
       ) {
         id
