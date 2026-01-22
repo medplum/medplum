@@ -76,6 +76,12 @@ import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-c
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
+/**
+ * Defines the minimum page size for cursor-based pagination that accommodates resources with the same lastUpdated. This value
+ * is relevant primarily to the deprecated v1 cursor format, but is enforced for v2 cursors as well.
+ */
+export const minCursorBasedSearchPageSize = 20;
+
 const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
 
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
@@ -671,7 +677,7 @@ function getSearchLinks(
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
-    searchRequest.count >= 20 &&
+    searchRequest.count >= minCursorBasedSearchPageSize &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
