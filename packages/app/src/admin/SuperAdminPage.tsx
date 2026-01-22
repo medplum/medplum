@@ -335,18 +335,18 @@ function ReindexForm({ onSubmit }: { onSubmit: (formData: Record<string, string>
               <Grid.Col span={6}>
                 <NumberInput
                   name="batchSize"
-                  label="Batch Size"
-                  description="Resources per batch (default: 500)"
+                  label="Resources per batch"
+                  description={<span>default: 500</span>}
                   placeholder="500"
                   min={1}
-                  max={10000}
+                  max={1000}
                 />
               </Grid.Col>
               <Grid.Col span={6}>
                 <NumberInput
                   name="searchStatementTimeout"
-                  label="Search Timeout (ms)"
-                  description="Search query timeout (default: 3600000)"
+                  label="Search query timeout (ms)"
+                  description={<span>default: 3,600,000 (1 hour)</span>}
                   placeholder="3600000"
                   min={1000}
                 />
@@ -354,17 +354,17 @@ function ReindexForm({ onSubmit }: { onSubmit: (formData: Record<string, string>
               <Grid.Col span={6}>
                 <NumberInput
                   name="upsertStatementTimeout"
-                  label="Upsert Timeout (ms)"
-                  description="Upsert query timeout (default: server config)"
-                  placeholder=""
+                  label="Upsert query timeout (ms)"
+                  description={<span>default: server `database.queryTimeout`</span>}
+                  placeholder="database.queryTimeout"
                   min={1000}
                 />
               </Grid.Col>
               <Grid.Col span={6}>
                 <NumberInput
                   name="delayBetweenBatches"
-                  label="Delay Between Batches (ms)"
-                  description="Throttle to reduce DB load (default: 0)"
+                  label="Delay between batches (ms)"
+                  description={<span>default: 0</span>}
                   placeholder="0"
                   min={0}
                   max={60000}
@@ -373,14 +373,8 @@ function ReindexForm({ onSubmit }: { onSubmit: (formData: Record<string, string>
               <Grid.Col span={6}>
                 <NumberInput
                   name="progressLogThreshold"
-                  label="Progress Log Threshold"
-                  description={
-                    <span>
-                      Log progress every N resources
-                      <br />
-                      (default: 50000)
-                    </span>
-                  }
+                  label="Log progress every N resources"
+                  description={<span>default: 50,000</span>}
                   placeholder="50000"
                   min={1}
                 />
@@ -388,16 +382,20 @@ function ReindexForm({ onSubmit }: { onSubmit: (formData: Record<string, string>
               <Grid.Col span={6}>
                 <NumberInput
                   name="endTimestampBufferMinutes"
-                  label="End Timestamp Buffer (minutes)"
-                  description={
-                    <span>
-                      Search end timestamp buffer
-                      <br />
-                      (default: 5)
-                    </span>
-                  }
+                  label="End timestamp buffer (minutes)"
+                  description={<span>default: 5</span>}
                   placeholder="5"
                   min={1}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="maxIterationAttempts"
+                  label="Max iteration attempts"
+                  description={<span>default: 3</span>}
+                  placeholder="3"
+                  min={1}
+                  max={20}
                 />
               </Grid.Col>
             </Grid>

@@ -372,6 +372,180 @@ describe('Reindex Worker', () => {
       ]);
     }));
 
+  test('Retries iteration on error when maxIterationAttempts > 1', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 3,
+      });
+
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      jest
+        .spyOn(systemRepo, 'search')
+        .mockRejectedValueOnce(new Error('Transient error 1'))
+        .mockRejectedValueOnce(new Error('Transient error 2'));
+
+      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await reindexJob.execute(undefined, jobData);
+      systemLogger.level = originalLevel;
+
+      // Should have attempted 3 times, with first 2 failing and 3rd succeeding
+      expect(processIterationSpy).toHaveBeenCalledTimes(3);
+
+      // Should have logged warnings for the first 2 attempts
+      expect(loggerWarnSpy).toHaveBeenCalledTimes(2);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 1,
+          maxIterationAttempts: 3,
+        })
+      );
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 2,
+          maxIterationAttempts: 3,
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      loggerWarnSpy.mockRestore();
+    }));
+
+  test('Fails after exhausting maxIterationAttempts', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, {
+        maxIterationAttempts: 2,
+      });
+
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      jest
+        .spyOn(systemRepo, 'search')
+        .mockRejectedValueOnce(new Error('Persistent error'))
+        .mockRejectedValueOnce(new Error('Persistent error'));
+
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await reindexJob.execute(undefined, jobData);
+      systemLogger.level = originalLevel;
+
+      // Should have attempted exactly maxIterationAttempts times
+      expect(processIterationSpy).toHaveBeenCalledTimes(2);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('error');
+      expect(asyncJob.output?.parameter).toEqual([
+        {
+          name: 'result',
+          part: expect.arrayContaining([
+            { name: 'resourceType', valueCode: 'ValueSet' },
+            { name: 'error', valueString: 'Persistent error' },
+          ]),
+        },
+      ]);
+    }));
+
+  test('Retries on thrown exceptions from processIteration', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 3,
+      });
+
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+
+      // Mock processIteration to throw an exception directly (not return an error result)
+      const processIterationSpy = jest
+        .spyOn(reindexJob, 'processIteration')
+        .mockRejectedValueOnce(new Error('Thrown exception 1'))
+        .mockRejectedValueOnce(new Error('Thrown exception 2'))
+        .mockResolvedValueOnce({ count: 0, durationMs: 100 });
+
+      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      await reindexJob.execute(undefined, jobData);
+
+      // Should have attempted 3 times, with first 2 throwing and 3rd succeeding
+      expect(processIterationSpy).toHaveBeenCalledTimes(3);
+
+      // Should have logged warnings for the first 2 attempts
+      expect(loggerWarnSpy).toHaveBeenCalledTimes(2);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 1,
+          maxIterationAttempts: 3,
+          error: 'Thrown exception 1',
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      loggerWarnSpy.mockRestore();
+    }));
+
+  test('Rethrows after exhausting maxIterationAttempts with thrown exceptions', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 2,
+      });
+
+      const systemRepo = getSystemRepo();
+      const reindexJob = new ReindexJob(systemRepo);
+
+      // Mock processIteration to always throw
+      const processIterationSpy = jest
+        .spyOn(reindexJob, 'processIteration')
+        .mockRejectedValue(new Error('Persistent thrown exception'));
+
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Persistent thrown exception');
+      systemLogger.level = originalLevel;
+
+      // Should have attempted exactly maxIterationAttempts times
+      expect(processIterationSpy).toHaveBeenCalledTimes(2);
+    }));
+
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({

@@ -56,6 +56,7 @@ export interface ReindexJobData extends PostDeployJobData {
   readonly upsertStatementTimeout?: number;
   readonly delayBetweenBatches?: number;
   readonly progressLogThreshold?: number;
+  readonly maxIterationAttempts?: number;
 }
 
 export type ReindexResult =
@@ -74,6 +75,7 @@ const defaultSettings: ReindexJobSettings = {
   searchStatementTimeout: 3_600_000, // 1 hour
   upsertStatementTimeout: 'DEFAULT',
   delayBetweenBatches: 0,
+  maxIterationAttempts: 3,
 };
 
 // Version that can be bumped when the worker code changes, typically for bug fixes,
@@ -127,6 +129,7 @@ interface ReindexJobSettings {
   readonly searchStatementTimeout: number;
   readonly upsertStatementTimeout: number | 'DEFAULT';
   readonly delayBetweenBatches: number;
+  readonly maxIterationAttempts: number;
 }
 
 export class ReindexJob {
@@ -146,6 +149,7 @@ export class ReindexJob {
       searchStatementTimeout: jobData.searchStatementTimeout ?? defaultSettings.searchStatementTimeout,
       upsertStatementTimeout: jobData.upsertStatementTimeout ?? getDefaultStatementTimeout(getConfig()),
       delayBetweenBatches: jobData.delayBetweenBatches ?? defaultSettings.delayBetweenBatches,
+      maxIterationAttempts: jobData.maxIterationAttempts ?? defaultSettings.maxIterationAttempts,
     };
   }
 
@@ -221,7 +225,7 @@ export class ReindexJob {
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
       await this.checkForQueueClosing(job, asyncJob, nextJobData);
-      const result = await this.processIteration(this.systemRepo, nextJobData);
+      const result = await this.processIterationWithRetry(nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
 
@@ -246,6 +250,38 @@ export class ReindexJob {
       }
     }
     return 'finished';
+  }
+
+  /**
+   * Attempt processIteration up to maxIterationAttempts times before moving on or failing.
+   * @param jobData - The current job data.
+   * @returns The result of reindexing the next page of results.
+   */
+  private async processIterationWithRetry(jobData: ReindexJobData): Promise<ReindexResult> {
+    const { maxIterationAttempts } = this.settings;
+    for (let attempt = 1; attempt <= maxIterationAttempts; attempt++) {
+      let error: unknown;
+      try {
+        const result = await this.processIteration(this.systemRepo, jobData);
+        // Return result if successful or on the last attempt
+        if (!('err' in result) || attempt === maxIterationAttempts) {
+          return result;
+        }
+        error = result.err;
+      } catch (err: unknown) {
+        if (attempt === maxIterationAttempts) {
+          throw err;
+        }
+        error = err;
+      }
+      this.logger.warn('Reindex iteration failed, retrying', {
+        resourceType: jobData.resourceTypes[0],
+        attempt,
+        maxIterationAttempts,
+        error: normalizeErrorString(error),
+      });
+    }
+    throw new Error('maxIterationAttempts must be at least 1');
   }
 
   /**
@@ -514,6 +550,7 @@ export interface ReindexJobOptions {
   delayBetweenBatches?: number;
   progressLogThreshold?: number;
   endTimestampBufferMinutes?: number;
+  maxIterationAttempts?: number;
 }
 
 export async function addReindexJob(
@@ -549,6 +586,7 @@ export function prepareReindexJobData(
     upsertStatementTimeout: options?.upsertStatementTimeout,
     delayBetweenBatches: options?.delayBetweenBatches,
     progressLogThreshold: options?.progressLogThreshold,
+    maxIterationAttempts: options?.maxIterationAttempts,
     results: Object.create(null),
     requestId: ctx?.requestId,
     traceId: ctx?.traceId,

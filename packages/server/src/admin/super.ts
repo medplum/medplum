@@ -128,6 +128,10 @@ superAdminRouter.post(
       .optional()
       .isInt({ min: 1 })
       .withMessage('endTimestampBufferMinutes must be a positive integer'),
+    body('maxIterationAttempts')
+      .optional()
+      .isInt({ min: 1, max: 20 })
+      .withMessage('maxIterationAttempts must be an integer from 1 to 20'),
   ],
   async (req: Request, res: Response) => {
     requireSuperAdmin();
@@ -187,6 +191,7 @@ superAdminRouter.post(
       endTimestampBufferMinutes: req.body.endTimestampBufferMinutes
         ? Number(req.body.endTimestampBufferMinutes)
         : undefined,
+      maxIterationAttempts: req.body.maxIterationAttempts ? Number(req.body.maxIterationAttempts) : undefined,
     };
 
     // construct a representation of the inputs/parameters for the reindex job
@@ -202,6 +207,7 @@ superAdminRouter.post(
       delayBetweenBatches: opts.delayBetweenBatches?.toString() ?? '',
       progressLogThreshold: opts.progressLogThreshold?.toString() ?? '',
       endTimestampBufferMinutes: opts.endTimestampBufferMinutes?.toString() ?? '',
+      maxIterationAttempts: opts.maxIterationAttempts?.toString() ?? '',
     };
 
     const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
