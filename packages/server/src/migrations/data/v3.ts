@@ -12,8 +12,9 @@ export const migration: ReindexPostDeployMigration = {
     return prepareReindexJobData(
       getResourceTypes().filter((rt) => rt !== 'Binary'),
       asyncJob.id,
-      undefined,
-      maxResourceVersion
+      {
+        maxResourceVersion,
+      }
     );
   },
   run: async (repo, job, jobData) => {
