@@ -69,6 +69,15 @@ export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJ
 
 const ReindexQueueName = 'ReindexQueue';
 
+interface ReindexJobSettings {
+  readonly batchSize: number;
+  readonly progressLogThreshold: number;
+  readonly searchStatementTimeout: number;
+  readonly upsertStatementTimeout: number | 'DEFAULT';
+  readonly delayBetweenBatches: number;
+  readonly maxIterationAttempts: number;
+}
+
 const defaultSettings: ReindexJobSettings = {
   batchSize: 500,
   progressLogThreshold: 50_000,
@@ -122,15 +131,6 @@ export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
 }
 
 export type ReindexExecuteResult = 'finished' | 'ineligible' | 'interrupted';
-
-interface ReindexJobSettings {
-  readonly batchSize: number;
-  readonly progressLogThreshold: number;
-  readonly searchStatementTimeout: number;
-  readonly upsertStatementTimeout: number | 'DEFAULT';
-  readonly delayBetweenBatches: number;
-  readonly maxIterationAttempts: number;
-}
 
 export class ReindexJob {
   private readonly systemRepo: Repository;
@@ -323,7 +323,11 @@ export class ReindexJob {
           await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(searchStatementTimeout)]);
           bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
         } finally {
-          await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(upsertStatementTimeout)]);
+          if (upsertStatementTimeout === 'DEFAULT') {
+            await conn.query(`RESET statement_timeout`);
+          } else {
+            await conn.query(`SELECT set_config('statement_timeout', $1, true)`, [String(upsertStatementTimeout)]);
+          }
         }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);

@@ -567,6 +567,26 @@ describe('Reindex Worker', () => {
       await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('maxIterationAttempts must be at least 1');
     }));
 
+  test('Handles DEFAULT upsertStatementTimeout without failing', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['MedicinalProductManufactured'], asyncJob.id);
+      // Simulate config.disableConnectionConfiguration being true by setting upsertStatementTimeout to 'DEFAULT'
+      (jobData as any).upsertStatementTimeout = 'DEFAULT';
+
+      const reindexJob = new ReindexJob();
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+    }));
+
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({
