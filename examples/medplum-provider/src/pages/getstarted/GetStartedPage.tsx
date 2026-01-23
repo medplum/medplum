@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  // Accordion, // Used in commented-out Clinical Standards section
   ActionIcon,
-  // Alert, // Used in commented-out Clinical Standards section
   Box,
   Button,
   Container,
@@ -12,7 +10,6 @@ import {
   Group,
   List,
   Paper,
-  // Progress, // Used in commented-out Clinical Standards section
   Stack,
   Text,
   Title,
@@ -22,56 +19,29 @@ import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
 import { showNotification } from '@mantine/notifications';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import {
-  // IconAlertCircle, // Used in commented-out Clinical Standards section
   IconApps,
   IconArrowUpRight,
   IconBook,
   IconBrandDiscord,
   IconBuilding,
-  // IconCheck, // Used in commented-out Clinical Standards section
-  // IconCircleCheck, // Used in commented-out Clinical Standards section
   IconDatabase,
   IconDownload,
   IconExternalLink,
   IconFileText,
   IconHelpCircle,
   IconMail,
-  // IconShieldCheck, // Used in commented-out Clinical Standards section
-  // IconTag, // Used in commented-out Clinical Standards section
   IconUser,
 } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import type { JSX } from 'react';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
-// Used in commented-out Clinical Standards section
-// import { useUSCoreProfiles } from '../../hooks/useUSCoreProfiles';
 import { showErrorNotification } from '../../utils/notifications';
-// import type { InstallationProgress } from '../../utils/uscore-installer';
-// import { installUSCoreProfiles } from '../../utils/uscore-installer';
 
 export function GetStartedPage(): JSX.Element {
   const medplum = useMedplum();
-  // Used in commented-out Clinical Standards section
-  // const { isUSCoreInstalled, refresh: refreshProfiles } = useUSCoreProfiles();
-  // const [installProgress, setInstallProgress] = useState<InstallationProgress | null>(null);
   const [importingPatient, setImportingPatient] = useState(false);
   const [importingVisit, setImportingVisit] = useState(false);
-
-  // Used in commented-out Clinical Standards section
-  // const handleInstall = useCallback(async () => {
-  //   setInstallProgress({
-  //     status: 'checking',
-  //     message: 'Starting installation...',
-  //     progress: 0,
-  //   });
-  //
-  //   const result = await installUSCoreProfiles(medplum, setInstallProgress);
-  //
-  //   if (result.success) {
-  //     await refreshProfiles();
-  //   }
-  // }, [medplum, refreshProfiles]);
 
   const handleImportPatient = useCallback(async () => {
     setImportingPatient(true);
@@ -115,10 +85,6 @@ export function GetStartedPage(): JSX.Element {
       setImportingVisit(false);
     }
   }, [medplum]);
-
-  // Used in commented-out Clinical Standards section
-  // const isInstalling = Boolean(installProgress && !['success', 'error', 'already-installed', 'idle'].includes(installProgress.status));
-  // const isInstalled = isUSCoreInstalled || installProgress?.status === 'success';
 
   return (
     <Box
@@ -171,241 +137,6 @@ export function GetStartedPage(): JSX.Element {
         </Box>
 
         <Stack gap="6rem">
-          {/* Clinical Standards Installation Card - Commented out for now
-        <Box>
-          <Group mb="xl" gap="sm" align="center">
-            <ActionIcon
-              size={48}
-              radius="xl"
-              variant="light"
-              style={{
-                backgroundColor: 'var(--mantine-color-yellow-8)',
-                border: 'none',
-              }}
-            >
-              <IconShieldCheck size={24} color="white" />
-            </ActionIcon>
-            <Stack gap={0} style={{ flex: 1 }}>
-              <Text fw={800} size="xl">
-                Install Clinical Standards & Terminology
-              </Text>
-              <Text size="sm" c="gray.7">
-                Add US Core profiles, code systems, and terminology sets for US healthcare compliance.
-              </Text>
-            </Stack>
-          </Group>
-          <Paper radius="md" withBorder p="lg" bg="var(--mantine-color-body)" shadow="sm">
-            <Box>
-              <Accordion
-                variant="unstyled"
-                radius="sm"
-                chevronIconSize={20}
-                styles={{ label: { padding: 0 }, control: { padding: 0 }, content: { padding: 0, paddingTop: 8 } }}
-              >
-                <Accordion.Item value="us-core">
-                  <Accordion.Control p="0">
-                    <Group gap="md" align="stretch" wrap="nowrap" p="0">
-                      <Box style={{ display: 'flex', alignItems: 'center' }}>
-                        <IconShieldCheck size={24} color="var(--mantine-color-blue-6)" />
-                      </Box>
-                      <Stack gap={0} style={{ flex: 1 }}>
-                        <Text size="lg" fw={600} c="blue">
-                          US Core Implementation
-                        </Text>
-                        <Text size="sm" c="gray.7">
-                          Required to conform to regulations for patient data across US healthcare.
-                        </Text>
-                      </Stack>
-                    </Group>
-                  </Accordion.Control>
-                  <Accordion.Panel py="md">
-                    <Text size="sm" fw={700} mb="lg" pl={40}>
-                      Profiles Included:
-                    </Text>
-                    <Grid gutter="xs" pl={40}>
-                      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-                        <List size="sm" spacing={1} c="gray.7" icon={<IconCheck size={16} color="teal" />} center>
-                          <List.Item>Patient</List.Item>
-                          <List.Item>Practitioner</List.Item>
-                          <List.Item>Organization</List.Item>
-                          <List.Item>Encounter</List.Item>
-                          <List.Item>Condition (Diagnosis)</List.Item>
-                          <List.Item>Condition (Problems)</List.Item>
-                          <List.Item>Observation (Clinical)</List.Item>
-                          <List.Item>Observation (Lab)</List.Item>
-                          <List.Item>Observation (Screening)</List.Item>
-                        </List>
-                      </Grid.Col>
-                      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-                        <List size="sm" spacing={1} c="gray.7" icon={<IconCheck size={16} color="teal" />} center>
-                          <List.Item>Medication</List.Item>
-                          <List.Item>MedicationRequest</List.Item>
-                          <List.Item>AllergyIntolerance</List.Item>
-                          <List.Item>Immunization</List.Item>
-                          <List.Item>Procedure</List.Item>
-                          <List.Item>DocumentReference</List.Item>
-                          <List.Item>DiagnosticReport (Note)</List.Item>
-                          <List.Item>DiagnosticReport (Lab)</List.Item>
-                          <List.Item>ServiceRequest</List.Item>
-                        </List>
-                      </Grid.Col>
-                      <Grid.Col span={{ base: 12, sm: 6, md: 4 }}>
-                        <List size="sm" spacing={1} c="gray.7" icon={<IconCheck size={16} color="teal" />} center>
-                          <List.Item>CarePlan</List.Item>
-                          <List.Item>CareTeam</List.Item>
-                          <List.Item>Goal</List.Item>
-                          <List.Item>Device</List.Item>
-                          <List.Item>Coverage</List.Item>
-                          <List.Item>Location</List.Item>
-                          <List.Item>RelatedPerson</List.Item>
-                        </List>
-                      </Grid.Col>
-                    </Grid>
-                    <Text size="sm" c="gray.7" mt="lg" pl={40}>
-                      Plus extensions for Race, Ethnicity, Birth Sex, Gender Identity, and Tribal Affiliation
-                    </Text>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              </Accordion>
-            </Box>
-
-            <Divider my="lg" />
-
-            <Box mb="md">
-              <Accordion
-                variant="unstyled"
-                radius="sm"
-                chevronIconSize={20}
-                styles={{ label: { padding: 0 }, control: { padding: 0 }, content: { padding: 0, paddingTop: 8 } }}
-              >
-                <Accordion.Item value="code-systems">
-                  <Accordion.Control p="0">
-                    <Group gap="md" align="stretch" wrap="nowrap" p="0">
-                      <Box style={{ display: 'flex', alignItems: 'center' }}>
-                        <IconTag size={24} color="var(--mantine-color-blue-6)" />
-                      </Box>
-                      <Stack gap={0} style={{ flex: 1 }}>
-                        <Text size="lg" fw={600} c="blue">
-                          Code Systems & Terminology
-                        </Text>
-                        <Text size="sm" c="gray.7">
-                          Standardized code sets for billing, diagnosis, and clinical documentation.
-                        </Text>
-                      </Stack>
-                    </Group>
-                  </Accordion.Control>
-                  <Accordion.Panel py="md">
-                    <Text size="sm" fw={700} mb="lg" pl={40}>
-                      Code Systems Included:
-                    </Text>
-                    <Grid gutter="xs" pl={40}>
-                      <Grid.Col span={{ base: 12, sm: 6 }}>
-                        <Stack gap="sm">
-                          <Box>
-                            <Group gap="xs" align="center" wrap="nowrap">
-                              <IconCheck size={16} color="teal" />
-                              <Text fw={600} size="sm">CPT Codes</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7" pl={24}>Current Procedural Terminology (AMA)</Text>
-                          </Box>
-                          <Box>
-                            <Group gap="xs" align="center" wrap="nowrap">
-                              <IconCheck size={16} color="teal" />
-                              <Text fw={600} size="sm">ICD-10-CM</Text>
-                            </Group>
-                            <Text size="sm" c="gray.7" pl={24}>International Classification of Diseases, 10th Revision, Clinical Modification</Text>
-                          </Box>
-                        </Stack>
-                      </Grid.Col>
-                      <Grid.Col span={{ base: 12, sm: 6 }}>
-                        <List size="sm" spacing={1} c="gray.7" icon={<IconCheck size={16} color="teal" />} center>
-                          <List.Item>USPS State Codes</List.Item>
-                          <List.Item>OMB Race Categories</List.Item>
-                          <List.Item>OMB Ethnicity Categories</List.Item>
-                          <List.Item>Birth Sex Codes</List.Item>
-                        </List>
-                      </Grid.Col>
-                    </Grid>
-                  </Accordion.Panel>
-                </Accordion.Item>
-              </Accordion>
-            </Box>
-
-            <Divider my="lg" />
-
-            {isInstalled ? (
-              <Alert icon={<IconCircleCheck size={18} />} color="green" variant="light">
-                <Text size="sm">
-                  <strong>Clinical standards are installed!</strong><br />
-                  US Core profiles, CPT codes, ICD-10-CM, and terminology sets are ready to use.
-                </Text>
-              </Alert>
-            ) : (
-              <Stack gap="sm">
-                {installProgress && installProgress.status !== 'idle' && (() => {
-                  let progressColor = 'blue';
-                  if (installProgress.status === 'error') {
-                    progressColor = 'red';
-                  } else if (installProgress.status === 'success') {
-                    progressColor = 'green';
-                  }
-                  return (
-                    <Box>
-                      <Group justify="space-between" mb="xs">
-                        <Text size="sm" fw={500}>
-                          {installProgress.message}
-                        </Text>
-                      </Group>
-                      <Progress
-                        value={installProgress.progress}
-                        size="md"
-                        radius="xl"
-                        color={progressColor}
-                        animated={isInstalling}
-                      />
-                    </Box>
-                  );
-                })()}
-
-                {installProgress?.status === 'error' && (
-                  <Alert icon={<IconAlertCircle size={18} />} color="red" variant="light">
-                    <Text size="sm">
-                      <strong>Installation failed:</strong> {installProgress.error}
-                    </Text>
-                  </Alert>
-                )}
-
-                {(!installProgress || installProgress.status === 'error') && (
-                  <Button
-                    leftSection={<IconDownload size={18} />}
-                    onClick={handleInstall}
-                    loading={isInstalling}
-                    disabled={isInstalling}
-                    fullWidth
-                  >
-                    Install Clinical Standards
-                  </Button>
-                )}
-
-                {installProgress?.status === 'success' && (
-                  <Alert icon={<IconCircleCheck size={18} />} color="green" variant="light">
-                    <Text size="sm">
-                      <strong>Installation complete!</strong> {installProgress.loadedResources} resources added, including US Core profiles, CPT codes, ICD-10-CM, and terminology sets.
-                    </Text>
-                  </Alert>
-                )}
-
-                {installProgress?.status === 'already-installed' && (
-                  <Alert icon={<IconCircleCheck size={18} />} color="green" variant="light">
-                    <Text size="sm">Clinical standards are already installed.</Text>
-                  </Alert>
-                )}
-              </Stack>
-            )}
-          </Paper>
-        </Box>
-        */}
-
           {/* Sample Data */}
           <Box>
             <Group mb="xl" gap="sm" align="center">
