@@ -10,6 +10,10 @@ import classes from './NavbarNotificationLink.module.css';
 
 /**
  * Hook to get the notification count for a resource type.
+ * @param resourceType - The FHIR resource type to query.
+ * @param countCriteria - The search criteria for counting resources.
+ * @param subscriptionCriteria - The subscription criteria to listen for updates.
+ * @returns The current notification count.
  */
 export function useNotificationCount(
   resourceType: ResourceType,
@@ -52,6 +56,8 @@ export interface NavbarLinkWithCountProps {
 /**
  * A component that renders a navbar link icon with a text count displayed on the far right.
  * Uses a flex wrapper to position the count after the label.
+ * @param props - The component props.
+ * @returns The rendered component.
  */
 export function NavbarLinkWithCount(props: NavbarLinkWithCountProps): JSX.Element {
   const count = useNotificationCount(props.resourceType, props.countCriteria, props.subscriptionCriteria);
@@ -78,6 +84,8 @@ export interface NavbarLinkWithBadgeProps {
 /**
  * A component that renders a navbar link icon with a badge indicator on the far right.
  * Used for DoseSpot notifications where we want to show a red badge instead of text count.
+ * @param props - The component props.
+ * @returns The rendered component.
  */
 export function NavbarLinkWithBadge(props: NavbarLinkWithBadgeProps): JSX.Element {
   if (props.count === 0) {
@@ -108,6 +116,8 @@ export interface DoseSpotNavbarLinkProps {
 /**
  * A component that renders the DoseSpot navbar link icon with a badge indicator.
  * Uses the useDoseSpotNotifications hook to get the notification count.
+ * @param props - The component props.
+ * @returns The rendered component.
  */
 export function DoseSpotNavbarLink(props: DoseSpotNavbarLinkProps): JSX.Element {
   const count = useDoseSpotNotifications() ?? 0;
