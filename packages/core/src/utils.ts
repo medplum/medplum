@@ -1507,5 +1507,18 @@ export function escapeHtml(unsafe: string): string {
     .replaceAll('…', '&hellip;');
 }
 
+/**
+ * Helper function to narrow a type by excluding undefined/null values.
+ * @param value - The value to refine
+ * @returns boolean
+ *
+ * Example usage:
+ *   const arr: Array<number | undefined> = [1,undefined];
+ *   const refined: Array<number> = arr.filter(isDefined);
+ */
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
+}
+
 /** Constant empty array. */
 export const EMPTY: readonly [] = Object.freeze([]);

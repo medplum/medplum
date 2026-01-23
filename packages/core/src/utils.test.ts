@@ -48,6 +48,7 @@ import {
   getReferenceString,
   getWebSocketUrl,
   isComplexTypeCode,
+  isDefined,
   isEmpty,
   isLowerCase,
   isPopulated,
@@ -1669,4 +1670,19 @@ describe('escapeHtml', () => {
   test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
 
   test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
+});
+
+describe('isDefined', () => {
+  test('is false for null values', () => expect(isDefined(null)).toStrictEqual(false));
+  test('is false for undefined values', () => expect(isDefined(undefined)).toStrictEqual(false));
+  test('is true for other falsey values', () => {
+    expect(isDefined('')).toStrictEqual(true);
+    expect(isDefined(0)).toStrictEqual(true);
+    expect(isDefined(false)).toStrictEqual(true);
+  });
+  test('when used in Array#filter it refines the type', () => {
+    const input: (number | null | undefined)[] = [0, undefined, 1, null, 2];
+    const result: number[] = input.filter(isDefined);
+    expect(result).toEqual([0, 1, 2]);
+  });
 });
