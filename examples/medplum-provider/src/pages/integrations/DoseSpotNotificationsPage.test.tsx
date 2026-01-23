@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
-import { act, render, screen, waitFor } from '../../test-utils';
+import { act, render, screen, waitFor } from '../../test-utils/render';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import { DoseSpotNotificationsPage } from './DoseSpotNotificationsPage';
 
@@ -59,7 +59,7 @@ describe('DoseSpotNotificationsPage', () => {
   test('Renders iframe on notifications tab', async () => {
     await setup('/dosespot');
     await waitFor(() => {
-      const iframe = screen.getByTitle('dosespot-notifications-iframe') as HTMLIFrameElement;
+      const iframe = screen.getByTitle<HTMLIFrameElement>('dosespot-notifications-iframe');
       expect(iframe).toBeDefined();
       expect(iframe.src).toBe('https://dosespot.example.com/iframe');
     });
