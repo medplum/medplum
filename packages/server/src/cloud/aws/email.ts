@@ -4,7 +4,7 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type Mail from 'nodemailer/lib/mailer';
 import { getConfig } from '../../config/loader';
-import { addressToString, buildAddresses, buildRawMessage } from '../../email/utils';
+import { buildAddresses, buildRawMessage, getFromAddress } from '../../email/utils';
 
 /**
  * Sends an email via AWS SES.
@@ -12,7 +12,7 @@ import { addressToString, buildAddresses, buildRawMessage } from '../../email/ut
  */
 export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   const config = getConfig();
-  const fromAddress = addressToString(options.from);
+  const fromAddress = getFromAddress(options);
   const toAddresses = buildAddresses(options.to);
   const ccAddresses = buildAddresses(options.cc);
   const bccAddresses = buildAddresses(options.bcc);

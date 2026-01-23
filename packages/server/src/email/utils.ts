@@ -5,6 +5,7 @@ import type Mail from 'nodemailer/lib/mailer';
 import type { Address } from 'nodemailer/lib/mailer';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
+import { isDefined } from '../util/types';
 
 /**
  * Returns the from address to use.
@@ -16,10 +17,14 @@ import { getLogger } from '../logger';
 export function getFromAddress(options: Mail.Options): string {
   const config = getConfig();
 
-  if (options.from) {
-    const fromAddress = addressToString(options.from);
+  const fromAddresses = buildAddresses(options.from);
+  if (fromAddresses && fromAddresses.length > 0) {
+    if (fromAddresses.length > 1) {
+      throw new Error('Multiple from addresses are not supported');
+    }
+    const fromAddress = fromAddresses[0];
     const fromEmail = extractEmailFromAddress(fromAddress);
-    if (fromAddress && fromEmail && config.approvedSenderEmails?.split(',')?.includes(fromEmail)) {
+    if (fromEmail && config.approvedSenderEmails?.split(',')?.includes(fromEmail)) {
       return fromAddress;
     }
     getLogger().warn('Email from address is not an approved sender', {
@@ -43,7 +48,7 @@ export function buildAddresses(input: string | Address | (string | Address)[] | 
   if (Array.isArray(input)) {
     return input.map(addressToString) as string[];
   }
-  return [addressToString(input) as string];
+  return [addressToString(input)].filter(isDefined);
 }
 
 /**
