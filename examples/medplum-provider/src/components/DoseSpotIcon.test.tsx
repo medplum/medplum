@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { DoseSpotIcon } from './DoseSpotIcon';
+import { DoseSpotNavbarLink, NavbarLinkWithBadge } from './NavbarNotificationLink';
 
 vi.mock('@medplum/dosespot-react', () => ({
   useDoseSpotNotifications: vi.fn(),
@@ -12,6 +13,81 @@ vi.mock('@medplum/dosespot-react', () => ({
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 
 describe('DoseSpotIcon', () => {
+  function setup(): ReturnType<typeof render> {
+    return render(
+      <MantineProvider>
+        <DoseSpotIcon />
+      </MantineProvider>
+    );
+  }
+
+  test('Renders the pill icon', () => {
+    const { container } = setup();
+
+    const icon = container.querySelector('svg.tabler-icon-pill');
+    expect(icon).toBeInTheDocument();
+  });
+
+  test('Renders icon with correct size', () => {
+    const { container } = setup();
+
+    const icon = container.querySelector('svg.tabler-icon-pill');
+    expect(icon).toHaveAttribute('width', '20');
+    expect(icon).toHaveAttribute('height', '20');
+  });
+});
+
+describe('NavbarLinkWithBadge', () => {
+  function setup(count: number): ReturnType<typeof render> {
+    return render(
+      <MantineProvider>
+        <NavbarLinkWithBadge iconComponent={<DoseSpotIcon />} count={count} />
+      </MantineProvider>
+    );
+  }
+
+  test('Renders icon without indicator when count is 0', () => {
+    const { container } = setup(0);
+
+    const icon = container.querySelector('svg.tabler-icon-pill');
+    expect(icon).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  test('Renders icon with indicator when count is greater than 0', () => {
+    const { container } = setup(5);
+
+    const icon = container.querySelector('svg.tabler-icon-pill');
+    expect(icon).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  test('Formats count with toLocaleString for large numbers', () => {
+    setup(1234);
+
+    expect(screen.getByText('1,234')).toBeInTheDocument();
+  });
+
+  test('Displays correct count for single digit', () => {
+    setup(1);
+
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
+
+  test('Displays correct count for double digit', () => {
+    setup(42);
+
+    expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  test('Displays correct count for triple digit', () => {
+    setup(999);
+
+    expect(screen.getByText('999')).toBeInTheDocument();
+  });
+});
+
+describe('DoseSpotNavbarLink', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -19,7 +95,7 @@ describe('DoseSpotIcon', () => {
   function setup(): ReturnType<typeof render> {
     return render(
       <MantineProvider>
-        <DoseSpotIcon />
+        <DoseSpotNavbarLink iconComponent={<DoseSpotIcon />} />
       </MantineProvider>
     );
   }
@@ -51,34 +127,6 @@ describe('DoseSpotIcon', () => {
     expect(screen.getByText('5')).toBeInTheDocument();
   });
 
-  test('Formats unreadCount with toLocaleString for large numbers', () => {
-    vi.mocked(useDoseSpotNotifications).mockReturnValue(1234);
-    setup();
-
-    expect(screen.getByText('1,234')).toBeInTheDocument();
-  });
-
-  test('Displays correct count for single digit', () => {
-    vi.mocked(useDoseSpotNotifications).mockReturnValue(1);
-    setup();
-
-    expect(screen.getByText('1')).toBeInTheDocument();
-  });
-
-  test('Displays correct count for double digit', () => {
-    vi.mocked(useDoseSpotNotifications).mockReturnValue(42);
-    setup();
-
-    expect(screen.getByText('42')).toBeInTheDocument();
-  });
-
-  test('Displays correct count for triple digit', () => {
-    vi.mocked(useDoseSpotNotifications).mockReturnValue(999);
-    setup();
-
-    expect(screen.getByText('999')).toBeInTheDocument();
-  });
-
   test('Icon is always rendered regardless of unreadCount', () => {
     vi.mocked(useDoseSpotNotifications).mockReturnValue(0);
     const { container, rerender } = setup();
@@ -89,7 +137,7 @@ describe('DoseSpotIcon', () => {
     vi.mocked(useDoseSpotNotifications).mockReturnValue(10);
     rerender(
       <MantineProvider>
-        <DoseSpotIcon />
+        <DoseSpotNavbarLink iconComponent={<DoseSpotIcon />} />
       </MantineProvider>
     );
 
