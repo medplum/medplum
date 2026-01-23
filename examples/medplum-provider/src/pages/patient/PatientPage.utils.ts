@@ -63,6 +63,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'MedicationRequest?_fields=medication[x],intent,status&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Meds',
   },
+  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   {
     id: 'labs',
     url: 'ServiceRequest',
@@ -84,6 +85,5 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Care Plans',
   },
   { id: 'message', url: 'Communication', label: 'Messages' },
-  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
 ];

@@ -17,8 +17,10 @@
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
   width: calc(100% - 350px);
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
 }
