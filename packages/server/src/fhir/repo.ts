@@ -14,6 +14,7 @@ import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
   allOk,
+  append,
   badRequest,
   convertToSearchableDates,
   convertToSearchableNumbers,
@@ -26,6 +27,7 @@ import {
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
+  EMPTY,
   evalFhirPathTyped,
   extractAccountReferences,
   flatMapFilter,
@@ -290,8 +292,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 10. 08/27/25 - Added HumanName sort columns (https://github.com/medplum/medplum/pull/7304)
    * 11. 09/25/25 - Added ConceptMapping lookup table (https://github.com/medplum/medplum/pull/7469)
    * 12. 12/01/25 - Added search param `Bot-cds-hook` (https://github.com/medplum/medplum/pull/7933)
+   * 13. 01/05/25 - Added search params: ActivityDefinition-code, Communication-priority, Communication-priority-order, ProjectMembership-active (https://github.com/medplum/medplum/pull/8160)
    */
-  static readonly VERSION: number = 12;
+  static readonly VERSION: number = 13;
 
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
@@ -864,6 +867,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // Parse result.data as a base64 string
     const buffer = Buffer.from(resource.data as string, 'base64');
 
+    // base64 data should be limited in size
+    const maxBase64Bytes = getConfig().base64BinaryMaxBytes;
+    if (maxBase64Bytes && buffer.length > maxBase64Bytes) {
+      throw new OperationOutcomeError(badRequest(`base64Binary exceeds ${maxBase64Bytes} bytes`));
+    }
     // Convert buffer to a Readable stream
     const stream = new Readable({
       read() {
@@ -952,7 +960,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Validate resource against base FHIR spec
-    const issues = validateResource(resource, options);
+    const issues = validateResource(resource, { ...options, base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes });
+
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
     }
@@ -996,6 +1005,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
         continue;
       }
+
       const validateStart = process.hrtime.bigint();
       validateResource(resource, { ...options, profile });
       const validateTime = Number(process.hrtime.bigint() - validateStart);
@@ -2042,10 +2052,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // When examining a Patient resource, we only look at the individual patient
       // We should not call `getPatients` and `readReference`
       const existingAccounts = extractAccountReferences(existing?.meta);
-      if (existingAccounts?.length) {
-        for (const account of existingAccounts) {
-          accounts.add(account.reference as string);
-        }
+      for (const account of existingAccounts ?? EMPTY) {
+        accounts.add(account.reference as string);
       }
     } else {
       const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
@@ -2058,23 +2066,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // If the patient has an account, then use it as the resource account.
         const patientAccounts = extractAccountReferences(patient.meta);
-        if (patientAccounts?.length) {
-          for (const account of patientAccounts) {
-            if (account.reference) {
-              accounts.add(account.reference);
-            }
+        for (const account of patientAccounts ?? EMPTY) {
+          if (account.reference) {
+            accounts.add(account.reference);
           }
         }
       }
     }
 
-    if (accounts.size < 1) {
-      return undefined;
-    }
-
-    const result: Reference[] = [];
+    let result: Reference[] | undefined;
     for (const reference of accounts) {
-      result.push({ reference });
+      result = append(result, { reference });
     }
     return result;
   }
@@ -2200,10 +2202,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   removeHiddenFields<T extends Resource>(input: T): T {
     const policy = satisfiedAccessPolicy(input, AccessPolicyInteraction.READ, this.context.accessPolicy);
-    if (policy?.hiddenFields) {
-      for (const field of policy.hiddenFields) {
-        this.removeField(input, field);
-      }
+    for (const field of policy?.hiddenFields ?? EMPTY) {
+      this.removeField(input, field);
     }
     if (!this.context.extendedMode && input.meta) {
       const meta = input.meta;

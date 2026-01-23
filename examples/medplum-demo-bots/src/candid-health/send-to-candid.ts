@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import { CPT, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
+import { CPT, EMPTY, getCodeBySystem, getIdentifier, getReferenceString, ICD10 } from '@medplum/core';
 import type {
   Address,
   Coverage,
@@ -301,12 +301,7 @@ function convertCoverageType(coverageType: Coverage['type']): string {
 // Assume that the diagnosis is represented as a Cove
 function convertDiagnoses(encounter: Encounter): any[] {
   const result: any[] = [];
-
-  if (!encounter.reasonCode) {
-    return result;
-  }
-
-  for (const reason of encounter.reasonCode) {
+  for (const reason of encounter.reasonCode ?? EMPTY) {
     const code = reason.coding?.find((c) => c.system === ICD10);
     if (code) {
       result.push({

@@ -1,5 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+/*
+ * This is a generated file
+ * Do not edit manually.
+ */
+
+// organize-imports-ignore - https://github.com/simonhaenisch/prettier-plugin-organize-imports?tab=readme-ov-file#skip-files
+
 export * as v1 from './v1';
 export * as v2 from './v2';
 export * as v3 from './v3';
@@ -9,6 +16,7 @@ export * as v6 from './v6';
 export * as v7 from './v7';
 export * as v8 from './v8';
 export * as v9 from './v9';
+/* CAUTION: LOAD-BEARING COMMENT */
 /* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */
 export * as v10 from './v10';
 export * as v11 from './v11';
@@ -32,3 +40,4 @@ export * as v28 from './v28';
 export * as v29 from './v29';
 export * as v30 from './v30';
 export * as v31 from './v31';
+export * as v32 from './v32';

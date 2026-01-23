@@ -27,6 +27,7 @@ import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   createReference,
+  EMPTY,
   escapeHtml,
   findCodeBySystem,
   formatCodeableConcept,
@@ -763,12 +764,10 @@ export class PatientSummaryBuilder {
 
   private buildDiagnosticReportRow(rows: (string | undefined)[][], resource: DiagnosticReport): void {
     rows.push([formatCodeableConcept(resource.code), undefined, formatDate(resource.effectiveDateTime)]);
-    if (resource.result) {
-      for (const result of resource.result) {
-        const r = this.getByReference(result);
-        if (r?.resourceType === 'Observation') {
-          this.buildResultRows(rows, r);
-        }
+    for (const result of resource.result ?? EMPTY) {
+      const r = this.getByReference(result);
+      if (r?.resourceType === 'Observation') {
+        this.buildResultRows(rows, r);
       }
     }
   }
@@ -780,12 +779,10 @@ export class PatientSummaryBuilder {
       formatDate(resource.effectiveDateTime),
     ]);
 
-    if (resource.hasMember) {
-      for (const member of resource.hasMember) {
-        const m = this.getByReference(member);
-        if (m?.resourceType === 'Observation') {
-          this.buildResultRows(rows, m);
-        }
+    for (const member of resource.hasMember ?? EMPTY) {
+      const m = this.getByReference(member);
+      if (m?.resourceType === 'Observation') {
+        this.buildResultRows(rows, m);
       }
     }
   }
@@ -801,12 +798,10 @@ export class PatientSummaryBuilder {
   private buildPlanRows(rows: (string | undefined)[][], resource: PlanResourceType): void {
     if (resource.resourceType === 'CarePlan') {
       rows.push([formatCodeableConcept(resource.category?.[0]), formatDate(resource.period?.start)]);
-      if (resource.activity) {
-        for (const activity of resource.activity) {
-          const a = this.getByReference(activity.reference);
-          if (a?.resourceType === 'ServiceRequest') {
-            rows.push([formatCodeableConcept(a.code), formatDate(a.authoredOn)]);
-          }
+      for (const activity of resource.activity ?? EMPTY) {
+        const a = this.getByReference(activity.reference);
+        if (a?.resourceType === 'ServiceRequest') {
+          rows.push([formatCodeableConcept(a.code), formatDate(a.authoredOn)]);
         }
       }
     }

@@ -27,15 +27,15 @@ const dummyDocument = {
   uri: 'https://example.com/dummy-doc',
 } as const;
 
-server.tool('search', { query: z.string() }, async ({ query }) => {
+server.registerTool('search', { inputSchema: { query: z.string() } }, async ({ query }) => {
   getLogger().debug(`Performing search for: "${query}"`);
   return { content: [dummyDocument] };
 });
 
-server.tool(
+server.registerTool(
   'fetch',
   {
-    id: z.string().describe('The ID of the resource to fetch, obtained from a search result.'),
+    inputSchema: { id: z.string().describe('The ID of the resource to fetch, obtained from a search result.') },
   },
   async ({ id }) => {
     getLogger().debug(`Performing fetch for ID: "${id}"`);
@@ -47,12 +47,14 @@ server.tool(
 // The current implmentation uses the very suboptimal approach of re-fetching the URL on behalf of the client.
 // Over time, we should definitely replace this with the "FhirRouter" approach, which would stay within the Medplum server and not re-fetch the URL.
 // However, there are a few FHIR endpoints that are not yet available in FhirRouter, so we need to use fetch for now.
-server.tool(
+server.registerTool(
   'fhir-request',
   {
-    method: z.string(),
-    path: z.string(),
-    body: z.any(),
+    inputSchema: {
+      method: z.string(),
+      path: z.string(),
+      body: z.any(),
+    },
   },
   async ({ method, path, body }) => {
     const ctx = getAuthenticatedContext();

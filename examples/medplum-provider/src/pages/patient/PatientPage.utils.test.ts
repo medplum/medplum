@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { describe, expect, test } from 'vitest';
 import {
   formatPatientPageTabUrl,
   getPatientPageTabOrThrow,
-  patientPathPrefix,
   PatientPageTabs,
+  patientPathPrefix,
   prependPatientPath,
 } from './PatientPage.utils';
 
@@ -24,7 +25,7 @@ describe('PatientPage.utils', () => {
   });
 
   describe('prependPatientPath', () => {
-    const mockPatient: Patient = {
+    const mockPatient: WithId<Patient> = {
       resourceType: 'Patient',
       id: 'patient-123',
     };

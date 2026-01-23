@@ -19,6 +19,7 @@ import { getTypedPropertyValue, toJsBoolean, toTypedValue } from '../fhirpath/ut
 import type { TypedValue } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
 import { tryGetDataType } from '../typeschema/types';
+import { EMPTY } from '../utils';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
 /**
@@ -132,10 +133,8 @@ function registerGlobals(ctx: TransformContext, structureMap: StructureMap): voi
     }
   }
 
-  if (structureMap.group) {
-    for (const group of structureMap.group) {
-      setVariable(ctx, group.name, { type: 'StructureMapGroup', value: group });
-    }
+  for (const group of structureMap.group ?? EMPTY) {
+    setVariable(ctx, group.name, { type: 'StructureMapGroup', value: group });
   }
 }
 
@@ -197,10 +196,8 @@ function evalGroup(ctx: TransformContext, group: StructureMapGroup, input: Typed
 
   const newContext: TransformContext = { root: ctx.root, parent: ctx, variables };
 
-  if (group.rule) {
-    for (const rule of group.rule) {
-      evalRule(newContext, rule);
-    }
+  for (const rule of group.rule ?? EMPTY) {
+    evalRule(newContext, rule);
   }
 
   return outputs;
@@ -271,20 +268,14 @@ function evalRuleAfterSources(ctx: TransformContext, rule: StructureMapGroupRule
   if (tryEvalShorthandRule(ctx, rule)) {
     return;
   }
-  if (rule.target) {
-    for (const target of rule.target) {
-      evalTarget(ctx, target);
-    }
+  for (const target of rule.target ?? EMPTY) {
+    evalTarget(ctx, target);
   }
-  if (rule.rule) {
-    for (const childRule of rule.rule) {
-      evalRule(ctx, childRule);
-    }
+  for (const childRule of rule.rule ?? EMPTY) {
+    evalRule(ctx, childRule);
   }
-  if (rule.dependent) {
-    for (const dependent of rule.dependent) {
-      evalDependent(ctx, dependent);
-    }
+  for (const dependent of rule.dependent ?? EMPTY) {
+    evalDependent(ctx, dependent);
   }
 }
 
@@ -342,8 +333,7 @@ function tryFindTypesGroup(ctx: TransformContext, sourceValue: TypedValue): Stru
   while (currentContext) {
     if (currentContext.variables) {
       for (const value of Object.values(currentContext.variables)) {
-        const array = arrayify(value);
-        for (const entry of array) {
+        for (const entry of arrayify(value)) {
           if (entry.type === 'StructureMapGroup') {
             const group = entry.value as StructureMapGroup;
             if (

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, evalFhirPathTyped, toJsBoolean, toTypedValue } from '@medplum/core';
+import { allOk, EMPTY, evalFhirPathTyped, toJsBoolean, toTypedValue } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ChargeItem, ChargeItemDefinition, Money, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -36,31 +36,52 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
     ...inputChargeItem,
   };
 
-  if (chargeItemDefinition.propertyGroup) {
-    for (const group of chargeItemDefinition.propertyGroup) {
-      if (group.priceComponent && group.priceComponent.length > 0) {
-        const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
-        if (basePriceComp?.amount) {
-          updatedChargeItem.priceOverride = basePriceComp.amount;
-          break;
-        }
+  for (const group of chargeItemDefinition.propertyGroup ?? EMPTY) {
+    if (group.priceComponent && group.priceComponent.length > 0) {
+      const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
+      if (basePriceComp?.amount) {
+        updatedChargeItem.priceOverride = basePriceComp.amount;
+        break;
       }
     }
   }
 
-  if (chargeItemDefinition.propertyGroup) {
-    let basePrice: Money | undefined;
+  // First pass: Find base price
+  let basePrice: Money | undefined;
+  for (const group of chargeItemDefinition.propertyGroup ?? EMPTY) {
+    let isGroupApplicable = true;
+    for (const condition of group.applicability ?? EMPTY) {
+      if (condition.expression) {
+        const value = toTypedValue(updatedChargeItem);
+        const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
+        isGroupApplicable = toJsBoolean(result);
+      }
+    }
 
-    // First pass: Find base price
-    for (const group of chargeItemDefinition.propertyGroup) {
+    if (!isGroupApplicable) {
+      continue;
+    }
+
+    if (group.priceComponent && group.priceComponent.length > 0) {
+      const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
+      if (basePriceComp?.amount) {
+        basePrice = { ...basePriceComp.amount };
+        break;
+      }
+    }
+  }
+
+  // Second pass: Apply all modifiers
+  if (basePrice?.value !== undefined) {
+    const finalPrice: Money = { ...basePrice };
+
+    for (const group of chargeItemDefinition.propertyGroup ?? EMPTY) {
       let isGroupApplicable = true;
-      if (group.applicability && group.applicability.length > 0) {
-        for (const condition of group.applicability) {
-          if (condition.expression) {
-            const value = toTypedValue(updatedChargeItem);
-            const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
-            isGroupApplicable = toJsBoolean(result);
-          }
+      for (const condition of group.applicability ?? EMPTY) {
+        if (condition.expression) {
+          const value = toTypedValue(updatedChargeItem);
+          const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
+          isGroupApplicable = toJsBoolean(result);
         }
       }
 
@@ -68,70 +89,38 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
         continue;
       }
 
-      if (group.priceComponent && group.priceComponent.length > 0) {
-        const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
-        if (basePriceComp?.amount) {
-          basePrice = { ...basePriceComp.amount };
-          break;
-        }
-      }
-    }
-
-    // Second pass: Apply all modifiers
-    if (basePrice?.value !== undefined) {
-      const finalPrice: Money = { ...basePrice };
-
-      for (const group of chargeItemDefinition.propertyGroup) {
-        let isGroupApplicable = true;
-        if (group.applicability && group.applicability.length > 0) {
-          for (const condition of group.applicability) {
-            if (condition.expression) {
-              const value = toTypedValue(updatedChargeItem);
-              const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
-              isGroupApplicable = toJsBoolean(result);
-            }
-          }
-        }
-
-        if (!isGroupApplicable) {
+      for (const component of group.priceComponent ?? EMPTY) {
+        if (component.type === 'base') {
           continue;
         }
 
-        if (group.priceComponent) {
-          for (const component of group.priceComponent) {
-            if (component.type === 'base') {
-              continue;
-            }
+        if (component.type === 'surcharge') {
+          if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+            finalPrice.value += component.amount.value;
+          } else if (
+            component.factor !== undefined &&
+            basePrice.value !== undefined &&
+            finalPrice.value !== undefined
+          ) {
+            finalPrice.value += basePrice.value * component.factor;
+          }
+        }
 
-            if (component.type === 'surcharge') {
-              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
-                finalPrice.value += component.amount.value;
-              } else if (
-                component.factor !== undefined &&
-                basePrice.value !== undefined &&
-                finalPrice.value !== undefined
-              ) {
-                finalPrice.value += basePrice.value * component.factor;
-              }
-            }
-
-            if (component.type === 'discount') {
-              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
-                finalPrice.value -= component.amount.value;
-              } else if (
-                component.factor !== undefined &&
-                basePrice.value !== undefined &&
-                finalPrice.value !== undefined
-              ) {
-                finalPrice.value -= basePrice.value * component.factor;
-              }
-            }
+        if (component.type === 'discount') {
+          if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+            finalPrice.value -= component.amount.value;
+          } else if (
+            component.factor !== undefined &&
+            basePrice.value !== undefined &&
+            finalPrice.value !== undefined
+          ) {
+            finalPrice.value -= basePrice.value * component.factor;
           }
         }
       }
-
-      updatedChargeItem.priceOverride = finalPrice;
     }
+
+    updatedChargeItem.priceOverride = finalPrice;
   }
 
   const result = await ctx.repo.updateResource<ChargeItem>(updatedChargeItem);
