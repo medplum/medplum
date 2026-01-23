@@ -1,6 +1,6 @@
 {
   "name": "medplum-health-gorilla-demo",
-  "version": "5.0.11",
+  "version": "5.0.12",
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
@@ -17,11 +17,11 @@
   "devDependencies": {
     "@mantine/core": "8.3.11",
     "@mantine/notifications": "8.3.11",
-    "@medplum/core": "5.0.11",
-    "@medplum/eslint-config": "5.0.11",
-    "@medplum/health-gorilla-core": "5.0.11",
-    "@medplum/health-gorilla-react": "5.0.11",
-    "@medplum/react": "5.0.11",
+    "@medplum/core": "5.0.12",
+    "@medplum/eslint-config": "5.0.12",
+    "@medplum/health-gorilla-core": "5.0.12",
+    "@medplum/health-gorilla-react": "5.0.12",
+    "@medplum/react": "5.0.12",
     "@tabler/icons-react": "3.36.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
