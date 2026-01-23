@@ -5,6 +5,7 @@ import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toPeriod, toTypedValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
 import { globalSchema } from '../types';
+import { EMPTY } from '../utils';
 import type { SearchableToken } from './ir';
 import {
   convertToSearchableDates,
@@ -25,11 +26,9 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
   if (searchRequest.resourceType !== resource.resourceType) {
     return false;
   }
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      if (!matchesSearchFilter(resource, searchRequest, filter)) {
-        return false;
-      }
+  for (const filter of searchRequest.filters ?? EMPTY) {
+    if (!matchesSearchFilter(resource, searchRequest, filter)) {
+      return false;
     }
   }
   return true;

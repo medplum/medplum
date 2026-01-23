@@ -192,11 +192,9 @@ describe.skipIf(!process.env.HEALTHIE_API_URL || !process.env.HEALTHIE_CLIENT_SE
         expect(Array.isArray(patientIds)).toBe(true);
 
         // If there are patient IDs, validate they are strings
-        if (patientIds.length > 0) {
-          patientIds.forEach((id) => {
-            expect(typeof id).toBe('string');
-            expect(id.length).toBeGreaterThan(0);
-          });
+        for (const id of patientIds) {
+          expect(typeof id).toBe('string');
+          expect(id.length).toBeGreaterThan(0);
         }
       });
 

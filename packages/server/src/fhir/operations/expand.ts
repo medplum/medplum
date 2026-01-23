@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, append, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
@@ -275,10 +275,8 @@ export async function hydrateCodeSystemProperties(
     codeSystem.property = append(codeSystem.property, parentProp);
   }
   // Populate property IDs from the database
-  if (codeSystem.property?.length) {
-    for (const property of codeSystem.property) {
-      property.id = propertyIds.find((row) => row.code === property.code)?.id;
-    }
+  for (const property of codeSystem.property ?? EMPTY) {
+    property.id = propertyIds.find((row) => row.code === property.code)?.id;
   }
 }
 

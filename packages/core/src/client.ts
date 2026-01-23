@@ -85,6 +85,7 @@ import { indexSearchParameter } from './types';
 import { indexStructureDefinitionBundle, isDataTypeLoaded, isProfileLoaded, loadDataType } from './typeschema/types';
 import type { CodeChallengeMethod, ProfileResource, QueryTypes, WithId } from './utils';
 import {
+  EMPTY,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -529,6 +530,20 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
+/**
+ * Response stream interface for bot streaming responses.
+ * Compatible with both VMContext and AWS Lambda runtimes.
+ */
+export interface BotResponseStream extends NodeJS.WritableStream {
+  /**
+   * Starts streaming with the given status code and headers.
+   * Must be called before write() to commit the HTTP response.
+   * @param statusCode - HTTP status code (e.g., 200)
+   * @param headers - HTTP headers to send
+   */
+  startStreaming(statusCode: number, headers: Record<string, string>): void;
+}
+
 export interface BotEvent<T = unknown> {
   readonly bot: Reference<Bot>;
   readonly contentType: string;
@@ -538,6 +553,8 @@ export interface BotEvent<T = unknown> {
   readonly requester?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
   /** Headers from the original request, when invoked by HTTP request */
   readonly headers?: Record<string, string | string[] | undefined>;
+  /** Optional response stream when invoked with SSE (Server Side Events) */
+  readonly responseStream?: BotResponseStream;
 }
 
 export interface InviteRequest {
@@ -1172,11 +1189,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   invalidateSearches(resourceType: ResourceType): void {
     const url = concatUrls(this.fhirBaseUrl, resourceType);
-    if (this.requestCache) {
-      for (const key of this.requestCache.keys()) {
-        if (key.endsWith(url) || key.includes(url + '?')) {
-          this.requestCache.delete(key);
-        }
+    for (const key of this.requestCache?.keys() ?? EMPTY) {
+      if (key.endsWith(url) || key.includes(url + '?')) {
+        this.requestCache?.delete(key);
       }
     }
   }
@@ -1805,19 +1820,19 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param reference - The FHIR reference.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
-  getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
+  getCachedReference<T extends Resource>(reference: Reference<T>): WithId<T> | undefined {
     const refString = reference.reference as string;
     if (!refString) {
       return undefined;
     }
     if (refString === 'system') {
-      return system as T;
+      return system as WithId<T>;
     }
     const [resourceType, id] = refString.split('/');
     if (!resourceType || !id) {
       return undefined;
     }
-    return this.getCached(resourceType as ResourceType, id) as T | undefined;
+    return this.getCached(resourceType as ResourceType, id) as WithId<T> | undefined;
   }
 
   /**
@@ -3364,10 +3379,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     return new ReadablePromise(
       (async () => {
         const bundle = await this.get<Bundle<T>>(url, options);
-        if (bundle.entry) {
-          for (const entry of bundle.entry) {
-            this.cacheResource(entry.resource, options);
-          }
+        for (const entry of bundle.entry ?? EMPTY) {
+          this.cacheResource(entry.resource, options);
         }
         return bundle;
       })()

@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type {
   ChargeItem,
   ChargeItemDefinition,
@@ -16,13 +14,16 @@ import type {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { BillingTab } from './BillingTab';
-import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
-import * as claimsUtils from '../../utils/claims';
-import * as chargeItemsUtils from '../../utils/chargeitems';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
+import * as chargeItemsUtils from '../../utils/chargeitems';
+import * as claimsUtils from '../../utils/claims';
+import { BillingTab } from './BillingTab';
 
 vi.mock('@mantine/notifications', async () => {
   const actual = await vi.importActual('@mantine/notifications');
@@ -34,13 +35,13 @@ vi.mock('@mantine/notifications', async () => {
 
 const { showNotification } = await import('@mantine/notifications');
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],
 };
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'finished',
@@ -53,7 +54,7 @@ const mockEncounter: Encounter = {
   ],
 };
 
-const mockCoverage: Coverage = {
+const mockCoverage: WithId<Coverage> = {
   resourceType: 'Coverage',
   id: 'coverage-123',
   status: 'active',
@@ -61,13 +62,13 @@ const mockCoverage: Coverage = {
   payor: [{ reference: 'Organization/organization-123' }],
 };
 
-const mockPractitioner: Practitioner = {
+const mockPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'practitioner-123',
   name: [{ given: ['Dr.'], family: 'Test' }],
 };
 
-const mockChargeItem: ChargeItem = {
+const mockChargeItem: WithId<ChargeItem> = {
   resourceType: 'ChargeItem',
   id: 'charge-123',
   status: 'billable',
@@ -88,7 +89,7 @@ const mockChargeItem: ChargeItem = {
   },
 };
 
-const mockClaim: Claim = {
+const mockClaim: WithId<Claim> = {
   resourceType: 'Claim',
   id: 'claim-123',
   status: 'active',
@@ -661,9 +662,9 @@ describe('BillingTab', () => {
       () => {
         expect(claimsUtils.createClaimFromEncounter).toHaveBeenCalledWith(
           medplum,
-          mockPatient.id,
-          mockEncounter.id,
-          mockPractitioner2.id,
+          mockPatient,
+          updatedEncounter,
+          mockPractitioner2,
           [appliedChargeItem]
         );
         expect(setClaim).toHaveBeenCalledWith(newClaim);
@@ -679,19 +680,19 @@ describe('BillingTab', () => {
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
-    const mockPractitioner1: Practitioner = {
+    const mockPractitioner1: WithId<Practitioner> = {
       resourceType: 'Practitioner',
       id: 'practitioner-1',
       name: [{ given: ['Dr.'], family: 'Test' }],
     };
 
-    const mockPractitioner2: Practitioner = {
+    const mockPractitioner2: WithId<Practitioner> = {
       resourceType: 'Practitioner',
       id: 'practitioner-2',
       name: [{ given: ['Dr.'], family: 'Smith' }],
     };
 
-    const appliedChargeItem: ChargeItem & { id: string } = {
+    const appliedChargeItem: WithId<ChargeItem> = {
       resourceType: 'ChargeItem',
       id: 'charge-new',
       status: 'planned',
@@ -855,7 +856,7 @@ describe('BillingTab', () => {
     } as any);
 
     // Setup with a claim but with undefined id
-    await setup({ claim: { ...mockClaim, id: undefined } });
+    await setup({ claim: { ...mockClaim, id: undefined as unknown as string } });
 
     // Export button is visible but clicking it should be a no-op
     const exportButton = screen.getByText('Export Claim');

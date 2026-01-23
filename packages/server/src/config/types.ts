@@ -57,6 +57,7 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   maxSearchOffset?: number;
+  base64BinaryMaxBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;

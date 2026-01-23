@@ -6,7 +6,7 @@ import type {
   ConceptMapTranslateParameters,
   WithId,
 } from '@medplum/core';
-import { allOk, badRequest, indexConceptMapCodings, OperationOutcomeError, Operator } from '@medplum/core';
+import { allOk, badRequest, EMPTY, indexConceptMapCodings, OperationOutcomeError, Operator } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ConceptMap, ConceptMapGroupUnmapped } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -157,10 +157,8 @@ async function handleUnmappedCodes(
       case 'other-map': {
         const otherMap = await lookupConceptMap({ url: unmapped.url });
         const results = await translateConcept(otherMap, params);
-        if (results.match?.length) {
-          for (const otherMatch of results.match) {
-            matches.push({ ...otherMatch, source: unmapped.url });
-          }
+        for (const otherMatch of results.match ?? EMPTY) {
+          matches.push({ ...otherMatch, source: unmapped.url });
         }
       }
     }

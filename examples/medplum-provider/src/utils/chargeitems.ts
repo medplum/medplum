@@ -1,10 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import type { ChargeItem, Encounter } from '@medplum/fhirtypes';
-
-export const CPT = 'http://www.ama-assn.org/go/cpt';
 
 /**
  * Standalone function to fetch and apply ChargeItemDefinition to charge item
@@ -12,7 +10,10 @@ export const CPT = 'http://www.ama-assn.org/go/cpt';
  * @param chargeItem - Current charge item
  * @returns Promise with updated charge items
  */
-export async function applyChargeItemDefinition(medplum: MedplumClient, chargeItem: ChargeItem): Promise<ChargeItem> {
+export async function applyChargeItemDefinition(
+  medplum: MedplumClient,
+  chargeItem: WithId<ChargeItem>
+): Promise<WithId<ChargeItem>> {
   if (!chargeItem.definitionCanonical || chargeItem.definitionCanonical.length === 0) {
     return chargeItem;
   }
@@ -32,17 +33,18 @@ export async function applyChargeItemDefinition(medplum: MedplumClient, chargeIt
     parameter: [
       {
         name: 'chargeItem',
-        valueReference: {
-          reference: getReferenceString(chargeItem),
-        },
+        valueReference: createReference(chargeItem),
       },
     ],
   });
 
-  return applyResult as ChargeItem;
+  return applyResult as WithId<ChargeItem>;
 }
 
-export async function getChargeItemsForEncounter(medplum: MedplumClient, encounter: Encounter): Promise<ChargeItem[]> {
+export async function getChargeItemsForEncounter(
+  medplum: MedplumClient,
+  encounter: Encounter
+): Promise<WithId<ChargeItem>[]> {
   if (!encounter) {
     return [];
   }

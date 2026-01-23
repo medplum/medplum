@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
 import type { Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './TaskDetailsModal.module.css';
@@ -79,7 +79,7 @@ export const TaskDetailsModal = (): JSX.Element => {
     }
 
     if (practitioner) {
-      updatedTask.owner = { reference: getReferenceString(practitioner) } as Reference<Practitioner>;
+      updatedTask.owner = createReference(practitioner) as Reference<Practitioner>;
     }
 
     try {

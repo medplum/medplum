@@ -33,6 +33,7 @@ type SchedulingParametersExtensionExtension =
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
   | { url: 'serviceType'; valueCoding: HardCoding }
+  | { url: 'timezone'; valueCode: string }
   | {
       url: 'availability';
       valueTiming: {
@@ -66,6 +67,7 @@ export type SchedulingParameters = {
   alignmentOffset: number; // minutes
   duration: number; // minutes
   serviceType: HardCoding[]; // codes that may be booked into this availability
+  timezone?: string;
 };
 
 function durationToMinutes(duration: Duration): number {
@@ -144,6 +146,10 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
       extension.extension.filter((ext) => ext.url === 'alignmentInterval'),
       'alignmentInterval'
     );
+    const timezone = atMostOne(
+      extension.extension.filter((ext) => ext.url === 'timezone'),
+      'timezone'
+    );
 
     // serviceType has cardinality 0..*
     const serviceType = extension.extension.filter((ext) => ext.url === 'serviceType').map((ext) => ext.valueCoding);
@@ -171,6 +177,7 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
       alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset.valueDuration) : 0,
       duration: durationToMinutes(duration.valueDuration),
       serviceType,
+      timezone: timezone?.valueCode,
     };
   });
 }

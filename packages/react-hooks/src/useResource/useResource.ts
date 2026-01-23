@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
 import { deepEquals, isReference, isResource, normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useCallback, useEffect, useState } from 'react';
@@ -16,14 +16,14 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 export function useResource<T extends Resource>(
   value: Reference<T> | Partial<T> | undefined,
   setOutcome?: (outcome: OperationOutcome) => void
-): T | undefined {
+): WithId<T> | undefined {
   const medplum = useMedplum();
-  const [resource, setResource] = useState<T | undefined>(() => {
+  const [resource, setResource] = useState<WithId<T> | undefined>(() => {
     return getInitialResource(medplum, value);
   });
 
   const setResourceIfChanged = useCallback(
-    (r: T | undefined) => {
+    (r: WithId<T> | undefined) => {
       if (!deepEquals(r, resource)) {
         setResource(r);
       }
@@ -73,10 +73,10 @@ export function useResource<T extends Resource>(
 function getInitialResource<T extends Resource>(
   medplum: MedplumClient,
   value: Reference<T> | Partial<T> | undefined
-): T | undefined {
+): WithId<T> | undefined {
   if (value) {
     if (isResource(value)) {
-      return value as T;
+      return value as WithId<T>;
     }
 
     if (isReference(value)) {

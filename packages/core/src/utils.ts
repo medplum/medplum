@@ -365,13 +365,11 @@ function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer[0];
-      }
-      buildQuestionnaireAnswerItems(item.item, result);
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      result[item.linkId] = item.answer[0];
     }
+    buildQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -397,17 +395,15 @@ function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        if (result[item.linkId]) {
-          result[item.linkId] = [...result[item.linkId], ...item.answer];
-        } else {
-          result[item.linkId] = item.answer;
-        }
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      if (result[item.linkId]) {
+        result[item.linkId] = [...result[item.linkId], ...item.answer];
+      } else {
+        result[item.linkId] = item.answer;
       }
-      buildAllQuestionnaireAnswerItems(item.item, result);
     }
+    buildAllQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -889,14 +885,8 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
  * @returns The code for the matching system, or undefined if not found.
  */
 export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
+  for (const category of categories ?? EMPTY) {
+    for (const coding of category.coding ?? EMPTY) {
       if (coding.system === system) {
         return coding.code;
       }
