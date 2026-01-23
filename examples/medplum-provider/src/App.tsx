@@ -106,9 +106,7 @@ export function App(): JSX.Element | null {
                 links: [
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
-                  ...(hasDoseSpot
-                    ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/dosespot' }]
-                    : []),
+                  ...(hasDoseSpot ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/dosespot' }] : []),
                 ],
               },
             ]
