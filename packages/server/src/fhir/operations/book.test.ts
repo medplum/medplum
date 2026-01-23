@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, isDefined } from '@medplum/core';
+import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
 import type { Appointment, Bundle, Practitioner, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
@@ -32,16 +32,8 @@ describe('Appointment/$book', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
-    practitioner1 = await systemRepo.createResource<Practitioner>({
-      resourceType: 'Practitioner',
-      meta: { project: project.project.id },
-      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
-    });
-    practitioner2 = await systemRepo.createResource<Practitioner>({
-      resourceType: 'Practitioner',
-      meta: { project: project.project.id },
-      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
-    });
+    practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
+    practitioner2 = await makePractitioner({ timezone: 'America/Phoenix' });
   });
 
   afterAll(async () => {
@@ -53,6 +45,21 @@ describe('Appointment/$book', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(actor)],
+    });
+  }
+
+  async function makePractitioner({ timezone }: { timezone?: string } = {}): Promise<WithId<Practitioner>> {
+    const extension = [];
+    if (timezone) {
+      extension.push({
+        url: 'http://hl7.org/fhir/StructureDefinition/timezone',
+        valueCode: timezone,
+      });
+    }
+    return systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension,
     });
   }
 
@@ -276,5 +283,91 @@ describe('Appointment/$book', () => {
       },
     ]);
     expect(response.status).toEqual(400);
+  });
+
+  test('fails with Conflict when there is an overlapping busy slot booked', async () => {
+    const practitioner = await makePractitioner();
+    const schedule = await makeSchedule(practitioner);
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'busy',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    // Status: Conflict
+    expect(response.status).toEqual(409);
+
+    // Check no appointment was created
+    const appointments = await systemRepo.searchResources<Appointment>(
+      parseSearchRequest(`Appointment?practitioner=Practitioner/${practitioner.id}`)
+    );
+    expect(appointments).toHaveLength(0);
+
+    // Check no additional slot was created
+    const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
+    expect(slots).toHaveLength(1);
+  });
+
+  test('succeeds when there is an explicit "free" slot at the same time', async () => {
+    const practitioner = await makePractitioner();
+    const schedule = await makeSchedule(practitioner);
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'free',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toEqual(201);
   });
 });
