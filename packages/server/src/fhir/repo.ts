@@ -960,7 +960,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Validate resource against base FHIR spec
-    const issues = validateResource(resource, { base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes }, options);
+    const issues = validateResource(resource, { ...options, base64BinaryMaxBytes: getConfig().base64BinaryMaxBytes });
 
     for (const issue of issues) {
       logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0]?.id, issue });
