@@ -6,9 +6,9 @@ Scheduling is a common workflow and correct use of the FHIR spec supports many c
 2. **Matching Availability** - Ensuring patients are matched to the right scheduled actors based on state, credentials, preferences, etc.
 3. **Consuming Availability** - How users actually select and book a unit of availability
 
-## Demo and Example App
+## Demo
 
-For a brief overview of Scheduling at Medplum, see the video below. For an example scheduling application, see our [Medplum Scheduling Demo](https://github.com/medplum/medplum-scheduling-demo).
+For a brief overview of Scheduling at Medplum, see the video below.
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/6yAROc0KPos" title="YouTube video player" frameborder="0"
