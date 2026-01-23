@@ -15,14 +15,13 @@ import type { JSX } from 'react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
-import { DoseSpotNavbarLink, NavbarLinkWithCount } from './components/NavbarNotificationLink';
+import { NavbarLinkWithCount } from './components/NavbarNotificationLink';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
-import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -108,7 +107,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
-                    ? [{ icon: <DoseSpotNavbarLink iconComponent={<DoseSpotIcon />} />, label: 'DoseSpot', href: '/dosespot' }]
+                    ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
                     : []),
                 ],
               },
@@ -164,8 +163,6 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
-              {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
-              {hasDoseSpot && <Route path="/dosespot/favorites" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
