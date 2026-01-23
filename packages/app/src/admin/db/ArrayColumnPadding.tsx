@@ -4,177 +4,80 @@ import { Grid, NumberInput, Paper, Stack, Text, Title } from '@mantine/core';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
-interface CalculationResults {
+const DEFAULT_TOLERANCE = 1e-10;
+
+/**
+ * Computes the cumulative distribution function of a Poisson distribution.
+ * Returns P(X ≤ k) where X ~ Poisson(λ).
+ *
+ * @param k - The upper bound (non-negative integer)
+ * @param lambda - The rate parameter (λ > 0)
+ * @returns The probability that a Poisson(λ) random variable is at most k
+ */
+function poissonCdfFn(k: number, lambda: number): number {
+  let sum = 0;
+  let term = Math.exp(-lambda);
+  for (let i = 0; i <= k; i++) {
+    if (i > 0) {
+      term *= lambda / i;
+    }
+    sum += term;
+  }
+  return sum;
+}
+
+/**
+ * Finds the minimum λ such that P(X ≤ k) ≤ p for X ~ Poisson(λ).
+ * Uses bisection search to invert the Poisson CDF.
+ *
+ * @param p - The target cumulative probability (0 < p < 1)
+ * @param k - The upper bound (non-negative integer)
+ * @param tolerance - Precision threshold for bisection (default: 1e-10)
+ * @returns The minimum λ satisfying the constraint
+ */
+function minLambda(p: number, k: number, tolerance = DEFAULT_TOLERANCE): number {
+  let lo = 0;
+  let hi = Math.max(k + 1, 1);
+
+  // Expand upper bound until CDF < p
+  while (poissonCdfFn(k, hi) > p) {
+    hi *= 2;
+    console.log('expand', { lo, hi });
+  }
+
+  // Bisection
+  while (hi - lo > tolerance) {
+    const mid = (lo + hi) / 2;
+    console.log('bisect', { lo, hi, mid, poisson: poissonCdfFn(k, mid) });
+    if (poissonCdfFn(k, mid) > p) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return hi;
+}
+
+type MResults = {
+  m: number;
+  poissonCdf: number;
+  lambda: number;
+  f: number;
+};
+type CalculationResults = {
   rowsSampled: number;
   cutoffFrequencyExact: number;
   cutoffFrequency: number;
   minimumSelectivity: number;
+  targetSelectivity: number;
   targetLambda: number;
-  poissonCdf: number;
-  minimumM: number;
-  floorM: number;
-  floorPoissonCdf: number;
-  floorLambda: number;
-  floorF: number;
-  ceilM: number;
-  ceilPoissonCdf: number;
-  ceilLambda: number;
-  ceilF: number;
-}
-
-/**
- * Compute log of gamma function using Lanczos approximation
- */
-function logGamma(z: number): number {
-  const g = 7;
-  const c = [
-    0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059,
-    12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
-  ];
-
-  if (z < 0.5) {
-    return Math.log(Math.PI / Math.sin(Math.PI * z)) - logGamma(1 - z);
-  }
-
-  z -= 1;
-  let x = c[0];
-  for (let i = 1; i < g + 2; i++) {
-    x += c[i] / (z + i);
-  }
-  const t = z + g + 0.5;
-  return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
-}
-
-/**
- * Compute the regularized lower incomplete gamma function P(a, x)
- * using series expansion for small x and continued fraction for large x
- */
-function regularizedGammaP(a: number, x: number): number {
-  if (x < 0 || a <= 0) {
-    return 0;
-  }
-  if (x === 0) {
-    return 0;
-  }
-
-  // Use series expansion for x < a + 1
-  if (x < a + 1) {
-    let sum = 1 / a;
-    let term = 1 / a;
-    for (let n = 1; n < 200; n++) {
-      term *= x / (a + n);
-      sum += term;
-      if (Math.abs(term) < Math.abs(sum) * 1e-15) {
-        break;
-      }
-    }
-    return sum * Math.exp(-x + a * Math.log(x) - logGamma(a));
-  }
-
-  // Use continued fraction for x >= a + 1
-  const fpmin = 1e-300;
-  let b = x + 1 - a;
-  let c = 1 / fpmin;
-  let d = 1 / b;
-  let h = d;
-
-  for (let i = 1; i < 200; i++) {
-    const an = -i * (i - a);
-    b += 2;
-    d = an * d + b;
-    if (Math.abs(d) < fpmin) {
-      d = fpmin;
-    }
-    c = b + an / c;
-    if (Math.abs(c) < fpmin) {
-      c = fpmin;
-    }
-    d = 1 / d;
-    const del = d * c;
-    h *= del;
-    if (Math.abs(del - 1) < 1e-15) {
-      break;
-    }
-  }
-
-  return 1 - Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
-}
-
-/**
- * Poisson CDF: P(X <= k) for X ~ Poisson(lambda)
- * This equals the regularized upper incomplete gamma function Q(k+1, lambda)
- * which equals 1 - P(k+1, lambda)
- */
-function poissonCdf(k: number, lambda: number): number {
-  if (lambda <= 0) {
-    return k >= 0 ? 1 : 0;
-  }
-  if (k < 0) {
-    return 0;
-  }
-  return 1 - regularizedGammaP(k + 1, lambda);
-}
-
-/**
- * Inverse of the gamma CDF (quantile function)
- * Find lambda such that P(k, lambda) = p using Newton's method
- * For gamma distribution with shape=k and scale=1
- */
-function gammaInv(p: number, k: number, _scale: number, tolerance: number = 1e-10): number {
-  if (p <= 0) {
-    return 0;
-  }
-  if (p >= 1) {
-    return Infinity;
-  }
-
-  // Initial guess using Wilson-Hilferty approximation
-  let lambda = k;
-  if (k > 1) {
-    const normalQuantile = Math.sqrt(2) * inverseErf(2 * p - 1);
-    const tmp = 1 - 2 / (9 * k) + normalQuantile * Math.sqrt(2 / (9 * k));
-    lambda = k * tmp * tmp * tmp;
-    if (lambda <= 0) {
-      lambda = k;
-    }
-  }
-
-  // Newton-Raphson iteration
-  for (let i = 0; i < 100; i++) {
-    const cdf = regularizedGammaP(k, lambda);
-    const error = cdf - p;
-
-    if (Math.abs(error) < tolerance) {
-      break;
-    }
-
-    // PDF of gamma distribution (derivative of CDF)
-    const pdf = Math.exp((k - 1) * Math.log(lambda) - lambda - logGamma(k));
-    if (pdf === 0) {
-      break;
-    }
-
-    const delta = error / pdf;
-    lambda = Math.max(lambda - delta, lambda / 10);
-  }
-
-  return lambda;
-}
-
-/**
- * Inverse error function approximation
- */
-function inverseErf(x: number): number {
-  const a = 0.147;
-  const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x);
-
-  const ln1mx2 = Math.log(1 - x * x);
-  const part1 = 2 / (Math.PI * a) + ln1mx2 / 2;
-  const part2 = ln1mx2 / a;
-
-  return sign * Math.sqrt(Math.sqrt(part1 * part1 - part2) - part1);
-}
+  targetPoissonCdf: number;
+  targetM: number;
+  results: {
+    name: string;
+    result: MResults;
+  }[];
+};
 
 function calculate(
   statisticsTarget: number,
@@ -182,47 +85,54 @@ function calculate(
   confidence: number,
   selectivityOverride?: number
 ): CalculationResults {
+  // compute minimum selectivity based on the formula from PostgreSQL's array column statistics source code
   const rowsSampled = statisticsTarget * 300;
   const cutoffFrequencyExact = (9 * elemsPerRow * rowsSampled) / ((statisticsTarget * 10 * 1000) / 7);
   const cutoffFrequency = Math.ceil(cutoffFrequencyExact);
   const minimumSelectivity = cutoffFrequency / rowsSampled;
 
-  // Use override if provided, otherwise use calculated minimum
-  const targetSelectivity = selectivityOverride ?? minimumSelectivity;
-  const effectiveCutoffFrequency = selectivityOverride ? Math.ceil(targetSelectivity * rowsSampled) : cutoffFrequency;
+  const targetSelectivity = Math.max(selectivityOverride ?? 0, minimumSelectivity);
+  const targetFrequency = selectivityOverride ? targetSelectivity * rowsSampled : cutoffFrequency;
+  const targetLambda = targetFrequency;
 
-  const targetLambda = effectiveCutoffFrequency;
-  const poissonCdfValue = poissonCdf(effectiveCutoffFrequency - 1, targetLambda);
-  const minimumM = Math.log(1 - confidence) / Math.log(poissonCdfValue);
+  // P(X ≤ (targetFrequency-1), lambda)
+  const targetPoissonCdf = poissonCdfFn(targetFrequency - 1, targetLambda);
 
-  // Floor calculations
-  const floorM = Math.floor(minimumM);
-  const floorPoissonCdf = Math.pow(1 - confidence, 1 / floorM);
-  const floorLambda = gammaInv(1 - floorPoissonCdf, effectiveCutoffFrequency, 1);
-  const floorF = floorLambda / rowsSampled;
-
-  // Ceil calculations
-  const ceilM = Math.ceil(minimumM);
-  const ceilPoissonCdf = Math.pow(1 - confidence, 1 / ceilM);
-  const ceilLambda = gammaInv(1 - ceilPoissonCdf, effectiveCutoffFrequency, 1);
-  const ceilF = ceilLambda / rowsSampled;
+  // P(X ≤ (targetFrequency-1)) ≤ (1-p)^(1/m), solve for m: m ≥ log(1 - p) / log(P(X ≤ (targetFrequency-1)))
+  const targetM = Math.log(1 - confidence) / Math.log(targetPoissonCdf);
 
   return {
     rowsSampled,
     cutoffFrequencyExact,
     cutoffFrequency,
     minimumSelectivity,
+    targetSelectivity,
     targetLambda,
+    targetPoissonCdf,
+    targetM,
+    results: [
+      // Since `m` must be an integer, calculate values for both floor and ceiling of targetM
+      {
+        name: 'Floor',
+        result: getMResults(Math.floor(targetM), confidence, targetFrequency, rowsSampled),
+      },
+      {
+        name: 'Ceiling',
+        result: getMResults(Math.ceil(targetM), confidence, targetFrequency, rowsSampled),
+      },
+    ],
+  };
+}
+
+function getMResults(m: number, confidence: number, frequency: number, rowsSampled: number): MResults {
+  const poissonCdfValue = Math.pow(1 - confidence, 1 / m);
+  const lambda = minLambda(poissonCdfValue, frequency - 1);
+  const f = lambda / rowsSampled;
+  return {
+    m,
     poissonCdf: poissonCdfValue,
-    minimumM,
-    floorM,
-    floorPoissonCdf,
-    floorLambda,
-    floorF,
-    ceilM,
-    ceilPoissonCdf,
-    ceilLambda,
-    ceilF,
+    lambda,
+    f,
   };
 }
 
@@ -385,38 +295,32 @@ export function ArrayColumnPadding(): JSX.Element {
                   <ResultRow label="Rows Sampled" value={results.rowsSampled} />
                   <ResultRow label="Cutoff Frequency (exact)" value={results.cutoffFrequencyExact} />
                   <ResultRow label="Cutoff Frequency" value={results.cutoffFrequency} />
+                  <ResultRow label="Min Selectivity" value={results.minimumSelectivity} format="scientific" />
                 </Stack>
               </Grid.Col>
               <Grid.Col span={{ base: 12, md: 6 }}>
                 <Stack gap="xs">
-                  <ResultRow label="Minimum Selectivity" value={results.minimumSelectivity} format="scientific" />
+                  <ResultRow label="Target Selectivity" value={results.targetSelectivity} format="scientific" />
                   <ResultRow label="Target Lambda" value={results.targetLambda} />
-                  <ResultRow label="Poisson CDF" value={results.poissonCdf} />
-                  <ResultRow label="Minimum M" value={results.minimumM} />
+                  <ResultRow label="Target Poisson CDF" value={results.targetPoissonCdf} />
+                  <ResultRow label="Target m" value={results.targetM} />
                 </Stack>
               </Grid.Col>
             </Grid>
           </Paper>
 
           <Grid>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <ResultGroup
-                title="Floor Option"
-                m={results.floorM}
-                poissonCdf={results.floorPoissonCdf}
-                lambda={results.floorLambda}
-                f={results.floorF}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <ResultGroup
-                title="Ceiling Option"
-                m={results.ceilM}
-                poissonCdf={results.ceilPoissonCdf}
-                lambda={results.ceilLambda}
-                f={results.ceilF}
-              />
-            </Grid.Col>
+            {results.results.map(({ name, result }) => (
+              <Grid.Col span={{ base: 12, md: 6 }} key={name}>
+                <ResultGroup
+                  title={`${name} Option`}
+                  m={result.m}
+                  poissonCdf={result.poissonCdf}
+                  lambda={result.lambda}
+                  f={result.f}
+                />
+              </Grid.Col>
+            ))}
           </Grid>
         </>
       )}
