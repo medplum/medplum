@@ -6,8 +6,8 @@ import {
   Operator,
   parseSearchRequest,
   SearchRequest,
-  WithId,
   sleep,
+  WithId,
 } from '@medplum/core';
 import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
