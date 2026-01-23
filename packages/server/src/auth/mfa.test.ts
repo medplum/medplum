@@ -4,7 +4,7 @@ import { allOk, badRequest } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { authenticator } from 'otplib';
+import { generate } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -40,11 +40,12 @@ describe('MFA', () => {
     );
 
     // Try to enroll before ever getting status, should fail
+    const fakeToken1 = await generate({ secret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP' });
     const res1 = await request(app)
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate('1234567890') });
+      .send({ token: fakeToken1 });
     expect(res1.status).toBe(400);
     expect(res1.body.issue[0].details.text).toBe('Secret not found');
 
@@ -58,11 +59,12 @@ describe('MFA', () => {
     expect(res2.body.login).toBeDefined();
 
     // Try to verify before enrolling, should fail
+    const fakeToken2 = await generate({ secret: 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP' });
     const res3 = await request(app)
       .post('/auth/mfa/verify')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res2.body.login, token: authenticator.generate('1234567890') });
+      .send({ login: res2.body.login, token: fakeToken2 });
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toBe('User not enrolled in MFA');
 
@@ -86,24 +88,26 @@ describe('MFA', () => {
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: '1234567890' });
+      .send({ token: '000000' });
     expect(res6.status).toBe(400);
     expect(res6.body.issue[0].details.text).toBe('Invalid token');
 
     // Enroll MFA
+    const enrollToken = await generate({ secret });
     const res7 = await request(app)
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: enrollToken });
     expect(res7.status).toBe(200);
 
     // Try to enroll again, should fail
+    const enrollToken2 = await generate({ secret });
     const res8 = await request(app)
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: enrollToken2 });
     expect(res8.status).toBe(400);
     expect(res8.body.issue[0].details.text).toBe('Already enrolled');
 
@@ -137,16 +141,17 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res10.body.login, token: '1234567890' });
+      .send({ login: res10.body.login, token: '000000' });
     expect(res12.status).toBe(400);
     expect(res12.body.issue[0].details.text).toBe('Invalid MFA token');
 
     // Verify MFA success
+    const verifyToken = await generate({ secret });
     const res13 = await request(app)
       .post('/auth/mfa/verify')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res10.body.login, token: authenticator.generate(secret) });
+      .send({ login: res10.body.login, token: verifyToken });
     expect(res13.status).toBe(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
@@ -205,11 +210,12 @@ describe('MFA', () => {
     const secret = new URL(res4.body.enrollUri).searchParams.get('secret') as string;
 
     // Enroll MFA
+    const enrollToken = await generate({ secret });
     const res5 = await request(app)
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: enrollToken });
     expect(res5.status).toBe(200);
 
     // Call disable without token, should fail
@@ -230,11 +236,12 @@ describe('MFA', () => {
     expect(res7.body).toMatchObject<OperationOutcome>(badRequest('Invalid token'));
 
     // Call disable with token, should succeed
+    const disableToken = await generate({ secret });
     const res8 = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: disableToken });
     expect(res8.status).toBe(200);
     expect(res8.body).toMatchObject<OperationOutcome>(allOk);
 
@@ -248,12 +255,13 @@ describe('MFA', () => {
     const secret2 = new URL(res9.body.enrollUri).searchParams.get('secret') as string;
 
     // Call disable while no longer enrolled, should error
+    const disableToken2 = await generate({ secret: secret2 });
     const res10 = await request(app)
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({
-        token: authenticator.generate(secret2),
+        token: disableToken2,
       });
     expect(res10.status).toBe(400);
     expect(res10.body).toMatchObject<OperationOutcome>(badRequest('User not enrolled in MFA'));

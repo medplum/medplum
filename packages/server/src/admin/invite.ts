@@ -18,7 +18,7 @@ import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { authenticator } from 'otplib';
+import { generateSecret as otplibGenerateSecret } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -172,7 +172,7 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
 
   let mfaSecret: string | undefined = undefined;
   if (mfaRequired) {
-    mfaSecret = authenticator.generateSecret();
+    mfaSecret = otplibGenerateSecret();
   }
 
   return {

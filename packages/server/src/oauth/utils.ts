@@ -38,7 +38,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { authenticator } from 'otplib';
+import { verify } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
@@ -292,7 +292,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * @param token - The user supplied MFA token.
  * @returns The updated login resource.
  */
-export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+export async function verifyLoginMfaToken(login: Login, token: string): Promise<Login> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -312,8 +312,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-  if (!authenticator.verify({ token, secret })) {
+  if (!(await verifyMfaToken({ secret, token }))) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
@@ -321,6 +320,16 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     ...login,
     mfaVerified: true,
   });
+}
+
+export async function verifyMfaToken({ secret, token }: { secret: string; token: string }): Promise<boolean> {
+  try {
+    const result = await verify({ token, secret, epochTolerance: (getConfig().mfaAuthenticatorWindow ?? 1) * 30 });
+    return result.valid;
+  } catch {
+    // starting in v13, otplib throws if invalid. https://github.com/yeojz/otplib/issues/762
+    return false;
+  }
 }
 
 /**

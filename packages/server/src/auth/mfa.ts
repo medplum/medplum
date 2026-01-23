@@ -5,14 +5,13 @@ import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
-import { authenticator } from 'otplib';
+import { generateSecret, generateURI } from 'otplib';
 import { toDataURL } from 'qrcode';
-import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
-import { verifyMfaToken } from '../oauth/utils';
+import { verifyLoginMfaToken, verifyMfaToken } from '../oauth/utils';
 import { sendLoginResult } from './utils';
 
 export const mfaRouter = Router();
@@ -29,14 +28,14 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   if (!user.mfaSecret) {
     user = await systemRepo.updateResource({
       ...user,
-      mfaSecret: authenticator.generateSecret(),
+      mfaSecret: generateSecret(),
     });
   }
 
   const accountName = `Medplum - ${user.email}`;
   const issuer = 'medplum.com';
   const secret = user.mfaSecret as string;
-  const otp = authenticator.keyuri(accountName, issuer, secret);
+  const otp = generateURI({ secret, label: accountName, issuer });
 
   res.json({
     enrolled: false,
@@ -63,7 +62,7 @@ mfaRouter.post(
       return;
     }
 
-    const result = await verifyMfaToken(login, req.body.token);
+    const result = await verifyLoginMfaToken(login, req.body.token);
 
     await systemRepo.updateResource({
       ...user,
@@ -95,8 +94,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret;
     const token = req.body.token as string;
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    if (!authenticator.verify({ token, secret })) {
+    const valid = await verifyMfaToken({ token, secret });
+    if (!valid) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -121,7 +120,7 @@ mfaRouter.post(
 
     const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
-    const result = await verifyMfaToken(login, req.body.token);
+    const result = await verifyLoginMfaToken(login, req.body.token);
     await sendLoginResult(res, result);
   }
 );
@@ -153,8 +152,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret;
     const token = req.body.token as string;
-    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    if (!authenticator.verify({ token, secret })) {
+    const valid = await verifyMfaToken({ token, secret });
+    if (!valid) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -164,7 +163,7 @@ mfaRouter.post(
       mfaEnrolled: false,
       // We generate a new secret so that next time the user enrolls that they don't get the same secret
       // This allows for new secrets in the case of lost / stolen two-factor devices
-      mfaSecret: authenticator.generateSecret(),
+      mfaSecret: generateSecret(),
     });
     sendOutcome(res, allOk);
   }

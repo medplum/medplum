@@ -18,7 +18,7 @@ import {
   tryLogin,
   validateLoginRequest,
   validatePkce,
-  verifyMfaToken,
+  verifyLoginMfaToken,
 } from './utils';
 
 let client: ClientApplication;
@@ -380,7 +380,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login revoked', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', revoked: true } as Login, 'token');
+      await verifyLoginMfaToken({ resourceType: 'Login', revoked: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -390,7 +390,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login granted', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', granted: true } as Login, 'token');
+      await verifyLoginMfaToken({ resourceType: 'Login', granted: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -400,7 +400,7 @@ describe('OAuth utils', () => {
 
   test('verifyMfaToken login already verified', async () => {
     try {
-      await verifyMfaToken({ resourceType: 'Login', mfaVerified: true } as Login, 'token');
+      await verifyLoginMfaToken({ resourceType: 'Login', mfaVerified: true } as Login, 'token');
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;

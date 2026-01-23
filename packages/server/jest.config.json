@@ -8,6 +8,7 @@
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
+  "transformIgnorePatterns": ["/node_modules/(?!(@scure|@otplib|@noble)/)"],
   "moduleFileExtensions": ["ts", "js", "json", "node"],
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",

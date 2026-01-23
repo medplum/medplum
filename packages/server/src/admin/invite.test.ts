@@ -11,7 +11,7 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
-import { authenticator } from 'otplib';
+import { generate } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -1165,21 +1165,23 @@ describe('Admin Invite', () => {
     expect(res4.body.issue[0].details.text).toBe('Invalid MFA token');
 
     // Enroll with actual token, should succeed
+    const enrollToken = await generate({ secret });
     const res5 = await request(app)
       .post('/auth/mfa/login-enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+      .send({ login: res3.body.login, token: enrollToken });
     expect(res5.status).toBe(200);
     expect(res5.body.login).toBeDefined();
     expect(res5.body.code).toBeDefined();
 
     // Try to enroll again with the same token, should fail
+    const enrollToken2 = await generate({ secret });
     const res6 = await request(app)
       .post('/auth/mfa/login-enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+      .send({ login: res3.body.login, token: enrollToken2 });
     expect(res6.status).toBe(400);
     expect(res6.body.issue[0].details.text).toBe('Already enrolled');
   });
