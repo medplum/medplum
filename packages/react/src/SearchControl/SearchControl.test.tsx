@@ -1039,5 +1039,144 @@ describe('SearchControl', () => {
       expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
       expect(screen.getByTestId('count-display').textContent).toBe('200,001-200,020 of 403,091');
     });
+
+    test('Estimates total when not provided by server', async () => {
+      const props: SearchControlProps = {
+        search,
+        onLoad,
+      };
+
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        // No total provided - server didn't include it
+        entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resource: { resourceType: 'Patient', id: 'test' } })],
+        link: [
+          {
+            relation: 'next',
+            url: 'http://example.com/next',
+          },
+        ],
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      // When total is undefined, it estimates: offset (0) + entries (20) + hasNext (1) = 21
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('1-20');
+    });
+
+    test('Estimates total without next link', async () => {
+      const props: SearchControlProps = {
+        search: { ...search, offset: 20 },
+        onLoad,
+      };
+
+      await setup(props, {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        // No total provided
+        entry: [{ resource: HomerSimpson }, ...Array(4).fill({ resource: { resourceType: 'Patient', id: 'test' } })],
+        // No next link - this is the last page
+      });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+      // When total is undefined and no next link: offset (20) + entries (5) + hasNext (0) = 25
+      const element = screen.getByTestId('count-display');
+      expect(element.textContent).toBe('21-25');
+    });
+  });
+
+  test('Handles search error', async () => {
+    const medplum = new MockClient();
+    medplum.search = jest.fn().mockRejectedValue(new Error('Network error'));
+
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+      },
+    };
+
+    await setup(props, undefined, medplum);
+
+    expect(await screen.findByText('Network error')).toBeInTheDocument();
+  });
+
+  test('Uncheck row checkbox', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true,
+    };
+
+    await setup(props);
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    const rowCheckboxes = screen.getAllByTestId('row-checkbox');
+
+    // Check the first checkbox
+    await act(async () => {
+      fireEvent.click(rowCheckboxes[0]);
+    });
+    expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
+
+    // Uncheck the first checkbox
+    await act(async () => {
+      fireEvent.click(rowCheckboxes[0]);
+    });
+    expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(false);
+  });
+
+  test('Filter value dialog onCancel', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+        fields: ['id', 'name'],
+      },
+      onLoad: jest.fn(),
+      onChange: jest.fn(),
+    };
+
+    await setup(props);
+
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // Open the popup menu by clicking on the column header
+    await act(async () => {
+      fireEvent.click(screen.getByText('Name'));
+    });
+
+    // Click "Contains..." to open the filter value dialog
+    const containsButton = await screen.findByText('Contains...');
+    await act(async () => {
+      fireEvent.click(containsButton);
+    });
+
+    // Wait for the modal to appear with the filter value input
+    await screen.findByTestId('filter-value');
+
+    // Find and click the modal's close button (the X button in the modal header)
+    // The close button is in the Modal header with mantine-CloseButton-root class
+    const closeButtons = document.querySelectorAll('.mantine-CloseButton-root');
+    const closeButton = closeButtons[closeButtons.length - 1]; // Get the most recent modal's close button
+    await act(async () => {
+      fireEvent.click(closeButton);
+    });
+
+    // Verify onChange was not called (dialog was cancelled)
+    expect(props.onChange).not.toHaveBeenCalled();
   });
 });
