@@ -9,7 +9,6 @@ import type { JSX } from 'react';
 import { Link, useLocation } from 'react-router';
 import classes from './DoseSpotNotificationsPage.module.css';
 
-
 export function DoseSpotNotificationsPage(): JSX.Element {
   const location = useLocation();
   const isFavoritesTab = location.pathname.includes('/favorites');

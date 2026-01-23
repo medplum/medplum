@@ -128,7 +128,9 @@ export function PatientSearchPage(): JSX.Element {
             >
               <Button
                 size="sm"
-                leftSection={syncing ? <Loader size={16} color="gray" opacity={0.5} /> : <IconSwitchHorizontal size={16} />}
+                leftSection={
+                  syncing ? <Loader size={16} color="gray" opacity={0.5} /> : <IconSwitchHorizontal size={16} />
+                }
                 disabled={syncing}
                 onClick={handleDoseSpotSync}
                 variant="light"
@@ -142,9 +144,7 @@ export function PatientSearchPage(): JSX.Element {
         onClick={(e) =>
           navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)
         }
-        onAuxClick={(e) =>
-          window.open(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`, '_blank')
-        }
+        onAuxClick={(e) => window.open(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onNew={() => {
           navigate(prependPatientPath(patient, `/${search.resourceType}/new`))?.catch(console.error);
         }}
