@@ -1179,4 +1179,106 @@ describe('SearchControl', () => {
     // Verify onChange was not called (dialog was cancelled)
     expect(props.onChange).not.toHaveBeenCalled();
   });
+
+  test('Ignores clicks on checkbox cell', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onClick: jest.fn(),
+      checkboxesEnabled: true,
+    };
+
+    await setup(props);
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // Click directly on the checkbox - this should NOT trigger onClick
+    const rowCheckbox = screen.getAllByTestId('row-checkbox')[0];
+    await act(async () => {
+      fireEvent.click(rowCheckbox);
+    });
+
+    // onClick should not be called when clicking checkbox
+    expect(props.onClick).not.toHaveBeenCalled();
+  });
+
+  test('Ignores right clicks on row', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onClick: jest.fn(),
+      onAuxClick: jest.fn(),
+    };
+
+    await setup(props);
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // Right click (button === 2) should be ignored
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      fireEvent.click(rows[0], { button: 2 });
+    });
+
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).not.toHaveBeenCalled();
+  });
+
+  test('Export button calls onExport directly when provided', async () => {
+    const onExport = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      onExport,
+    });
+
+    expect(await screen.findByText('Export...')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export...'));
+    });
+
+    // onExport should be called directly, not opening the export dialog
+    expect(onExport).toHaveBeenCalled();
+  });
+
+  test('Displays estimated total with tilde when total is estimate', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        total: 'estimate',
+        count: 20,
+        fields: ['id', '_lastUpdated', 'name'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    await setup(props, {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 100,
+      entry: [{ resource: HomerSimpson }, ...Array(19).fill({ resource: { resourceType: 'Patient', id: 'test' } })],
+    });
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+    const element = screen.getByTestId('count-display');
+    // Should show tilde for estimate
+    expect(element.textContent).toBe('1-20 of ~100');
+  });
 });
