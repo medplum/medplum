@@ -5,6 +5,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { getTimeZone, resolveAvailability } from './utils/scheduling';
+import type { SchedulingParameters } from './utils/scheduling-parameters';
+import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
 const bookOperation = {
   resourceType: 'OperationDefinition',
@@ -67,6 +70,16 @@ function assertAllMatch<T>(objects: T[], msg: string): T {
   return first;
 }
 
+function hasMatchingServiceType(serviceType: Slot['serviceType'], schedulingParameters: SchedulingParameters): boolean {
+  return (
+    serviceType?.some(({ coding }) => {
+      return coding?.some(({ system, code }) => {
+        return schedulingParameters.serviceType.some((st) => st.system === system && st.code === code);
+      });
+    }) ?? false
+  );
+}
+
 /**
  * Handles HTTP requests for the Appointment $book operation.
  *
@@ -93,12 +106,41 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const schedules = await ctx.repo.readReferences(slots.map((slot) => slot.schedule));
   assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
 
+  schedules.forEach((schedule) => {
+    if (schedule.actor.length !== 1) {
+      throw new OperationOutcomeError(badRequest('$book only supported on schedules with exactly one actor'));
+    }
+  });
+
+  const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
+  assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
+
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
-        slots.map(async (slot) => {
-          const schedule = getReferenceString(slot.schedule);
-          invariant(schedule, 'Slot missing schedule reference after load succeeded');
+        slots.map(async (slot, index) => {
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === slot.schedule.reference);
+          invariant(schedule, 'Slot.schedule not loaded');
+
+          const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
+          invariant(actor, 'Slot.schedule.actor not loaded');
+          const actorTimeZone = getTimeZone(actor);
+          if (!actorTimeZone) {
+            throw new OperationOutcomeError(
+              badRequest('No timezone specified', `Parameters.parameter[${index}].schedule.actor`)
+            );
+          }
+
+          const extensions = parseSchedulingParametersExtensions(schedule);
+          let parameters = extensions.filter((ext) => hasMatchingServiceType(slot.serviceType, ext));
+          if (parameters.length === 0) {
+            // If no service type match found, fall back to wildcard availability
+            parameters = extensions.filter((ext) => ext.serviceType.length === 0);
+          }
+
+          if (parameters.length === 0) {
+            throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
+          }
 
           const existingSlots = await ctx.repo.searchResources<Slot>({
             resourceType: 'Slot',
@@ -107,7 +149,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               {
                 code: 'schedule',
                 operator: Operator.EQUALS,
-                value: schedule,
+                value: getReferenceString(schedule),
               },
               {
                 code: 'status',
@@ -124,6 +166,21 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
           if (existingSlots.length > 0) {
             throw new OperationOutcomeError(conflict('Availability conflict'));
+          }
+
+          const interval = { start: new Date(start), end: new Date(end) };
+          const activeParameters = parameters.find((params) => {
+            const timeZone = params.timezone ?? actorTimeZone;
+            const result = resolveAvailability(params, interval, timeZone);
+            return (
+              result[0] &&
+              result[0].start.getTime() <= interval.start.getTime() &&
+              result[0].end.getTime() >= interval.end.getTime()
+            );
+          });
+
+          if (!activeParameters) {
+            throw new OperationOutcomeError(badRequest('No availability found at this time'));
           }
         })
       );

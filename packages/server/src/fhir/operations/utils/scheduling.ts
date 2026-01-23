@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isDefined } from '@medplum/core';
-import type { Coding, Slot } from '@medplum/fhirtypes';
+import { getExtensionValue, isDefined } from '@medplum/core';
+import type { Coding, Resource, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
 import { areIntervalsOverlapping, clamp } from '../../../util/date';
 import type { SchedulingParameters } from './scheduling-parameters';
 
-type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
-
 // Tricky: support zero-based and one-based indexing by including Sunday on both ends.
 // (Date#getDay() uses zero-based indexing and Temporal#dayOfWeek uses one-based indexing)
+type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
@@ -50,6 +49,19 @@ function hasMatchingServiceType(slot: Slot, inputCoding: Coding | undefined): bo
     }
   }
   return false;
+}
+
+export const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+
+/**
+ * Given a Resource, try to identify a relevant time zone from its extensions.
+ * See https://build.fhir.org/ig/HL7/fhir-extensions/StructureDefinition-timezone.html
+ *
+ * @param resource - The Resource to examing
+ * @returns string | undefined - The contents of the timezone extension
+ */
+export function getTimeZone(resource: Resource): string | undefined {
+  return getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
 }
 
 /**

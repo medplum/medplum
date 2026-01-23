@@ -33,7 +33,7 @@ describe('Appointment/$book', () => {
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
-    practitioner2 = await makePractitioner({ timezone: 'America/Phoenix' });
+    practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
   });
 
   afterAll(async () => {
@@ -45,6 +45,28 @@ describe('Appointment/$book', () => {
       resourceType: 'Schedule',
       meta: { project: project.project.id },
       actor: [createReference(actor)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 30, unit: 'min' },
+            },
+          ],
+        },
+      ],
     });
   }
 
@@ -286,7 +308,7 @@ describe('Appointment/$book', () => {
   });
 
   test('fails with Conflict when there is an overlapping busy slot booked', async () => {
-    const practitioner = await makePractitioner();
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await makeSchedule(practitioner);
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
@@ -334,7 +356,7 @@ describe('Appointment/$book', () => {
   });
 
   test('succeeds when there is an explicit "free" slot at the same time', async () => {
-    const practitioner = await makePractitioner();
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await makeSchedule(practitioner);
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
@@ -369,5 +391,91 @@ describe('Appointment/$book', () => {
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
+  });
+
+  test('it fails when trying to book outside of availability windows', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/New_York' });
+    const schedule = await makeSchedule(practitioner);
+    const start = '2026-01-15T07:00:00-04:00';
+    const end = '2026-01-15T07:30:00-04:00';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'No availability found at this time',
+        },
+      },
+    ]);
+    expect(response.status).toEqual(400);
+  });
+
+  test.each([
+    // start of NYC window isn't in LA availability
+    { start: '2026-01-15T09:00:00-04:00', end: '2026-01-15T10:00:00-04:00', succeeds: false },
+    // end of LA window isn't in NYC availability
+    { start: '2026-01-15T16:00:00-07:00', end: '2026-01-15T17:00:00-07:00', succeeds: false },
+    // midday is in both windows
+    { start: '2026-01-15T13:00:00-04:00', end: '2026-01-15T14:00:00-04:00', succeeds: true },
+  ])('with practitioners in different timezones', async ({ start, end, succeeds }) => {
+    const practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
+    const practitioner2 = await makePractitioner({ timezone: 'America/Los_Angeles' });
+    const schedule1 = await makeSchedule(practitioner1);
+    const schedule2 = await makeSchedule(practitioner2);
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule1),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule2),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    if (succeeds) {
+      expect(response.status).toEqual(201);
+    } else {
+      expect(response.status).toEqual(400);
+    }
   });
 });

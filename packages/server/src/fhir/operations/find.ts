@@ -6,17 +6,16 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  getExtensionValue,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, OperationDefinition, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, resolveAvailability } from './utils/scheduling';
+import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
 import type { HardCoding, SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
@@ -43,11 +42,6 @@ type FindParameters = {
   end: string;
   'service-type'?: string;
 };
-
-const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
-function getTimeZone(resource: Resource): string | undefined {
-  return getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
-}
 
 // Given scheduling parameter descriptions, and an array of input service types, return
 // [SchedulingParameters, serviceType] pairs.
