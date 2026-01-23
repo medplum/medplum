@@ -24,16 +24,6 @@ vi.mock('@medplum/dosespot-react', async () => {
   };
 });
 
-// Mock FavoriteMedicationsTable
-vi.mock('./FavoriteMedicationsTable', () => ({
-  FavoriteMedicationsTable: () => <div>Favorite Medications Table</div>,
-}));
-
-// Mock DoseSpotFavoritesTab
-vi.mock('./DoseSpotFavoritesTab', () => ({
-  DoseSpotFavoritesTab: () => <div>DoseSpot Favorites Tab</div>,
-}));
-
 describe('DoseSpotNotificationsPage', () => {
   async function setup(initialPath = '/dosespot'): Promise<void> {
     const medplum = new MockClient();
@@ -65,10 +55,12 @@ describe('DoseSpotNotificationsPage', () => {
     });
   });
 
-  test('Renders favorites tab when on favorites route', async () => {
+  test('Renders favorites iframe when on favorites route', async () => {
     await setup('/dosespot/favorites');
     await waitFor(() => {
-      expect(screen.getByText('DoseSpot Favorites Tab')).toBeDefined();
+      const iframe = screen.getByTitle<HTMLIFrameElement>('dosespot-favorites-iframe');
+      expect(iframe).toBeDefined();
+      expect(iframe.src).toBe('https://dosespot.example.com/iframe');
     });
   });
 
