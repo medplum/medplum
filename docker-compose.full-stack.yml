@@ -5,6 +5,8 @@ services:
     environment:
       - POSTGRES_USER=medplum
       - POSTGRES_PASSWORD=medplum
+    volumes:
+      - medplum-postgres-data:/var/lib/postgresql/data
     command:
       # We use command line args instead of a postgres.conf to avoid additional setup out of the box
       - 'postgres'
@@ -107,3 +109,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+volumes:
+  medplum-postgres-data:

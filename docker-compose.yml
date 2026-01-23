@@ -13,6 +13,7 @@ services:
     volumes:
       - ./postgres/postgres.conf:/usr/local/etc/postgres/postgres.conf
       - ./postgres/:/docker-entrypoint-initdb.d/
+      - medplum-postgres-data:/var/lib/postgresql/data
     command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
     ports:
       - '5432:5432'
@@ -22,3 +23,6 @@ services:
     command: redis-server --requirepass medplum
     ports:
       - '6379:6379'
+
+volumes:
+  medplum-postgres-data:
