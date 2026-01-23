@@ -1291,6 +1291,9 @@ export function replaceNullWithUndefinedInRows(rows: any[]): void {
 export function getSearchParamColumnType(impl: ColumnSearchParameterImplementation): string {
   let baseColumnType: string;
   switch (impl.type) {
+    case SearchParameterType.UUID:
+      baseColumnType = 'UUID';
+      break;
     case SearchParameterType.BOOLEAN:
       baseColumnType = 'BOOLEAN';
       break;

@@ -1440,7 +1440,15 @@ export function buildDateSearchFilter(
     }
   }
 
-  return buildCondition(impl, filter, splitSearchOnComma(filter.value), new Column(table, impl.columnName));
+  const column = new Column(table, impl.columnName);
+  const columnType = getSearchParamColumnType(impl);
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
+  if (impl.array) {
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', filter.value, columnType);
+    return negated ? new Negation(condition) : condition;
+  } else {
+    return new Condition(column, fhirOperatorToSqlOperator(filter.operator), filter.value, columnType);
+  }
 }
 
 /**
@@ -1568,7 +1576,7 @@ function buildCondition(
   const columnType = getSearchParamColumnType(impl);
   const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
   if (impl.array) {
-    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, `${columnType}[]`);
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, columnType);
     return negated ? new Negation(condition) : condition;
   } else if (values.length > 1) {
     const condition = new Condition(column, 'IN', values, columnType);
