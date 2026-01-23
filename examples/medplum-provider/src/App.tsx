@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
@@ -15,12 +15,14 @@ import type { JSX } from 'react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
+import { DoseSpotNavbarLink, NavbarLinkWithCount } from './components/NavbarNotificationLink';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
+import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -76,7 +78,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
-                      <NotificationIcon
+                      <NavbarLinkWithCount
                         resourceType="Communication"
                         countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
                         subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
@@ -88,7 +90,7 @@ export function App(): JSX.Element | null {
                   },
                   {
                     icon: (
-                      <NotificationIcon
+                      <NavbarLinkWithCount
                         resourceType="Task"
                         countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
                         subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
@@ -106,7 +108,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
-                    ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
+                    ? [{ icon: <DoseSpotNavbarLink iconComponent={<DoseSpotIcon />} />, label: 'DoseSpot', href: '/dosespot' }]
                     : []),
                 ],
               },
@@ -162,7 +164,8 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/dosespot" element={<DoseSpotTab />} />
+              {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
+              {hasDoseSpot && <Route path="/dosespot/favorites" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
