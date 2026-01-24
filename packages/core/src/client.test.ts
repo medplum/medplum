@@ -690,7 +690,7 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.resourceType).toBeDefined();
     expect(client.getAccessToken()).toBeDefined();
-    
+
     // Verify that the membership_id was included in the request
     expect(requestBody).toBeDefined();
     expect(requestBody).toContain('membership_id=' + membershipId);
