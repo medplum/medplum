@@ -4084,10 +4084,8 @@ describe('App', () => {
       }
 
       // Start HL7 server that sends CA (commit ack) first, then AA (application ack)
-      let messageCount = 0;
       const hl7Server = new Hl7Server((conn) => {
         conn.addEventListener('message', ({ message }) => {
-          messageCount++;
           // First send a CA (commit ack), then AA (application ack)
           const caAck = message.buildAck({ ackCode: 'CA' });
           conn.send(caAck);
