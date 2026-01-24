@@ -38,7 +38,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
-import { ReturnAckCategory } from './agent';
+import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
