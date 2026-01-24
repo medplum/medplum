@@ -5,6 +5,7 @@ import type {
   AgentMessage,
   AgentReloadConfigRequest,
   AgentTransmitRequest,
+  AgentTransmitResponse,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
 } from '@medplum/core';
@@ -3471,7 +3472,7 @@ describe('App', () => {
 
       const state = {
         mySocket: undefined as Client | undefined,
-        transmitResponses: [] as AgentMessage[],
+        transmitResponses: [] as AgentTransmitResponse[],
       };
 
       const mockServer = new Server('wss://example.com/ws/agent');
@@ -4035,6 +4036,536 @@ describe('App', () => {
       // Stats should have recorded the new message
       const client = pool?.getClients()[0];
       expect(client?.stats?.getSampleCount()).toBe(1);
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+  });
+
+  describe('returnAck handling in pushMessage', () => {
+    test('Uses default of FIRST when no returnAck options are specified', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA (commit ack) first, then AA (application ack)
+      let messageCount = 0;
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          messageCount++;
+          // First send a CA (commit ack), then AA (application ack)
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          // Delay slightly before sending the AA
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58200);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58200',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // With FIRST (default), should return the CA immediately
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('CA');
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('Uses per-message returnAck when specified', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA first, then AA
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          // First send a CA (commit ack), then AA (application ack)
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          // Delay before sending the AA
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58201);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58201',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+            returnAck: 'application', // Explicitly request application-level ACK
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response - should wait for AA, not return on CA
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // With APPLICATION, should skip CA and return the AA
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('AA');
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('Uses defaultReturnAck from Device URL when per-message returnAck is not specified', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA first, then AA
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58202);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      // Include defaultReturnAck=application in the Device URL
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58202?defaultReturnAck=application',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+            // No returnAck specified - should use defaultReturnAck from URL
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // With defaultReturnAck=application, should skip CA and return the AA
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('AA');
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('Per-message returnAck takes priority over defaultReturnAck from Device URL', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA first, then AA
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58203);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      // Device URL has defaultReturnAck=application, but message specifies returnAck=first
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58203?defaultReturnAck=application',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+            returnAck: 'first', // Per-message returnAck should override Device URL default
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // Per-message returnAck=first should take priority, so should return CA
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('CA');
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('parseReturnAck handles invalid values gracefully and defaults to FIRST', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA first, then AA
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58204);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      // Device URL has an invalid defaultReturnAck value
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58204?defaultReturnAck=invalid_value',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // Invalid defaultReturnAck should fall back to FIRST, so should return CA
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('CA');
+
+      // Should have logged a warning about the invalid value
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid value for returnAck; expected 'first' or 'application'")
+      );
+
+      await app.stop();
+      await hl7Server.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      console.log = originalConsoleLog;
+    });
+
+    test('parseReturnAck is case-insensitive', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        transmitResponses: [] as AgentTransmitResponse[],
+      };
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', (socket) => {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          if (command.type === 'agent:connect:request') {
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+          } else if (command.type === 'agent:transmit:response') {
+            state.transmitResponses.push(command);
+          }
+        });
+      });
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      // Start HL7 server that sends CA first, then AA
+      const hl7Server = new Hl7Server((conn) => {
+        conn.addEventListener('message', ({ message }) => {
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          conn.send(caAck);
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            conn.send(aaAck);
+          }, 50);
+        });
+      });
+      await hl7Server.start(58205);
+
+      const hl7MessageBody =
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+      const wsClient = state.mySocket as unknown as Client;
+      // Use uppercase APPLICATION in the URL
+      wsClient.send(
+        Buffer.from(
+          JSON.stringify({
+            type: 'agent:transmit:request',
+            remote: 'mllp://localhost:58205?defaultReturnAck=APPLICATION',
+            contentType: ContentType.HL7_V2,
+            body: hl7MessageBody,
+            callback: 'test-callback',
+          } satisfies AgentTransmitRequest)
+        )
+      );
+
+      // Wait for response
+      while (state.transmitResponses.length === 0) {
+        await sleep(50);
+      }
+
+      // Should recognize APPLICATION (case-insensitive) and return AA
+      expect(state.transmitResponses.length).toBe(1);
+      const response = Hl7Message.parse(state.transmitResponses[0].body);
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('AA');
 
       await app.stop();
       await hl7Server.stop();

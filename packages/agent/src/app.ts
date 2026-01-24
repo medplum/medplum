@@ -28,7 +28,7 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import { DEFAULT_ENCODING } from '@medplum/hl7';
+import { DEFAULT_ENCODING, ReturnAckCategory } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, spawn } from 'node:child_process';
@@ -1014,6 +1014,13 @@ export class App {
 
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
+    const defaultReturnAck = this.parseReturnAck(address.searchParams.get('defaultReturnAck'));
+
+    // Determine the effective returnAck with fallback chain:
+    // 1. Per-message returnAck from AgentTransmitRequest (highest priority)
+    // 2. defaultReturnAck from Device URL
+    // 3. 'first' (default - for backwards compatibility)
+    const returnAck = message.returnAck ?? defaultReturnAck ?? ReturnAckCategory.FIRST;
 
     let pool: Hl7ClientPool;
 
@@ -1073,7 +1080,7 @@ export class App {
     }
 
     client
-      .sendAndWait(requestMsg)
+      .sendAndWait(requestMsg, { returnAck })
       .then((response) => {
         this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
         this.addToWebSocketQueue({
@@ -1115,5 +1122,32 @@ export class App {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Parses and normalizes the `returnAck` mode parameter from the Device URL.
+   *
+   * @param rawValue - The raw query parameter value retrieved from the Device URL (e.g., 'application', 'first', or undefined).
+   * @returns The parsed `ReturnAckCategory` enum value.
+   */
+  private parseReturnAck(rawValue: string | null | undefined): ReturnAckCategory | undefined {
+    if (!rawValue) {
+      return undefined;
+    }
+
+    const normalizedValue = rawValue.toLowerCase();
+
+    if (normalizedValue === 'application') {
+      return ReturnAckCategory.APPLICATION;
+    }
+
+    if (normalizedValue === 'first') {
+      return ReturnAckCategory.FIRST;
+    }
+
+    this.log.warn(`Invalid value for returnAck; expected 'first' or 'application'. Using default of 'first'.`, {
+      value: rawValue,
+    });
+    return undefined;
   }
 }
