@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, OperationOutcomeError, sleep, validationError } from '@medplum/core';
+import { Hl7Message, OperationOutcomeError, ReturnAckCategory, sleep, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
 import type net from 'node:net';
 import { Hl7Base } from './base';
@@ -10,6 +10,9 @@ import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent 
 // iconv-lite docs have great examples and explanations for how to use Buffers with iconv-lite:
 // See: https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding
 
+// Export `ReturnAckCategory` for backwards-compat
+export { ReturnAckCategory };
+
 export type Hl7MessageQueueItem = {
   message: Hl7Message;
   resolve: (reply: Hl7Message) => void;
@@ -17,14 +20,6 @@ export type Hl7MessageQueueItem = {
   returnAck: ReturnAckCategory;
   timer?: NodeJS.Timeout;
 };
-
-export const ReturnAckCategory = {
-  /** The first ACK message received is the one returned */
-  FIRST: 'first',
-  /** Only return upon receiving a positive application-level ACK (AA), or if a commit-level error occurred */
-  APPLICATION: 'application',
-} as const;
-export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAckCategory];
 
 export interface SendAndWaitOptions {
   /** The ACK-level that the Promise should resolve on. The default is `ReturnAckCategory.ANY` (returns on the first ACK of any type). */
