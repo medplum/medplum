@@ -4,6 +4,7 @@ import { badRequest } from '@medplum/core';
 import type { OperationOutcome, Project } from '@medplum/fhirtypes';
 import { Router } from 'express';
 import { authenticateRequest } from '../oauth/middleware';
+import { appleHandler, appleValidator } from './apple';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
 import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
@@ -41,6 +42,7 @@ authRouter.post('/resetpassword', resetPasswordValidator, validateRecaptcha(), r
 authRouter.post('/setpassword', setPasswordValidator, setPasswordHandler);
 authRouter.post('/verifyemail', verifyEmailValidator, verifyEmailHandler);
 authRouter.post('/google', googleValidator, googleHandler);
+authRouter.post('/apple', appleValidator, appleHandler);
 authRouter.post('/exchange', exchangeValidator, exchangeHandler);
 authRouter.post('/revoke', authenticateRequest, revokeValidator, revokeHandler);
 authRouter.get('/login/:login', statusValidator, statusHandler);
