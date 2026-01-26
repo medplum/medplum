@@ -352,7 +352,7 @@ export class App {
    * Run healthcheck using a configured endpoint/channel.
    * This sends a message through the normal HL7 flow.
    * @param channelNameOrEndpoint - The channel name or endpoint to run the healthcheck against.
-   * @return a Promise that resolves when the healthcheck completes.
+   * @returns a Promise that resolves when the healthcheck completes.
    */
   private async runConfiguredHealthcheck(channelNameOrEndpoint: string): Promise<void> {
     this.log.info(`Running configured healthcheck: ${channelNameOrEndpoint}`);
