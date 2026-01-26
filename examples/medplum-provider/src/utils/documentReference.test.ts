@@ -64,7 +64,7 @@ describe('documentReference utils', () => {
       };
       const searchSpy = vi.spyOn(medplum, 'searchResources');
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum as any, request);
+      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
 
       expect(result).toEqual([]);
       expect(searchSpy).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('documentReference utils', () => {
       ];
       const searchSpy = vi.spyOn(medplum, 'searchResources').mockResolvedValue(documents as any);
 
-      const result = await fetchLabOrderRequisitionDocuments(medplum as any, request);
+      const result = await fetchLabOrderRequisitionDocuments(medplum, request);
 
       expect(searchSpy).toHaveBeenCalledWith(
         'DocumentReference',

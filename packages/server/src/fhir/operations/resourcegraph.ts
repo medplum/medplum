@@ -110,7 +110,7 @@ async function followLinks(
     return;
   }
   for (const link of links) {
-    for (const target of link.target || []) {
+    for (const target of link.target ?? EMPTY) {
       let linkedResources: WithId<Resource>[];
 
       if (isFhirPathLink(link)) {

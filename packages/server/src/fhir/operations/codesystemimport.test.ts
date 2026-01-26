@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, EMPTY } from '@medplum/core';
 import type { CodeSystem, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -52,14 +52,12 @@ describe('CodeSystem $import', () => {
       .send();
     expect(resS.status).toStrictEqual(200);
 
-    if (resS.body.entry.length > 0) {
-      for (const entry of resS.body.entry) {
-        const resD = await request(app)
-          .delete(`/fhir/R4/CodeSystem/${entry.resource.id}`)
-          .set('Authorization', 'Bearer ' + accessToken)
-          .send();
-        expect(resD.status).toStrictEqual(200);
-      }
+    for (const entry of resS.body.entry ?? EMPTY) {
+      const resD = await request(app)
+        .delete(`/fhir/R4/CodeSystem/${entry.resource.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send();
+      expect(resD.status).toStrictEqual(200);
     }
 
     const res = await request(app)

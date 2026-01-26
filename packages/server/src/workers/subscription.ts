@@ -4,6 +4,7 @@ import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@me
 import {
   AccessPolicyInteraction,
   ContentType,
+  EMPTY,
   Operator,
   createReference,
   deepClone,
@@ -651,11 +652,9 @@ function buildRestHookHeaders(
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
   }
 
-  if (subscription.channel?.header) {
-    for (const header of subscription.channel.header) {
-      const [key, value] = header.split(/:/);
-      headers[key.trim()] = value.trim();
-    }
+  for (const header of subscription.channel.header ?? EMPTY) {
+    const [key, value] = header.split(/:/);
+    headers[key.trim()] = value.trim();
   }
 
   // Look for signature secret in Medplum extension
@@ -706,7 +705,7 @@ async function execBot(
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
-  const project = bot.meta?.project as string;
+  const project = subscription.meta?.project as string;
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;

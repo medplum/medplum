@@ -3,7 +3,7 @@
 import { Button, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, getReferenceString, normalizeErrorString, parseReference } from '@medplum/core';
+import { createReference, getQuestionnaireAnswers, normalizeErrorString, parseReference } from '@medplum/core';
 import type {
   Coding,
   Coverage,
@@ -16,8 +16,8 @@ import type {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 
 interface InitiateEligibilityRequestProps {
   readonly coverage: Coverage;
@@ -71,18 +71,12 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
       resourceType: 'CoverageEligibilityRequest',
       status: 'active',
       purpose: ['benefits'],
-      patient: {
-        reference: getReferenceString(patient),
-      },
+      patient: createReference(patient),
       created: new Date().toISOString(),
-      insurer: {
-        reference: getReferenceString(insurer),
-      },
+      insurer: createReference(insurer),
       insurance: [
         {
-          coverage: {
-            reference: getReferenceString(coverage),
-          },
+          coverage: createReference(coverage),
         },
       ],
       item: [
@@ -96,9 +90,7 @@ export function InitiateEligibilityRequest({ coverage }: InitiateEligibilityRequ
         start,
         end,
       },
-      enterer: {
-        reference: getReferenceString(profile),
-      },
+      enterer: createReference(profile),
     };
 
     try {

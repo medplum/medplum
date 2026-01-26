@@ -1,10 +1,12 @@
 services:
   postgres:
     image: postgres:16
-    restart: always
+    restart: unless-stopped # for production usage, consider using 'always'
     environment:
       - POSTGRES_USER=medplum
       - POSTGRES_PASSWORD=medplum
+    volumes:
+      - medplum-postgres-data:/var/lib/postgresql/data
     command:
       # We use command line args instead of a postgres.conf to avoid additional setup out of the box
       - 'postgres'
@@ -26,7 +28,7 @@ services:
 
   redis:
     image: redis:7
-    restart: always
+    restart: unless-stopped # for production usage, consider 'always'
     command: redis-server --requirepass medplum
     ports:
       - '6379:6379'
@@ -39,7 +41,7 @@ services:
   # Medplum server container
   medplum-server:
     image: medplum/medplum-server:latest
-    restart: always
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,7 +98,7 @@ services:
   # Medplum app container (web UI)
   medplum-app:
     image: medplum/medplum-app:latest
-    restart: always
+    restart: unless-stopped
     depends_on:
       medplum-server:
         condition: service_healthy
@@ -107,3 +109,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+volumes:
+  medplum-postgres-data:

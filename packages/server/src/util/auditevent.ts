@@ -329,6 +329,9 @@ function tail(str: string, n: number): string {
   return str.substring(str.length - n);
 }
 
+const SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL =
+  'https://medplum.com/fhir/StructureDefinition/subscription-audit-event-destination';
+
 /**
  * Creates an AuditEvent for a subscription attempt.
  * @param resource - The resource that triggered the subscription.
@@ -349,7 +352,7 @@ export async function createSubscriptionAuditEvent(
   const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
-  await systemRepo.createResource<AuditEvent>({
+  const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
       project: auditedEvent.meta?.project,
@@ -377,7 +380,32 @@ export async function createSubscriptionAuditEvent(
     outcome,
     outcomeDesc,
     extension: buildTracingExtension(),
-  });
+  };
+
+  // Read destination extensions from subscription
+  const destinations: string[] = [];
+  if (subscription?.extension) {
+    for (const ext of subscription.extension) {
+      if (ext.url === SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL && ext.valueCode) {
+        destinations.push(ext.valueCode);
+      }
+    }
+  }
+
+  // Default to 'resource' if no extensions found
+  const finalDestinations = destinations.length > 0 ? destinations : ['resource'];
+
+  // Process each destination
+  for (const destination of finalDestinations) {
+    switch (destination) {
+      case 'resource':
+        await systemRepo.createResource<AuditEvent>(auditEvent);
+        break;
+      case 'log':
+        logAuditEvent(auditEvent);
+        break;
+    }
+  }
 }
 
 export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {

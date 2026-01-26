@@ -28,6 +28,16 @@ import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference, isResource } from './types';
 
 /**
+ * Sleep options.
+ */
+export interface SleepOptions {
+  /**
+   * Optional `AbortSignal` that can be used to cancel the scheduled sleep.
+   */
+  readonly signal?: AbortSignal | null;
+}
+
+/**
  * QueryTypes defines the different ways to specify FHIR search parameters.
  *
  * Can be any valid input to the URLSearchParams() constructor.
@@ -355,13 +365,11 @@ function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer[0];
-      }
-      buildQuestionnaireAnswerItems(item.item, result);
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      result[item.linkId] = item.answer[0];
     }
+    buildQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -387,17 +395,15 @@ function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        if (result[item.linkId]) {
-          result[item.linkId] = [...result[item.linkId], ...item.answer];
-        } else {
-          result[item.linkId] = item.answer;
-        }
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      if (result[item.linkId]) {
+        result[item.linkId] = [...result[item.linkId], ...item.answer];
+      } else {
+        result[item.linkId] = item.answer;
       }
-      buildAllQuestionnaireAnswerItems(item.item, result);
     }
+    buildAllQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -879,14 +885,8 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
  * @returns The code for the matching system, or undefined if not found.
  */
 export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
+  for (const category of categories ?? EMPTY) {
+    for (const coding of category.coding ?? EMPTY) {
       if (coding.system === system) {
         return coding.code;
       }
@@ -1250,12 +1250,24 @@ export function singularize<T>(value: T | T[] | undefined): T | undefined {
 
 /**
  * Sleeps for the specified number of milliseconds.
- * @param ms - Time delay in milliseconds
+ * @param ms - Time delay in milliseconds.
+ * @param options - Optional sleep options.
  * @returns A promise that resolves after the specified number of milliseconds.
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
+export const sleep = (ms: number, options?: SleepOptions): Promise<void> =>
+  new Promise((resolve, reject) => {
+    options?.signal?.throwIfAborted();
+
+    const timeout = setTimeout(resolve, ms);
+
+    options?.signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout);
+        reject(options.signal?.reason);
+      },
+      { once: true }
+    );
   });
 
 /**
@@ -1493,6 +1505,19 @@ export function escapeHtml(unsafe: string): string {
     .replaceAll('‘', '&lsquo;')
     .replaceAll('’', '&rsquo;')
     .replaceAll('…', '&hellip;');
+}
+
+/**
+ * Helper function to narrow a type by excluding undefined/null values.
+ * @param value - The value to refine
+ * @returns boolean
+ *
+ * Example usage:
+ *   const arr: Array<number | undefined> = [1,undefined];
+ *   const refined: Array<number> = arr.filter(isDefined);
+ */
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
 }
 
 /** Constant empty array. */

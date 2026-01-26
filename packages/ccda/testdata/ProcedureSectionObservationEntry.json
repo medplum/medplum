@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -66,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -112,7 +114,7 @@
           ],
           "text": "Borderline normal electrocardiogram"
         },
-        "effectiveDateTime": "2014-03-29T09:15:22-0500",
+        "effectiveDateTime": "2014-03-29T09:15:22-05:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",

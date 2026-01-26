@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, normalizeErrorString } from '@medplum/core';
+import { badRequest, createReference, EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
@@ -68,7 +68,7 @@ async function setupSubscriptionHandler(): Promise<void> {
     ][];
     for (const [resource, subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
-      for (const socket of subToWsLookup.get(subscriptionId) ?? []) {
+      for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
         // Get the repo for this socket in the context of the subscription
         const subMetadataMap = wsToSubLookup.get(socket);
         if (!subMetadataMap) {

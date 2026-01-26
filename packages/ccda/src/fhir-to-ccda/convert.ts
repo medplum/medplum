@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { EMPTY } from '@medplum/core';
 import type {
   Address,
   Bundle,
@@ -266,10 +267,8 @@ export class FhirToCcdaConverter {
   private createSections(): CcdaSection[] {
     const sections: CcdaSection[] = [];
 
-    if (this.composition.section) {
-      for (const section of this.composition.section) {
-        sections.push(this.createSection(section));
-      }
+    for (const section of this.composition.section ?? EMPTY) {
+      sections.push(this.createSection(section));
     }
 
     return sections;

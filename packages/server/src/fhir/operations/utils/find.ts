@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import { isDefined } from '@medplum/core';
 import type { Coding, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import { flatMapMax } from '../../../util/array';
 import type { Interval } from '../../../util/date';
 import { addMinutes, areIntervalsOverlapping, clamp } from '../../../util/date';
-import { isDefined } from '../../../util/types';
 import type { SchedulingParameters } from './scheduling-parameters';
 
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';

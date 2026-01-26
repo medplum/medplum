@@ -2,22 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { ChargeItemList } from './ChargeItemList';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import { ChargeItemList } from './ChargeItemList';
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['John'], family: 'Doe' }],
 };
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
@@ -28,7 +29,7 @@ const mockEncounter: Encounter = {
   subject: { reference: 'Patient/patient-123' },
 };
 
-const mockChargeItem: ChargeItem = {
+const mockChargeItem: WithId<ChargeItem> = {
   resourceType: 'ChargeItem',
   id: 'charge-123',
   status: 'billable',
