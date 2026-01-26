@@ -98,9 +98,9 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-# next eslint-config-next @next/bundle-analyzer - 16 of course is a non-trivial upgrade 
+# otplib - version 13+ requires ESM, holding back until server supports ESM
 # temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
-MAJOR_EXCLUDE="@types/node @types/node-fetch commander hibp jose node-fetch npm zod uuid next eslint-config-next @next/bundle-analyzer temporal-polyfill"
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander hibp jose node-fetch npm zod uuid otplib temporal-polyfill"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -128,7 +128,7 @@ set +e
 gh pr view
 PR_VIEW_EXIT_CODE=$?
 
-# Set the -e flag back 
+# Set the -e flag back
 set -e
 
 if [ "$PR_VIEW_EXIT_CODE" -ne 0 ]; then

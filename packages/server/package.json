@@ -85,7 +85,7 @@
     "jszip": "3.10.1",
     "node-fetch": "2.7.0",
     "nodemailer": "7.0.12",
-    "otplib": "13.1.1",
+    "otplib": "12.0.1",
     "pdfmake": "0.2.21",
     "pg": "8.17.2",
     "qrcode": "1.5.4",

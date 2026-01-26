@@ -18,7 +18,7 @@ import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import type Mail from 'nodemailer/lib/mailer';
-import { generateSecret } from 'otplib';
+import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
@@ -28,6 +28,7 @@ import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
+import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const inviteValidator = makeValidationMiddleware([
@@ -157,7 +158,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {
   const { firstName, lastName, externalId, scope, mfaRequired } = request;
   const email = request.email?.toLowerCase();
-  const password = request.password ?? generateSecret({ length: 16 });
+  const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
@@ -171,7 +172,7 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
 
   let mfaSecret: string | undefined = undefined;
   if (mfaRequired) {
-    mfaSecret = generateSecret();
+    mfaSecret = authenticator.generateSecret();
   }
 
   return {

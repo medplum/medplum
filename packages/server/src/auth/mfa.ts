@@ -5,7 +5,7 @@ import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
-import { generateSecret, generateURI, verify } from 'otplib';
+import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
@@ -29,14 +29,14 @@ mfaRouter.get('/status', authenticateRequest, async (_req: Request, res: Respons
   if (!user.mfaSecret) {
     user = await systemRepo.updateResource({
       ...user,
-      mfaSecret: generateSecret(),
+      mfaSecret: authenticator.generateSecret(),
     });
   }
 
   const accountName = `Medplum - ${user.email}`;
   const issuer = 'medplum.com';
   const secret = user.mfaSecret as string;
-  const otp = generateURI({ label: accountName, issuer, secret });
+  const otp = authenticator.keyuri(accountName, issuer, secret);
 
   res.json({
     enrolled: false,
@@ -95,8 +95,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret;
     const token = req.body.token as string;
-    // authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    if (!verify({ token, secret })) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -153,9 +153,8 @@ mfaRouter.post(
 
     const secret = user.mfaSecret;
     const token = req.body.token as string;
-    // authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
-    const epochTolerance = getConfig().mfaAuthenticatorWindow ?? 1;
-    if (!verify({ token, secret, epochTolerance })) {
+    authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+    if (!authenticator.verify({ token, secret })) {
       sendOutcome(res, badRequest('Invalid token'));
       return;
     }
@@ -165,7 +164,7 @@ mfaRouter.post(
       mfaEnrolled: false,
       // We generate a new secret so that next time the user enrolls that they don't get the same secret
       // This allows for new secrets in the case of lost / stolen two-factor devices
-      mfaSecret: generateSecret(),
+      mfaSecret: authenticator.generateSecret(),
     });
     sendOutcome(res, allOk);
   }

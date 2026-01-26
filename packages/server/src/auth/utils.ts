@@ -14,7 +14,7 @@ import type {
 import bcrypt from 'bcryptjs';
 import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { generateURI } from 'otplib';
+import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
@@ -92,7 +92,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     const accountName = `Medplum - ${user.email}`;
     const issuer = 'medplum.com';
     const secret = user.mfaSecret as string;
-    const otp = generateURI({ label: accountName, issuer, secret });
+    const otp = authenticator.keyuri(accountName, issuer, secret);
     res.json({ login: login.id, mfaEnrollRequired: true, enrollUri: otp, enrollQrCode: await toDataURL(otp) });
     return;
   }

@@ -38,7 +38,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
-import { verify } from 'otplib';
+import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
@@ -312,8 +312,8 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
-  const epochTolerance = getConfig().mfaAuthenticatorWindow ?? 1;
-  if (!verify({ token, secret, epochTolerance })) {
+  authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
+  if (!authenticator.verify({ token, secret })) {
     throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
