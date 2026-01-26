@@ -608,7 +608,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
-  const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
+  const downloadURL = 'https://hl7.org/fhir/R4/fhir-spec.zip';
   const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
   const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');
