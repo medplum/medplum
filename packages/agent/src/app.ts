@@ -28,8 +28,8 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import { DEFAULT_ENCODING, Hl7Client, Hl7Server } from '@medplum/hl7';
 import type { Hl7Connection } from '@medplum/hl7';
+import { DEFAULT_ENCODING, Hl7Client, Hl7Server } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
 import { exec, execSync, spawn } from 'node:child_process';
@@ -81,7 +81,8 @@ const ROLLBACK_TIMEOUT_MS = 10000;
 // Versions before this use the installer-based coordination (Windows) which doesn't
 // require the handoff signal. When upgrading FROM a version >= this, we require
 // the handoff signal and abort if we don't receive it.
-const MIN_HANDOFF_PROTOCOL_VERSION = '5.1.0';
+// TODO: Fix this when finalizing branch
+const MIN_HANDOFF_PROTOCOL_VERSION = '5.0.12';
 
 async function execAsync(
   command: string,
@@ -328,9 +329,7 @@ export class App {
    */
   private async runUpgradeHealthcheck(): Promise<void> {
     // Check for configured healthcheck endpoint
-    const configuredEndpoint = this.config?.setting?.find(
-      (s) => s.name === 'upgradeHealthcheckEndpoint'
-    )?.valueString;
+    const configuredEndpoint = this.config?.setting?.find((s) => s.name === 'upgradeHealthcheckEndpoint')?.valueString;
 
     // Also check if there's a healthcheck channel configured
     const healthcheckChannel = this.config?.channel?.find((c) => c.name === HEALTHCHECK_CHANNEL_NAME);
