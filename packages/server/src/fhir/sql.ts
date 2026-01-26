@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  SearchParameterType,
+  append,
+  conflict,
+  normalizeOperationOutcome,
+  serverTimeout,
+} from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
@@ -1278,4 +1286,33 @@ export function replaceNullWithUndefinedInRows(rows: any[]): void {
       row[k] ??= undefined;
     }
   }
+}
+
+export function getSearchParamColumnType(impl: ColumnSearchParameterImplementation): string {
+  let baseColumnType: string;
+  switch (impl.type) {
+    case SearchParameterType.UUID:
+      baseColumnType = 'UUID';
+      break;
+    case SearchParameterType.BOOLEAN:
+      baseColumnType = 'BOOLEAN';
+      break;
+    case SearchParameterType.DATE:
+      baseColumnType = 'DATE';
+      break;
+    case SearchParameterType.DATETIME:
+      baseColumnType = 'TIMESTAMPTZ';
+      break;
+    case SearchParameterType.NUMBER:
+    case SearchParameterType.QUANTITY:
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
+        baseColumnType = 'INTEGER';
+      } else {
+        baseColumnType = 'DOUBLE PRECISION';
+      }
+      break;
+    default:
+      baseColumnType = 'TEXT';
+  }
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
 }
