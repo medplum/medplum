@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { runInLambda } from '../cloud/aws/execute';
+import { runInLambda, runInLambdaStreaming } from '../cloud/aws/execute';
 import { executeFissionBot } from '../cloud/fission/execute';
 import { recordHistogramValue } from '../otel/otel';
 import { AuditEventOutcome, createBotAuditEvent } from '../util/auditevent';
@@ -32,7 +32,11 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     };
 
     if (bot.runtimeVersion === 'awslambda') {
-      result = await runInLambda(context);
+      if (context.responseStream) {
+        result = await runInLambdaStreaming(context, context.responseStream);
+      } else {
+        result = await runInLambda(context);
+      }
     } else if (bot.runtimeVersion === 'vmcontext') {
       result = await runInVmContext(context);
     } else if (bot.runtimeVersion === 'fission') {
