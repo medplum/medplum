@@ -4476,7 +4476,9 @@ describe('App', () => {
 
       // Should have logged a warning about the invalid value with fallback message
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining("Invalid value for returnAck; expected: 'first' or 'application', received: invalid_value")
+        expect.stringContaining(
+          "Invalid value for returnAck; expected: 'first' or 'application', received: invalid_value"
+        )
       );
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining("falling back to default return ACK behavior of 'first'")
@@ -4549,6 +4551,7 @@ describe('App', () => {
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
+            // @ts-ignore This is for testing
             returnAck: 'invalid_value', // Invalid per-message returnAck
           } satisfies AgentTransmitRequest)
         )
@@ -4564,7 +4567,9 @@ describe('App', () => {
       const response = state.transmitResponses[0];
       expect(response.statusCode).toBe(400);
       expect(response.contentType).toBe(ContentType.TEXT);
-      expect(response.body).toContain("Invalid value for returnAck; expected: 'first' or 'application', received: invalid_value");
+      expect(response.body).toContain(
+        "Invalid value for returnAck; expected: 'first' or 'application', received: invalid_value"
+      );
 
       // The HL7 message should NOT have been sent to the server
       expect(messageReceived).toBe(false);
