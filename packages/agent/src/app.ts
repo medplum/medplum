@@ -160,13 +160,15 @@ export class App {
         `Upgrade detected from version ${upgradeDetails.previousVersion} to ${upgradeDetails.targetVersion}`
       );
 
+      const strippedPrevVersion = upgradeDetails.previousVersion.split('-')[0];
+
       // Check if the previous version supports the handoff protocol
       // If previousVersion is "UNKNOWN" (set by installer) or older than MIN_HANDOFF_PROTOCOL_VERSION,
       // we skip the handoff coordination and rely on installer-based coordination
       previousVersionSupportsHandoff =
         upgradeDetails.previousVersion !== 'UNKNOWN' &&
-        semver.valid(upgradeDetails.previousVersion) !== null &&
-        semver.gte(upgradeDetails.previousVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+        semver.valid(strippedPrevVersion) !== null &&
+        semver.gte(strippedPrevVersion, MIN_HANDOFF_PROTOCOL_VERSION);
 
       if (previousVersionSupportsHandoff) {
         this.log.info('Previous version supports handoff protocol, coordinating with old agent...');
