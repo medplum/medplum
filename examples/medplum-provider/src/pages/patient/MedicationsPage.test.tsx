@@ -162,5 +162,4 @@ describe('MedicationsPage', () => {
       expect(screen.getByText('New Resource')).toBeInTheDocument();
     });
   });
-
 });
