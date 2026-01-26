@@ -4,11 +4,18 @@ sidebar_position: 21
 
 # Resource $expunge
 
-The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record), expunge completely removes all traces of the resource.
+The `$expunge` operation permanently deletes a resource and all of its history from the database. Unlike a standard FHIR delete (which creates a "tombstone" record by marking it as deleted), expunge completely removes all traces of the resource.
 
 :::warning
 This operation is **irreversible**. Once a resource is expunged, it cannot be recovered. Use with caution.
 :::
+
+## Use Cases
+
+- **Data Cleanup**: Remove test data from development environments
+- **Compliance**: Fulfill data deletion requests under regulations like GDPR
+- **Tenant Offboarding**: Clean up all data when a tenant leaves the platform
+- **Error Correction**: Remove erroneously created resources that shouldn't exist
 
 ## Authorization
 
@@ -112,13 +119,6 @@ If you don't have admin privileges:
 - Deletes resources in batches of 10,000
 - Also deletes associated Binary resources
 - Runs as an async job to handle large datasets
-
-## Use Cases
-
-- **Data Cleanup**: Remove test data from development environments
-- **Compliance**: Fulfill data deletion requests under regulations like GDPR
-- **Tenant Offboarding**: Clean up all data when a tenant leaves the platform
-- **Error Correction**: Remove erroneously created resources that shouldn't exist
 
 ## Related Documentation
 

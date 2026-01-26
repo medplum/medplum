@@ -6,6 +6,13 @@ sidebar_position: 26
 
 The `$import` operation allows you to import code mappings into a ConceptMap. This is useful for bulk loading terminology mappings from external sources or programmatically adding mappings to an existing ConceptMap.
 
+## Use Cases
+
+- **Terminology Migration**: Bulk import mappings from another terminology system
+- **External Data Integration**: Import mappings from external standards organizations
+- **Automated Mapping**: Programmatically create mappings based on external mapping files
+- **Mapping Updates**: Update existing mappings with new versions
+
 ## Authorization
 
 This operation requires **admin privileges**. You must be a project admin (`Membership.admin = true`).
@@ -210,13 +217,6 @@ The operation returns the ConceptMap resource that was imported into.
   ]
 }
 ```
-
-## Use Cases
-
-- **Terminology Migration**: Bulk import mappings from another terminology system
-- **External Data Integration**: Import mappings from external standards organizations
-- **Automated Mapping**: Programmatically create mappings based on external mapping files
-- **Mapping Updates**: Update existing mappings with new versions
 
 ## Related Documentation
 

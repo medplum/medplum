@@ -6,6 +6,13 @@ sidebar_position: 34
 
 The `$expand-profile` operation expands a `StructureDefinition` profile by recursively loading all nested `StructureDefinition` resources referenced in the profile's element type definitions. This is useful for obtaining a complete set of profiles needed to validate or render resources conforming to a profile.
 
+## Use Cases
+
+- **Profile Validation Setup**: Load all profiles needed to validate a resource against a profile hierarchy
+- **UI Schema Generation**: Load all profiles to generate a complete UI schema with proper constraints
+- **Profile Documentation**: Generate documentation that includes all referenced profiles
+- **Implementation Guide Support**: Work with complex profile hierarchies from implementation guides like US Core
+
 ## Invocation
 
 ```
@@ -89,7 +96,7 @@ GET /fhir/R4/StructureDefinition/$expand-profile?url=http://example.org/fhir/Str
 }
 ```
 
-## Use Cases
+## Example Usage
 
 ### Profile Validation Setup
 

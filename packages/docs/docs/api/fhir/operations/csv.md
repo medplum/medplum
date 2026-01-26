@@ -4,7 +4,14 @@ sidebar_position: 24
 
 # Resource $csv
 
-The `$csv` operation exports FHIR resources as a CSV (Comma-Separated Values) file. This is useful for exporting data for analysis in spreadsheet applications, reporting tools, or data pipelines.
+The `$csv` operation exports FHIR resources as a CSV (Comma-Separated Values) file, which is useful for exporting data for analysis in spreadsheet applications, reporting tools, or data pipelines.
+
+## Use Cases
+
+- **Reporting**: Generate reports for administrative or clinical purposes
+- **Data Analysis**: Export data for analysis in Excel, Google Sheets, or BI tools
+- **Data Migration**: Export data for import into other systems
+- **Auditing**: Create snapshots of data for audit purposes
 
 ## Invoke the `$csv` operation
 
@@ -152,13 +159,6 @@ Content-Disposition: attachment; filename=export.csv
 ## Security
 
 The operation includes CSV injection protection by escaping potentially dangerous characters (`=`, `+`, `-`, `@`) at the start of cell values.
-
-## Use Cases
-
-- **Reporting**: Generate reports for administrative or clinical purposes
-- **Data Analysis**: Export data for analysis in Excel, Google Sheets, or BI tools
-- **Data Migration**: Export data for import into other systems
-- **Auditing**: Create snapshots of data for audit purposes
 
 ## Related Documentation
 

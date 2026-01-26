@@ -6,6 +6,13 @@ sidebar_position: 23
 
 The `$ai` operation provides an interface for calling AI language models (like OpenAI's GPT) through Medplum. This operation supports both standard request/response and streaming modes.
 
+## Use Cases
+
+- **Clinical Decision Support**: Get AI assistance for clinical questions
+- **Documentation Assistance**: Help generate clinical notes and summaries
+- **Patient Education**: Create patient-friendly explanations of medical concepts
+- **Data Analysis**: Analyze and summarize patient data with AI assistance
+
 ## Prerequisites
 
 The AI feature must be enabled for your project. Contact your Medplum administrator or ensure `ai` is included in your project's features list.
@@ -184,13 +191,6 @@ Tool calls are not supported in streaming mode.
   ]
 }
 ```
-
-## Use Cases
-
-- **Clinical Decision Support**: Get AI assistance for clinical questions
-- **Documentation Assistance**: Help generate clinical notes and summaries
-- **Patient Education**: Create patient-friendly explanations of medical concepts
-- **Data Analysis**: Analyze and summarize patient data with AI assistance
 
 ## Security Considerations
 

@@ -6,7 +6,19 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # ValueSet $validate-code
 
-Validates whether a specified coding is included in the given `ValueSet`.
+The `$validate-code` operation checks whether a code is a valid member of a specific ValueSet. Unlike CodeSystem validation (which checks if a code exists anywhere in a code system), ValueSet validation confirms that a code is within the specific subset of codes allowed for a particular use-such as the list of valid allergy severity codes or permitted procedure types.
+
+This is critical for enforcing business rules and data quality, ensuring that clinical data conforms to the specific terminology constraints defined for your application's forms and interfaces.
+
+## Use Cases
+
+- **Form Field Validation**: Ensure user-selected codes are valid for specific fields (e.g., only certain condition codes for a chief complaint field)
+- **Constraint Enforcement**: Validate that incoming data meets ValueSet-based constraints defined in FHIR profiles
+- **Interface Validation**: Check that codes from external systems are valid for the expected ValueSet before processing
+- **Custom Picklist Validation**: Verify selections against organization-specific ValueSets that subset larger code systems
+- **Profile Compliance**: Confirm that coded data meets the terminology requirements of implementation guides like US Core
+
+## Invoke the `$validate-code` operation
 
 ```
 [baseUrl]/ValueSet/$validate-code
@@ -99,3 +111,11 @@ curl 'https://api.medplum.com/fhir/R4/ValueSet/$validate-code' \
   ]
 }
 ```
+
+## Related
+
+- [ValueSet $expand](/docs/api/fhir/operations/valueset-expand) - Expand a value set to see all valid codes
+- [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate codes against code systems
+- [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up details about codes
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [FHIR ValueSet $validate-code](https://hl7.org/fhir/R4/valueset-operation-validate-code.html) - FHIR specification

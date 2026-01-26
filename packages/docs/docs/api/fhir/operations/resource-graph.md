@@ -6,6 +6,13 @@ sidebar_position: 33
 
 The `$graph` operation fetches all resources related to a given resource as defined by a `GraphDefinition`. This allows you to retrieve a complete graph of related resources in a single request.
 
+## Use Cases
+
+- **Patient Summary with Related Resources**: Fetch a patient along with their conditions, medications, and allergies in a single request
+- **Care Team Retrieval**: Load a care team with all practitioners, organizations, and the patient
+- **Profile Validation Setup**: Load all profiles needed to validate a resource
+- **UI Data Loading**: Efficiently load complex data relationships for clinical dashboards
+
 ## Invocation
 
 ```
@@ -208,7 +215,7 @@ Multiple search parameters can be combined with `&`.
 | `404 Not Found` | GraphDefinition not found |
 | `404 Not Found` | Starting resource not found |
 
-## Use Cases
+## Example GraphDefinitions
 
 ### Patient Summary with Related Resources
 

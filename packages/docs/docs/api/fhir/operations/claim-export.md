@@ -6,6 +6,13 @@ sidebar_position: 28
 
 The `$export` operation exports a `Claim` resource as a CMS-1500 PDF document. This is useful for generating standardized claim forms for healthcare billing.
 
+## Use Cases
+
+- **Insurance Claim Submission**: Generate CMS-1500 forms for submission to insurance payers
+- **Medical Billing Documentation**: Create standardized billing documents for patient records
+- **Claims Reconciliation**: Generate PDF copies of claims for auditing and reconciliation
+- **Patient Billing Records**: Provide patients with copies of claims submitted on their behalf
+
 ## Invocation
 
 ### Instance Level (GET)

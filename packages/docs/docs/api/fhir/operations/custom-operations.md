@@ -6,6 +6,13 @@ sidebar_position: 29
 
 Medplum supports custom FHIR operations implemented via Bots. This allows you to define your own operations with custom business logic while following FHIR operation semantics.
 
+## Use Cases
+
+- **Domain-Specific APIs**: Build custom endpoints tailored to your organization's specific healthcare workflows
+- **Business Logic Encapsulation**: Implement complex validation, calculation, or transformation logic as reusable operations
+- **Extended FHIR Capabilities**: Add functionality beyond standard FHIR operations while maintaining API consistency
+- **Integration Endpoints**: Create custom endpoints for receiving data from external systems in specific formats
+
 ## Overview
 
 Custom operations are implemented by:

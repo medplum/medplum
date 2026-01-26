@@ -6,6 +6,12 @@ sidebar_position: 25
 
 The `$cancel` operation allows you to cancel a running asynchronous job. This is useful when you need to stop a long-running operation that is no longer needed.
 
+## Use Cases
+
+- **Resource Management**: Cancel jobs that are no longer needed to free up server resources
+- **Error Recovery**: Stop a job that was started with incorrect parameters
+- **User Control**: Allow users to cancel long-running exports or operations they initiated
+
 ## Invoke the `$cancel` operation
 
 ```
@@ -104,12 +110,6 @@ If the AsyncJob doesn't exist or you don't have access:
   ]
 }
 ```
-
-## Use Cases
-
-- **Resource Management**: Cancel jobs that are no longer needed to free up server resources
-- **Error Recovery**: Stop a job that was started with incorrect parameters
-- **User Control**: Allow users to cancel long-running exports or operations they initiated
 
 ## AsyncJob Lifecycle
 

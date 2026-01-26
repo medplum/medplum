@@ -6,6 +6,13 @@ sidebar_position: 27
 
 The `$apply` operation applies a `ChargeItemDefinition` resource to a specific `ChargeItem`, calculating the appropriate pricing based on the definition's property groups and applicability rules.
 
+## Use Cases
+
+- **Automated Pricing Calculations**: Automatically calculate prices for lab tests, procedures, or services based on predefined rules
+- **Insurance-Specific Rates**: Apply different pricing based on payer contracts or insurance types
+- **Dynamic Discount Management**: Calculate surcharges or discounts based on patient eligibility or service context
+- **Revenue Cycle Automation**: Streamline billing workflows by programmatically determining charge amounts
+
 ## Invocation
 
 ```

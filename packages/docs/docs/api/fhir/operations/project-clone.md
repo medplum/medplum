@@ -6,6 +6,12 @@ sidebar_position: 32
 
 The `$clone` operation creates a complete copy of a Medplum project, including all its resources. This is useful for creating test environments, project templates, or migrating projects.
 
+## Use Cases
+
+- **Creating a Test Environment**: Clone production to create isolated testing environments
+- **Creating a Project Template**: Clone configuration and bots without patient data for new client projects
+- **Cloning Specific Resources**: Selectively clone bots, questionnaires, or other resources
+
 :::caution Self-Hosted Deployments Only
 This operation requires super admin privileges, which are only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need to clone a project, please contact [Medplum support](https://www.medplum.com/contact).
 :::
@@ -90,7 +96,7 @@ The following resources are cloned (if `resourceTypes` is not specified):
 - AsyncJob resources
 - External system connections (must be reconfigured)
 
-## Use Cases
+## Example Configurations
 
 ### Creating a Test Environment
 

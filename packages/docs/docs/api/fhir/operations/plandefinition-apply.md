@@ -8,6 +8,13 @@ Medplum implements the FHIR [`$apply` operation](https://hl7.org/fhir/plandefini
 
 The `$apply` operation converts a PlanDefinition into a set of actionable resources for a specific patient. It creates a CarePlan containing a RequestGroup with Tasks based on the actions defined in the PlanDefinition.
 
+## Use Cases
+
+- **Care Protocols**: Apply standardized care protocols to patients
+- **Clinical Guidelines**: Implement evidence-based treatment guidelines
+- **Care Coordination**: Generate care plans with assigned tasks
+- **Workflow Automation**: Create structured workflows from templates
+
 ## Invoke the `$apply` operation
 
 ```
@@ -121,13 +128,6 @@ The `$apply` operation processes the PlanDefinition and:
 Medplum supports custom extensions on ActivityDefinitions for Task configuration:
 
 - `https://medplum.com/fhir/StructureDefinition/task-elements` - Configure Task owner and performerType using FHIRPath expressions
-
-## Use Cases
-
-- **Care Protocols**: Apply standardized care protocols to patients
-- **Clinical Guidelines**: Implement evidence-based treatment guidelines
-- **Care Coordination**: Generate care plans with assigned tasks
-- **Workflow Automation**: Create structured workflows from templates
 
 ## Example PlanDefinition
 

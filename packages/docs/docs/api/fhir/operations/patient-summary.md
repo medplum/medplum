@@ -6,6 +6,13 @@ sidebar_position: 31
 
 The `$summary` operation generates an International Patient Summary (IPS) document for a patient. This creates a comprehensive clinical summary following the [IPS Implementation Guide](https://build.fhir.org/ig/HL7/fhir-ips/index.html).
 
+## Use Cases
+
+- **Care Transitions and Referrals**: Generate standardized clinical summaries when patients move between care settings or providers
+- **Patient Portal Health Summaries**: Provide patients with comprehensive, readable summaries of their health record
+- **Emergency Department Quick Views**: Give ED clinicians rapid access to essential patient information during emergencies
+- **Cross-Border Health Record Sharing**: Share patient data internationally using the standardized IPS format
+
 ## Invocation
 
 ```

@@ -6,6 +6,13 @@ sidebar_position: 30
 
 The `$smart-launch` operation initiates a SMART on FHIR app launch sequence for a `ClientApplication`. This creates a `SmartAppLaunch` context resource and redirects the user to the application's launch URI.
 
+## Use Cases
+
+- **EHR-Embedded App Launching**: Launch SMART apps from within an EHR's clinical workflow context
+- **Single Sign-On Integration**: Provide seamless authentication when launching third-party clinical apps
+- **Context-Aware App Initialization**: Pass patient or encounter context to SMART apps automatically
+- **Patient Portal Integration**: Enable patients to launch apps from their portal with proper authorization
+
 ## Invocation
 
 ```

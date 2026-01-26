@@ -43,7 +43,7 @@ function escapeMdx(fileName, text) {
     text = text.replaceAll('[Home](./index)', '[Home](./)');
   }
 
-  const specialChars = ['{', '}'];
+  const specialChars = ['{', '}', '<', '>'];
   let inSingleBacktick = false;
   let inTripleBacktick = false;
   let backtickCount = 0;
