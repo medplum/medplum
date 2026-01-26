@@ -7,11 +7,11 @@ import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
 import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
 
+// Export `ReturnAckCategory` for backwards-compat
+export { ReturnAckCategory } from '@medplum/core';
+
 // iconv-lite docs have great examples and explanations for how to use Buffers with iconv-lite:
 // See: https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding
-
-// Export `ReturnAckCategory` for backwards-compat
-export { ReturnAckCategory };
 
 export type Hl7MessageQueueItem = {
   message: Hl7Message;
