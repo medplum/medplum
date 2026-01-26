@@ -592,4 +592,134 @@ describe('Appointment/$book', () => {
     expect(response.body).toHaveProperty('issue');
     expect(response.status).toEqual(400);
   });
+
+  test.each([
+    // alignmentInterval, alignmentOffset, start, end
+    [20, 5, '2026-01-15T14:05:00-04:00', '2026-01-15T15:05:00-04:00'],
+    [20, 5, '2026-01-15T14:25:00-04:00', '2026-01-15T15:25:00-04:00'],
+    [20, 5, '2026-01-15T14:45:00-04:00', '2026-01-15T15:45:00-04:00'],
+    [30, 15, '2026-01-15T14:15:00-04:00', '2026-01-15T15:15:00-04:00'],
+    [30, 15, '2026-01-15T14:45:00-04:00', '2026-01-15T15:45:00-04:00'],
+  ])(
+    'booking a slot against parameters with alignment attributes',
+    async (alignmentInterval, alignmentOffset, start, end) => {
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.project.id },
+        actor: [createReference(practitioner1)],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'availability',
+                valueTiming: {
+                  repeat: {
+                    dayOfWeek: ['tue', 'wed', 'thu'],
+                    timeOfDay: ['09:00:00'],
+                    duration: 8,
+                    durationUnit: 'h',
+                  },
+                },
+              },
+              {
+                url: 'duration',
+                valueDuration: { value: 60, unit: 'min' },
+              },
+              {
+                url: 'alignmentInterval',
+                valueDuration: { value: alignmentInterval, unit: 'min' },
+              },
+              {
+                url: 'alignmentOffset',
+                valueDuration: { value: alignmentOffset, unit: 'min' },
+              },
+            ],
+          },
+        ],
+      });
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                start,
+                end,
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+      expect(response.status).toEqual(201);
+    }
+  );
+
+  test.each([
+    // alignmentInterval, alignmentOffset, start, end
+    [20, 5, '2026-01-15T14:00:00-04:00', '2026-01-15T15:00:00-04:00'],
+    [20, 5, '2026-01-15T14:10:00-04:00', '2026-01-15T15:10:00-04:00'],
+  ])('attempting to book a misaligned slot fails', async (alignmentInterval, alignmentOffset, start, end) => {
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 60, unit: 'min' },
+            },
+            {
+              url: 'alignmentInterval',
+              valueDuration: { value: alignmentInterval, unit: 'min' },
+            },
+            {
+              url: 'alignmentOffset',
+              valueDuration: { value: alignmentOffset, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response.status).toEqual(400);
+  });
 });

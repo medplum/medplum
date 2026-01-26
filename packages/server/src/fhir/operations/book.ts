@@ -13,6 +13,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { isAlignedTime } from './utils/book';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
@@ -159,6 +160,9 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           parameters = parameters.filter((ext) => ext.duration === durationMinutes);
+          parameters = parameters.filter((ext) =>
+            isAlignedTime(startDate, { alignment: ext.alignmentInterval, offsetMinutes: ext.alignmentOffset })
+          );
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
