@@ -51,7 +51,7 @@ export async function initApp(): Promise<void> {
 
   const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 
-  const navigate = (path: string, options?: { replace?: boolean }): Promise<void> => router.navigate(path, options);
+  const navigate = (path: string): Promise<void> => router.navigate(path);
 
   const root = createRoot(document.getElementById('root') as HTMLElement);
   root.render(

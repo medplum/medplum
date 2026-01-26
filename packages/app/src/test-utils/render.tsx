@@ -9,15 +9,15 @@ import { Notifications } from '@mantine/notifications';
 import type { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import type { RenderResult } from '@testing-library/react';
-import { render as testingLibraryRender } from '@testing-library/react';
+import { act, fireEvent, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
+import type { UserEvent } from '@testing-library/user-event';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
-export { act, fireEvent, screen, waitFor } from '@testing-library/react';
-export type { RenderResult } from '@testing-library/react';
-export { userEvent } from '@testing-library/user-event';
-export type { UserEvent } from '@testing-library/user-event';
+export { act, fireEvent, screen, userEvent, waitFor };
+export type { RenderResult, UserEvent };
 
 const theme = {};
 

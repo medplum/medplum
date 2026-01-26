@@ -6,7 +6,7 @@ import { Anchor, Tabs } from '@mantine/core';
 import { isString, locationUtils } from '@medplum/core';
 import { useMedplumNavigate } from '@medplum/react-hooks';
 import type { JSX, MouseEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { isAuxClick } from '../utils/dom';
 import styles from './LinkTabs.module.css';
 
@@ -27,23 +27,9 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
   const navigate = useMedplumNavigate();
 
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = getTabFromUrl();
+    const tab = locationUtils.getPathname().split('/').pop();
     return tab && tabs.some((t) => t.value === tab) ? tab : tabs[0].value;
   });
-
-  // navigate to currentTab if not in the URL
-  const effectFiredRef = useRef(false);
-  useEffect(() => {
-    if (effectFiredRef.current) {
-      return;
-    }
-    effectFiredRef.current = true;
-
-    const tab = getTabFromUrl();
-    if (!tab || tab !== currentTab) {
-      navigate(`${baseUrl}/${currentTab}`, { replace: true });
-    }
-  }, [baseUrl, currentTab, navigate]);
 
   function onTabChange(newTabName: string | null): void {
     newTabName = newTabName || tabs[0].value;
@@ -65,10 +51,6 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
       {children}
     </Tabs>
   );
-}
-
-function getTabFromUrl(): string | undefined {
-  return locationUtils.getPathname().split('/').pop();
 }
 
 function normalizeTabDefinitions(tabs: string[] | TabDefinition[]): TabDefinition[] {

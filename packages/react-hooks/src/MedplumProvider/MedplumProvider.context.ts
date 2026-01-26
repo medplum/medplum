@@ -5,7 +5,7 @@ import { createContext, useContext } from 'react';
 
 export const reactContext = createContext(undefined as MedplumContext | undefined);
 
-export type MedplumNavigateFunction = (path: string, options?: { replace?: boolean }) => void;
+export type MedplumNavigateFunction = (path: string) => void;
 
 export interface MedplumContext {
   medplum: MedplumClient;

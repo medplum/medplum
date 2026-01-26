@@ -72,13 +72,7 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 /**
  * The default "navigate" function which simply uses window.location.href.
  * @param path - The path to navigate to.
- * @param options - Navigation options.
- * @param options.replace - Whether to replace the current history entry if possible
  */
-function defaultNavigate(path: string, options?: { replace?: boolean }): void {
-  if (options?.replace) {
-    window.location.replace(path);
-    return;
-  }
+function defaultNavigate(path: string): void {
   window.location.assign(path);
 }
