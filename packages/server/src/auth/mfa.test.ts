@@ -4,7 +4,7 @@ import { allOk, badRequest } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { authenticator } from 'otplib';
+import { generate } from 'otplib';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -44,7 +44,7 @@ describe('MFA', () => {
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate('1234567890') });
+      .send({ token: generate({ secret: '1234567890' }) });
     expect(res1.status).toBe(400);
     expect(res1.body.issue[0].details.text).toBe('Secret not found');
 
@@ -62,7 +62,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res2.body.login, token: authenticator.generate('1234567890') });
+      .send({ login: res2.body.login, token: generate({ secret: '1234567890' }) });
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toBe('User not enrolled in MFA');
 
@@ -95,7 +95,7 @@ describe('MFA', () => {
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: generate({ secret }) });
     expect(res7.status).toBe(200);
 
     // Try to enroll again, should fail
@@ -103,7 +103,7 @@ describe('MFA', () => {
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: generate({ secret }) });
     expect(res8.status).toBe(400);
     expect(res8.body.issue[0].details.text).toBe('Already enrolled');
 
@@ -146,7 +146,7 @@ describe('MFA', () => {
       .post('/auth/mfa/verify')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res10.body.login, token: authenticator.generate(secret) });
+      .send({ login: res10.body.login, token: generate({ secret }) });
     expect(res13.status).toBe(200);
     expect(res13.body.login).toBeDefined();
     expect(res13.body.code).toBeDefined();
@@ -209,7 +209,7 @@ describe('MFA', () => {
       .post('/auth/mfa/enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: generate({ secret }) });
     expect(res5.status).toBe(200);
 
     // Call disable without token, should fail
@@ -234,7 +234,7 @@ describe('MFA', () => {
       .post('/auth/mfa/disable')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ token: authenticator.generate(secret) });
+      .send({ token: generate({ secret }) });
     expect(res8.status).toBe(200);
     expect(res8.body).toMatchObject<OperationOutcome>(allOk);
 
@@ -253,7 +253,7 @@ describe('MFA', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
       .send({
-        token: authenticator.generate(secret2),
+        token: generate({ secret: secret2 }),
       });
     expect(res10.status).toBe(400);
     expect(res10.body).toMatchObject<OperationOutcome>(badRequest('User not enrolled in MFA'));

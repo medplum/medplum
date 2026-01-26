@@ -11,7 +11,7 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
-import { authenticator } from 'otplib';
+import { generate } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -1169,7 +1169,7 @@ describe('Admin Invite', () => {
       .post('/auth/mfa/login-enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+      .send({ login: res3.body.login, token: generate({ secret }) });
     expect(res5.status).toBe(200);
     expect(res5.body.login).toBeDefined();
     expect(res5.body.code).toBeDefined();
@@ -1179,7 +1179,7 @@ describe('Admin Invite', () => {
       .post('/auth/mfa/login-enroll')
       .set('Authorization', `Bearer ${accessToken}`)
       .type('json')
-      .send({ login: res3.body.login, token: authenticator.generate(secret) });
+      .send({ login: res3.body.login, token: generate({ secret }) });
     expect(res6.status).toBe(400);
     expect(res6.body.issue[0].details.text).toBe('Already enrolled');
   });

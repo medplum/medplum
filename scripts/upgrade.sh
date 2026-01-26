@@ -99,7 +99,8 @@ fi
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
 # next eslint-config-next @next/bundle-analyzer - 16 of course is a non-trivial upgrade 
-MAJOR_EXCLUDE="@types/node commander hibp jose node-fetch npm zod uuid next eslint-config-next @next/bundle-analyzer"
+# temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander hibp jose node-fetch npm zod uuid next eslint-config-next @next/bundle-analyzer temporal-polyfill"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -152,7 +153,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target greatest --pre 0 --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then
