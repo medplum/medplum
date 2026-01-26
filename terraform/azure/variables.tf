@@ -39,3 +39,9 @@ variable "deployment_id" {
   type        = string
   default     = "1"
 }
+
+variable "dns_zone_name" {
+  description = "The DNS zone name for the deployment (e.g., darren-azure.foomedical.dev)"
+  type        = string
+  default     = null
+}

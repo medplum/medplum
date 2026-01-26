@@ -109,3 +109,8 @@ output "managed_identity_client_id" {
 output "oidc_issuer_url" {
   value = module.medplum_aks.oidc_issuer_url
 }
+
+output "aks_cluster_name" {
+  description = "The name of the AKS cluster"
+  value       = module.medplum_aks.aks_name
+}

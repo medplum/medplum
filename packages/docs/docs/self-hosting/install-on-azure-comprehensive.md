@@ -18,29 +18,29 @@ If you have questions, please [contact us](mailto:hello@medplum.com) or [join ou
 
 ### Components
 
-| Component | Azure Service | Purpose |
-|-----------|---------------|---------|
-| Container Orchestration | Azure Kubernetes Service (AKS) | Runs Medplum server containers |
-| Database | Azure Database for PostgreSQL Flexible Server | Primary data storage |
-| Cache | Azure Cache for Redis | Session and cache storage |
-| API Gateway | Azure Application Gateway | Ingress controller for API |
-| CDN | Azure Front Door | Content delivery for frontend app |
-| Secrets | Azure Key Vault | Configuration and secrets management |
-| DNS | Azure DNS Zone | DNS hosting for your subdomain |
-| Storage | Azure Blob Storage | Binary/file storage |
+| Component | Azure Service | Docker Image | Purpose |
+|-----------|---------------|--------------|---------|
+| API Server | Azure Kubernetes Service (AKS) | `medplum/medplum-server` | Runs Medplum API server |
+| Frontend App | Azure Container Apps | `medplum/medplum-app` | Serves the React frontend |
+| Database | Azure Database for PostgreSQL | - | Primary data storage |
+| Cache | Azure Cache for Redis | - | Session and cache storage |
+| API Gateway | Azure Application Gateway | - | Ingress controller for API |
+| Secrets | Azure Key Vault | - | Configuration and secrets management |
+| DNS | Azure DNS Zone | - | DNS hosting for your subdomain |
+| Storage | Azure Blob Storage | - | Binary/file storage |
 
 ### Network Architecture
 
-```
-Internet
-    │
-    ├─── api.yourdomain.com ──► Application Gateway ──► AKS (Medplum Server)
-    │                                                         │
-    └─── app.yourdomain.com ──► Azure Front Door ──► Blob Storage
-                                                              │
-                                                    ┌─────────┴─────────┐
-                                                    │                   │
-                                              PostgreSQL            Redis
+```mermaid
+flowchart TD
+    Internet((Internet))
+    
+    Internet -->|api.yourdomain.com| AppGW[Application Gateway]
+    AppGW --> AKS[AKS<br/>medplum-server]
+    AKS --> PostgreSQL[(PostgreSQL)]
+    AKS --> Redis[(Redis)]
+    
+    Internet -->|app.yourdomain.com| ContainerApps[Azure Container Apps<br/>medplum-app]
 ```
 
 ## Prerequisites
@@ -105,25 +105,51 @@ After deployment, save these output values - you'll need them for subsequent ste
 # View all outputs
 terraform output
 
-# Get specific values
+# Get sensitive values
 terraform output postgresql_password
 terraform output redis_primary_key
 ```
 
-Expected outputs:
+Expected outputs (save these for later steps):
 ```
+aks_cluster_name = "medplum-dev-1-aks"
 api_ip = "20.xx.xx.xx"
-cdn_endpoint = "medplum-endpoint.azurefd.net"
+key_vault_name = "medplum-dev-1-kv"
 medplum_server_identity_client_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 medplum_server_identity_name = "medplum-dev-1-server"
 oidc_issuer_url = "https://eastus2.oic.prod-aks.azure.com/..."
-postgresql_dns_record = "medplum-dev-postgres.postgres.database.azure.com"
-redis_hostname = "medplum-dev-redis.redis.cache.windows.net"
+postgresql_dns_record = "medplum-dev-1-postgres.postgres.database.azure.com"
+postgresql_password = <sensitive>
+redis_hostname = "medplum-dev-1-redis.redis.cache.windows.net"
+redis_primary_key = <sensitive>
+storage_account_name = "medplumdev1sa"
 ```
+
+### Variable Reference
+
+Use this table to map terraform outputs to configuration values throughout the guide:
+
+| Placeholder | Terraform Output | Example Value | Used In |
+|-------------|------------------|---------------|---------|
+| `YOUR_RESOURCE_GROUP` | (from tfvars) | `medplum-rg` | Steps 8, 9, 11, 12, 13 |
+| `YOUR_LOCATION` | (from tfvars) | `eastus2` | Step 13 |
+| `YOUR_AKS_NAME` | `aks_cluster_name` | `medplum-dev-1-aks` | Steps 8, 11 |
+| `YOUR_KEYVAULT_NAME` | `key_vault_name` | `medplum-dev-1-kv` | Steps 7, 10 |
+| `YOUR_API_IP` | `api_ip` | `20.xx.xx.xx` | Step 9 |
+| `YOUR_MANAGED_IDENTITY_NAME` | `medplum_server_identity_name` | `medplum-dev-1-server` | Step 8 |
+| `YOUR_MANAGED_IDENTITY_CLIENT_ID` | `medplum_server_identity_client_id` | `xxxxxxxx-xxxx-...` | Step 10 |
+| `YOUR_POSTGRESQL_HOST` | `postgresql_dns_record` | `medplum-dev-1-postgres.postgres...` | Steps 5, 7 |
+| `YOUR_POSTGRESQL_PASSWORD` | `postgresql_password` | (sensitive) | Steps 5, 7 |
+| `YOUR_REDIS_HOST` | `redis_hostname` | `medplum-dev-1-redis.redis...` | Step 7 |
+| `YOUR_REDIS_PASSWORD` | `redis_primary_key` | (sensitive) | Step 7 |
+| `YOUR_STORAGE_ACCOUNT` | `storage_account_name` | `medplumdev1sa` | Step 7 (binaryStorage) |
+| `azure.yourdomain.com` | (your DNS zone) | `azure.example.com` | Steps 9, 12, 13 |
+| `api.yourdomain.com` | (your API domain) | `api.azure.example.com` | Steps 7, 10, 12, 13 |
+| `app.yourdomain.com` | (your app domain) | `app.azure.example.com` | Steps 7, 13 |
 
 ### Step 5: Create the Medplum Database
 
-Connect to PostgreSQL and create the database with required extensions:
+Connect to PostgreSQL and create the database. The Medplum server will automatically create required extensions (`uuid-ossp`, `pg_trgm`, `btree_gin`) during its initial startup migrations.
 
 ```bash
 # Install psql if needed (macOS)
@@ -134,25 +160,19 @@ brew link --force libpq
 psql "host=<postgresql_dns_record> port=5432 dbname=postgres user=medplumadmin sslmode=require"
 ```
 
-Run these SQL commands:
+Run this SQL command:
 
 ```sql
 -- Create the medplum database
 CREATE DATABASE medplum;
 
--- Connect to the new database
-\c medplum
-
--- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-CREATE EXTENSION IF NOT EXISTS "btree_gin";
-
--- Verify extensions
-\dx
-
 -- Exit
 \q
+```
+
+**Verify:** Reconnect and confirm the database exists:
+```bash
+psql "host=<postgresql_dns_record> port=5432 dbname=medplum user=medplumadmin sslmode=require" -c "SELECT 1;"
 ```
 
 ### Step 6: Generate RSA Signing Key
@@ -182,7 +202,7 @@ Create a JSON configuration file (`medplum-config.json`):
   "tokenUrl": "https://api.yourdomain.com/oauth2/token",
   "userInfoUrl": "https://api.yourdomain.com/oauth2/userinfo",
   "appBaseUrl": "https://app.yourdomain.com/",
-  "binaryStorage": "azure:medplum-storage",
+  "binaryStorage": "azure:YOUR_STORAGE_ACCOUNT",
   "storageBaseUrl": "https://api.yourdomain.com/storage/",
   "supportEmail": "\"Your App\" <support@yourdomain.com>",
   "maxJsonSize": "1mb",
@@ -218,11 +238,12 @@ Create a JSON configuration file (`medplum-config.json`):
 }
 ```
 
-Replace the placeholder values:
+Replace the placeholder values (see Variable Reference table in Step 4):
 - `YOUR_POSTGRESQL_HOST`: From terraform output `postgresql_dns_record`
 - `YOUR_POSTGRESQL_PASSWORD`: From `terraform output postgresql_password`
 - `YOUR_REDIS_HOST`: From terraform output `redis_hostname`
 - `YOUR_REDIS_PASSWORD`: From `terraform output redis_primary_key`
+- `YOUR_STORAGE_ACCOUNT`: From terraform output `storage_account_name`
 - `YOUR_PRIVATE_KEY_HERE`: Contents of `medplum-key.pem` (replace newlines with `\n`)
 
 Upload to Key Vault:
@@ -232,6 +253,11 @@ az keyvault secret set \
   --vault-name "YOUR_KEYVAULT_NAME" \
   --name "medplum-config" \
   --file "medplum-config.json"
+```
+
+**Verify:** Confirm the secret was uploaded:
+```bash
+az keyvault secret show --vault-name "YOUR_KEYVAULT_NAME" --name "medplum-config" --query "name" -o tsv
 ```
 
 ### Step 8: Create Federated Identity Credential
@@ -257,10 +283,20 @@ az identity federated-credential create \
 
 Replace:
 - `YOUR_RESOURCE_GROUP`: Your Azure resource group name
-- `YOUR_AKS_NAME`: Your AKS cluster name
+- `YOUR_AKS_NAME`: From terraform output `aks_cluster_name`
 - `YOUR_MANAGED_IDENTITY_NAME`: From terraform output `medplum_server_identity_name`
 
-### Step 9: Configure DNS
+**Verify:** Confirm the federated credential was created:
+```bash
+az identity federated-credential list \
+  --identity-name "YOUR_MANAGED_IDENTITY_NAME" \
+  --resource-group "YOUR_RESOURCE_GROUP" \
+  --query "[].name" -o tsv
+```
+
+### Step 9: Configure API DNS
+
+Set up DNS for the API domain. The app domain DNS will be configured in Step 13 after Container Apps is deployed.
 
 #### Option A: Using Azure DNS Zone (Recommended for Subdomains)
 
@@ -276,7 +312,7 @@ If you're using a subdomain (e.g., `azure.yourdomain.com`), delegate it to Azure
 
 2. **Add NS records at your domain registrar** pointing your subdomain to Azure's nameservers.
 
-3. **Create DNS records in Azure:**
+3. **Create API DNS record:**
    ```bash
    # API domain - A record pointing to Application Gateway
    az network dns record-set a add-record \
@@ -284,24 +320,28 @@ If you're using a subdomain (e.g., `azure.yourdomain.com`), delegate it to Azure
      --zone-name azure.yourdomain.com \
      --record-set-name api \
      --ipv4-address YOUR_API_IP
-
-   # App domain - CNAME record pointing to Front Door
-   az network dns record-set cname set-record \
-     --resource-group YOUR_RESOURCE_GROUP \
-     --zone-name azure.yourdomain.com \
-     --record-set-name app \
-     --cname YOUR_CDN_ENDPOINT
    ```
 
 #### Option B: Using External DNS Provider
 
-Add these records at your DNS provider:
+Add this record at your DNS provider:
 - **A record**: `api.yourdomain.com` → Application Gateway IP (from terraform output `api_ip`)
-- **CNAME record**: `app.yourdomain.com` → Front Door endpoint (from terraform output `cdn_endpoint`)
+
+**Verify:** Confirm DNS propagation:
+```bash
+nslookup api.yourdomain.com
+```
 
 ### Step 10: Configure Helm Values
 
-Edit `charts/values.yaml`:
+Create a custom values file or edit the default `charts/values.yaml`. You can also copy the example file:
+
+```bash
+cd medplum/charts
+cp values-example-azure.yaml my-values.yaml
+```
+
+Edit your values file with your configuration:
 
 ```yaml
 global:
@@ -312,6 +352,7 @@ global:
     type: 'azure:your-keyvault-name.vault.azure.net:medplum-config'
 
 serviceAccount:
+  create: true
   annotations:
     azure.workload.identity/client-id: "YOUR_MANAGED_IDENTITY_CLIENT_ID"
 
@@ -321,7 +362,7 @@ deployment:
   replicaCount: 1
   image:
     repository: medplum/medplum-server
-    tag: latest
+    tag: ""  # Uses Chart.appVersion by default
   resources:
     requests:
       memory: '1Gi'
@@ -331,6 +372,9 @@ deployment:
       cpu: '1000m'
   autoscaling:
     enabled: true
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
 
 podSecurityContext:
   runAsNonRoot: true
@@ -359,13 +403,19 @@ podDisruptionBudget:
 ingress:
   deploy: true
   domain: 'api.yourdomain.com'
-  tlsSecretName: 'medplum-api-tls'  # Will be created by cert-manager
+  tlsSecretName: 'medplum-api-tls'
+  # Enable cert-manager integration for automatic TLS certificates
+  certManager:
+    enabled: true
+    clusterIssuer: 'letsencrypt-prod'
 ```
 
 Replace:
 - `your-keyvault-name`: Your Key Vault name (without `.vault.azure.net`)
 - `YOUR_MANAGED_IDENTITY_CLIENT_ID`: From terraform output `medplum_server_identity_client_id`
 - `api.yourdomain.com`: Your API domain
+
+> **Note:** When `ingress.certManager.enabled` is `true`, the Helm chart automatically adds cert-manager annotations to the Ingress resource.
 
 ### Step 11: Connect to AKS and Deploy
 
@@ -376,14 +426,30 @@ az aks get-credentials \
   --name YOUR_AKS_NAME \
   --overwrite-existing
 
-# Deploy with Helm
+# Navigate to Helm chart directory (from repository root)
 cd charts
-helm install medplum-server . -n medplum --create-namespace -f values.yaml
+
+# Deploy with Helm (use your custom values file)
+helm install medplum-server . -n medplum --create-namespace -f my-values.yaml
 ```
 
-### Step 12: Set Up TLS Certificates
+**Verify:** Check that the pod is running:
+```bash
+kubectl get pods -n medplum
+kubectl logs -n medplum -l app.kubernetes.io/name=medplum --tail=50
+```
 
-#### For API Domain (Using cert-manager)
+The pod may restart a few times initially while waiting for database migrations to complete.
+
+### Step 12: Set Up API TLS Certificate
+
+:::tip DNS Propagation
+Before proceeding, ensure your DNS records from Step 9 have fully propagated. DNS propagation can take 5-30 minutes depending on your DNS provider. If cert-manager attempts certificate issuance before DNS propagates, it will fail the HTTP-01 challenge.
+
+Verify with: `nslookup api.yourdomain.com` - it should return your Application Gateway IP.
+:::
+
+Use cert-manager to provision a Let's Encrypt certificate for the API domain.
 
 1. **Install cert-manager:**
    ```bash
@@ -455,109 +521,106 @@ helm install medplum-server . -n medplum --create-namespace -f values.yaml
    EOF
    ```
 
-#### For App Domain (Using Azure Front Door Managed Certificate)
-
-Azure Front Door uses **DigiCert** (not Let's Encrypt) for managed certificates. You must add a CAA record authorizing DigiCert before the certificate can be provisioned.
-
-1. **Add CAA record for DigiCert:**
+   **Verify:** Check certificate provisioning (may take 2-5 minutes):
    ```bash
-   az network dns record-set caa add-record \
+   kubectl get certificate -n medplum
+   kubectl describe certificate medplum-api-tls -n medplum
+   ```
+
+   Wait until `READY` shows `True` before proceeding.
+
+### Step 13: Deploy Frontend with Azure Container Apps
+
+Deploy the Medplum frontend using the official Docker image. The `medplum/medplum-app` image supports runtime configuration via environment variables.
+
+1. **Create Container Apps environment:**
+   ```bash
+   az containerapp env create \
+     --name medplum-app-env \
+     --resource-group YOUR_RESOURCE_GROUP \
+     --location YOUR_LOCATION
+   ```
+
+2. **Deploy the frontend container:**
+   ```bash
+   az containerapp create \
+     --name medplum-app \
+     --resource-group YOUR_RESOURCE_GROUP \
+     --environment medplum-app-env \
+     --image medplum/medplum-app:latest \
+     --target-port 80 \
+     --ingress external \
+     --env-vars \
+       MEDPLUM_BASE_URL=https://api.yourdomain.com/ \
+       MEDPLUM_REGISTER_ENABLED=true
+   ```
+
+3. **Get the Container App FQDN:**
+   ```bash
+   CONTAINER_APP_FQDN=$(az containerapp show \
+     --name medplum-app \
+     --resource-group YOUR_RESOURCE_GROUP \
+     --query "properties.configuration.ingress.fqdn" -o tsv)
+
+   echo "Container App FQDN: $CONTAINER_APP_FQDN"
+   ```
+
+   **Verify:** Test the container is running:
+   ```bash
+   curl -I "https://$CONTAINER_APP_FQDN"
+   ```
+
+4. **Configure app DNS records:**
+
+   Add CNAME pointing to Container App:
+   ```bash
+   # For Azure DNS Zone:
+   az network dns record-set cname set-record \
      --resource-group YOUR_RESOURCE_GROUP \
      --zone-name azure.yourdomain.com \
-     --record-set-name "@" \
-     --flags 0 \
-     --tag "issue" \
-     --value "digicert.com"
+     --record-set-name app \
+     --cname "$CONTAINER_APP_FQDN"
+
+   # For external DNS: Add CNAME record app.yourdomain.com → $CONTAINER_APP_FQDN
    ```
 
-2. **Add TXT record for domain validation:**
-
-   Get the validation token from Azure:
+   Add TXT record for domain verification:
    ```bash
-   az afd custom-domain show \
+   VERIFICATION_ID=$(az containerapp show \
+     --name medplum-app \
      --resource-group YOUR_RESOURCE_GROUP \
-     --profile-name YOUR_FRONTDOOR_PROFILE \
-     --custom-domain-name YOUR_CUSTOM_DOMAIN_NAME \
-     --query "validationProperties.validationToken" -o tsv
-   ```
+     --query 'properties.customDomainVerificationId' -o tsv)
 
-   Add the TXT record:
-   ```bash
    az network dns record-set txt add-record \
      --resource-group YOUR_RESOURCE_GROUP \
      --zone-name azure.yourdomain.com \
-     --record-set-name "_dnsauth.app" \
-     --value "YOUR_VALIDATION_TOKEN"
+     --record-set-name "asuid.app" \
+     --value "$VERIFICATION_ID"
    ```
 
-3. **Monitor certificate provisioning:**
+5. **Add custom domain and managed certificate:**
    ```bash
-   az afd custom-domain show \
+   # Add custom domain
+   az containerapp hostname add \
+     --name medplum-app \
      --resource-group YOUR_RESOURCE_GROUP \
-     --profile-name YOUR_FRONTDOOR_PROFILE \
-     --custom-domain-name YOUR_CUSTOM_DOMAIN_NAME \
-     --query "{hostname:hostName, validationState:domainValidationState, deploymentStatus:deploymentStatus}" \
-     -o table
-   ```
+     --hostname app.yourdomain.com
 
-   Status progression:
-   - `Pending` → `Approved` → Certificate provisioning begins
-   - `deploymentStatus: Succeeded` → HTTPS is ready
-
-   This process can take 15-45 minutes.
-
-### Step 13: Build and Deploy Frontend
-
-The frontend app must be built with the correct API URL configured.
-
-1. **Create environment file for Azure:**
-   ```bash
-   cd packages/app
-
-   cat > .env.azure << 'EOF'
-   MEDPLUM_BASE_URL=https://api.yourdomain.com/
-   MEDPLUM_CLIENT_ID=
-   GOOGLE_CLIENT_ID=
-   RECAPTCHA_SITE_KEY=
-   MEDPLUM_REGISTER_ENABLED=true
-   EOF
-   ```
-
-2. **Build the app with Azure configuration:**
-   ```bash
-   # Backup local .env
-   cp .env .env.backup
-
-   # Use Azure configuration
-   cp .env.azure .env
-
-   # Install dependencies (if needed)
-   cd ../.. && npm install && cd packages/app
-
-   # Build
-   npm run build
-
-   # Restore local .env
-   cp .env.backup .env
-   ```
-
-3. **Upload to Azure Storage:**
-   ```bash
-   az storage blob upload-batch \
-     --account-name YOUR_STORAGE_ACCOUNT \
-     --destination '$web' \
-     --source dist/ \
-     --overwrite \
-     --auth-mode key
-   ```
-
-4. **Purge CDN cache** (so new files are served immediately):
-   ```bash
-   az afd endpoint purge \
+   # Bind managed certificate
+   az containerapp hostname bind \
+     --name medplum-app \
      --resource-group YOUR_RESOURCE_GROUP \
-     --profile-name YOUR_FRONTDOOR_PROFILE \
-     --endpoint-name YOUR_ENDPOINT_NAME \
-     --content-paths "/*"
+     --hostname app.yourdomain.com \
+     --environment medplum-app-env \
+     --validation-method CNAME
+   ```
+
+   **Verify:** Check certificate status (takes 1-5 minutes):
+   ```bash
+   az containerapp hostname list \
+     --name medplum-app \
+     --resource-group YOUR_RESOURCE_GROUP \
+     --query "[].{hostname:name, bindingType:bindingType}" -o table
    ```
 
 ### Step 14: Verify Deployment
@@ -567,7 +630,7 @@ The frontend app must be built with the correct API URL configured.
 kubectl get pods -n medplum
 
 # Check logs
-kubectl logs -n medplum -l app=medplum-server --tail=100
+kubectl logs -n medplum -l app.kubernetes.io/name=medplum --tail=100
 
 # Test API health endpoint
 curl https://api.yourdomain.com/healthcheck
@@ -643,66 +706,21 @@ az network dns record-set caa add-record \
   --value "letsencrypt.org"
 ```
 
-#### 5. Azure Front Door Certificate Stuck in Pending (App Certificate)
-
-**Error:** `We found a CAA record for your custom domain that does not include DigiCert as an authorized Certificate Authority`
-
-**Cause:** Azure Front Door uses DigiCert for managed certificates, but CAA record only allows Let's Encrypt
-
-**Solution:** Add DigiCert to CAA records:
-```bash
-az network dns record-set caa add-record \
-  --resource-group YOUR_RESOURCE_GROUP \
-  --zone-name azure.yourdomain.com \
-  --record-set-name "@" \
-  --flags 0 \
-  --tag "issue" \
-  --value "digicert.com"
-```
-
-Then regenerate the validation token if needed:
-```bash
-az afd custom-domain regenerate-validation-token \
-  --resource-group YOUR_RESOURCE_GROUP \
-  --profile-name YOUR_FRONTDOOR_PROFILE \
-  --custom-domain-name YOUR_CUSTOM_DOMAIN_NAME
-```
-
-**Note:** After regenerating, you must update the TXT record with the new validation token.
-
-#### 6. Frontend Shows 404 on API Calls
+#### 5. Frontend Shows 404 on API Calls
 
 **Error:** API calls return 404, requests going to `app.yourdomain.com` instead of `api.yourdomain.com`
 
-**Cause:** Frontend was built with wrong `MEDPLUM_BASE_URL` (defaults to localhost)
+**Cause:** `MEDPLUM_BASE_URL` environment variable not set correctly in Container App
 
-**Solution:** Rebuild the frontend with correct API URL:
+**Solution:** Update the Container App environment variable:
 ```bash
-cd packages/app
-
-# Create .env with correct API URL
-echo "MEDPLUM_BASE_URL=https://api.yourdomain.com/" > .env
-
-# Rebuild
-npm run build
-
-# Re-upload to Azure Storage
-az storage blob upload-batch \
-  --account-name YOUR_STORAGE_ACCOUNT \
-  --destination '$web' \
-  --source dist/ \
-  --overwrite \
-  --auth-mode key
-
-# Purge CDN cache
-az afd endpoint purge \
+az containerapp update \
+  --name medplum-app \
   --resource-group YOUR_RESOURCE_GROUP \
-  --profile-name YOUR_FRONTDOOR_PROFILE \
-  --endpoint-name YOUR_ENDPOINT_NAME \
-  --content-paths "/*"
+  --set-env-vars MEDPLUM_BASE_URL=https://api.yourdomain.com/
 ```
 
-#### 7. PostgreSQL Connection Issues
+#### 6. PostgreSQL Connection Issues
 
 **Error:** Connection timeout or authentication failure
 
@@ -711,7 +729,7 @@ az afd endpoint purge \
 - Confirm SSL is enabled in connection string
 - Check password doesn't have special characters that need escaping in JSON
 
-#### 8. Redis Connection Issues
+#### 7. Redis Connection Issues
 
 **Error:** `ECONNREFUSED` or `NOAUTH`
 
@@ -724,10 +742,10 @@ az afd endpoint purge \
 
 ```bash
 # View pod logs
-kubectl logs -n medplum -l app=medplum-server -f
+kubectl logs -n medplum -l app.kubernetes.io/name=medplum -f
 
 # Describe pod for events
-kubectl describe pod -n medplum -l app=medplum-server
+kubectl describe pod -n medplum -l app.kubernetes.io/name=medplum
 
 # Check certificate status
 kubectl get certificate -n medplum

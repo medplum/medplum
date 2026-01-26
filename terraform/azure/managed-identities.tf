@@ -4,6 +4,8 @@ resource "azurerm_user_assigned_identity" "medplum_server_identity" {
   location            = var.location
   name                = "medplum-${var.environment}-${var.deployment_id}-server"
   resource_group_name = var.resource_group_name
+
+  depends_on = [azurerm_resource_group.rg]
 }
 
 output "medplum_server_identity_name" {

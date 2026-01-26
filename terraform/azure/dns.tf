@@ -4,7 +4,7 @@
 # by adding NS records pointing to Azure's nameservers
 
 resource "azurerm_dns_zone" "medplum" {
-  name                = "darren-azure.foomedical.dev"
+  name                = var.dns_zone_name
   resource_group_name = var.resource_group_name
 
   depends_on = [azurerm_resource_group.rg]
