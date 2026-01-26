@@ -13,6 +13,7 @@ import {
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { isAlignedTime } from './utils/book';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
@@ -135,6 +136,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
   assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
 
+  const bufferSlots: Slot[] = [];
+
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
@@ -168,6 +171,12 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
           }
 
+          const bufferBeforeMax = Math.max(...parameters.map((p) => p.bufferBefore));
+          const bufferAfterMax = Math.max(...parameters.map((p) => p.bufferAfter));
+
+          const searchStart = addMinutes(startDate, -1 * bufferBeforeMax).toISOString();
+          const searchEnd = addMinutes(endDate, bufferAfterMax).toISOString();
+
           const existingSlots = await ctx.repo.searchResources<Slot>({
             resourceType: 'Slot',
             count: DEFAULT_MAX_SEARCH_COUNT,
@@ -185,7 +194,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               {
                 code: '_filter',
                 operator: Operator.EQUALS,
-                value: `((start ge "${start}" and start le "${end}") or (end ge "${start}" and end le "${end}") or (start lt "${start}" and end gt "${end}"))`,
+                value: `((start ge "${searchStart}" and start le "${searchEnd}") or (end ge "${searchStart}" and end le "${searchEnd}") or (start lt "${searchStart}" and end gt "${searchEnd}"))`,
               },
             ],
           });
@@ -196,34 +205,64 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(badRequest('Too many existing slots found in range. Try another time.'));
           }
 
-          const availableSlots = existingSlots.filter((slot) => slot.status === 'free');
-          const blockedSlots = existingSlots.filter((slot) => slot.status !== 'free');
-
-          if (blockedSlots.length > 0) {
-            throw new OperationOutcomeError(conflict('Availability conflict'));
+          // If there exists busy slots overlapping with the requested booking time,
+          // we can bail out now with an informative error message.
+          const explicitOverlap = existingSlots.find((existingSlot) => {
+            return (
+              existingSlot.status !== 'free' &&
+              areIntervalsOverlapping(
+                { start: startDate, end: endDate },
+                { start: new Date(existingSlot.start), end: new Date(existingSlot.end) }
+              )
+            );
+          });
+          if (explicitOverlap) {
+            throw new OperationOutcomeError(conflict('Requested time slot is no longer available'));
           }
 
-          const range = { start: new Date(start), end: new Date(end) };
           const serviceType = (slot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
           const activeParameters = parameters.find((params) => {
+            const range = {
+              start: addMinutes(startDate, -1 * params.bufferBefore),
+              end: addMinutes(endDate, params.bufferAfter),
+            };
             const timeZone = params.timezone ?? actorTimeZone;
             const availability = resolveAvailability(params, range, timeZone);
             const result = applyExistingSlots({
               availability,
-              slots: availableSlots,
+              slots: existingSlots,
               range,
               serviceType,
             });
 
-            return (
-              result[0] &&
-              result[0].start.getTime() <= range.start.getTime() &&
-              result[0].end.getTime() >= range.end.getTime()
+            return result.some(
+              (interval) =>
+                interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()
             );
           });
 
           if (!activeParameters) {
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
+          }
+
+          if (activeParameters.bufferBefore) {
+            bufferSlots.push({
+              resourceType: 'Slot',
+              status: 'busy-unavailable',
+              start: addMinutes(startDate, -1 * activeParameters.bufferBefore).toISOString(),
+              end: startDate.toISOString(),
+              schedule: slot.schedule,
+            });
+          }
+
+          if (activeParameters.bufferAfter) {
+            bufferSlots.push({
+              resourceType: 'Slot',
+              status: 'busy-unavailable',
+              start: endDate.toISOString(),
+              end: addMinutes(endDate, activeParameters.bufferAfter).toISOString(),
+              schedule: slot.schedule,
+            });
           }
         })
       );
@@ -246,7 +285,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           })
         )
       );
-      return [appointment, ...createdSlots];
+      const createdBufferSlots = await Promise.all(bufferSlots.map((slot) => ctx.repo.createResource(slot)));
+      return [appointment, ...createdSlots, ...createdBufferSlots];
     },
     { serializable: true }
   );

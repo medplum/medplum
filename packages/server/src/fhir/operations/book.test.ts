@@ -722,4 +722,234 @@ describe('Appointment/$book', () => {
       });
     expect(response.status).toEqual(400);
   });
+
+  test('with bufferBefore', async () => {
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 60, unit: 'min' },
+            },
+            {
+              url: 'bufferBefore',
+              valueDuration: { value: 20, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    // Trying to book at the front of the availability window fails
+    const response1 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T09:00:00-05:00',
+              end: '2026-01-15T10:00:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response1.status).toEqual(400);
+
+    // Booking with buffer in the availability window succeeds
+    const response2 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T10:00:00-05:00',
+              end: '2026-01-15T11:00:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response2.body).not.toHaveProperty('issue');
+    expect(response2.status).toEqual(201);
+
+    // It creates a bufferBefore slot with status: 'busy-unavailable
+    const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+    const bufferSlots = entries.filter(isSlot).filter((slot) => slot.status === 'busy-unavailable');
+    expect(bufferSlots).toHaveLength(1);
+    expect(bufferSlots).toMatchObject([
+      {
+        resourceType: 'Slot',
+        start: '2026-01-15T14:40:00.000Z',
+        end: '2026-01-15T15:00:00.000Z',
+        schedule: createReference(schedule),
+        status: 'busy-unavailable',
+      },
+    ]);
+
+    // Trying to book immediately following the previously created booking
+    // does not have availability due to lack of bufferBefore.
+    const response3 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T11:00:00-05:00',
+              end: '2026-01-15T12:00:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response3.status).toEqual(400);
+  });
+
+  test('with bufferAfter', async () => {
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 30, unit: 'min' },
+            },
+            {
+              url: 'bufferAfter',
+              valueDuration: { value: 20, unit: 'min' },
+            },
+            {
+              url: 'alignmentInterval',
+              valueDuration: { value: 15, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    // Trying to book at the end of the availability window fails
+    const response1 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T16:30:00-05:00',
+              end: '2026-01-15T17:00:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response1.status).toEqual(400);
+
+    // Booking with buffer in the availability window succeeds
+    const response2 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T16:00:00-05:00',
+              end: '2026-01-15T16:30:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response2.body).not.toHaveProperty('issue');
+    expect(response2.status).toEqual(201);
+
+    // It creates a bufferAfter slot with status: 'busy-unavailable
+    const entries = ((response2.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+    const bufferSlots = entries.filter(isSlot).filter((slot) => slot.status === 'busy-unavailable');
+    expect(bufferSlots).toHaveLength(1);
+    expect(bufferSlots).toMatchObject([
+      {
+        resourceType: 'Slot',
+        start: '2026-01-15T21:30:00.000Z',
+        end: '2026-01-15T21:50:00.000Z',
+        schedule: createReference(schedule),
+        status: 'busy-unavailable',
+      },
+    ]);
+
+    // Trying to book immediately before the previously created booking
+    // does not have availability due to lack of bufferAfter.
+    const response3 = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T15:15:00-05:00',
+              end: '2026-01-15T15:45:00-05:00',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response3.status).toEqual(400);
+  });
 });
