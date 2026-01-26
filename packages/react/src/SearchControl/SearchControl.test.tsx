@@ -544,6 +544,37 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toHaveBeenCalledTimes(3);
   });
 
+  test('Aux click event on row triggers onAuxClick handler', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onClick: jest.fn(),
+      onAuxClick: jest.fn(),
+    };
+
+    await setup(props);
+
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // Trigger auxclick event directly (middle mouse button)
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      const auxClickEvent = new MouseEvent('auxclick', { bubbles: true, button: 1 });
+      rows[0].dispatchEvent(auxClickEvent);
+    });
+
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalled();
+  });
+
   test('Field editor onOk', async () => {
     const props: SearchControlProps = {
       search: {
@@ -1228,10 +1259,20 @@ describe('SearchControl', () => {
     await setup(props);
     expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
-    // Right click (button === 2) should be ignored
+    // Right click (button === 2) should be ignored via onClick handler
     await act(async () => {
       const rows = screen.getAllByTestId('search-control-row');
       fireEvent.click(rows[0], { button: 2 });
+    });
+
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).not.toHaveBeenCalled();
+
+    // Right click (button === 2) should also be ignored via onAuxClick handler
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      const auxClickEvent = new MouseEvent('auxclick', { bubbles: true, button: 2 });
+      rows[0].dispatchEvent(auxClickEvent);
     });
 
     expect(props.onClick).not.toHaveBeenCalled();
@@ -1280,5 +1321,78 @@ describe('SearchControl', () => {
     const element = screen.getByTestId('count-display');
     // Should show tilde for estimate
     expect(element.textContent).toBe('1-20 of ~100');
+  });
+
+  test('Click all checkbox handles entries without resource id', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true,
+    };
+
+    // Create a bundle with mixed entries - some with id, some without
+    await setup(props, {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 3,
+      entry: [
+        { resource: HomerSimpson },
+        { resource: { resourceType: 'Patient' } }, // No id
+        { resource: { resourceType: 'Patient', id: 'patient-2' } },
+      ],
+    });
+
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // Click all checkbox
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('all-checkbox'));
+    });
+
+    // All checkbox should be checked
+    const allCheckbox = screen.getByTestId('all-checkbox');
+    expect((allCheckbox as HTMLInputElement).checked).toEqual(true);
+
+    // Only rows with IDs should have their checkboxes checked
+    const rowCheckboxes = screen.queryAllByTestId('row-checkbox');
+    expect(rowCheckboxes.length).toEqual(3);
+    expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true); // Homer has id
+    expect((rowCheckboxes[1] as HTMLInputElement).checked).toEqual(false); // No id
+    expect((rowCheckboxes[2] as HTMLInputElement).checked).toEqual(true); // Has id
+  });
+
+  test('Calls onApiReady with refresh function', async () => {
+    const onApiReady = jest.fn();
+    const onLoad = jest.fn();
+
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onApiReady,
+      onLoad,
+    };
+
+    await setup(props);
+
+    // Wait for component to fully load
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+
+    // onApiReady should have been called with an object containing refresh
+    expect(onApiReady).toHaveBeenCalled();
+    expect(onApiReady).toHaveBeenCalledWith({ refresh: expect.any(Function) });
+
+    // Verify the refresh function is callable
+    const api = onApiReady.mock.calls[0][0];
+    expect(typeof api.refresh).toBe('function');
   });
 });
