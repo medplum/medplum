@@ -60,6 +60,7 @@ describe('parseSchedulingParametersExtensions', () => {
         alignmentOffset: 0,
         duration: 120,
         serviceType: [],
+        timezone: undefined,
       },
     ]);
   });
@@ -80,6 +81,7 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'serviceType', valueCoding: { code: 'new-patient', system: 'http://example.com' } },
             { url: 'serviceType', valueCoding: { code: 'office-visit', system: 'http://example.com' } },
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
+            { url: 'timezone', valueCode: 'America/Phoenix' },
             {
               url: 'availability',
               valueTiming: {
@@ -130,6 +132,7 @@ describe('parseSchedulingParametersExtensions', () => {
           { code: 'new-patient', system: 'http://example.com' },
           { code: 'office-visit', system: 'http://example.com' },
         ],
+        timezone: 'America/Phoenix',
       },
     ]);
   });

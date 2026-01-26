@@ -57,6 +57,7 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   maxSearchOffset?: number;
+  base64BinaryMaxBytes?: number;
   defaultSuperAdminEmail?: string;
   defaultSuperAdminPassword?: string;
   defaultSuperAdminClientId?: string;
@@ -128,7 +129,11 @@ export interface MedplumServerConfig {
   redactAuditEvents?: boolean;
 
   /** Optional configuration for array column padding to mitigate statistics issues in Postgres. */
-  arrayColumnPadding?: { [searchParamCode: string]: { resourceType?: string[]; config: ArrayColumnPaddingConfig } };
+  arrayColumnPadding?: {
+    [searchParamCode: string]:
+      | { resourceType?: string[]; config: ArrayColumnPaddingConfig }
+      | { resourceType?: string[]; config: ArrayColumnPaddingConfig }[];
+  };
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
   mfaAuthenticatorWindow?: number;

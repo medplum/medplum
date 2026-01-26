@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
-import { ResourceTable, useResource, PatientSummary } from '@medplum/react';
+import { PatientSummary, ResourceTable, useResource } from '@medplum/react';
 import type { JSX } from 'react';
-import { LabResultDetails } from '../labs/LabResultDetails';
-import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { EncounterChart } from '../encounter/EncounterChart';
+import { LabOrderDetails } from '../labs/LabOrderDetails';
+import { LabResultDetails } from '../labs/LabResultDetails';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
 
 interface ResourcePanelProps<T extends Resource = Resource> {

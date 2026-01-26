@@ -294,6 +294,12 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   margin: 4px;
 }
 
+.medplum-drummond-compliance-image {
+  width: 45px;
+  height: 45px;
+  margin: 4px;
+}
+
 /* Mobile Styles */
 /** In mobile view, reduce the padding */
 @media screen and (max-width: 996px) {

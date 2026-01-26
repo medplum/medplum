@@ -3,7 +3,6 @@
 import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { useState, useEffect } from 'react';
 import type { JSX } from 'react';
-import type { SlotInfo } from 'react-big-calendar';
 import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
 import type { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
@@ -12,9 +11,10 @@ import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { useNavigate } from 'react-router';
 import { showNotification } from '@mantine/notifications';
+import type { Range } from '../../types/scheduling';
 
 interface CreateVisitProps {
-  appointmentSlot: SlotInfo | undefined;
+  appointmentSlot: Range | undefined;
 }
 
 export function CreateVisit(props: CreateVisitProps): JSX.Element {

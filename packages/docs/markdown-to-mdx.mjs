@@ -1,18 +1,65 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
 /* global console */
 /* global process */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-import fs from 'node:fs';
-import path from 'node:path';
+
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
+
+const allowList = [
+  'index.md',
+
+  // Top pages from Google Analytics
+  'core.md',
+  'core.medplumclient.md',
+  'core.medplumrequestoptions.md',
+  'core.medplumclient.executebatch.md',
+  'core.medplumclient.search.md',
+  'core.medplumclient.searchresources.md',
+  'core.hl7message.md',
+  'core.medplumclient.readpatienteverything.md',
+  'core.botevent.md',
+  'core.clientstorage.md',
+
+  // Sidebar links
+  'core.createpdffunction.md',
+  'core.mailaddress.md',
+  'core.mailattachment.md',
+  'core.mailoptions.md',
+
+  // Other linked pages
+  'core.medplumclient.createresourceifnoneexist.md',
+  'core.medplumclient.readhistory.md',
+  'core.medplumclient.sendemail.md',
+  'core.medplumclient.startclientlogin.md',
+  'core.medplumclient.signinwithexternalauth.md',
+  'core.medplumclient.processcode.md',
+  'core.medplumclient.startgooglelogin.md',
+  'core.medplumclient.startlogin.md',
+  'core.medplumclient.signinwithredirect.md',
+  'core.medplumclient.exchangeexternalaccesstoken.md',
+  'core.getquestionnaireanswers.md',
+  'core.medplumclient.createresource.md',
+  'core.botevent.secrets.md',
+  'core.medplumclient.createpdf.md',
+  'core.findobservationinterval.md',
+  'core.findobservationreferencerange.md',
+  'core.matchesrange.md',
+  'core.validateresource.md',
+  'core.medplumclient.setbasicauth.md',
+  'core.getreferencestring.md',
+  'core.medplumclient.searchresourcepages.md',
+  'core.medplumclient.getprofile.md',
+];
 
 function copyDir(sourceDir, targetDir) {
-  const files = fs.readdirSync(sourceDir, { withFileTypes: true });
-  fs.mkdirSync(targetDir, { recursive: true });
+  const files = readdirSync(sourceDir, { withFileTypes: true });
+  mkdirSync(targetDir, { recursive: true });
 
   for (const file of files) {
-    const sourceFilePath = path.join(sourceDir, file.name);
-    const targetFilePath = path.join(targetDir, file.name);
+    const sourceFilePath = join(sourceDir, file.name);
+    const targetFilePath = join(targetDir, file.name);
     if (file.isDirectory()) {
       copyDir(sourceFilePath, targetFilePath);
     } else {
@@ -22,10 +69,13 @@ function copyDir(sourceDir, targetDir) {
 }
 
 function copyFile(sourceFile, targetFile) {
+  if (!allowList.includes(basename(sourceFile))) {
+    return;
+  }
   if (sourceFile.endsWith('.md')) {
-    fs.writeFileSync(targetFile.replace('.md', '.mdx'), escapeMdx(sourceFile, fs.readFileSync(sourceFile, 'utf8')));
+    writeFileSync(targetFile.replace('.md', '.mdx'), escapeMdx(sourceFile, readFileSync(sourceFile, 'utf8')));
   } else {
-    fs.copyfileSync(sourceFile, targetFile);
+    copyFileSync(sourceFile, targetFile);
   }
 }
 
@@ -35,7 +85,7 @@ function escapeMdx(fileName, text) {
     .trimStart()
     .replaceAll('.md)', ')');
 
-  if (path.basename(fileName) === 'index.md') {
+  if (basename(fileName) === 'index.md') {
     // In Docusaurus, the index.mdx file is used as the landing page for the folder.
     // Relative links are relative to the parent, not the index.mdx file.
     text = text.replaceAll('](./index)', '](../)').replaceAll('](./', '](./sdk/');
@@ -43,6 +93,17 @@ function escapeMdx(fileName, text) {
     text = text.replaceAll('[Home](./index)', '[Home](./)');
   }
 
+  // Remove links to any relative .md files not in the allow list
+  // Example: [TypedEventTarget](./core.typedeventtarget)
+  text = text.replaceAll(/\[([^\]]+)\]\(\.\/([^)]+)\)/g, (match, p1, p2) => {
+    if (allowList.includes(p2 + '.md')) {
+      return `[${p1}](./${p2})`;
+    } else {
+      return p1;
+    }
+  });
+
+  // Escape {, }, <, and > characters outside of code blocks
   const specialChars = ['{', '}', '<', '>'];
   let inSingleBacktick = false;
   let inTripleBacktick = false;

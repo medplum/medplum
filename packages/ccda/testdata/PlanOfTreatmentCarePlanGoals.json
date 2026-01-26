@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -68,7 +68,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -77,17 +79,25 @@
       "resource": {
         "resourceType": "Goal",
         "id": "2a620155-9d11-439e-92b3-5d9815ff4dd4",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Goal1"
+          }
+        ],
         "lifecycleStatus": "active",
-        "category": [{
-          "coding": [
-            {
-              "system": "http://snomed.info/sct",
-              "code": "289169006",
-              "display": "Exercising to lose weight"
-            }
-          ],
-          "text": "Exercising to lose weight"
-        }],
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "289169006",
+                "display": "Exercising to lose weight"
+              }
+            ],
+            "text": "Exercising to lose weight"
+          }
+        ],
         "description": {
           "text": "Exercising to lose weight"
         },
@@ -118,12 +128,6 @@
               ],
               "text": "Patient education"
             }
-          }
-        ],
-        "extension": [
-          {
-            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
-            "valueString": "#Goal1"
           }
         ]
       }
@@ -132,17 +136,25 @@
       "resource": {
         "resourceType": "Goal",
         "id": "2a620155-9d11-439e-92b3-5d9815ff4dd3",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Goal2"
+          }
+        ],
         "lifecycleStatus": "active",
-        "category": [{
-          "coding": [
-            {
-              "system": "http://snomed.info/sct",
-              "code": "406162001",
-              "display": "Asthma management"
-            }
-          ],
-          "text": "Asthma management"
-        }],
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "406162001",
+                "display": "Asthma management"
+              }
+            ],
+            "text": "Asthma management"
+          }
+        ],
         "description": {
           "text": "Asthma management"
         },
@@ -173,12 +185,6 @@
               ],
               "text": "Patient education"
             }
-          }
-        ],
-        "extension": [
-          {
-            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
-            "valueString": "#Goal2"
           }
         ]
       }

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
+import { EMPTY } from '@medplum/core';
 import type { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { createReadStream, writeFile } from 'node:fs';
 import { resolve } from 'node:path';
@@ -105,9 +106,9 @@ async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient):
     entry: entries,
   });
 
-  result.entry?.forEach((resultEntry) => {
+  for (const resultEntry of result.entry ?? EMPTY) {
     prettyPrint(resultEntry.response);
-  });
+  }
 }
 
 function parseResource(jsonString: string, addExtensionsForMissingValues: boolean): Resource {

@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -70,7 +70,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -88,7 +90,9 @@
         "name": [
           {
             "family": "Seven",
-            "given": ["Henry"]
+            "given": [
+              "Henry"
+            ]
           }
         ],
         "telecom": [
@@ -124,7 +128,9 @@
         "name": [
           {
             "family": "Seven",
-            "given": ["Henry"]
+            "given": [
+              "Henry"
+            ]
           }
         ],
         "telecom": [
@@ -200,7 +206,7 @@
           ],
           "text": "Smokes tobacco daily"
         },
-        "effectiveDateTime": "2014-06-06T10:32:00-0500",
+        "effectiveDateTime": "2014-06-06T10:32:00-05:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -256,7 +262,7 @@
           ],
           "text": "Moderate cigarette smoker"
         },
-        "effectiveDateTime": "2014-06-06T10:32:00-0500",
+        "effectiveDateTime": "2014-06-06T10:32:00-05:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",

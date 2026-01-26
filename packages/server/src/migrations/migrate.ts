@@ -4,6 +4,7 @@ import type { FileBuilder } from '@medplum/core';
 import {
   deepClone,
   deepEquals,
+  EMPTY,
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -18,7 +19,7 @@ import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-import { TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -435,31 +436,7 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
 ];
 
 function getColumnDefinition(impl: ColumnSearchParameterImplementation): ColumnDefinition {
-  let baseColumnType: string;
-  switch (impl.type) {
-    case SearchParameterType.BOOLEAN:
-      baseColumnType = 'BOOLEAN';
-      break;
-    case SearchParameterType.DATE:
-      baseColumnType = 'DATE';
-      break;
-    case SearchParameterType.DATETIME:
-      baseColumnType = 'TIMESTAMPTZ';
-      break;
-    case SearchParameterType.NUMBER:
-    case SearchParameterType.QUANTITY:
-      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
-        baseColumnType = 'INTEGER';
-      } else {
-        baseColumnType = 'DOUBLE PRECISION';
-      }
-      break;
-    default:
-      baseColumnType = 'TEXT';
-      break;
-  }
-
-  return { name: impl.columnName, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
+  return { name: impl.columnName, type: getSearchParamColumnType(impl), notNull: false };
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
@@ -1116,7 +1093,7 @@ export function getCreateTableQueries(tableDef: TableDefinition, options: { incl
     createTableLines.push(`  PRIMARY KEY (${tableDef.compositePrimaryKey.map(escapeMixedCaseIdentifier).join(', ')})`);
   }
 
-  for (const constraint of tableDef.constraints ?? []) {
+  for (const constraint of tableDef.constraints ?? EMPTY) {
     assert(constraint.type === 'check', `Unsupported constraint type: ${constraint.type}`);
     createTableLines.push(`  CONSTRAINT "${constraint.name}" CHECK (${constraint.expression})`);
   }
@@ -1255,7 +1232,7 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
   const matchedConstraints = new Set<CheckConstraintDefinition>();
   const seenNames = new Set<string>();
 
-  for (const targetConstraint of targetTable.constraints ?? []) {
+  for (const targetConstraint of targetTable.constraints ?? EMPTY) {
     assert(
       !seenNames.has(targetConstraint.name),
       new Error('Duplicate constraint name: ' + targetConstraint.name, { cause: targetConstraint })
@@ -1275,7 +1252,7 @@ function generateConstraintsActions(startTable: TableDefinition, targetTable: Ta
     }
   }
 
-  for (const startConstraint of startTable.constraints ?? []) {
+  for (const startConstraint of startTable.constraints ?? EMPTY) {
     if (!matchedConstraints.has(startConstraint)) {
       console.log(
         `[${startTable.name}] Existing constraint should not exist:`,

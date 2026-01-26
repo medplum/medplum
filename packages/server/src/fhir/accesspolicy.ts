@@ -4,6 +4,7 @@ import type { ProfileResource, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  EMPTY,
   getReferenceString,
   isResource,
   isString,
@@ -134,13 +135,11 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
-    if (replaced.resource) {
-      for (const resourcePolicy of replaced.resource) {
-        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
-          resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
-        }
-        resourcePolicies.push(resourcePolicy);
+    for (const resourcePolicy of replaced.resource ?? EMPTY) {
+      if (!resourcePolicy.interaction && resourcePolicy.readonly) {
+        resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
       }
+      resourcePolicies.push(resourcePolicy);
     }
     if (replaced.ipAccessRule) {
       ipAccessRules.push(...replaced.ipAccessRule);

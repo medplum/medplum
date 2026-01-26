@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import ChargeItemPanel from './ChargeItemPanel';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import ChargeItemPanel from './ChargeItemPanel';
 
-const mockChargeItem: ChargeItem = {
+const mockChargeItem: WithId<ChargeItem> = {
   resourceType: 'ChargeItem',
   id: 'charge-123',
   status: 'billable',
@@ -175,7 +176,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays updated price', () => {
-    const itemWithPrice: ChargeItem = {
+    const itemWithPrice: WithId<ChargeItem> = {
       ...mockChargeItem,
       priceOverride: { value: 150.5, currency: 'USD' },
     };
@@ -185,7 +186,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays price as N/A when no price override', () => {
-    const itemWithoutPrice: ChargeItem = {
+    const itemWithoutPrice: WithId<ChargeItem> = {
       ...mockChargeItem,
       priceOverride: undefined,
     };
@@ -195,7 +196,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('displays modifier when present', () => {
-    const itemWithModifier: ChargeItem = {
+    const itemWithModifier: WithId<ChargeItem> = {
       ...mockChargeItem,
       extension: [
         {
@@ -230,7 +231,7 @@ describe('ChargeItemPanel', () => {
         },
       ],
     };
-    const updatedChargeItem: ChargeItem = {
+    const updatedChargeItem: WithId<ChargeItem> = {
       ...mockChargeItem,
       extension: [
         {
@@ -250,7 +251,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('handles charge item with existing modifier extension', () => {
-    const itemWithExistingModifier: ChargeItem = {
+    const itemWithExistingModifier: WithId<ChargeItem> = {
       ...mockChargeItem,
       extension: [
         {
@@ -272,7 +273,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('handles charge item with non-CPT codes', () => {
-    const itemWithMultipleCodes: ChargeItem = {
+    const itemWithMultipleCodes: WithId<ChargeItem> = {
       ...mockChargeItem,
       code: {
         coding: [
@@ -300,7 +301,7 @@ describe('ChargeItemPanel', () => {
 
     expect(screen.getByDisplayValue('$100.00')).toBeInTheDocument();
 
-    const updatedItem: ChargeItem = {
+    const updatedItem: WithId<ChargeItem> = {
       ...mockChargeItem,
       priceOverride: { value: 200, currency: 'USD' },
     };
@@ -317,7 +318,7 @@ describe('ChargeItemPanel', () => {
   });
 
   test('handles charge item without extension', () => {
-    const itemWithoutExtension: ChargeItem = {
+    const itemWithoutExtension: WithId<ChargeItem> = {
       ...mockChargeItem,
       extension: undefined,
     };
@@ -478,7 +479,7 @@ describe('ChargeItemPanel', () => {
 
   test('updateCptCodes preserves non-CPT codes when updating', () => {
     const onChange = vi.fn();
-    const itemWithMultipleCodes: ChargeItem = {
+    const itemWithMultipleCodes: WithId<ChargeItem> = {
       ...mockChargeItem,
       code: {
         coding: [
