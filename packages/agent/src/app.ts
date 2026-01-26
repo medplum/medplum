@@ -1028,6 +1028,7 @@ export class App {
         statusCode: 400,
         body: normalizeErrorString(err),
       } satisfies AgentTransmitResponse);
+      return;
     }
 
     let defaultReturnAck: ReturnAckCategory | undefined;
