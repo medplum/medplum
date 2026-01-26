@@ -116,6 +116,12 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     'Mismatched slot end times'
   );
 
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const durationMinutes = durationMs / 1000 / 60;
+
   const schedules = await ctx.repo.readReferences(slots.map((slot) => slot.schedule));
   assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
 
@@ -151,6 +157,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             // If no service type match found, fall back to wildcard availability
             parameters = extensions.filter((ext) => ext.serviceType.length === 0);
           }
+
+          parameters = parameters.filter((ext) => ext.duration === durationMinutes);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));

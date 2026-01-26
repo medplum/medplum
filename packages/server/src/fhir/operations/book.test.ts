@@ -62,7 +62,7 @@ describe('Appointment/$book', () => {
             },
             {
               url: 'duration',
-              valueDuration: { value: 30, unit: 'min' },
+              valueDuration: { value: 60, unit: 'min' },
             },
           ],
         },
@@ -397,7 +397,7 @@ describe('Appointment/$book', () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
     const schedule = await makeSchedule(practitioner);
     const start = '2026-01-15T07:00:00-04:00';
-    const end = '2026-01-15T07:30:00-04:00';
+    const end = '2026-01-15T08:00:00-04:00';
 
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -566,5 +566,30 @@ describe('Appointment/$book', () => {
 
     expect(response.body).not.toHaveProperty('issue');
     expect(response.status).toEqual(201);
+  });
+
+  test('booking a slot with a different duration than scheduling parameters fails', async () => {
+    const schedule = await makeSchedule(practitioner1);
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start: '2026-01-15T14:00:00Z',
+              end: '2026-01-15T14:30:00Z',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    expect(response.body).toHaveProperty('issue');
+    expect(response.status).toEqual(400);
   });
 });
