@@ -251,7 +251,7 @@ async function includeInExpansion(
   const system = codeSystem.url;
   for (const { code, display, synonymOf, language } of results) {
     const ex = expansion.find((o) => o.code === code);
-    if (ex && display) {
+    if (ex) {
       if (isEmpty(synonymOf)) {
         if (ex.display) {
           ex.designation = append(ex.designation, {
@@ -260,7 +260,7 @@ async function includeInExpansion(
           });
         }
         ex.display = display;
-      } else {
+      } else if (display) {
         ex.designation = append(ex.designation, { language: language ?? undefined, value: display });
       }
     } else {
