@@ -77,17 +77,11 @@ export class SearchClickEvent extends Event {
   }
 }
 
-export interface SearchControlApi {
-  refresh: () => void;
-}
-
 export interface SearchControlProps {
   readonly search: SearchRequest;
   readonly checkboxesEnabled?: boolean;
   readonly hideToolbar?: boolean;
   readonly hideFilters?: boolean;
-  readonly toolbarActions?: JSX.Element;
-  readonly onApiReady?: (api: SearchControlApi) => void;
   readonly onLoad?: (e: SearchLoadEvent) => void;
   readonly onChange?: (e: SearchChangeEvent) => void;
   readonly onClick?: (e: SearchClickEvent) => void;
@@ -177,14 +171,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   useEffect(() => {
     loadResults();
   }, [loadResults]);
-
-  // Expose refresh API via onApiReady callback
-  const { onApiReady } = props;
-  useEffect(() => {
-    if (onApiReady) {
-      onApiReady({ refresh: refreshResults });
-    }
-  }, [onApiReady, refreshResults]);
 
   function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -300,10 +286,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   return (
     <div className={classes.root} data-testid="search-control">
       {!props.hideToolbar && (
-        <Group justify="space-between" pb="40px" style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}>
-          <Group gap={0}>
+        <Group justify="space-between" mb="xl">
+          <Group gap={2}>
             <Button
-              size="sm"
+              size="compact-md"
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconColumns size={iconSize} />}
@@ -312,7 +298,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               Fields
             </Button>
             <Button
-              size="sm"
+              size="compact-md"
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconFilter size={iconSize} />}
@@ -322,7 +308,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             </Button>
             {props.onNew && (
               <Button
-                size="sm"
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
                 leftSection={<IconFilePlus size={iconSize} />}
@@ -333,7 +319,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && isExportPassed() && (
               <Button
-                size="sm"
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
                 leftSection={<IconTableExport size={iconSize} />}
@@ -348,7 +334,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && props.onDelete && (
               <Button
-                size="sm"
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
                 leftSection={<IconTrash size={iconSize} />}
@@ -359,7 +345,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {!isMobile && props.onBulk && (
               <Button
-                size="sm"
+                size="compact-md"
                 variant={buttonVariant}
                 color={buttonColor}
                 leftSection={<IconBoxMultiple size={iconSize} />}
@@ -369,7 +355,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </Button>
             )}
           </Group>
-          <Group gap={8}>
+          <Group gap={2}>
             {lastResult && (
               <Text size="xs" c="dimmed" data-testid="count-display">
                 {getStart(memoizedSearch, lastResult).toLocaleString()}-
@@ -378,10 +364,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                   ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
-            <ActionIcon size="lg" variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
+            <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
               <IconRefresh size={iconSize} />
             </ActionIcon>
-            {props.toolbarActions}
           </Group>
         </Group>
       )}
@@ -491,7 +476,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </Container>
       )}
       {lastResult && (
-        <Center pb="lg" pt="xl" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+        <Center m="md" p="md">
           <Pagination
             value={getPage(memoizedSearch)}
             total={getTotalPages(memoizedSearch, lastResult)}
