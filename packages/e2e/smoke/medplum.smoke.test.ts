@@ -43,14 +43,8 @@ test.describe('Medplum App Smoke Tests', () => {
   test('Create a patient', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
-    // Ensure navbar is open - if Patient link is not visible, click logo to open it
-    const patientLink = page.getByRole('link', { name: 'Patient' });
-    const isVisible = await patientLink.isVisible().catch(() => false);
-    if (!isVisible) {
-      await page.getByRole('button', { name: 'Medplum Logo' }).click();
-      await expect(patientLink).toBeVisible();
-    }
-    await patientLink.click();
+    await page.getByRole('button', { name: 'Medplum Logo' }).click();
+    await page.getByRole('link', { name: 'Patient' }).click();
     await page.getByRole('button', { name: 'New...' }).click();
     await page.getByRole('button', { name: 'Add Name' }).click();
     await page.getByPlaceholder('Given').fill('Frodo');
@@ -64,15 +58,9 @@ test.describe('Medplum App Smoke Tests', () => {
   test('Search for patient via searchbar', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
-    // In v1 layout, search is in the header with placeholder "Search"
     await page.getByPlaceholder('Search').fill('Frodo Baggins');
-    // Wait for the patient text to appear (avoid waiting for hidden options dropdowns)
-    // The display format may include initials like "FBFrodo Baggins"
-    await expect(page.getByText(/Frodo Baggins/i).first()).toBeVisible({ timeout: 10000 });
-    await page
-      .getByText(/Frodo Baggins/i)
-      .first()
-      .click();
+    await expect(page.getByTestId('options')).toBeVisible();
+    await page.getByText('FBFrodo Baggins').first().click();
 
     await page.getByTestId('timeline-item').getByText('Frodo Baggins').click();
   });
