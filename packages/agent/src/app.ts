@@ -351,6 +351,8 @@ export class App {
   /**
    * Run healthcheck using a configured endpoint/channel.
    * This sends a message through the normal HL7 flow.
+   * @param channelNameOrEndpoint - The channel name or endpoint to run the healthcheck against.
+   * @return a Promise that resolves when the healthcheck completes.
    */
   private async runConfiguredHealthcheck(channelNameOrEndpoint: string): Promise<void> {
     this.log.info(`Running configured healthcheck: ${channelNameOrEndpoint}`);
@@ -426,6 +428,8 @@ export class App {
 
   /**
    * Send a test HL7 message and verify we receive an ACK.
+   * @param host - The host of the endpoint to send the healthcheck message to.
+   * @param port - The port of the endpoint to send the healthcheck message to.
    */
   private async sendHealthcheckMessage(host: string, port: number): Promise<void> {
     const client = new Hl7Client({ host, port, connectTimeout: 5000 });
