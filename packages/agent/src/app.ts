@@ -1014,13 +1014,34 @@ export class App {
 
     const address = new URL(message.remote);
     const encoding = address.searchParams.get('encoding') ?? undefined;
-    const defaultReturnAck = this.parseReturnAck(address.searchParams.get('defaultReturnAck'));
+    let msgReturnAck: ReturnAckCategory | undefined;
+    try {
+      msgReturnAck = this.parseReturnAck(message.returnAck);
+    } catch (err) {
+      this.log.error(normalizeErrorString(err));
+      this.addToWebSocketQueue({
+        type: 'agent:transmit:response',
+        channel: message.channel,
+        remote: message.remote,
+        callback: message.callback,
+        contentType: ContentType.TEXT,
+        statusCode: 400,
+        body: normalizeErrorString(err),
+      } satisfies AgentTransmitResponse);
+    }
+
+    let defaultReturnAck: ReturnAckCategory | undefined;
+    try {
+      defaultReturnAck = this.parseReturnAck(address.searchParams.get('defaultReturnAck'));
+    } catch (err) {
+      this.log.warn(`${normalizeErrorString(err)} - falling back to default return ACK behavior of 'first'.`);
+    }
 
     // Determine the effective returnAck with fallback chain:
     // 1. Per-message returnAck from AgentTransmitRequest (highest priority)
     // 2. defaultReturnAck from Device URL
     // 3. 'first' (default - for backwards compatibility)
-    const returnAck = message.returnAck ?? defaultReturnAck ?? ReturnAckCategory.FIRST;
+    const returnAck = msgReturnAck ?? defaultReturnAck ?? ReturnAckCategory.FIRST;
 
     let pool: Hl7ClientPool;
 
@@ -1145,9 +1166,6 @@ export class App {
       return ReturnAckCategory.FIRST;
     }
 
-    this.log.warn(`Invalid value for returnAck; expected 'first' or 'application'. Using default of 'first'.`, {
-      value: rawValue,
-    });
-    return undefined;
+    throw new Error(`Invalid value for returnAck; expected: 'first' or 'application', received: ${rawValue}`);
   }
 }
