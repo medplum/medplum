@@ -71,7 +71,13 @@ describe('AppShell v1', () => {
   test('Toggle sidebar', async () => {
     await setup();
     expect(screen.getByText('Your application here')).toBeInTheDocument();
-    // Navbar is open by default when localStorage is empty
+    expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
+
+    // Click on the logo to open the menu
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
 
     // Click on the logo to close the menu
@@ -80,19 +86,16 @@ describe('AppShell v1', () => {
     });
 
     expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
-
-    // Click on the logo to open the menu again
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
-
-    expect(screen.getByText('Menu 1')).toBeInTheDocument();
   });
 
   test('Resource Type Search', async () => {
     await setup();
 
-    // Navbar is open by default, so the Resource Type input is available
+    // Click on the logo to open the menu
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+
     const input = screen.getByPlaceholderText('Resource Type');
 
     // Enter random text
@@ -149,7 +152,14 @@ describe('AppShell v2', () => {
     const logoButton = screen.getByRole('button', { name: 'Medplum Logo' });
     const menuTitle = screen.getByText('Menu 1');
 
-    // Navbar is open by default when localStorage is empty
+    expect(logoButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+
+    // Click on the logo to open the menu
+    await act(async () => {
+      fireEvent.click(logoButton);
+    });
+
     expect(logoButton).toHaveAttribute('aria-expanded', 'true');
     expect(menuTitle.getAttribute('data-opened')).toBe('true');
 
@@ -160,42 +170,33 @@ describe('AppShell v2', () => {
 
     expect(logoButton).toHaveAttribute('aria-expanded', 'false');
     expect(menuTitle.getAttribute('data-opened')).toBeNull();
-
-    // Click on the logo to open the menu again
-    await act(async () => {
-      fireEvent.click(logoButton);
-    });
-
-    expect(logoButton).toHaveAttribute('aria-expanded', 'true');
-    expect(menuTitle.getAttribute('data-opened')).toBe('true');
   });
 
   test('Toggle sidebar v2 via toggle button', async () => {
     await setup('v2');
     expect(screen.getByText('Your application here')).toBeInTheDocument();
 
-    // Navbar is open by default, so the toggle button shows "Close Sidebar"
-    const toggleButton = screen.getByLabelText('Close Sidebar');
+    const toggleButton = screen.getByLabelText('Open Sidebar');
     const menuTitle = screen.getByText('Menu 1');
 
-    expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
-    expect(menuTitle.getAttribute('data-opened')).toBe('true');
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
 
-    // Click on the toggle button to close the menu
+    // Click on the toggle button to open the menu
     await act(async () => {
       fireEvent.click(toggleButton);
     });
 
-    expect(screen.getByLabelText('Open Sidebar')).toHaveAttribute('aria-expanded', 'false');
-    expect(menuTitle.getAttribute('data-opened')).toBeNull();
-
-    // Click again to open the menu
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Open Sidebar'));
-    });
-
     expect(screen.getByLabelText('Close Sidebar')).toHaveAttribute('aria-expanded', 'true');
     expect(menuTitle.getAttribute('data-opened')).toBe('true');
+
+    // Click again to close the menu
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Close Sidebar'));
+    });
+
+    expect(screen.getByLabelText('Open Sidebar')).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
   });
 
   test('Spotlight search', async () => {
