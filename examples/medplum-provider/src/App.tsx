@@ -159,7 +159,7 @@ export function App(): JSX.Element | null {
       pathname={location.pathname}
       searchParams={searchParams}
       layoutVersion="v2"
-      showLayoutToggle={false}
+      showLayoutVersionToggle={false}
       menus={
         profile
           ? [

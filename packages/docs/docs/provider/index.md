@@ -25,10 +25,10 @@ Occasionally, you may need to use the Medplum App for administrative and other t
 
 The following sections outline the primary functionality of the Medplum Provider app.
 
-#### [Adding Practitioners & Data](./provider/practitioners-data)
+#### [Adding Practitioners & Data](./provider/getting-started)
 
-- [Adding Practitioners (via Medplum App)](./provider/practitioners-data#adding-practitioners)
-- [Importing Data (via Medplum App)](./provider/practitioners-data#importing-data)
+- [Adding Practitioners (via Medplum App)](./provider/getting-started#adding-practitioners)
+- [Importing Data (via Medplum App)](./provider/getting-started#importing-data)
 
 #### [Patient Profile](./provider/patient-profile)
 
