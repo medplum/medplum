@@ -4551,8 +4551,7 @@ describe('App', () => {
             contentType: ContentType.HL7_V2,
             body: hl7MessageBody,
             callback: 'test-callback',
-            // @ts-ignore This is for testing
-            returnAck: 'invalid_value', // Invalid per-message returnAck
+            returnAck: 'invalid_value' as 'first', // Invalid per-message returnAck
           } satisfies AgentTransmitRequest)
         )
       );
