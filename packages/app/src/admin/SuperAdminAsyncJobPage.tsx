@@ -5,15 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import type { SearchRequest, WithId } from '@medplum/core';
 import { forbidden, formatSearchQuery, normalizeErrorString, Operator } from '@medplum/core';
 import type { AsyncJob, Resource } from '@medplum/fhirtypes';
-import {
-  Container,
-  LinkTabs,
-  MedplumLink,
-  OperationOutcomeAlert,
-  Panel,
-  SearchControl,
-  useMedplum,
-} from '@medplum/react';
+import { Container, LinkTabs, MedplumLink, OperationOutcomeAlert, Panel, SearchControl, useMedplum } from '@medplum/react';
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
@@ -36,7 +28,7 @@ export function SuperAdminAsyncDashboardPage(): JSX.Element {
     <Container miw="1600" maw="2000">
       <Panel>
         <Title order={1}>AsyncJob Dashboard</Title>
-        <LinkTabs baseUrl="/admin/super/asyncjob" tabs={tabs} keepMounted={false} autoRedirectToFirstTab>
+        <LinkTabs baseUrl="/admin/super/asyncjob" tabs={tabs} keepMounted={false}>
           <Tabs.Panel value="asyncjob" pt="md">
             <AsyncJobs />
           </Tabs.Panel>
