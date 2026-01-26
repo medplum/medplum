@@ -1,11 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, conflict, created, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  badRequest,
+  conflict,
+  created,
+  DEFAULT_MAX_SEARCH_COUNT,
+  EMPTY,
+  getReferenceString,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { getTimeZone, resolveAvailability } from './utils/scheduling';
+import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
@@ -28,6 +37,8 @@ const bookOperation = {
 type BookParameters = {
   slot: Slot[];
 };
+
+type Matcher = (params: SchedulingParameters) => boolean;
 
 // Helper that tests a condition that we believe should always be true.
 //
@@ -70,14 +81,16 @@ function assertAllMatch<T>(objects: T[], msg: string): T {
   return first;
 }
 
-function hasMatchingServiceType(serviceType: Slot['serviceType'], schedulingParameters: SchedulingParameters): boolean {
-  return (
-    serviceType?.some(({ coding }) => {
-      return coding?.some(({ system, code }) => {
-        return schedulingParameters.serviceType.some((st) => st.system === system && st.code === code);
-      });
-    }) ?? false
+function makeMatcher(slot: Slot): Matcher {
+  const codes = (slot.serviceType ?? EMPTY).flatMap((concept) =>
+    (concept.coding ?? EMPTY).map((coding) => `${coding.system}|${coding.code}`)
   );
+  const codeSet = new Set(codes);
+  return (schedulingParams: SchedulingParameters) => {
+    return schedulingParams.serviceType.some((coding) => {
+      return codeSet.has(`${coding.system}|${coding.code}`);
+    });
+  };
 }
 
 /**
@@ -132,7 +145,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const extensions = parseSchedulingParametersExtensions(schedule);
-          let parameters = extensions.filter((ext) => hasMatchingServiceType(slot.serviceType, ext));
+          const matcher = makeMatcher(slot);
+          let parameters = extensions.filter((ext) => matcher(ext));
           if (parameters.length === 0) {
             // If no service type match found, fall back to wildcard availability
             parameters = extensions.filter((ext) => ext.serviceType.length === 0);
@@ -144,7 +158,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
           const existingSlots = await ctx.repo.searchResources<Slot>({
             resourceType: 'Slot',
-            count: 1,
+            count: DEFAULT_MAX_SEARCH_COUNT,
             filters: [
               {
                 code: 'schedule',
@@ -154,7 +168,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               {
                 code: 'status',
                 operator: Operator.EQUALS,
-                value: 'busy,busy-tentative,busy-unavailable',
+                value: 'busy,busy-tentative,busy-unavailable,free',
               },
               {
                 code: '_filter',
@@ -164,18 +178,35 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             ],
           });
 
-          if (existingSlots.length > 0) {
+          // If we filled a full search page of slots, then there may be slots we
+          // didn't fetch that would impact availability. Fail loudly here.
+          if (existingSlots.length === DEFAULT_MAX_SEARCH_COUNT) {
+            throw new OperationOutcomeError(badRequest('Too many existing slots found in range. Try another time.'));
+          }
+
+          const availableSlots = existingSlots.filter((slot) => slot.status === 'free');
+          const blockedSlots = existingSlots.filter((slot) => slot.status !== 'free');
+
+          if (blockedSlots.length > 0) {
             throw new OperationOutcomeError(conflict('Availability conflict'));
           }
 
-          const interval = { start: new Date(start), end: new Date(end) };
+          const range = { start: new Date(start), end: new Date(end) };
+          const serviceType = (slot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
           const activeParameters = parameters.find((params) => {
             const timeZone = params.timezone ?? actorTimeZone;
-            const result = resolveAvailability(params, interval, timeZone);
+            const availability = resolveAvailability(params, range, timeZone);
+            const result = applyExistingSlots({
+              availability,
+              slots: availableSlots,
+              range,
+              serviceType,
+            });
+
             return (
               result[0] &&
-              result[0].start.getTime() <= interval.start.getTime() &&
-              result[0].end.getTime() >= interval.end.getTime()
+              result[0].start.getTime() <= range.start.getTime() &&
+              result[0].end.getTime() >= range.end.getTime()
             );
           });
 

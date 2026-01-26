@@ -478,4 +478,93 @@ describe('Appointment/$book', () => {
       expect(response.status).toEqual(400);
     }
   });
+
+  test('succeeds against an explicit "free" slot outside of regular availability', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/Phoenix' });
+    const schedule = await makeSchedule(practitioner);
+    const start = '2026-01-15T08:00:00-07:00';
+    const end = '2026-01-15T09:00:00-07:00';
+
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end,
+      status: 'free',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toEqual(201);
+  });
+
+  test('succeeds over adjacent explicit "free" slots', async () => {
+    const practitioner = await makePractitioner({ timezone: 'America/Phoenix' });
+    const schedule = await makeSchedule(practitioner);
+    const start = '2026-01-15T08:00:00-07:00';
+    const middle = '2026-01-15T08:30:00-07:00';
+    const end = '2026-01-15T09:00:00-07:00';
+
+    // First "free" slot covers 8am - 8:30am
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start,
+      end: middle,
+      status: 'free',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+    });
+
+    // Second "free" slot covers 8:30am - 9am
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      start: middle,
+      end,
+      status: 'free',
+      schedule: createReference(schedule),
+      meta: { project: project.project.id },
+    });
+
+    // Requesting to book a slot from 8am - 9am works
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toEqual(201);
+  });
 });

@@ -6,6 +6,7 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  EMPTY,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -160,7 +161,12 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
       let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
-      availability = applyExistingSlots({ availability, slots, range, serviceType });
+      availability = applyExistingSlots({
+        availability,
+        slots,
+        range,
+        serviceType: serviceType ? [serviceType] : EMPTY,
+      });
       return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
         resourceType: 'Slot',
         start: start.toISOString(),

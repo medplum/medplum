@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getExtensionValue, isDefined } from '@medplum/core';
+import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
 import type { Coding, Resource, Slot } from '@medplum/fhirtypes';
 import { Temporal } from 'temporal-polyfill';
 import type { Interval } from '../../../util/date';
@@ -28,7 +28,7 @@ function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.Zoned
   return results;
 }
 
-function hasMatchingServiceType(slot: Slot, inputCoding: Coding | undefined): boolean {
+function hasMatchingServiceType(slot: Slot, inputCoding: readonly Coding[]): boolean {
   const serviceType = slot.serviceType ?? [];
   // Slots without any service type are considered as "wildcard" slots that support
   // any service type codes
@@ -38,13 +38,15 @@ function hasMatchingServiceType(slot: Slot, inputCoding: Coding | undefined): bo
 
   // If we didn't get a specific code to test for, we should only match wildcard slots,
   // which we ruled out above.
-  if (!inputCoding) {
+  if (inputCoding.length === 0) {
     return false;
   }
 
+  const codes = new Set(inputCoding.map((coding) => `${coding.system}|${coding.code}`));
+
   // Check if there any of the Slot's service type codes match the input code
   for (const codeableConcept of serviceType) {
-    if (codeableConcept.coding?.some((c) => c.system === inputCoding.system && c.code === inputCoding.code)) {
+    if (codeableConcept.coding?.some((c) => codes.has(`${c.system}|${c.code}`))) {
       return true;
     }
   }
@@ -247,11 +249,11 @@ export function applyExistingSlots(params: {
   availability: Interval[];
   slots: Slot[];
   range: Interval;
-  serviceType?: Coding;
+  serviceType?: readonly Coding[];
 }): Interval[] {
   const freeSlotIntervals = params.slots
     .filter((slot) => slot.status === 'free')
-    .filter((slot) => hasMatchingServiceType(slot, params.serviceType))
+    .filter((slot) => hasMatchingServiceType(slot, params.serviceType ?? EMPTY))
     .map((slot) => intersectIntervals({ start: new Date(slot.start), end: new Date(slot.end) }, params.range))
     .filter(isDefined);
 

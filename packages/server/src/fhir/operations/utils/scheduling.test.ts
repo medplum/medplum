@@ -536,22 +536,22 @@ describe('applyExistingSlots', () => {
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slots = makeSlots(schedule, freeIntervals, 'free'); // No serviceType
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
-    const serviceType = { system: 'http://example.com', code: 'office-visit' };
+    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
 
   test('free slots with matching service type are included', () => {
-    const serviceType = { system: 'http://example.com', code: 'office-visit' };
+    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
-    const slots = makeSlots(schedule, freeIntervals, 'free', [{ coding: [serviceType] }]);
+    const slots = makeSlots(schedule, freeIntervals, 'free', [{ coding: serviceType }]);
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
 
   test('free slots with non-matching service type are excluded', () => {
-    const serviceType = { system: 'http://example.com', code: 'office-visit' };
+    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system: 'http://example.com', code: 'new-patient' }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -562,7 +562,7 @@ describe('applyExistingSlots', () => {
 
   test('free slots do not match when system matches but code differs', () => {
     const system = 'http://example.com';
-    const serviceType = { system, code: 'checkup' };
+    const serviceType = [{ system, code: 'checkup' }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system, code: 'office-visit' }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -572,7 +572,7 @@ describe('applyExistingSlots', () => {
 
   test('free slots do not match when code matches but system differs', () => {
     const code = 'office-visit';
-    const serviceType = { system: 'http://other.com', code };
+    const serviceType = [{ system: 'http://other.com', code }];
     const freeIntervals = [{ start: new Date('2025-12-01T10:00:00.000Z'), end: new Date('2025-12-01T14:00:00.000Z') }];
     const slotServiceType = [{ coding: [{ system: 'http://example.com', code }] }];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
@@ -590,7 +590,7 @@ describe('applyExistingSlots', () => {
     ];
     const slots = makeSlots(schedule, freeIntervals, 'free', slotServiceType);
     const range = { start: new Date('2025-12-01'), end: new Date('2025-12-30') };
-    const serviceType = { system: 'http://example.com', code: 'office-visit' };
+    const serviceType = [{ system: 'http://example.com', code: 'office-visit' }];
 
     expect(applyExistingSlots({ availability: [], slots, range, serviceType })).toEqual(freeIntervals);
   });
