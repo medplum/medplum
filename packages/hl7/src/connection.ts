@@ -22,7 +22,7 @@ export type Hl7MessageQueueItem = {
 };
 
 export interface SendAndWaitOptions {
-  /** The ACK-level that the Promise should resolve on. The default is `ReturnAckCategory.ANY` (returns on the first ACK of any type). */
+  /** The ACK-level that the Promise should resolve on. The default is `ReturnAckCategory.APPLICATION` (returns on the first application-level ACK). */
   returnAck?: ReturnAckCategory;
   /** The amount of milliseconds to wait before timing out when waiting for the response to a message. */
   timeoutMs?: number;
