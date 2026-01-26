@@ -1198,6 +1198,50 @@ describe('Expand', () => {
     ]);
   });
 
+  test('Condense multiple synonyms in expansion', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: `urn:uuid:${randomUUID()}`,
+      status: 'draft',
+      content: 'example',
+      name: 'Example allergy manifestations',
+      property: [{ code: 'status', type: 'code' }],
+      concept: [
+        {
+          code: 'HIV',
+          display: 'Hives',
+          designation: [{ value: 'Wheal' }, { language: 'fr', value: 'éruption urticaire' }],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${valueSet.url}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
+    ]);
+  });
+
   test('Searches translated designations', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',

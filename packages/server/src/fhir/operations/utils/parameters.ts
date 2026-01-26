@@ -254,7 +254,7 @@ function makeParameter(param: OperationDefinitionParameter, value: unknown): Par
     for (const part of param.part) {
       const nestedValue = (value as Record<string, unknown>)[part.name ?? ''];
       checkMinMax(part, nestedValue);
-      if (nestedValue === undefined) {
+      if (isEmpty(nestedValue)) {
         continue;
       }
       if (Array.isArray(nestedValue)) {
