@@ -15,7 +15,7 @@ import { getAppName } from '../utils/app';
 
 export interface HeaderDropdownProps {
   readonly version?: string;
-  readonly showLayoutToggle?: boolean;
+  readonly showLayoutVersionToggle?: boolean;
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -24,7 +24,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const logins = medplum.getLogins();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
-  const showLayoutToggle = props.showLayoutToggle ?? true;
+  const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
   function setAppShellVersion(version: 'v1' | 'v2'): void {
     localStorage['appShellLayoutVersion'] = version;
