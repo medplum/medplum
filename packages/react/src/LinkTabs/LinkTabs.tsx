@@ -19,31 +19,33 @@ export interface LinkTabsProps extends Omit<TabsProps, 'value' | 'onChange'> {
   readonly baseUrl: string;
   readonly tabs: string[] | TabDefinition[];
   readonly children?: React.ReactNode;
+  /** If true, redirects to the first tab when the current URL doesn't match any tab. Defaults to false. */
+  readonly autoRedirectToFirstTab?: boolean;
 }
 
 export function LinkTabs(props: LinkTabsProps): JSX.Element {
-  const { baseUrl, tabs: tabDefinitions, children, ...rest } = props;
+  const { baseUrl, tabs: tabDefinitions, children, autoRedirectToFirstTab, ...rest } = props;
   const tabs = normalizeTabDefinitions(tabDefinitions);
   const navigate = useMedplumNavigate();
 
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    const tab = getTabFromUrl();
+    const tab = getTabFromUrl(baseUrl);
     return tab && tabs.some((t) => t.value === tab) ? tab : tabs[0].value;
   });
 
-  // navigate to currentTab if not in the URL
+  // navigate to currentTab if not in the URL (only when redirectToFirstTab is enabled)
   const effectFiredRef = useRef(false);
   useEffect(() => {
-    if (effectFiredRef.current) {
+    if (!autoRedirectToFirstTab || effectFiredRef.current) {
       return;
     }
     effectFiredRef.current = true;
 
-    const tab = getTabFromUrl();
+    const tab = getTabFromUrl(baseUrl);
     if (!tab || tab !== currentTab) {
-      navigate(`${baseUrl}/${currentTab}`, { replace: true });
+      navigate(`${baseUrl}/${currentTab}`);
     }
-  }, [baseUrl, currentTab, navigate]);
+  }, [baseUrl, currentTab, navigate, autoRedirectToFirstTab]);
 
   function onTabChange(newTabName: string | null): void {
     newTabName = newTabName || tabs[0].value;
@@ -67,7 +69,7 @@ export function LinkTabs(props: LinkTabsProps): JSX.Element {
   );
 }
 
-function getTabFromUrl(): string | undefined {
+function getTabFromUrl(_baseUrl: string): string | undefined {
   return locationUtils.getPathname().split('/').pop();
 }
 

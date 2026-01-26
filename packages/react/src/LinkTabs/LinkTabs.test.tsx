@@ -62,22 +62,31 @@ describe('LinkTabs', () => {
     expect(timelineTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('initializes with first tab when current path does not match any tab and redirects', () => {
+  test('initializes with first tab when current path does not match any tab (no redirect by default)', () => {
     mockLocationUtils.getPathname.mockReturnValue('/patient/123/unknown');
     setup();
 
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
-    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview', { replace: true });
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
-  test('initializes with first tab when path is empty and redirects', () => {
-    mockLocationUtils.getPathname.mockReturnValue('/patient/123');
-    setup();
+  test('redirects to first tab when autoRedirectToFirstTab is true and path does not match', () => {
+    mockLocationUtils.getPathname.mockReturnValue('/patient/123/unknown');
+    setup({ autoRedirectToFirstTab: true });
 
     const overviewTab = screen.getByRole('tab', { name: 'Overview' });
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
-    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview', { replace: true });
+    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview');
+  });
+
+  test('redirects to first tab when autoRedirectToFirstTab is true and path is empty', () => {
+    mockLocationUtils.getPathname.mockReturnValue('/patient/123');
+    setup({ autoRedirectToFirstTab: true });
+
+    const overviewTab = screen.getByRole('tab', { name: 'Overview' });
+    expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+    expect(navigateMock).toHaveBeenCalledWith('/patient/123/overview');
   });
 
   test('navigates when tab is clicked', async () => {

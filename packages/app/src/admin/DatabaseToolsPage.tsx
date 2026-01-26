@@ -23,7 +23,7 @@ export function DatabaseToolsPage(): JSX.Element {
     <Container maw="100%">
       <Panel>
         <Title order={1}>Database Tools</Title>
-        <LinkTabs baseUrl="/admin/super/db" tabs={tabs}>
+        <LinkTabs baseUrl="/admin/super/db" tabs={tabs} autoRedirectToFirstTab>
           <Tabs.Panel value="gin-indexes" pt="md">
             <GINIndexes />
           </Tabs.Panel>
