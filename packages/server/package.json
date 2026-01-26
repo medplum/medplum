@@ -14,18 +14,33 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "files": [
+    "src",
+    "static",
+    "dist/**",
+    "node_modules/.deno",
+    "node_modules/.deno/**",
+    "deno.json",
+    "deno.lock",
+    "babel.config.json",
+    "medplum.config.json",
+    "README.md"
+  ],
   "scripts": {
     "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
     "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
+    "prepublishOnly": "bash -c 'set -e; mkdir -p .deno node_modules/.deno; if [ -d .deno-packages ]; then cp -a .deno-packages/. .deno/; fi; if [ -d .deno ] && [ \"$(ls -A .deno 2>/dev/null)\" ]; then cp -a .deno/. node_modules/.deno/; fi; rm -rf .deno .deno-packages'",
+    "postinstall": "bash -c 'mkdir -p node_modules/.deno'",
     "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
     "test:seed": "jest seed.test.ts --testTimeout=400000",
-    "trex_build": "tbuild node_modules/@data2evidence/trex"
+    "trex_build": "tbuild ."
   },
+  "bundleDependencies":true,
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "0.7.3",
     "@aws-sdk/client-cloudwatch-logs": "3.849.0",
@@ -96,6 +111,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@trex/cli": "latest",
     "@jest/test-sequencer": "29.7.0",
     "@medplum/fhirtypes": "4.3.6",
     "@types/body-parser": "1.19.6",
@@ -122,9 +138,7 @@
     "set-cookie-parser": "2.7.1",
     "supertest": "7.1.4",
     "superwstest": "2.1.1",
-    "ts-node-dev": "2.0.0",
-    "@data2evidence/trex": "latest",
-    "deno": "latest"
+    "ts-node-dev": "2.0.0"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -146,24 +160,24 @@
           "imports": "/deno.json"
         }
       ],
-       "env": { 
-          "d2e-fhir-server": {
-              "FHIR_SERVER_BASE_URL": "http://${PROJECT_NAME:-d2e}-trex.${TLS__INTERNAL__DOMAIN:-alp.local}:33001",
-              "PG__PORT": "${PG__PORT}",
-              "PG__HOST":"${PG__HOST}",
-              "PG__DB_NAME": "${PG__DB_NAME}",
-              "PG_SUPER_PASSWORD": "${PG_SUPER_PASSWORD}",
-              "PG_SUPER_USER": "${PG_SUPER_USER:-postgres}",
-              "FHIR__LOG_LEVEL": "debug",
-              "FHIR_CUSTOM_SCHEMA": "${FHIR_CUSTOM_SCHEMA:-fhir}",
-              "FHIR__CLIENT_ID": "${FHIR__CLIENT_ID:-${FHIR__CLIENT_ID:-db6b2304-f236-45ec-b10c-a852681e7129}}",
-              "FHIR__CLIENT_SECRET": "${FHIR__CLIENT_SECRET}",
-              "REDIS_PASSWORD": "${REDIS_PASSWORD}",
-              "REDIS_HOST": "${REDIS_HOST:-${PROJECT_NAME:-d2e}-minerva-redis-1}",
-              "REDIS_PORT": "${REDIS_PORT:-6379}",
-              "BINARY_UPLOAD_LIMIT_SIZE": "${BINARY_UPLOAD_LIMIT_SIZE:-50mb}",
-              "AUTH_RATE_LIMIT": "${AUTH_RATE_LIMIT:-1000}"
-          }
+      "env": {
+        "d2e-fhir-server": {
+          "FHIR_SERVER_BASE_URL": "http://${PROJECT_NAME:-d2e}-trex.${TLS__INTERNAL__DOMAIN:-alp.local}:33001",
+          "PG__PORT": "${PG__PORT}",
+          "PG__HOST": "${PG__HOST}",
+          "PG__DB_NAME": "${PG__DB_NAME}",
+          "PG_SUPER_PASSWORD": "${PG_SUPER_PASSWORD}",
+          "PG_SUPER_USER": "${PG_SUPER_USER:-postgres}",
+          "FHIR__LOG_LEVEL": "debug",
+          "FHIR_CUSTOM_SCHEMA": "${FHIR_CUSTOM_SCHEMA:-fhir}",
+          "FHIR__CLIENT_ID": "${FHIR__CLIENT_ID:-${FHIR__CLIENT_ID:-db6b2304-f236-45ec-b10c-a852681e7129}}",
+          "FHIR__CLIENT_SECRET": "${FHIR__CLIENT_SECRET}",
+          "REDIS_PASSWORD": "${REDIS_PASSWORD}",
+          "REDIS_HOST": "${REDIS_HOST:-${PROJECT_NAME:-d2e}-minerva-redis-1}",
+          "REDIS_PORT": "${REDIS_PORT:-6379}",
+          "BINARY_UPLOAD_LIMIT_SIZE": "${BINARY_UPLOAD_LIMIT_SIZE:-50mb}",
+          "AUTH_RATE_LIMIT": "${AUTH_RATE_LIMIT:-1000}"
+        }
       },
       "roles": {
         "ALP_SYSTEM_ADMIN": [

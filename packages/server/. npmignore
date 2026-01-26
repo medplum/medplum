@@ -1,0 +1,15 @@
+# Exclude everything first
+*
+
+# Then include what we want
+!src/**
+!static/**
+!node_modules/.deno/**
+!node_modules/.deno
+!package.json
+!deno.json
+!deno.lock
+!README.md
+!babel.config.json
+!medplum.config.json
+!dist/**

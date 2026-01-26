@@ -9,7 +9,7 @@ import * as fns from '../migrate-functions';
 // prettier-ignore
 export async function run(client: PoolClient): Promise<void> {
   const actions: { name: string; durationMs: number }[] = []
-  await fns.query(client, actions, `CREATE FUNCTION token_array_to_text(text[])
+  await fns.query(client, actions, `CREATE OR REPLACE FUNCTION token_array_to_text(text[])
     RETURNS text LANGUAGE sql IMMUTABLE
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`);
 
