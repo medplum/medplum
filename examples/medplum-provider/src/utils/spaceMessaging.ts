@@ -172,7 +172,7 @@ export async function sendToBotStreaming(
     headers: {
       'Authorization': `Bearer ${medplum.getAccessToken()}`,
       'Content-Type': 'application/fhir+json',
-      'Accept': 'text/event-stream, application/fhir+json, application/json',
+      'Accept': 'text/event-stream',
     },
     body: JSON.stringify({
       resourceType: 'Parameters',
@@ -203,12 +203,11 @@ export async function sendToBotStreaming(
   }
 
   // Handle streaming SSE response
-  const reader = response.body?.getReader();
-  if (!reader) {
+  if (!response.body) {
     throw new Error('No response body');
   }
 
-  const decoder = new TextDecoder();
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
   let fullContent = '';
   let buffer = '';
 
@@ -216,7 +215,7 @@ export async function sendToBotStreaming(
     const { done, value } = await reader.read();
     if (done) { break; }
 
-    buffer += decoder.decode(value, { stream: true });
+    buffer += value;
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
 
