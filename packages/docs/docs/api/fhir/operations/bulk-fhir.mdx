@@ -18,6 +18,23 @@ The export process is asynchronous, and you will need to poll a status URL retur
 
 [ndjson]: https://jsonlines.org/
 
+## Access Policy Requirements
+
+Because the bulk export process is asynchronous, your [AccessPolicy](/docs/access/access-policies) must grant you access to the `AsyncJob` resourceType. This is required to poll the status of the export operation. Without access to `AsyncJob`, you will not be able to check the status of your export or retrieve the results.
+
+Your AccessPolicy should include an entry like this:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "resource": [
+    {
+      "resourceType": "AsyncJob"
+    }
+  ]
+}
+```
+
 ## Group Export
 
 To specify which patients need to be included in the export, construct a [Group](/docs/api/fhir/resources/group) resource and add specific patients as `Group.member.entity.`
