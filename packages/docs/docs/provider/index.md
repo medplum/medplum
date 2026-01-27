@@ -10,20 +10,22 @@ The Medplum Provider is a user-facing web application for clinical users and ope
 
 Medplum Provider is built on the Medplum Platform and is [open source](https://github.com/medplum/medplum/tree/main/examples/medplum-provider). Depending on your organization’s needs, you can use Medplum Provider as your system of record, as a starting point, or as an implementation reference for your own custom electronic health record system.
 
-## Getting Started
+## Registering & Signing In
 
 To use Medplum Provider, you'll need a Medplum account.
 
-1. Register a new account and Project on the Medplum App at [app.medplum.com](http://app.medplum.com)
+1. Register a new account and create a new Project on the Medplum App at [app.medplum.com](http://app.medplum.com)
 2. Navigate to Medplum Provider at [provider.medplum.com](http://provider.medplum.com) and sign in with the same credentials
+3. After signing in, review the "[Get Started](http://provider.medplum.com/getstarted)" page to import sample data and more
 
-Occasionally, you may also need to use the Medplum App for administrative and other tasks which we note explicitly in this documentation.
+
+Occasionally, you may need to use the Medplum App for administrative and other tasks which we note explicitly in this documentation.
 
 ## Using Medplum Provider
 
 The following sections outline the primary functionality of the Medplum Provider app.
 
-#### [Getting Started](./provider/getting-started)
+#### [Adding Practitioners & Data](./provider/getting-started)
 
 - [Adding Practitioners (via Medplum App)](./provider/getting-started#adding-practitioners)
 - [Importing Data (via Medplum App)](./provider/getting-started#importing-data)

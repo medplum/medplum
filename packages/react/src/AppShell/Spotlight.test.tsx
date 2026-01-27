@@ -128,6 +128,16 @@ describe('Spotlight', () => {
         birthDate: '1985-05-15',
       });
 
+      // Mock valueSetExpand to prevent hanging on resource type search
+      const valueSetSpy = jest.spyOn(medplum, 'valueSetExpand').mockResolvedValue({
+        resourceType: 'ValueSet',
+        status: 'active',
+        expansion: {
+          timestamp: new Date().toISOString(),
+          contains: [],
+        },
+      });
+
       await setup();
 
       const searchInput = screen.getByTestId('spotlight-search');
@@ -141,6 +151,8 @@ describe('Spotlight', () => {
         },
         { timeout: 3000 }
       );
+
+      valueSetSpy.mockRestore();
     });
 
     test('searches by UUID when input is a valid UUID', async () => {

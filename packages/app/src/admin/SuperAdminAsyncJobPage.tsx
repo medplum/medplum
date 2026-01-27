@@ -5,27 +5,28 @@ import { showNotification } from '@mantine/notifications';
 import type { SearchRequest, WithId } from '@medplum/core';
 import { forbidden, formatSearchQuery, normalizeErrorString, Operator } from '@medplum/core';
 import type { AsyncJob, Resource } from '@medplum/fhirtypes';
-import { Container, MedplumLink, OperationOutcomeAlert, Panel, SearchControl, useMedplum } from '@medplum/react';
+import {
+  Container,
+  LinkTabs,
+  MedplumLink,
+  OperationOutcomeAlert,
+  Panel,
+  SearchControl,
+  useMedplum,
+} from '@medplum/react';
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { startAsyncJobAsync } from './SuperAdminStartAsyncJob';
 
-const SYSTEM_ASYNCJOB = 'System AsyncJob';
-const POSTDEPLOY_MIGRATIONS = 'Post-deploy Migrations';
-const TABS = [POSTDEPLOY_MIGRATIONS, SYSTEM_ASYNCJOB];
+const tabs = [
+  { label: 'Post-deploy Migrations', value: 'migrations' },
+  { label: 'System AsyncJob', value: 'asyncjob' },
+];
 
 export function SuperAdminAsyncDashboardPage(): JSX.Element {
   const medplum = useMedplum();
-  const [currentTab, setCurrentTab] = useState(TABS[0]);
-
-  function onTabChange(newTabName: string | null): void {
-    newTabName ||= TABS[0];
-    if (TABS.includes(newTabName)) {
-      setCurrentTab(newTabName);
-    }
-  }
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -35,21 +36,14 @@ export function SuperAdminAsyncDashboardPage(): JSX.Element {
     <Container miw="1600" maw="2000">
       <Panel>
         <Title order={1}>AsyncJob Dashboard</Title>
-        <Tabs keepMounted={false} value={currentTab} onChange={onTabChange}>
-          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-            {TABS.map((t) => (
-              <Tabs.Tab key={t} value={t}>
-                {t}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panel value={SYSTEM_ASYNCJOB} pt="md">
+        <LinkTabs baseUrl="/admin/super/asyncjob" tabs={tabs} keepMounted={false}>
+          <Tabs.Panel value="asyncjob" pt="md">
             <AsyncJobs />
           </Tabs.Panel>
-          <Tabs.Panel value={POSTDEPLOY_MIGRATIONS} pt="md">
+          <Tabs.Panel value="migrations" pt="md">
             <PostDeployMigrations />
           </Tabs.Panel>
-        </Tabs>
+        </LinkTabs>
       </Panel>
     </Container>
   );

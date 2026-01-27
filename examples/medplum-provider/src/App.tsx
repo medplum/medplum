@@ -8,16 +8,21 @@ import {
   IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
+  IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { DismissableNavIcon } from './components/DismissableNavIcon';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
+
+const SETUP_DISMISSED_KEY = 'medplum-provider-setup-dismissed';
+
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
@@ -43,12 +48,19 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
+import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
+
+  const handleDismissSetup = (): void => {
+    localStorage.setItem(SETUP_DISMISSED_KEY, 'true');
+    setSetupDismissed(true);
+  };
 
   if (medplum.isLoading()) {
     return null;
@@ -62,6 +74,8 @@ export function App(): JSX.Element | null {
       logo={<Logo size={24} />}
       pathname={location.pathname}
       searchParams={searchParams}
+      layoutVersion="v2"
+      showLayoutVersionToggle={false}
       menus={
         profile
           ? [
@@ -103,6 +117,15 @@ export function App(): JSX.Element | null {
               {
                 title: 'Quick Links',
                 links: [
+                  ...(!setupDismissed
+                    ? [
+                        {
+                          icon: <DismissableNavIcon icon={<IconSettingsAutomation />} onDismiss={handleDismissSetup} />,
+                          label: 'Get Started',
+                          href: '/getstarted',
+                        },
+                      ]
+                    : []),
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
@@ -120,13 +143,23 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
+              <Route path="/getstarted" element={<GetStartedPage />} />
               <Route path="/Spaces/Communication" element={<SpacesPage />}>
                 <Route index element={<SpacesPage />} />
                 <Route path=":topicId" element={<SpacesPage />} />
               </Route>
               <Route
                 path="/"
-                element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}
+                element={
+                  <Navigate
+                    to={
+                      setupDismissed
+                        ? '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated'
+                        : '/getstarted'
+                    }
+                    replace
+                  />
+                }
               />
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
