@@ -4,7 +4,14 @@
   "appBaseUrl": "http://localhost:3000/",
   "binaryStorage": "file:./binary/",
   "storageBaseUrl": "http://localhost:8103/storage/",
-  "supportEmail": "\"Medplum\" <support@medplum.com>",
+  "smtp": {
+    "host": "smtp.gmail.com",
+    "port": 587,
+    "secure": false,
+    "username": "kuper.oleh.dev@gmail.com",
+    "password": "jmlp kxmw ezrm deba"
+  },
+  "supportEmail": "\"Foomedical\" <kuper.oleh.dev@gmail.com>",
   "googleClientId": "397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com",
   "googleClientSecret": "",
   "recaptchaSiteKey": "6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq",
