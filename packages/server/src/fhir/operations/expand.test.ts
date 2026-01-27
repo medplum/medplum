@@ -1,15 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  WithId} from '@medplum/core';
-import {
-  ContentType,
-  HTTP_HL7_ORG,
-  HTTP_TERMINOLOGY_HL7_ORG,
-  LOINC,
-  SNOMED,
-  createReference,
-} from '@medplum/core';
+import type { WithId } from '@medplum/core';
+import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
 import type {
   CodeSystem,
   OperationOutcome,
