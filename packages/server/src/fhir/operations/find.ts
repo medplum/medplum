@@ -14,8 +14,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
-import { applyExistingSlots, findSlotTimes, resolveAvailability } from './utils/find';
+import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { applyExistingSlots, resolveAvailability } from './utils/scheduling';
 import type { HardCoding, SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
