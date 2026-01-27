@@ -2,10 +2,19 @@
 sidebar_position: 8
 ---
 
-# Project Initialization
+# Project $init
 
-Medplum implements a custom `Project/$init` operation, which can create a new Project and set up the admin user,
-resulting in a ready-to-use empty Project.
+The `$init` operation creates a new Medplum Project with an admin user in a single API call. Projects provide isolated environments for different applications, organizations, or tenants-each with their own users, access policies, and FHIR resources.
+
+This operation streamlines the onboarding process for multi-tenant platforms, allowing you to programmatically provision new customer environments without manual setup steps.
+
+## Use Cases
+
+- **Customer Onboarding**: Automatically create isolated project environments when new customers sign up
+- **Development Environments**: Spin up separate projects for development, staging, and production
+- **Multi-Tenant SaaS**: Provision tenant-specific projects with dedicated resources and access controls
+- **Testing and QA**: Create temporary projects for automated testing scenarios
+- **Partner Integrations**: Set up isolated environments for third-party integrations
 
 ## Invoke the `$init` operation
 
@@ -72,3 +81,11 @@ curl 'https://api.medplum.com/fhir/R4/Project/$init' \
   -d '{"resourceType":"Parameters", "parameter":[ {"name":"name", "valueString":"Test Project"}, \
     {"name":"owner", "valueReference": {"reference": "User/cb5bb36b-fcfa-4c07-8da1-5f3afd8d261d" } } ]}'
 ```
+
+## Related
+
+- [Projects Guide](/docs/access/projects) - Understanding Medplum projects and multi-tenancy
+- [Access Control](/docs/access/access-policies) - Configuring access policies for projects
+- [Admin Access](/docs/access/admin) - Administrative access and operations
+- [User Configuration](/docs/access/user-configuration) - Managing users and invitations
+- [Medplum Project Resource](/docs/api/fhir/medplum/project) - Project resource reference
