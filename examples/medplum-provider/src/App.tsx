@@ -78,8 +78,8 @@ export function App(): JSX.Element | null {
                     icon: (
                       <InboxIcon
                         resourceType="Communication"
-                        countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
+                        countCriteria={`status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic&_summary=count`}
+                        subscriptionCriteria={`Communication?status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic`}
                         iconComponent={<IconMail />}
                       />
                     ),
