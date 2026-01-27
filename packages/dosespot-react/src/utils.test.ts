@@ -14,6 +14,23 @@ import {
   removePreferredPharmacyFromPatient,
 } from './utils';
 
+type PatientExtension = NonNullable<Patient['extension']>[number];
+
+const getPharmacyReference = (extension?: PatientExtension): string | undefined => {
+  const pharmacyExt = extension?.extension?.find((ext) => ext.url === 'pharmacy');
+  return pharmacyExt?.valueReference?.reference;
+};
+
+const getPharmacyTypeCode = (extension?: PatientExtension): string | undefined => {
+  const typeExt = extension?.extension?.find((ext) => ext.url === 'type');
+  return typeExt?.valueCodeableConcept?.coding?.[0]?.code;
+};
+
+const findPharmacyExtension = (
+  extensions: Patient['extension'],
+  reference: string
+): PatientExtension | undefined => extensions?.find((extension) => getPharmacyReference(extension) === reference);
+
 describe('utils', () => {
   describe('getMedicationName', () => {
     test('Returns medication name from code text', () => {
@@ -146,7 +163,7 @@ describe('utils', () => {
                   coding: [
                     {
                       system: 'https://dosespot.com/pharmacy-preference-type',
-                      code: 'preferred',
+                      code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
                 },
@@ -202,7 +219,7 @@ describe('utils', () => {
                   coding: [
                     {
                       system: 'https://dosespot.com/pharmacy-preference-type',
-                      code: 'preferred',
+                      code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
                 },
@@ -354,20 +371,12 @@ describe('utils', () => {
       expect(result.extension).toHaveLength(2);
 
       // Check that the old primary pharmacy is now preferred
-      const oldPharmacy = result.extension?.find((ext) => {
-        const pharmacyExt = ext.extension?.find((e) => e.url === 'pharmacy');
-        return pharmacyExt?.valueReference?.reference === 'Organization/123';
-      });
-      const oldTypeExt = oldPharmacy?.extension?.find((e) => e.url === 'type');
-      expect(oldTypeExt?.valueCodeableConcept?.coding?.[0]?.code).toBe(PHARMACY_TYPE_PREFERRED);
+      const oldPharmacy = findPharmacyExtension(result.extension, 'Organization/123');
+      expect(getPharmacyTypeCode(oldPharmacy)).toBe(PHARMACY_TYPE_PREFERRED);
 
       // Check that the new pharmacy is primary
-      const newPharmacy = result.extension?.find((ext) => {
-        const pharmacyExt = ext.extension?.find((e) => e.url === 'pharmacy');
-        return pharmacyExt?.valueReference?.reference === 'Organization/456';
-      });
-      const newTypeExt = newPharmacy?.extension?.find((e) => e.url === 'type');
-      expect(newTypeExt?.valueCodeableConcept?.coding?.[0]?.code).toBe(PHARMACY_TYPE_PRIMARY);
+      const newPharmacy = findPharmacyExtension(result.extension, 'Organization/456');
+      expect(getPharmacyTypeCode(newPharmacy)).toBe(PHARMACY_TYPE_PRIMARY);
     });
 
     test('Updates existing pharmacy when adding same organization', () => {
