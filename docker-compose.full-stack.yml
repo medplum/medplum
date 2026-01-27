@@ -92,10 +92,10 @@ services:
       test:
         # We use Node's fetch for healthcheck because this image doesn't have a curl or wget installed
         [
-          'CMD',
-          'node',
-          '-e',
-          'fetch("http://localhost:8103/healthcheck").then(r => r.json()).then(console.log).catch(() => { process.exit(1); })',
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8103/healthcheck', res => res.statusCode===200 ? process.exit(0) : process.exit(1))"
         ]
       interval: 30s
       timeout: 10s
