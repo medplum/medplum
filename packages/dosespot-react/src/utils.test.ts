@@ -26,10 +26,8 @@ const getPharmacyTypeCode = (extension?: PatientExtension): string | undefined =
   return typeExt?.valueCodeableConcept?.coding?.[0]?.code;
 };
 
-const findPharmacyExtension = (
-  extensions: Patient['extension'],
-  reference: string
-): PatientExtension | undefined => extensions?.find((extension) => getPharmacyReference(extension) === reference);
+const findPharmacyExtension = (extensions: Patient['extension'], reference: string): PatientExtension | undefined =>
+  extensions?.find((extension) => getPharmacyReference(extension) === reference);
 
 describe('utils', () => {
   describe('getMedicationName', () => {
