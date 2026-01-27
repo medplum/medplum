@@ -1,6 +1,6 @@
 # SMART App Launch with Custom Parameters
 
-Medplum supports custom URL parameters in SMART App Launch flows through FHIR extensions on `ClientApplication` resources. This allows you to include additional context (such as patient identifiers) in the launch URL without modifying code.
+Medplum supports custom URL parameters in SMART App Launch flows through FHIR extensions on `ClientApplication` resources. This allows you to include additional context (such as patient identifiers, resource IDs, or static values) in the launch URL without modifying code.
 
 ## Use Case
 
@@ -10,7 +10,7 @@ Instead of hardcoding this logic, you can configure it declaratively using FHIR 
 
 ## Extension Structure
 
-Add an extension to your `ClientApplication` resource with the following structure:
+You can add multiple extensions to your `ClientApplication`, each defining one custom URL parameter. Each extension has the following structure:
 
 ```json
 {
@@ -20,15 +20,19 @@ Add an extension to your `ClientApplication` resource with the following structu
   "launchUri": "https://your-app.com/launch",
   "extension": [
     {
-      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-patient-identifier",
+      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter",
       "extension": [
+        {
+          "url": "name",
+          "valueString": "patient"
+        },
+        {
+          "url": "sourceType",
+          "valueString": "patientIdentifier"
+        },
         {
           "url": "system",
           "valueUri": "https://www.healthgorilla.com"
-        },
-        {
-          "url": "parameterName",
-          "valueString": "patient"
         }
       ]
     }
@@ -38,13 +42,20 @@ Add an extension to your `ClientApplication` resource with the following structu
 
 ### Extension Fields
 
-- **`url`**: `https://medplum.com/fhir/StructureDefinition/smart-launch-patient-identifier` - The extension definition URL
-- **`system`** (nested extension): The identifier system to look up on the Patient resource (e.g., `"https://www.healthgorilla.com"`)
-- **`parameterName`** (nested extension): The URL query parameter name to use (defaults to `"patient"` if not specified)
+- **`url`**: `https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter` - The extension definition URL (can be repeated for multiple parameters)
+- **`name`** (nested extension, required): The URL query parameter name (e.g., `"patient"`, `"encounter"`, `"orgId"`)
+- **`sourceType`** (nested extension, required): Where to get the parameter value from. Valid values:
+  - `"patientIdentifier"` - Extract from Patient resource identifier with specified system
+  - `"encounterIdentifier"` - Extract from Encounter resource identifier with specified system
+  - `"patientId"` - Use the Patient resource ID
+  - `"encounterId"` - Use the Encounter resource ID
+  - `"static"` - Use a static value from the `value` field
+- **`system`** (nested extension, required for identifier sources): The identifier system to look up (e.g., `"https://www.healthgorilla.com"`)
+- **`value`** (nested extension, required for static sources): The static value to use when `sourceType` is `"static"`
 
 ## Example: Health Gorilla Integration
 
-Here's a complete example for Health Gorilla:
+Here's a complete example for Health Gorilla that adds a `patient` parameter with the Health Gorilla identifier:
 
 ```json
 {
@@ -59,15 +70,67 @@ Here's a complete example for Health Gorilla:
   "jwksUri": "https://sandbox.healthgorilla.com/.well-known/jwks.json",
   "extension": [
     {
-      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-patient-identifier",
+      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter",
       "extension": [
+        {
+          "url": "name",
+          "valueString": "patient"
+        },
+        {
+          "url": "sourceType",
+          "valueString": "patientIdentifier"
+        },
         {
           "url": "system",
           "valueUri": "https://www.healthgorilla.com"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Multiple Parameters Example
+
+You can define multiple custom parameters by adding multiple extensions. Here's an example with both a patient identifier and a static organization ID:
+
+```json
+{
+  "resourceType": "ClientApplication",
+  "name": "Multi-Parameter App",
+  "launchUri": "https://example.com/launch",
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter",
+      "extension": [
+        {
+          "url": "name",
+          "valueString": "patient"
         },
         {
-          "url": "parameterName",
-          "valueString": "patient"
+          "url": "sourceType",
+          "valueString": "patientIdentifier"
+        },
+        {
+          "url": "system",
+          "valueUri": "https://www.healthgorilla.com"
+        }
+      ]
+    },
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter",
+      "extension": [
+        {
+          "url": "name",
+          "valueString": "orgId"
+        },
+        {
+          "url": "sourceType",
+          "valueString": "static"
+        },
+        {
+          "url": "value",
+          "valueString": "my-org-123"
         }
       ]
     }
@@ -102,19 +165,25 @@ For this extension to work, your Patient resources must have an identifier with 
 
 1. When a user clicks the SMART app launch link on a Patient or Encounter page, Medplum:
    - Creates a `SmartAppLaunch` resource
-   - Checks the `ClientApplication` for the extension
-   - If present, extracts the patient identifier using the specified system
-   - Adds the identifier value to the launch URL as the specified parameter
+   - Checks the `ClientApplication` for extensions with the `smart-launch-url-parameter` URL
+   - For each extension found:
+     - Resolves the parameter value based on the `sourceType`:
+       - `patientIdentifier` / `encounterIdentifier`: Extracts identifier value from the resource
+       - `patientId` / `encounterId`: Uses the resource ID
+       - `static`: Uses the provided static value
+     - Adds the parameter to the launch URL
    - Redirects to the launch URL
 
 2. The resulting launch URL will look like:
    ```
-   https://sandbox.healthgorilla.com/app/patient-chart/launch?iss=https://api.medplum.com/fhir/R4/&launch=da4435ec-5bca-4f18-b4a9-747d71c75369&patient=da06e767ef08774b83aed58b
+   https://sandbox.healthgorilla.com/app/patient-chart/launch?iss=https://api.medplum.com/fhir/R4/&launch=da4435ec-5bca-4f18-b4a9-747d71c75369&patient=<Health Gorilla ID>
    ```
 
 ## Error Handling
 
-If the patient identifier with the specified system is not found on the Patient resource, a warning notification will be displayed, but the launch will still proceed with the standard `iss` and `launch` parameters.
+- If a required resource (Patient or Encounter) is missing for a parameter that needs it, a warning notification is displayed and the launch proceeds without that parameter
+- If an identifier with the specified system is not found, a warning notification is displayed and the launch proceeds without that parameter
+- The launch always proceeds with at least the standard `iss` and `launch` parameters, even if custom parameters cannot be resolved
 
 ## Setting Up via Medplum App
 

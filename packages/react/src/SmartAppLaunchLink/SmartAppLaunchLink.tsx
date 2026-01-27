@@ -5,7 +5,6 @@ import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
   ensureTrailingSlash,
-  getExtension,
   getIdentifier,
   locationUtils,
   normalizeErrorString,
@@ -22,21 +21,99 @@ export interface SmartAppLaunchLinkProps extends AnchorProps {
 }
 
 /**
- * Extension URL for configuring custom patient identifier parameters in SMART app launch.
- * When present on a ClientApplication, this extension specifies:
- * - The patient identifier system to extract from the Patient resource
- * - The URL parameter name to include in the launch URL
+ * Extension URL for configuring custom URL parameters in SMART app launch.
+ * Multiple extensions with this URL can be present, each defining one custom parameter.
+ * Each extension specifies:
+ * - `name`: The URL parameter name
+ * - `sourceType`: Where to get the value from (e.g., "patientIdentifier", "encounterIdentifier", "resourceId", "static")
+ * - `system`: For identifier sources, the identifier system to use
+ * - `value`: For static sources, the static value to use
  */
-const SMART_LAUNCH_PATIENT_IDENTIFIER_EXTENSION_URL =
-  'https://medplum.com/fhir/StructureDefinition/smart-launch-patient-identifier';
+const SMART_LAUNCH_URL_PARAMETER_EXTENSION_URL =
+  'https://medplum.com/fhir/StructureDefinition/smart-launch-url-parameter';
+
+type ParameterSourceType = 'patientIdentifier' | 'encounterIdentifier' | 'patientId' | 'encounterId' | 'static';
+
+interface CustomParameter {
+  name: string;
+  sourceType: ParameterSourceType;
+  system?: string;
+  value?: string;
+}
 
 export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element | null {
   const medplum = useMedplum();
   const { client, patient, encounter, children, ...rest } = props;
 
-  // Load patient resource if we need to extract identifier
+  // Load resources if we need to extract values
   // Always call useResource hook (React hooks rules), it handles undefined gracefully
   const patientResource = useResource(patient);
+  const encounterResource = useResource(encounter);
+
+  /**
+   * Extracts custom parameters from ClientApplication extensions.
+   * @returns Array of custom parameter configurations.
+   */
+  function getCustomParameters(): CustomParameter[] {
+    const parameters: CustomParameter[] = [];
+    const extensions = client.extension?.filter((e) => e.url === SMART_LAUNCH_URL_PARAMETER_EXTENSION_URL) || [];
+
+    for (const extension of extensions) {
+      const nameExtension = extension.extension?.find((e) => e.url === 'name');
+      const sourceTypeExtension = extension.extension?.find((e) => e.url === 'sourceType');
+      const systemExtension = extension.extension?.find((e) => e.url === 'system');
+      const valueExtension = extension.extension?.find((e) => e.url === 'value');
+
+      const name = nameExtension?.valueString;
+      const sourceType = sourceTypeExtension?.valueString as ParameterSourceType | undefined;
+      const system = systemExtension?.valueUri || systemExtension?.valueString;
+      const value = valueExtension?.valueString;
+
+      if (name && sourceType) {
+        parameters.push({
+          name,
+          sourceType,
+          system,
+          value,
+        });
+      }
+    }
+
+    return parameters;
+  }
+
+  /**
+   * Resolves the value for a custom parameter based on its source type.
+   * @param parameter - The custom parameter configuration.
+   * @returns The resolved parameter value, or undefined if not available.
+   */
+  function resolveParameterValue(parameter: CustomParameter): string | undefined {
+    switch (parameter.sourceType) {
+      case 'patientIdentifier':
+        if (!patientResource || !parameter.system) {
+          return undefined;
+        }
+        return getIdentifier(patientResource, parameter.system);
+
+      case 'encounterIdentifier':
+        if (!encounterResource || !parameter.system) {
+          return undefined;
+        }
+        return getIdentifier(encounterResource, parameter.system);
+
+      case 'patientId':
+        return patientResource?.id;
+
+      case 'encounterId':
+        return encounterResource?.id;
+
+      case 'static':
+        return parameter.value;
+
+      default:
+        return undefined;
+    }
+  }
 
   function launchApp(): void {
     medplum
@@ -50,34 +127,44 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
         url.searchParams.set('launch', result.id);
 
-        // Check for extension that specifies custom patient identifier parameter
-        const identifierExtension = getExtension(
-          client,
-          SMART_LAUNCH_PATIENT_IDENTIFIER_EXTENSION_URL
-        );
+        // Process custom parameters from extensions
+        const customParameters = getCustomParameters();
+        for (const parameter of customParameters) {
+          const paramValue = resolveParameterValue(parameter);
 
-        if (identifierExtension && patientResource) {
-          // Get nested extensions for system and parameterName
-          const systemExtension = identifierExtension.extension?.find((e) => e.url === 'system');
-          const parameterNameExtension = identifierExtension.extension?.find((e) => e.url === 'parameterName');
+          if (paramValue) {
+            url.searchParams.set(parameter.name, paramValue);
+            continue;
+          }
 
-          // Extract values from nested extensions
-          const identifierSystem = systemExtension?.valueUri || systemExtension?.valueString;
-          const parameterName = parameterNameExtension?.valueString || 'patient';
-
-          if (identifierSystem) {
-            // Extract the identifier value from the patient resource
-            const identifierValue = getIdentifier(patientResource, identifierSystem);
-
-            if (identifierValue) {
-              url.searchParams.set(parameterName, identifierValue);
-            } else {
-              showNotification({
-                color: 'yellow',
-                message: `Patient identifier with system "${identifierSystem}" not found`,
-                autoClose: 5000,
-              });
-            }
+          // Show warning if required resource/identifier is missing
+          if (
+            (parameter.sourceType === 'patientIdentifier' || parameter.sourceType === 'patientId') &&
+            !patientResource
+          ) {
+            showNotification({
+              color: 'yellow',
+              message: `Parameter "${parameter.name}" requires a Patient resource`,
+              autoClose: 5000,
+            });
+          } else if (
+            (parameter.sourceType === 'encounterIdentifier' || parameter.sourceType === 'encounterId') &&
+            !encounterResource
+          ) {
+            showNotification({
+              color: 'yellow',
+              message: `Parameter "${parameter.name}" requires an Encounter resource`,
+              autoClose: 5000,
+            });
+          } else if (
+            (parameter.sourceType === 'patientIdentifier' || parameter.sourceType === 'encounterIdentifier') &&
+            parameter.system
+          ) {
+            showNotification({
+              color: 'yellow',
+              message: `Identifier with system "${parameter.system}" not found for parameter "${parameter.name}"`,
+              autoClose: 5000,
+            });
           }
         }
 
