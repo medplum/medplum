@@ -1,16 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
+import type { WithId } from '@medplum/core';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
@@ -33,7 +34,6 @@ describe('VisitDetailsPanel', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(DrAliceSmith);
   });
 
   const setup = (props: Partial<Parameters<typeof VisitDetailsPanel>[0]> = {}): ReturnType<typeof render> => {
@@ -74,26 +74,86 @@ describe('VisitDetailsPanel', () => {
 
   test('calls onEncounterChange when practitioner is changed', async () => {
     const onEncounterChange = vi.fn();
-    await medplum.createResource(mockPractitioner);
-    setup({ onEncounterChange, practitioner: mockPractitioner });
+
+    const mockPractitioner1: Practitioner = {
+      resourceType: 'Practitioner',
+      id: 'practitioner-1',
+      name: [{ given: ['Dr.'], family: 'Test' }],
+    };
+
+    const mockPractitioner2: Practitioner = {
+      resourceType: 'Practitioner',
+      id: 'practitioner-2',
+      name: [{ given: ['Dr.'], family: 'Smith' }],
+    };
+
+    await medplum.createResource(mockPractitioner1);
+    await medplum.createResource(mockPractitioner2);
+
+    // Mock search to return practitioners
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockPractitioner1, mockPractitioner2] as any);
+
+    // Start without a practitioner selected so ResourceInput shows a searchbox
+    setup({ onEncounterChange });
 
     await waitFor(() => {
       expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
     });
 
-    // ResourceInput calls onChange when a practitioner is selected
-    // Since we're passing a default practitioner, the onChange should be called
-    // when the component initializes with the practitioner value
-    // However, ResourceInput may not call onChange on mount, so we verify
-    // that the practitioner is displayed instead
-    await waitFor(() => {
-      // Check that the practitioner name is displayed
-      expect(screen.getByText(/Dr\. Test/i)).toBeInTheDocument();
+    // Find the ResourceInput searchbox (ResourceInput uses AsyncAutocomplete which renders a searchbox)
+    await waitFor(
+      () => {
+        const searchbox = screen.queryByRole('searchbox');
+        expect(searchbox).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    const practitionerInput = screen.getByRole('searchbox');
+
+    // Type to search for a practitioner using fireEvent.change (like PlanDefinitionBuilder)
+    await act(async () => {
+      fireEvent.change(practitionerInput, { target: { value: 'Smith' } });
     });
 
-    // The onChange should be called when practitioner is actually changed via user interaction
-    // For now, we verify the component renders correctly with the practitioner
-    expect(screen.getByText(/Practitioner/i)).toBeInTheDocument();
+    // Wait for search to be called
+    await waitFor(
+      () => {
+        expect(medplum.searchResources).toHaveBeenCalledWith(
+          'Practitioner',
+          expect.any(URLSearchParams),
+          expect.any(Object)
+        );
+      },
+      { timeout: 3000 }
+    );
+
+    // Wait for the dropdown option to appear and click it (like PlanDefinitionBuilder)
+    // The display string for Practitioner is typically "Dr. Smith" or just "Smith"
+    await waitFor(
+      () => {
+        const smithOption = screen.queryByText(/Smith/i);
+        expect(smithOption).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    await act(async () => {
+      const smithOption = screen.getByText(/Smith/i);
+      fireEvent.click(smithOption);
+    });
+
+    // Verify onEncounterChange was called with updated encounter
+    await waitFor(
+      () => {
+        expect(onEncounterChange).toHaveBeenCalled();
+        const call = onEncounterChange.mock.calls[onEncounterChange.mock.calls.length - 1];
+        const updatedEncounter = call[0] as Encounter;
+        expect(updatedEncounter.participant).toBeDefined();
+        expect(updatedEncounter.participant?.[0]?.individual?.reference).toBe('Practitioner/practitioner-2');
+      },
+      { timeout: 5000 }
+    );
   });
 
   test('calls onEncounterChange when check in time is changed', async () => {

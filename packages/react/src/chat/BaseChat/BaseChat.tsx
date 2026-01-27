@@ -71,7 +71,7 @@ function upsertCommunications(
       if (!b.sent) {
         return 1;
       }
-      return (a.sent as string).localeCompare(b.sent as string);
+      return a.sent.localeCompare(b.sent);
     });
   }
 

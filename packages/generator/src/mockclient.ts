@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
+import { EMPTY } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -134,12 +135,7 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 
 function removeBaseFromElements(sd: StructureDefinition): void {
   for (const element of sd.snapshot?.element ?? []) {
-    if (
-      element.base &&
-      element.path === element.base.path &&
-      element.min === element.base.min &&
-      element.max === element.base.max
-    ) {
+    if (element.path === element.base?.path && element.min === element.base.min && element.max === element.base.max) {
       element.base = undefined;
     }
   }
@@ -182,10 +178,8 @@ function cleanStructureDefinition(sd: StructureDefinition): void {
   sd.text = undefined;
   sd.differential = undefined;
   sd.mapping = undefined;
-  if (sd?.snapshot?.element) {
-    for (const element of sd.snapshot.element) {
-      element.mapping = undefined;
-    }
+  for (const element of sd.snapshot?.element ?? EMPTY) {
+    element.mapping = undefined;
   }
 }
 

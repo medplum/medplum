@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  SearchParameterType,
+  append,
+  conflict,
+  normalizeOperationOutcome,
+  serverTimeout,
+} from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
@@ -992,12 +1000,12 @@ export class UpdateQuery extends BaseQuery {
       sql.appendIdentifier(this._from.name);
     }
 
-    if (this.predicate.expressions.length > 0) {
+    if (this.predicate.expressions.length) {
       sql.append(' WHERE ');
       sql.appendExpression(this.predicate);
     }
 
-    if (this.returning && this.returning.length > 0) {
+    if (this.returning?.length) {
       sql.append(' RETURNING ');
       let first = true;
       for (const column of this.returning) {
@@ -1274,10 +1282,37 @@ export function isValidColumnName(columnName: string): boolean {
 
 export function replaceNullWithUndefinedInRows(rows: any[]): void {
   for (const row of rows) {
-    for (const k in row) {
-      if ((row as any)[k] === null) {
-        (row as any)[k] = undefined;
-      }
+    for (const k of Object.keys(row)) {
+      row[k] ??= undefined;
     }
   }
+}
+
+export function getSearchParamColumnType(impl: ColumnSearchParameterImplementation): string {
+  let baseColumnType: string;
+  switch (impl.type) {
+    case SearchParameterType.UUID:
+      baseColumnType = 'UUID';
+      break;
+    case SearchParameterType.BOOLEAN:
+      baseColumnType = 'BOOLEAN';
+      break;
+    case SearchParameterType.DATE:
+      baseColumnType = 'DATE';
+      break;
+    case SearchParameterType.DATETIME:
+      baseColumnType = 'TIMESTAMPTZ';
+      break;
+    case SearchParameterType.NUMBER:
+    case SearchParameterType.QUANTITY:
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
+        baseColumnType = 'INTEGER';
+      } else {
+        baseColumnType = 'DOUBLE PRECISION';
+      }
+      break;
+    default:
+      baseColumnType = 'TEXT';
+  }
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
 }

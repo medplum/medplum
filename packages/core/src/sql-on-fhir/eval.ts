@@ -4,6 +4,7 @@ import type { Resource, ViewDefinition, ViewDefinitionSelect } from '@medplum/fh
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import type { TypedValue } from '../types';
+import { EMPTY } from '../utils';
 
 /**
  * Represents a "selection structure" in the SQL-on-FHIR specification.
@@ -62,27 +63,23 @@ function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
   }
 
   const variables: Record<string, TypedValue> = {};
-  if (v.constant) {
-    for (const c of v.constant) {
-      const typedConstant = { type: 'ViewDefinitionConstant', value: c };
-      variables['%' + c.name] = getTypedPropertyValue(typedConstant, 'value') as TypedValue;
-    }
+  for (const c of v.constant ?? EMPTY) {
+    const typedConstant = { type: 'ViewDefinitionConstant', value: c };
+    variables['%' + c.name] = getTypedPropertyValue(typedConstant, 'value') as TypedValue;
   }
 
   const typedResource = toTypedValue(r);
 
-  if (v.where) {
-    for (const where of v.where) {
-      const whereResult = evalFhirPathTyped(where.path, [typedResource], variables);
-      if (whereResult.length !== 1) {
-        return [];
-      }
-      if (whereResult[0].type !== 'boolean') {
-        throw new Error('WHERE clause must evaluate to a boolean');
-      }
-      if (!whereResult[0].value) {
-        return [];
-      }
+  for (const where of v.where ?? EMPTY) {
+    const whereResult = evalFhirPathTyped(where.path, [typedResource], variables);
+    if (whereResult.length !== 1) {
+      return [];
+    }
+    if (whereResult[0].type !== 'boolean') {
+      throw new Error('WHERE clause must evaluate to a boolean');
+    }
+    if (!whereResult[0].value) {
+      return [];
     }
   }
 
@@ -125,7 +122,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
     const parts: OutputRow[][] = [];
 
     // Process Columns:
-    for (const col of s.column ?? []) {
+    for (const col of s.column ?? EMPTY) {
       // For each Column col of S.column, define val as fhirpath(col.path, f)
       const val = evalFhirPathTyped(col.path, [f], variables);
 
@@ -153,7 +150,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
 
     // Process Selects:
     // For each selection structure sel of S.select
-    for (const sel of s.select ?? []) {
+    for (const sel of s.select ?? EMPTY) {
       // Define rows as the collection of all rows emitted by Process(sel, f)
       const rows = process(sel, f, variables);
 
@@ -194,7 +191,7 @@ function process(s: SelectionStructure, n: TypedValue, variables: Record<string,
     const r: OutputRow = {};
 
     // For each Column c in ValidateColumns(V, [])
-    for (const c of s.column ?? []) {
+    for (const c of s.column ?? EMPTY) {
       // Bind the column c.name to null in the row r
       r[c.name] = null;
     }

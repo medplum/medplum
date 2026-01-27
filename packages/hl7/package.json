@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "5.0.10",
+  "version": "5.0.12",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
@@ -48,7 +48,7 @@
     "dist/esm"
   ],
   "scripts": {
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
@@ -56,11 +56,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "5.0.10",
-    "iconv-lite": "0.7.1"
+    "@medplum/core": "5.0.12",
+    "iconv-lite": "0.7.2"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "5.0.10"
+    "@medplum/fhirtypes": "5.0.12"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

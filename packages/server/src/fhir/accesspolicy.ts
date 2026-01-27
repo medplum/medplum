@@ -4,6 +4,7 @@ import type { ProfileResource, WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
+  EMPTY,
   getReferenceString,
   isResource,
   isString,
@@ -77,7 +78,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     strictMode: project.strictMode,
     extendedMode,
     checkReferencesOnWrite: project.checkReferencesOnWrite,
-    validateTerminology: project.features?.some((f) => f === 'validate-terminology'),
+    validateTerminology: project.features?.includes('validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
   });
 }
@@ -134,13 +135,11 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
-    if (replaced.resource) {
-      for (const resourcePolicy of replaced.resource) {
-        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
-          resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
-        }
-        resourcePolicies.push(resourcePolicy);
+    for (const resourcePolicy of replaced.resource ?? EMPTY) {
+      if (!resourcePolicy.interaction && resourcePolicy.readonly) {
+        resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
       }
+      resourcePolicies.push(resourcePolicy);
     }
     if (replaced.ipAccessRule) {
       ipAccessRules.push(...replaced.ipAccessRule);
@@ -188,7 +187,7 @@ async function buildAccessPolicyResources(
     try {
       original = await systemRepo.readReference(accessPolicyReference);
       accessPolicyMap.set(policyReferenceString, original);
-    } catch (_error) {
+    } catch {
       // Intentionally catch and rethrow with a generic error message for security
       // (don't expose access policy details during login)
       throw new OperationOutcomeError(
@@ -201,7 +200,7 @@ async function buildAccessPolicyResources(
 
   const params = access.parameter || [];
   params.push({ name: 'profile', valueReference: profile });
-  if (!params.find((p) => p.name === 'patient')) {
+  if (!params.some((p) => p.name === 'patient')) {
     params.push({ name: 'patient', valueReference: profile });
   }
   let json = JSON.stringify(original);
@@ -227,7 +226,7 @@ async function buildAccessPolicyResources(
 function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void {
   const defaultResourceTypes = ['SearchParameter', 'StructureDefinition'];
   for (const resourceType of defaultResourceTypes) {
-    if (!resourcePolicies.find((r) => r.resourceType === resourceType)) {
+    if (!resourcePolicies.some((r) => r.resourceType === resourceType)) {
       resourcePolicies.push({
         resourceType,
         readonly: true,
@@ -258,9 +257,7 @@ function applyProjectAdminAccessPolicy(
   } else if (membership.admin) {
     // If the user is a project admin,
     // then grant limited access to the project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter(
-      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
-    );
+    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
@@ -277,26 +274,24 @@ function applyProjectAdminAccessPolicy(
       });
     }
 
-    accessPolicy.resource.push({
-      resourceType: 'ProjectMembership',
-      readonlyFields: ['project', 'user'],
-    });
-
-    accessPolicy.resource.push({
-      resourceType: 'UserSecurityRequest',
-      readonly: true,
-    });
-
-    accessPolicy.resource.push({
-      resourceType: 'User',
-      hiddenFields: ['passwordHash', 'mfaSecret'],
-      readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
-    });
+    accessPolicy.resource.push(
+      {
+        resourceType: 'ProjectMembership',
+        readonlyFields: ['project', 'user'],
+      },
+      {
+        resourceType: 'UserSecurityRequest',
+        readonly: true,
+      },
+      {
+        resourceType: 'User',
+        hiddenFields: ['passwordHash', 'mfaSecret'],
+        readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      }
+    );
   } else {
     // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter(
-      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
-    );
+    accessPolicy.resource = accessPolicy.resource?.filter((r) => !projectAdminResourceTypes.includes(r.resourceType));
   }
 
   return accessPolicy;

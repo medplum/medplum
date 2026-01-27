@@ -18,9 +18,9 @@ This is a living document, and we continually update our resources. We welcome f
 - [HIPAA compliance](hipaa.md)
 - [CFR Part 11](cfr11.md)
 - [ISO 9001](iso9001.md)
-- [CMS FHIR](cms-fhir.md)
+- [HTI-4](hti-4.md)
 - [Good Manufacturing Practices (GMP)](gmp.md)
-- HITRUST (coming soon)
+- [HITRUST](hitrust.md)
 - ISO 27001 Certification (coming soon)
 
 ## Materials and Usage

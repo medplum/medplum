@@ -8,20 +8,32 @@ import type {
   AgentTransmitRequest,
   AgentTransmitResponse,
 } from '@medplum/core';
-import { allOk, ContentType, createReference, Hl7Message, LogLevel, MEDPLUM_VERSION, sleep } from '@medplum/core';
+import {
+  allOk,
+  ContentType,
+  createReference,
+  EMPTY,
+  Hl7Message,
+  LogLevel,
+  MEDPLUM_VERSION,
+  sleep,
+} from '@medplum/core';
 import type { Agent, AgentChannel, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
-import { Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
+import type { Hl7Connection } from '@medplum/hl7';
+import { Hl7Client, Hl7EnhancedAckSentEvent, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 import type { Client } from 'mock-socket';
 import { Server } from 'mock-socket';
 import { App } from './app';
-import type { AgentHl7ChannelConnection, AppLevelAckMode } from './hl7';
+import type { AppLevelAckMode } from './hl7';
 import {
   AgentHl7Channel,
+  AgentHl7ChannelConnection,
   APP_LEVEL_ACK_CODES,
   APP_LEVEL_ACK_MODES,
   parseAppLevelAckMode,
+  parseEnhancedMode,
   shouldSendAppLevelAck,
 } from './hl7';
 import { createMockLogger } from './test-utils';
@@ -55,9 +67,15 @@ describe('HL7', () => {
     });
   });
 
-  test('Send and receive', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+  let mockServer: Server;
+  beforeEach(() => {
+    mockServer = new Server('wss://example.com/ws/agent');
+  });
+  afterEach(() => {
+    mockServer.stop();
+  });
 
+  test('Send and receive', async () => {
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -136,14 +154,11 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Send and receive -- error', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -224,15 +239,12 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Send and receive -- no callback in response', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -312,13 +324,10 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Send and receive -- enhanced mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
-
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -363,6 +372,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: endpoint.address + '?enhanced=true',
     });
 
@@ -406,12 +416,9 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Send and receive -- enhanced mode + messagesPerMin', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
-
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -456,6 +463,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=60',
     });
 
@@ -513,13 +521,11 @@ describe('HL7', () => {
 
     await client.close();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Invalid messagesPerMin logs warning', async () => {
     const originalConsoleLog = console.log;
     console.log = jest.fn();
-    const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
       socket.on('message', (data) => {
@@ -538,6 +544,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
+      id: undefined,
       address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=twenty',
     });
 
@@ -565,12 +572,10 @@ describe('HL7', () => {
     );
 
     await app.stop();
-    mockServer.stop();
     console.log = originalConsoleLog;
   });
 
   test('Push', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -650,7 +655,6 @@ describe('HL7', () => {
     // Shutdown everything
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Push -- keepAlive Enabled', async () => {
@@ -658,7 +662,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -937,7 +940,6 @@ describe('HL7', () => {
     // Shutdown everything
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
 
     // Make sure all clients are closed after stopping app
     expect(app.hl7Clients.size).toStrictEqual(0);
@@ -951,7 +953,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1049,7 +1050,6 @@ describe('HL7', () => {
     expect(app.hl7Clients.get('mllp://localhost:57001')?.size()).toStrictEqual(0);
 
     await app.stop();
-    mockServer.stop();
 
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining("Persistent connection to remote 'mllp://localhost:57001' closed")
@@ -1066,7 +1066,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1217,13 +1216,11 @@ describe('HL7', () => {
 
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
 
     console.log = originalConsoleLog;
   });
 
   test('Default maxClientsPerRemote of 5 in non-keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1356,11 +1353,9 @@ describe('HL7', () => {
 
     await hl7Server.stop();
     await app.stop();
-    mockServer.stop();
   });
 
   test('Default maxClientsPerRemote of 1 in keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1472,11 +1467,9 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Setting maxClientsPerRemote in non-keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1589,11 +1582,9 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Setting maxClientsPerRemote in keepAlive mode', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1708,7 +1699,6 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   test('Updating maxClientsPerRemote without changing keepAlive updates pool limit', async () => {
@@ -1716,7 +1706,6 @@ describe('HL7', () => {
       reloadConfigResponse: null as AgentReloadConfigResponse | null,
     };
 
-    const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
 
     mockServer.on('connection', (socket) => {
@@ -1854,12 +1843,10 @@ describe('HL7', () => {
 
     await app.stop();
     await hl7Server.stop({ forceDrainTimeoutMs: 100 });
-    mockServer.stop();
   });
 
   describe('assignSeqNo functionality', () => {
     test('Messages sent on websocket should have sequence numbers in order', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
       };
@@ -1961,11 +1948,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When channel is reloaded but name does not change, sequence number remains the same', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -2118,11 +2103,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When channel name changes, sequence number resets', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         reloadConfigResponse: null as AgentReloadConfigResponse | null,
@@ -2290,13 +2273,11 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
   });
 
   describe('Channel stats tracking', () => {
     test('When logStatsFreqSecs is set, channel should track stats', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         transmitRequests: [] as AgentTransmitRequest[],
         shouldSendAck: true,
@@ -2486,12 +2467,9 @@ describe('HL7', () => {
 
       await client.close();
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is not set, channel should not track stats', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
-
       mockServer.on('connection', (socket) => {
         socket.on('message', (data) => {
           const command = JSON.parse((data as Buffer).toString('utf8'));
@@ -2567,11 +2545,9 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is set via reload, channel should start tracking', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2662,11 +2638,9 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeDefined();
 
       await app.stop();
-      mockServer.stop();
     });
 
     test('When logStatsFreqSecs is removed via reload, channel should stop tracking', async () => {
-      const mockServer = new Server('wss://example.com/ws/agent');
       const state = {
         mySocket: undefined as Client | undefined,
         reloadConfigResponse: null as AgentReloadConfigRequest | null,
@@ -2758,7 +2732,6 @@ describe('HL7', () => {
       expect((channel as AgentHl7Channel).stats).toBeUndefined();
 
       await app.stop();
-      mockServer.stop();
     });
   });
 });
@@ -2836,6 +2809,30 @@ describe('AgentHl7Channel application-level ACK gating', () => {
     expect(sendMock).toHaveBeenCalledTimes(1);
   });
 
+  test('aaMode drops all application ACKs (AA)', () => {
+    const channel = createTestChannel('mllp://localhost:57104?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AA'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('aaMode drops all application ACKs (AE)', () => {
+    const channel = createTestChannel('mllp://localhost:57105?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AE'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  test('aaMode drops all application ACKs (AR)', () => {
+    const channel = createTestChannel('mllp://localhost:57106?enhanced=aa');
+    const sendMock = attachMockConnection(channel);
+
+    channel.sendToRemote(createTransmitResponse('AR'));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   test('ER with enhanced mode drops AA acknowledgements', () => {
     const channel = createTestChannel('mllp://localhost:57102?enhanced=true&appLevelAck=ER');
     const sendMock = attachMockConnection(channel);
@@ -2881,13 +2878,53 @@ describe('parseAppLevelAckMode', () => {
   });
 });
 
+describe('parseEnhancedMode', () => {
+  test('parses "true" to "standard"', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('true', logger)).toBe('standard');
+  });
+
+  test('parses "TRUE" to "standard" (case insensitive)', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('TRUE', logger)).toBe('standard');
+  });
+
+  test('parses "aa" to "aaMode"', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('aa', logger)).toBe('aaMode');
+  });
+
+  test('parses "AA" to "aaMode" (case insensitive)', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('AA', logger)).toBe('aaMode');
+  });
+
+  test('returns undefined when null is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode(null, logger)).toBeUndefined();
+  });
+
+  test('returns undefined when undefined is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode(undefined, logger)).toBeUndefined();
+  });
+
+  test('returns undefined and logs warning when invalid value is passed', () => {
+    const logger = createMockLogger();
+    expect(parseEnhancedMode('invalid', logger)).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(
+      "Invalid enhanced value 'invalid'; expected 'true' or 'aa'. Using standard mode (enhanced mode disabled)."
+    );
+  });
+});
+
 describe('shouldSendAppLevelAck', () => {
   test.each(APP_LEVEL_ACK_CODES)('non enhanced mode always returns true', (ackCode) => {
     expect(
       shouldSendAppLevelAck({
         mode: 'NE',
         ackCode,
-        enhancedMode: false,
+        enhancedMode: undefined,
       })
     ).toBe(true);
   });
@@ -2897,7 +2934,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'AL',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(true);
   });
@@ -2907,7 +2944,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'NE',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(false);
   });
@@ -2921,7 +2958,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'ER',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(result);
   });
@@ -2935,7 +2972,7 @@ describe('shouldSendAppLevelAck', () => {
       shouldSendAppLevelAck({
         mode: 'SU',
         ackCode,
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toBe(result);
   });
@@ -2946,8 +2983,135 @@ describe('shouldSendAppLevelAck', () => {
         // This is an invalid mode
         mode: 'CA' as AppLevelAckMode,
         ackCode: 'AA',
-        enhancedMode: true,
+        enhancedMode: 'standard',
       })
     ).toThrow('Invalid app-level ACK mode provided');
+  });
+
+  test.each(APP_LEVEL_ACK_CODES)('aaMode never forwards application-level ACKs', (ackCode) => {
+    expect(
+      shouldSendAppLevelAck({
+        mode: 'AL',
+        ackCode,
+        enhancedMode: 'aaMode',
+      })
+    ).toBe(false);
+  });
+});
+
+describe('AgentHl7ChannelConnection enhanced ACK logging', () => {
+  const BASE_MESSAGE = Hl7Message.parse(
+    'MSH|^~\\&|SND|FAC|RCV|FAC|202501011200||ADT^A01|MSG00001|P|2.5\rPID|1||123456||Doe^John\r'
+  );
+
+  function createMockHl7Connection(): Hl7Connection {
+    const eventListeners = new Map<string, ((...args: any[]) => void)[]>();
+    return {
+      socket: {
+        remoteAddress: '127.0.0.1',
+        remotePort: 12345,
+      },
+      addEventListener: jest.fn((event: string, listener: (...args: any[]) => void) => {
+        const listeners = eventListeners.get(event) ?? [];
+        listeners.push(listener);
+        eventListeners.set(event, listeners);
+      }),
+      dispatchEvent: jest.fn((event: Event) => {
+        for (const listener of eventListeners.get(event.type) ?? EMPTY) {
+          listener(event);
+        }
+      }),
+      setEncoding: jest.fn(),
+      setEnhancedMode: jest.fn(),
+      setMessagesPerMin: jest.fn(),
+      send: jest.fn(),
+      close: jest.fn(),
+    } as unknown as Hl7Connection;
+  }
+
+  function createTestChannelWithMockLogger(address: string): {
+    channel: AgentHl7Channel;
+    channelLog: ReturnType<typeof createMockLogger>;
+  } {
+    const channelLog = createMockLogger();
+    const mockApp = {
+      log: createMockLogger(),
+      channelLog,
+      heartbeatEmitter: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      },
+      getAgentConfig: jest.fn(),
+      addToWebSocketQueue: jest.fn(),
+      agentId: 'test-agent',
+    } as unknown as App;
+
+    const definition = { name: 'test-channel' } as AgentChannel;
+    const endpoint = {
+      resourceType: 'Endpoint',
+      status: 'active',
+      address,
+    } as Endpoint;
+
+    const channel = new AgentHl7Channel(mockApp, definition, endpoint);
+    return { channel, channelLog };
+  }
+
+  test('logs Commit ACK (CA) when enhanced ACK with CA is sent', async () => {
+    const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57200?enhanced=true');
+    const mockConnection = createMockHl7Connection();
+
+    // Create the channel connection which sets up the event listener
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
+
+    // Build a CA ACK message
+    const ackMessage = BASE_MESSAGE.buildAck({ ackCode: 'CA' });
+
+    // Dispatch the enhancedAckSent event
+    const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
+    mockConnection.dispatchEvent(event);
+
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: MSG00001]'));
+    await connection.close();
+  });
+
+  test('logs Immediate ACK (AA) when enhanced ACK with AA is sent', async () => {
+    const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57201?enhanced=aa');
+    const mockConnection = createMockHl7Connection();
+
+    // Create the channel connection which sets up the event listener
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
+
+    // Build an AA ACK message
+    const ackMessage = BASE_MESSAGE.buildAck({ ackCode: 'AA' });
+
+    // Dispatch the enhancedAckSent event
+    const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessage);
+    mockConnection.dispatchEvent(event);
+
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Immediate ACK (AA) -- ID: MSG00001]'));
+    await connection.close();
+  });
+
+  test('logs "not provided" when message control ID is missing', async () => {
+    const { channel, channelLog } = createTestChannelWithMockLogger('mllp://localhost:57202?enhanced=true');
+    const mockConnection = createMockHl7Connection();
+
+    // Create the channel connection which sets up the event listener
+    const connection = new AgentHl7ChannelConnection(channel, mockConnection);
+
+    // Create an ACK message directly without MSA.2 (message control ID reference)
+    // This simulates a malformed or unexpected ACK where the control ID is not present
+    const ackMessageWithoutId = Hl7Message.parse(
+      'MSH|^~\\&|RCV|FAC|SND|FAC|202501011200||ACK^A01|ACK001|P|2.5\rMSA|CA\r'
+    );
+
+    // Dispatch the enhancedAckSent event
+    const event = new Hl7EnhancedAckSentEvent(mockConnection, ackMessageWithoutId);
+    mockConnection.dispatchEvent(event);
+
+    expect(channelLog.info).toHaveBeenCalledWith(expect.stringContaining('[Sent Commit ACK (CA) -- ID: not provided]'));
+    await connection.close();
   });
 });

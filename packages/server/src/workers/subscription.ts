@@ -4,6 +4,7 @@ import type { BackgroundJobContext, BackgroundJobInteraction, WithId } from '@me
 import {
   AccessPolicyInteraction,
   ContentType,
+  EMPTY,
   Operator,
   createReference,
   deepClone,
@@ -146,7 +147,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
   worker.on('active', (job) => {
     // Only record queuedDuration on the first attempt
     if (job.attemptsMade === 0) {
-      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - (job.timestamp as number)) / 1000);
+      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
     }
   });
   worker.on('completed', (job) => {
@@ -154,10 +155,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
       'medplum.subscription.executionDuration',
       ((job.finishedOn as number) - (job.processedOn as number)) / 1000
     );
-    recordHistogramValue(
-      'medplum.subscription.totalDuration',
-      ((job.finishedOn as number) - (job.timestamp as number)) / 1000
-    );
+    recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
   });
   worker.on('failed', (job) => {
     if (job) {
@@ -654,11 +652,9 @@ function buildRestHookHeaders(
     headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
   }
 
-  if (subscription.channel?.header) {
-    for (const header of subscription.channel.header) {
-      const [key, value] = header.split(/:/);
-      headers[key.trim()] = value.trim();
-    }
+  for (const header of subscription.channel.header ?? EMPTY) {
+    const [key, value] = header.split(/:/);
+    headers[key.trim()] = value.trim();
   }
 
   // Look for signature secret in Medplum extension
@@ -709,7 +705,7 @@ async function execBot(
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
-  const project = bot.meta?.project as string;
+  const project = subscription.meta?.project as string;
   const requester = resource.meta?.author as Reference<
     Bot | ClientApplication | Patient | Practitioner | RelatedPerson
   >;

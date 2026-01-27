@@ -51,7 +51,8 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   const sandbox = {
     console: botConsole,
     fetch,
-    require: createRequire(typeof __filename !== 'undefined' ? __filename : import.meta.url),
+    require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
+    process,
     ContentType,
     Hl7Message,
     MedplumClient,
@@ -70,6 +71,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       traceId,
       headers,
       defaultHeaders: request.defaultHeaders,
+      responseStream: request.responseStream,
     },
   };
 
@@ -87,7 +89,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, defaultHeaders, responseStream } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -104,7 +106,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
+      let result = await exports.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -124,7 +126,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   // Return the result of the code execution
   try {
-    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
+    const returnValue = await vm.runInNewContext(wrappedCode, sandbox, options);
     return {
       success: true,
       logResult: botConsole.toString(),

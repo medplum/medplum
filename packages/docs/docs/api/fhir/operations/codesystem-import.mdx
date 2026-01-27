@@ -1,6 +1,3 @@
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/codesystem-import.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -22,21 +19,32 @@ This operation is only available to Project Admins and Super Admins.
 
 ## Parameters
 
-| Name       | Type                 | Description                                                        | Required        |
-| ---------- | -------------------- | ------------------------------------------------------------------ | --------------- |
-| `system`   | `uri`                | The canonical URL of the code system to import into                | No<sup>\*</sup> |
-| `concept`  | `Coding`             | A code, along with optional display text to add to the code system | No              |
-| `property` | `Part[]` (see below) | Metadata about codes in the code system to be imported             | No              |
+| Name          | Type                 | Description                                                        | Required        |
+| ------------- | -------------------- | ------------------------------------------------------------------ | --------------- |
+| `system`      | `uri`                | The canonical URL of the code system to import into                | No<sup>\*</sup> |
+| `concept`     | `Coding`             | A code, along with optional display text to add to the code system | No              |
+| `property`    | `Part[]` (see below) | Metadata about codes in the code system to be imported             | No              |
+| `designation` | `Part[]` (see below) | Additional synonyms or translations of codes' display text         | No              |
 
 <sup>\*</sup> If `system` is not provided, the operation must be invoked on a specific `CodeSystem` instance by ID.
 
 Each `property` parameter contains a `part` array with three nested parameters:
 
-| Name       | Type     | Description                            | Required |
-| ---------- | -------- | -------------------------------------- | -------- |
-| `code`     | `code`   | The code to which the property applies | Yes      |
-| `property` | `code`   | The property name                      | Yes      |
-| `value`    | `string` | The value of the property              | Yes      |
+| Name       | Type     | Description                                         | Required |
+| ---------- | -------- | --------------------------------------------------- | -------- |
+| `code`     | `code`   | The code to which the property applies              | Yes      |
+| `property` | `code`   | The property name (from `CodeSystem.property.code`) | Yes      |
+| `value`    | `string` | The value of the property                           | Yes      |
+
+Any `designation` parameters have three nested `part` parameters:
+
+| Name       | Type     | Description                                          | Required |
+| ---------- | -------- | ---------------------------------------------------- | -------- |
+| `code`     | `code`   | The code to which the synonym or translation applies | Yes      |
+| `language` | `code`   | The [language code][bcp47] for translations          | No       |
+| `value`    | `string` | Display string                                       | Yes      |
+
+[bcp47]: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
 
 ## Output
 

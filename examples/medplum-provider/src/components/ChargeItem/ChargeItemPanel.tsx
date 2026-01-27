@@ -1,21 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from '@mantine/core';
+import type { WithId } from '@medplum/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
 import type { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
 import { CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconTrash } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { applyChargeItemDefinition } from '../../utils/chargeitems';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
 const CPT_CODE_SYSTEM = 'http://www.ama-assn.org/go/cpt';
 
-interface ChargeItemPanelProps {
-  chargeItem: ChargeItem;
-  onChange: (chargeItem: ChargeItem) => void;
-  onDelete: (chargeItem: ChargeItem) => void;
+export interface ChargeItemPanelProps {
+  chargeItem: WithId<ChargeItem>;
+  onChange: (chargeItem: WithId<ChargeItem>) => void;
+  onDelete: (chargeItem: WithId<ChargeItem>) => void;
 }
 
 export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Element {
@@ -31,16 +32,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     const cptCodes = chargeItem?.code?.coding?.filter((coding) => coding.system === CPT_CODE_SYSTEM) ?? [];
     setCptCodes({ coding: cptCodes });
   }, [chargeItem]);
-
-  const updateCptCodes = (value: CodeableConcept | undefined): void => {
-    const updatedChargeItem = { ...chargeItem };
-    const existingNonCptCodes = chargeItem.code?.coding?.filter((coding) => coding.system !== CPT_CODE_SYSTEM) ?? [];
-    updatedChargeItem.code = {
-      ...(value ?? {}),
-      coding: [...(value?.coding ?? []), ...existingNonCptCodes],
-    };
-    onChange(updatedChargeItem);
-  };
 
   const updateModifiers = async (value: CodeableConcept | undefined): Promise<void> => {
     if (!value) {
@@ -64,18 +55,18 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     await updateChargeItem(updatedChargeItem);
   };
 
-  const updateChargeItem = async (updatedChargeItem: ChargeItem): Promise<void> => {
+  const updateChargeItem = async (updatedChargeItem: WithId<ChargeItem>): Promise<void> => {
     await medplum.updateResource(updatedChargeItem);
     const appliedChargeItem = await applyChargeItemDefinition(medplum, updatedChargeItem);
     onChange(appliedChargeItem);
   };
 
   const deleteChargeItem = async (): Promise<void> => {
-    await medplum.deleteResource('ChargeItem', chargeItem.id as string);
+    await medplum.deleteResource('ChargeItem', chargeItem.id);
     onDelete(chargeItem);
   };
 
-  const getModifierExtension = (item: ChargeItem): CodeableConcept | undefined => {
+  const getModifierExtension = (item: WithId<ChargeItem>): CodeableConcept | undefined => {
     if (item?.extension) {
       const modifierExtension = item.extension.find((ext) => ext.url === CHARGE_ITEM_MODIFIER_URL);
       return modifierExtension?.valueCodeableConcept;
@@ -98,7 +89,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
               name="cptCode"
               path="cptCode"
               defaultValue={cptCodes}
-              onChange={updateCptCodes}
               readOnly
               disabled={true}
             />

@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { EMPTY } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type {
   Bundle,
@@ -39,7 +40,7 @@ function loadValueSets(fileName: string): void {
   for (const entry of valueSetBundle.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'CodeSystem' || resource.resourceType === 'ValueSet') {
-      valueSets.set(resource.url as string, resource as CodeSystem | ValueSet);
+      valueSets.set(resource.url as string, resource);
     }
   }
 }
@@ -65,30 +66,24 @@ function buildValueSetValues(url: string, result: string[]): void {
 }
 
 function buildValueSetComposeValues(compose: ValueSetCompose | undefined, result: string[]): void {
-  if (compose?.include) {
-    for (const include of compose.include) {
-      if (include.concept) {
-        for (const concept of include.concept) {
-          if (concept.code) {
-            result.push(concept.code);
-          }
+  for (const include of compose?.include ?? EMPTY) {
+    if (include.concept) {
+      for (const concept of include.concept) {
+        if (concept.code) {
+          result.push(concept.code);
         }
-      } else if (include.system) {
-        const includedValues = getValueSetValues(include.system);
-        if (includedValues) {
-          result.push(...includedValues);
-        }
+      }
+    } else if (include.system) {
+      const includedValues = getValueSetValues(include.system);
+      if (includedValues) {
+        result.push(...includedValues);
       }
     }
   }
 }
 
 function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined, result: string[]): void {
-  if (!concepts) {
-    return;
-  }
-
-  for (const concept of concepts) {
+  for (const concept of concepts ?? EMPTY) {
     if (concept.code) {
       result.push(concept.code);
     }

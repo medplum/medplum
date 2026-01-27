@@ -165,14 +165,14 @@ describe('OrderLabsPage', () => {
     expect(screen.getByText('Selected tests')).toBeInTheDocument();
   });
 
-  test('Shows coverage input when patient is set', () => {
+  test('Shows coverage input when patient is set', async () => {
     mockLabOrderReturn.state.performingLab = {
       resourceType: 'Organization',
       id: 'lab-123',
     } as LabOrganization;
     vi.mocked(useHealthGorillaLabOrder).mockReturnValue(mockLabOrderReturn);
 
-    setup({ patientId: 'patient-123' });
+    await act(async () => setup({ patientId: 'patient-123' }));
     expect(screen.getByText('Bill to')).toBeInTheDocument();
   });
 

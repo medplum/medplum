@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, RXNORM } from '@medplum/core';
+import { createReference, EMPTY, RXNORM } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
+import type { Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
   // Get all of the answers from the questionnaire response
 
-  for (const item of event.input?.item?.[0]?.item as QuestionnaireResponseItem[]) {
+  for (const item of event.input?.item?.[0]?.item ?? EMPTY) {
     if (item.answer?.[0]?.valueBoolean) {
       const medication = await medplum.createResource({
         resourceType: 'MedicationStatement',
         subject: event.input.subject as Reference<Patient>,
         status: 'active',
-        derivedFrom: [createReference(event.input as QuestionnaireResponse)],
+        derivedFrom: [createReference(event.input)],
         informationSource: event.input.subject as Reference<Patient>, // This indicates that the patient reported this medication
         medicationCodeableConcept: {
           coding: [

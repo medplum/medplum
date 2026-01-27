@@ -34,11 +34,8 @@ coverage/
 tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 
-# Server tarball
-medplum-server.tar.gz
-
-# App tarball
-medplum-app.tar.gz
+# Tarballs
+*.tar.gz
 
 # Deb files
 *.deb

@@ -90,14 +90,12 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     ownerRef = params.owner;
   } else if (params.ownerEmail) {
     let user = await getUserByEmailWithoutProject(params.ownerEmail);
-    if (!user) {
-      user = await createUser({
-        email: params.ownerEmail,
-        password: randomUUID(),
-        firstName: params.name,
-        lastName: 'Admin',
-      });
-    }
+    user ??= await createUser({
+      email: params.ownerEmail,
+      password: randomUUID(),
+      firstName: params.name,
+      lastName: 'Admin',
+    });
     ownerRef = createReference(user);
   } else if (login.user.reference?.startsWith('User/')) {
     ownerRef = login.user as Reference;
@@ -158,8 +156,8 @@ export async function createProject(
     const profile = await createProfile(
       project,
       'Practitioner',
-      admin.firstName as string,
-      admin.lastName as string,
+      admin.firstName,
+      admin.lastName,
       admin.email as string
     );
     const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });

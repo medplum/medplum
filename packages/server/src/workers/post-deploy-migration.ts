@@ -7,7 +7,7 @@ import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import type { PoolClient } from 'pg';
 import * as semver from 'semver';
-import { getRequestContext, tryRunInRequestContext } from '../context';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
@@ -27,7 +27,7 @@ import {
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
-import type { MigrationAction, MigrationActionResult } from '../migrations/types';
+import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
 import type { WorkerInitializer } from './utils';
 import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
@@ -151,7 +151,12 @@ async function runDynamicMigration(
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {
-      await executeMigrationActions(client, results, job.data.migrationActions);
+      if (job.data.migrationActions.preDeploy.length) {
+        await executeMigrationActions(client, results, job.data.migrationActions.preDeploy);
+      }
+      if (job.data.migrationActions.postDeploy.length) {
+        await executeMigrationActions(client, results, job.data.migrationActions.postDeploy);
+      }
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
@@ -240,26 +245,26 @@ function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionRes
 }
 
 export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
-  const { requestId, traceId } = getRequestContext();
+  const ctx = tryGetRequestContext();
   return {
     type: 'custom',
     asyncJobId: asyncJob.id,
-    requestId,
-    traceId,
+    requestId: ctx?.requestId,
+    traceId: ctx?.traceId,
   };
 }
 
 export function prepareDynamicMigrationJobData(
   asyncJob: WithId<AsyncJob>,
-  migrationActions: MigrationAction[]
+  migrationActions: PhasalMigration
 ): DynamicPostDeployJobData {
-  const { requestId, traceId } = getRequestContext();
+  const ctx = tryGetRequestContext();
   return {
     type: 'dynamic',
     migrationActions,
     asyncJobId: asyncJob.id,
-    requestId,
-    traceId,
+    requestId: ctx?.requestId,
+    traceId: ctx?.traceId,
   };
 }
 

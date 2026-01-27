@@ -525,7 +525,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    const input = screen.getByLabelText<HTMLInputElement>('q1');
     expect(input).toBeInTheDocument();
     if (inputType !== 'date' && inputType !== 'datetime-local') {
       // JSDOM does not support date or datetime-local
@@ -555,7 +555,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    const input = screen.getByLabelText<HTMLInputElement>('q1');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
@@ -1200,10 +1200,10 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText<HTMLInputElement>(visibleQuestion + ' *');
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
-    const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
+    const updatedQuestion2StringInput = screen.getByLabelText<HTMLInputElement>('visible question 2');
     expect(updatedQuestion2StringInput.value).toBe('Test Value for Question2-String');
   });
 
@@ -1308,7 +1308,7 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
@@ -2242,7 +2242,8 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'answer' } });
+      const input = document.getElementById('question1-0') as HTMLInputElement;
+      fireEvent.change(input, { target: { value: 'answer' } });
     });
 
     await act(async () => {
@@ -2252,6 +2253,59 @@ describe('QuestionnaireForm', () => {
     expect(screen.getAllByText('Question Group').length).toBe(2);
 
     expect(screen.getAllByText('Question 2').length).toBe(2);
+  });
+
+  test('Repeating string items maintain values when typing', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Repeating String Question',
+            type: 'string',
+            repeats: true,
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Get the first input by id
+    const firstInput = document.getElementById('q1-0') as HTMLInputElement;
+    expect(firstInput).toBeInTheDocument();
+
+    // Type in the first field
+    await act(async () => {
+      fireEvent.change(firstInput, { target: { value: 'first value' } });
+    });
+
+    // Add a second item
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add Item'));
+    });
+
+    // Get both inputs by id
+    const secondInput = document.getElementById('q1-1') as HTMLInputElement;
+    expect(secondInput).toBeInTheDocument();
+
+    // Type in the second field
+    await act(async () => {
+      fireEvent.change(secondInput, { target: { value: 'second value' } });
+    });
+
+    // Submit and verify both values are preserved
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer).toEqual([{ valueString: 'first value' }, { valueString: 'second value' }]);
   });
 
   test('No Answers Defined', async () => {
@@ -2381,7 +2435,7 @@ describe('QuestionnaireForm', () => {
     const searchResources = jest.spyOn(medplum, 'searchResources');
 
     // Get the search input
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Simpson"
     await act(async () => {

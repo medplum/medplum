@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { act, renderHook, waitFor } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
-import type { JSX } from 'react';
+import type { WithId } from '@medplum/core';
 import type {
   Appointment,
   ChargeItem,
@@ -15,17 +13,20 @@ import type {
   Task,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import { useEncounterChart } from './useEncounterChart';
+import { MedplumProvider } from '@medplum/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { JSX } from 'react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
 import { createClaimFromEncounter } from '../utils/claims';
 import { showErrorNotification } from '../utils/notifications';
+import { useEncounterChart } from './useEncounterChart';
 
 vi.mock('../utils/chargeitems');
 vi.mock('../utils/claims');
 vi.mock('../utils/notifications');
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
@@ -39,7 +40,7 @@ const mockEncounter: Encounter = {
   appointment: [{ reference: 'Appointment/appointment-123' }],
 };
 
-const mockPatient: Patient = {
+const mockPatient: WithId<Patient> = {
   resourceType: 'Patient',
   id: 'patient-123',
   name: [{ given: ['Test'], family: 'Patient' }],
@@ -75,7 +76,7 @@ const mockClinicalImpression: ClinicalImpression = {
   encounter: { reference: 'Encounter/encounter-123' },
 };
 
-const mockChargeItem: ChargeItem = {
+const mockChargeItem: WithId<ChargeItem> = {
   resourceType: 'ChargeItem',
   id: 'charge-item-123',
   status: 'billable',
@@ -83,7 +84,7 @@ const mockChargeItem: ChargeItem = {
   code: { text: 'Test Charge' },
 };
 
-const mockClaim: Claim = {
+const mockClaim: WithId<Claim> = {
   resourceType: 'Claim',
   id: 'claim-123',
   status: 'active',
@@ -269,7 +270,7 @@ describe('useEncounterChart', () => {
   });
 
   test('creates claim when all conditions are met', async () => {
-    const newClaim: Claim = {
+    const newClaim: WithId<Claim> = {
       resourceType: 'Claim',
       id: 'new-claim-123',
       status: 'active',
@@ -301,9 +302,13 @@ describe('useEncounterChart', () => {
       expect(result.current.claim?.id).toBe('new-claim-123');
     });
 
-    expect(createClaimFromEncounter).toHaveBeenCalledWith(medplum, 'patient-123', 'encounter-123', 'practitioner-123', [
-      mockChargeItem,
-    ]);
+    expect(createClaimFromEncounter).toHaveBeenCalledWith(
+      medplum,
+      expect.objectContaining({ resourceType: 'Patient', id: 'patient-123' }),
+      expect.objectContaining({ resourceType: 'Encounter', id: 'encounter-123' }),
+      expect.objectContaining({ resourceType: 'Practitioner', id: 'practitioner-123' }),
+      [mockChargeItem]
+    );
   });
 
   test('does not create claim if one already exists', async () => {
@@ -345,7 +350,7 @@ describe('useEncounterChart', () => {
   });
 
   test('does not create claim if practitioner is missing', async () => {
-    const encounterWithoutPractitioner: Encounter = {
+    const encounterWithoutPractitioner: WithId<Encounter> = {
       ...mockEncounter,
       participant: [],
     };
@@ -443,7 +448,7 @@ describe('useEncounterChart', () => {
 
     expect(result.current.encounter).toBeUndefined();
 
-    const updatedEncounter: Encounter = {
+    const updatedEncounter: WithId<Encounter> = {
       ...mockEncounter,
       status: 'finished',
     };

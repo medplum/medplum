@@ -101,7 +101,7 @@ export function BatchPage(): JSX.Element {
     async (files: FileWithPath[]) => {
       for (const file of files) {
         const reader = new FileReader();
-        reader.onload = (e) => submitBatch(e.target?.result as string, file.name as string);
+        reader.onload = (e) => submitBatch(e.target?.result as string, file.name);
         reader.readAsText(file);
       }
     },

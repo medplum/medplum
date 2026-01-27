@@ -1,11 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { OperationOutcomeError, WithId } from '@medplum/core';
-import type { ClientApplication, Login } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import type { ClientApplication, Login, Patient, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { createTestClient, withTestContext } from '../test.setup';
+import type { Repository } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
+import { createTestClient, createTestProject, withTestContext } from '../test.setup';
+import { verifyJwt } from './keys';
 import {
   getAuthTokens,
   getClientApplication,
@@ -428,6 +432,225 @@ describe('OAuth utils', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login missing profile');
     }
+  });
+
+  describe('getAuthTokens with email scope', () => {
+    let project: WithId<Project>;
+    let repo: Repository;
+
+    beforeAll(async () => {
+      await withTestContext(async () => {
+        const result = await createTestProject({ withRepo: true });
+        project = result.project;
+        repo = result.repo;
+      });
+    });
+
+    test('Access token includes email when email scope is requested for User', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User with email
+        const userEmail = `test-${randomUUID()}@example.com`;
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          email: userEmail,
+          firstName: 'Test',
+          lastName: 'User',
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token includes email
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBe(userEmail);
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also includes email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBe(userEmail);
+      });
+    });
+
+    test('Access token does not include email when email scope is not requested', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User with email
+        const userEmail = `test-${randomUUID()}@example.com`;
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          email: userEmail,
+          firstName: 'Test',
+          lastName: 'User',
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login without email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token does not include email
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
+
+    test('Access token does not include email for ClientApplication even with email scope', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a ClientApplication
+        const client = await repo.createResource<ClientApplication>({
+          resourceType: 'ClientApplication',
+          name: 'Test Client',
+          secret: randomUUID(),
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the client
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(client),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'client',
+          user: createReference(client),
+          client: createReference(client),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(client, login, createReference(patient));
+
+        // Verify access token does not include email (ClientApplication is not a User)
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
+
+    test('Access token does not include email when user has no email address', async () => {
+      await withTestContext(async () => {
+        const systemRepo = getSystemRepo();
+
+        // Create a User without email
+        const user = await systemRepo.createResource<User>({
+          resourceType: 'User',
+          firstName: 'Test',
+          lastName: 'User',
+          // email is undefined
+        });
+
+        // Create a Patient profile
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+
+        // Create a ProjectMembership for the user
+        const membership = await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          user: createReference(user),
+          profile: createReference(patient),
+          project: createReference(project),
+        });
+
+        // Create a Login with email scope
+        const login = await systemRepo.createResource<Login>({
+          resourceType: 'Login',
+          authMethod: 'password',
+          user: createReference(user),
+          membership: createReference(membership),
+          scope: 'openid profile email',
+          granted: true,
+          authTime: new Date().toISOString(),
+          nonce: randomUUID(),
+        } as Login);
+
+        const tokens = await getAuthTokens(user, login, createReference(patient));
+
+        // Verify access token does not include email (user has no email)
+        const accessTokenClaims = (await verifyJwt(tokens.accessToken)).payload;
+        expect(accessTokenClaims.email).toBeUndefined();
+        expect(accessTokenClaims.login_id).toBe(login.id);
+        expect(accessTokenClaims.scope).toBe('openid profile email');
+
+        // Verify ID token also does not include email
+        const idTokenClaims = (await verifyJwt(tokens.idToken)).payload;
+        expect(idTokenClaims.email).toBeUndefined();
+      });
+    });
   });
 
   test('CLI client', async () => {

@@ -32,12 +32,12 @@ import type {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import type { Request } from 'express';
-import type { IncomingMessage } from 'http';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
@@ -147,7 +147,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   if (request.clientId) {
     client = await getClientApplication(request.clientId);
     if (client.allowedOrigin && request.origin) {
-      if (!client.allowedOrigin.some((o) => o === request.origin)) {
+      if (!client.allowedOrigin.includes(request.origin)) {
         throw new OperationOutcomeError(badRequest('Invalid origin'));
       }
     }
@@ -262,7 +262,7 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
 
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
   if (request.password && user.passwordHash) {
-    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
+    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash);
     if (!bcryptResult) {
       throw new OperationOutcomeError(badRequest('Email or password is invalid'));
     }
@@ -419,7 +419,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   let membership = undefined;
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch (_err) {
+  } catch {
     throw new OperationOutcomeError(badRequest('Profile not found'));
   }
   if (membership.user?.reference !== login.user?.reference) {
@@ -431,7 +431,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Get the project
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const project = await systemRepo.readReference<Project>(membership.project);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -504,7 +504,7 @@ export async function checkIpAccessRules(login: Login, accessPolicy: AccessPolic
     return;
   }
   for (const rule of accessPolicy.ipAccessRule) {
-    if (matchesIpAccessRule(login.remoteAddress, rule.value as string)) {
+    if (matchesIpAccessRule(login.remoteAddress, rule.value)) {
       if (rule.action === 'allow') {
         return;
       }
@@ -617,6 +617,7 @@ export async function getAuthTokens(
       username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
+      email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     },
     { lifetime: options?.accessLifetime }
   );
@@ -915,7 +916,7 @@ export async function getLoginForAccessToken(
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
-  } catch (_err) {
+  } catch {
     return undefined;
   }
 
@@ -925,7 +926,7 @@ export async function getLoginForAccessToken(
   let login = undefined;
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
-  } catch (_err) {
+  } catch {
     return undefined;
   }
 
@@ -934,7 +935,10 @@ export async function getLoginForAccessToken(
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  if (membership.active === false) {
+    return undefined;
+  }
+  const project = await systemRepo.readReference<Project>(membership.project);
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const authState = { login, project, membership, userConfig, accessToken };
   await tryAddOnBehalfOf(req, authState);
@@ -959,7 +963,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
   let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
-  } catch (_err) {
+  } catch {
     return undefined;
   }
 
@@ -972,7 +976,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     return undefined;
   }
 
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const project = await systemRepo.readReference<Project>(membership.project);
   const login: Login = {
     resourceType: 'Login',
     user: createReference(client),
@@ -1068,7 +1072,7 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
     // Use cached login if available
     login = JSON.parse(cachedValue) as Login;
     membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
-    project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+    project = await systemRepo.readReference<Project>(membership.project);
   } else {
     // If not cached, try to authenticate the user with the external auth provider
     const externalAuthState = await tryExternalAuthLogin(req, accessToken, claims, externalAuthConfig);
@@ -1152,7 +1156,7 @@ async function tryExternalAuthLogin(
     userAgent: req?.get('User-Agent'),
   });
 
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const project = await systemRepo.readReference<Project>(membership.project);
 
   logAuditEvent(
     createAuditEvent(

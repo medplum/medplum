@@ -172,7 +172,7 @@ describe('Navbar', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type');
 
     // Enter random text
     await act(async () => {
@@ -200,13 +200,13 @@ describe('Navbar', () => {
   test('Add Bookmark render and submit', async () => {
     await setup();
 
-    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+    const button = screen.getByRole('button', { name: 'Add Bookmark' });
 
     await act(async () => {
       fireEvent.click(button);
     });
 
-    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText('Bookmark Name');
 
     expect(input).toBeInTheDocument();
 
@@ -223,13 +223,13 @@ describe('Navbar', () => {
   test('Add Bookmark close', async () => {
     await setup();
 
-    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+    const button = screen.getByRole('button', { name: 'Add Bookmark' });
 
     await act(async () => {
       fireEvent.click(button);
     });
 
-    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText('Bookmark Name');
 
     expect(input).toBeInTheDocument();
 
@@ -241,13 +241,13 @@ describe('Navbar', () => {
   test('Add Bookmark save', async () => {
     await setup();
 
-    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+    const button = screen.getByRole('button', { name: 'Add Bookmark' });
 
     await act(async () => {
       fireEvent.click(button);
     });
 
-    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText('Bookmark Name');
 
     expect(input).toBeInTheDocument();
 

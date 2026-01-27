@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
+import { EMPTY, formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
 import type {
   HumanName,
   Patient,
@@ -89,10 +89,7 @@ export class HumanNameTable extends LookupTable {
     }
 
     const names: (HumanName | undefined | null)[] | undefined = (resource as HumanNameResource).name;
-    if (!Array.isArray(names)) {
-      return;
-    }
-    for (const name of names) {
+    for (const name of names ?? EMPTY) {
       if (!name) {
         continue;
       }
@@ -214,13 +211,9 @@ export function getHumanNameSortValue(
   names: (HumanName | undefined | null)[] | undefined,
   searchParam: SearchParameter
 ): string | undefined {
-  if (!Array.isArray(names)) {
-    return undefined;
-  }
-
   let result: string | undefined;
   let resultPrecedence: number = Infinity;
-  for (const name of names) {
+  for (const name of names ?? EMPTY) {
     if (!name) {
       continue;
     }

@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary"
       }
     },
@@ -41,18 +41,26 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine", "Jones"]
+            "given": [
+              "Katherine",
+              "Jones"
+            ]
           },
           {
             "family": "Madison",
-            "given": ["Kathy", "Jones"]
+            "given": [
+              "Kathy",
+              "Jones"
+            ]
           }
         ],
         "gender": "female",
         "birthDate": "1970-06-01",
         "address": [
           {
-            "line": ["1001 Amber Dr"],
+            "line": [
+              "1001 Amber Dr"
+            ],
             "city": "Beaverton",
             "state": "OR",
             "postalCode": "97006",

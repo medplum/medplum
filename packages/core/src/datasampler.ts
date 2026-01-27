@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
-import { getReferenceString } from './utils';
+import { EMPTY, getReferenceString } from './utils';
 
 export type StatsFn = (data: number[]) => number | Quantity;
 export type QuantityUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
@@ -144,11 +144,9 @@ export function expandSampledObservation(obs: Observation): Observation[] {
   if (obs.valueSampledData) {
     results.push(...convertSampleToObservations(obs.valueSampledData, startTime, obs));
   }
-  if (obs.component) {
-    for (const component of obs.component) {
-      if (component.valueSampledData) {
-        results.push(...convertSampleToObservations(component.valueSampledData, startTime, { ...obs, ...component }));
-      }
+  for (const component of obs.component ?? EMPTY) {
+    if (component.valueSampledData) {
+      results.push(...convertSampleToObservations(component.valueSampledData, startTime, { ...obs, ...component }));
     }
   }
   return results;

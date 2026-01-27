@@ -7,6 +7,7 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   deriveIdentifierSearchParameter,
+  EMPTY,
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
@@ -61,6 +62,7 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
+  getSearchParamColumnType,
   Negation,
   periodToRangeString,
   SelectQuery,
@@ -74,6 +76,12 @@ import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-c
  * Defines the maximum number of resources returned in a single search result.
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
+
+/**
+ * Defines the minimum page size for cursor-based pagination that accommodates resources with the same lastUpdated. This value
+ * is relevant primarily to the deprecated v1 cursor format, but is enforced for v2 cursors as well.
+ */
+export const minCursorBasedSearchPageSize = 20;
 
 const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
 
@@ -670,7 +678,7 @@ function getSearchLinks(
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
-    searchRequest.count >= 20 &&
+    searchRequest.count >= minCursorBasedSearchPageSize &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
@@ -925,19 +933,17 @@ export function buildSearchExpression(
   searchRequest: SearchRequest
 ): Expression | undefined {
   const expressions: Expression[] = [];
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      let expr: Expression | undefined;
-      if (isChainedSearchFilter(filter)) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter);
-        expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
-      } else {
-        expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
-      }
+  for (const filter of searchRequest.filters ?? EMPTY) {
+    let expr: Expression | undefined;
+    if (isChainedSearchFilter(filter)) {
+      const chain = parseChainedParameter(searchRequest.resourceType, filter);
+      expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
+    } else {
+      expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
+    }
 
-      if (expr) {
-        expressions.push(expr);
-      }
+    if (expr) {
+      expressions.push(expr);
     }
   }
   if (expressions.length === 0) {
@@ -991,7 +997,7 @@ function buildSearchFilterExpression(
   if (filter.operator === Operator.IDENTIFIER) {
     param = deriveIdentifierSearchParameter(param);
     filter = {
-      code: param.code as string,
+      code: param.code,
       operator: Operator.EQUALS,
       value: filter.value,
     };
@@ -1197,7 +1203,7 @@ function buildFilterParameterComparison(
 ): Expression {
   return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
     code: filterComparison.path,
-    operator: filterComparison.operator as Operator,
+    operator: filterComparison.operator,
     value: filterComparison.value,
   });
 }
@@ -1434,7 +1440,15 @@ export function buildDateSearchFilter(
     }
   }
 
-  return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
+  const column = new Column(table, impl.columnName);
+  const columnType = getSearchParamColumnType(impl);
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
+  if (impl.array) {
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', filter.value, columnType);
+    return negated ? new Negation(condition) : condition;
+  } else {
+    return new Condition(column, fhirOperatorToSqlOperator(filter.operator), filter.value, columnType);
+  }
 }
 
 /**
@@ -1477,7 +1491,9 @@ function buildQuantitySearchFilter(
  * @param searchRequest - The search request.
  */
 function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: SearchRequest): void {
-  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(repo, builder, searchRequest, sortRule));
+  for (const sortRule of searchRequest.sortRules ?? EMPTY) {
+    addOrderByClause(repo, builder, searchRequest, sortRule);
+  }
 }
 
 /**
@@ -1557,15 +1573,16 @@ function buildCondition(
   column?: Column | string
 ): Condition | Negation {
   column = column ?? impl.columnName;
+  const columnType = getSearchParamColumnType(impl);
   const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
   if (impl.array) {
-    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, impl.type + '[]');
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, columnType);
     return negated ? new Negation(condition) : condition;
   } else if (values.length > 1) {
-    const condition = new Condition(column, 'IN', values, impl.type);
+    const condition = new Condition(column, 'IN', values, columnType);
     return negated ? new Negation(condition) : condition;
   } else {
-    return new Condition(column, negated ? 'IS_DISTINCT_FROM' : '=', values[0], impl.type);
+    return new Condition(column, negated ? 'IS_DISTINCT_FROM' : '=', values[0], columnType);
   }
 }
 

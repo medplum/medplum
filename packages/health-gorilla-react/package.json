@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-react",
-  "version": "5.0.10",
+  "version": "5.0.12",
   "description": "Medplum Health Gorilla React SDK",
   "keywords": [
     "medplum",
@@ -51,7 +51,7 @@
   ],
   "scripts": {
     "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
-    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint src/",
@@ -60,29 +60,29 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "5.0.10",
-    "@medplum/definitions": "5.0.10",
-    "@medplum/fhirtypes": "5.0.10",
-    "@medplum/health-gorilla-core": "5.0.10",
-    "@medplum/mock": "5.0.10",
-    "@medplum/react": "5.0.10",
+    "@medplum/core": "5.0.12",
+    "@medplum/definitions": "5.0.12",
+    "@medplum/fhirtypes": "5.0.12",
+    "@medplum/health-gorilla-core": "5.0.12",
+    "@medplum/mock": "5.0.12",
+    "@medplum/react": "5.0.12",
     "@testing-library/jest-dom": "6.9.1",
-    "@testing-library/react": "16.3.0",
-    "@types/node": "22.19.2",
-    "@types/react": "19.2.7",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "22.19.7",
+    "@types/react": "19.2.9",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.2",
-    "jsdom": "27.3.0",
+    "jsdom": "27.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-router": "7.10.1",
-    "vitest": "4.0.15"
+    "react-router": "7.12.0",
+    "vitest": "4.0.18"
   },
   "peerDependencies": {
-    "@medplum/core": "5.0.10",
-    "@medplum/fhirtypes": "5.0.10",
-    "@medplum/health-gorilla-core": "5.0.10",
-    "@medplum/react": "5.0.10",
+    "@medplum/core": "5.0.12",
+    "@medplum/fhirtypes": "5.0.12",
+    "@medplum/health-gorilla-core": "5.0.12",
+    "@medplum/react": "5.0.12",
     "react": "^18.0.0 || ^19.0.0"
   },
   "engines": {

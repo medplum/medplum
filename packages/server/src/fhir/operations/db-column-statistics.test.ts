@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, EMPTY } from '@medplum/core';
 import type { ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -164,15 +164,13 @@ function expectColumn(tableParam: ParametersParameter | undefined, name: string,
     ]),
   });
 
-  if (parts?.length) {
-    const column = tableParam?.part?.find(
-      (p) => p.name === 'column' && p.part?.find((pp) => pp.name === 'name' && pp.valueString === name)
-    ) as ParametersParameter;
-    expect(column).toBeDefined();
-    for (const part of parts) {
-      const tablePart = column?.part?.find((p) => p.name === part.name) as ParametersParameter;
-      expect(tablePart).toBeDefined();
-      expect(tablePart).toMatchObject(part);
-    }
+  const column = tableParam?.part?.find(
+    (p) => p.name === 'column' && p.part?.find((pp) => pp.name === 'name' && pp.valueString === name)
+  ) as ParametersParameter;
+  expect(column).toBeDefined();
+  for (const part of parts ?? EMPTY) {
+    const tablePart = column?.part?.find((p) => p.name === part.name) as ParametersParameter;
+    expect(tablePart).toBeDefined();
+    expect(tablePart).toMatchObject(part);
   }
 }

@@ -9,7 +9,6 @@ import type { JSX } from 'react';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
 import classes from './TaskBoard.module.css';
-import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskDetailPanelProps {
@@ -34,8 +33,6 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   const patientRef = task?.for as Reference<Patient>;
   const selectedPatient = useResource<Patient>(patientRef);
 
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
-
   if (!task) {
     return (
       <Box h="100%" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -45,9 +42,9 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
   }
 
   const handleTaskChange = async (updatedTask: Task): Promise<void> => {
+    await medplum.updateResource(updatedTask);
     setTask(updatedTask);
     onTaskChange?.(updatedTask);
-    await debouncedUpdateResource(updatedTask);
   };
 
   const handleDeleteTask = async (deletedTask: Task): Promise<void> => {
