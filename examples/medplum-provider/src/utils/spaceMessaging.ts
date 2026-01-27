@@ -16,6 +16,11 @@ const resourceSummaryBotId: Identifier = {
   system: 'https://www.medplum.com/bots',
 };
 
+const resourceSummaryBotSseId: Identifier = {
+  value: 'ai-resource-summary-sse',
+  system: 'https://www.medplum.com/bots',
+};
+
 export interface ToolCall {
   id: string;
   function: {
@@ -149,6 +154,83 @@ export async function sendToBot(
   return { content, toolCalls };
 }
 
+export async function sendToBotStreaming(
+  medplum: ReturnType<typeof useMedplum>,
+  botId: Identifier,
+  messages: Message[],
+  model: string,
+  onChunk: (chunk: string) => void
+): Promise<string> {
+  // Find the bot by identifier
+  const bot = await medplum.searchOne('Bot', { identifier: `${botId.system}|${botId.value}` });
+  if (!bot?.id) {
+    throw new Error(`Bot not found: ${botId.value}`);
+  }
+
+  const response = await fetch(medplum.fhirUrl('Bot', bot.id, '$execute').toString(), {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${medplum.getAccessToken()}`,
+      'Content-Type': 'application/fhir+json',
+      'Accept': 'text/event-stream',
+    },
+    body: JSON.stringify({
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'messages', valueString: JSON.stringify(messages) },
+        { name: 'model', valueString: model },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Bot execution failed: ${response.status} - ${errorText}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error('No response body');
+  }
+
+  const decoder = new TextDecoder();
+  let fullContent = '';
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      // Skip empty lines
+      if (!line.trim()) continue;
+
+      // Handle SSE data lines
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6);
+        if (!data || data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+          const content = parsed.content || parsed.choices?.[0]?.delta?.content;
+          if (content) {
+            fullContent += content;
+            onChunk(fullContent);
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+  }
+
+  return fullContent;
+}
+
 export interface ProcessMessageParams {
   medplum: ReturnType<typeof useMedplum>;
   input: string;
@@ -161,6 +243,7 @@ export interface ProcessMessageParams {
   setRefreshKey: React.Dispatch<React.SetStateAction<number>>;
   setCurrentFhirRequest: (request: string | undefined) => void;
   onNewTopic: (topic: Communication) => void;
+  onStreamChunk?: (content: string, resourceRefs?: string[]) => void;
 }
 
 export interface ProcessMessageResult {
@@ -182,6 +265,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     setRefreshKey,
     setCurrentFhirRequest,
     onNewTopic,
+    onStreamChunk,
   } = params;
 
   // Create topic on first message
@@ -232,9 +316,16 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       }
     }
 
-    // Get summary response after tool execution
-    const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
-    content = summaryResponse.content;
+    // Get summary response after tool execution (streaming if callback provided)
+    if (onStreamChunk) {
+      const uniqueRefs = resourceRefs.length > 0 ? [...new Set(resourceRefs)] : undefined;
+      content = await sendToBotStreaming(medplum, resourceSummaryBotSseId, currentMessages, selectedModel, (chunk) => {
+        onStreamChunk(chunk, uniqueRefs);
+      });
+    } else {
+      const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
+      content = summaryResponse.content;
+    }
   }
 
   const uniqueRefs = allResourceRefs.length > 0 ? [...new Set(allResourceRefs)] : undefined;
