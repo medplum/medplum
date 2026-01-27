@@ -172,7 +172,7 @@ export async function sendToBotStreaming(
     headers: {
       'Authorization': `Bearer ${medplum.getAccessToken()}`,
       'Content-Type': 'application/fhir+json',
-      'Accept': 'text/event-stream',
+      'Accept': 'text/event-stream, application/fhir+json, application/json',
     },
     body: JSON.stringify({
       resourceType: 'Parameters',
@@ -188,6 +188,21 @@ export async function sendToBotStreaming(
     throw new Error(`Bot execution failed: ${response.status} - ${errorText}`);
   }
 
+  const contentType = response.headers.get('Content-Type') || '';
+  const isStreaming = contentType.includes('text/event-stream');
+
+  // Handle non-streaming (buffered) JSON response
+  if (!isStreaming) {
+    const data = await response.json();
+    // Handle FHIR Parameters response format
+    const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
+    if (content) {
+      onChunk(content);
+    }
+    return content;
+  }
+
+  // Handle streaming SSE response
   const reader = response.body?.getReader();
   if (!reader) {
     throw new Error('No response body');
@@ -199,7 +214,7 @@ export async function sendToBotStreaming(
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) { break; }
 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -207,12 +222,12 @@ export async function sendToBotStreaming(
 
     for (const line of lines) {
       // Skip empty lines
-      if (!line.trim()) continue;
+      if (!line.trim()) { continue; }
 
       // Handle SSE data lines
       if (line.startsWith('data: ')) {
         const data = line.slice(6);
-        if (!data || data === '[DONE]') continue;
+        if (!data || data === '[DONE]') { continue; }
 
         try {
           const parsed = JSON.parse(data);

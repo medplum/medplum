@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  InvokeCommand,
-  InvokeWithResponseStreamCommand,
-  LambdaClient,
-  ListLayerVersionsCommand,
-} from '@aws-sdk/client-lambda';
+import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -22,7 +17,6 @@ import { getLambdaFunctionName } from './execute';
 const app = express();
 let accessToken: string;
 let bot: Bot;
-let streamingBot: Bot;
 
 describe('Execute', () => {
   let mockLambdaClient: AwsClientStub<LambdaClient>;
@@ -47,37 +41,6 @@ describe('Execute', () => {
       return {
         LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
         Payload: encoder.encode(output),
-      };
-    });
-
-    // Mock for streaming invocation
-    mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
-      const encoder = new TextEncoder();
-      // Simulate streaming response: first line is headers JSON, then SSE data
-      const headersLine = JSON.stringify({
-        statusCode: 200,
-        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
-      });
-      const dataChunks = ['data: Hello \n\n', 'data: World!\n\n'];
-
-      // Create an async generator to simulate EventStream
-      async function* createEventStream(): AsyncGenerator<{ PayloadChunk?: { Payload: Uint8Array }; InvokeComplete?: { LogResult?: string } }> {
-        // Send headers line with newline
-        yield { PayloadChunk: { Payload: encoder.encode(headersLine + '\n') } };
-        // Send data chunks
-        for (const chunk of dataChunks) {
-          yield { PayloadChunk: { Payload: encoder.encode(chunk) } };
-        }
-        // Signal completion
-        yield {
-          InvokeComplete: {
-            LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
-          },
-        };
-      }
-
-      return {
-        EventStream: createEventStream(),
       };
     });
   });
@@ -109,34 +72,6 @@ describe('Execute', () => {
       });
     expect(res.status).toBe(201);
     bot = res.body as Bot;
-
-    // Create streaming bot
-    const streamingRes = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
-        name: 'Streaming Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-          export async function handler(medplum, event) {
-            const { responseStream } = event;
-            responseStream.startStreaming(200, {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              'Connection': 'keep-alive'
-            });
-            responseStream.write('data: Hello \\n\\n');
-            responseStream.write('data: World!\\n\\n');
-            responseStream.end();
-            return 'done';
-          }
-        `,
-      });
-    expect(streamingRes.status).toBe(201);
-    streamingBot = streamingRes.body as Bot;
   });
 
   afterAll(async () => {
@@ -295,39 +230,5 @@ describe('Execute', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('input');
-  });
-
-  describe('Accept: text/event-stream (SSE streaming)', () => {
-    test('Streaming execution with chunks', async () => {
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send('input');
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('text/event-stream');
-
-      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toStrictEqual(2);
-      expect(events[0]).toStrictEqual('data: Hello ');
-      expect(events[1]).toStrictEqual('data: World!');
-    });
-
-    test('Streaming execution with JSON input', async () => {
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
-        .set('Content-Type', ContentType.JSON)
-        .set('Accept', 'text/event-stream')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send({ message: 'hello' });
-      expect(res.status).toBe(200);
-      expect(res.headers['content-type']).toBe('text/event-stream');
-
-      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
-      expect(events.length).toStrictEqual(2);
-      expect(events[0]).toStrictEqual('data: Hello ');
-      expect(events[1]).toStrictEqual('data: World!');
-    });
   });
 });

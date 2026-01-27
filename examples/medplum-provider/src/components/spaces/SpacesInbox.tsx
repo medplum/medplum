@@ -94,6 +94,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       }, 300);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, hasStarted]);
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
