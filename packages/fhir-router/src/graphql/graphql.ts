@@ -293,7 +293,7 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+export function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
   return new GraphQLObjectType({
     name: resourceType + 'Connection',
     fields: {
@@ -330,7 +330,7 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
  * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  */
-async function resolveByConnectionApi(
+export async function resolveByConnectionApi(
   source: any,
   args: Record<string, string>,
   ctx: GraphQLContext,
