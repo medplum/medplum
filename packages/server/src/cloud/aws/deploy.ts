@@ -64,29 +64,33 @@ const WRAPPER_CODE = `
   if (streaming) {
     // Streaming mode - create a BotResponseStream for the bot
     let streamStarted = false;
+    let wrappedStream = responseStream;
 
     const botResponseStream = {
       startStreaming: (statusCode, headers) => {
         if (streamStarted) return;
         streamStarted = true;
-        // Write header line for Medplum server to parse
-        responseStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
+        // Use HttpResponseStream.from for AWS-native metadata handling
+        const metadata = { statusCode, headers };
+        wrappedStream = awslambda.HttpResponseStream.from(responseStream, metadata);
+        // Write newline to signal end of headers for Medplum server
+        wrappedStream.write("\\n");
       },
       write: (chunk) => {
         if (!streamStarted) {
           throw new Error("Must call startStreaming() before write()");
         }
-        return responseStream.write(chunk);
+        return wrappedStream.write(chunk);
       },
       end: (chunk) => {
         if (chunk !== undefined) {
-          responseStream.write(chunk);
+          wrappedStream.write(chunk);
         }
-        responseStream.end();
+        wrappedStream.end();
       },
-      on: (event, listener) => responseStream.on(event, listener),
-      once: (event, listener) => responseStream.once(event, listener),
-      emit: (event, ...args) => responseStream.emit(event, ...args),
+      on: (event, listener) => wrappedStream.on(event, listener),
+      once: (event, listener) => wrappedStream.once(event, listener),
+      emit: (event, ...args) => wrappedStream.emit(event, ...args),
       writable: true,
     };
 
