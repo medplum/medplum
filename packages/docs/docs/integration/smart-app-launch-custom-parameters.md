@@ -86,7 +86,7 @@ For this extension to work, your Patient resources must have an identifier with 
   "identifier": [
     {
       "system": "https://www.healthgorilla.com",
-      "value": "da06e767ef08774b83aed58b"
+      "value": "<Health Gorilla ID>"
     }
   ],
   "name": [
