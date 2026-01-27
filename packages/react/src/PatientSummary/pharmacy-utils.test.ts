@@ -16,7 +16,7 @@ import {
 describe('pharmacy-utils', () => {
   describe('Constants', () => {
     test('PATIENT_PREFERRED_PHARMACY_URL is correct', () => {
-      expect(PATIENT_PREFERRED_PHARMACY_URL).toBe('https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy');
+      expect(PATIENT_PREFERRED_PHARMACY_URL).toBe('http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy');
     });
 
     test('PHARMACY_TYPE_PRIMARY is correct', () => {
@@ -80,7 +80,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -119,7 +119,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -158,7 +158,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -180,7 +180,7 @@ describe('pharmacy-utils', () => {
             ],
           },
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -215,7 +215,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'type',
@@ -242,7 +242,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -266,7 +266,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             extension: [
               {
                 url: 'pharmacy',
@@ -301,7 +301,7 @@ describe('pharmacy-utils', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+            url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
             valueString: 'invalid',
           },
         ],

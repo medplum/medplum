@@ -5,7 +5,7 @@ import { getReferenceString } from '@medplum/core';
 import type { Extension, Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
 
 // Extension URLs and systems
-export const PATIENT_PREFERRED_PHARMACY_URL = 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
+export const PATIENT_PREFERRED_PHARMACY_URL = 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
 
 export const PHARMACY_TYPE_PRIMARY = 'primary';
