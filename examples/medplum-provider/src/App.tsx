@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, InboxIcon, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
@@ -15,7 +15,6 @@ import type { JSX } from 'react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
-import { NavbarLinkWithCount } from './components/NavbarNotificationLink';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -77,7 +76,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
-                      <NavbarLinkWithCount
+                      <InboxIcon
                         resourceType="Communication"
                         countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
                         subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
@@ -89,7 +88,7 @@ export function App(): JSX.Element | null {
                   },
                   {
                     icon: (
-                      <NavbarLinkWithCount
+                      <InboxIcon
                         resourceType="Task"
                         countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
                         subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
