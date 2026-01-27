@@ -29,6 +29,9 @@ export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
+const nodeFetchModule = require("node-fetch");
+const nodeFetch = nodeFetchModule.default || nodeFetchModule;
+global.fetch = nodeFetch;
 const userCode = require("./user.cjs");
 
 exports.handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
@@ -36,7 +39,10 @@ exports.handler = awslambda.streamifyResponse(async (event, responseStream, cont
 
 const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
+import nodeFetch from 'node-fetch';
 import * as userCode from './user.mjs';
+
+globalThis.fetch = nodeFetch;
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
 `;
@@ -49,7 +55,7 @@ const WRAPPER_CODE = `
       options.headers ||= {};
       options.headers['X-Trace-Id'] = traceId;
       options.headers['traceparent'] = traceId;
-      return fetch(url, options);
+      return nodeFetch(url, options);
     },
     createPdf,
   });
@@ -58,33 +64,29 @@ const WRAPPER_CODE = `
   if (streaming) {
     // Streaming mode - create a BotResponseStream for the bot
     let streamStarted = false;
-    let wrappedStream = responseStream;
 
     const botResponseStream = {
       startStreaming: (statusCode, headers) => {
         if (streamStarted) return;
         streamStarted = true;
-        // Use HttpResponseStream.from for AWS-native metadata handling
-        const metadata = { statusCode, headers };
-        wrappedStream = awslambda.HttpResponseStream.from(responseStream, metadata);
         // Write header line for Medplum server to parse
-        wrappedStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
+        responseStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
       },
       write: (chunk) => {
         if (!streamStarted) {
           throw new Error("Must call startStreaming() before write()");
         }
-        return wrappedStream.write(chunk);
+        return responseStream.write(chunk);
       },
       end: (chunk) => {
         if (chunk !== undefined) {
-          wrappedStream.write(chunk);
+          responseStream.write(chunk);
         }
-        wrappedStream.end();
+        responseStream.end();
       },
-      on: (event, listener) => wrappedStream.on(event, listener),
-      once: (event, listener) => wrappedStream.once(event, listener),
-      emit: (event, ...args) => wrappedStream.emit(event, ...args),
+      on: (event, listener) => responseStream.on(event, listener),
+      once: (event, listener) => responseStream.once(event, listener),
+      emit: (event, ...args) => responseStream.emit(event, ...args),
       writable: true,
     };
 

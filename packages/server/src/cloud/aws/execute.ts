@@ -11,6 +11,16 @@ import { getConfig } from '../../config/loader';
 let client: LambdaClient;
 
 /**
+ * Sanitizes a string to only include valid FHIR string characters.
+ * FHIR strings allow: \r, \n, \t, and \u0020-\uFFFF
+ * @param str - The string to sanitize.
+ * @returns The sanitized string.
+ */
+function sanitizeForFhir(str: string): string {
+  return str.replace(/[^\r\n\t\u0020-\uFFFF]/g, '');
+}
+
+/**
  * Executes a Bot in an AWS Lambda.
  * @param request - The bot request.
  * @returns The bot execution result.
@@ -55,13 +65,13 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
 
     return {
       success: !response.FunctionError,
-      logResult: parseLambdaLog(response.LogResult as string),
+      logResult: sanitizeForFhir(parseLambdaLog(response.LogResult as string)),
       returnValue,
     };
   } catch (err) {
     return {
       success: false,
-      logResult: normalizeErrorString(err),
+      logResult: sanitizeForFhir(normalizeErrorString(err)),
     };
   }
 }
@@ -118,7 +128,7 @@ export async function runInLambdaStreaming(
     const response = await client.send(command);
 
     if (!response.EventStream) {
-      return { success: false, logResult: 'No event stream in response' };
+      return { success: false, logResult: sanitizeForFhir('No event stream in response') };
     }
 
     for await (const event of response.EventStream) {
@@ -146,7 +156,7 @@ export async function runInLambdaStreaming(
               }
             } catch {
               // If headers parsing fails, treat entire response as error
-              return { success: false, logResult: 'Failed to parse streaming headers: ' + headersLine };
+              return { success: false, logResult: sanitizeForFhir('Failed to parse streaming headers: ' + headersLine) };
             }
           }
         } else {
@@ -157,12 +167,12 @@ export async function runInLambdaStreaming(
 
       if (event.InvokeComplete) {
         if (event.InvokeComplete.ErrorCode) {
-          logResult = `Lambda error: ${event.InvokeComplete.ErrorCode} - ${event.InvokeComplete.ErrorDetails}`;
+          logResult = sanitizeForFhir(`Lambda error: ${event.InvokeComplete.ErrorCode} - ${event.InvokeComplete.ErrorDetails}`);
           return { success: false, logResult };
         }
         // Extract log result if available
         if (event.InvokeComplete.LogResult) {
-          logResult = parseLambdaLog(event.InvokeComplete.LogResult);
+          logResult = sanitizeForFhir(parseLambdaLog(event.InvokeComplete.LogResult));
         }
       }
     }
@@ -170,11 +180,11 @@ export async function runInLambdaStreaming(
     // End the response stream
     responseStream.end();
 
-    return { success: true, logResult };
+    return { success: true, logResult: sanitizeForFhir(logResult) };
   } catch (err) {
     return {
       success: false,
-      logResult: normalizeErrorString(err),
+      logResult: sanitizeForFhir(normalizeErrorString(err)),
     };
   }
 }
@@ -212,7 +222,7 @@ export function getLambdaFunctionName(bot: Bot): string {
  */
 function parseLambdaLog(logResult: string): string {
   const logBuffer = Buffer.from(logResult, 'base64');
-  const log = logBuffer.toString('ascii');
+  const log = logBuffer.toString('utf8');
   const lines = log.split('\n');
   const result = [];
   for (const line of lines) {
@@ -226,5 +236,7 @@ function parseLambdaLog(logResult: string): string {
     }
     result.push(line);
   }
-  return result.join('\n').trim();
+  // Sanitize the log to only include valid FHIR string characters
+  // FHIR strings allow: \r, \n, \t, and \u0020-\uFFFF
+  return result.join('\n').trim().replace(/[^\r\n\t\u0020-\uFFFF]/g, '');
 }
