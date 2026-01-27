@@ -95,6 +95,27 @@ function makeMatcher(slot: Slot): Matcher {
   };
 }
 
+function findMatchingSchedulingParameters(extensions: SchedulingParameters[], slot: Slot): SchedulingParameters[] {
+  const matcher = makeMatcher(slot);
+  let parameters = extensions.filter((ext) => matcher(ext));
+  if (parameters.length === 0) {
+    // If no service type match found, fall back to wildcard availability
+    parameters = extensions.filter((ext) => ext.serviceType.length === 0);
+  }
+
+  const startDate = new Date(slot.start);
+  const endDate = new Date(slot.end);
+
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const durationMinutes = durationMs / 1000 / 60;
+
+  parameters = parameters.filter((ext) => ext.duration === durationMinutes);
+  parameters = parameters.filter((ext) =>
+    isAlignedTime(startDate, { alignment: ext.alignmentInterval, offsetMinutes: ext.alignmentOffset })
+  );
+  return parameters;
+}
+
 /**
  * Handles HTTP requests for the Appointment $book operation.
  *
@@ -120,9 +141,6 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
   const startDate = new Date(start);
   const endDate = new Date(end);
-
-  const durationMs = endDate.getTime() - startDate.getTime();
-  const durationMinutes = durationMs / 1000 / 60;
 
   const schedules = await ctx.repo.readReferences(slots.map((slot) => slot.schedule));
   assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
@@ -155,17 +173,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const extensions = parseSchedulingParametersExtensions(schedule);
-          const matcher = makeMatcher(slot);
-          let parameters = extensions.filter((ext) => matcher(ext));
-          if (parameters.length === 0) {
-            // If no service type match found, fall back to wildcard availability
-            parameters = extensions.filter((ext) => ext.serviceType.length === 0);
-          }
-
-          parameters = parameters.filter((ext) => ext.duration === durationMinutes);
-          parameters = parameters.filter((ext) =>
-            isAlignedTime(startDate, { alignment: ext.alignmentInterval, offsetMinutes: ext.alignmentOffset })
-          );
+          const parameters = findMatchingSchedulingParameters(extensions, slot);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
