@@ -170,9 +170,9 @@ export async function sendToBotStreaming(
   const response = await fetch(medplum.fhirUrl('Bot', bot.id, '$execute').toString(), {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${medplum.getAccessToken()}`,
+      Authorization: `Bearer ${medplum.getAccessToken()}`,
       'Content-Type': 'application/fhir+json',
-      'Accept': 'text/event-stream',
+      Accept: 'text/event-stream',
     },
     body: JSON.stringify({
       resourceType: 'Parameters',
@@ -213,7 +213,9 @@ export async function sendToBotStreaming(
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) { break; }
+    if (done) {
+      break;
+    }
 
     buffer += value;
     const lines = buffer.split('\n');
@@ -221,12 +223,16 @@ export async function sendToBotStreaming(
 
     for (const line of lines) {
       // Skip empty lines
-      if (!line.trim()) { continue; }
+      if (!line.trim()) {
+        continue;
+      }
 
       // Handle SSE data lines
       if (line.startsWith('data: ')) {
         const data = line.slice(6);
-        if (!data || data === '[DONE]') { continue; }
+        if (!data || data === '[DONE]') {
+          continue;
+        }
 
         try {
           const parsed = JSON.parse(data);
