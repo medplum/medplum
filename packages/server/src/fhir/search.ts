@@ -62,6 +62,7 @@ import {
   Conjunction,
   Disjunction,
   escapeLikeString,
+  getSearchParamColumnType,
   Negation,
   periodToRangeString,
   SelectQuery,
@@ -1439,7 +1440,15 @@ export function buildDateSearchFilter(
     }
   }
 
-  return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
+  const column = new Column(table, impl.columnName);
+  const columnType = getSearchParamColumnType(impl);
+  const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
+  if (impl.array) {
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', filter.value, columnType);
+    return negated ? new Negation(condition) : condition;
+  } else {
+    return new Condition(column, fhirOperatorToSqlOperator(filter.operator), filter.value, columnType);
+  }
 }
 
 /**
@@ -1564,15 +1573,16 @@ function buildCondition(
   column?: Column | string
 ): Condition | Negation {
   column = column ?? impl.columnName;
+  const columnType = getSearchParamColumnType(impl);
   const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
   if (impl.array) {
-    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, impl.type + '[]');
+    const condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', values, columnType);
     return negated ? new Negation(condition) : condition;
   } else if (values.length > 1) {
-    const condition = new Condition(column, 'IN', values, impl.type);
+    const condition = new Condition(column, 'IN', values, columnType);
     return negated ? new Negation(condition) : condition;
   } else {
-    return new Condition(column, negated ? 'IS_DISTINCT_FROM' : '=', values[0], impl.type);
+    return new Condition(column, negated ? 'IS_DISTINCT_FROM' : '=', values[0], columnType);
   }
 }
 

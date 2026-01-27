@@ -19,7 +19,7 @@ import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import type { ColumnSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import type { SqlFunctionDefinition } from '../fhir/sql';
-import { TokenArrayToTextFn } from '../fhir/sql';
+import { getSearchParamColumnType, TokenArrayToTextFn } from '../fhir/sql';
 import * as fns from './migrate-functions';
 import {
   ColumnNameAbbreviations,
@@ -436,31 +436,7 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
 ];
 
 function getColumnDefinition(impl: ColumnSearchParameterImplementation): ColumnDefinition {
-  let baseColumnType: string;
-  switch (impl.type) {
-    case SearchParameterType.BOOLEAN:
-      baseColumnType = 'BOOLEAN';
-      break;
-    case SearchParameterType.DATE:
-      baseColumnType = 'DATE';
-      break;
-    case SearchParameterType.DATETIME:
-      baseColumnType = 'TIMESTAMPTZ';
-      break;
-    case SearchParameterType.NUMBER:
-    case SearchParameterType.QUANTITY:
-      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
-        baseColumnType = 'INTEGER';
-      } else {
-        baseColumnType = 'DOUBLE PRECISION';
-      }
-      break;
-    default:
-      baseColumnType = 'TEXT';
-      break;
-  }
-
-  return { name: impl.columnName, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
+  return { name: impl.columnName, type: getSearchParamColumnType(impl), notNull: false };
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
