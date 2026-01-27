@@ -4,7 +4,7 @@ sidebar_position: 31
 
 # Patient $summary
 
-The `$summary` operation generates an International Patient Summary (IPS) document for a patient. This creates a comprehensive clinical summary following the [IPS Implementation Guide](https://build.fhir.org/ig/HL7/fhir-ips/index.html).
+The `$summary` operation generates an International Patient Summary (IPS) document for a patient. This creates a comprehensive clinical summary following the [IPS Implementation Guide](https://hl7.org/fhir/uv/ips/).
 
 ## Use Cases
 
@@ -184,6 +184,6 @@ The operation collects and organizes the following resource types:
 
 ## Related Documentation
 
-- [International Patient Summary IG](https://build.fhir.org/ig/HL7/fhir-ips/index.html)
+- [International Patient Summary IG](https://hl7.org/fhir/uv/ips/)
 - [Patient $everything](./patient-everything)
 - [Composition Resource](https://www.hl7.org/fhir/composition.html)

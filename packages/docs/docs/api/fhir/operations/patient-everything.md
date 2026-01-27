@@ -11,9 +11,7 @@ This operation is essential for scenarios requiring complete patient data, such 
 ## Use Cases
 
 - **Patient Record Requests**: Fulfill patient requests for their complete medical record (21st Century Cures Act compliance)
-- **Care Transitions**: Export a patient's full history when transferring care to another provider
-- **Data Portability**: Support patients moving their health data to new systems or apps
-- **Backup and Archival**: Create complete snapshots of patient records for disaster recovery
+- **Care Transitions**: Grabbing a patient's full history when transferring care to another provider
 - **Analytics and Research**: Extract comprehensive patient data for population health analysis or research studies
 
 ## Invoke the `$everything` operation
