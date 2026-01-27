@@ -63,7 +63,30 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer[]): void {
     if (formState && props.context) {
-      formState.onChangeAnswer(props.context, props.item, newResponseAnswer);
+      // For repeating non-choice items, we need to update only the specific index
+      // Choice items (checkboxes, dropdowns) manage multiple answers internally
+      const isNonChoiceRepeating =
+        item.repeats &&
+        props.index !== undefined &&
+        item.type !== QuestionnaireItemType.choice &&
+        item.type !== QuestionnaireItemType.openChoice;
+
+      if (isNonChoiceRepeating) {
+        const currentAnswers = response.answer || [];
+        const updatedAnswers = [...currentAnswers];
+
+        if (newResponseAnswer.length === 0) {
+          // Remove the answer at this index
+          updatedAnswers.splice(props.index, 1);
+        } else {
+          // Update the answer at this index
+          updatedAnswers[props.index] = newResponseAnswer[0];
+        }
+
+        formState.onChangeAnswer(props.context, props.item, updatedAnswers);
+      } else {
+        formState.onChangeAnswer(props.context, props.item, newResponseAnswer);
+      }
     }
   }
 
@@ -76,6 +99,15 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   if (!name) {
     return null;
   }
+
+  // For repeating non-choice items, generate a unique id by including the index
+  // Choice items render once and manage multiple answers internally, so they keep the same id
+  const isNonChoiceRepeating =
+    item.repeats &&
+    props.index !== undefined &&
+    item.type !== QuestionnaireItemType.choice &&
+    item.type !== QuestionnaireItemType.openChoice;
+  const inputId = isNonChoiceRepeating ? `${name}-${props.index}` : name;
 
   let initial: QuestionnaireItemInitial | undefined = undefined;
   if (item.initial && item.initial.length > 0) {
@@ -98,10 +130,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.boolean:
       formComponent = (
-        <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
+        <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={inputId}>
           <Checkbox
-            id={props.item.linkId}
-            name={props.item.linkId}
+            id={inputId}
+            name={name}
             required={props.required ?? item.required}
             defaultChecked={defaultValue?.value}
             onChange={(e) => onChangeAnswer([{ valueBoolean: e.currentTarget.checked }])}
@@ -114,7 +146,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           type="number"
           step="any"
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -129,7 +161,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextInput
           type="number"
           step={1}
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -143,7 +175,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       formComponent = (
         <TextInput
           type="date"
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -165,7 +197,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       formComponent = (
         <TextInput
           type="time"
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -177,7 +209,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.url:
       formComponent = (
         <TextInput
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -191,7 +223,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.text:
       formComponent = (
         <Textarea
-          id={name}
+          id={inputId}
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
@@ -207,7 +239,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <Group py={4}>
           <AttachmentInput
             path=""
-            name={name}
+            name={inputId}
             defaultValue={defaultValue?.value}
             onChange={(newValue) => onChangeAnswer([{ valueAttachment: newValue }])}
           />
@@ -217,7 +249,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.reference:
       formComponent = (
         <ReferenceInput
-          name={name}
+          name={inputId}
           required={props.required ?? item.required}
           targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
           searchCriteria={getQuestionnaireItemReferenceFilter(item, formState?.subject, formState?.encounter)}
@@ -230,7 +262,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       formComponent = (
         <QuantityInput
           path=""
-          name={name}
+          name={inputId}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(newValue) => onChangeAnswer([{ valueQuantity: newValue }])}
@@ -243,7 +275,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       if (isCheckboxChoice(item)) {
         formComponent = (
           <QuestionnaireCheckboxInput
-            name={name}
+            name={inputId}
             item={item}
             required={props.required ?? item.required}
             initial={initial}
@@ -255,7 +287,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         // defaults answervalueset items to dropdown and everything else to radio button
         formComponent = (
           <QuestionnaireDropdownInput
-            name={name}
+            name={inputId}
             item={item}
             required={props.required ?? item.required}
             initial={initial}
@@ -266,7 +298,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       } else {
         formComponent = (
           <QuestionnaireRadioButtonInput
-            name={name}
+            name={inputId}
             item={item}
             required={props.required ?? item.required}
             initial={initial}
@@ -361,7 +393,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
     if (item.answerOption) {
       for (const option of item.answerOption) {
         const optionValue = getItemAnswerOptionValue(option);
-        data.push(typedValueToString(optionValue) as string);
+        data.push(typedValueToString(optionValue));
       }
     }
     return (

@@ -4,6 +4,7 @@ import type { TokensContext } from '@medplum/core';
 import {
   badRequest,
   convertToSearchableTokens,
+  EMPTY,
   evalFhirPathTyped,
   getSearchParameterDetails,
   OperationOutcomeError,
@@ -54,7 +55,7 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
 
   // Check for case-insensitive types first, as they are more specific than case-sensitive types
   for (const elementDefinition of details.elementDefinitions) {
-    for (const type of elementDefinition.type ?? []) {
+    for (const type of elementDefinition.type ?? EMPTY) {
       if (type.code === PropertyType.ContactPoint) {
         return TokenIndexTypes.CASE_INSENSITIVE;
       }
@@ -67,7 +68,7 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
   // be more efficient in the common case than always exhaustively looping through every
   // detail.elementDefinitions.type to see if "ContactPoint" is still to come.
   for (const elementDefinition of details.elementDefinitions) {
-    for (const type of elementDefinition.type ?? []) {
+    for (const type of elementDefinition.type ?? EMPTY) {
       if (
         type.code === PropertyType.Identifier ||
         type.code === PropertyType.CodeableConcept ||

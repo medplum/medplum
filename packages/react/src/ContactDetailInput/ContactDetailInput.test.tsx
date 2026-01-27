@@ -17,11 +17,11 @@ describe('ContactDetailInput', () => {
       />
     );
 
-    const system = screen.getByTestId('system') as HTMLInputElement;
+    const system = screen.getByTestId<HTMLInputElement>('system');
     expect(system).toBeDefined();
     expect(system.value).toEqual('email');
 
-    const value = screen.getByPlaceholderText('Value') as HTMLInputElement;
+    const value = screen.getByPlaceholderText<HTMLInputElement>('Value');
     expect(value).toBeDefined();
     expect(value.value).toEqual('abc@example.com');
   });

@@ -78,7 +78,7 @@ The Quick Search Bar can be used to navigate to specific instances of [ServiceRe
 
 The profile selector can be accessed by clicking the arrow next to your name on the top-right corner of the screen.
 
-By clicking "Add another account", users can be log into multiple projects simultaneously. The profile selector will display all projects that the user is currently logged into so that users can quickly switch between projects.
+By clicking "Switch to another project", users can be log into multiple projects simultaneously. The profile selector will display all projects that the user is currently logged into so that users can quickly switch between projects.
 
 "Account Settings" can be used to navigate to the user's [profile resource](/docs/app/invite) page.
 

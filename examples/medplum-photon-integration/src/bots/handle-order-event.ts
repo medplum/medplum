@@ -29,7 +29,7 @@ export async function handler(
     throw new Error('No linked patient');
   }
 
-  const dispenses = handleOrderCreatedEvent(data as OrderCreatedData, PHOTON_AUTH_TOKEN, medplum, patient);
+  const dispenses = handleOrderCreatedEvent(data, PHOTON_AUTH_TOKEN, medplum, patient);
   return dispenses;
 }
 

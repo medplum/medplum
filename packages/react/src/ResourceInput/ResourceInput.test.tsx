@@ -63,7 +63,7 @@ describe('ResourceInput', () => {
       placeholder: 'Test',
     });
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test');
 
     // Enter "Simpson"
     await act(async () => {
@@ -88,7 +88,7 @@ describe('ResourceInput', () => {
       onChange,
     });
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test');
 
     // Enter "Simpson"
     await act(async () => {
@@ -173,7 +173,7 @@ describe('ResourceInput', () => {
     expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
 
-    const clearAllButton = screen.getByTitle('Clear all') as HTMLImageElement;
+    const clearAllButton = screen.getByTitle('Clear all');
     expect(clearAllButton).toBeInTheDocument();
 
     await act(async () => {
@@ -205,7 +205,7 @@ describe('ResourceInput', () => {
       onChange: jest.fn(),
     });
 
-    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test');
 
     // Enter "Simpson"
     await act(async () => {

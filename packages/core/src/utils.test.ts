@@ -48,6 +48,7 @@ import {
   getReferenceString,
   getWebSocketUrl,
   isComplexTypeCode,
+  isDefined,
   isEmpty,
   isLowerCase,
   isPopulated,
@@ -67,6 +68,7 @@ import {
   setCodeBySystem,
   setIdentifier,
   singularize,
+  sleep,
   sortStringArray,
   splitN,
   stringify,
@@ -1323,6 +1325,15 @@ describe('Core Utils', () => {
     expect(result).toStrictEqual(observations[0]);
   });
 
+  test('sleep with abort signal', async () => {
+    const controller = new AbortController();
+    const promise = sleep(100, { signal: controller.signal });
+
+    controller.abort();
+
+    await expect(promise).rejects.toThrow('The operation was aborted');
+  });
+
   test('splitN', () => {
     expect(
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
@@ -1659,4 +1670,19 @@ describe('escapeHtml', () => {
   test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
 
   test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
+});
+
+describe('isDefined', () => {
+  test('is false for null values', () => expect(isDefined(null)).toStrictEqual(false));
+  test('is false for undefined values', () => expect(isDefined(undefined)).toStrictEqual(false));
+  test('is true for other falsey values', () => {
+    expect(isDefined('')).toStrictEqual(true);
+    expect(isDefined(0)).toStrictEqual(true);
+    expect(isDefined(false)).toStrictEqual(true);
+  });
+  test('when used in Array#filter it refines the type', () => {
+    const input: (number | null | undefined)[] = [0, undefined, 1, null, 2];
+    const result: number[] = input.filter(isDefined);
+    expect(result).toEqual([0, 1, 2]);
+  });
 });

@@ -3,7 +3,6 @@
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
-import type { ProfileResource } from '@medplum/core';
 import type {
   Communication,
   Patient,
@@ -27,13 +26,33 @@ interface NewTopicDialogProps {
 export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
   const { subject, opened, onClose, onSubmit } = props;
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
+  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
+
   const [topic, setTopic] = useState('');
-  const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>([]);
+  const [practitioners, setPractitioners] = useState<Reference<Practitioner>[]>(
+    profile?.resourceType === 'Practitioner' ? [createReference(profile) as Reference<Practitioner>] : []
+  );
   const [patient, setPatient] = useState<Reference<Patient> | undefined>(
     subject ? createReference(subject as Patient) : undefined
   );
-  const profile = useMedplumProfile();
-  const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
+
+  // Create initial QuestionnaireResponse with current practitioner as default
+  const initialResponse: QuestionnaireResponse | undefined = useMemo(() => {
+    if (profile?.resourceType === 'Practitioner') {
+      return {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
+          {
+            linkId: 'q1',
+            answer: [{ valueReference: createReference(profile) as Reference<Practitioner> }],
+          },
+        ],
+      };
+    }
+    return undefined;
+  }, [profile]);
 
   const handleSubmit = async (): Promise<void> => {
     if (!patient) {
@@ -94,6 +113,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
 
           <QuestionnaireForm
             questionnaire={questionnaire}
+            questionnaireResponse={initialResponse}
             excludeButtons={true}
             onChange={(value: QuestionnaireResponse) => {
               const references =

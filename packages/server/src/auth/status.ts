@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest } from '@medplum/core';
+import { badRequest, singularize } from '@medplum/core';
 import type { Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { param } from 'express-validator';
@@ -19,7 +19,7 @@ export const statusValidator = makeValidationMiddleware([param('login').isUUID()
 export async function statusHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getSystemRepo();
 
-  const loginId = req.params.login;
+  const loginId = singularize(req.params.login) ?? '';
   const login = await systemRepo.readResource<Login>('Login', loginId);
 
   if (login.granted) {

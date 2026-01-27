@@ -51,7 +51,7 @@ describe('ResourcePage', () => {
     });
 
     try {
-      await medplum.readResource('Practitioner', practitioner.id as string);
+      await medplum.readResource('Practitioner', practitioner.id);
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -116,7 +116,7 @@ describe('ResourcePage', () => {
 
     // Select "Test Bot" in the bot input field
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Test"
     await act(async () => {
@@ -195,7 +195,7 @@ describe('ResourcePage', () => {
 
     // Select "Test Bot" in the bot input field
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Now let's create a subscription without any extension (fires for all interactions)
     // Select "Test Bot" in the bot input field

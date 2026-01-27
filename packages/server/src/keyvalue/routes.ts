@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { getStatus, normalizeErrorString, normalizeOperationOutcome, singularize } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { authenticateRequest } from '../oauth/middleware';
@@ -10,8 +10,9 @@ export const keyValueRouter = Router();
 keyValueRouter.use(authenticateRequest);
 
 keyValueRouter.get('/:key', async (req: Request, res: Response) => {
+  const key = singularize(req.params.key) ?? '';
   try {
-    const value = await getValue(req.params.key);
+    const value = await getValue(key);
     res.status(200).send(value);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
@@ -20,8 +21,9 @@ keyValueRouter.get('/:key', async (req: Request, res: Response) => {
 });
 
 keyValueRouter.put('/:key', async (req: Request, res: Response) => {
+  const key = singularize(req.params.key) ?? '';
   try {
-    await setValue(req.params.key, req.body);
+    await setValue(key, req.body);
     res.sendStatus(204);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
@@ -30,8 +32,9 @@ keyValueRouter.put('/:key', async (req: Request, res: Response) => {
 });
 
 keyValueRouter.delete('/:key', async (req: Request, res: Response) => {
+  const key = singularize(req.params.key) ?? '';
   try {
-    await deleteValue(req.params.key);
+    await deleteValue(key);
     res.sendStatus(204);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);

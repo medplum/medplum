@@ -13,7 +13,7 @@ import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
 
 const OPEN_WIDTH = 250;
-const CLOSED_WIDTH = 70;
+const CLOSED_WIDTH = 59;
 
 export interface AppShellProps {
   readonly logo: ReactNode;
@@ -27,6 +27,8 @@ export interface AppShellProps {
   readonly resourceTypeSearchDisabled?: boolean;
   readonly notifications?: ReactNode;
   readonly layoutVersion?: 'v1' | 'v2';
+  readonly showLayoutVersionToggle?: boolean;
+  readonly spotlightPatientsOnly?: boolean;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -85,8 +87,10 @@ export function AppShell(props: AppShellProps): JSX.Element {
         resourceTypeSearchDisabled={true}
         opened={navbarOpen}
         spotlightEnabled={true}
+        patientsOnly={props.spotlightPatientsOnly}
         userMenuEnabled={true}
         version={props.version}
+        showLayoutVersionToggle={props.showLayoutVersionToggle}
       />
     ) : undefined;
   } else {
@@ -122,6 +126,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           closeNavbar={closeNavbar}
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
+          patientsOnly={props.spotlightPatientsOnly}
         />
       ) : undefined;
   }

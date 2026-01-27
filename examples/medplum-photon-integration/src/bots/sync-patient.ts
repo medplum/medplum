@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getCodeBySystem, getReferenceString } from '@medplum/core';
+import { EMPTY, getCodeBySystem, getReferenceString } from '@medplum/core';
 import type { BotEvent, MedplumClient, PatchOperation } from '@medplum/core';
 import type { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import type {
@@ -182,11 +182,7 @@ export async function createAllergyInputs(
 ): Promise<PhotonAllergenInput[]> {
   const allergyInputs: PhotonAllergenInput[] = [];
 
-  if (!allergies) {
-    return [];
-  }
-
-  for (const allergy of allergies) {
+  for (const allergy of allergies ?? EMPTY) {
     const photonAllergyId = await getPhotonAllergyId(allergy, authToken);
     if (!photonAllergyId) {
       continue;

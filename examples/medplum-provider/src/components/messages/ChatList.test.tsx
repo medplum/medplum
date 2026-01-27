@@ -45,7 +45,7 @@ const mockLastCommunication1: Communication = {
   sent: '2024-01-01T12:00:00Z',
 };
 
-const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatList', () => {
   let medplum: MockClient;
@@ -67,11 +67,7 @@ describe('ChatList', () => {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <ChatList
-              threads={threads}
-              selectedCommunication={selectedCommunication}
-              onSelectedItem={mockOnSelectedItem}
-            />
+            <ChatList threads={threads} selectedCommunication={selectedCommunication} getThreadUri={mockGetThreadUri} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -120,7 +116,7 @@ describe('ChatList', () => {
     expect(screen.getByText('Topic 1')).toBeInTheDocument();
   });
 
-  test('renders link with correct href from onSelectedItem', async () => {
+  test('renders link with correct href from getThreadUri', async () => {
     setup([[mockCommunication1, mockLastCommunication1]]);
     await waitFor(() => {
       const link = screen.getByText('John Doe').closest('a');

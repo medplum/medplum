@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { IssueSeverity, MedplumClient, MedplumClientOptions, WithId } from '@medplum/core';
-import { ContentType, isOk, isUUID } from '@medplum/core';
+import { ContentType, EMPTY, isOk, isUUID } from '@medplum/core';
 import type { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
@@ -367,7 +367,7 @@ export async function resolveAgentReference(
 
 export function parseAgentBulkOpBundle(bundle: Bundle<Parameters>): AgentBulkOpResponse[] {
   const responses = [];
-  for (const entry of bundle.entry ?? []) {
+  for (const entry of bundle.entry ?? EMPTY) {
     if (!entry.resource) {
       throw new Error('No Parameter resource found in entry');
     }

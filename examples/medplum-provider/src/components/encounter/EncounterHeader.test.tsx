@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
+import type { WithId } from '@medplum/core';
+import type { Encounter, Practitioner } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import type { Encounter, Practitioner } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { EncounterHeader } from './EncounterHeader';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ChartNoteStatus } from '../../types/encounter';
+import { EncounterHeader } from './EncounterHeader';
 
-const mockEncounter: Encounter = {
+const mockEncounter: WithId<Encounter> = {
   resourceType: 'Encounter',
   id: 'encounter-123',
   status: 'in-progress',
@@ -33,7 +34,6 @@ describe('EncounterHeader', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(DrAliceSmith);
   });
 
   const setup = (props: Partial<Parameters<typeof EncounterHeader>[0]> = {}): ReturnType<typeof render> => {

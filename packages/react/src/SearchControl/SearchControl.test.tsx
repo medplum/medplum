@@ -83,7 +83,7 @@ describe('SearchControl', () => {
 
     const props = {
       search,
-      onLoad: jest.fn() as jest.Mock,
+      onLoad: jest.fn(),
     };
 
     const { rerender } = await setup(props);
@@ -117,7 +117,7 @@ describe('SearchControl', () => {
 
     const props = {
       search,
-      onLoad: jest.fn() as jest.Mock,
+      onLoad: jest.fn(),
     };
 
     const { rerender } = await setup(props);

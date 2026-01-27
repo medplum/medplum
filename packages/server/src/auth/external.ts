@@ -38,7 +38,7 @@ export interface ExternalAuthState {
   redirectUri?: string;
 }
 
-export const externalCallbackHandler = async (req: Request, res: Response): Promise<void> => {
+export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
   const code = req.query.code as string;
   if (!code) {
     sendOutcome(res, badRequest('Missing code'));
@@ -54,7 +54,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let body: ExternalAuthState;
   try {
     body = JSON.parse(state);
-  } catch (_err) {
+  } catch {
     sendOutcome(res, badRequest('Invalid state'));
     return;
   }
@@ -143,13 +143,13 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
   if (login.codeChallenge) {
-    redirectUrl.searchParams.set('code_challenge', login.codeChallenge as string);
+    redirectUrl.searchParams.set('code_challenge', login.codeChallenge);
   }
   if (login.codeChallengeMethod) {
     redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
   }
   res.redirect(redirectUrl.toString());
-};
+}
 
 /**
  * Tries to find the identity provider configuration.
@@ -206,15 +206,15 @@ async function verifyExternalCode(
   }
 
   if (idp.tokenAuthMethod === OAuthTokenAuthMethod.ClientSecretPost) {
-    params.append('client_id', idp.clientId as string);
-    params.append('client_secret', idp.clientSecret as string);
+    params.append('client_id', idp.clientId);
+    params.append('client_secret', idp.clientSecret);
   } else {
     // Default to client_secret_basic
     headers.Authorization = `Basic ${encodeBase64(idp.clientId + ':' + idp.clientSecret)}`;
   }
 
   try {
-    const response = await fetch(idp.tokenUrl as string, {
+    const response = await fetch(idp.tokenUrl, {
       method: 'POST',
       headers,
       body: params.toString(),

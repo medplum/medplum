@@ -37,12 +37,12 @@ export function SignInPage(): JSX.Element {
     >
       <Logo size={32} />
       {searchParams.get('project') !== 'new' && (
-        <Title order={3} py="lg">
+        <Title order={3} py="lg" ta="center">
           Sign in to {getAppName()}
         </Title>
       )}
       {searchParams.get('project') === 'new' && (
-        <Title order={3} py="lg">
+        <Title order={3} py="lg" ta="center">
           Sign in again to create a new project
         </Title>
       )}

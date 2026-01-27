@@ -87,7 +87,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name');
 
     // Enter random text
     await act(async () => {
@@ -116,7 +116,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name');
 
     // Enter random text
     await act(async () => {
@@ -152,8 +152,8 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
-    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *');
+    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name');
 
     await act(async () => {
       fireEvent.focus(menuInput);
@@ -202,8 +202,8 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
-    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *');
+    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name');
 
     await act(async () => {
       fireEvent.focus(menuInput);

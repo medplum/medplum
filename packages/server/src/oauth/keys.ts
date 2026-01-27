@@ -49,6 +49,12 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
    * For example, "Patient/123" or "Practitioner/456".
    */
   profile: string;
+
+  /**
+   * User email address.
+   * Included when the 'email' scope is requested and the user is a User resource.
+   */
+  email?: string;
 }
 
 export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {

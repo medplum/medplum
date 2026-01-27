@@ -60,7 +60,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const handleSubmit = useCallback(
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
-      const format = data.format as keyof typeof formats;
+      const format = data.format;
       const { operation, type, contentType, extension } = formats[format];
       const url = medplum.fhirUrl('Patient', patientId, operation);
       const params = {} as Record<string, unknown>;

@@ -65,7 +65,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.click(screen.getByLabelText('Add item'));
     });
 
-    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
+    const input = await screen.findByRole('searchbox');
 
     // Enter random text
     await act(async () => {
@@ -111,7 +111,7 @@ describe('PatientSummary - Medications', () => {
       fireEvent.click(screen.getByText('Tylenol'));
     });
 
-    const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
+    const input = await screen.findByRole('searchbox');
 
     // Enter random text
     await act(async () => {

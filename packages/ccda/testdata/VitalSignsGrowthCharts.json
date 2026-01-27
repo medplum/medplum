@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -130,7 +130,7 @@
           "system": "http://unitsofmeasure.org",
           "code": "%"
         },
-        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "effectiveDateTime": "2014-05-20T19:36:05-06:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -192,7 +192,7 @@
           "system": "http://unitsofmeasure.org",
           "code": "%"
         },
-        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "effectiveDateTime": "2014-05-20T19:36:05-06:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -254,7 +254,7 @@
           "system": "http://unitsofmeasure.org",
           "code": "%"
         },
-        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "effectiveDateTime": "2015-11-20T19:36:05-06:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -316,7 +316,7 @@
           "system": "http://unitsofmeasure.org",
           "code": "%"
         },
-        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "effectiveDateTime": "2015-11-20T19:36:05-06:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -378,7 +378,7 @@
           "system": "http://unitsofmeasure.org",
           "code": "%"
         },
-        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "effectiveDateTime": "2015-11-20T19:36:05-06:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
@@ -424,7 +424,7 @@
           "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
           "display": "Katherine Madison"
         },
-        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "effectiveDateTime": "2014-05-20T19:36:05-06:00",
         "hasMember": [
           {
             "reference": "Observation/701c0a9a-d25c-4d74-9149-5659eb446557",
@@ -474,7 +474,7 @@
           "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
           "display": "Katherine Madison"
         },
-        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "effectiveDateTime": "2015-11-20T19:36:05-06:00",
         "hasMember": [
           {
             "reference": "Observation/15c8bd35-b9dc-4da7-a13d-70b9618bc945",

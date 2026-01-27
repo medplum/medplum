@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { allOk, badRequest, createReference, resolveId } from '@medplum/core';
-import type { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
@@ -30,12 +30,12 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
+  if (!timingSafeEqualStr(pcr.secret, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
 
-  const user = await systemRepo.readReference(pcr.user as Reference<User>);
+  const user = await systemRepo.readReference(pcr.user);
 
   await systemRepo.withTransaction(async () => {
     await systemRepo.updateResource<User>({ ...user, emailVerified: true });

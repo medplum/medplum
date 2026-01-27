@@ -111,7 +111,7 @@ async function fetchRelatedResources(
     await Promise.all(
       diagnosticReport.result.map(async (obsRef) => {
         try {
-          const obs = await medplum.readReference(obsRef as Reference<Observation>);
+          const obs = await medplum.readReference(obsRef);
           observations.push(obs);
 
           // If this observation has child observations, fetch them as well
@@ -138,7 +138,7 @@ async function fetchRelatedResources(
   let specimen: Specimen | undefined;
   if (serviceRequest?.specimen && serviceRequest.specimen.length > 0) {
     try {
-      specimen = await medplum.readReference(serviceRequest.specimen[0] as Reference<Specimen>);
+      specimen = await medplum.readReference(serviceRequest.specimen[0]);
     } catch (err) {
       console.warn('Could not find Specimen', err);
     }

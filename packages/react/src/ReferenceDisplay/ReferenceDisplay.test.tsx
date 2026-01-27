@@ -26,13 +26,13 @@ describe('ReferenceDisplay', () => {
   test('Renders reference', () => {
     setup(<ReferenceDisplay value={{ reference: 'Organization/123' }} />);
     expect(screen.getByText('Organization/123')).toBeDefined();
-    expect((screen.getByText('Organization/123') as HTMLAnchorElement).href).toMatch('Organization/123');
+    expect(screen.getByText<HTMLAnchorElement>('Organization/123').href).toMatch('Organization/123');
   });
 
   test('Renders reference and display', () => {
     setup(<ReferenceDisplay value={{ reference: 'Organization/123', display: 'Foo' }} />);
     expect(screen.getByText('Foo')).toBeDefined();
-    expect((screen.getByText('Foo') as HTMLAnchorElement).href).toMatch('Organization/123');
+    expect(screen.getByText<HTMLAnchorElement>('Foo').href).toMatch('Organization/123');
   });
 
   test('Renders unknown properties', () => {

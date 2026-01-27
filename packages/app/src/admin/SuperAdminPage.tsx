@@ -176,20 +176,7 @@ export function SuperAdminPage(): JSX.Element {
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
         properly.
       </p>
-      <Form onSubmit={reindexResourceType}>
-        <Stack>
-          <FormSection title="Resource Type" htmlFor="resourceType">
-            <TextInput id="resourceType" name="resourceType" placeholder="Reindex Resource Type" />
-          </FormSection>
-          <FormSection title="Search Filter" htmlFor="filter">
-            <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
-          </FormSection>
-          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
-            <MaxResourceVersionInput />
-          </FormSection>
-          <Button type="submit">Reindex</Button>
-        </Stack>
-      </Form>
+      <ReindexForm onSubmit={reindexResourceType} />
       <Divider my="lg" />
       <Title order={2}>Purge Resources</Title>
       <p>As system generated resources accumulate, the system may require a purge to remove old resources.</p>
@@ -306,6 +293,115 @@ function MaxResourceVersionInput(): JSX.Element {
         <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
       )}
     </>
+  );
+}
+
+function ReindexForm({ onSubmit }: { readonly onSubmit: (formData: Record<string, string>) => void }): JSX.Element {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  function handleSubmit(formData: Record<string, string>): void {
+    const cleanedData: Record<string, string> = {};
+    for (const [key, value] of Object.entries(formData)) {
+      if (value !== '') {
+        cleanedData[key] = value;
+      }
+    }
+    onSubmit(cleanedData);
+  }
+
+  return (
+    <Form onSubmit={handleSubmit}>
+      <Stack>
+        <FormSection title="Resource Type" htmlFor="resourceType">
+          <TextInput id="resourceType" name="resourceType" placeholder="Reindex Resource Type" />
+        </FormSection>
+        <FormSection title="Search Filter" htmlFor="filter">
+          <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
+        </FormSection>
+        <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+          <MaxResourceVersionInput />
+        </FormSection>
+
+        <Button variant="subtle" size="xs" onClick={() => setShowAdvanced(!showAdvanced)}>
+          {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+        </Button>
+
+        {showAdvanced && (
+          <Stack gap="sm">
+            <Grid>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="batchSize"
+                  label="Resources per batch"
+                  description={<span>default: 500</span>}
+                  placeholder="500"
+                  min={20}
+                  max={1000}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="searchStatementTimeout"
+                  label="Search query timeout (ms)"
+                  description={<span>default: 3,600,000 (1 hour)</span>}
+                  placeholder="3600000"
+                  min={1000}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="upsertStatementTimeout"
+                  label="Upsert query timeout (ms)"
+                  description={<span>default: server `database.queryTimeout`</span>}
+                  placeholder="database.queryTimeout"
+                  min={1000}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="delayBetweenBatches"
+                  label="Delay between batches (ms)"
+                  description={<span>default: 0</span>}
+                  placeholder="0"
+                  min={0}
+                  max={60000}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="progressLogThreshold"
+                  label="Log progress every N resources"
+                  description={<span>default: 50,000</span>}
+                  placeholder="50000"
+                  min={1}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="endTimestampBufferMinutes"
+                  label="End timestamp buffer (minutes)"
+                  description={<span>default: 5</span>}
+                  placeholder="5"
+                  min={1}
+                />
+              </Grid.Col>
+              <Grid.Col span={6}>
+                <NumberInput
+                  name="maxIterationAttempts"
+                  label="Max iteration attempts"
+                  description={<span>default: 3</span>}
+                  placeholder="3"
+                  min={1}
+                  max={20}
+                />
+              </Grid.Col>
+            </Grid>
+          </Stack>
+        )}
+
+        <Button type="submit">Reindex</Button>
+      </Stack>
+    </Form>
   );
 }
 

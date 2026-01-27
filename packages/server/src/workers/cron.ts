@@ -173,7 +173,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
   }
 
   // Days of the week
-  const days = timing.repeat.dayOfWeek ? timing.repeat.dayOfWeek : undefined;
+  const days = timing.repeat.dayOfWeek;
   if (days) {
     const daysCronFormat = [];
     for (const day of days) {

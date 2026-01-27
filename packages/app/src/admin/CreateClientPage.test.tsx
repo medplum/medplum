@@ -89,7 +89,7 @@ describe('CreateClientPage', () => {
       });
     });
 
-    const input = screen.getByPlaceholderText('Access Policy') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Access Policy');
 
     // Enter "Example Access Policy"
     await act(async () => {

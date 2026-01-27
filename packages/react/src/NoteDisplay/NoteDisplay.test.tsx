@@ -48,4 +48,12 @@ describe('NoteDisplay', () => {
 
     expect(screen.getByText('Medplum Bots')).toBeDefined();
   });
+
+  test('Returns null if value is undefined', async () => {
+    await act(async () => {
+      setup({ value: undefined });
+    });
+
+    expect(screen.queryByRole('blockquote')).toBeNull();
+  });
 });

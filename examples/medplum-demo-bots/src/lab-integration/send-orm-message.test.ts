@@ -122,6 +122,7 @@ describe('Send to Partner Lab', () => {
     vi.clearAllMocks();
   });
 
+  // Skip test
   test.skip('Test Connection', async (ctx: any) => {
     try {
       await handler(ctx.medplum, {

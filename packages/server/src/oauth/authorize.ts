@@ -61,7 +61,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   let client = undefined;
   try {
     client = await getClientApplication(params.client_id as string);
-  } catch (_err) {
+  } catch {
     res.status(400).send('Client not found');
     return false;
   }
@@ -167,7 +167,7 @@ function isValidAudience(aud: string | undefined): boolean {
     const audUrl = new URL(aud);
     const serverUrl = new URL(getConfig().baseUrl);
     return audUrl.protocol === serverUrl.protocol && audUrl.host === serverUrl.host;
-  } catch (_err) {
+  } catch {
     return false;
   }
 }
@@ -182,7 +182,7 @@ async function isValidLaunch(launch: string): Promise<boolean> {
   try {
     await systemRepo.readResource('SmartAppLaunch', launch);
     return true;
-  } catch (_err) {
+  } catch {
     return false;
   }
 }

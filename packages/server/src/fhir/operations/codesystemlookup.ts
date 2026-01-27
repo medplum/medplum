@@ -23,14 +23,15 @@ type CodeSystemLookupParameters = {
 
 export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.system, { version: params.version });
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.system, { version: params.version });
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource('CodeSystem', params.coding.system, { version: params.version });
+    codeSystem = await findTerminologyResource(repo, 'CodeSystem', params.coding.system, { version: params.version });
   } else {
     return [badRequest('No code system specified')];
   }

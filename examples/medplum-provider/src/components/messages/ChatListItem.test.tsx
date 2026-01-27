@@ -32,7 +32,7 @@ const mockLastCommunication: Communication = {
   ],
 };
 
-const mockOnSelectedItem = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatListItem', () => {
   let medplum: MockClient;
@@ -40,7 +40,6 @@ describe('ChatListItem', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {
@@ -52,7 +51,7 @@ describe('ChatListItem', () => {
               topic={topic}
               lastCommunication={lastCommunication}
               isSelected={isSelected}
-              onSelectedItem={mockOnSelectedItem}
+              getThreadUri={mockGetThreadUri}
             />
           </MantineProvider>
         </MedplumProvider>
@@ -133,7 +132,7 @@ describe('ChatListItem', () => {
     });
   });
 
-  test('generates correct link from onSelectedItem', async () => {
+  test('generates correct link from getThreadUri', async () => {
     setup(mockTopic, mockLastCommunication, false);
 
     await waitFor(() => {

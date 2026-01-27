@@ -108,7 +108,7 @@ export async function searchPatientCompartment(
   search?: Partial<SearchRequest>
 ): Promise<Bundle<WithId<Resource>>> {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = search?.types ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  const types = search?.types ?? flatMapFilter(resourceList, (r) => (r.code === 'Binary' ? undefined : r.code));
   types.push(target.resourceType);
   sortStringArray(types);
 

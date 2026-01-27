@@ -105,17 +105,40 @@ describe('TasksTab', () => {
       expect(screen.getByText('Test Task')).toBeInTheDocument();
     });
 
-    const link = screen.getByRole('link');
-    expect(link).toHaveAttribute('href', '/Patient/patient-123/Task/task-123');
+    const links = screen.getAllByRole('link');
+    const taskLink = links.find((link) => link.getAttribute('href')?.includes('/Patient/patient-123/Task/task-123'));
+    expect(taskLink).toBeDefined();
+    // getTaskUri includes the query string, so check that href starts with the expected path
+    expect(taskLink?.getAttribute('href')).toMatch(/^\/Patient\/patient-123\/Task\/task-123/);
   });
 
   test('handles selected task from URL parameter', async () => {
     await medplum.createResource(mockTask);
-    setup('/Patient/patient-123/Task/task-123');
+    vi.spyOn(medplum, 'search').mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      total: 1,
+      entry: [{ resource: mockTask }],
+    } as any);
+    vi.spyOn(medplum, 'readResource').mockResolvedValue(mockTask as any);
 
-    await waitFor(() => {
-      expect(screen.getByText('Properties')).toBeInTheDocument();
-    });
+    setup(
+      '/Patient/patient-123/Task/task-123?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-123'
+    );
+
+    await waitFor(
+      () => {
+        expect(medplum.readResource).toHaveBeenCalledWith('Task', 'task-123');
+      },
+      { timeout: 3000 }
+    );
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Properties')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('handles different patient IDs', async () => {
@@ -132,12 +155,17 @@ describe('TasksTab', () => {
       entry: [{ resource: taskForDifferentPatient }],
     } as any);
 
-    setup('/Patient/patient-456/Task');
+    setup('/Patient/patient-456/Task?_sort=-_lastUpdated&_count=20&_total=accurate&patient=Patient%2Fpatient-456');
 
     await waitFor(() => {
-      const link = screen.getByRole('link');
-      expect(link).toHaveAttribute('href', '/Patient/patient-456/Task/task-456');
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
     });
+
+    const links = screen.getAllByRole('link');
+    const taskLink = links.find((link) => link.getAttribute('href')?.includes('/Patient/patient-456/Task/task-456'));
+    expect(taskLink).toBeDefined();
+    // getTaskUri includes the query string, so check that href starts with the expected path
+    expect(taskLink?.getAttribute('href')).toMatch(/^\/Patient\/patient-456\/Task\/task-456/);
   });
 
   test('shows empty state when no tasks found', async () => {
@@ -151,7 +179,7 @@ describe('TasksTab', () => {
     setup();
 
     await waitFor(() => {
-      expect(screen.getByText('No tasks found')).toBeInTheDocument();
+      expect(screen.getByText('No tasks available.')).toBeInTheDocument();
     });
   });
 });

@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -66,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -91,8 +93,8 @@
           "display": "Katherine Madison"
         },
         "performedPeriod": {
-          "start": "2014-02-03T09:22:05-0700",
-          "end": "2014-02-03T11:15:14-0700"
+          "start": "2014-02-03T09:22:05-07:00",
+          "end": "2014-02-03T11:15:14-07:00"
         },
         "bodySite": [
           {

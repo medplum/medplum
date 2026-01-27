@@ -105,7 +105,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   if (req.params.id) {
     codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, {
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
       ownProjectOnly: !isSuperAdmin,
     });
   } else {

@@ -40,7 +40,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search');
     await act(async () => {
       fireEvent.change(input, { target: { value: 'prod' } });
     });
@@ -63,7 +63,7 @@ describe('ChooseProfileForm', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByPlaceholderText('Search') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search');
     await act(async () => {
       fireEvent.change(input, { target: { value: 'xyz' } });
     });

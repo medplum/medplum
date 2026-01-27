@@ -14,7 +14,7 @@ export const migration: ReindexPostDeployMigration = {
   prepareJobData(asyncJob: WithId<AsyncJob>) {
     // Also reindex Task, which was placed into the Patient compartment in a previous migration
     const resourceTypes: ResourceType[] = ['ServiceRequest', 'Task'];
-    return prepareReindexJobData(resourceTypes, asyncJob.id, undefined, maxResourceVersion);
+    return prepareReindexJobData(resourceTypes, asyncJob.id, { maxResourceVersion });
   },
   run: async (repo, job, jobData) => {
     return new ReindexJob(repo).execute(job, jobData);

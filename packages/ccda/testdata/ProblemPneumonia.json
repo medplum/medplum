@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -66,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -84,13 +86,19 @@
         "name": [
           {
             "family": "Sixer",
-            "given": ["Heartly"],
-            "suffix": ["MD"]
+            "given": [
+              "Heartly"
+            ],
+            "suffix": [
+              "MD"
+            ]
           }
         ],
         "address": [
           {
-            "line": ["6666 StreetName St."],
+            "line": [
+              "6666 StreetName St."
+            ],
             "city": "Silver Spring",
             "state": "MD",
             "postalCode": "20901",
@@ -130,13 +138,19 @@
         "name": [
           {
             "family": "Sixer",
-            "given": ["Heartly"],
-            "suffix": ["MD"]
+            "given": [
+              "Heartly"
+            ],
+            "suffix": [
+              "MD"
+            ]
           }
         ],
         "address": [
           {
-            "line": ["6666 StreetName St."],
+            "line": [
+              "6666 StreetName St."
+            ],
             "city": "Silver Spring",
             "state": "MD",
             "postalCode": "20901",
@@ -174,7 +188,9 @@
           }
         ],
         "meta": {
-          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
+          ]
         },
         "clinicalStatus": {
           "coding": [
@@ -218,7 +234,7 @@
           "display": "Katherine Madison"
         },
         "onsetDateTime": "2014-02-27T00:00:00Z",
-        "recordedDate": "2014-03-02T12:45:36-0500",
+        "recordedDate": "2014-03-02T12:45:36-05:00",
         "recorder": {
           "reference": "Practitioner/3dfd1be3-1806-48e9-86dd-7282b2cae74f",
           "display": "Heartly Sixer MD"

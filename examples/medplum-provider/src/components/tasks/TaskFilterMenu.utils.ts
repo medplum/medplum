@@ -19,9 +19,10 @@ export const TASK_STATUSES: Task['status'][] = [
   'accepted',
   'rejected',
   'ready',
-  'cancelled',
   'in-progress',
   'on-hold',
   'failed',
   'completed',
 ];
+
+export const TASK_PRIORITIES: Task['priority'][] = ['routine', 'urgent', 'asap', 'stat'];

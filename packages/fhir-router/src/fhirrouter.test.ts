@@ -449,4 +449,10 @@ describe('FHIR Router', () => {
     expect(resource).toMatchObject(patient);
     expect(resource?.meta?.account?.reference).toStrictEqual('Organization/123');
   });
+
+  test('Custom system-level operation returns not found', async () => {
+    const [res, resource] = await router.handleRequest(makeSimpleRequest('POST', '/$custom-operation', {}), repo);
+    expect(res).toMatchObject(notFound);
+    expect(resource).toBeUndefined();
+  });
 });

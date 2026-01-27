@@ -111,7 +111,7 @@ describe('HeaderSearchInput', () => {
   test('Use autocomplete', async () => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Simpson"
     await act(async () => {
@@ -141,7 +141,7 @@ describe('HeaderSearchInput', () => {
   test('Search by UUID', async () => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "00000000-0000-0000-0000-000000000000"
     await act(async () => {
@@ -171,7 +171,7 @@ describe('HeaderSearchInput', () => {
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter the search term
     // Can be patient name, patient identifier, or service request identifier
@@ -200,7 +200,7 @@ describe('HeaderSearchInput', () => {
   test('Sort by relevance', async () => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "Simpson"
     await act(async () => {
@@ -225,7 +225,7 @@ describe('HeaderSearchInput', () => {
   test('Max results', async () => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "many"
     await act(async () => {
@@ -250,7 +250,7 @@ describe('HeaderSearchInput', () => {
   test('Empty strings', async () => {
     setup();
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter "empty"
     await act(async () => {

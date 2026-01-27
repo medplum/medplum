@@ -8,7 +8,7 @@ import type { JSX } from 'react';
 export function DoseSpotIcon(): JSX.Element {
   const unreadCount = useDoseSpotNotifications();
 
-  const icon = <IconPill size={20} color="gray" />;
+  const icon = <IconPill size={20} />;
 
   return unreadCount ? (
     <Indicator inline label={unreadCount.toLocaleString()} size={16} offset={2} position="bottom-end" color="red">

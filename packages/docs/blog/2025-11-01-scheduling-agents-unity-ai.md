@@ -19,7 +19,7 @@ This is a transcript summary of the October 2025 webinar with Medplum and Unity 
 
 **Reshma:** At Medplum, we often talk about the "terrible choice" healthcare developers face: invest heavily to build from scratch or fight with rigid, off-the-shelf software. Unity AI demonstrates **a third path**—building exceptional products on top of pre-built primitives. Here is a recap of how Unity AI is using Medplum and `FHIR` to coordinate scarce resources.
 
-## **The Core Problem: Coordination and Scarcity**
+## The Core Problem: Coordination and Scarcity
 
 **Cody:** Healthcare operations are fundamentally about **the coordination of scarce resources**—staff, equipment time, and physical space. While clinical algorithms for treatment are well-established, the logistics of getting the right patient to the right place at the right time remains a massive challenge.
 
@@ -32,7 +32,7 @@ This is a transcript summary of the October 2025 webinar with Medplum and Unity 
 **Cody:** Our thesis is that voice agents represent a solution to this communication constraint. Unlike humans, AI agents are **infinitely scalable**. They can react instantly to cancellations, reach more people simultaneously, and continuously work to fill schedule gaps.
 
 
-## **The Role of Data Standardization (FHIR)**
+## The Role of Data Standardization (FHIR)
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/pbiJRr1GxDo?start=430" title="Data Standardization in Healthcare" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -44,7 +44,7 @@ This is a transcript summary of the October 2025 webinar with Medplum and Unity 
 
 **Reshma:** This is a really subtle but important point. At Medplum, we see this constantly with pediatrics and elder care on the platform. Noting down the `RelatedPerson` is critical for caregiver access. It is excellent to see an agent that actually **respects this data model** to reduce friction for the family.
 
-## **Architecture: Systems of Action**
+## Architecture: Systems of Action
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/pbiJRr1GxDo?start=900" title="Technical Architecture & Tools" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -56,7 +56,7 @@ This is a transcript summary of the October 2025 webinar with Medplum and Unity 
 
 **Cody:** Because Medplum handles the identity management and event-driven architecture, we can **focus entirely on the logic of the scheduling agents** rather than building boilerplate infrastructure.
 
-## **The Future: The Distributed EHR**
+## The Future: The Distributed EHR
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/pbiJRr1GxDo?start=1150" title="Future of EHRs & Scheduling" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
@@ -67,7 +67,7 @@ This is a transcript summary of the October 2025 webinar with Medplum and Unity 
 **Reshma:** We agree completely. We believe customization is required to be successful, and monolithic systems often fail to yield to specific workflows like infusion or complex radiology. The composability of this architecture allows for **"best-of-breed" solutions** to work together seamlessly through standard APIs.
 
 
-## **Community Q&A Highlights**
+## Community Q&A Highlights
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/pbiJRr1GxDo?start=1920" title="Q&A Session" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>

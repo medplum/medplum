@@ -93,14 +93,58 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
+  return 'done';
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
+  return 'done';
+};
+`,
+  ],
+  [
+    `
+export async function handler(medplum, event) {
+  throw new Error('Streaming error test');
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  throw new Error('Streaming error test');
+};
+`,
+  ],
 ] as [string, string][];
 
-type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot';
+type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
 const botDefinitions: { name: BotName; system: boolean; code: [string, string] }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
+  { name: 'streamingBot', system: false, code: botCodes[3] },
+  { name: 'streamingErrorBot', system: false, code: botCodes[4] },
 ];
 
 describe('Execute', () => {
@@ -901,6 +945,53 @@ describe('Execute', () => {
           ]),
         }),
       });
+    });
+  });
+
+  describe('Accept: text/event-stream (SSE streaming)', () => {
+    test('Streaming execution with chunks', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+
+      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
+    });
+
+    test('Streaming execution with JSON input', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ message: 'hello' });
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+
+      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
+    });
+
+    test('Streaming execution error handling', async () => {
+      // Errors thrown before writing to responseStream return HTTP 400
+      // because headers are not flushed until first write
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingErrorBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });
   });
 });

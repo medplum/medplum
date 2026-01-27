@@ -3,8 +3,8 @@
 import { Card, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
+import type { MedplumClient, WithId } from '@medplum/core';
+import { createReference, normalizeErrorString } from '@medplum/core';
 import type { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
@@ -13,13 +13,13 @@ import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
-import { TaskStatusPanel } from './TaskStatusPanel';
 import { TaskServiceRequest } from './TaskServiceRequest';
+import { TaskStatusPanel } from './TaskStatusPanel';
 
 interface TaskPanelProps {
-  task: Task;
+  task: WithId<Task>;
   enabled?: boolean;
-  onUpdateTask: (task: Task) => void;
+  onUpdateTask: (task: WithId<Task>) => void;
 }
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
@@ -51,7 +51,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
             output: [
               {
                 type: { text: 'QuestionnaireResponse' },
-                valueReference: { reference: getReferenceString(updatedResponse) },
+                valueReference: createReference(updatedResponse),
               },
             ],
           });
@@ -71,7 +71,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         output: [
           {
             type: { text: 'DiagnosticReport' },
-            valueReference: { reference: getReferenceString(diagnosticReport) },
+            valueReference: createReference(diagnosticReport),
           },
         ],
       });
@@ -81,7 +81,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   );
 
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
-    const updatedTask: Task = { ...task, status: status };
+    const updatedTask: WithId<Task> = { ...task, status: status };
     await updateTaskStatus(updatedTask, medplum, onUpdateTask);
   };
 
@@ -111,9 +111,9 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
 };
 
 const updateTaskStatus = async (
-  task: Task,
+  task: WithId<Task>,
   medplum: MedplumClient,
-  onUpdateTask: (task: Task) => void
+  onUpdateTask: (task: WithId<Task>) => void
 ): Promise<void> => {
   try {
     const response = await medplum.updateResource(task);

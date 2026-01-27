@@ -53,6 +53,9 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     return undefined;
   }
 
+  // C-CDA timezone format: ±HHMM (e.g., -0500, +0530)
+  const CCDA_TIMEZONE_PATTERN = /^[+-]\d{4}$/;
+
   const year = dateTime.substring(0, 4);
   let month = '01';
   let day = '01';
@@ -77,8 +80,11 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
 
   if (dateTime.length > 14) {
     tz = dateTime.substring(14);
-    if (tz === '+0000') {
+    if (tz === '+0000' || tz === '-0000') {
       tz = 'Z';
+    } else if (CCDA_TIMEZONE_PATTERN.test(tz)) {
+      // Format timezone with colon separator: ±HHMM → ±HH:MM
+      tz = `${tz.substring(0, 3)}:${tz.substring(3)}`;
     }
   }
 

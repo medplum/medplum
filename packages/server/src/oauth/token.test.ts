@@ -12,7 +12,14 @@ import {
   parseJWTPayload,
   parseSearchRequest,
 } from '@medplum/core';
-import type { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import type {
+  AccessPolicy,
+  ClientApplication,
+  Login,
+  Project,
+  ProjectMembership,
+  SmartAppLaunch,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { decodeJwt, generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
@@ -343,6 +350,29 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
     expect(res.body.error).toBeUndefined();
     expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Token for client with inactive ProjectMembership', async () => {
+    const { client, membership } = await createTestProject({ withClient: true });
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    const accessToken = res.body.access_token;
+    expect(accessToken).toBeDefined();
+
+    const res1 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
+    expect(res1.status).toBe(200);
+
+    // Disable membership, access should be denied after
+    await systemRepo.updateResource<ProjectMembership>({ ...membership, active: false });
+
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`).send();
+    expect(res2.status).toBe(401);
   });
 
   test('Client credentials IP address restriction', async () => {

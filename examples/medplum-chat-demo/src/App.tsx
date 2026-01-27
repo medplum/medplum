@@ -103,12 +103,12 @@ function MessageNotification({ profile, navigate }: NotificationProps): JSX.Elem
     <NotificationIcon
       label="Mail"
       resourceType="Communication"
-      countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count&part-of:missing=false`}
-      subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
+      countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count&part-of:missing=false`}
+      subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
       iconComponent={<IconMail />}
       onClick={() =>
         navigate(
-          `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
+          `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
         )?.catch(console.error)
       }
     />
@@ -120,12 +120,12 @@ function TaskNotification({ profile, navigate }: NotificationProps): JSX.Element
     <NotificationIcon
       label="Tasks"
       resourceType="Task"
-      countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-      subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
+      countCriteria={`owner=${getReferenceString(profile)}&status:not=completed&_summary=count`}
+      subscriptionCriteria={`Task?owner=${getReferenceString(profile)}`}
       iconComponent={<IconClipboardCheck />}
       onClick={() =>
         navigate(
-          `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
+          `/Task?owner=${getReferenceString(profile)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
         )?.catch(console.error)
       }
     />

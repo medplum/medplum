@@ -29,7 +29,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
       .then((result) => {
         const url = new URL(client.launchUri as string);
         url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
-        url.searchParams.set('launch', result.id as string);
+        url.searchParams.set('launch', result.id);
         locationUtils.assign(url.toString());
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));

@@ -67,8 +67,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     throw err;
   }
   let transactionString = JSON.stringify(exampleBotData);
-  const botEntries: BundleEntry[] =
-    (exampleBotData as Bundle).entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
+  const botEntries: BundleEntry[] = exampleBotData.entry?.filter((e) => e.resource?.resourceType === 'Bot') || [];
   const botNames = botEntries.map((e) => (e.resource as Bot).name ?? '');
   const botIds: Record<string, string> = {};
 
@@ -82,11 +81,11 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       })) as WithId<Bot>;
     }
 
-    botIds[botName] = existingBot.id as string;
+    botIds[botName] = existingBot.id;
 
     transactionString = transactionString
       .replaceAll(`$bot-${botName}-reference`, getReferenceString(existingBot))
-      .replaceAll(`$bot-${botName}-id`, existingBot.id as string);
+      .replaceAll(`$bot-${botName}-id`, existingBot.id);
   }
 
   const transaction = JSON.parse(transactionString);

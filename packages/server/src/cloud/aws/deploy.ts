@@ -166,11 +166,10 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
   const zipFile = await createZipFile(bot, code);
   log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
-  const exists = await lambdaExists(client, name);
-  if (!exists) {
-    await createLambda(bot, client, name, zipFile);
-  } else {
+  if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
+  } else {
+    await createLambda(bot, client, name, zipFile);
   }
 }
 

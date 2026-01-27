@@ -77,9 +77,9 @@ export function HomePage(): JSX.Element {
     let url: string | undefined;
 
     for (const subscription of subscriptions) {
-      const { parameter } = (await medplum.get(
+      const { parameter } = await medplum.get<Parameters>(
         `/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`
-      )) as Parameters;
+      );
       const token = parameter?.find((param) => param.name === 'token')?.valueString;
       if (!url) {
         url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;

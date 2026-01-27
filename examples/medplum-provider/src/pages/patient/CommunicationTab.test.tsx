@@ -27,7 +27,6 @@ describe('CommunicationTab', () => {
   beforeEach(async () => {
     medplum = new MockClient();
     vi.clearAllMocks();
-    await medplum.createResource(HomerSimpson);
     useNavigateSpy = vi.spyOn(reactRouter, 'useNavigate');
     useParamsSpy = vi.spyOn(reactRouter, 'useParams');
   });
@@ -51,7 +50,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In progress')).toBeInTheDocument();
     });
 
     expect(useParamsSpy).toHaveBeenCalled();
@@ -62,7 +61,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In progress')).toBeInTheDocument();
     });
   });
 
@@ -79,7 +78,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication/message-123`);
 
     await waitFor(() => {
-      expect(screen.getByText('Messages')).toBeInTheDocument();
+      expect(screen.getByText('In progress')).toBeInTheDocument();
     });
   });
 });

@@ -130,7 +130,7 @@ describe('Login', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 5 characters');
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
   });
 
   test('Wrong password', async () => {

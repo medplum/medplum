@@ -524,6 +524,30 @@ describe('FHIR Routes', () => {
       }
     });
 
+    test('Search by POST with multiple includes', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient/_search`)
+        .set('Authorization', 'Bearer ' + token)
+        .type('form')
+        .send(`_include=Patient:general-practitioner&_include=Patient:organization`);
+      expect(res.status).toBe(200);
+      const result = res.body as Bundle;
+      expect(result.type).toStrictEqual('searchset');
+      expect(result.entry?.length).toBeGreaterThan(0);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
     test('Search multiple resource types with _type', async () =>
       withTestContext(async () => {
         const { accessToken } = await createTestProject({

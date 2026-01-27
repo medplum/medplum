@@ -32,7 +32,7 @@ import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
-import { healthcheckHandler } from './healthcheck';
+import { cleanupReservedDatabaseConnections, healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
@@ -46,7 +46,6 @@ import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
-import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initServerRegistryHeartbeatListener } from './server-registry';
@@ -229,26 +228,24 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   return server;
 }
 
-export function initAppServices(config: MedplumServerConfig): Promise<void> {
+export async function initAppServices(config: MedplumServerConfig): Promise<void> {
   loadStructureDefinitions();
   initRedis(config.redis);
-
-  return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    await initDatabase(config);
-    await seedDatabase(config);
-    await initKeys(config);
-    initBinaryStorage(config.binaryStorage);
-    initWorkers(config);
-    initHeartbeat(config);
-    initOtelHeartbeat();
-    initServerRegistryHeartbeatListener();
-    await maybeAutoRunPendingPostDeployMigration();
-  });
+  await initDatabase(config);
+  await seedDatabase(config);
+  await initKeys(config);
+  initBinaryStorage(config.binaryStorage);
+  initWorkers(config);
+  initHeartbeat(config);
+  initOtelHeartbeat();
+  initServerRegistryHeartbeatListener();
+  await maybeAutoRunPendingPostDeployMigration();
 }
 
 export async function shutdownApp(): Promise<void> {
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
+  cleanupReservedDatabaseConnections();
   await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {

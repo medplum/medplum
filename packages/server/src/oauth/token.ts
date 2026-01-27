@@ -16,7 +16,7 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -114,7 +114,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (_err) {
+  } catch {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -134,7 +134,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const project = await systemRepo.readReference(membership.project as Reference<Project>);
+  const project = await systemRepo.readReference(membership.project);
   const scope = (req.body.scope || 'openid') as string;
 
   const login = await systemRepo.createResource<Login>({
@@ -230,7 +230,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     } else if (login.client) {
       client = await getClientApplication(resolveId(login.client) as string);
     }
-  } catch (_err) {
+  } catch {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -276,7 +276,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   let claims: MedplumRefreshTokenClaims;
   try {
     claims = (await verifyJwt(refreshToken)).payload as MedplumRefreshTokenClaims;
-  } catch (_err) {
+  } catch {
     sendTokenError(res, 'invalid_request', 'Invalid refresh token');
     return;
   }
@@ -326,7 +326,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     const clientId = resolveId(login.client) ?? '';
     try {
       client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    } catch (_err) {
+    } catch {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
     }
@@ -513,7 +513,7 @@ async function parseClientAssertion(
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (_err) {
+  } catch {
     return { error: 'Client not found' };
   }
 

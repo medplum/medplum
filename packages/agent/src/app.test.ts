@@ -604,7 +604,7 @@ describe('App', () => {
     expect(prodChannel.connections.size).toStrictEqual(1);
     const hl7ProdConnection = prodChannel.connections.values().next().value as AgentHl7ChannelConnection;
     expect(hl7ProdConnection).toBeDefined();
-    expect(hl7ProdConnection.hl7Connection.enhancedMode).toStrictEqual(false);
+    expect(hl7ProdConnection.hl7Connection.enhancedMode).toBeUndefined();
 
     // Check that the socket is not closed
     const hl7ProdConnectionSocket = hl7ProdConnection.hl7Connection.socket;
@@ -737,7 +737,7 @@ describe('App', () => {
     expect(hl7ProdConnectionSocketAfter).toStrictEqual(hl7ProdConnectionSocket);
 
     // But enhanced mode should be active on the existing connection
-    expect(hl7ProdConnectionAfter.hl7Connection.enhancedMode).toStrictEqual(true);
+    expect(hl7ProdConnectionAfter.hl7Connection.enhancedMode).toStrictEqual('standard');
 
     // Check that the byte stream channel was rebound
     expect(console.log).toHaveBeenCalledWith(

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isResource } from '@medplum/core';
+import { EMPTY, isResource } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type {
   Bundle,
@@ -29,7 +29,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Resource>)
     return false;
   }
 
-  const resource = event.input as Resource;
+  const resource = event.input;
 
   switch (resource.resourceType) {
     case 'ServiceRequest': {
@@ -309,11 +309,7 @@ async function getCoverage(medplum: MedplumClient, sr: ServiceRequest): Promise<
  * @throws An error if no Organization is found.
  */
 async function getPerformer(medplum: MedplumClient, sr: ServiceRequest): Promise<Organization> {
-  if (!sr.performer || sr.performer.length === 0) {
-    throw new Error('Performer is missing');
-  }
-
-  for (const ref of sr.performer) {
+  for (const ref of sr.performer ?? EMPTY) {
     if (ref.type === 'Organization' || ref.reference?.startsWith('Organization')) {
       const org = await medplum.readReference(ref as Reference<Organization>);
 
@@ -326,6 +322,5 @@ async function getPerformer(medplum: MedplumClient, sr: ServiceRequest): Promise
       }
     }
   }
-
   throw new Error('Performer is missing');
 }

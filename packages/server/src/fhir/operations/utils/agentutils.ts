@@ -46,7 +46,7 @@ export async function getAgentForRequest(
   repo: Repository
 ): Promise<WithId<Agent> | undefined> {
   // Prefer to search by ID from path parameter
-  const { id } = req.params;
+  const id = singularize(req.params.id);
   if (id) {
     return repo.readResource<Agent>('Agent', id);
   }
@@ -84,7 +84,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
   if (destination.startsWith('Device/')) {
     try {
       return await repo.readReference<Device>({ reference: destination });
-    } catch (_err) {
+    } catch {
       return undefined;
     }
   }

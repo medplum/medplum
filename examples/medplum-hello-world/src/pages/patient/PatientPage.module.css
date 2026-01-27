@@ -1,0 +1,24 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.sidebar {
+  flex: 1;
+  width: 350px;
+  height: 100%;
+}
+
+.scrollArea {
+  height: 100%;
+}
+
+.content {
+  width: calc(100% - 350px);
+  height: 100%;
+  overflow: auto;
+  border-inline-start: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-4));
+}

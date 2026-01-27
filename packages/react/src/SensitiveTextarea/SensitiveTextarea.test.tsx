@@ -9,7 +9,7 @@ describe('SensitiveTextarea', () => {
 
     render(<SensitiveTextarea placeholder="secret" defaultValue="foo" onChange={onChange} />);
 
-    const input = screen.getByPlaceholderText('secret') as HTMLTextAreaElement;
+    const input = screen.getByPlaceholderText<HTMLTextAreaElement>('secret');
     expect(input).toBeInTheDocument();
 
     await act(async () => {

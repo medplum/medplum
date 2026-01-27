@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { sleep } from '@medplum/core';
+import { EMPTY, sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import type { MedplumRedisConfig } from './config/types';
 import { getLogger } from './logger';
@@ -30,10 +30,8 @@ export async function closeRedis(): Promise<void> {
     const tmpSubscribers = redisSubscribers;
     redis = undefined;
     redisSubscribers = undefined;
-    if (tmpSubscribers) {
-      for (const subscriber of tmpSubscribers) {
-        subscriber.disconnect();
-      }
+    for (const subscriber of tmpSubscribers ?? EMPTY) {
+      subscriber.disconnect();
     }
     await tmpRedis.quit();
     await sleep(100);
@@ -70,11 +68,8 @@ export function getRedisSubscriber(): Redis & { quit: never } {
   if (!redis) {
     throw new Error('Redis not initialized');
   }
-  if (!redisSubscribers) {
-    redisSubscribers = new Set();
-  }
-
   const subscriber = redis.duplicate();
+  redisSubscribers ??= new Set();
   redisSubscribers.add(subscriber);
 
   subscriber.on('end', () => {

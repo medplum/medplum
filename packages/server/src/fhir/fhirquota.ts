@@ -110,7 +110,7 @@ export class FhirRateLimiter {
         this.logger.error('Unhandled rate limiter response', { response: JSON.stringify(err) });
         return;
       }
-      const result = err as RateLimiterRes;
+      const result = err;
       this.setState(result);
       this.logger.warn('User rate limited', {
         limit: this.limiter.points,

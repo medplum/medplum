@@ -316,7 +316,7 @@ describe('Agent Push', () => {
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
@@ -382,7 +382,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
@@ -448,7 +448,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
@@ -513,7 +513,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 

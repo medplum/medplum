@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
 
@@ -656,9 +656,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueReference: {
-                reference: getReferenceString(payorOrganization1),
-              },
+              valueReference: createReference(payorOrganization1),
             },
           ],
         },
@@ -699,9 +697,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueReference: {
-                reference: getReferenceString(payorOrganization2),
-              },
+              valueReference: createReference(payorOrganization2),
             },
           ],
         },
@@ -907,9 +903,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Pharmacy',
           answer: [
             {
-              valueReference: {
-                reference: getReferenceString(pharmacyOrganization),
-              },
+              valueReference: createReference(pharmacyOrganization),
             },
           ],
         },

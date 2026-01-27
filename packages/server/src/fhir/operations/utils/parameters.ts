@@ -24,7 +24,7 @@ import type { Request } from 'express';
 export function parseParameters<T>(input: T | Parameters): T {
   if (input && typeof input === 'object' && 'resourceType' in input && input.resourceType === 'Parameters') {
     // Convert the parameters to input
-    const parameters = (input as Parameters).parameter ?? [];
+    const parameters = input.parameter ?? [];
     return Object.fromEntries(parameters.map((p) => [p.name, p.valueString])) as T;
   } else {
     return input as T;
@@ -56,7 +56,7 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
     return parseParams(inputParameters, input.parameter) as T;
   } else {
     return Object.fromEntries(
-      inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name as string])])
+      inputParameters.map((param) => [param.name, validateInputParam(param, input[param.name])])
     ) as T;
   }
 }
@@ -199,10 +199,9 @@ export function buildOutputParameters(operation: OperationDefinition, output: ob
   if (outputParameters?.length === 1 && param1?.name === 'return') {
     if (!isResource(output, param1.type as ResourceType | undefined)) {
       throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
-    } else {
-      // Send Resource as output directly, instead of using Parameters format
-      return output as Parameters;
     }
+    // Send Resource as output directly, instead of using Parameters format
+    return output as any;
   }
   const response: Parameters = {
     resourceType: 'Parameters',

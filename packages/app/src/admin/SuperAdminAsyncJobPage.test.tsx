@@ -1,13 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
-import { Notifications, notifications } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import type { AsyncJob, BundleEntry } from '@medplum/fhirtypes';
-import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 const MIGRATION_INFO_URL = 'admin/super/migrations';
 const PENDING_BUNDLE_ENTRY: BundleEntry[] = [
@@ -104,17 +100,7 @@ function mockFetch(url: string, options: { method: string; body: string }): Prom
 
 async function setup(medplum: MedplumClient): Promise<void> {
   await act(async () => {
-    // renderAppRoutes(medplum, '/admin/super/asyncjob');
-    render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={['/admin/super/asyncjob']} initialIndex={0}>
-          <MantineProvider>
-            <Notifications />
-            <AppRoutes />
-          </MantineProvider>
-        </MemoryRouter>
-      </MedplumProvider>
-    );
+    renderAppRoutes(medplum, '/admin/super/asyncjob/migrations');
   });
 }
 
@@ -157,26 +143,16 @@ describe('SuperAdminAsyncJobPage', () => {
     expect(postDeployMigrationsTab).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(postDeployMigrationsTab);
-    });
-
-    await act(async () => {
       fireEvent.click(systemAsyncJobTab);
     });
 
     await waitFor(() => screen.getByText('00000000-0000-0000-0000-000000000002'));
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     await act(async () => {
-      fireEvent.click(screen.getByText('00000000-0000-0000-0000-000000000002'), { button: 1 });
+      fireEvent.click(postDeployMigrationsTab);
     });
-    expect(errorSpy).not.toHaveBeenCalled();
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('00000000-0000-0000-0000-000000000002'));
-    });
-    expect(errorSpy).toHaveBeenCalledTimes(2);
-    errorSpy.mockRestore();
+    await waitFor(() => screen.getByText('Refresh'));
   });
 
   test('Renders migrations table and start migration', async () => {

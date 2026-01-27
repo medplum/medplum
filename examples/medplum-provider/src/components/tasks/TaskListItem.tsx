@@ -11,16 +11,16 @@ import cx from 'clsx';
 interface TaskListItemProps {
   task: Task;
   selectedTask: Task | undefined;
-  onSelectedItem: (task: Task) => string;
+  getTaskUri: (task: Task) => string;
 }
 
 export function TaskListItem(props: TaskListItemProps): JSX.Element {
-  const { task, selectedTask, onSelectedItem } = props;
+  const { task, selectedTask, getTaskUri } = props;
   const isSelected = selectedTask?.id === task.id;
   const patient = useResource(task.for);
   const owner = useResource(task.owner);
   const taskFrom = task?.authoredOn ? `from ${formatDate(task?.authoredOn)}` : '';
-  const taskUrl = onSelectedItem(task);
+  const taskUrl = getTaskUri(task);
 
   return (
     <MedplumLink to={taskUrl} underline="never">
@@ -37,7 +37,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
             <Text fw={700} className={classes.content}>
               {task.code?.text ?? `Task ${taskFrom}`}
             </Text>
-            <StatusBadge status={task.status} />
+            <StatusBadge status={task.status} variant="light" />
           </Group>
           <Stack gap={0} c="dimmed">
             {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}

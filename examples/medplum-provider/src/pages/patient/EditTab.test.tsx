@@ -50,7 +50,6 @@ describe('EditTab', () => {
     vi.spyOn(reactRouter, 'useNavigate').mockReturnValue(navigateSpy as any);
     // Mock requestProfileSchema to resolve successfully
     vi.spyOn(medplum, 'requestProfileSchema').mockResolvedValue(undefined);
-    await medplum.createResource(HomerSimpson);
   });
 
   const setup = (url: string): ReturnType<typeof render> => {
@@ -87,36 +86,33 @@ describe('EditTab', () => {
   };
 
   test('Loads patient data', async () => {
-    const patient = await medplum.createResource(HomerSimpson);
     const readResourceSpy = vi.spyOn(medplum, 'readResource');
-    setup(`/Patient/${patient.id}/edit`);
+    setup(`/Patient/${HomerSimpson.id}/edit`);
 
     await waitFor(() => {
-      expect(readResourceSpy).toHaveBeenCalledWith('Patient', patient.id);
+      expect(readResourceSpy).toHaveBeenCalledWith('Patient', HomerSimpson.id);
     });
   });
 
   test('Submit updates patient and navigates', async () => {
     const user = userEvent.setup();
-    const patient = await medplum.createResource(HomerSimpson);
-    setup(`/Patient/${patient.id}/edit`);
+    setup(`/Patient/${HomerSimpson.id}/edit`);
 
     const updateButton = await getUpdateButton();
 
-    vi.spyOn(medplum, 'updateResource').mockResolvedValue(patient as any);
+    vi.spyOn(medplum, 'updateResource').mockResolvedValue(HomerSimpson as any);
     await user.click(updateButton);
 
     await waitFor(() => {
       expect(medplum.updateResource).toHaveBeenCalled();
       expect(screen.getByText('Success')).toBeInTheDocument();
-      expect(navigateSpy).toHaveBeenCalledWith(`/Patient/${patient.id}/timeline`);
+      expect(navigateSpy).toHaveBeenCalledWith(`/Patient/${HomerSimpson.id}/timeline`);
     });
   });
 
   test('Handles update error', async () => {
     const user = userEvent.setup();
-    const patient = await medplum.createResource(HomerSimpson);
-    setup(`/Patient/${patient.id}/edit`);
+    setup(`/Patient/${HomerSimpson.id}/edit`);
 
     const updateButton = await getUpdateButton();
 

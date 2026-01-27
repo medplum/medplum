@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { DiagnosticReport, Observation } from '@medplum/fhirtypes';
+import { EMPTY } from '@medplum/core';
+import type { DiagnosticReport } from '@medplum/fhirtypes';
 import { OID_RESULT_ORGANIZER } from '../../oids';
 import { mapCodeableConceptToCcdaCode } from '../../systems';
 import type { CcdaCode, CcdaEntry, CcdaId, CcdaOrganizerComponent } from '../../types';
@@ -11,17 +12,15 @@ import { createCcdaObservation } from './observation';
 export function createDiagnosticReportEntry(converter: FhirToCcdaConverter, resource: DiagnosticReport): CcdaEntry {
   const components: CcdaOrganizerComponent[] = [];
 
-  if (resource.result) {
-    for (const member of resource.result) {
-      const child = converter.findResourceByReference(member);
-      if (child?.resourceType !== 'Observation') {
-        continue;
-      }
-
-      components.push({
-        observation: [createCcdaObservation(converter, child as Observation)],
-      });
+  for (const member of resource.result ?? EMPTY) {
+    const child = converter.findResourceByReference(member);
+    if (child?.resourceType !== 'Observation') {
+      continue;
     }
+
+    components.push({
+      observation: [createCcdaObservation(converter, child)],
+    });
   }
 
   // Note: The effectiveTime is an interval that spans the effectiveTimes of the contained result observations.

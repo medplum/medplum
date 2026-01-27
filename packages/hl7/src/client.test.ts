@@ -210,7 +210,7 @@ describe('Hl7Client', () => {
           isOperationOutcome(event.error.outcome) &&
           event.error.outcome.issue?.[0].details?.text === 'Messages were still pending when connection closed'
         ) {
-          closeErrorEvent = event as Hl7ErrorEvent;
+          closeErrorEvent = event;
         }
       });
 

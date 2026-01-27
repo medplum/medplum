@@ -20,7 +20,7 @@ import {
   isDataTypeLoaded,
   normalizeOperationOutcome,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
   IconAdjustmentsHorizontal,
@@ -141,10 +141,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     (options?: RequestInit) => {
       setOutcome(undefined);
       medplum
-        .requestSchema(memoizedSearch.resourceType as ResourceType)
+        .requestSchema(memoizedSearch.resourceType)
         .then(() =>
           medplum.search(
-            memoizedSearch.resourceType as ResourceType,
+            memoizedSearch.resourceType,
             formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
             options
           )

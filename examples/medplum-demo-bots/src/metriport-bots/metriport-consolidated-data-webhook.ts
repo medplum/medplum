@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
+import { ContentType, EMPTY } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
 
@@ -118,11 +118,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
 export function convertToTransactionBundle(bundle: Bundle, medplumPatientId: string): Bundle {
   const idToFullUrlMap: Record<string, string> = {};
-  bundle.entry?.forEach((entry) => {
+  for (const entry of bundle.entry ?? EMPTY) {
     if (entry.resource?.id && entry.fullUrl) {
       idToFullUrlMap[entry.resource.id] = entry.fullUrl;
     }
-  });
+  }
 
   const transactionBundle: Bundle = {
     resourceType: 'Bundle',

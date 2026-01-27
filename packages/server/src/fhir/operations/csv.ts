@@ -104,7 +104,7 @@ function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
 function tryCsvEscape(input: unknown): string {
   try {
     return csvEscape(input);
-  } catch (_err) {
+  } catch {
     // Silently ignore malformed data in projects that do not use "strict" mode
     return '';
   }

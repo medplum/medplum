@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { OperationOutcomeError, WithId } from '@medplum/core';
+import type { WithId } from '@medplum/core';
 import {
   badRequest,
   createReference,
@@ -8,6 +8,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
+  OperationOutcomeError,
   parseSearchRequest,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
@@ -34,15 +35,65 @@ describe('MemoryRepository', () => {
   test('Create resource with meta', async () => {
     const id = randomUUID();
     const versionId = randomUUID();
-    const lastUpdated = new Date().toISOString();
+    const lastUpdated = new Date('2020-01-01').toISOString();
+
+    const account = await repo.createResource({
+      resourceType: 'Account',
+      status: 'active',
+    });
+    const accounts = [createReference(account)];
+
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       id,
-      meta: { versionId, lastUpdated },
+      meta: { versionId, lastUpdated, accounts },
     });
     expect(patient.id).toBe(id);
+
+    // Management properties are overridden by the repo
+    expect(patient.meta?.versionId).not.toBe(versionId);
+    expect(patient.meta?.lastUpdated).not.toBe(lastUpdated);
+
+    // Other properties are passed through
+    expect(patient.meta?.accounts).toEqual([{ reference: `Account/${account.id}` }]);
+  });
+
+  test('Create resource with meta when seeding', async () => {
+    const id = randomUUID();
+    const versionId = randomUUID();
+    const lastUpdated = new Date('2020-01-01').toISOString();
+
+    const account = await repo.createResource({
+      resourceType: 'Account',
+      status: 'active',
+    });
+    const accounts = [createReference(account)];
+
+    const patient = await repo.withSeeding(() =>
+      repo.createResource<Patient>({
+        resourceType: 'Patient',
+        id,
+        meta: { versionId, lastUpdated, accounts },
+      })
+    );
+
+    expect(patient.id).toBe(id);
+
+    // Management properties may be set when seeding
     expect(patient.meta?.versionId).toBe(versionId);
     expect(patient.meta?.lastUpdated).toBe(lastUpdated);
+
+    // Other properties are passed through
+    expect(patient.meta?.accounts).toEqual([{ reference: `Account/${account.id}` }]);
+  });
+
+  test('Create resource with duplicate ID throws error', async () => {
+    const id = randomUUID();
+    await repo.createResource({ resourceType: 'Patient', id });
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(OperationOutcomeError);
+    await expect(() => repo.createResource({ resourceType: 'Patient', id })).rejects.toThrow(
+      'Assigned ID is already in use'
+    );
   });
 
   test('Read invalid reference', async () => {

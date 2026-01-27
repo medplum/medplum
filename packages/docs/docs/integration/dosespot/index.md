@@ -10,6 +10,7 @@ This collaboration enables healthcare professionals to seamlessly place medicati
 - Patient coverage benefits checks
 - Electronic Prescriptions for Controlled Substances (EPCS)
 - [Clinic favorite medications](/docs/integration/dosespot/clinic-favorite-medications) for streamlined prescribing to reduce the number of clicks required for clinicians to prescribe common medications
+- [Prescriber Enrollment](/docs/integration/dosespot/enroll-user) for automatically setting up your Users in DoseSpot
 
 ## DoseSpot FAQ
 

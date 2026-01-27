@@ -137,7 +137,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   }
 
   function changeItem(changedItem: QuestionnaireItem): void {
-    const curr = itemRef.current as T;
+    const curr = itemRef.current;
     props.onChange({
       ...curr,
       item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),

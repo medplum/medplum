@@ -93,7 +93,7 @@ mfaRouter.post(
       return;
     }
 
-    const secret = user.mfaSecret as string;
+    const secret = user.mfaSecret;
     const token = req.body.token as string;
     authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
     if (!authenticator.verify({ token, secret })) {
@@ -151,7 +151,7 @@ mfaRouter.post(
       return;
     }
 
-    const secret = user.mfaSecret as string;
+    const secret = user.mfaSecret;
     const token = req.body.token as string;
     authenticator.options = { window: getConfig().mfaAuthenticatorWindow ?? 1 };
     if (!authenticator.verify({ token, secret })) {

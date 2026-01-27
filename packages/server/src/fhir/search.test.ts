@@ -4842,6 +4842,21 @@ describe('project-scoped Repository', () => {
       ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
     }));
 
+  test('Date array columns', async () =>
+    withTestContext(async () => {
+      const result = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'date',
+            operator: Operator.EQUALS,
+            value: new Date().toISOString(),
+          },
+        ],
+      });
+      expect(result.entry).toHaveLength(0);
+    }));
+
   describe('discourage sequential scans', () => {
     let querySpy: jest.SpyInstance;
     beforeEach(() => {

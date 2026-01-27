@@ -9,11 +9,11 @@ import { ChatListItem } from './ChatListItem';
 interface ChatListProps {
   threads: [Communication, Communication | undefined][];
   selectedCommunication: Communication | undefined;
-  onSelectedItem: (topic: Communication) => string;
+  getThreadUri: (topic: Communication) => string;
 }
 
 export const ChatList = (props: ChatListProps): JSX.Element => {
-  const { threads, selectedCommunication, onSelectedItem } = props;
+  const { threads, selectedCommunication, getThreadUri } = props;
 
   return (
     <Stack gap={0}>
@@ -27,7 +27,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
               topic={topicCommunication}
               lastCommunication={lastCommunication}
               isSelected={_isSelected}
-              onSelectedItem={onSelectedItem}
+              getThreadUri={getThreadUri}
             />
             <Divider />
           </Fragment>

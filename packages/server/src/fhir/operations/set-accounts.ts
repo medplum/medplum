@@ -8,6 +8,7 @@ import {
   append,
   badRequest,
   concatUrls,
+  EMPTY,
   forbidden,
   isResourceType,
   notFound,
@@ -166,7 +167,7 @@ export async function setResourceAccounts(
     const maxSearchOffset = getConfig().maxSearchOffset ?? Number.POSITIVE_INFINITY;
     while ((search.offset ?? 0) <= maxSearchOffset) {
       const bundle = await searchPatientCompartment(repo, target, search);
-      for (const entry of bundle.entry ?? []) {
+      for (const entry of bundle.entry ?? EMPTY) {
         const resource = entry.resource;
         if (resource && resource.resourceType !== 'Patient') {
           await updateCompartmentResource(systemRepo, resource, additions, removals);

@@ -14,7 +14,7 @@ export function setPropertyValue(
   const types = elementDefinition.type;
   if (types.length > 1) {
     for (const type of types) {
-      const compoundKey = key.replace('[x]', capitalize(type.code as string));
+      const compoundKey = key.replace('[x]', capitalize(type.code));
       if (compoundKey in obj) {
         delete obj[compoundKey];
       }

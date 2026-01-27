@@ -111,6 +111,28 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith(isoString, 'dateTime');
   });
 
+  test('Time property', async () => {
+    const onChange = jest.fn();
+
+    await setup({
+      ...defaultProps,
+      name: 'time',
+      property: { ...baseProperty, type: [{ code: 'time' }] },
+      onChange,
+    });
+
+    const input = screen.getByTestId('time');
+    expect(input).toBeDefined();
+    expect(input).toHaveAttribute('type', 'time');
+    expect(input).toHaveAttribute('step', '1');
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '14:30:00' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('14:30:00', 'time');
+  });
+
   test('Markdown property', async () => {
     const onChange = jest.fn();
 

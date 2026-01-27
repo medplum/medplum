@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -64,7 +64,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -82,7 +84,9 @@
         "name": [
           {
             "family": "Seven",
-            "given": ["Henry"]
+            "given": [
+              "Henry"
+            ]
           }
         ],
         "telecom": [
@@ -118,7 +122,9 @@
         "name": [
           {
             "family": "Seven",
-            "given": ["Henry"]
+            "given": [
+              "Henry"
+            ]
           }
         ],
         "telecom": [
@@ -162,7 +168,9 @@
           ]
         },
         "type": "allergy",
-        "category": ["food"],
+        "category": [
+          "food"
+        ],
         "patient": {
           "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
           "display": "Katherine Madison"
@@ -171,7 +179,7 @@
           "reference": "Practitioner/b0ff47f4-ff49-43ee-8e46-43db7b57d986",
           "display": "Henry Seven"
         },
-        "recordedDate": "2014-01-04T12:35:06-0500",
+        "recordedDate": "2014-01-04T12:35:06-05:00",
         "onsetDateTime": "1998-01-01T00:00:00Z",
         "extension": [
           {

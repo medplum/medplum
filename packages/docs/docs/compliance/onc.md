@@ -11,9 +11,9 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 | Item                           | Description                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------ |
 | Developer Organization Name    | Medplum                                                                        |
-| Date the product was certified | 07/31/2025                                                                     |
-| Product Name and Version       | Medplum, 4                                                                     |
-| Unique Certification Number    | [15.04.04.3147.Medp.04.02.1.250731](https://chpl.healthit.gov/#/listing/11676) |
+| Date the product was certified | 12/31/2025                                                                     |
+| Product Name and Version       | Medplum, 5                                                                     |
+| Unique Certification Number    | [15.04.04.3147.Medp.05.03.1.251231](https://chpl.healthit.gov/#/listing/11745) |
 | Certification Criteria         | [Criteria link](#criteria-certified)                                           |
 | Pricing                        | [Offering Grid](/pricing)                                                      |
 | Registration Process           | [Instructions](/docs/tutorials/register)                                       |
@@ -41,6 +41,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [a14](/docs/charting/implantable-devices) | Implantable Device List  |
 | [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
+| b11                                                 | Decision Support Interventions                       |
 | c1                                                  | Clinical Quality Measures Record and Export          |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d2](/docs/api/fhir/resources/auditevent) | Auditable Events and Tamper Resistance  |
@@ -77,6 +78,10 @@ The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compl
 ## Real World Testing
 
 * Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024 ([Results](https://drive.google.com/file/d/1qR9vM3XYZ2ABl806W7HI8z6Und5GkEIz/view?usp=drive_link))
-* Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025 ([Results](https://drive.google.com/file/d/1jRRDw0q1cXS6m4cV22AMvwlXOiV73bh_/view?usp=sharing))
+
+## ONC Certificate
+
+* Download [ONC Certificate](https://drive.google.com/file/d/1uyYlmpmNvCPByPP9AETeKE16AXY17PEc/view?usp=drive_link)
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

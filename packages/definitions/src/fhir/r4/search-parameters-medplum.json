@@ -654,7 +654,7 @@
         "publisher": "Medplum",
         "description": "Numeric priority order for resource types using http://hl7.org/fhir/ValueSet/request-priority",
         "code": "priority-order",
-        "base": ["CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
+        "base": ["Communication", "CommunicationRequest", "MedicationRequest", "RequestGroup", "ServiceRequest", "Task"],
         "type": "number",
         "expression": "iif(priority = 'stat', 50, iif(priority = 'asap', 40, iif(priority = 'urgent', 30, iif(priority = 'routine', 20, 10))))"
       }
@@ -1665,6 +1665,57 @@
         "base": ["ServiceRequest"],
         "type": "token",
         "expression": "ServiceRequest.reasonCode"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ActivityDefinition-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ActivityDefinition-code",
+        "url": "https://medplum.com/fhir/SearchParameter/ActivityDefinition-code",
+        "version": "4.0.1",
+        "name": "code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The code(s) described by this ActivityDefinition",
+        "code": "code",
+        "base": ["ActivityDefinition"],
+        "type": "token",
+        "expression": "ActivityDefinition.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Communication-priority",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Communication-priority",
+        "url": "https://medplum.com/fhir/SearchParameter/Communication-priority",
+        "version": "4.0.1",
+        "name": "priority",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The priority of this Communication",
+        "code": "priority",
+        "base": ["Communication"],
+        "type": "token",
+        "expression": "Communication.priority"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-active",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-active",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-active",
+        "version": "4.0.1",
+        "name": "active",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "If this ProjectMembership is active",
+        "code": "active",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.active"
       }
     }
   ]

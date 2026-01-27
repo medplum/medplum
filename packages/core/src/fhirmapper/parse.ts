@@ -375,7 +375,7 @@ class StructureMapParser {
     if (!this.structureMap.contained) {
       this.structureMap.contained = [];
     }
-    this.structureMap.contained.push(conceptMap as ConceptMap);
+    this.structureMap.contained.push(conceptMap);
   }
 
   private parseConceptMapPrefix(prefixes: Record<string, string>): void {

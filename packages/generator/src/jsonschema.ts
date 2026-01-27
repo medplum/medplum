@@ -121,7 +121,7 @@ function buildProperties(typeSchema: InternalTypeSchema): {
 
   for (const [path, elementDefinition] of Object.entries(typeSchema.elements)) {
     for (const elementDefinitionType of elementDefinition?.type ?? []) {
-      const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code as string));
+      const propertyName = path.replace('[x]', capitalize(elementDefinitionType.code));
       properties[propertyName] = buildPropertySchema(elementDefinition, elementDefinitionType, path);
     }
 
@@ -168,8 +168,8 @@ function getTypeName(path: string, elementDefinitionType: ElementDefinitionType)
   if (path.endsWith('.id')) {
     return 'id';
   }
-  const code = elementDefinitionType.code as string;
-  return code === 'BackboneElement' || code === 'Element' ? buildTypeName(path.split('.') as string[]) : code;
+  const code = elementDefinitionType.code;
+  return code === 'BackboneElement' || code === 'Element' ? buildTypeName(path.split('.')) : code;
 }
 
 function buildTypeName(components: string[]): string {

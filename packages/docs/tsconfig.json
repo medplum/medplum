@@ -1,7 +1,10 @@
 {
+  "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
     "baseUrl": ".",
     "jsx": "react-jsx",
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "strictNullChecks": true
+  },
+  "include": ["blog", "docs", "src"]
 }

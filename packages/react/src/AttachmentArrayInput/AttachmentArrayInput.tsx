@@ -67,7 +67,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             <AttachmentButton
               disabled={props.disabled}
               onUpload={(attachment: Attachment) => {
-                setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
+                setValuesWrapper([...valuesRef.current, attachment]);
               }}
             >
               {(props) => (

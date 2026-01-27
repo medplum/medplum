@@ -47,6 +47,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
+import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
@@ -104,7 +105,7 @@ fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, n
         legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
           (s) => s.name === 'legacyFhirJsonResponseFormat'
         )?.valueBoolean;
-      } catch (_err) {
+      } catch {
         // Ignore errors since unauthenticated requests also use this middleware
       }
 
@@ -350,6 +351,9 @@ function initInternalFhirRouter(): FhirRouter {
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
+  // Schedule $find operation
+  router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
+
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
@@ -418,7 +422,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     method: req.method as HttpMethod,
     url: stripPrefix(req.originalUrl, '/fhir/R4'),
     pathname: '',
-    params: req.params,
+    params: req.params as Record<string, string>,
     query: Object.create(null), // Defer query param parsing to router for consistency
     // Express v5 changed the default value of `req.body` from {} to undefined. A decent number of FHIR handlers
     // rely on the previous behavior, so we defer handling undefined for now

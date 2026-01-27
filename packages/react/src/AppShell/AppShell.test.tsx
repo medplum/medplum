@@ -96,7 +96,7 @@ describe('AppShell v1', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type');
 
     // Enter random text
     await act(async () => {
@@ -145,42 +145,58 @@ describe('AppShell v2', () => {
     expect(screen.getByText('Your application here')).toBeInTheDocument();
   });
 
-  test('Toggle sidebar v2', async () => {
+  test('Toggle sidebar v2 via logo', async () => {
     await setup('v2');
     expect(screen.getByText('Your application here')).toBeInTheDocument();
 
+    const logoButton = screen.getByRole('button', { name: 'Medplum Logo' });
+    const menuTitle = screen.getByText('Menu 1');
+
+    expect(logoButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+
     // Click on the logo to open the menu
     await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
+      fireEvent.click(logoButton);
     });
 
-    expect(screen.getByText('Menu 1')).toBeInTheDocument();
+    expect(logoButton).toHaveAttribute('aria-expanded', 'true');
+    expect(menuTitle.getAttribute('data-opened')).toBe('true');
 
     // Click on the logo to close the menu
     await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
+      fireEvent.click(logoButton);
     });
 
-    expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
+    expect(logoButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
   });
 
-  test('Toggle sidebar v2', async () => {
+  test('Toggle sidebar v2 via toggle button', async () => {
     await setup('v2');
     expect(screen.getByText('Your application here')).toBeInTheDocument();
 
-    // Click on the logo to open the menu
+    const toggleButton = screen.getByLabelText('Open Sidebar');
+    const menuTitle = screen.getByText('Menu 1');
+
+    expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
+
+    // Click on the toggle button to open the menu
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Toggle navbar' }));
+      fireEvent.click(toggleButton);
     });
 
-    expect(screen.getByText('Menu 1')).toBeInTheDocument();
+    expect(screen.getByLabelText('Close Sidebar')).toHaveAttribute('aria-expanded', 'true');
+    expect(menuTitle.getAttribute('data-opened')).toBe('true');
 
-    // Click on the logo to close the menu
+    // Click again to close the menu
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Toggle navbar' }));
+      fireEvent.click(screen.getByLabelText('Close Sidebar'));
     });
 
-    expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Open Sidebar')).toHaveAttribute('aria-expanded', 'false');
+    expect(menuTitle.getAttribute('data-opened')).toBeNull();
   });
 
   test('Spotlight search', async () => {
@@ -190,30 +206,30 @@ describe('AppShell v2', () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const searchButton = screen.getByText('Search') as HTMLInputElement;
+    const searchButton = screen.getByText('Search');
 
     await act(async () => {
       fireEvent.click(searchButton);
     });
 
-    const input = (await screen.findByPlaceholderText('Search...')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText(/Start typing to search/i);
 
-    // Expect the initial "not found" message:
-    expect(screen.getByText('Type to search...')).toBeInTheDocument();
+    // Expect the initial keyboard shortcut hint when nothing is in recent history
+    expect(screen.getByText(/open Search next time/i)).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'jibberish' } });
     });
 
     // Expect the "No results found" message:
-    expect(screen.getByText('No results found')).toBeInTheDocument();
+    expect(await screen.findByText('No results found')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(input, { target: { value: '' } });
     });
 
-    // Back to the initial "not found" message:
-    expect(screen.getByText('Type to search...')).toBeInTheDocument();
+    // Back to the initial keyboard shortcut hint:
+    expect(await screen.findByText(/open Search next time/i)).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Homer' } });

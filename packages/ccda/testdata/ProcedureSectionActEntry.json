@@ -23,7 +23,7 @@
             "display": "Medplum"
           }
         ],
-        "date": "2025-01-01T00:00:00-0500",
+        "date": "2025-01-01T00:00:00-05:00",
         "title": "Medical Summary",
         "section": [
           {
@@ -66,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -90,7 +92,7 @@
           "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
           "display": "Katherine Madison"
         },
-        "performedDateTime": "2014-03-29T10:45:13-0500",
+        "performedDateTime": "2014-03-29T10:45:13-05:00",
         "extension": [
           {
             "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",

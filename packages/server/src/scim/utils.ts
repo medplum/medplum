@@ -42,7 +42,7 @@ export async function searchScimUsers(
 
   const filter = params.filter;
   if (filter && typeof filter === 'string') {
-    const match = filter.match(/^userName eq "([^"]+)"$/);
+    const match = /^userName eq "([^"]+)"$/.exec(filter);
     if (match) {
       searchRequest.filters.push({
         code: 'user-name',

@@ -2037,6 +2037,12 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
             type: 'quantity',
             text: 'Quantity',
           },
+          {
+            linkId: 'repeating-string',
+            type: 'string',
+            text: 'Repeating String',
+            repeats: true,
+          },
         ],
       }}
       questionnaireResponse={{
@@ -2190,6 +2196,22 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
                   value: 1,
                   unit: '2',
                 },
+              },
+            ],
+          },
+          {
+            id: 'id-29',
+            linkId: 'repeating-string',
+            text: 'Repeating String',
+            answer: [
+              {
+                valueString: 'First value',
+              },
+              {
+                valueString: 'Second value',
+              },
+              {
+                valueString: 'Third value',
               },
             ],
           },

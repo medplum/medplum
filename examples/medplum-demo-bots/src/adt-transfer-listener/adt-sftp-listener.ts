@@ -420,7 +420,7 @@ function createEncounter(
         }
         // Default value if not present or not in value set
         return 'unknown';
-      })() as Encounter['status'],
+      })(),
       class: {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
         code: mapPatientClass(pv1.getField(2)?.getComponent(1)) || 'IMP',

@@ -21,7 +21,6 @@ The eFax integration allows you to:
 ## Prerequisites
 
 Before using the eFax integration, you must have:
-- An eFax Corporate account with API access credentials
 - The eFax integration enabled on your Medplum project (contact the Medplum team)
 - eFax API credentials configured as project secrets
 

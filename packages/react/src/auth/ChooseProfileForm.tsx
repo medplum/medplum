@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
+import { Anchor, Box, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
 import type { LoginAuthenticationResponse } from '@medplum/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import type { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
@@ -81,6 +81,17 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
           </Combobox.Options>
         </div>
       </Combobox>
+      <Text size="sm" ta="center" mt="md">
+        <Anchor
+          component="button"
+          type="button"
+          onClick={() => {
+            window.location.href = `/signin?project=new&login=${props.login}`;
+          }}
+        >
+          Create a new project
+        </Anchor>
+      </Text>
     </Stack>
   );
 }

@@ -1,36 +1,114 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Task } from '@medplum/fhirtypes';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import classes from '../tasks/TasksPage.module.css';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
+import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
+import type { SearchRequest } from '@medplum/core';
+import { Loading, useMedplumProfile } from '@medplum/react';
+import { normalizeTaskSearch } from '../../utils/task-search';
 
 export function TasksTab(): JSX.Element {
   const { patientId, taskId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const profile = useMedplumProfile();
+  const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
+  const patientRef = `Patient/${patientId}`;
 
-  const onSelectedItem = (task: Task): string => {
-    return `/Patient/${patientId}/Task/${task.id}`;
+  useEffect(() => {
+    const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search, {
+      additionalFilters: [
+        {
+          code: 'patient',
+          operator: Operator.EQUALS,
+          value: patientRef,
+        },
+      ],
+    });
+
+    if (needsNavigation) {
+      navigate(`/Patient/${patientId}/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
+    } else {
+      setParsedSearch(normalizedSearch);
+    }
+  }, [location, navigate, patientId, patientRef]);
+
+  if (!parsedSearch) {
+    return <Loading />;
+  }
+
+  const onNew = (task: Task): void => {
+    navigate(getTaskUri(task))?.catch(console.error);
   };
 
-  const handleTaskChange = (task: Task): void => {
-    navigate(onSelectedItem(task))?.catch(console.error);
+  const getTaskUri = (task: Task): string => {
+    return `/Patient/${patientId}/Task/${task.id}${formatSearchQuery(parsedSearch)}`;
   };
 
-  const handleDeleteTask = (_: Task): void => {
-    navigate(`/Patient/${patientId}/Task`)?.catch(console.error);
+  const onDelete = (_: Task): void => {
+    navigate(`/Patient/${patientId}/Task${formatSearchQuery(parsedSearch)}`)?.catch(console.error);
   };
+
+  const onChange = (search: SearchRequest): void => {
+    navigate(`/Patient/${patientId}/Task${formatSearchQuery(search)}`)?.catch(console.error);
+  };
+
+  const myTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner' && f.code !== 'patient') || [];
+  myTasksFilters.push({
+    code: 'patient',
+    operator: Operator.EQUALS,
+    value: patientRef,
+  });
+  if (profile) {
+    const profileRef = getReferenceString(profile);
+    if (profileRef) {
+      myTasksFilters.push({
+        code: 'owner',
+        operator: Operator.EQUALS,
+        value: profileRef,
+      });
+    }
+  }
+  const myTasksSearch: SearchRequest = {
+    ...parsedSearch,
+    filters: myTasksFilters,
+    offset: 0,
+  };
+
+  const allTasksFilters = parsedSearch.filters?.filter((f) => f.code !== 'owner' && f.code !== 'patient') || [];
+  allTasksFilters.push({
+    code: 'patient',
+    operator: Operator.EQUALS,
+    value: patientRef,
+  });
+  const allTasksSearch: SearchRequest = {
+    ...parsedSearch,
+    filters: allTasksFilters,
+    offset: 0,
+  };
+
+  const myTasksQuery = formatSearchQuery(myTasksSearch);
+  const allTasksQuery = formatSearchQuery(allTasksSearch);
 
   return (
     <div className={classes.container}>
       <TaskBoard
-        query={`patient=Patient/${patientId}&_sort=-_lastUpdated`}
+        query={formatSearchQuery(parsedSearch).substring(1)}
         selectedTaskId={taskId}
-        onTaskChange={handleTaskChange}
-        onDeleteTask={handleDeleteTask}
-        onSelectedItem={onSelectedItem}
+        onDelete={onDelete}
+        onNew={onNew}
+        onChange={onChange}
+        getTaskUri={getTaskUri}
+        myTasksUri={
+          myTasksQuery ? `/Patient/${patientId}/Task?${myTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
+        allTasksUri={
+          allTasksQuery ? `/Patient/${patientId}/Task?${allTasksQuery.substring(1)}` : `/Patient/${patientId}/Task`
+        }
       />
     </div>
   );

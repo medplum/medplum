@@ -51,14 +51,18 @@ export function buildAddresses(input: string | Address | (string | Address)[] | 
  * @param address - nodemailer address input.
  * @returns String address.
  */
-export function addressToString(address: Address | string | undefined): string | undefined {
-  if (address) {
-    if (typeof address === 'string') {
-      return address;
-    }
-    if (typeof address === 'object' && 'address' in address) {
-      return address.address;
-    }
+export function addressToString(address: (string | Address)[] | Address | string | undefined): string | undefined {
+  if (!address) {
+    return undefined;
+  }
+  if (Array.isArray(address)) {
+    address = address[0];
+  }
+  if (typeof address === 'string') {
+    return address;
+  }
+  if (typeof address === 'object' && 'address' in address) {
+    return address.address;
   }
   return undefined;
 }

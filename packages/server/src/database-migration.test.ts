@@ -10,7 +10,6 @@ import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
-import { AuthenticatedRequestContext } from './context';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
@@ -26,7 +25,6 @@ import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
@@ -106,7 +104,7 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
 }
 
 async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
-  const jobs = (await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'))) as WithId<AsyncJob>[];
+  const jobs = await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'));
   await repo.expungeResources(
     'AsyncJob',
     jobs.map((job) => job.id)
@@ -565,7 +563,6 @@ describe('Database migrations', () => {
       await initApp(app, config);
       await expungePostDeployMigrationAsyncJob(getSystemRepo());
 
-      requestContextStore.enterWith(AuthenticatedRequestContext.system());
       ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
       const systemRepo = getSystemRepo();
@@ -732,7 +729,7 @@ describe('Database migrations', () => {
       });
 
       test('Nothing to do', async () => {
-        generateMigrationActionsSpy.mockResolvedValueOnce([]);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: [], postDeploy: [] });
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         const res1 = await request(app)
@@ -753,7 +750,7 @@ describe('Database migrations', () => {
             tableName: 'AsyncJob',
           },
         ];
-        generateMigrationActionsSpy.mockResolvedValueOnce(pendingActions);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: pendingActions, postDeploy: [] });
 
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
@@ -767,7 +764,10 @@ describe('Database migrations', () => {
         const jobData = queueAddSpy.mock.calls[0][1];
         expect(jobData).toMatchObject({
           type: 'dynamic',
-          migrationActions: pendingActions,
+          migrationActions: {
+            preDeploy: pendingActions,
+            postDeploy: [],
+          },
         });
 
         expect(res1.status).toStrictEqual(202);

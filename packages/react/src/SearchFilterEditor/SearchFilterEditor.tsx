@@ -28,13 +28,13 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
-  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search) as SearchRequest);
+  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search));
 
   const searchRef = useRef<SearchRequest>(search);
   searchRef.current = search;
 
   useEffect(() => {
-    setSearch(deepClone(props.search) as SearchRequest);
+    setSearch(deepClone(props.search));
   }, [props.search]);
 
   function onAddFilter(filter: Filter): void {

@@ -279,7 +279,7 @@ We encourage healthcare organizations and developers to embrace TEFCA and contri
 | **QHIN Technical Framework (QTF)** | The most recent effective version of the document that outlines the technical specifications and other technical requirements necessary for QHINs to exchange information[^25]. |
 
 
-#### **Works cited**
+#### Works cited
 
 1\. TEFCA | HealthIT.gov, accessed February 16, 2025, [https://www.healthit.gov/topic/interoperability/policy/trusted-exchange-framework-and-common-agreement-tefca](https://www.healthit.gov/topic/interoperability/policy/trusted-exchange-framework-and-common-agreement-tefca)  
 2\. Understanding TEFCA: Key Changes and Impacts on Healthcare in 2025 and Beyond, accessed February 16, 2025, [https://www.productiveedge.com/blog/understanding-tefca-key-changes-and-impacts-on-healthcare-in-2025-and-beyond](https://www.productiveedge.com/blog/understanding-tefca-key-changes-and-impacts-on-healthcare-in-2025-and-beyond)  

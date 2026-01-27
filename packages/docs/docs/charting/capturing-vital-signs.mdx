@@ -176,6 +176,150 @@ The `valueQuantity` field is stored as a `Quantity` type, which contains a `valu
 | `valueDateTime`        | Used to represent the exact time and date an observation was made.            | string                                                                             | Birth date and time                | 2023-07-24T13:22:00Z                                                                                                                         |
 | `valuePeriod`          | Used for observations that have a specific duration or period.                | [Period](https://www.medplum.com/docs/api/fhir/datatypes/period)                   | Menstrual cycle duration           | 2023-05-12 – 2023-6-09                                                                                                                       |
 
+## Using `valueSampledData` for Timeseries Data
+
+The `valueSampledData` field is recommended for storing **dense timeseries observation data** from devices such as wearables (e.g., smartwatches, fitness trackers, continuous glucose monitors). This datatype efficiently represents a series of measurements taken at regular intervals within a single `Observation` resource.
+
+### When to Use `valueSampledData`
+
+Use `valueSampledData` when you have:
+- Multiple measurements taken at regular intervals (e.g., heart rate readings every minute)
+- Data from wearable devices or continuous monitoring equipment
+- Timeseries data that would otherwise require creating many individual `Observation` resources
+
+:::warning Large-Scale Wearables Data
+
+**Medplum is not designed for large-scale wearables data ingestion.** While `valueSampledData` is suitable for moderate-frequency timeseries data (e.g., hourly or daily summaries), applications that need to store high-frequency data from many devices simultaneously (e.g., second-by-second readings from thousands of wearables) should consider using a dedicated data warehouse solution.
+
+For large-scale wearables data:
+- Use Medplum for clinical summaries and aggregated observations
+- Stream raw high-frequency data to a time-series database or data warehouse
+
+:::
+
+### Structure of `SampledData`
+
+The `SampledData` datatype includes:
+- `origin`: The base value and unit (as a `Quantity`)
+- `period`: The number of milliseconds between samples
+- `dimensions`: The number of values per sample period
+- `factor`: A scaling factor applied to the data
+- `data`: A space-separated string of compressed sample values
+
+<details>
+  <summary>Example: Heart rate data from a wearable device</summary>
+
+```js
+{
+  "resourceType": "Observation",
+  "status": "final",
+  "code": {
+    "system": "http://loinc.org",
+    "code": "8867-4",
+    "display": "Heart rate"
+  },
+  "subject": {
+    "reference": "Patient/example-patient"
+  },
+  "device": {
+    "reference": "Device/apple-watch-123"
+  },
+  "effectivePeriod": {
+    "start": "2024-01-15T08:00:00Z",
+    "end": "2024-01-15T09:00:00Z"
+  },
+  "valueSampledData": {
+    "origin": {
+      "value": 60,
+      "unit": "beats/min",
+      "system": "http://unitsofmeasure.org",
+      "code": "{Beats}/min"
+    },
+    "period": 60000,  // 1 minute in milliseconds
+    "dimensions": 1,
+    "factor": 1,
+    "data": "5 3 2 4 1 2 3 2 1 0 2 1 3 2 4 3 2 1 0 1 2 3 4 5 4 3 2 1 0 1 2 3 4 5 6 5 4 3 2 1 0 1 2 3 4 5 4 3 2 1 0 1 2 3 4 5 4 3 2 1 0"
+    // Each value represents the difference from the origin (60 bpm)
+    // So "5" = 65 bpm, "3" = 63 bpm, etc.
+  }
+}
+```
+
+</details>
+
+### Helper Functions
+
+Medplum provides helper functions in `@medplum/core` for working with `valueSampledData`:
+
+#### `expandSampledData()`
+
+Expands a `SampledData` object into an array of numeric values:
+
+```typescript
+import { expandSampledData } from '@medplum/core';
+
+const sampledData = {
+  origin: { value: 60, unit: 'beats/min' },
+  period: 60000,
+  dimensions: 1,
+  factor: 1,
+  data: '5 3 2 4 1'
+};
+
+const values = expandSampledData(sampledData);
+// Returns: [65, 63, 62, 64, 61]
+```
+
+#### `expandSampledObservation()`
+
+Converts an `Observation` with `valueSampledData` into multiple individual `Observation` resources, one for each data point:
+
+```typescript
+import { expandSampledObservation } from '@medplum/core';
+
+const observation = {
+  resourceType: 'Observation',
+  code: { /* ... */ },
+  valueSampledData: { /* ... */ },
+  effectiveDateTime: '2024-01-15T08:00:00Z'
+};
+
+const expandedObservations = expandSampledObservation(observation);
+// Returns an array of Observation resources, each with a valueQuantity
+// and effectiveDateTime calculated from the sampled data
+```
+
+#### `summarizeObservations()` and `DataSampler`
+
+Summarize multiple `Observation` resources into a single summary `Observation` with the original data points preserved in `component.valueSampledData`:
+
+```typescript
+import { summarizeObservations, DataSampler } from '@medplum/core';
+
+// Option 1: Using summarizeObservations helper
+const observations = [/* array of Observation resources */];
+const summary = summarizeObservations(
+  observations,
+  { text: 'Average Heart Rate' },
+  (data) => data.reduce((a, b) => a + b, 0) / data.length
+);
+
+// Option 2: Using DataSampler class for more control
+const sampler = new DataSampler({
+  code: { text: 'Heart Rate' },
+  unit: { unit: 'beats/min', code: '{Beats}/min' }
+});
+
+sampler.addObservation(obs1);
+sampler.addObservation(obs2);
+// ... add more observations
+
+const summary = sampler.summarize(
+  { text: 'Average Heart Rate' },
+  (data) => data.reduce((a, b) => a + b, 0) / data.length
+);
+```
+
 ## Multi-component Observations
 
 In some cases it is possible for an `Observation` to have multiple "sub-observations". The `Observation.component` field can be used in these cases when there are multiple results that cannot be reasonably interpreted individually.

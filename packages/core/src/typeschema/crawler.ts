@@ -126,15 +126,15 @@ class Crawler {
 
     for (const propertyValue of propertyValues) {
       for (const value of arrayify(propertyValue)) {
-        this.crawlPropertyValue(value, path);
+        this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private crawlPropertyValue(value: TypedValueWithPath, path: string): void {
+  private crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): void {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       this.crawlObject(value, type, path);
     }
   }
@@ -205,15 +205,15 @@ class AsyncCrawler {
 
     for (const propertyValue of propertyValues) {
       for (const value of arrayify(propertyValue)) {
-        await this.crawlPropertyValue(value, path);
+        await this.crawlPropertyValue(value, path, schema);
       }
     }
   }
 
-  private async crawlPropertyValue(value: TypedValueWithPath, path: string): Promise<void> {
+  private async crawlPropertyValue(value: TypedValueWithPath, path: string, schema: InternalTypeSchema): Promise<void> {
     if (!isPrimitiveType(value.type)) {
       // Recursively crawl as the expected data type
-      const type = getDataType(value.type);
+      const type = schema.innerTypes?.find((t) => t.name === value.type) ?? getDataType(value.type);
       await this.crawlObject(value, type, path);
     }
   }

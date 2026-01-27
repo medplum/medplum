@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MedplumProvider } from '@medplum/react';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import { SignLockDialog } from './SignLockDialog';
@@ -14,7 +14,6 @@ describe('SignLockDialog', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    await medplum.createResource(DrAliceSmith);
     vi.clearAllMocks();
   });
 

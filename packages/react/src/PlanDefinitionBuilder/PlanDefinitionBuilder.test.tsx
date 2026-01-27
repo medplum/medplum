@@ -347,7 +347,7 @@ describe('PlanDefinitionBuilder', () => {
 
     expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
 
-    const input = screen.getByPlaceholderText('Search for activity definition') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search for activity definition');
 
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Comprehensive' } });

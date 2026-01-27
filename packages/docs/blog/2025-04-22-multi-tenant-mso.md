@@ -102,7 +102,7 @@ Imposing these restrictions on Practitioner users is done via Medplum's [AccessP
 
 ```
 
-Because of the Patient's [compartment definition](https://build.fhir.org/compartmentdefinition-patient.html), which is essentially a way to link related resource types to the Patient resource, we can set the **compartment** array on the Patient resource and have that same **compartment** propogate to all the other resources related to the Patient. These are resources like Appointments, Observations, and DiagnosticReports that should all inherit the same access restrictions. This is done using the Patient [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) FHIR operation.
+Because of the Patient's [compartment definition](https://build.fhir.org/compartmentdefinition-patient.html), which is essentially a way to link related resource types to the Patient resource, we can set the **compartment** array on the Patient resource and have that same **compartment** propogate to all the other resources related to the Patient. These are resources like Appointments, Observations, and DiagnosticReports that should all inherit the same access restrictions. This is done using the [$set-accounts](/docs/api/fhir/operations/set-accounts) FHIR operation.
 
 For example, say you want to enroll _Patient/123_ into two Organizations, _Organization/789_ and _Organization/456_. You can do this by making the following request:
 
@@ -173,7 +173,7 @@ The `%organization` value is replaced at runtime with one or more of the Organiz
 
 What if we want to do everything discussed above but also restrict any access until the Patient has given consent?
 
-To do this, we can create a universal [Consent](/docs/api/fhir/resources/consent) resource with its _status_ set to _active_ that can also be added to the Patient's compartment and extended to all resources related to the Patient using the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation. Then to revoke Patient consent, you can simply remove the Consent resource from the Patient's compartment.
+To do this, we can create a universal [Consent](/docs/api/fhir/resources/consent) resource with its _status_ set to _active_ that can also be added to the Patient's compartment and extended to all resources related to the Patient using the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation. Then to revoke Patient consent, you can simply remove the Consent resource from the Patient's compartment.
 
 Then, your access policy will look like this:
 
@@ -212,7 +212,7 @@ Then, your access policy will look like this:
 
 ### Additional Access Control: Assigning Practitioner Access to Specific Patients
 
-If allowing Practitioners to access all Patients enrolled in a shared Organization is not restrictive enough, you can also configure the AccessPolicy to only allow access to specifically assigned Patients. This can be done using a similar pattern to the Organizational access by not just adding Organization references to the Patient's compartment, but also adding Practitioner references to the Patient's compartment that represent the Practitioners that are allowed to access the Patient. Again, this is done using the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) FHIR operation.
+If allowing Practitioners to access all Patients enrolled in a shared Organization is not restrictive enough, you can also configure the AccessPolicy to only allow access to specifically assigned Patients. This can be done using a similar pattern to the Organizational access by not just adding Organization references to the Patient's compartment, but also adding Practitioner references to the Patient's compartment that represent the Practitioners that are allowed to access the Patient. Again, this is done using the [$set-accounts](/docs/api/fhir/operations/set-accounts) FHIR operation.
 
 For example, say you want to give _Practitioner/456_ in _Organization/789_ access to _Patient/123_. You can do this by making the following request:
 

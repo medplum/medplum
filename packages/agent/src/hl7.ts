@@ -3,7 +3,13 @@
 import type { AgentTransmitResponse, ILogger } from '@medplum/core';
 import { ContentType, Hl7Message, normalizeErrorString } from '@medplum/core';
 import type { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import type { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent } from '@medplum/hl7';
+import type {
+  EnhancedMode,
+  Hl7Connection,
+  Hl7EnhancedAckSentEvent,
+  Hl7ErrorEvent,
+  Hl7MessageEvent,
+} from '@medplum/hl7';
 import { Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import type { App } from './app';
@@ -25,7 +31,7 @@ export type AppLevelAckCode = (typeof APP_LEVEL_ACK_CODES)[number];
 export interface ShouldSendAppLevelAckOptions {
   mode: AppLevelAckMode;
   ackCode: AppLevelAckCode;
-  enhancedMode: boolean;
+  enhancedMode: EnhancedMode;
 }
 
 export class AgentHl7Channel extends BaseChannel {
@@ -43,7 +49,7 @@ export class AgentHl7Channel extends BaseChannel {
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
-    this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
+    this.server = new Hl7Server((connection: Hl7Connection) => this.handleNewConnection(connection));
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
@@ -87,7 +93,7 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   sendToRemote(msg: AgentTransmitResponse): void {
-    const connection = this.connections.get(msg.remote as string);
+    const connection = this.connections.get(msg.remote);
     if (connection) {
       const hl7Message = Hl7Message.parse(msg.body);
       const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
@@ -168,9 +174,9 @@ export class AgentHl7Channel extends BaseChannel {
   }
 
   private configureHl7ServerAndConnections(): void {
-    const address = new URL(this.getEndpoint().address as string);
+    const address = new URL(this.getEndpoint().address);
     const encoding = address.searchParams.get('encoding') ?? undefined;
-    const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const enhancedMode = parseEnhancedMode(address.searchParams.get('enhanced'), this.log);
     const assignSeqNo = address.searchParams.get('assignSeqNo')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
     const appLevelAckRaw = address.searchParams.get('appLevelAck') ?? undefined;
@@ -225,8 +231,11 @@ export class AgentHl7ChannelConnection {
     this.remote = `${hl7Connection.socket.remoteAddress}:${hl7Connection.socket.remotePort}`;
 
     // Add listener immediately to handle incoming messages
-    this.hl7Connection.addEventListener('message', (event) => this.handleMessage(event));
-    this.hl7Connection.addEventListener('error', (event) => this.handleError(event));
+    this.hl7Connection.addEventListener('message', (event: Hl7MessageEvent) => this.handleMessage(event));
+    this.hl7Connection.addEventListener('error', (event: Hl7ErrorEvent) => this.handleError(event));
+    this.hl7Connection.addEventListener('enhancedAckSent', (event: Hl7EnhancedAckSentEvent) =>
+      this.handleEnhancedAckSent(event)
+    );
   }
 
   private async handleMessage(event: Hl7MessageEvent): Promise<void> {
@@ -246,7 +255,7 @@ export class AgentHl7ChannelConnection {
       this.channel.app.addToWebSocketQueue({
         type: 'agent:transmit:request',
         accessToken: 'placeholder',
-        channel: this.channel.getDefinition().name as string,
+        channel: this.channel.getDefinition().name,
         remote: this.remote,
         contentType: ContentType.HL7_V2,
         body: event.message.toString(),
@@ -268,9 +277,47 @@ export class AgentHl7ChannelConnection {
     this.channel.channelLog.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
+  private handleEnhancedAckSent(event: Hl7EnhancedAckSentEvent): void {
+    const hl7Message = event.message;
+    const msgControlId = hl7Message.getSegment('MSA')?.getField(2)?.toString();
+    const ackCode = hl7Message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+
+    this.channel.channelLog.info(
+      `[Sent ${ackCode === 'CA' ? 'Commit ACK (CA)' : 'Immediate ACK (AA)'} -- ID: ${msgControlId ?? 'not provided'}]: ${hl7Message.toString().replaceAll('\r', '\n')}`
+    );
+  }
+
   close(): Promise<void> {
     return this.hl7Connection.close();
   }
+}
+
+/**
+ * Parses and normalizes the enhanced mode parameter from the endpoint URL.
+ *
+ * @param rawValue - The raw query parameter value retrieved from the endpoint URL (e.g., 'true', 'aa', or undefined).
+ * @param logger - The Logger instance to use for logging.
+ * @returns The parsed enhanced mode enum value.
+ */
+export function parseEnhancedMode(rawValue: string | null | undefined, logger: ILogger): EnhancedMode {
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const normalizedValue = rawValue.toLowerCase();
+
+  if (normalizedValue === 'true') {
+    return 'standard';
+  }
+
+  if (normalizedValue === 'aa') {
+    return 'aaMode';
+  }
+
+  logger.warn(
+    `Invalid enhanced value '${rawValue}'; expected 'true' or 'aa'. Using standard mode (enhanced mode disabled).`
+  );
+  return undefined;
 }
 
 /**
@@ -319,14 +366,22 @@ export function isAppLevelAckMode(candidate: string): candidate is AppLevelAckMo
 
 /**
  * Determines whether an application-level ACK should be forwarded to the remote system.
- * @param options - The configuration describing the ACK mode, current ACK code, and whether enhanced mode is enabled.
+ * @param options - The configuration describing the ACK mode, current ACK code, and enhanced mode setting.
  * @returns True if the ACK should be forwarded to the remote system; otherwise, false.
  */
 export function shouldSendAppLevelAck(options: ShouldSendAppLevelAckOptions): boolean {
   const { mode, ackCode, enhancedMode } = options;
+  // If enhanced mode is not enabled (undefined), always send the ACK
   if (!enhancedMode) {
     return true;
   }
+
+  // For 'aaMode', never forward application-level ACKs (we already sent AA immediately)
+  if (enhancedMode === 'aaMode') {
+    return false;
+  }
+
+  // For 'standard' enhanced mode, follow the app-level ACK mode rules
   switch (mode) {
     case 'AL':
       return true;

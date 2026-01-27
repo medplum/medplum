@@ -42,7 +42,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
           <Text size="sm">
-            <ResourceName c="dark" fw={500} value={author} link={true} />
+            <ResourceName c="inherit" fw={500} value={author} link={true} />
           </Text>
           <Text size="xs">
             <MedplumLink c="dimmed" to={props.resource}>

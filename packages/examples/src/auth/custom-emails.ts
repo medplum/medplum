@@ -4,7 +4,7 @@
 // start-block customEmails
 import type { BotEvent, MedplumClient, ProfileResource } from '@medplum/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import type { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
+import type { ProjectMembership, Reference, UserSecurityRequest } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {
   // This Bot executes on every new UserSecurityRequest resource.
@@ -14,7 +14,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<UserSecuri
   const pcr = event.input;
 
   // Get the user from the UserSecurityRequest.
-  const user = await medplum.readReference(pcr.user as Reference<User>);
+  const user = await medplum.readReference(pcr.user);
 
   // Get the project membership for the user.
   // ProjectMembership is an administrative resource that connects a User and a Project.

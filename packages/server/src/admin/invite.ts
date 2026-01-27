@@ -274,7 +274,7 @@ async function validateAccessPolicies(
     references.push(request.accessPolicy);
   }
 
-  if (request.access && Array.isArray(request.access)) {
+  if (Array.isArray(request.access)) {
     for (const access of request.access) {
       if (access.policy) {
         references.push(access.policy);
@@ -282,7 +282,7 @@ async function validateAccessPolicies(
     }
   }
 
-  if (request.membership?.access && Array.isArray(request.membership.access)) {
+  if (Array.isArray(request.membership?.access)) {
     for (const access of request.membership.access) {
       if (access.policy) {
         references.push(access.policy);

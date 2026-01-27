@@ -95,7 +95,7 @@ describe('ReconnectingWebSocket', () => {
     await wsServer.connected;
     const receivedEvent = await new Promise<MessageEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('message', (event) => {
-        resolve(event as MessageEvent);
+        resolve(event);
       });
       wsServer.send({ med: 'plum' });
     });

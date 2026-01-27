@@ -59,7 +59,7 @@ describe('App', () => {
     const user = await setup();
     await openMenu(user);
 
-    await user.click(screen.getByText('Add another account'));
+    await user.click(screen.getByText('Switch to another project'));
   });
 
   test('Click sign out', async () => {
@@ -84,7 +84,7 @@ describe('App', () => {
     const user = await setup();
     await openNav(user);
 
-    const input = (await screen.findByPlaceholderText('Resource Type')) as HTMLInputElement;
+    const input = await screen.findByPlaceholderText('Resource Type');
 
     // Enter random text
     await user.type(input, 'Different');

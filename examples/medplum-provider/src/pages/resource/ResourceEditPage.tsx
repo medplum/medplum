@@ -21,7 +21,7 @@ export function ResourceEditPage(): JSX.Element | null {
   useEffect(() => {
     if (resourceType && id) {
       medplum
-        .readResource(resourceType as ResourceType, id)
+        .readResource(resourceType, id)
         .then((resource) => setValue(deepClone(resource)))
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));

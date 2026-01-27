@@ -279,7 +279,7 @@ describe('SearchFilterEditor', () => {
     // Wait for the resource to load
     await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
 
-    const input = screen.getByTestId('filter-0-row-filter-value') as HTMLInputElement;
+    const input = screen.getByTestId<HTMLInputElement>('filter-0-row-filter-value');
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
 
@@ -304,7 +304,7 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    const input = screen.getByDisplayValue('5') as HTMLInputElement;
+    const input = screen.getByDisplayValue('5');
     await act(async () => {
       fireEvent.change(input, { target: { value: '6' } });
     });

@@ -1,11 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { renderHook, waitFor } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
-import type { JSX } from 'react';
+import type { WithId } from '@medplum/core';
 import type { Encounter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { MedplumProvider } from '@medplum/react';
+import { renderHook, waitFor } from '@testing-library/react';
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { useEncounter } from './useEncounter';
 
 vi.mock('react-router', async () => {
@@ -15,8 +17,6 @@ vi.mock('react-router', async () => {
     useParams: vi.fn(),
   };
 });
-
-import { useParams } from 'react-router';
 
 describe('useEncounter', () => {
   let medplum: MockClient;
@@ -40,7 +40,7 @@ describe('useEncounter', () => {
   });
 
   test('loads encounter resource by ID from URL params', async () => {
-    const mockEncounter: Encounter = {
+    const mockEncounter: WithId<Encounter> = {
       resourceType: 'Encounter',
       id: 'encounter-123',
       status: 'in-progress',
@@ -62,7 +62,7 @@ describe('useEncounter', () => {
   });
 
   test('handles different encounter IDs correctly', async () => {
-    const mockEncounter: Encounter = {
+    const mockEncounter: WithId<Encounter> = {
       resourceType: 'Encounter',
       id: 'encounter-456',
       status: 'finished',

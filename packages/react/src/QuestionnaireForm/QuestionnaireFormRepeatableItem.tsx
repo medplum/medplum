@@ -20,12 +20,7 @@ export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatab
   const showAddButton = item.type !== QuestionnaireItemType.choice && item.type !== QuestionnaireItemType.openChoice;
   const answers = responseItem.answer && responseItem.answer.length > 0 ? responseItem.answer : [{}];
   return (
-    <FormSection
-      key={props.item.linkId}
-      htmlFor={props.item.linkId}
-      title={props.item.text}
-      withAsterisk={props.item.required}
-    >
+    <FormSection key={props.item.linkId} title={props.item.text} withAsterisk={props.item.required}>
       <Stack gap="xs">
         {answers?.map((_, index) => (
           <QuestionnaireFormItem

@@ -1,6 +1,6 @@
 {
   "name": "medplum-fsh-profiles",
-  "version": "5.0.10",
+  "version": "5.0.12",
   "private": true,
   "description": "Medplum FSH Profiles Example",
   "type": "module",
@@ -11,7 +11,7 @@
     "dev": "npm run build:profiles"
   },
   "devDependencies": {
-    "fsh-sushi": "3.16.5",
+    "fsh-sushi": "3.17.0",
     "rimraf": "6.1.2"
   },
   "packageManager": "npm@10.9.4",

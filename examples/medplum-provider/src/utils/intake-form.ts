@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { addProfileToResource, createReference, getQuestionnaireAnswers } from '@medplum/core';
+import { addProfileToResource, append, createReference, EMPTY, getQuestionnaireAnswers } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
@@ -83,25 +83,22 @@ export async function onboardPatient(
   }
 
   const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
-  if (emergencyContacts) {
-    patient.contact = [];
-    for (const contact of emergencyContacts) {
-      patient.contact.push({
-        relationship: [
-          {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'EP',
-                display: 'Emergency contact person',
-              },
-            ],
-          },
-        ],
-        name: getHumanName(contact, 'emergency-contact-'),
-        telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
-      });
-    }
+  for (const contact of emergencyContacts ?? EMPTY) {
+    patient.contact = append(patient.contact, {
+      relationship: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+              code: 'EP',
+              display: 'Emergency contact person',
+            },
+          ],
+        },
+      ],
+      name: getHumanName(contact, 'emergency-contact-'),
+      telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
+    });
   }
 
   addExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race'], 'ombCategory');

@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
+import { allOk, badRequest, getStatus, isOperationOutcome, singularize } from '@medplum/core';
 import type { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -17,7 +17,7 @@ import { sendBinaryResponse } from '../fhir/response';
  */
 export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
   const systemRepo = getSystemRepo();
-  const id = req.params.id;
+  const id = singularize(req.params.id) ?? '';
   const runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
 
   // The ProjectMembership must be for a Bot resource

@@ -1,5 +1,7 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
-import { CSSProperties, JSX, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 import styles from './FeatureGrid.module.css';
 
 export interface FeatureGridProps {
@@ -16,7 +18,7 @@ export function FeatureGrid(props: FeatureGridProps): JSX.Element {
 }
 
 export interface FeatureProps {
-  readonly imgSrc?: string;
+  readonly icon?: ReactNode;
   readonly title: string;
   readonly children: ReactNode;
   readonly linkRef?: string;
@@ -26,11 +28,7 @@ export interface FeatureProps {
 export function Feature(props: FeatureProps): JSX.Element {
   return (
     <div className={styles.featureCell}>
-      {props.imgSrc && (
-        <div className={styles.featureIcon}>
-          <img src={props.imgSrc} loading="lazy" alt={props.title} width="28" height="28" />
-        </div>
-      )}
+      {props.icon && <div className={styles.featureIcon}>{props.icon}</div>}
       <h3>{props.title}</h3>
       <p>{props.children}</p>
       {props.linkRef && props.linkText && (

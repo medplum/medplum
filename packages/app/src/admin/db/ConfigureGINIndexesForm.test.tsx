@@ -112,7 +112,7 @@ describe('ConfigureGINIndexesForm', () => {
     setup();
     expect(screen.getByText('reset to default (on)')).toBeInTheDocument();
 
-    const input = screen.getByPlaceholderText('e.g. Observation') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('e.g. Observation');
 
     await act(async () => {
       fireEvent.click(input);

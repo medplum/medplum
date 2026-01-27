@@ -1,13 +1,22 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { FileBuilder } from '@medplum/core';
-import { readdirSync, writeFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { Client } from 'pg';
+import * as semver from 'semver';
 import type { BuildMigrationOptions } from './migrate';
-import { buildMigration, buildSchema, indexStructureDefinitionsAndSearchParameters } from './migrate';
+import {
+  generateMigrationActions,
+  buildSchema,
+  indexStructureDefinitionsAndSearchParameters,
+  writePreDeployActionsToBuilder,
+  writePostDeployActionsToBuilder,
+} from './migrate';
+import packageJson from '../../package.json';
 
 export const SCHEMA_DIR = resolve('./src/migrations/schema');
+export const DATA_DIR = resolve('./src/migrations/data');
 
 export async function main(): Promise<void> {
   const dryRun = process.argv.includes('--dryRun');
@@ -23,8 +32,6 @@ export async function main(): Promise<void> {
   });
   const options: BuildMigrationOptions = {
     dbClient,
-    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
-    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
     analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
     writeSchema: process.argv.includes('--writeSchema'),
@@ -33,17 +40,33 @@ export async function main(): Promise<void> {
 
   if (!options.skipMigration) {
     await dbClient.connect();
-
-    const b = new FileBuilder();
-    await buildMigration(b, options);
-
+    const actions = await generateMigrationActions(options);
     await dbClient.end();
 
-    if (dryRun) {
-      console.log(b.toString());
-    } else {
-      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-      rewriteMigrationExports();
+    if (actions.preDeploy.length) {
+      const preDeployBuilder = new FileBuilder();
+      writePreDeployActionsToBuilder(preDeployBuilder, actions.preDeploy);
+
+      if (dryRun) {
+        console.log(preDeployBuilder.toString());
+      } else {
+        writeFileSync(`${SCHEMA_DIR}/v${getNextVersion(SCHEMA_DIR)}.ts`, preDeployBuilder.toString(), 'utf8');
+        rewriteMigrationExports(SCHEMA_DIR);
+      }
+    }
+
+    if (actions.postDeploy.length) {
+      const postDeployBuilder = new FileBuilder();
+      writePostDeployActionsToBuilder(postDeployBuilder, actions.postDeploy);
+
+      if (dryRun) {
+        console.log(postDeployBuilder.toString());
+      } else {
+        const id = `v${getNextVersion(DATA_DIR)}`;
+        writeFileSync(`${DATA_DIR}/${id}.ts`, postDeployBuilder.toString(), 'utf8');
+        rewriteMigrationExports(DATA_DIR);
+        addDataMigrationToManifest(id);
+      }
     }
   }
 
@@ -58,17 +81,21 @@ export async function main(): Promise<void> {
   }
 }
 
-function getNextSchemaVersion(): number {
-  const [lastSchemaVersion] = getMigrationFilenames()
+function getNextVersion(dir: string = SCHEMA_DIR): number {
+  const [lastVersion] = getMigrationFilenames(dir)
     .map(getVersionFromFilename)
     .sort((a, b) => b - a);
 
-  return lastSchemaVersion + 1;
+  return lastVersion + 1;
 }
 
-function rewriteMigrationExports(): void {
+function rewriteMigrationExports(dir: string): void {
   const b = new FileBuilder();
-  const filenamesWithoutExt = getMigrationFilenames()
+  b.append(
+    '// organize-imports-ignore - https://github.com/simonhaenisch/prettier-plugin-organize-imports?tab=readme-ov-file#skip-files'
+  );
+  b.newLine();
+  const filenamesWithoutExt = getMigrationFilenames(dir)
     .map(getVersionFromFilename)
     .sort((a, b) => a - b)
     .map((version) => `v${version}`);
@@ -81,11 +108,18 @@ function rewriteMigrationExports(): void {
       );
     }
   }
-  writeFileSync(`${SCHEMA_DIR}/index.ts`, b.toString(), { flag: 'w' });
+  writeFileSync(`${dir}/index.ts`, b.toString(), { flag: 'w' });
 }
 
-function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
+export function addDataMigrationToManifest(version: string): void {
+  const path = join(DATA_DIR, 'data-version-manifest.json');
+  const manifest = JSON.parse(readFileSync(path, 'utf8'));
+  manifest[version] = { serverVersion: semver.inc(packageJson.version, 'patch') };
+  writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n');
+}
+
+function getMigrationFilenames(dir: string = SCHEMA_DIR): string[] {
+  return readdirSync(dir).filter((filename) => /^v\d+\.ts$/.test(filename));
 }
 
 function getVersionFromFilename(filename: string): number {

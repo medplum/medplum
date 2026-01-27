@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
+import { CPT, EMPTY, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
 import type { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -408,16 +408,14 @@ export function mapCcdaCodeToCodeableConcept(ccdaCode: CcdaCode | undefined): Co
     text: ccdaCode['@_displayName'],
   };
 
-  if (ccdaCode.translation) {
-    for (const translation of ccdaCode.translation) {
-      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
-      if (translationSystem) {
-        result.coding?.push({
-          system: translationSystem,
-          code: translation['@_code'],
-          display: translation['@_displayName'],
-        });
-      }
+  for (const translation of ccdaCode.translation ?? EMPTY) {
+    const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+    if (translationSystem) {
+      result.coding?.push({
+        system: translationSystem,
+        code: translation['@_code'],
+        display: translation['@_displayName'],
+      });
     }
   }
 

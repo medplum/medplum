@@ -21,7 +21,7 @@ describe('HL7', () => {
     expect(msg.header).toBeDefined();
     expect(msg.header.name).toBe('MSH');
 
-    const msh = msg.header as Hl7Segment;
+    const msh = msg.header;
     expect(msh.getField(0)?.toString()).toBe('MSH');
     expect(msh.getField(1)?.toString()).toBe('|');
     expect(msh.getField(2)?.toString()).toBe('^~\\&');

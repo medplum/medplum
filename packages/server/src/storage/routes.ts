@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { singularize } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -44,15 +45,15 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
     return;
   }
 
-  const { id } = req.params;
+  const id = singularize(req.params.id) ?? '';
   const systemRepo = getSystemRepo();
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
     const stream = await getBinaryStorage().readBinary(binary);
-    res.status(200).contentType(binary.contentType as string);
+    res.status(200).contentType(binary.contentType);
     await pump(stream, res);
-  } catch (_err) {
+  } catch {
     res.sendStatus(404);
   }
 });
