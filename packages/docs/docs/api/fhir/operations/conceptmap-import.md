@@ -15,7 +15,7 @@ The `$import` operation allows you to import code mappings into a ConceptMap. Th
 
 ## Authorization
 
-This operation requires **admin privileges**. You must be a project admin (`Membership.admin = true`).
+This operation requires **admin privileges**. You must be a project admin (`ProjectMembership.admin = true`).
 
 ## Invoke the `$import` operation
 
