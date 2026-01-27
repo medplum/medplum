@@ -30,6 +30,44 @@ export interface PreferredPharmacy {
 }
 
 /**
+ * Gets the reference string from a pharmacy extension.
+ * @param ext - The extension to extract from.
+ * @returns The reference string or undefined.
+ */
+function getPharmacyRefString(ext: Extension): string | undefined {
+  const pharmacyExt = ext.extension?.find((e) => e.url === 'pharmacy');
+  return pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
+}
+
+/**
+ * Checks if an extension is a preferred pharmacy extension.
+ * @param ext - The extension to check.
+ * @returns True if it's a preferred pharmacy extension with nested extensions.
+ */
+function isPreferredPharmacyExtension(ext: Extension): boolean {
+  return ext.url === PATIENT_PREFERRED_PHARMACY_URL && !!ext.extension;
+}
+
+/**
+ * Demotes a pharmacy extension to 'preferred' status.
+ * @param ext - The extension to demote.
+ */
+function demoteToPreferred(ext: Extension): void {
+  const typeExt = ext.extension?.find((e) => e.url === 'type');
+  if (typeExt) {
+    typeExt.valueCodeableConcept = {
+      coding: [
+        {
+          system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
+          code: PHARMACY_TYPE_PREFERRED,
+          display: 'Preferred Pharmacy',
+        },
+      ],
+    };
+  }
+}
+
+/**
  * Extracts preferred pharmacies from a Patient resource's extensions.
  *
  * @param patient - The Patient resource.
@@ -116,59 +154,30 @@ export function addPreferredPharmacyToPatient(
   orgRef: Reference<Organization>,
   isPrimary: boolean
 ): Patient {
-  if (!patient.extension) {
-    patient.extension = [];
-  }
+  patient.extension ??= [];
 
   const orgRefString = getReferenceString(orgRef);
 
-  // If setting as primary, first demote all other pharmacies to 'preferred'
+  // If setting as primary, demote all other pharmacies to 'preferred'
   if (isPrimary) {
     for (const ext of patient.extension) {
-      if (ext.url === PATIENT_PREFERRED_PHARMACY_URL && ext.extension) {
-        const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
-        const existingRefString = pharmacyExt?.valueReference
-          ? getReferenceString(pharmacyExt.valueReference)
-          : undefined;
-
-        // Skip if this is the same pharmacy we're adding
-        if (existingRefString === orgRefString) {
-          continue;
-        }
-
-        // Update type to 'preferred'
-        const typeExt = ext.extension.find((e) => e.url === 'type');
-        if (typeExt) {
-          typeExt.valueCodeableConcept = {
-            coding: [
-              {
-                system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
-                code: PHARMACY_TYPE_PREFERRED,
-                display: 'Preferred Pharmacy',
-              },
-            ],
-          };
-        }
+      if (isPreferredPharmacyExtension(ext) && getPharmacyRefString(ext) !== orgRefString) {
+        demoteToPreferred(ext);
       }
     }
   }
 
-  // Check if this pharmacy already exists
-  const existingIndex = patient.extension.findIndex((ext) => {
-    if (ext.url !== PATIENT_PREFERRED_PHARMACY_URL || !ext.extension) {
-      return false;
-    }
-    const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
-    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
-    return existingRefString === orgRefString;
-  });
+  // Find existing pharmacy extension index
+  const existingIndex = patient.extension.findIndex(
+    (ext) => isPreferredPharmacyExtension(ext) && getPharmacyRefString(ext) === orgRefString
+  );
+
+  const newExtension = createPreferredPharmacyExtension(orgRef, isPrimary);
 
   if (existingIndex >= 0) {
-    // Update existing extension
-    patient.extension[existingIndex] = createPreferredPharmacyExtension(orgRef, isPrimary);
+    patient.extension[existingIndex] = newExtension;
   } else {
-    // Add new extension
-    patient.extension.push(createPreferredPharmacyExtension(orgRef, isPrimary));
+    patient.extension.push(newExtension);
   }
 
   return patient;
@@ -189,12 +198,10 @@ export function removePreferredPharmacyFromPatient(patient: Patient, orgRef: Ref
   const orgRefString = getReferenceString(orgRef);
 
   patient.extension = patient.extension.filter((ext) => {
-    if (ext.url !== PATIENT_PREFERRED_PHARMACY_URL || !ext.extension) {
+    if (!isPreferredPharmacyExtension(ext)) {
       return true; // Keep non-pharmacy extensions
     }
-    const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
-    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
-    return existingRefString !== orgRefString;
+    return getPharmacyRefString(ext) !== orgRefString;
   });
 
   return patient;
