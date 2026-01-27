@@ -50,16 +50,12 @@ services:
     volumes:
       # Conditionally define a volume for a `medplum.config.json` if one is specified by the MEDPLUM_CONFIG_PATH env var
       - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
-    entrypoint: >
-      sh -c "
-      if [ -n '${MEDPLUM_CONFIG_PATH}' ]; then
-        echo 'Config file found, running with custom config'
-        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js file:/usr/src/medplum/packages/server/medplum.config.json
-      else
-        echo 'No config file found, running with default env settings'
-        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
-      fi
-      "
+    entrypoint:
+      - node
+      - --require
+      - ./packages/server/dist/otel/instrumentation.js
+      - packages/server/dist/index.js
+      - env
     environment:
       MEDPLUM_PORT: 8103
       MEDPLUM_BASE_URL: 'http://localhost:8103/'
