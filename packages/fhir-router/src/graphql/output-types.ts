@@ -37,6 +37,10 @@ import {
 import { buildConnectionType, resolveByConnectionApi } from './graphql';
 import type { GraphQLContext } from './utils';
 import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
+<<<<<<< HEAD
+=======
+import { getConnectionType, resolveByConnectionApi } from './graphql';
+>>>>>>> 5fa2728d4 (graphql type caching)
 
 export const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   ...typeCache,
@@ -270,7 +274,7 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
       };
       // Add Connection field for count support
       fields[childResourceType + 'Connection'] = {
-        type: buildConnectionType(childResourceType, childGraphQLType),
+        type: getConnectionType(childResourceType, childGraphQLType),
         args,
         resolve: resolveByConnectionApi,
       };

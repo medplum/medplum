@@ -221,7 +221,7 @@ function buildRootSchema(): GraphQLSchema {
 
     // FHIR GraphQL Connection API
     fields[resourceType + 'Connection'] = {
-      type: buildConnectionType(resourceType, graphQLOutputType),
+      type: getConnectionType(resourceType, graphQLOutputType),
       args: buildSearchArgs(resourceType),
       resolve: resolveByConnectionApi,
     };
@@ -293,10 +293,24 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
+<<<<<<< HEAD
 export function buildConnectionType(
   resourceType: ResourceType,
   resourceGraphQLType: GraphQLOutputType
 ): GraphQLOutputType {
+=======
+export function getConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+  const cacheKey = resourceType + 'Connection';
+  let result = outputTypeCache[cacheKey];
+  if (!result) {
+    result = buildConnectionType(resourceType, resourceGraphQLType);
+    outputTypeCache[cacheKey] = result;
+  }
+  return result;
+}
+
+function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+>>>>>>> 5fa2728d4 (graphql type caching)
   return new GraphQLObjectType({
     name: resourceType + 'Connection',
     fields: {
