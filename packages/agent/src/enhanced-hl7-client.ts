@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Hl7Message, ILogger } from '@medplum/core';
-import type { Hl7ClientOptions } from '@medplum/hl7';
+import type { Hl7ClientOptions, SendAndWaitOptions } from '@medplum/hl7';
 import { Hl7Client } from '@medplum/hl7';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { HeartbeatEmitter } from './types';
@@ -31,12 +31,12 @@ export class EnhancedHl7Client extends Hl7Client {
     return super.send(msg);
   }
 
-  async sendAndWait(msg: Hl7Message): Promise<Hl7Message> {
+  async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
     const msgControlId = msg.getSegment('MSH')?.getField(10)?.toString();
     if (this.stats && msgControlId) {
       this.stats.recordMessageSent(msgControlId);
     }
-    const response = await super.sendAndWait(msg);
+    const response = await super.sendAndWait(msg, options);
     if (this.stats && msgControlId) {
       this.stats.recordAckReceived(msgControlId);
     }
