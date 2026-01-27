@@ -116,6 +116,34 @@ function findMatchingSchedulingParameters(extensions: SchedulingParameters[], sl
   return parameters;
 }
 
+function chooseActiveParameters(
+  proposedSlot: Slot,
+  parameters: SchedulingParameters[],
+  actorTimeZone: string,
+  existingSlots: Slot[]
+): SchedulingParameters | undefined {
+  const startDate = new Date(proposedSlot.start);
+  const endDate = new Date(proposedSlot.end);
+  const serviceType = (proposedSlot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
+  return parameters.find((params) => {
+    const timeZone = params.timezone ?? actorTimeZone;
+    const range = {
+      start: addMinutes(startDate, -1 * params.bufferBefore),
+      end: addMinutes(endDate, params.bufferAfter),
+    };
+    const availability = resolveAvailability(params, range, timeZone);
+    const result = applyExistingSlots({
+      availability,
+      slots: existingSlots,
+      range,
+      serviceType,
+    });
+    return result.some(
+      (interval) => interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()
+    );
+  });
+}
+
 /**
  * Handles HTTP requests for the Appointment $book operation.
  *
@@ -228,26 +256,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(conflict('Requested time slot is no longer available'));
           }
 
-          const serviceType = (slot.serviceType ?? EMPTY).flatMap((concept) => concept.coding ?? EMPTY);
-          const activeParameters = parameters.find((params) => {
-            const range = {
-              start: addMinutes(startDate, -1 * params.bufferBefore),
-              end: addMinutes(endDate, params.bufferAfter),
-            };
-            const timeZone = params.timezone ?? actorTimeZone;
-            const availability = resolveAvailability(params, range, timeZone);
-            const result = applyExistingSlots({
-              availability,
-              slots: existingSlots,
-              range,
-              serviceType,
-            });
-
-            return result.some(
-              (interval) =>
-                interval.start.getTime() <= range.start.getTime() && interval.end.getTime() >= range.end.getTime()
-            );
-          });
+          const activeParameters = chooseActiveParameters(slot, parameters, actorTimeZone, existingSlots);
 
           if (!activeParameters) {
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
