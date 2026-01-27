@@ -38,7 +38,9 @@ This operation requires **admin privileges**. You must be a project admin (`Memb
 | `url`     | `uri`     | The canonical URL of the ConceptMap to import into        | No*      |
 | `mapping` | `complex` | One or more mappings to import (see structure below)      | Yes      |
 
-*Either the instance ID in the URL or the `url` parameter must be provided.
+::: note
+<sup>*</sup> Either the instance ID in the URL or the `url` parameter must be provided.
+:::
 
 ### Mapping Structure
 
