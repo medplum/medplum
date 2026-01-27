@@ -68,10 +68,6 @@ export function ArrayColumnPadding(): JSX.Element {
       return undefined;
     }
 
-    if (stats < 100 || stats > 10000 || elems < 1 || conf <= 0 || conf >= 1) {
-      return undefined;
-    }
-
     return calculate(stats, elems, conf, override);
   }, [statisticsTarget, elemsPerRow, confidence, selectivityOverride]);
 
