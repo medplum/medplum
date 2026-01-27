@@ -292,7 +292,7 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 
 ### Adding references to the meta.compartment field
 
-In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation to add references to the **meta.compartment** field.
+In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation to add references to the **meta.compartment** field.
 
 
 <Tabs groupId="tenant-type">
@@ -360,7 +360,7 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 </TabItem>
 </Tabs>
 
-Any resource can be assigned to a tenant with this model. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation on that specific resource.
+Any resource can be assigned to a tenant with this model. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation on that specific resource.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -392,7 +392,7 @@ Any resource can be assigned to a tenant with this model. For example, you could
 
 For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse) belongs to a Patient if it has a reference to the Patient in the `subject` or `author` field, a [Communication](/docs/api/fhir/resources/communication) belongs to a Patient if it has a reference to the Patient in the `subject`, `recipient`, or `sender` field, etc.
 
-**To assign a Patient and all resources that _"belong"_ to that Patient to a tenant, call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation with `propagate` set to `true`.**
+**To assign a Patient and all resources that _"belong"_ to that Patient to a tenant, call the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation with `propagate` set to `true`.**
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -418,13 +418,13 @@ For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireres
   </TabItem>
 </Tabs>
 
-**You only need to call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation once when assigning Patient to a tenant.** You do not need to call it again when new resources are created that _"belong"_ to that Patient because they will inherit the `meta.compartment` field from the Patient.
+**You only need to call the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation once when assigning Patient to a tenant.** You do not need to call it again when new resources are created that _"belong"_ to that Patient because they will inherit the `meta.compartment` field from the Patient.
 
 ### What if you need to assign a Patient to multiple tenants?
 
 This is common in scenarios where you need the Patient to be visible across multiple organizations, services, or care teams.
 
-To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) with multiple tenant references. This will label the Patient and all resources that _"belong"_ to that Patient with the multiple tenant references.
+To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/api/fhir/operations/set-accounts) with multiple tenant references. This will label the Patient and all resources that _"belong"_ to that Patient with the multiple tenant references.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
