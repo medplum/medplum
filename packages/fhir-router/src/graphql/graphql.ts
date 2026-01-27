@@ -293,7 +293,10 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-export function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+export function buildConnectionType(
+  resourceType: ResourceType,
+  resourceGraphQLType: GraphQLOutputType
+): GraphQLOutputType {
   return new GraphQLObjectType({
     name: resourceType + 'Connection',
     fields: {

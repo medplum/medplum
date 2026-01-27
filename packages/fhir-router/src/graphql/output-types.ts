@@ -34,9 +34,9 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
+import { buildConnectionType, resolveByConnectionApi } from './graphql';
 import type { GraphQLContext } from './utils';
 import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
-import { buildConnectionType, resolveByConnectionApi } from './graphql';
 
 export const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   ...typeCache,
