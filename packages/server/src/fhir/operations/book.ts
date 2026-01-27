@@ -187,8 +187,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
-        slots.map(async (slot, index) => {
-          const schedule = schedules.find((s) => `Schedule/${s.id}` === slot.schedule.reference);
+        slots.map(async (proposedSlot, index) => {
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === proposedSlot.schedule.reference);
           invariant(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
@@ -201,7 +201,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const extensions = parseSchedulingParametersExtensions(schedule);
-          const parameters = findMatchingSchedulingParameters(extensions, slot);
+          const parameters = findMatchingSchedulingParameters(extensions, proposedSlot);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
@@ -256,7 +256,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(conflict('Requested time slot is no longer available'));
           }
 
-          const activeParameters = chooseActiveParameters(slot, parameters, actorTimeZone, existingSlots);
+          const activeParameters = chooseActiveParameters(proposedSlot, parameters, actorTimeZone, existingSlots);
 
           if (!activeParameters) {
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
@@ -268,7 +268,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               status: 'busy-unavailable',
               start: addMinutes(startDate, -1 * activeParameters.bufferBefore).toISOString(),
               end: startDate.toISOString(),
-              schedule: slot.schedule,
+              schedule: proposedSlot.schedule,
             });
           }
 
@@ -278,7 +278,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               status: 'busy-unavailable',
               start: endDate.toISOString(),
               end: addMinutes(endDate, activeParameters.bufferAfter).toISOString(),
-              schedule: slot.schedule,
+              schedule: proposedSlot.schedule,
             });
           }
         })
