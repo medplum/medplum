@@ -293,12 +293,6 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-<<<<<<< HEAD
-export function buildConnectionType(
-  resourceType: ResourceType,
-  resourceGraphQLType: GraphQLOutputType
-): GraphQLOutputType {
-=======
 export function getConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
   const cacheKey = resourceType + 'Connection';
   let result = outputTypeCache[cacheKey];
@@ -310,7 +304,6 @@ export function getConnectionType(resourceType: ResourceType, resourceGraphQLTyp
 }
 
 function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
->>>>>>> 5fa2728d4 (graphql type caching)
   return new GraphQLObjectType({
     name: resourceType + 'Connection',
     fields: {
