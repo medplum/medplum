@@ -17,7 +17,6 @@ export function getPharmacyIdFromOrganization(organization: Organization): numbe
   return id ? Number.parseInt(id, 10) : undefined;
 }
 
-export type { PreferredPharmacy } from '@medplum/react';
 export {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
@@ -28,3 +27,4 @@ export {
   PHARMACY_TYPE_PRIMARY,
   removePreferredPharmacyFromPatient,
 } from '@medplum/react';
+export type { PreferredPharmacy } from '@medplum/react';
