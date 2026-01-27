@@ -1,17 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import type { Extension, Identifier, Organization, Patient, Reference } from '@medplum/fhirtypes';
 
 // Extension URLs and systems
-// Note: These constants are duplicated from @medplum/dosespot-react to avoid
-// creating a dependency between @medplum/react and @medplum/dosespot-react.
-// If you modify these, ensure the corresponding values in dosespot-react/utils.ts
-// are also updated.
 export const PATIENT_PREFERRED_PHARMACY_URL = 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy';
 export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
 
 export const PHARMACY_TYPE_PRIMARY = 'primary';
+export const PHARMACY_TYPE_PREFERRED = 'preferred';
 
 // Bot identifiers
 export const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';
@@ -33,9 +31,6 @@ export interface PreferredPharmacy {
 
 /**
  * Extracts preferred pharmacies from a Patient resource's extensions.
- *
- * Note: This function is intentionally duplicated from `@medplum/dosespot-react`
- * to avoid creating a dependency between `@medplum/react` and `@medplum/dosespot-react`.
  *
  * @param patient - The Patient resource.
  * @returns An array of PreferredPharmacy objects.
@@ -70,4 +65,137 @@ export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPh
   }
 
   return pharmacies;
+}
+
+/**
+ * Creates a preferredPharmacy extension object.
+ *
+ * @param orgRef - Reference to the Organization resource.
+ * @param isPrimary - Whether this is the primary pharmacy.
+ * @returns The extension object to add to a Patient.
+ */
+export function createPreferredPharmacyExtension(orgRef: Reference<Organization>, isPrimary: boolean): Extension {
+  const typeCode = isPrimary ? PHARMACY_TYPE_PRIMARY : PHARMACY_TYPE_PREFERRED;
+  const typeDisplay = isPrimary ? 'Primary Pharmacy' : 'Preferred Pharmacy';
+
+  return {
+    url: PATIENT_PREFERRED_PHARMACY_URL,
+    extension: [
+      {
+        url: 'pharmacy',
+        valueReference: orgRef,
+      },
+      {
+        url: 'type',
+        valueCodeableConcept: {
+          coding: [
+            {
+              system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
+              code: typeCode,
+              display: typeDisplay,
+            },
+          ],
+        },
+      },
+    ],
+  };
+}
+
+/**
+ * Adds or updates a preferred pharmacy extension on a Patient.
+ * If the pharmacy already exists, updates its type. Otherwise, adds a new extension.
+ * If isPrimary is true, other pharmacies are set to 'preferred'.
+ *
+ * @param patient - The Patient resource to modify (will be mutated).
+ * @param orgRef - Reference to the Organization resource.
+ * @param isPrimary - Whether to set this as the primary pharmacy.
+ * @returns The modified Patient resource.
+ */
+export function addPreferredPharmacyToPatient(
+  patient: Patient,
+  orgRef: Reference<Organization>,
+  isPrimary: boolean
+): Patient {
+  if (!patient.extension) {
+    patient.extension = [];
+  }
+
+  const orgRefString = getReferenceString(orgRef);
+
+  // If setting as primary, first demote all other pharmacies to 'preferred'
+  if (isPrimary) {
+    for (const ext of patient.extension) {
+      if (ext.url === PATIENT_PREFERRED_PHARMACY_URL && ext.extension) {
+        const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
+        const existingRefString = pharmacyExt?.valueReference
+          ? getReferenceString(pharmacyExt.valueReference)
+          : undefined;
+
+        // Skip if this is the same pharmacy we're adding
+        if (existingRefString === orgRefString) {
+          continue;
+        }
+
+        // Update type to 'preferred'
+        const typeExt = ext.extension.find((e) => e.url === 'type');
+        if (typeExt) {
+          typeExt.valueCodeableConcept = {
+            coding: [
+              {
+                system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
+                code: PHARMACY_TYPE_PREFERRED,
+                display: 'Preferred Pharmacy',
+              },
+            ],
+          };
+        }
+      }
+    }
+  }
+
+  // Check if this pharmacy already exists
+  const existingIndex = patient.extension.findIndex((ext) => {
+    if (ext.url !== PATIENT_PREFERRED_PHARMACY_URL || !ext.extension) {
+      return false;
+    }
+    const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
+    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
+    return existingRefString === orgRefString;
+  });
+
+  if (existingIndex >= 0) {
+    // Update existing extension
+    patient.extension[existingIndex] = createPreferredPharmacyExtension(orgRef, isPrimary);
+  } else {
+    // Add new extension
+    patient.extension.push(createPreferredPharmacyExtension(orgRef, isPrimary));
+  }
+
+  return patient;
+}
+
+/**
+ * Removes a preferred pharmacy extension from a Patient.
+ *
+ * @param patient - The Patient resource to modify (will be mutated).
+ * @param orgRef - Reference to the Organization resource to remove.
+ * @returns The modified Patient resource.
+ */
+export function removePreferredPharmacyFromPatient(patient: Patient, orgRef: Reference<Organization>): Patient {
+  if (!patient.extension) {
+    return patient;
+  }
+
+  const orgRefString = getReferenceString(orgRef);
+
+  patient.extension = patient.extension.filter((ext) => {
+    if (ext.url !== PATIENT_PREFERRED_PHARMACY_URL || !ext.extension) {
+      return true; // Keep non-pharmacy extensions
+    }
+    const pharmacyExt = ext.extension.find((e) => e.url === 'pharmacy');
+    const existingRefString = pharmacyExt?.valueReference ? getReferenceString(pharmacyExt.valueReference) : undefined;
+    return existingRefString !== orgRefString;
+  });
+
+  return patient;
 }

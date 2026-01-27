@@ -9,6 +9,7 @@ import {
   MEDPLUM_BOT_SYSTEM,
   PATIENT_PREFERRED_PHARMACY_URL,
   PHARMACY_PREFERENCE_TYPE_SYSTEM,
+  PHARMACY_TYPE_PREFERRED,
   PHARMACY_TYPE_PRIMARY,
 } from './pharmacy-utils';
 
@@ -20,6 +21,10 @@ describe('pharmacy-utils', () => {
 
     test('PHARMACY_TYPE_PRIMARY is correct', () => {
       expect(PHARMACY_TYPE_PRIMARY).toBe('primary');
+    });
+
+    test('PHARMACY_TYPE_PREFERRED is correct', () => {
+      expect(PHARMACY_TYPE_PREFERRED).toBe('preferred');
     });
 
     test('PHARMACY_PREFERENCE_TYPE_SYSTEM is correct', () => {
@@ -128,7 +133,7 @@ describe('pharmacy-utils', () => {
                   coding: [
                     {
                       system: 'https://dosespot.com/pharmacy-preference-type',
-                      code: 'preferred',
+                      code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
                 },
@@ -189,7 +194,7 @@ describe('pharmacy-utils', () => {
                   coding: [
                     {
                       system: 'https://dosespot.com/pharmacy-preference-type',
-                      code: 'preferred',
+                      code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
                 },
