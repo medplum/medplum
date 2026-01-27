@@ -156,21 +156,21 @@ function chooseActiveParameters(
 export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<BookParameters>(bookOperation, req);
-  const { slot: slots } = params;
+  const proposedSlots = params.slot;
 
   const start = assertAllMatch(
-    slots.map((slot) => slot.start),
+    proposedSlots.map((slot) => slot.start),
     'Mismatched slot start times'
   );
   const end = assertAllMatch(
-    slots.map((slot) => slot.end),
+    proposedSlots.map((slot) => slot.end),
     'Mismatched slot end times'
   );
 
   const startDate = new Date(start);
   const endDate = new Date(end);
 
-  const schedules = await ctx.repo.readReferences(slots.map((slot) => slot.schedule));
+  const schedules = await ctx.repo.readReferences(proposedSlots.map((slot) => slot.schedule));
   assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
 
   schedules.forEach((schedule) => {
@@ -187,8 +187,8 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const createdResources = await ctx.repo.withTransaction(
     async () => {
       await Promise.all(
-        slots.map(async (slot, index) => {
-          const schedule = schedules.find((s) => `Schedule/${s.id}` === slot.schedule.reference);
+        proposedSlots.map(async (proposedSlot, index) => {
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === proposedSlot.schedule.reference);
           invariant(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
@@ -201,7 +201,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           }
 
           const extensions = parseSchedulingParametersExtensions(schedule);
-          const parameters = findMatchingSchedulingParameters(extensions, slot);
+          const parameters = findMatchingSchedulingParameters(extensions, proposedSlot);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
@@ -256,7 +256,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             throw new OperationOutcomeError(conflict('Requested time slot is no longer available'));
           }
 
-          const activeParameters = chooseActiveParameters(slot, parameters, actorTimeZone, existingSlots);
+          const activeParameters = chooseActiveParameters(proposedSlot, parameters, actorTimeZone, existingSlots);
 
           if (!activeParameters) {
             throw new OperationOutcomeError(badRequest('No availability found at this time'));
@@ -268,7 +268,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               status: 'busy-unavailable',
               start: addMinutes(startDate, -1 * activeParameters.bufferBefore).toISOString(),
               end: startDate.toISOString(),
-              schedule: slot.schedule,
+              schedule: proposedSlot.schedule,
             });
           }
 
@@ -278,7 +278,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
               status: 'busy-unavailable',
               start: endDate.toISOString(),
               end: addMinutes(endDate, activeParameters.bufferAfter).toISOString(),
-              schedule: slot.schedule,
+              schedule: proposedSlot.schedule,
             });
           }
         })
@@ -295,7 +295,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         end,
       });
       const createdSlots = await Promise.all(
-        slots.map((slot) =>
+        proposedSlots.map((slot) =>
           ctx.repo.createResource({
             ...slot,
             status: 'busy',
