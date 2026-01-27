@@ -85,7 +85,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 | `serviceType` | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only | Optional | Applies configuration only to the specified service type, overriding defaults for that service | Values apply as the default for all services |
 | `availability` | [Timing](/docs/api/fhir/datatypes/timing) | Schedule only | Optional | Bookings must fully fit within the recurring windows | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone` | Code | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
-| `duration` | [Duration](/docs/api/fhir/datatypes/duration) | Schedule only | Required | Determines how long the time increments for a Slot are | N/A - must be specified |
+| `duration` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Required | Determines how long the time increments for a Slot are | N/A - must be specified |
 | `bufferBefore` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires prep time before start to also be free | No prep time required |
 | `bufferAfter` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires cleanup time after end to also be free | No cleanup time required |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Start times must align to the interval (e.g., every 15 minutes) | Start times are not constrained by an interval grid |
@@ -114,7 +114,7 @@ All scheduling constraints are managed through a single consolidated extension: 
       "valueCode": "America/Los_Angeles"
     },
     
-    // Required: duration determines how long the time increments for a Slot are (Schedule only)
+    // Required: duration determines how long the time increments for a Slot are
     {
       "url": "duration",
       "valueDuration": {
@@ -547,6 +547,13 @@ This ActivityDefinition defines default scheduling parameters for a 30-minute of
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
         "url": "bufferBefore",
         "valueDuration": {"value": 5, "unit": "min"}
       },
@@ -664,6 +671,13 @@ This ActivityDefinition defines a 60-minute new patient visit with 15-minute buf
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
@@ -701,6 +715,13 @@ This ActivityDefinition defines a 20-minute follow-up visit with 5-minute buffer
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 10, "unit": "min"}}
@@ -868,6 +889,13 @@ This ActivityDefinition defines a 120-minute surgical procedure requiring coordi
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 45, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 30, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
