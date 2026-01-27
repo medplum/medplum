@@ -150,7 +150,7 @@ describe('PatientSummary - Pharmacies', () => {
       id: 'patient-1',
       extension: [
         {
-          url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
           extension: [
             {
               url: 'pharmacy',
@@ -186,7 +186,7 @@ describe('PatientSummary - Pharmacies', () => {
       id: 'patient-1',
       extension: [
         {
-          url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
           extension: [
             {
               url: 'pharmacy',
@@ -295,7 +295,7 @@ describe('PatientSummary - Pharmacies', () => {
       id: 'patient-1',
       extension: [
         {
-          url: 'https://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
           extension: [
             {
               url: 'pharmacy',
