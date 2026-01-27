@@ -293,7 +293,10 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-export function getConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+export function getConnectionType(
+  resourceType: ResourceType,
+  resourceGraphQLType: GraphQLOutputType
+): GraphQLOutputType {
   const cacheKey = resourceType + 'Connection';
   let result = outputTypeCache[cacheKey];
   if (!result) {
