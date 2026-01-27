@@ -1,6 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
+import {
+  ContentType,
+  HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  LOINC,
+  SNOMED,
+  WithId,
+  createReference,
+} from '@medplum/core';
 import type {
   CodeSystem,
   OperationOutcome,
@@ -14,6 +22,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
+import { addExpansionItems } from './expand';
 
 describe('Expand', () => {
   const app = express();
@@ -1198,7 +1207,7 @@ describe('Expand', () => {
     ]);
   });
 
-  test('Condense multiple synonyms in expansion', async () => {
+  test('Condenses multiple synonyms in expansion', async () => {
     const codeSystem: CodeSystem = {
       resourceType: 'CodeSystem',
       url: `urn:uuid:${randomUUID()}`,
@@ -1239,6 +1248,36 @@ describe('Expand', () => {
 
     expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
       { system: codeSystem.url, code: 'HIV', display: 'Hives', designation: [{ value: 'Wheal' }] },
+    ]);
+  });
+
+  test('addExpansionItems() allows items out of order', () => {
+    const rows = [
+      { id: 'foo', code: 'F', display: 'Foo', synonymOf: 'bar', language: null },
+      { id: 'bar', code: 'F', display: 'Food', synonymOf: null, language: null },
+      { id: 'baz', code: 'F', display: 'Essen', synonymOf: 'bar', language: 'de' },
+    ];
+    const expansion: ValueSetExpansionContains[] = [];
+    const system = 'http://example.com/codes/' + randomUUID();
+    const codeSystem: WithId<CodeSystem> = {
+      resourceType: 'CodeSystem',
+      id: randomUUID(),
+      status: 'draft',
+      content: 'not-present',
+      url: system,
+    };
+
+    addExpansionItems(rows, expansion, codeSystem);
+    expect(expansion).toStrictEqual([
+      {
+        system,
+        code: 'F',
+        display: 'Food',
+        designation: [
+          { value: 'Foo', language: undefined },
+          { value: 'Essen', language: 'de' },
+        ],
+      } satisfies ValueSetExpansionContains,
     ]);
   });
 

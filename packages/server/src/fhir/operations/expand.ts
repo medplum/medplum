@@ -248,8 +248,23 @@ async function includeInExpansion(
   }
 
   const results = await query.execute(db);
+  addExpansionItems(results as ExpansionRow[], expansion, codeSystem);
+}
+
+interface ExpansionRow {
+  code: string;
+  display: string | null;
+  synonymOf: string | null;
+  language: string | null;
+}
+
+export function addExpansionItems(
+  rows: ExpansionRow[],
+  expansion: ValueSetExpansionContains[],
+  codeSystem: WithId<CodeSystem>
+): void {
   const system = codeSystem.url;
-  for (const { code, display, synonymOf, language } of results) {
+  for (const { code, display, synonymOf, language } of rows) {
     const ex = expansion.find((o) => o.code === code);
     if (ex) {
       if (isEmpty(synonymOf)) {
@@ -259,12 +274,12 @@ async function includeInExpansion(
             value: ex.display,
           });
         }
-        ex.display = display;
+        ex.display = display ?? undefined;
       } else if (display) {
         ex.designation = append(ex.designation, { language: language ?? undefined, value: display });
       }
     } else {
-      expansion.push({ system, code, display });
+      expansion.push({ system, code, display: display ?? undefined });
     }
   }
 }
