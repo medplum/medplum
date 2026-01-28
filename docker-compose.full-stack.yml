@@ -55,13 +55,10 @@ services:
       # Conditionally define a volume for a `medplum.config.json` if one is specified by the MEDPLUM_CONFIG_PATH env var
       - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
       - ./wait-for-it.sh:/usr/src/medplum/wait-for-it.sh
-     entrypoint:
-      - sh
-      - -c
-      - |
-        /usr/src/medplum/wait-for-it.sh postgres:5432 --timeout=60 --strict -- \
-        /usr/src/medplum/wait-for-it.sh redis:6379 --timeout=60 --strict -- \
-        node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env
+    entrypoint: >
+      sh -c "/usr/src/medplum/wait-for-it.sh postgres:5432 --timeout=60 --strict -- \
+      /usr/src/medplum/wait-for-it.sh redis:6379 --timeout=60 --strict -- \
+      node --require ./packages/server/dist/otel/instrumentation.js packages/server/dist/index.js env"
     environment:
       MEDPLUM_PORT: 8103
       MEDPLUM_BASE_URL: 'http://localhost:8103/'
