@@ -46,7 +46,7 @@ import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getRedis } from '../redis';
+import { getRedis, reconnectOnError } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
@@ -118,7 +118,7 @@ const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
