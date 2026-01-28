@@ -33,6 +33,11 @@ metadata:
   namespace: {{ include "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
+  {{- if .Values.ingress.certManager.enabled }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.certManager.clusterIssuer | quote }}
+    appgw.ingress.kubernetes.io/ssl-redirect: "true"
+  {{- end }}
 spec:
   tls:
     - hosts:

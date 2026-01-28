@@ -27,7 +27,7 @@ resource "azurerm_postgresql_flexible_server" "db" {
   location                      = var.location
   private_dns_zone_id           = azurerm_private_dns_zone.db.id
   public_network_access_enabled = false
-  name                          = "medplum-${var.environment}-${var.deployment_id}-postgres-db"
+  name                          = "mp-${var.environment}-${var.deployment_id}-postgres"
   resource_group_name           = var.resource_group_name
   sku_name                      = "B_Standard_B1ms" # "GP_Standard_D2s_v3"
   storage_mb                    = 32768

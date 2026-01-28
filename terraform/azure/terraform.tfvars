@@ -1,9 +1,27 @@
+# Medplum Azure Deployment Configuration
+# ========================================
+# Domain: darren-azure.foomedical.dev (delegated from Squarespace)
 
-# Azure 
-resource_group_name = "medplum"
-location            = "eastus2"
+# Azure region - Canada Central (Toronto)
+location = "canadacentral"
+
+# Resource group name
+resource_group_name = "darren-medplum-rg"
+
+# Environment: dev uses smaller, cheaper resources
+environment = "dev"
+
+# Deployment ID
+deployment_id = "1"
+
+# App domain for Azure Front Door CDN
+# This matches the DNS zone created in dns.tf
+app_domain = "app.darren-azure.foomedical.dev"
+
+# Resource tags
 tags = {
-  app = "medplum"
+  Environment = "dev"
+  Project     = "medplum"
+  ManagedBy   = "terraform"
+  Owner       = "darren"
 }
-app_domain                = "YOUR_APP_URL"
-app_certificate_secret_id = "YOUR_CERTIFICATE_SECRET_ID"

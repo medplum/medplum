@@ -28,3 +28,8 @@ resource "azurerm_role_assignment" "server_identity_role_assignment" {
   role_definition_name = "Storage Blob Data Owner"
   principal_id         = azurerm_user_assigned_identity.medplum_server_identity.principal_id
 }
+
+output "storage_account_name" {
+  description = "The name of the storage account"
+  value       = azurerm_storage_account.app_storage_account.name
+}
