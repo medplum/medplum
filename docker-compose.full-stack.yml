@@ -73,7 +73,7 @@ services:
       MEDPLUM_REDIS_PASSWORD: 'medplum'
 
       MEDPLUM_SMTP_HOST: 'smtp.sendgrid.net'
-      MEDPLUM_SMTP_PORT: 25
+      MEDPLUM_SMTP_PORT: 2525
       MEDPLUM_SMTP_SECURE: 'false'
       MEDPLUM_SMTP_USERNAME: 'apikey'
       MEDPLUM_SMTP_PASSWORD: ${SMTP_PASSWORD}
