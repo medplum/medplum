@@ -8,9 +8,25 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import CodeBlock from '@theme/CodeBlock';
 
-# Resend Webhooks
+# Resource $resend
 
-Medplum implements a custom operation, `$resend`, that can be used to trigger [Subscriptions](/docs/subscriptions) listening to a a particular resource. Please note that the User, Bot, or ClientApplication invoking this operation must have [project admin credentials](/docs/access/admin). 
+The `$resend` operation manually triggers subscription notifications for a specific resource. This is invaluable for debugging subscription workflows, recovering from failed notifications, and replaying events during development or after system issues.
+
+When a subscription notification fails or you need to reprocess a resource through your subscription pipeline, `$resend` lets you re-trigger the workflow without modifying the underlying resource—ensuring your integrations stay synchronized.
+
+## Use Cases
+
+- **Failed Notification Recovery**: Retry subscription notifications that failed due to temporary network issues or downstream service outages
+- **Debugging Subscriptions**: Test subscription logic during development by manually triggering notifications
+- **Data Synchronization**: Force re-sync of specific resources to external systems after fixing integration issues
+- **Selective Replay**: Re-trigger a specific subscription for a resource instead of all subscriptions
+- **Integration Testing**: Verify that subscriptions fire correctly without creating new test data
+
+:::note Admin Required
+The User, Bot, or ClientApplication invoking this operation must have [project admin credentials](/docs/access/admin).
+:::
+
+## Parameters
 
 The operation takes an optional `option` parameter, which is an object containing three fields:
 
@@ -76,6 +92,10 @@ If successful, you will receive the following OperationOutcome
 }
 ```
 
-## Related Documentation
+## Related
 
-- Refer to [Subscriptions](/docs/subscriptions) to learn more about Medplum's implementation of FHIR Subscriptions
+- [Subscriptions Guide](/docs/subscriptions) - Complete guide to FHIR Subscriptions in Medplum
+- [Bot $execute](/docs/api/fhir/operations/bot-execute) - Execute bots triggered by subscriptions
+- [Subscription Resource](/docs/api/fhir/resources/subscription) - FHIR Subscription resource reference
+- [Admin Access](/docs/access/admin) - Admin credentials required for this operation
+- [FHIR Subscriptions](https://hl7.org/fhir/R4/subscription.html) - FHIR specification for Subscription
