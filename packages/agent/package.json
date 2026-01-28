@@ -21,6 +21,7 @@
     "agent": "NODE_NO_WARNINGS=1 tsx src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
+    "hl7-load-test": "NODE_NO_WARNINGS=1 tsx src/hl7-load-test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --runInBand"
