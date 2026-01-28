@@ -222,12 +222,10 @@ export async function sendToBotStreaming(
     buffer = lines.pop() || '';
 
     for (const line of lines) {
-      // Skip empty lines
       if (!line.trim()) {
         continue;
       }
 
-      // Handle SSE data lines
       if (line.startsWith('data: ')) {
         const data = line.slice(6);
         if (!data || data === '[DONE]') {
@@ -236,10 +234,10 @@ export async function sendToBotStreaming(
 
         try {
           const parsed = JSON.parse(data);
-          const content = parsed.content || parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            fullContent += content;
-            onChunk(fullContent);
+          const chunk = parsed.content || parsed.choices?.[0]?.delta?.content;
+          if (chunk) {
+            fullContent += chunk;
+            onChunk(chunk);
           }
         } catch {
           // Ignore parse errors
@@ -263,7 +261,7 @@ export interface ProcessMessageParams {
   setRefreshKey: React.Dispatch<React.SetStateAction<number>>;
   setCurrentFhirRequest: (request: string | undefined) => void;
   onNewTopic: (topic: Communication) => void;
-  onStreamChunk?: (content: string, resourceRefs?: string[]) => void;
+  onStreamChunk?: (chunk: string) => void;
 }
 
 export interface ProcessMessageResult {
@@ -338,10 +336,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
     // Get summary response after tool execution (streaming if callback provided)
     if (onStreamChunk) {
-      const uniqueRefs = resourceRefs.length > 0 ? [...new Set(resourceRefs)] : undefined;
-      content = await sendToBotStreaming(medplum, resourceSummaryBotSseId, currentMessages, selectedModel, (chunk) => {
-        onStreamChunk(chunk, uniqueRefs);
-      });
+      content = await sendToBotStreaming(medplum, resourceSummaryBotSseId, currentMessages, selectedModel, onStreamChunk);
     } else {
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;

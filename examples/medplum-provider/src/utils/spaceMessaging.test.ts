@@ -79,7 +79,7 @@ describe('sendToBotStreaming', () => {
     );
 
     expect(result).toBe('Hello world!');
-    expect(receivedChunks).toEqual(['Hello', 'Hello world', 'Hello world!']);
+    expect(receivedChunks).toEqual(['Hello', ' world', '!']);
   });
 
   test('handles buffered JSON response', async () => {
@@ -203,7 +203,7 @@ describe('sendToBotStreaming', () => {
     );
 
     expect(result).toBe('Hello there');
-    expect(receivedChunks).toEqual(['Hello', 'Hello there']);
+    expect(receivedChunks).toEqual(['Hello', ' there']);
   });
 
   test('ignores malformed JSON in SSE stream', async () => {
@@ -230,7 +230,7 @@ describe('sendToBotStreaming', () => {
     );
 
     expect(result).toBe('Hello world');
-    expect(receivedChunks).toEqual(['Hello', 'Hello world']);
+    expect(receivedChunks).toEqual(['Hello', ' world']);
   });
 
   test('handles SSE with empty data lines', async () => {

@@ -144,8 +144,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         setRefreshKey,
         setCurrentFhirRequest,
         onNewTopic,
-        onStreamChunk: (content) => {
-          setStreamingContent(content);
+        onStreamChunk: (chunk) => {
+          setStreamingContent((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
       });
