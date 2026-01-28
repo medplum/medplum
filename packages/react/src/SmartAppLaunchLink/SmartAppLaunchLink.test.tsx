@@ -61,8 +61,9 @@ describe('SmartAppLaunchLink', () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
+    const { id: _, ...patientWithoutId } = HomerSimpson;
     const patientWithIdentifier: Patient = {
-      ...HomerSimpson,
+      ...patientWithoutId,
       identifier: [
         {
           system: 'https://www.healthgorilla.com',
@@ -111,8 +112,9 @@ describe('SmartAppLaunchLink', () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
+    const { id: _, ...encounterWithoutId } = HomerEncounter;
     const encounterWithIdentifier: Encounter = {
-      ...HomerEncounter,
+      ...encounterWithoutId,
       identifier: [
         {
           system: 'https://example.com/encounter-id',
@@ -174,7 +176,8 @@ describe('SmartAppLaunchLink', () => {
     };
 
     const testMedplum = new MockClient();
-    const patient = await testMedplum.createResource(HomerSimpson);
+    const { id: _, ...patientWithoutId } = HomerSimpson;
+    const patient = await testMedplum.createResource(patientWithoutId);
 
     setup(
       <SmartAppLaunchLink client={client} patient={createReference(patient)}>
@@ -211,7 +214,8 @@ describe('SmartAppLaunchLink', () => {
     };
 
     const testMedplum = new MockClient();
-    const encounter = await testMedplum.createResource(HomerEncounter);
+    const { id: _, ...encounterWithoutId } = HomerEncounter;
+    const encounter = await testMedplum.createResource(encounterWithoutId);
 
     setup(
       <SmartAppLaunchLink client={client} encounter={createReference(encounter)}>
@@ -267,8 +271,9 @@ describe('SmartAppLaunchLink', () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
+    const { id: _, ...patientWithoutId } = HomerSimpson;
     const patientWithIdentifier: Patient = {
-      ...HomerSimpson,
+      ...patientWithoutId,
       identifier: [
         {
           system: 'https://www.healthgorilla.com',
@@ -399,8 +404,9 @@ describe('SmartAppLaunchLink', () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
+    const { id: _, ...patientWithoutId } = HomerSimpson;
     const patientWithoutIdentifier: Patient = {
-      ...HomerSimpson,
+      ...patientWithoutId,
       identifier: [
         {
           system: 'https://other-system.com',
@@ -505,8 +511,9 @@ describe('SmartAppLaunchLink', () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
+    const { id: _, ...patientWithoutId } = HomerSimpson;
     const patientWithIdentifier: Patient = {
-      ...HomerSimpson,
+      ...patientWithoutId,
       identifier: [
         {
           system: 'https://www.healthgorilla.com',
