@@ -68,7 +68,9 @@ const WRAPPER_CODE = `
 
     const botResponseStream = {
       startStreaming: (statusCode, headers) => {
-        if (streamStarted) return;
+        if (streamStarted) {
+          return;
+        }
         streamStarted = true;
         // Use HttpResponseStream.from for AWS-native metadata handling
         const metadata = { statusCode, headers };
