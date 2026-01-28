@@ -61,7 +61,10 @@ describe('Execute', () => {
       const dataChunks = ['data: Hello \n\n', 'data: World!\n\n'];
 
       // Create an async generator to simulate EventStream
-      async function* createEventStream(): AsyncGenerator<{ PayloadChunk?: { Payload: Uint8Array }; InvokeComplete?: { LogResult?: string } }> {
+      async function* createEventStream(): AsyncGenerator<{
+        PayloadChunk?: { Payload: Uint8Array };
+        InvokeComplete?: { LogResult?: string };
+      }> {
         // Send headers line with newline
         yield { PayloadChunk: { Payload: encoder.encode(headersLine + '\n') } };
         // Send data chunks
