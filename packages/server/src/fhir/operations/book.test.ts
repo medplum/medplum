@@ -953,3 +953,104 @@ describe('Appointment/$book', () => {
     expect(response3.status).toEqual(400);
   });
 });
+
+describe('scheduling flow integration test', () => {
+  let project: TestProjectResult<{ withAccessToken: true }>;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    project = await createTestProject({ withAccessToken: true });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('a slot from $find can be used as input to $book', async () => {
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/timezone',
+          valueCode: 'America/Phoenix',
+        },
+      ],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 35, unit: 'min' },
+            },
+            {
+              url: 'alignmentInterval',
+              valueDuration: { value: 30, unit: 'min' },
+            },
+            {
+              url: 'alignmentOffset',
+              valueDuration: { value: 5, unit: 'min' },
+            },
+            {
+              url: 'bufferBefore',
+              valueDuration: { value: 10, unit: 'min' },
+            },
+            {
+              url: 'bufferAfter',
+              valueDuration: { value: 15, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    const findResponse = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .query({
+        start: new Date('2026-01-28T07:00:00.000-07:00'),
+        end: new Date('2026-01-28T12:00:00.000-07:00'),
+      });
+
+    expect(findResponse.body).not.toHaveProperty('issue');
+    expect(findResponse.status).toBe(200);
+    expect(findResponse.body).toHaveProperty('entry');
+    expect(findResponse.body.entry).toHaveLength(4);
+    const proposedSlot: Slot = findResponse.body.entry[1].resource;
+
+    const bookResponse = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: proposedSlot,
+          },
+        ],
+      });
+
+    expect(bookResponse.body).not.toHaveProperty('issue');
+    expect(bookResponse.status).toBe(201);
+  });
+});
