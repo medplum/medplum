@@ -339,11 +339,7 @@ describe('SmartAppLaunchLink', () => {
       ],
     };
 
-    setup(
-      <SmartAppLaunchLink client={client}>
-        Launch App
-      </SmartAppLaunchLink>
-    );
+    setup(<SmartAppLaunchLink client={client}>Launch App</SmartAppLaunchLink>);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Launch App'));
