@@ -1,9 +1,9 @@
 {
   "port": 8103,
-  "baseUrl": "http://localhost:8103/",
-  "appBaseUrl": "http://localhost:3000/",
+  "baseUrl": "http://46.101.174.118:8103/",
+  "appBaseUrl": "http://46.101.174.118:3000/",
   "binaryStorage": "file:./binary/",
-  "storageBaseUrl": "http://localhost:8103/storage/",
+  "storageBaseUrl": "http://46.101.174.118:8103/storage/",
   "smtp": {
     "host": "smtp.gmail.com",
     "port": 587,
