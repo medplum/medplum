@@ -10,7 +10,8 @@ export interface MedplumAppConfig {
 }
 
 const config: MedplumAppConfig = {
-  baseUrl: import.meta.env?.MEDPLUM_BASE_URL,
+  // baseUrl: import.meta.env?.MEDPLUM_BASE_URL,
+  baseUrl: 'http://46.101.174.118:8103/',
   clientId: import.meta.env?.MEDPLUM_CLIENT_ID,
   googleClientId: import.meta.env?.GOOGLE_CLIENT_ID,
   recaptchaSiteKey: import.meta.env?.RECAPTCHA_SITE_KEY,
