@@ -72,16 +72,16 @@ services:
       MEDPLUM_REDIS_PORT: 6379
       MEDPLUM_REDIS_PASSWORD: 'medplum'
 
-      MEDPLUM_SMTP_HOST: 'smtp.gmail.com'
+      MEDPLUM_SMTP_HOST: 'smtp.sendgrid.net'
       MEDPLUM_SMTP_PORT: 587
       MEDPLUM_SMTP_SECURE: 'false'
-      MEDPLUM_SMTP_USERNAME: 'kuper.oleh.dev@gmail.com'
-      MEDPLUM_SMTP_PASSWORD: 'nize jxfx bghq dapy'
+      MEDPLUM_SMTP_USERNAME: 'apikey'
+      MEDPLUM_SMTP_PASSWORD: ${SMTP_PASSWORD}
       MEDPLUM_EMAIL_PROVIDER: 'smtp'
-      MEDPLUM_APPROVED_SENDER_EMAILS: 'kuper.oleh.dev@gmail.com'
+      MEDPLUM_APPROVED_SENDER_EMAILS: 'oleh.kuper@incode-it.com'
 
       MEDPLUM_BINARY_STORAGE: 'file:./binary/'
-      MEDPLUM_SUPPORT_EMAIL: 'Medplum <kuper.oleh.dev@gmail.com>'
+      MEDPLUM_SUPPORT_EMAIL: 'Medplum <oleh.kuper@incode-it.com>'
       MEDPLUM_GOOGLE_CLIENT_ID: '397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com'
       MEDPLUM_GOOGLE_CLIENT_SECRET: ''
       MEDPLUM_RECAPTCHA_SITE_KEY: '6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq'
