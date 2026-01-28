@@ -336,7 +336,13 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
     // Get summary response after tool execution (streaming if callback provided)
     if (onStreamChunk) {
-      content = await sendToBotStreaming(medplum, resourceSummaryBotSseId, currentMessages, selectedModel, onStreamChunk);
+      content = await sendToBotStreaming(
+        medplum,
+        resourceSummaryBotSseId,
+        currentMessages,
+        selectedModel,
+        onStreamChunk
+      );
     } else {
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;
