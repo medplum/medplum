@@ -58,9 +58,9 @@ services:
       - env
     environment:
       MEDPLUM_PORT: 8103
-      MEDPLUM_BASE_URL: 'http://localhost:8103/'
-      MEDPLUM_APP_BASE_URL: 'http://localhost:3000/'
-      MEDPLUM_STORAGE_BASE_URL: 'http://localhost:8103/storage/'
+      MEDPLUM_BASE_URL: 'http://46.101.174.118:8103'
+      MEDPLUM_APP_BASE_URL: 'http://46.101.174.118:3000'
+      MEDPLUM_STORAGE_BASE_URL: 'http://46.101.174.118:8103/storage'
 
       MEDPLUM_DATABASE_HOST: 'postgres'
       MEDPLUM_DATABASE_PORT: 5432
