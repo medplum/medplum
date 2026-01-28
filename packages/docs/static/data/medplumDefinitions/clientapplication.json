@@ -448,6 +448,22 @@
       "definition": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "certificateTrustStore",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.certificateTrustStore",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional PEM-formatted certificates that are allowed to authenticate to this service via mutual TLS. Supports both Certificate Authorities (CAs) and self-signed certificates. Multiple certificates can be included.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [
