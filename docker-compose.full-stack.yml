@@ -23,6 +23,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - medplum-net
 
   redis:
     image: redis:7
@@ -35,6 +37,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - medplum-net
 
   # Medplum server container
   medplum-server:
@@ -108,6 +112,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+    networks:
+      - medplum-net
 
   # Medplum app container (web UI)
   medplum-app:
@@ -123,3 +129,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - medplum-net
+      
+networks:
+  medplum-net:
+    driver: bridge
