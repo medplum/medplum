@@ -332,5 +332,100 @@ describe('Execute', () => {
       expect(events[0]).toStrictEqual('data: Hello ');
       expect(events[1]).toStrictEqual('data: World!');
     });
+
+    test('Streaming execution with malformed headers', async () => {
+      // Override the mock to return invalid JSON headers
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          // Send malformed headers (not valid JSON)
+          yield { PayloadChunk: { Payload: encoder.encode('not valid json\n') } };
+          yield { InvokeComplete: {} };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('Failed to parse streaming headers');
+    });
+
+    test('Streaming execution with Lambda error', async () => {
+      // Override the mock to return an error
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { ErrorCode?: string; ErrorDetails?: string };
+        }> {
+          yield {
+            InvokeComplete: {
+              ErrorCode: 'Unhandled',
+              ErrorDetails: 'Test error message',
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('Lambda error: Unhandled');
+    });
+
+    test('Streaming execution with headers split across chunks', async () => {
+      // Override the mock to split headers across multiple chunks
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+        const headersJson = JSON.stringify({
+          statusCode: 200,
+          headers: { 'Content-Type': 'text/event-stream' },
+        });
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          // Split the headers line across two chunks
+          const midpoint = Math.floor(headersJson.length / 2);
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson.substring(0, midpoint)) } };
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson.substring(midpoint) + '\n') } };
+          // Send data
+          yield { PayloadChunk: { Payload: encoder.encode('data: Split test\n\n') } };
+          yield {
+            InvokeComplete: {
+              LogResult: `U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==`,
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+      expect(res.text).toContain('data: Split test');
+    });
   });
 });
