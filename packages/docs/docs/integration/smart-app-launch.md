@@ -43,8 +43,13 @@ The same launch links will be available on the [Encounter](https://app.medplum.c
 
 In addition to supporting Smart app launch from the [Medplum app](/docs/app), implementors can also embed Smart App Launch Links into their own custom applications. To see an example of how that works, refer to the [Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) react component.
 
+## Custom Launch Parameters
+
+Some SMART apps require additional URL parameters beyond the standard `iss` and `launch` parameters. You can configure custom parameters using FHIR extensions on your `ClientApplication` resource. See [SMART App Launch with Custom Parameters](/docs/integration/smart-app-launch-custom-parameters) for details.
+
 ## Related Reading
 
+- [SMART App Launch with Custom Parameters](/docs/integration/smart-app-launch-custom-parameters) - Configure custom URL parameters via extensions
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
 - [SMART-on-FHIR sample application](https://github.com/medplum/medplum/tree/main/examples/medplum-smart-on-fhir-demo) on GitHub
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
