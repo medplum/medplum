@@ -10,12 +10,12 @@ export interface MedplumAppConfig {
 }
 
 const config: MedplumAppConfig = {
-  baseUrl: import.meta.env?.VITE_MEDPLUM_BASE_URL,
-  clientId: import.meta.env?.VITE_MEDPLUM_CLIENT_ID,
-  googleClientId: import.meta.env?.VITE_GOOGLE_CLIENT_ID,
-  recaptchaSiteKey: import.meta.env?.VITE_RECAPTCHA_SITE_KEY,
-  registerEnabled: import.meta.env?.VITE_MEDPLUM_REGISTER_ENABLED,
-  awsTextractEnabled: import.meta.env?.VITE_MEDPLUM_AWS_TEXTRACT_ENABLED,
+  baseUrl: import.meta.env?.MEDPLUM_BASE_URL,
+  clientId: import.meta.env?.MEDPLUM_CLIENT_ID,
+  googleClientId: import.meta.env?.GOOGLE_CLIENT_ID,
+  recaptchaSiteKey: import.meta.env?.RECAPTCHA_SITE_KEY,
+  registerEnabled: import.meta.env?.MEDPLUM_REGISTER_ENABLED,
+  awsTextractEnabled: import.meta.env?.MEDPLUM_AWS_TEXTRACT_ENABLED,
 };
 
 export function getConfig(): MedplumAppConfig {
