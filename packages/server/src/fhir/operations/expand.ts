@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { allOk, append, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
+import { allOk, append, badRequest, EMPTY, isEmpty, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   CodeSystem,
@@ -248,9 +248,39 @@ async function includeInExpansion(
   }
 
   const results = await query.execute(db);
+  addExpansionItems(results as ExpansionRow[], expansion, codeSystem);
+}
+
+interface ExpansionRow {
+  code: string;
+  display: string | null;
+  synonymOf: string | null;
+  language: string | null;
+}
+
+export function addExpansionItems(
+  rows: ExpansionRow[],
+  expansion: ValueSetExpansionContains[],
+  codeSystem: WithId<CodeSystem>
+): void {
   const system = codeSystem.url;
-  for (const { code, display } of results) {
-    expansion.push({ system, code, display });
+  for (const { code, display, synonymOf, language } of rows) {
+    const ex = expansion.find((o) => o.code === code);
+    if (ex) {
+      if (isEmpty(synonymOf)) {
+        if (ex.display) {
+          ex.designation = append(ex.designation, {
+            language: codeSystem.language,
+            value: ex.display,
+          });
+        }
+        ex.display = display ?? undefined;
+      } else if (display) {
+        ex.designation = append(ex.designation, { language: language ?? undefined, value: display });
+      }
+    } else {
+      expansion.push({ system, code, display: display ?? undefined });
+    }
   }
 }
 

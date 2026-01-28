@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType } from '@medplum/core';
 import type { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -463,10 +464,27 @@ describe('CodeSystem lookup', () => {
   });
 
   test('Outputs translated designations', async () => {
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .auth(accessToken, { type: 'bearer' })
+      .send({
+        resourceType: 'CodeSystem',
+        status: 'draft',
+        content: 'example',
+        name: 'Example allergy manifestations',
+        property: [{ code: 'status', type: 'code' }],
+        concept: [
+          {
+            code: 'HIV',
+            display: 'Hives',
+            designation: [{ value: 'Wheal' }, { language: 'fr', value: 'éruption urticaire' }],
+          },
+        ],
+      } satisfies CodeSystem);
+    const codeSystem = csRes.body as WithId<CodeSystem>;
+
     const res = await request(app)
-      .get(
-        '/fhir/R4/CodeSystem/$lookup?system=http://terminology.hl7.org/CodeSystem/operation-outcome&code=MSG_INVALID_ID'
-      )
+      .get(`/fhir/R4/CodeSystem/${codeSystem.id}/$lookup?code=HIV`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .send();
@@ -474,28 +492,18 @@ describe('CodeSystem lookup', () => {
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
       parameter: expect.arrayContaining([
-        { name: 'name', valueString: 'Operation Outcome Codes' },
-        { name: 'display', valueString: 'Id not accepted' },
-        {
-          name: 'designation',
-          part: [
-            { name: 'language', valueCode: 'pl' },
-            { name: 'value', valueString: 'Identyfikator nie zaakceptowany' },
-          ],
-        },
+        { name: 'name', valueString: 'Example allergy manifestations' },
+        { name: 'display', valueString: 'Hives' },
         {
           name: 'designation',
           part: [
             { name: 'language', valueCode: 'fr' },
-            { name: 'value', valueString: 'Id non accepté' },
+            { name: 'value', valueString: 'éruption urticaire' },
           ],
         },
         {
           name: 'designation',
-          part: [
-            { name: 'language', valueCode: 'zh' },
-            { name: 'value', valueString: 'Id不被接受' },
-          ],
+          part: [{ name: 'value', valueString: 'Wheal' }],
         },
       ]),
     });
