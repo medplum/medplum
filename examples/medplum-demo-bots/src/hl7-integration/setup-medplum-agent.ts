@@ -68,9 +68,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const projectId = medplum.getProject()?.id;
   const bots = await Promise.all(
     endpoints.map(async (endpoint) => {
-      return medplum.post(`/admin/projects/${projectId}/bot`, {
+      return medplum.post<Bot>(`/admin/projects/${projectId}/bot`, {
         name: `${organization.name}: ${endpoint.name} [Inbound]`,
-      }) as Promise<Bot>;
+      });
     })
   );
 

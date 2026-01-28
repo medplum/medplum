@@ -18,10 +18,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Partial<Me
   // The operation will return the Textract results
   // The results will also be available as a FHIR Binary and FHIR Media
   // You can optionally include `comprehend: true` to send the Textract results to AWS Comprehend
-  const textractResult = (await medplum.post(
+  const textractResult = await medplum.post<TextractResponse>(
     medplum.fhirUrl('Media', media.id as string, '$aws-textract'),
     {}
-  )) as TextractResponse;
+  );
 
   // Convert the AWS Textract output to an array of string lines
   const lines = textractResult.Blocks.map((b) => b.Text).filter(Boolean);

@@ -13,6 +13,7 @@ import type {
   Coverage,
   Encounter,
   EncounterDiagnosis,
+  Media,
   Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
@@ -109,7 +110,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       diagnosis: diagnosisArray,
     };
 
-    const response = await medplum.post(medplum.fhirUrl('Claim', '$export'), {
+    const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
       resourceType: 'Parameters',
       parameter: [{ name: 'resource', resource: claimToExport }],
     });

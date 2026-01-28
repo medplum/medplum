@@ -85,7 +85,7 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
     console.log('No existing connector found. Creating...');
     // Create the bot resource in the project
     existing = await medplum
-      .post('admin/projects/' + projectId + '/bot', {
+      .post<any>('admin/projects/' + projectId + '/bot', {
         name: IMPORTER_BOT.name,
         description: IMPORTER_BOT.description,
         sourceCode,
