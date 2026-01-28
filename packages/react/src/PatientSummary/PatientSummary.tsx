@@ -47,6 +47,7 @@ import {
   getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
+import { Pharmacies } from './Pharmacies';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
@@ -300,6 +301,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             />
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
+            <Divider />
+            <Pharmacies patient={patient} onClickResource={onClickResource} />
             <Divider />
           </>
         )}

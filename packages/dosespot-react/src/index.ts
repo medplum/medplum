@@ -4,4 +4,5 @@ export * from './common';
 export * from './useDoseSpotClinicFormulary';
 export * from './useDoseSpotIFrame';
 export * from './useDoseSpotNotifications';
+export * from './useDoseSpotPatientPharmacy';
 export * from './utils';
