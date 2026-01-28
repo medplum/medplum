@@ -53,7 +53,8 @@ services:
       - '8103:8103'
     volumes:
       # Conditionally define a volume for a `medplum.config.json` if one is specified by the MEDPLUM_CONFIG_PATH env var
-      - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
+      # - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
+      - ./packages/server/medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json
     environment:
       MEDPLUM_PORT: 8103
       MEDPLUM_BASE_URL: 'http://localhost:8103/'
