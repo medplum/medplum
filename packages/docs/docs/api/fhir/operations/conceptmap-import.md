@@ -8,9 +8,7 @@ The `$import` operation allows you to import code mappings into a ConceptMap. Th
 
 ## Use Cases
 
-- **Terminology Migration**: Bulk import mappings from another terminology system
-- **External Data Integration**: Import mappings from external standards organizations
-- **Automated Mapping**: Programmatically create mappings based on external mapping files
+- **Bulk Import from External Sources**: Import mappings from other terminology systems or external standards organizations, including programmatically creating mappings from external mapping files
 - **Mapping Updates**: Update existing mappings with new versions
 
 ## Authorization
@@ -58,7 +56,7 @@ Each mapping has the following parts:
 
 ### Relationship Values
 
-Valid values from the [concept-map-equivalence](http://hl7.org/fhir/ValueSet/concept-map-equivalence) ValueSet:
+Valid values from the [concept-map-equivalence](http://hl7.org/fhir/R4/valueset-concept-map-equivalence.html) ValueSet:
 - `equivalent` (default)
 - `equal`
 - `wider`
@@ -138,55 +136,20 @@ The operation returns the ConceptMap resource that was imported into.
   "id": "my-concept-map",
   "url": "http://example.org/ConceptMap/my-mappings",
   "status": "active",
-  "group": [
-    {
-      "source": "http://example.org/source-system",
-      "target": "http://example.org/target-system",
-      "element": [
-        {
-          "code": "ABC",
-          "display": "Source Code ABC",
-          "target": [
-            {
-              "code": "XYZ",
-              "display": "Target Code XYZ",
-              "equivalence": "equivalent"
-            }
-          ]
-        }
-      ]
-    }
-  ]
 }
 ```
 
 ## Behavior
 
 - **Upsert Logic**: Mappings are inserted or updated based on the unique combination of (conceptMap, sourceSystem, sourceCode, targetSystem, targetCode)
-- **Duplicate Handling**: Duplicate mappings in the input are deduplicated
 - **Transaction**: The entire import runs within a database transaction
 - **Existing Mappings**: Mappings already defined in the ConceptMap resource are also imported into the database
 
 ## Error Responses
 
-### Missing Source Code
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "issue": [
-    {
-      "severity": "error",
-      "code": "invalid",
-      "details": {
-        "text": "Source code for mapping is required"
-      }
-    }
-  ]
-}
-```
-
 ### URL Not Permitted for Instance Operation
+
+Occurs when calling the instance-level operation (`/ConceptMap/[id]/$import`) while also providing the `url` parameter. The target ConceptMap is already identified by the instance ID in the path, so `url` is redundant and not allowed. Omit the `url` parameter when using the instance URL, or call the type-level operation (`/ConceptMap/$import`) and provide `url` in the request body instead.
 
 ```json
 {
@@ -203,25 +166,8 @@ The operation returns the ConceptMap resource that was imported into.
 }
 ```
 
-### Access Denied
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "issue": [
-    {
-      "severity": "error",
-      "code": "forbidden",
-      "details": {
-        "text": "Forbidden"
-      }
-    }
-  ]
-}
-```
-
 ## Related Documentation
 
 - [ConceptMap $translate](/docs/api/fhir/operations/conceptmap-translate) - Translate codes using ConceptMaps
 - [Terminology](/docs/terminology) - Overview of terminology support in Medplum
-- [FHIR ConceptMap](https://hl7.org/fhir/conceptmap.html) - FHIR specification
+- [FHIR ConceptMap](http://hl7.org/fhir/R4/conceptmap.html) - FHIR specification

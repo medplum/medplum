@@ -6,10 +6,8 @@ When working with healthcare standards like LOINC, SNOMED CT, or ICD-10, `$looku
 
 ## Use Cases
 
-- **Display Code Descriptions**: Show human-readable names for lab tests, diagnoses, or procedures in your UI
-- **Terminology Validation**: Verify that a code exists and retrieve its official display text
+- **Display Code Descriptions**: Show human-readable names for lab tests, diagnoses, or procedures in your UI, including alternative names or consumer-friendly descriptions for medical concepts
 - **Code Property Retrieval**: Access metadata like LOINC component, property, timing, and scale information
-- **Synonym Lookup**: Find alternative names or consumer-friendly descriptions for medical concepts
 - **Hierarchy Navigation**: Discover parent codes to understand where a concept fits in the terminology hierarchy
 
 ## Invoke the `$lookup` operation

@@ -6,11 +6,10 @@ The `$validate-code` operation checks whether a code exists within a specific co
 
 ## Use Cases
 
-- **Form Validation**: Verify user-entered codes before saving clinical data
+- **Form and Input Validation**: Verify user-entered codes or confirm selected codes from autocomplete/typeahead are valid before saving clinical data
 - **Interface Validation**: Check incoming codes from external systems (labs, pharmacies, EHRs) before processing
 - **Data Quality Checks**: Audit existing data to identify invalid or deprecated codes
 - **Migration Validation**: Ensure codes are valid when importing data from legacy systems
-- **Autocomplete Verification**: Confirm that a selected code from a typeahead is valid in the target code system
 
 ## Invoke the `$validate-code` operation
 

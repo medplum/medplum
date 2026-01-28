@@ -12,11 +12,9 @@ This is critical for enforcing business rules and data quality, ensuring that cl
 
 ## Use Cases
 
-- **Form Field Validation**: Ensure user-selected codes are valid for specific fields (e.g., only certain condition codes for a chief complaint field)
-- **Constraint Enforcement**: Validate that incoming data meets ValueSet-based constraints defined in FHIR profiles
-- **Interface Validation**: Check that codes from external systems are valid for the expected ValueSet before processing
+- **Input Validation**: Ensure user-selected codes or codes from external systems are valid for specific fields or expected ValueSets before processing
+- **Constraint Enforcement**: Validate that incoming data meets ValueSet-based constraints defined in FHIR profiles or implementation guides like US Core
 - **Custom Picklist Validation**: Verify selections against organization-specific ValueSets that subset larger code systems
-- **Profile Compliance**: Confirm that coded data meets the terminology requirements of implementation guides like US Core
 
 ## Invoke the `$validate-code` operation
 
