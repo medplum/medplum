@@ -47,20 +47,6 @@ function createMockStreamingResponse(content: string): Response {
   });
 }
 
-// Helper to create a mock buffered JSON response
-function createMockBufferedResponse(content: string): Response {
-  return new Response(
-    JSON.stringify({
-      resourceType: 'Parameters',
-      parameter: [{ name: 'content', valueString: content }],
-    }),
-    {
-      status: 200,
-      headers: { 'Content-Type': 'application/fhir+json' },
-    }
-  );
-}
-
 describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
