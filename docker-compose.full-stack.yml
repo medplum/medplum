@@ -23,8 +23,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - medplum-net
 
   redis:
     image: redis:7
@@ -37,8 +35,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - medplum-net
 
   # Medplum server container
   medplum-server:
@@ -53,8 +49,13 @@ services:
       - '8103:8103'
     volumes:
       # Conditionally define a volume for a `medplum.config.json` if one is specified by the MEDPLUM_CONFIG_PATH env var
-      # - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
-      - ./packages/server/medplum.config.json:/usr/src/medplum/packages/server/medplum.config.json
+      - ${MEDPLUM_CONFIG_PATH:-./medplum.config.json}:/usr/src/medplum/packages/server/medplum.config.json
+    entrypoint:
+      - node
+      - --require
+      - ./packages/server/dist/otel/instrumentation.js
+      - packages/server/dist/index.js
+      - env
     environment:
       MEDPLUM_PORT: 8103
       MEDPLUM_BASE_URL: 'http://localhost:8103/'
@@ -99,16 +100,14 @@ services:
       test:
         # We use Node's fetch for healthcheck because this image doesn't have a curl or wget installed
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "require('http').get('http://localhost:8103/healthcheck', res => res.statusCode===200 ? process.exit(0) : process.exit(1))"
         ]
       interval: 30s
       timeout: 10s
       retries: 5
-    networks:
-      - medplum-net
 
   # Medplum app container (web UI)
   medplum-app:
@@ -124,9 +123,3 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - medplum-net
-      
-networks:
-  medplum-net:
-    driver: bridge
