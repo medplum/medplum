@@ -210,7 +210,7 @@ export function extractAmazonTraceId(amznTraceId: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
-export function buildTracingExtension(): Extension[] | undefined {
+export function buildTracingExtension(): Extension | undefined {
   const ctx = tryGetRequestContext();
 
   if (ctx === undefined) {
@@ -230,12 +230,10 @@ export function buildTracingExtension(): Extension[] | undefined {
     return undefined;
   }
 
-  return [
-    {
-      url: 'https://medplum.com/fhir/StructureDefinition/tracing',
-      extension: subExtensions,
-    },
-  ];
+  return {
+    url: 'https://medplum.com/fhir/StructureDefinition/tracing',
+    extension: subExtensions,
+  };
 }
 
 function requestIds(req: Request): { requestId: string; traceId: string } {
