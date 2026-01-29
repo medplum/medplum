@@ -31,12 +31,10 @@ export function AppsPage(): JSX.Element | null {
   }
 
   let patient: Reference<Patient> | undefined = undefined;
-  let patientResource: Patient | undefined = undefined;
   let encounter: Reference<Encounter> | undefined = undefined;
 
   if (resource.resourceType === 'Patient') {
     patient = createReference(resource);
-    patientResource = resource;
   } else if (resource.resourceType === 'Encounter') {
     patient = resource.subject as Reference<Patient>;
     encounter = createReference(resource);
@@ -57,12 +55,7 @@ export function AppsPage(): JSX.Element | null {
       {smartApps?.map((clientApplication) => (
         <div key={clientApplication.id}>
           <Title order={3}>
-            <SmartAppLaunchLink
-              client={clientApplication}
-              patient={patient}
-              encounter={encounter}
-              patientResource={patientResource}
-            >
+            <SmartAppLaunchLink client={clientApplication} patient={patient} encounter={encounter}>
               {clientApplication.name}
             </SmartAppLaunchLink>
           </Title>

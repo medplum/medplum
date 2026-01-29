@@ -5,7 +5,7 @@ import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { ensureTrailingSlash, getExtensionValue, getIdentifier, locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 
 /**
@@ -20,14 +20,13 @@ export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;
   readonly patient?: Reference<Patient>;
   readonly encounter?: Reference<Encounter>;
-  /** Optional full Patient resource used to extract identifier values for launch URL parameters. */
-  readonly patientResource?: Patient;
   readonly children?: ReactNode;
 }
 
 export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { client, patient, encounter, patientResource, children, ...rest } = props;
+  const { client, patient, encounter, children, ...rest } = props;
+  const patientResource = useResource(patient);
 
   function launchApp(): void {
     medplum

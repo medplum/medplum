@@ -9,10 +9,8 @@ import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SmartAppLaunchLink, SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM } from './SmartAppLaunchLink';
 
-const medplum = new MockClient();
-
 describe('SmartAppLaunchLink', () => {
-  function setup(children: ReactNode): void {
+  function setup(children: ReactNode, medplum = new MockClient()): void {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
@@ -21,7 +19,6 @@ describe('SmartAppLaunchLink', () => {
   }
 
   test('Happy path', async () => {
-    // const assignSpy = jest.spyOn(locationUtils, 'assign').mockImplementation(() => undefined);
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -56,7 +53,7 @@ describe('SmartAppLaunchLink', () => {
 
     const patientWithIdentifier: Patient = {
       resourceType: 'Patient',
-      id: 'test-patient',
+      id: 'test-patient-with-hg-id',
       identifier: [
         {
           system: 'https://healthgorilla.com/patient-id',
@@ -81,14 +78,15 @@ describe('SmartAppLaunchLink', () => {
       ],
     };
 
+    // Create a mock client with the patient pre-loaded
+    const medplum = new MockClient();
+    await medplum.createResource(patientWithIdentifier);
+
     setup(
-      <SmartAppLaunchLink
-        client={clientWithExtension}
-        patient={createReference(patientWithIdentifier)}
-        patientResource={patientWithIdentifier}
-      >
+      <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithIdentifier)}>
         Health Gorilla App
-      </SmartAppLaunchLink>
+      </SmartAppLaunchLink>,
+      medplum
     );
 
     expect(screen.getByText('Health Gorilla App')).toBeInTheDocument();
@@ -112,7 +110,7 @@ describe('SmartAppLaunchLink', () => {
 
     const patientWithIdentifier: Patient = {
       resourceType: 'Patient',
-      id: 'test-patient',
+      id: 'test-patient-no-ext',
       identifier: [
         {
           system: 'https://healthgorilla.com/patient-id',
@@ -127,14 +125,14 @@ describe('SmartAppLaunchLink', () => {
       launchUri: 'https://example.com/launch',
     };
 
+    const medplum = new MockClient();
+    await medplum.createResource(patientWithIdentifier);
+
     setup(
-      <SmartAppLaunchLink
-        client={clientWithoutExtension}
-        patient={createReference(patientWithIdentifier)}
-        patientResource={patientWithIdentifier}
-      >
+      <SmartAppLaunchLink client={clientWithoutExtension} patient={createReference(patientWithIdentifier)}>
         App Without Extension
-      </SmartAppLaunchLink>
+      </SmartAppLaunchLink>,
+      medplum
     );
 
     await act(async () => {
@@ -153,7 +151,7 @@ describe('SmartAppLaunchLink', () => {
 
     const patientWithDifferentIdentifier: Patient = {
       resourceType: 'Patient',
-      id: 'test-patient',
+      id: 'test-patient-diff-id',
       identifier: [
         {
           system: 'http://example.com/other-system',
@@ -174,14 +172,14 @@ describe('SmartAppLaunchLink', () => {
       ],
     };
 
+    const medplum = new MockClient();
+    await medplum.createResource(patientWithDifferentIdentifier);
+
     setup(
-      <SmartAppLaunchLink
-        client={clientWithExtension}
-        patient={createReference(patientWithDifferentIdentifier)}
-        patientResource={patientWithDifferentIdentifier}
-      >
+      <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithDifferentIdentifier)}>
         App With Missing Identifier
-      </SmartAppLaunchLink>
+      </SmartAppLaunchLink>,
+      medplum
     );
 
     await act(async () => {
