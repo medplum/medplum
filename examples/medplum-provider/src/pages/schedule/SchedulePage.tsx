@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Drawer, Group, Stack, Title } from '@mantine/core';
+import { Box, Button, Drawer, Group, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   createReference,
@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
+import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import { showErrorNotification } from '../../utils/notifications';
 import { Calendar } from '../../components/Calendar';
@@ -165,6 +166,7 @@ export function SchedulePage(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
+  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
   const [range, setRange] = useState<Range | undefined>(undefined);
   const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
@@ -172,6 +174,7 @@ export function SchedulePage(): JSX.Element | null {
   const [findSlots, setFindSlots] = useState<Slot[] | undefined>(undefined);
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
+  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
 
   useEffect(() => {
     if (medplum.isLoading() || !profile) {
@@ -279,6 +282,13 @@ export function SchedulePage(): JSX.Element | null {
           ['appointment', reference],
           ['_count', '1'],
         ]);
+
+        if (encounters.length === 0) {
+          setAppointmentDetails(appointment);
+          appointmentDetailsHandlers.open();
+          return;
+        }
+
         const patient = encounters?.[0]?.subject;
         if (patient?.reference) {
           await navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`);
@@ -331,6 +341,19 @@ export function SchedulePage(): JSX.Element | null {
         h="100%"
       >
         <CreateVisit appointmentSlot={appointmentSlot} />
+      </Drawer>
+      <Drawer
+        opened={appointmentDetailsOpened}
+        onClose={appointmentDetailsHandlers.close}
+        title={
+          <Text size="xl" fw={700}>
+            Appointment Details
+          </Text>
+        }
+        position="right"
+        h="100%"
+      >
+        {appointmentDetails && <AppointmentDetails appointment={appointmentDetails} />}
       </Drawer>
     </Box>
   );
