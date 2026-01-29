@@ -9,7 +9,32 @@ import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM, SmartAppLaunchLink } from './SmartAppLaunchLink';
 
+// Mock useResource to return the patient synchronously
+let mockPatientResource: Patient | undefined;
+
+jest.mock('@medplum/react-hooks', () => {
+  const actual = jest.requireActual('@medplum/react-hooks');
+  return {
+    ...actual,
+    useResource: jest.fn((reference) => {
+      // If reference is provided and matches our test patient, return it
+      if (reference && typeof reference === 'object' && 'reference' in reference && mockPatientResource) {
+        const refStr = reference.reference;
+        if (refStr === `Patient/${mockPatientResource.id}`) {
+          return mockPatientResource;
+        }
+      }
+      return undefined;
+    }),
+  };
+});
+
 describe('SmartAppLaunchLink', () => {
+  beforeEach(() => {
+    mockPatientResource = undefined;
+    jest.clearAllMocks();
+  });
+
   function setup(children: ReactNode, medplum = new MockClient()): void {
     render(
       <MemoryRouter>
@@ -78,15 +103,19 @@ describe('SmartAppLaunchLink', () => {
       ],
     };
 
-    // Create a mock client with the patient pre-loaded
+    // Set the mock patient resource so useResource returns it
+    mockPatientResource = patientWithIdentifier;
+
     const medplum = new MockClient();
-    await medplum.createResource(patientWithIdentifier);
+    // Mock createResource to return a successful response
+    const createResourceSpy = jest.spyOn(medplum, 'createResource').mockResolvedValue({
+      resourceType: 'SmartAppLaunch',
+      id: 'test-launch-id',
+    } as SmartAppLaunch & { id: string });
 
-    // Spy on createResource to verify the SmartAppLaunch is created with the identifier
-    const createResourceSpy = jest.spyOn(medplum, 'createResource');
-
+    const patientReference = createReference(patientWithIdentifier);
     setup(
-      <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithIdentifier)}>
+      <SmartAppLaunchLink client={clientWithExtension} patient={patientReference}>
         Health Gorilla App
       </SmartAppLaunchLink>,
       medplum
