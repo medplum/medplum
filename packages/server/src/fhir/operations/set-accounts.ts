@@ -21,7 +21,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { addSetAccountsJobData } from '../../workers/set-accounts';
 import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
+import { getShardSystemRepo } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -100,6 +100,7 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
     await exec.run(async () => {
       await addSetAccountsJobData({
         asyncJob,
+        shardId: repo.shardId,
         resourceType,
         id,
         accounts: params.accounts,
@@ -134,7 +135,7 @@ export async function setResourceAccounts(
   }
 
   // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(repo.shardId);
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
   if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {

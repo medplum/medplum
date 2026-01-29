@@ -25,6 +25,7 @@ export class ResourceCap {
   private current?: RateLimiterRes;
   private readonly enabled: boolean;
   private readonly logger: Logger;
+  private readonly projectShardId: string;
 
   private initPromise?: Promise<void>;
 
@@ -39,6 +40,7 @@ export class ResourceCap {
 
     this.logger = logger;
     this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableResourceCap')?.valueBoolean === true;
+    this.projectShardId = authState.projectShardId;
   }
 
   private async init(): Promise<void> {
@@ -52,7 +54,7 @@ export class ResourceCap {
         new SelectQuery(rt).raw(`COUNT(*)::int as "count"`).where('projectId', '=', this.projectKey)
       );
       const query = new SelectQuery('combined', new Union(...subqueries)).column('count');
-      const tableCounts = await query.execute(getDatabasePool(DatabaseMode.READER));
+      const tableCounts = await query.execute(getDatabasePool(DatabaseMode.READER, this.projectShardId));
       const totalCount = tableCounts.reduce((sum, row) => sum + row.count, 0);
       currentStatus = await this.limiter.set(this.projectKey, totalCount, ONE_DAY);
     }

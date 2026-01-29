@@ -19,7 +19,7 @@ import {
   preconditionFailed,
   stringify,
 } from '@medplum/core';
-import type { Bundle, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import type { Bundle, OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { applyPatch } from 'rfc6902';
 
@@ -189,7 +189,7 @@ export abstract class FhirRepository<TClient = unknown> {
    */
   abstract withTransaction<TResult>(
     callback: (client: TClient) => Promise<TResult>,
-    options?: { serializable?: boolean }
+    options?: { serializable?: boolean; resourceType?: ResourceType }
   ): Promise<TResult>;
 
   /**

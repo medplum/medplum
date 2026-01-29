@@ -9,19 +9,21 @@ import { loadStructureDefinitions } from '../fhir/structure';
 import { getLogger } from '../logger';
 import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { initBinaryStorage } from '../storage/loader';
 import * as cronModule from './cron';
 import * as downloadModule from './download';
 import * as subscriptionModule from './subscription';
 
 describe('Workers', () => {
+  const shardId = GLOBAL_SHARD_ID;
   beforeAll(() => {
     loadStructureDefinitions();
   });
 
   test('Init and close', async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');
@@ -59,7 +61,7 @@ describe('Workers', () => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
-      await addBackgroundJobs(resource, undefined, {} as BackgroundJobContext);
+      await addBackgroundJobs(shardId, resource, undefined, {} as BackgroundJobContext);
 
       expect(subSpy).toHaveBeenCalledTimes(1);
       expect(downloadSpy).toHaveBeenCalledTimes(1);

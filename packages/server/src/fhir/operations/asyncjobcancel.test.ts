@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -149,7 +149,7 @@ describe('AsyncJob/$cancel', () => {
   test('Cancelled job does not get added to super admin project', () =>
     withTestContext(async () => {
       // We create the resource with system repo so that it is like how system AsyncJobs get created
-      const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+      const asyncJob = await getGlobalSystemRepo().createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),

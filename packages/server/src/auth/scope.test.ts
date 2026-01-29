@@ -6,13 +6,13 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 describe('Scope', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   const email = `multi${randomUUID()}@example.com`;
   const password = randomUUID();
 
@@ -72,9 +72,9 @@ describe('Scope', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    const login = await globalSystemRepo.readResource<Login>('Login', res1.body.login);
     await withTestContext(() =>
-      systemRepo.updateResource({
+      globalSystemRepo.updateResource({
         ...login,
         revoked: true,
       })
@@ -98,9 +98,9 @@ describe('Scope', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    const login = await globalSystemRepo.readResource<Login>('Login', res1.body.login);
     await withTestContext(() =>
-      systemRepo.updateResource({
+      globalSystemRepo.updateResource({
         ...login,
         granted: true,
       })

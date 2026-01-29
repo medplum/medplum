@@ -10,7 +10,7 @@ import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
-import type { CacheEntry } from '../fhir/repo';
+import type { CacheEntry, Repository } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
@@ -20,6 +20,7 @@ import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
+import { getProjectShardId } from '../sharding/sharding-utils';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -50,15 +51,16 @@ const METRIC_OPTIONS = { attributes: { hostname } };
 const wsToSubLookup = new Map<WebSocket, Map<string, WebSocketSubMetadata>>();
 const subToWsLookup = new Map<string, Set<WebSocket>>();
 
-let redisSubscriber: Redis | undefined;
+const redisSubscribers = new Map<string, Redis>();
 let heartbeatHandler: (() => void) | undefined;
 
 let subscriptionEventsFired = 0;
 let subscriptionMessagesSent = 0;
 let subscriptionMessagesReceived = 0;
 
-async function setupSubscriptionHandler(): Promise<void> {
-  redisSubscriber = getRedisSubscriber();
+async function setupSubscriptionHandler(shardId: string): Promise<void> {
+  const redisSubscriber = getRedisSubscriber(shardId);
+  redisSubscribers.set(shardId, redisSubscriber);
   redisSubscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
     const subEventArgsArr = JSON.parse(events) as [
@@ -197,7 +199,6 @@ function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
 export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
-  const redis = getRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
@@ -235,8 +236,23 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
 
-    if (!redisSubscriber) {
-      await setupSubscriptionHandler();
+    const authState = await getLoginForAccessToken(undefined, rawToken);
+    if (!authState) {
+      globalLogger.info('[WS] Unable to get login for the given access token', {
+        subscriptionId: verifiedToken.subscription_id,
+      });
+      return;
+    }
+    let repo: Repository;
+    try {
+      repo = await getRepoForLogin(authState);
+    } catch (err) {
+      globalLogger.error('[WS] Unable to get repo for the given access token', { err, authState });
+      return;
+    }
+
+    if (!redisSubscribers.get(repo.shardId)) {
+      await setupSubscriptionHandler(repo.shardId);
     }
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken);
     ensureHeartbeatHandler();
@@ -251,7 +267,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
         return;
       }
       unsubscribeWsFromAllSubscriptions(socket);
-      const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
+      const cacheEntryStr = await getRedis(repo.shardId).get(`Subscription/${verifiedToken.subscription_id}`);
       if (!cacheEntryStr) {
         globalLogger.warn('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect');
         return;
@@ -268,8 +284,23 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
 
+    const authState = await getLoginForAccessToken(undefined, rawToken);
+    if (!authState) {
+      globalLogger.info('[WS] Unable to get login for the given access token', {
+        subscriptionId: verifiedToken.subscription_id,
+      });
+      return;
+    }
+    let repo: Repository;
+    try {
+      repo = await getRepoForLogin(authState);
+    } catch (err) {
+      globalLogger.error('[WS] Unable to get repo for the given access token', { err, authState });
+      return;
+    }
+
     unsubscribeWsFromSubscription(socket, verifiedToken.subscription_id);
-    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
+    const cacheEntryStr = await getRedis(repo.shardId).get(`Subscription/${verifiedToken.subscription_id}`);
     if (!cacheEntryStr) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
         subscriptionId: verifiedToken.subscription_id,
@@ -406,17 +437,15 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
-export async function markInMemorySubscriptionsInactive(
-  projectId: string,
-  subscriptionIds: Set<string>
-): Promise<void> {
+async function markInMemorySubscriptionsInactive(projectId: string, subscriptionIds: Set<string>): Promise<void> {
   const refStrs = [];
   for (const subscriptionId of subscriptionIds) {
     refStrs.push(`Subscription/${subscriptionId}`);
   }
   let redis: Redis | undefined;
+  const projectShardId = await getProjectShardId(projectId);
   try {
-    redis = getRedis();
+    redis = getRedis(projectShardId);
   } catch {
     redis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');

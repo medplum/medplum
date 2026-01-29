@@ -8,7 +8,7 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
@@ -31,7 +31,7 @@ describe('Me', () => {
   });
 
   test('User configuration', async () => {
-    const { project, membership, accessToken } = await withTestContext(() =>
+    const { project, projectShardId, membership, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -91,7 +91,7 @@ describe('Me', () => {
     expect(res5.status).toBe(200);
 
     // As super admin user, add an identifier to the user
-    const systemRepo = getSystemRepo();
+    const systemRepo = getShardSystemRepo(projectShardId);
     await systemRepo.patchResource('User', resolveId(res4.body.user) as string, [
       {
         op: 'add',
@@ -218,7 +218,7 @@ describe('Me', () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { project, membership, accessToken } = await withTestContext(() =>
+    const { project, projectShardId, membership, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -279,7 +279,7 @@ describe('Me', () => {
     expect(res3.body.security.memberships).toHaveLength(2);
 
     // Mark the 2nd ProjectMembership as inactive
-    await getSystemRepo().patchResource('ProjectMembership', inviteResponse.membership.id, [
+    await getShardSystemRepo(projectShardId).patchResource('ProjectMembership', inviteResponse.membership.id, [
       {
         op: 'add',
         path: '/active',

@@ -19,6 +19,7 @@ describe('FHIR Rate Limits', () => {
   let config: MedplumServerConfig;
   let redisConfig: TestRedisConfig;
   let accessToken: string;
+  let projectShardId: string;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -33,14 +34,14 @@ describe('FHIR Rate Limits', () => {
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRedis(projectShardId), redisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 
   test('Blocks request that would exceed limit', async () => {
     config.defaultFhirQuota = 20;
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
@@ -54,7 +55,7 @@ describe('FHIR Rate Limits', () => {
   test('Blocks single too-expensive request', async () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res = await request(app)
       .post('/fhir/R4/Patient')
@@ -66,7 +67,7 @@ describe('FHIR Rate Limits', () => {
   test('Allows batch under limit', async () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res = await request(app)
       .post('/fhir/R4/')
@@ -83,7 +84,7 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({
+    ({ accessToken, projectShardId } = await createTestProject({
       withAccessToken: true,
       project: { features: ['transaction-bundles'] },
     }));
@@ -103,7 +104,7 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 500;
     config.defaultRateLimit = 100;
     await initApp(app, config);
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
@@ -120,7 +121,7 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({
+    ({ accessToken, projectShardId } = await createTestProject({
       withAccessToken: true,
       project: { systemSetting: [{ name: 'userFhirQuota', valueInteger: 1000 }] },
     }));
@@ -136,11 +137,13 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    const { accessToken, repo, membership } = await createTestProject({
+    const testProjectResult = await createTestProject({
       withAccessToken: true,
       withRepo: true,
       withClient: true,
     });
+    ({ accessToken, projectShardId } = testProjectResult);
+    const { repo, membership } = testProjectResult;
 
     const userConfig = await repo.createResource<UserConfiguration>({
       resourceType: 'UserConfiguration',
@@ -162,16 +165,25 @@ describe('FHIR Rate Limits', () => {
     config.defaultFhirQuota = 100;
     await initApp(app, config);
 
-    const { accessToken, project } = await createTestProject({
+    const testProjectResult = await createTestProject({
       withAccessToken: true,
       project: {
         systemSetting: [{ name: 'totalFhirQuota', valueInteger: 100 }],
       },
     });
+    ({ accessToken, projectShardId } = testProjectResult);
+    const project = testProjectResult.project;
 
     const email = `${randomUUID()}@example.com`;
     const password = randomUUID();
-    await inviteUser({ project, resourceType: 'Practitioner', firstName: 'A.', lastName: 'Zee', email, password });
+    await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'A.',
+      lastName: 'Zee',
+      email,
+      password,
+    });
 
     const loginRes = await request(app).post('/auth/login').type('json').send({
       email,

@@ -13,7 +13,7 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -26,6 +26,7 @@ const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
 let project: WithId<Project>;
+let projectShardId: string;
 let client: WithId<ClientApplication>;
 let corsClient: WithId<ClientApplication>;
 
@@ -37,10 +38,10 @@ describe('Login', () => {
       await initApp(app, config);
 
       // Create a test project
-      ({ project, client } = await createTestProject({ withClient: true }));
+      ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
 
       // Create another client with CORS "allowed origins"
-      corsClient = await getSystemRepo().createResource<ClientApplication>({
+      corsClient = await getShardSystemRepo(projectShardId).createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         meta: {
           project: project.id,
@@ -351,7 +352,7 @@ describe('Login', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project: newProject, projectShardId: newProjectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -360,9 +361,9 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = getSystemRepo();
+      const systemRepo = getShardSystemRepo(newProjectShardId);
       await systemRepo.updateResource({
-        ...project,
+        ...newProject,
         features: ['google-auth-required'],
       });
     });
@@ -524,7 +525,7 @@ describe('Login', () => {
     );
 
     // Mark the membership as inactive
-    await getSystemRepo().updateResource({ ...membership, active: false });
+    await getShardSystemRepo(projectShardId).updateResource({ ...membership, active: false });
 
     // User should not be able to login
     const res = await request(app).post('/auth/login').type('json').send({

@@ -23,6 +23,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { runInAsyncContext } from '../../context';
+import { getProjectShardId } from '../../sharding/sharding-utils';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
@@ -33,6 +34,7 @@ let accessToken: string;
 let login: WithId<Login>;
 let membership: WithId<ProjectMembership>;
 let project: WithId<Project>;
+let projectShardId: string;
 let observation: Observation;
 let diagnosticReport: DiagnosticReport;
 let patient: Patient;
@@ -48,6 +50,7 @@ describe('Patient Set Accounts Operation', () => {
       withClient: true,
       membership: { admin: true },
     }));
+    projectShardId = await getProjectShardId(project);
 
     // Create organization
     const orgRes = await request(app)
@@ -424,7 +427,7 @@ describe('Patient Set Accounts Operation', () => {
     queue.add.mockClear();
 
     await runInAsyncContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      { login, membership, project, projectShardId, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
       () => execSetAccountsJob(job)
@@ -515,7 +518,7 @@ describe('Patient Set Accounts Operation', () => {
 
     // Manually execute worker
     await runInAsyncContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      { login, membership, project, projectShardId, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
       () => execSetAccountsJob(job)

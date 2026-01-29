@@ -3,6 +3,7 @@
 import type { AgentLogsResponse, WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import type { Repository } from '../repo';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
@@ -38,15 +39,20 @@ export async function agentFetchLogsHandler(req: FhirRequest): Promise<FhirRespo
   const params = parseInputParameters<AgentFetchLogsOptions>(operation, req);
   req.query = rest;
 
-  return handleBulkAgentOperation(req, async (agent) => fetchLogs(agent, params));
+  return handleBulkAgentOperation(req, async (repo, agent) => fetchLogs(repo, agent, params));
 }
 
 export type AgentFetchLogsOptions = {
   limit?: number;
 };
 
-async function fetchLogs(agent: WithId<Agent>, options: AgentFetchLogsOptions): Promise<FhirResponse> {
+async function fetchLogs(
+  repo: Repository,
+  agent: WithId<Agent>,
+  options: AgentFetchLogsOptions
+): Promise<FhirResponse> {
   return sendAndHandleAgentRequest<AgentLogsResponse>(
+    repo,
     agent,
     { type: 'agent:logs:request', limit: options?.limit },
     'agent:logs:response',

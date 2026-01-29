@@ -6,7 +6,7 @@ import type { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { timingSafeEqualStr } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -17,7 +17,7 @@ export const verifyEmailValidator = makeValidationMiddleware([
 ]);
 
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (pcr.type !== 'verify-email') {
@@ -54,7 +54,7 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  */
 export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
   // Create the password change request
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },

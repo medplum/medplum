@@ -5,9 +5,6 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadAwsConfig } from '../cloud/aws/config';
-import { loadAzureConfig } from '../cloud/azure/config';
-import { loadGcpConfig } from '../cloud/gcp/config';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
@@ -43,15 +40,21 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'file':
       config = await loadFileConfig(configPath);
       break;
-    case 'aws':
+    case 'aws': {
+      const { loadAwsConfig } = await import('../cloud/aws/config');
       config = await loadAwsConfig(configPath);
       break;
-    case 'gcp':
+    }
+    case 'gcp': {
+      const { loadGcpConfig } = await import('../cloud/gcp/config');
       config = await loadGcpConfig(configPath);
       break;
-    case 'azure':
+    }
+    case 'azure': {
+      const { loadAzureConfig } = await import('../cloud/azure/config');
       config = await loadAzureConfig(configPath);
       break;
+    }
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
@@ -60,16 +63,22 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     throw new Error('Missing required config setting: baseUrl. Please set "baseUrl" in your configuration.');
   }
 
+  if (config.shards?.global) {
+    throw new Error('Shard id "global" is reserved');
+  }
+
   cachedConfig = addDefaults(config);
   return cachedConfig;
 }
 
 /**
  * Loads the configuration setting for unit and integration tests.
+ * @param sharded - Whether to load the sharded configuration.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(): Promise<MedplumServerConfig> {
-  const config = await loadConfig('file:medplum.config.json');
+export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerConfig> {
+  const redisTestDB = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
+  const config = await loadConfig(sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
@@ -82,7 +91,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
     username: 'medplum_test_readonly',
     password: 'medplum_test_readonly',
   };
-  config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
+  config.redis.db = redisTestDB;
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
@@ -90,6 +99,35 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
   config.defaultSuperAdminClientId = randomUUID();
   config.defaultSuperAdminClientSecret = randomUUID();
+
+  if (sharded) {
+    if (!config.shards) {
+      throw new Error('Sharded configuration requires shards');
+    }
+
+    let shardCount = 0;
+    for (const shardConfig of Object.values(config.shards)) {
+      shardCount++;
+
+      shardConfig.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
+      shardConfig.database.port = process.env['POSTGRES_PORT']
+        ? Number.parseInt(process.env['POSTGRES_PORT'], 10)
+        : 5432;
+      shardConfig.database.dbname = shardConfig.database.dbname?.replace('medplum', 'medplum_test');
+      shardConfig.database.runMigrations = false;
+      shardConfig.database.disableRunPostDeployMigrations = true;
+      shardConfig.readonlyDatabase = {
+        ...shardConfig.database,
+        username: 'medplum_test_readonly',
+        password: 'medplum_test_readonly',
+      };
+      if (redisTestDB + shardCount > 15) {
+        throw new Error('Too many shards');
+      }
+      shardConfig.redis.db = redisTestDB + shardCount;
+      shardConfig.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+    }
+  }
   return config;
 }
 

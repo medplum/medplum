@@ -8,6 +8,7 @@ import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
+import type { Repository } from '../repo';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -47,7 +48,7 @@ export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse
     return [badRequest('Must specify agent ID or identifier')];
   }
 
-  const [statusOrOutcome] = await getStatusForAgents([agent]);
+  const [statusOrOutcome] = await getStatusForAgents(repo, [agent]);
 
   if (isOperationOutcome(statusOrOutcome)) {
     return [statusOrOutcome];
@@ -58,15 +59,19 @@ export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse
 
 /**
  * Gets the status for a given list of Agents.
+ * @param repo - The FHIR repository.
  * @param agents - The agents to get the status of.
  * @returns A Bundle containing Parameters containing agents with their corresponding status response.
  */
-export async function getStatusForAgents(agents: WithId<Agent>[]): Promise<(Parameters | OperationOutcome)[]> {
+export async function getStatusForAgents(
+  repo: Repository,
+  agents: WithId<Agent>[]
+): Promise<(Parameters | OperationOutcome)[]> {
   // Get the agent status details from Redis
   // This is set by the agent websocket connection
   // See: packages/server/src/agent/websockets.ts
   // Here we use MGET to get all the keys at once, which reduces this from O(n) Redis commands to O(1)
-  const statusStrs = await getRedis().mget(agents.map((agent) => `medplum:agent:${agent.id}:info`));
+  const statusStrs = await getRedis(repo.shardId).mget(agents.map((agent) => `medplum:agent:${agent.id}:info`));
 
   const statuses: (Parameters | OperationOutcome)[] = [];
 

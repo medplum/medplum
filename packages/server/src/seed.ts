@@ -5,39 +5,66 @@ import type { ClientApplication, Practitioner, Project, ProjectMembership, User 
 import { bcryptHashPassword } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
+import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
+import type { ShardPool } from './sharding/sharding-types';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
-  const systemRepo = getSystemRepo();
+  // Ensure 'global' shard is run first
+  const globalPool = getDatabasePool(DatabaseMode.WRITER, 'global');
+  await seedDatabaseShard(globalPool, config);
 
-  if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded');
-    return;
+  // Seed all other shards
+  if (config.shards) {
+    for (const shardName of Object.keys(config.shards)) {
+      if (shardName === 'global') {
+        continue;
+      }
+      const pool = getDatabasePool(DatabaseMode.WRITER, shardName);
+      await seedDatabaseShard(pool, config);
+    }
   }
+}
 
-  await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo, config);
+export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
+  await withPoolClient(async (client) => {
+    const systemRepo = getShardSystemRepo(client.shardId, client);
 
-    globalLogger.info('Building structure definitions...');
-    let startTime = Date.now();
-    await rebuildR4StructureDefinitions(systemRepo);
-    globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+    if (await isSeeded(systemRepo)) {
+      globalLogger.info('Already seeded', { shardId: pool.shardId });
+      return;
+    }
 
-    globalLogger.info('Building value sets...');
-    startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
-    globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+    await systemRepo.withTransaction(async () => {
+      await createSuperAdmin(systemRepo, config);
 
-    globalLogger.info('Building search parameters...');
-    startTime = Date.now();
-    await rebuildR4SearchParameters(systemRepo);
-    globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
-  });
+      globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
+      let startTime = Date.now();
+      await rebuildR4StructureDefinitions(systemRepo);
+      globalLogger.info('Finished building structure definitions', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
+
+      globalLogger.info('Building value sets...', { shardId: pool.shardId });
+      startTime = Date.now();
+      await rebuildR4ValueSets(systemRepo);
+      globalLogger.info('Finished building value sets', { shardId: pool.shardId, durationMs: Date.now() - startTime });
+
+      globalLogger.info('Building search parameters...', { shardId: pool.shardId });
+      startTime = Date.now();
+      await rebuildR4SearchParameters(systemRepo);
+      globalLogger.info('Finished building search parameters', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
+    });
+  }, pool);
 }
 
 async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
@@ -124,6 +151,12 @@ async function createSuperAdmin(systemRepo: Repository, config: MedplumServerCon
  * @param systemRepo - The system repository to use to check if the database is seeded.
  * @returns True if already seeded.
  */
-function isSeeded(systemRepo: Repository): Promise<User | undefined> {
-  return systemRepo.searchOne({ resourceType: 'User' });
+function isSeeded(systemRepo: Repository): Promise<Project | undefined> {
+  //TODO{sharding} - replace this with some well known table that is set after seeding so it doesn't potentially
+  // relay on the global shard or a super admin NOT having taken some action like deleting all projects; which is
+  // weird to think about but technically possible?
+  return systemRepo.searchOne({
+    resourceType: 'Project',
+    filters: [{ code: 'name', operator: 'exact', value: 'Super Admin' }],
+  });
 }

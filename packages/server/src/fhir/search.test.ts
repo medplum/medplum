@@ -54,7 +54,8 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
-import { getSystemRepo, Repository } from './repo';
+import type { SystemRepository } from './repo';
+import { getGlobalSystemRepo, getShardSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
@@ -67,17 +68,20 @@ const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', 
 describe('project-scoped Repository', () => {
   let config: MedplumServerConfig;
   let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
     repo = new Repository({
+      projectShardId,
       strictMode: true,
       projects: [project],
       currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
+    systemRepo = getShardSystemRepo(projectShardId);
   });
 
   afterAll(async () => {
@@ -4716,7 +4720,6 @@ describe('project-scoped Repository', () => {
 
     test('Cursor pagination dedupes across page boundaries', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         const identifier = randomUUID();
         const lastUpdated = new Date();
         lastUpdated.setMilliseconds(0);
@@ -4904,7 +4907,7 @@ describe('project-scoped Repository', () => {
 });
 
 describe('systemRepo', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

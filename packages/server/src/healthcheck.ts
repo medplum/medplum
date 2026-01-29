@@ -8,6 +8,7 @@ import { DatabaseMode, getDatabasePool } from './database';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import { getRedis } from './redis';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
@@ -17,6 +18,8 @@ let readerConn: PoolClient | undefined;
 let writerConn: PoolClient | undefined;
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
+  // TODO{sharding} Should this test redis/postgres on every shard?
+
   writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
   let startTime = Date.now();
   const postgresWriterOk = await testPostgres(writerConn);
@@ -38,7 +41,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   }
 
   startTime = Date.now();
-  const redisOk = await testRedis();
+  const redisOk = await testRedis(GLOBAL_SHARD_ID);
   const redisRoundtripMs = Date.now() - startTime;
   setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, METRIC_IN_SECS_OPTIONS);
 
@@ -53,7 +56,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 }
 
 async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
-  return getDatabasePool(mode).connect();
+  return getDatabasePool(mode, GLOBAL_SHARD_ID).connect();
 }
 
 export function cleanupReservedDatabaseConnections(): void {
@@ -64,13 +67,13 @@ export function cleanupReservedDatabaseConnections(): void {
 }
 
 function hasSeparateReaderPool(): boolean {
-  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+  return getDatabasePool(DatabaseMode.WRITER, 'global') !== getDatabasePool(DatabaseMode.READER, 'global');
 }
 
 async function testPostgres(pool: PoolClient): Promise<boolean> {
   return (await pool.query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 
-async function testRedis(): Promise<boolean> {
-  return (await getRedis().ping()) === 'PONG';
+async function testRedis(shardId: string): Promise<boolean> {
+  return (await getRedis(shardId).ping()) === 'PONG';
 }

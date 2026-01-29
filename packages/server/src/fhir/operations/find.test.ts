@@ -6,11 +6,11 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import type { SystemRepository } from '../repo';
+import { getShardSystemRepo } from '../repo';
 
-const systemRepo = getSystemRepo();
 const app = express();
 const request = supertest(app);
 
@@ -52,11 +52,13 @@ describe('Schedule/:id/$find', () => {
   let location: Location;
   let practitioner: Practitioner;
   let project: TestProjectResult<{ withAccessToken: true }>;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     project = await createTestProject({ withAccessToken: true });
+    systemRepo = getShardSystemRepo(project.projectShardId);
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },

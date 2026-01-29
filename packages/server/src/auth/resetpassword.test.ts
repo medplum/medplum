@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -21,7 +21,7 @@ jest.mock('node-fetch');
 
 describe('Reset Password', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const globalSystemRepo = getGlobalSystemRepo();
   const testRecaptchaSecretKey = 'testrecaptchasecretkey';
 
   beforeAll(async () => {
@@ -172,7 +172,7 @@ describe('Reset Password', () => {
     // Create a domain with external auth
     const domain = randomUUID() + '.example.com';
     await withTestContext(() =>
-      systemRepo.createResource<DomainConfiguration>({
+      globalSystemRepo.createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain,
         identityProvider: {
@@ -208,7 +208,7 @@ describe('Reset Password', () => {
 
     await withTestContext(async () => {
       // Register and create a project
-      const { project } = await registerNew({
+      const { project, projectShardId } = await registerNew({
         firstName: 'Reset',
         lastName: 'Reset',
         projectName: 'Reset Project',
@@ -217,6 +217,7 @@ describe('Reset Password', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
+      const systemRepo = getShardSystemRepo(projectShardId);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -263,7 +264,7 @@ describe('Reset Password', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      await systemRepo.updateResource({
+      await globalSystemRepo.updateResource({
         ...project,
         site: [
           {
@@ -363,7 +364,7 @@ describe('Reset Password', () => {
       });
 
       // Add the project to the user
-      await systemRepo.patchResource('User', resolveId(user) as string, [
+      await globalSystemRepo.patchResource('User', resolveId(user) as string, [
         {
           path: '/project',
           op: 'add',
@@ -410,7 +411,7 @@ describe('Reset Password', () => {
       });
 
       // Add the project to the user
-      await systemRepo.patchResource('User', resolveId(user) as string, [
+      await globalSystemRepo.patchResource('User', resolveId(user) as string, [
         {
           path: '/project',
           op: 'add',
@@ -436,7 +437,7 @@ describe('Reset Password', () => {
 
     // Get newly created UserSecurityRequest
     const userSecurityRequest = (await withTestContext(async () =>
-      systemRepo.searchOne<UserSecurityRequest>({
+      globalSystemRepo.searchOne<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         filters: [
           {

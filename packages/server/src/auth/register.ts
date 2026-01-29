@@ -5,7 +5,7 @@ import { createReference } from '@medplum/core';
 import type { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { createProject } from '../fhir/operations/projectinit';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
 
@@ -30,6 +30,7 @@ export interface RegisterResponse {
   readonly accessToken: string;
   readonly user: WithId<User>;
   readonly project: WithId<Project>;
+  readonly projectShardId: string;
   readonly login: WithId<Login>;
   readonly membership: WithId<ProjectMembership>;
   readonly profile: WithId<ProfileResource>;
@@ -48,8 +49,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   let user = await getUserByEmailWithoutProject(email);
   if (!user) {
-    const systemRepo = getSystemRepo();
-    user = await systemRepo.createResource<User>({
+    const globalSystemRepo = getGlobalSystemRepo();
+    user = await globalSystemRepo.createResource<User>({
       resourceType: 'User',
       firstName,
       lastName,
@@ -69,7 +70,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     allowNoMembership: true,
   });
 
-  const { membership, client, project, profile } = await createProject(projectName, user);
+  const { membership, client, project, projectShardId, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
     user,
@@ -85,6 +86,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     accessToken: token.accessToken,
     user,
     project,
+    projectShardId,
     login,
     membership: membership as WithId<ProjectMembership>,
     profile: profile as WithId<ProfileResource>,

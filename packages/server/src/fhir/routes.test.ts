@@ -10,6 +10,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
@@ -19,6 +20,7 @@ let searchOnReaderAccessToken: string;
 let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
+const shardId = GLOBAL_SHARD_ID;
 
 describe('FHIR Routes', () => {
   beforeAll(async () => {
@@ -483,8 +485,8 @@ describe('FHIR Routes', () => {
 
   describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
     test('Search', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -502,8 +504,8 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -525,8 +527,8 @@ describe('FHIR Routes', () => {
     });
 
     test('Search by POST with multiple includes', async () => {
-      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
       const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
       const res = await request(app)
@@ -573,8 +575,8 @@ describe('FHIR Routes', () => {
           });
         expect(res2.status).toBe(201);
 
-        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
         const res3 = await request(app)
           .get('/fhir/R4?_type=Patient,Observation')
