@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { SmartAppLaunchLink, SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM } from './SmartAppLaunchLink';
+import { SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM, SmartAppLaunchLink } from './SmartAppLaunchLink';
 
 describe('SmartAppLaunchLink', () => {
   function setup(children: ReactNode, medplum = new MockClient()): void {
