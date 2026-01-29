@@ -257,15 +257,56 @@ export function SchedulePage(): JSX.Element | null {
     [createAppointmentHandlers]
   );
 
-  // When a "free" slot is selected, open the create appointment modal
+  const bookSlot = useCallback(
+    async (slot: Slot) => {
+      const data = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'slot', resource: slot }],
+      });
+      medplum.invalidateSearches('Appointment');
+      medplum.invalidateSearches('Slot');
+
+      // Remove the $find result we acted on from our state
+      const id = SchedulingTransientIdentifier.get(slot);
+      setFindSlots((slots) => (slots ?? EMPTY).filter((slot) => SchedulingTransientIdentifier.get(slot) !== id));
+
+      // Add the $book response to our state
+      const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
+      const slots = resources
+        .filter((obj: Slot | Appointment): obj is Slot => obj.resourceType === 'Slot')
+        .filter((slot) => slot.status !== 'busy');
+      const appointments = resources.filter(
+        (obj: Slot | Appointment): obj is Appointment => obj.resourceType === 'Appointment'
+      );
+      setAppointments((state) => appointments.concat(state ?? EMPTY));
+      setSlots((state) => slots.concat(state ?? EMPTY));
+
+      // Open the appointment details drawer for the resource we just created
+      const firstAppointment = appointments[0];
+      if (firstAppointment) {
+        setAppointmentDetails(firstAppointment);
+        appointmentDetailsHandlers.open();
+      }
+    },
+    [medplum, appointmentDetailsHandlers]
+  );
+
   const handleSelectSlot = useCallback(
     (slot: Slot) => {
+      // If selecting a slot from "$find", run it through "$book" to create an
+      // appointment and slots
+      if (SchedulingTransientIdentifier.get(slot)) {
+        bookSlot(slot).catch(showErrorNotification);
+        return;
+      }
+
+      // When a "free" slot is selected, open the create appointment modal
       if (slot.status === 'free') {
         createAppointmentHandlers.open();
         setAppointmentSlot({ start: new Date(slot.start), end: new Date(slot.end) });
       }
     },
-    [createAppointmentHandlers]
+    [createAppointmentHandlers, bookSlot]
   );
 
   // When an appointment is selected, navigate to the detail page
