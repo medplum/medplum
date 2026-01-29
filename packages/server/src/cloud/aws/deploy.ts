@@ -29,33 +29,37 @@ export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
-const nodeFetchModule = require("node-fetch");
-const nodeFetch = nodeFetchModule.default || nodeFetchModule;
-global.fetch = nodeFetch;
 const userCode = require("./user.cjs");
 
-exports.handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
+exports.handler = awslambda.streamifyResponse(async (event, responseStream, _context) => {
 `;
 
 const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
-import nodeFetch from 'node-fetch';
 import * as userCode from './user.mjs';
 
-globalThis.fetch = nodeFetch;
-
-export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
+export const handler = awslambda.streamifyResponse(async (event, responseStream, _context) => {
 `;
 
 const WRAPPER_CODE = `
+  function logError(err) {
+    if (err instanceof Error) {
+      console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+    } else if (typeof err === "object") {
+      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+    } else {
+      console.log("Unhandled error: " + err);
+    }
+  }
+
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
-    fetch: function(url, options = {}) {
+    fetch: function (url, options = {}) {
       options.headers ||= {};
       options.headers['X-Trace-Id'] = traceId;
       options.headers['traceparent'] = traceId;
-      return nodeFetch(url, options);
+      return fetch(url, options);
     },
     createPdf,
   });
@@ -68,7 +72,9 @@ const WRAPPER_CODE = `
 
     const botResponseStream = {
       startStreaming: (statusCode, headers) => {
-        if (streamStarted) return;
+        if (streamStarted) {
+          return;
+        }
         streamStarted = true;
         // Use HttpResponseStream.from for AWS-native metadata handling
         const metadata = { statusCode, headers };
@@ -105,13 +111,7 @@ const WRAPPER_CODE = `
         responseStream.end();
       }
     } catch (err) {
-      if (err instanceof Error) {
-        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-      } else if (typeof err === "object") {
-        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-      } else {
-        console.log("Unhandled error: " + err);
-      }
+      logError(err);
       if (!streamStarted) {
         responseStream.end();
       }
@@ -131,13 +131,7 @@ const WRAPPER_CODE = `
       responseStream.write(JSON.stringify(result));
       responseStream.end();
     } catch (err) {
-      if (err instanceof Error) {
-        console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-      } else if (typeof err === "object") {
-        console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-      } else {
-        console.log("Unhandled error: " + err);
-      }
+      logError(err);
       responseStream.end();
       throw err;
     }
