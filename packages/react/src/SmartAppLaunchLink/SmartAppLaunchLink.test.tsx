@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, locationUtils } from '@medplum/core';
+import type { ClientApplication, Patient } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { SmartAppLaunchLink } from './SmartAppLaunchLink';
+import { SmartAppLaunchLink, SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM } from './SmartAppLaunchLink';
 
 const medplum = new MockClient();
 
@@ -47,5 +48,149 @@ describe('SmartAppLaunchLink', () => {
     expect(url).toContain('https://example.com');
     expect(url).toContain('launch=');
     expect(url).toContain('iss=');
+  });
+
+  test('Includes patient identifier when extension is present', async () => {
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
+
+    const patientWithIdentifier: Patient = {
+      resourceType: 'Patient',
+      id: 'test-patient',
+      identifier: [
+        {
+          system: 'https://healthgorilla.com/patient-id',
+          value: '0e4af968e733693405e943e1',
+        },
+        {
+          system: 'http://example.com/mrn',
+          value: 'MRN12345',
+        },
+      ],
+      name: [{ given: ['Test'], family: 'Patient' }],
+    };
+
+    const clientWithExtension: ClientApplication = {
+      resourceType: 'ClientApplication',
+      launchUri: 'https://sandbox.healthgorilla.com/app/patient-chart/launch',
+      extension: [
+        {
+          url: SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM,
+          valueString: 'https://healthgorilla.com/patient-id',
+        },
+      ],
+    };
+
+    setup(
+      <SmartAppLaunchLink
+        client={clientWithExtension}
+        patient={createReference(patientWithIdentifier)}
+        patientResource={patientWithIdentifier}
+      >
+        Health Gorilla App
+      </SmartAppLaunchLink>
+    );
+
+    expect(screen.getByText('Health Gorilla App')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Health Gorilla App'));
+    });
+
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+
+    const url = mockAssign.mock.calls[0][0];
+    expect(url).toContain('https://sandbox.healthgorilla.com/app/patient-chart/launch');
+    expect(url).toContain('launch=');
+    expect(url).toContain('iss=');
+    expect(url).toContain('patient=0e4af968e733693405e943e1');
+  });
+
+  test('Does not include patient param when extension is absent', async () => {
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
+
+    const patientWithIdentifier: Patient = {
+      resourceType: 'Patient',
+      id: 'test-patient',
+      identifier: [
+        {
+          system: 'https://healthgorilla.com/patient-id',
+          value: '0e4af968e733693405e943e1',
+        },
+      ],
+      name: [{ given: ['Test'], family: 'Patient' }],
+    };
+
+    const clientWithoutExtension: ClientApplication = {
+      resourceType: 'ClientApplication',
+      launchUri: 'https://example.com/launch',
+    };
+
+    setup(
+      <SmartAppLaunchLink
+        client={clientWithoutExtension}
+        patient={createReference(patientWithIdentifier)}
+        patientResource={patientWithIdentifier}
+      >
+        App Without Extension
+      </SmartAppLaunchLink>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('App Without Extension'));
+    });
+
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+
+    const url = mockAssign.mock.calls[0][0];
+    expect(url).not.toContain('patient=');
+  });
+
+  test('Does not include patient param when identifier not found', async () => {
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
+
+    const patientWithDifferentIdentifier: Patient = {
+      resourceType: 'Patient',
+      id: 'test-patient',
+      identifier: [
+        {
+          system: 'http://example.com/other-system',
+          value: 'some-value',
+        },
+      ],
+      name: [{ given: ['Test'], family: 'Patient' }],
+    };
+
+    const clientWithExtension: ClientApplication = {
+      resourceType: 'ClientApplication',
+      launchUri: 'https://example.com/launch',
+      extension: [
+        {
+          url: SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM,
+          valueString: 'https://healthgorilla.com/patient-id',
+        },
+      ],
+    };
+
+    setup(
+      <SmartAppLaunchLink
+        client={clientWithExtension}
+        patient={createReference(patientWithDifferentIdentifier)}
+        patientResource={patientWithDifferentIdentifier}
+      >
+        App With Missing Identifier
+      </SmartAppLaunchLink>
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('App With Missing Identifier'));
+    });
+
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+
+    const url = mockAssign.mock.calls[0][0];
+    expect(url).not.toContain('patient=');
   });
 });
