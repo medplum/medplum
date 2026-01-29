@@ -4,7 +4,13 @@ import { Stack, Text, Box, ScrollArea, Group, ActionIcon, CloseButton, Avatar, T
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum, useResource } from '@medplum/react';
-import { IconRobot, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlus, IconCode } from '@tabler/icons-react';
+import {
+  IconRobot,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconPlus,
+  IconCode,
+} from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
