@@ -50,4 +50,9 @@ describe('DatabaseToolsPage', () => {
     setup();
     expect(screen.getByText('Configure GIN indexes')).toBeInTheDocument();
   });
+
+  test('Array Column Padding tab exists', async () => {
+    setup();
+    expect(screen.getByRole('tab', { name: 'Array Column Padding' })).toBeInTheDocument();
+  });
 });
