@@ -14,7 +14,7 @@ These recommendations come from patterns we've seen across self-hosted deploymen
 
 Deploy your Medplum infrastructure in a dedicated cloud account (e.g., an AWS child account under your organization). This provides several benefits:
 
-- **Cleaner blast radius**: Medplum resources are isolated from your other workloads
+- **Smaller blast radius**: Medplum resources are isolated from your other workloads
 - **Simplified access control**: Easier to grant scoped permissions for audits, compliance reviews, or vendor support
 - **Cost visibility**: Clear attribution of Medplum-related infrastructure costs
 - **Support readiness**: If you ever need hands-on assistance from the Medplum team, granting temporary access to a dedicated account is straightforward and doesn't expose your broader infrastructure
