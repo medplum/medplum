@@ -122,10 +122,20 @@ describe('Spotlight', () => {
     });
 
     test('performs search and shows results', async () => {
-      await medplum.createResource<Patient>({
+      const janePatient: Patient = {
         resourceType: 'Patient',
+        id: 'jane-smith-test-id',
         name: [{ given: ['Jane'], family: 'Smith' }],
         birthDate: '1985-05-15',
+      };
+
+      // Mock GraphQL to return Jane in the results
+      const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
+        data: {
+          Patients1: [janePatient],
+          Patients2: undefined,
+          ServiceRequestList: undefined,
+        },
       });
 
       // Mock valueSetExpand to prevent hanging on resource type search
@@ -147,11 +157,12 @@ describe('Spotlight', () => {
 
       await waitFor(
         () => {
-          expect(screen.getByText('No results found')).toBeInTheDocument();
+          expect(screen.getByTestId('action-group-Patients')).toBeInTheDocument();
         },
         { timeout: 3000 }
       );
 
+      graphqlSpy.mockRestore();
       valueSetSpy.mockRestore();
     });
 
