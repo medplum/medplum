@@ -17,7 +17,7 @@ interface LambdaPayload {
   input: unknown;
   contentType: string;
   secrets: BotExecutionContext['secrets'];
-  traceId: string;
+  traceId?: string;
   headers: BotExecutionContext['headers'];
   streaming: boolean;
 }
@@ -67,7 +67,10 @@ async function runInLambdaStreaming(
   payload: LambdaPayload
 ): Promise<BotExecutionResult> {
   const name = getLambdaFunctionName(request.bot);
-  const responseStream = request.responseStream!;
+  const responseStream = request.responseStream;
+  if (!responseStream) {
+    return { success: false, logResult: 'No response stream in request' };
+  }
   const command = new InvokeWithResponseStreamCommand({
     FunctionName: name,
     InvocationType: 'RequestResponse',
@@ -81,7 +84,7 @@ async function runInLambdaStreaming(
       return { success: false, logResult: 'No event stream in response' };
     }
 
-    return processEventStream(response.EventStream, responseStream);
+    return await processEventStream(response.EventStream, responseStream);
   } catch (err) {
     return { success: false, logResult: normalizeErrorString(err) };
   }
