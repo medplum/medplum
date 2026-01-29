@@ -204,6 +204,12 @@ describe('Calendar', () => {
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
     });
 
+    test('renders appointments without a patient', async () => {
+      const appointment = { ...createAppointment(), participant: [] };
+      setup({ appointments: [appointment] });
+      expect(screen.getByText(/No Patient/)).toBeInTheDocument();
+    });
+
     test('filters out cancelled appointments', async () => {
       const cancelledAppointment = createAppointment({
         id: 'cancelled-1',

@@ -77,10 +77,12 @@ function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
         ? ` (${appointment.status})`
         : '';
 
+      const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
+
       return {
         type: 'appointment',
         appointment,
-        title: `${patientParticipant?.actor?.display} ${status}`,
+        title: `${name} ${status}`,
         start: new Date(appointment.start as string),
         end: new Date(appointment.end as string),
         resource: appointment,
