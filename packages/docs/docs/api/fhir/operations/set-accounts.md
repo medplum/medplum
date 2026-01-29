@@ -2,9 +2,16 @@
 sidebar_position: 5.1
 ---
 
-# Set Resource Accounts
+# Resource $set-accounts
 
 Medplum implements a custom `$set-accounts` operation to manage account references. **This is the recommended way to manage account references for all resources**.
+
+## Use Cases
+
+- **Multi-Tenant Data Segmentation**: Assign resources to specific accounts for organization-based data isolation
+- **Organization-Based Access Control**: Set account references to enable access policies based on organizational membership
+- **Patient Compartment Management**: Propagate account assignments to all resources in a patient's compartment for consistent access
+- **Batch Account Assignment**: Update account references across large sets of resources during migrations or onboarding
 
 This operation sets the target resource's `meta.accounts` references and optionally propagates changes to resources in that resources's compartment. This is useful when you need to ensure consistent `meta.accounts` access across all resources related to a patient, for example.
 

@@ -38,6 +38,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
@@ -422,6 +423,12 @@ export interface PushToAgentOptions extends MedplumRequestOptions {
    * Time to wait before request timeout in milliseconds; defaults to `10000` (10 s)
    */
   waitTimeout?: number;
+  /**
+   * The ACK-level that the agent should wait for when sending HL7 messages.
+   * - `'first'`: Return on the first ACK message received (default)
+   * - `'application'`: Wait for application-level ACK (AA), skipping commit ACKs (CA)
+   */
+  returnAck?: ReturnAckCategory;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -2942,7 +2949,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     waitForResponse?: boolean,
     options?: PushToAgentOptions
   ): Promise<any> {
-    const { waitTimeout, ...requestOptions } = options ?? {};
+    const { waitTimeout, returnAck, ...requestOptions } = options ?? {};
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
@@ -2951,6 +2958,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         contentType,
         waitForResponse,
         ...(waitTimeout !== undefined ? { waitTimeout } : undefined),
+        ...(returnAck !== undefined ? { returnAck } : undefined),
       },
       ContentType.FHIR_JSON,
       requestOptions

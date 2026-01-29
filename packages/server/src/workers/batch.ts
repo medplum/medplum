@@ -22,6 +22,7 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
 import { queueRegistry } from './utils';
 
@@ -43,7 +44,7 @@ const jobName = 'BatchJobData';
 
 export const initBatchWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   const queue = new Queue<BatchJobData>(queueName, {
