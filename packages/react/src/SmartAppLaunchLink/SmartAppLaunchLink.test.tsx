@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, locationUtils } from '@medplum/core';
-import type { ClientApplication, Patient } from '@medplum/fhirtypes';
+import type { ClientApplication, Patient, SmartAppLaunch } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
@@ -47,7 +47,7 @@ describe('SmartAppLaunchLink', () => {
     expect(url).toContain('iss=');
   });
 
-  test('Includes patient identifier when extension is present', async () => {
+  test('Includes patient identifier in SmartAppLaunch when extension is present', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -82,6 +82,9 @@ describe('SmartAppLaunchLink', () => {
     const medplum = new MockClient();
     await medplum.createResource(patientWithIdentifier);
 
+    // Spy on createResource to verify the SmartAppLaunch is created with the identifier
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+
     setup(
       <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithIdentifier)}>
         Health Gorilla App
@@ -97,14 +100,27 @@ describe('SmartAppLaunchLink', () => {
 
     await waitFor(() => expect(mockAssign).toHaveBeenCalled());
 
+    // Verify the SmartAppLaunch was created with the patient identifier
+    expect(createResourceSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        resourceType: 'SmartAppLaunch',
+        patient: expect.objectContaining({
+          reference: 'Patient/test-patient-with-hg-id',
+          identifier: {
+            system: 'https://healthgorilla.com/patient-id',
+            value: '0e4af968e733693405e943e1',
+          },
+        }),
+      })
+    );
+
     const url = mockAssign.mock.calls[0][0];
     expect(url).toContain('https://sandbox.healthgorilla.com/app/patient-chart/launch');
     expect(url).toContain('launch=');
     expect(url).toContain('iss=');
-    expect(url).toContain('patient=0e4af968e733693405e943e1');
   });
 
-  test('Does not include patient param when extension is absent', async () => {
+  test('Does not include identifier in SmartAppLaunch when extension is absent', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -128,6 +144,8 @@ describe('SmartAppLaunchLink', () => {
     const medplum = new MockClient();
     await medplum.createResource(patientWithIdentifier);
 
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+
     setup(
       <SmartAppLaunchLink client={clientWithoutExtension} patient={createReference(patientWithIdentifier)}>
         App Without Extension
@@ -141,11 +159,15 @@ describe('SmartAppLaunchLink', () => {
 
     await waitFor(() => expect(mockAssign).toHaveBeenCalled());
 
-    const url = mockAssign.mock.calls[0][0];
-    expect(url).not.toContain('patient=');
+    // Verify the SmartAppLaunch was created without an identifier
+    const smartAppLaunchCall = createResourceSpy.mock.calls.find(
+      (call) => (call[0] as SmartAppLaunch).resourceType === 'SmartAppLaunch'
+    );
+    expect(smartAppLaunchCall).toBeDefined();
+    expect((smartAppLaunchCall?.[0] as SmartAppLaunch).patient?.identifier).toBeUndefined();
   });
 
-  test('Does not include patient param when identifier not found', async () => {
+  test('Does not include identifier in SmartAppLaunch when identifier not found on patient', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -175,6 +197,8 @@ describe('SmartAppLaunchLink', () => {
     const medplum = new MockClient();
     await medplum.createResource(patientWithDifferentIdentifier);
 
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+
     setup(
       <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithDifferentIdentifier)}>
         App With Missing Identifier
@@ -188,7 +212,11 @@ describe('SmartAppLaunchLink', () => {
 
     await waitFor(() => expect(mockAssign).toHaveBeenCalled());
 
-    const url = mockAssign.mock.calls[0][0];
-    expect(url).not.toContain('patient=');
+    // Verify the SmartAppLaunch was created without an identifier (since no matching identifier found)
+    const smartAppLaunchCall = createResourceSpy.mock.calls.find(
+      (call) => (call[0] as SmartAppLaunch).resourceType === 'SmartAppLaunch'
+    );
+    expect(smartAppLaunchCall).toBeDefined();
+    expect((smartAppLaunchCall?.[0] as SmartAppLaunch).patient?.identifier).toBeUndefined();
   });
 });
