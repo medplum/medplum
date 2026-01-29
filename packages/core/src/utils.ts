@@ -445,20 +445,32 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param resource - The resource to add the identifier to.
  * @param system - The identifier system.
  * @param value - The identifier value.
+ * @param options - Optional attributes to set
+ * @param options.use - IdentifierUse code (https://build.fhir.org/valueset-identifier-use.html)
  */
-export function setIdentifier(resource: Resource & { identifier?: Identifier[] }, system: string, value: string): void {
+export function setIdentifier(
+  resource: Resource & { identifier?: Identifier[] },
+  system: string,
+  value: string,
+  options?: { use?: Identifier['use'] }
+): void {
+  const identifier: Identifier = { system, value };
+  if (options?.use) {
+    identifier.use = options.use;
+  }
+
   const identifiers = resource.identifier;
   if (!identifiers) {
-    resource.identifier = [{ system, value }];
+    resource.identifier = [identifier];
     return;
   }
-  for (const identifier of identifiers) {
-    if (identifier.system === system) {
-      identifier.value = value;
+  for (const existingIdentifier of identifiers) {
+    if (existingIdentifier.system === system) {
+      Object.assign(existingIdentifier, identifier);
       return;
     }
   }
-  identifiers.push({ system, value });
+  identifiers.push(identifier);
 }
 
 /**

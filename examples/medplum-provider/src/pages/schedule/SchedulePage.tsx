@@ -18,6 +18,7 @@ import type { Range } from '../../types/scheduling';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import classes from './SchedulePage.module.css';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
+import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type ScheduleFindPaneProps = {
   schedule: WithId<Schedule>;
@@ -78,6 +79,7 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
       .then((bundle) => {
         if (!signal.aborted) {
           if (bundle.entry) {
+            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
             onChange(bundle.entry.map((entry) => entry.resource).filter(isDefined));
           } else {
             onChange([]);
@@ -114,7 +116,7 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
         </Title>
         {(props.slots ?? []).map((slot) => (
           <Button
-            key={slot.id ?? slot.start}
+            key={SchedulingTransientIdentifier.get(slot) ?? slot.id ?? slot.start}
             variant="outline"
             color="gray.3"
             styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
