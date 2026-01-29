@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { InvokeCommand, InvokeWithResponseStreamCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
@@ -9,19 +9,30 @@ import { getConfig } from '../../config/loader';
 
 let client: LambdaClient;
 
-/**
- * Executes a Bot in an AWS Lambda.
- * @param request - The bot request.
- * @returns The bot execution result.
- */
-export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
-  const config = getConfig();
+interface LambdaPayload {
+  bot: ReturnType<typeof createReference>;
+  baseUrl: string;
+  requester: BotExecutionContext['requester'];
+  accessToken: string;
+  input: unknown;
+  contentType: string;
+  secrets: BotExecutionContext['secrets'];
+  traceId: string;
+  headers: BotExecutionContext['headers'];
+  streaming: boolean;
+}
+
+function getLambdaClient(): LambdaClient {
   if (!client) {
-    client = new LambdaClient({ region: config.awsRegion });
+    client = new LambdaClient({ region: getConfig().awsRegion });
   }
-  const name = getLambdaFunctionName(bot);
-  const payload = {
+  return client;
+}
+
+function buildPayload(request: BotExecutionContext): LambdaPayload {
+  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers, responseStream } = request;
+  const config = getConfig();
+  return {
     bot: createReference(bot),
     baseUrl: config.baseUrl,
     requester,
@@ -31,20 +42,133 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     secrets,
     traceId,
     headers,
+    streaming: !!responseStream,
   };
+}
 
-  // Build the command
-  const encoder = new TextEncoder();
+/**
+ * Executes a Bot in an AWS Lambda.
+ * Automatically uses streaming if responseStream is provided in the context.
+ * @param request - The bot request.
+ * @returns The bot execution result.
+ */
+export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
+  const payload = buildPayload(request);
+
+  if (request.responseStream) {
+    return runInLambdaStreaming(request, payload);
+  }
+
+  return runInLambdaNonStreaming(request, payload);
+}
+
+async function runInLambdaStreaming(
+  request: BotExecutionContext,
+  payload: LambdaPayload
+): Promise<BotExecutionResult> {
+  const name = getLambdaFunctionName(request.bot);
+  const responseStream = request.responseStream!;
+  const command = new InvokeWithResponseStreamCommand({
+    FunctionName: name,
+    InvocationType: 'RequestResponse',
+    Payload: new TextEncoder().encode(JSON.stringify(payload)),
+  });
+
+  try {
+    const response = await getLambdaClient().send(command);
+
+    if (!response.EventStream) {
+      return { success: false, logResult: 'No event stream in response' };
+    }
+
+    return processEventStream(response.EventStream, responseStream);
+  } catch (err) {
+    return { success: false, logResult: normalizeErrorString(err) };
+  }
+}
+
+async function processEventStream(
+  eventStream: AsyncIterable<{ PayloadChunk?: { Payload?: Uint8Array }; InvokeComplete?: { ErrorCode?: string; ErrorDetails?: string; LogResult?: string } }>,
+  responseStream: NonNullable<BotExecutionContext['responseStream']>
+): Promise<BotExecutionResult> {
+  const decoder = new TextDecoder();
+  let headersParsed = false;
+  let buffer = '';
+  let logResult = '';
+
+  for await (const event of eventStream) {
+    if (event.PayloadChunk?.Payload) {
+      const chunk = decoder.decode(event.PayloadChunk.Payload);
+
+      if (!headersParsed) {
+        const result = processStreamingHeaders(buffer + chunk, responseStream);
+        if (result.error) {
+          return { success: false, logResult: result.error };
+        }
+        headersParsed = result.headersParsed;
+        buffer = result.buffer;
+      } else {
+        responseStream.write(chunk);
+      }
+    }
+
+    if (event.InvokeComplete) {
+      if (event.InvokeComplete.ErrorCode) {
+        return {
+          success: false,
+          logResult: `Lambda error: ${event.InvokeComplete.ErrorCode} - ${event.InvokeComplete.ErrorDetails}`,
+        };
+      }
+      if (event.InvokeComplete.LogResult) {
+        logResult = parseLambdaLog(event.InvokeComplete.LogResult);
+      }
+    }
+  }
+
+  responseStream.end();
+  return { success: true, logResult };
+}
+
+function processStreamingHeaders(
+  buffer: string,
+  responseStream: NonNullable<BotExecutionContext['responseStream']>
+): { headersParsed: boolean; buffer: string; error?: string } {
+  const newlineIndex = buffer.indexOf('\n');
+  if (newlineIndex === -1) {
+    return { headersParsed: false, buffer };
+  }
+
+  const headersLine = buffer.substring(0, newlineIndex);
+  const remainingData = buffer.substring(newlineIndex + 1);
+
+  try {
+    const headersJson = JSON.parse(headersLine);
+    responseStream.startStreaming(headersJson.statusCode || 200, headersJson.headers || {});
+
+    if (remainingData) {
+      responseStream.write(remainingData);
+    }
+
+    return { headersParsed: true, buffer: '' };
+  } catch {
+    return { headersParsed: false, buffer: '', error: 'Failed to parse streaming headers: ' + headersLine };
+  }
+}
+
+async function runInLambdaNonStreaming(
+  request: BotExecutionContext,
+  payload: LambdaPayload
+): Promise<BotExecutionResult> {
+  const name = getLambdaFunctionName(request.bot);
   const command = new InvokeCommand({
     FunctionName: name,
     InvocationType: 'RequestResponse',
     LogType: 'Tail',
-    Payload: encoder.encode(JSON.stringify(payload)),
+    Payload: new TextEncoder().encode(JSON.stringify(payload)),
   });
 
-  // Execute the command
   try {
-    const response = await client.send(command);
+    const response = await getLambdaClient().send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
 
     // The response from AWS Lambda is always JSON, even if the function returns a string
@@ -58,10 +182,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
       returnValue,
     };
   } catch (err) {
-    return {
-      success: false,
-      logResult: normalizeErrorString(err),
-    };
+    return { success: false, logResult: normalizeErrorString(err) };
   }
 }
 
