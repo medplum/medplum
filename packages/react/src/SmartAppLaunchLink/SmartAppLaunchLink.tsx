@@ -15,9 +15,10 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
 
 /**
- * Extension URL for specifying which patient identifier system to use in the launch URL.
+ * Extension URL for specifying which patient identifier system to use in the SMART launch context.
  * When this extension is present on a ClientApplication, the patient's identifier with the
- * matching system will be included as a 'patient' query parameter in the SMART launch URL.
+ * matching system will be included in the SmartAppLaunch resource's patient reference and
+ * returned to the SMART app in the token response.
  */
 export const SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM =
   'https://medplum.com/fhir/StructureDefinition/smart-app-launch-patient-identifier-system';
@@ -35,31 +36,38 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
   const patientResource = useResource(patient);
 
   function launchApp(): void {
+    // Build the patient reference, potentially including an identifier
+    let patientRef: Reference<Patient> | undefined = patient;
+
+    if (patient && patientResource) {
+      const identifierSystem = getExtensionValue(client, SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM) as
+        | string
+        | undefined;
+      if (identifierSystem) {
+        const patientIdentifierValue = getIdentifier(patientResource, identifierSystem);
+        if (patientIdentifierValue) {
+          // Include both the reference and the identifier in the patient reference
+          patientRef = {
+            ...patient,
+            identifier: {
+              system: identifierSystem,
+              value: patientIdentifierValue,
+            },
+          };
+        }
+      }
+    }
+
     medplum
       .createResource<SmartAppLaunch>({
         resourceType: 'SmartAppLaunch',
-        patient,
+        patient: patientRef,
         encounter,
       })
       .then((result) => {
         const url = new URL(client.launchUri as string);
         url.searchParams.set('iss', ensureTrailingSlash(medplum.fhirUrl().toString()));
         url.searchParams.set('launch', result.id);
-
-        // Check if the ClientApplication has an extension specifying a patient identifier system
-        // If so, look up the patient's identifier and add it to the launch URL
-        if (patientResource) {
-          const identifierSystem = getExtensionValue(client, SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM) as
-            | string
-            | undefined;
-          if (identifierSystem) {
-            const patientIdentifier = getIdentifier(patientResource, identifierSystem);
-            if (patientIdentifier) {
-              url.searchParams.set('patient', patientIdentifier);
-            }
-          }
-        }
-
         locationUtils.assign(url.toString());
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
