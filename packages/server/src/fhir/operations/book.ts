@@ -14,6 +14,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
+import { invariant } from '../../util/invariant';
 import { isAlignedTime } from './utils/book';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
@@ -41,31 +42,6 @@ type BookParameters = {
 };
 
 type Matcher = (params: SchedulingParameters) => boolean;
-
-// Helper that tests a condition that we believe should always be true.
-//
-// This allows programmers to make an assertion to the type system that
-// TypeScript can't natively infer. It will throw a runtime error if the
-// assertion is ever violated.
-//
-// Example: After applying a filter to a query that requires the existence of a
-// field, you can use invariant to tell TS that the object must have that
-// attribute.
-//
-// ```
-//   const user = systemRepo.searchOne<User>({
-//     resourceType: 'User',
-//     filters: [{ code: 'email', operator: Operator.EQUALS, value: 'alice@example.com' }]
-//   });
-//
-//   invariant(user.email); // refines user.email from `string | undefined` to `string`
-//   const result: string = user.email.toLowerCase()
-// ```
-function invariant(condition: unknown, msg?: string): asserts condition {
-  if (!condition) {
-    throw new Error(msg ?? 'Invariant violation');
-  }
-}
 
 function assertAllOk<T>(objects: (Error | T)[], msg: string, path?: string): asserts objects is T[] {
   objects.forEach((obj, idx) => {
