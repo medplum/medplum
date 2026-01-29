@@ -55,5 +55,9 @@
   "packageManager": "npm@10.9.4",
   "engines": {
     "node": "^22.18.0 || >=24.2.0"
+  },
+  "dependencies": {
+    "react-live": "^4.1.8",
+    "recharts": "^3.7.0"
   }
 }

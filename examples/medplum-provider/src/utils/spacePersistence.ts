@@ -93,6 +93,7 @@ function buildMessageCommunication(topicId: string, message: Message, sequenceNu
           tool_calls: message.tool_calls,
           tool_call_id: message.tool_call_id,
           resources: message.resources,
+          componentCode: message.componentCode,
           sequenceNumber,
         }),
       },
@@ -175,6 +176,7 @@ export async function loadConversationMessages(medplum: MedplumClient, topicId: 
             tool_calls: data.tool_calls,
             tool_call_id: data.tool_call_id,
             resources: data.resources,
+            componentCode: data.componentCode,
           },
           sequenceNumber: data.sequenceNumber || 0,
         });
