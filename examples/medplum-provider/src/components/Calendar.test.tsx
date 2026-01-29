@@ -291,6 +291,22 @@ describe('Calendar', () => {
       expect(screen.getByText('Available')).toBeInTheDocument();
     });
 
+    test('clicking on a $find slots', async () => {
+      const onSelectAppointment = vi.fn();
+      const onSelectInterval = vi.fn();
+      const onSelectSlot = vi.fn();
+      const slot = createSlot({
+        identifier: [{ system: 'https://medplum.com/fhir/scheduling-transient-id', value: 'abcde', use: 'temp' }],
+      });
+      setup({ onSelectAppointment, onSelectInterval, onSelectSlot, slots: [slot] });
+
+      expect(screen.getByText('Available')).toBeInTheDocument();
+      await userEvent.click(screen.getByText('Available'));
+      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+      expect(onSelectInterval).not.toHaveBeenCalled();
+    });
+
     test('renders multiple slots', async () => {
       const slot1 = createSlot({ id: 'slot-1', status: 'free' });
       const slot2 = createSlot({
