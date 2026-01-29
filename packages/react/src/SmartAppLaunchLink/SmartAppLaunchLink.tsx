@@ -3,7 +3,13 @@
 import type { AnchorProps } from '@mantine/core';
 import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ensureTrailingSlash, getExtensionValue, getIdentifier, locationUtils, normalizeErrorString } from '@medplum/core';
+import {
+  ensureTrailingSlash,
+  getExtensionValue,
+  getIdentifier,
+  locationUtils,
+  normalizeErrorString,
+} from '@medplum/core';
 import type { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
