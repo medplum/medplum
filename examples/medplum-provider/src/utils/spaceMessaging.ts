@@ -21,6 +21,11 @@ const resourceSummaryBotSseId: Identifier = {
   system: 'https://www.medplum.com/bots',
 };
 
+const componentGeneratorBotSseId: Identifier = {
+  value: 'ai-component-generator-sse',
+  system: 'https://www.medplum.com/bots',
+};
+
 export interface ToolCall {
   id: string;
   function: {
@@ -76,6 +81,32 @@ function extractResourceRefs(result: Resource | Bundle): string[] {
   return refs;
 }
 
+export function extractCodeFromResponse(response: string): string | undefined {
+  // Look for JSX/TSX code blocks
+  const jsxMatch = response.match(/```(?:jsx|tsx|javascript|js)?\s*\n([\s\S]*?)```/);
+  if (jsxMatch) {
+    return jsxMatch[1].trim();
+  }
+  return undefined;
+}
+
+export async function collectFhirData(
+  medplum: ReturnType<typeof useMedplum>,
+  refs: string[]
+): Promise<any[]> {
+  const resources: any[] = [];
+  for (const ref of refs) {
+    try {
+      const [resourceType, id] = ref.split('/');
+      const resource = await medplum.readResource(resourceType as any, id);
+      resources.push(resource);
+    } catch {
+      // Skip resources that can't be fetched
+    }
+  }
+  return resources;
+}
+
 export async function executeToolCalls(
   medplum: ReturnType<typeof useMedplum>,
   toolCalls: ToolCall[],
@@ -116,6 +147,14 @@ export async function executeToolCalls(
         };
         messages.push(toolErrorMessage);
       }
+    } else if (toolCall.function.name === 'set_visualization') {
+      // Acknowledge visualization tool call (handled separately via visualize flag)
+      const toolMessage: Message = {
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({ acknowledged: true }),
+      };
+      messages.push(toolMessage);
     } else {
       // Handle unrecognized tool calls - OpenAI requires a response for every tool_call_id
       const toolErrorMessage: Message = {
@@ -138,7 +177,7 @@ export async function sendToBot(
   botId: Identifier,
   messages: Message[],
   model: string
-): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
+): Promise<{ content?: string; toolCalls?: ToolCall[]; visualize?: boolean }> {
   const response = await medplum.executeBot(botId, {
     resourceType: 'Parameters',
     parameter: [
@@ -150,8 +189,9 @@ export async function sendToBot(
   const content = response.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString;
   const toolCallsStr = response.parameter?.find((p: { name: string }) => p.name === 'tool_calls')?.valueString;
   const toolCalls = toolCallsStr ? JSON.parse(toolCallsStr) : undefined;
+  const visualize = response.parameter?.find((p: { name: string }) => p.name === 'visualize')?.valueBoolean;
 
-  return { content, toolCalls };
+  return { content, toolCalls, visualize };
 }
 
 export async function sendToBotStreaming(
@@ -159,15 +199,13 @@ export async function sendToBotStreaming(
   botId: Identifier,
   messages: Message[],
   model: string,
-  onChunk: (chunk: string) => void
+  onChunk: (chunk: string) => void,
+  additionalParams?: { name: string; valueString: string }[]
 ): Promise<string> {
-  // Find the bot by identifier
-  const bot = await medplum.searchOne('Bot', { identifier: `${botId.system}|${botId.value}` });
-  if (!bot?.id) {
-    throw new Error(`Bot not found: ${botId.value}`);
-  }
+  const baseUrl = medplum.fhirUrl('Bot', '$execute').toString();
+  const url = `${baseUrl}?identifier=${encodeURIComponent(`${botId.system}|${botId.value}`)}`;
 
-  const response = await fetch(medplum.fhirUrl('Bot', bot.id, '$execute').toString(), {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${medplum.getAccessToken()}`,
@@ -179,6 +217,7 @@ export async function sendToBotStreaming(
       parameter: [
         { name: 'messages', valueString: JSON.stringify(messages) },
         { name: 'model', valueString: model },
+        ...(additionalParams || []),
       ],
     }),
   });
@@ -194,7 +233,6 @@ export async function sendToBotStreaming(
   // Handle non-streaming (buffered) JSON response
   if (!isStreaming) {
     const data = await response.json();
-    // Handle FHIR Parameters response format
     const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
     if (content) {
       onChunk(content);
@@ -332,6 +370,49 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       for (let i = 0; i < toolMessages.length; i++) {
         await saveMessage(medplum, activeTopicId, toolMessages[i], baseSequence + 1 + i);
       }
+    }
+
+    // Check if the bot indicated visualization is appropriate
+    if (initialResponse.visualize && allResourceRefs.length > 0) {
+      // Collect FHIR data to pass to the component generator
+      const fhirData = await collectFhirData(medplum, allResourceRefs);
+
+      // Use component generator bot for visualization requests
+      // Pass FHIR data so the bot can bake it into the generated component
+      if (onStreamChunk) {
+        content = await sendToBotStreaming(
+          medplum,
+          componentGeneratorBotSseId,
+          currentMessages,
+          selectedModel,
+          onStreamChunk,
+          [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
+        );
+      } else {
+        const componentResponse = await sendToBot(medplum, componentGeneratorBotSseId, currentMessages, selectedModel);
+        content = componentResponse.content;
+      }
+
+      // Extract component code from response
+      const componentCode = extractCodeFromResponse(content || '');
+
+      const uniqueRefs = [...new Set(allResourceRefs)];
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: content || 'I received your message but was unable to generate a response. Please try again.',
+        resources: uniqueRefs,
+        componentCode,
+      };
+
+      if (activeTopicId) {
+        await saveMessage(medplum, activeTopicId, assistantMessage, currentMessages.length);
+      }
+
+      return {
+        activeTopicId,
+        assistantMessage,
+        updatedMessages: [...currentMessages, assistantMessage],
+      };
     }
 
     // Get summary response after tool execution (streaming if callback provided)
