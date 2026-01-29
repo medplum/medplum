@@ -8,6 +8,7 @@ test('AWS Textract', async () => {
   const medplum = new MockClient();
 
   // Mock the medplum.post method
+  // @ts-expect-error This stub doesn't match the implementation type; this is fine for this test.
   medplum.post = async () => ({
     JobStatus: 'SUCCEEDED',
     Blocks: [
