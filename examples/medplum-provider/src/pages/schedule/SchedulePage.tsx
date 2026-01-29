@@ -338,11 +338,16 @@ export function SchedulePage(): JSX.Element | null {
         showErrorNotification(error);
       }
     },
-    [medplum, navigate]
+    [medplum, navigate, appointmentDetailsHandlers]
   );
 
   const height = window.innerHeight - 60;
   const serviceTypes = useMemo(() => schedule && parseSchedulingParameters(schedule), [schedule]);
+
+  const handleAppointmentUpdate = useCallback((updated: Appointment) => {
+    setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
+    setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
+  }, []);
 
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
@@ -394,7 +399,9 @@ export function SchedulePage(): JSX.Element | null {
         position="right"
         h="100%"
       >
-        {appointmentDetails && <AppointmentDetails appointment={appointmentDetails} />}
+        {appointmentDetails && (
+          <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
+        )}
       </Drawer>
     </Box>
   );
