@@ -76,17 +76,19 @@ const WRAPPER_CODE = `
           return;
         }
         streamStarted = true;
-        // Use HttpResponseStream.from for AWS-native metadata handling
-        const metadata = { statusCode, headers };
-        wrappedStream = awslambda.HttpResponseStream.from(responseStream, metadata);
-        // Write newline to signal end of headers for Medplum server
-        wrappedStream.write("\\n");
+        // Write metadata as JSON + newline for Medplum server to parse
+        responseStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
       },
       write: (chunk) => {
         if (!streamStarted) {
           throw new Error("Must call startStreaming() before write()");
         }
         return wrappedStream.write(chunk);
+      },
+      flush: () => {
+        if (typeof wrappedStream.flush === 'function') {
+          wrappedStream.flush();
+        }
       },
       end: (chunk) => {
         if (chunk !== undefined) {
@@ -105,17 +107,38 @@ const WRAPPER_CODE = `
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream: botResponseStream });
+      const result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream: botResponseStream });
       if (!streamStarted) {
-        // Bot didn't use streaming, close the stream
+        // Bot returned without streaming - send the result as JSON
+        // This handles cases like returning OperationOutcome errors early
+        responseStream.write(JSON.stringify({
+          statusCode: 200,
+          headers: { "Content-Type": "application/json" },
+        }) + "\\n");
+        if (result !== undefined) {
+          responseStream.write(JSON.stringify(result));
+        }
         responseStream.end();
       }
     } catch (err) {
       logError(err);
       if (!streamStarted) {
+        // Write error response headers and body before ending
+        const errorResponse = {
+          resourceType: "OperationOutcome",
+          issue: [{ severity: "error", code: "exception", details: { text: err instanceof Error ? err.message : String(err) } }]
+        };
+        responseStream.write(JSON.stringify({
+          statusCode: 500,
+          headers: { "Content-Type": "application/fhir+json" },
+        }) + "\\n");
+        responseStream.write(JSON.stringify(errorResponse));
         responseStream.end();
+      } else {
+        // Stream already started, just end it
+        responseStream.end();
+        throw err;
       }
-      throw err;
     }
   } else {
     // Non-streaming mode - execute normally and write result to stream

@@ -427,5 +427,48 @@ describe('Execute', () => {
       expect(res.headers['content-type']).toBe('text/event-stream');
       expect(res.text).toContain('data: Split test');
     });
+
+    test('Streaming request but bot returns early without streaming', async () => {
+      // Override the mock to simulate bot returning JSON without using streaming
+      // This happens when bot returns early (e.g., OperationOutcome error)
+      mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
+        const encoder = new TextEncoder();
+        const headersJson = JSON.stringify({
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const resultJson = JSON.stringify({
+          resourceType: 'OperationOutcome',
+          issue: [{ severity: 'error', code: 'invalid', details: { text: 'Test error' } }],
+        });
+
+        async function* createEventStream(): AsyncGenerator<{
+          PayloadChunk?: { Payload: Uint8Array };
+          InvokeComplete?: { LogResult?: string };
+        }> {
+          // Bot returns JSON without streaming - headers line then result
+          yield { PayloadChunk: { Payload: encoder.encode(headersJson + '\n') } };
+          yield { PayloadChunk: { Payload: encoder.encode(resultJson) } };
+          yield {
+            InvokeComplete: {
+              LogResult: `U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==`,
+            },
+          };
+        }
+
+        return { EventStream: createEventStream() };
+      });
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('application/json');
+      expect(res.body.resourceType).toBe('OperationOutcome');
+      expect(res.body.issue[0].details.text).toBe('Test error');
+    });
   });
 });

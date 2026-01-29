@@ -106,12 +106,16 @@ async function processEventStream(
       if (!headersParsed) {
         const result = processStreamingHeaders(buffer + chunk, responseStream);
         if (result.error) {
-          return { success: false, logResult: result.error };
+          return { success: false, logResult: sanitizeLogResult(result.error) };
         }
         headersParsed = result.headersParsed;
         buffer = result.buffer;
       } else {
         responseStream.write(chunk);
+        // Flush to ensure data is sent immediately to client
+        if (typeof (responseStream as any).flush === 'function') {
+          (responseStream as any).flush();
+        }
       }
     }
 
@@ -119,7 +123,9 @@ async function processEventStream(
       if (event.InvokeComplete.ErrorCode) {
         return {
           success: false,
-          logResult: `Lambda error: ${event.InvokeComplete.ErrorCode} - ${event.InvokeComplete.ErrorDetails}`,
+          logResult: sanitizeLogResult(
+            `Lambda error: ${event.InvokeComplete.ErrorCode} - ${event.InvokeComplete.ErrorDetails}`
+          ),
         };
       }
       if (event.InvokeComplete.LogResult) {
@@ -222,7 +228,7 @@ export function getLambdaFunctionName(bot: Bot): string {
  */
 function parseLambdaLog(logResult: string): string {
   const logBuffer = Buffer.from(logResult, 'base64');
-  const log = logBuffer.toString('ascii');
+  const log = logBuffer.toString('utf-8');
   const lines = log.split('\n');
   const result = [];
   for (const line of lines) {
@@ -236,5 +242,18 @@ function parseLambdaLog(logResult: string): string {
     }
     result.push(line);
   }
-  return result.join('\n').trim();
+  return sanitizeLogResult(result.join('\n').trim());
+}
+
+/**
+ * Sanitizes a log result string to ensure it's valid for FHIR string fields.
+ * FHIR strings only allow: \r, \n, \t, and characters from \u0020 to \uFFFF.
+ * This removes or replaces control characters that would cause validation errors.
+ * @param str - The string to sanitize.
+ * @returns The sanitized string.
+ */
+function sanitizeLogResult(str: string): string {
+  // Replace invalid control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F) with empty string
+  // Keep valid characters: \t (0x09), \n (0x0A), \r (0x0D), and \u0020-\uFFFF
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
