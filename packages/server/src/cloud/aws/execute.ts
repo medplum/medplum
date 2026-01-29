@@ -62,10 +62,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
   return runInLambdaNonStreaming(request, payload);
 }
 
-async function runInLambdaStreaming(
-  request: BotExecutionContext,
-  payload: LambdaPayload
-): Promise<BotExecutionResult> {
+async function runInLambdaStreaming(request: BotExecutionContext, payload: LambdaPayload): Promise<BotExecutionResult> {
   const name = getLambdaFunctionName(request.bot);
   const responseStream = request.responseStream;
   if (!responseStream) {
@@ -91,7 +88,10 @@ async function runInLambdaStreaming(
 }
 
 async function processEventStream(
-  eventStream: AsyncIterable<{ PayloadChunk?: { Payload?: Uint8Array }; InvokeComplete?: { ErrorCode?: string; ErrorDetails?: string; LogResult?: string } }>,
+  eventStream: AsyncIterable<{
+    PayloadChunk?: { Payload?: Uint8Array };
+    InvokeComplete?: { ErrorCode?: string; ErrorDetails?: string; LogResult?: string };
+  }>,
   responseStream: NonNullable<BotExecutionContext['responseStream']>
 ): Promise<BotExecutionResult> {
   const decoder = new TextDecoder();
