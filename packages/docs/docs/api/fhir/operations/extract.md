@@ -1,17 +1,27 @@
-# QuestionnaireResponse Extract
+# QuestionnaireResponse $extract
 
-Extracts data from a questionnaire response into templated resources. It implements the
-[template-based extraction][template-extract] flow from the draft [Structured Data Capture v4 IG][sdc-ig].
-See [Structured Data Capture][data-capture] for more information.
+The `$extract` operation transforms completed questionnaire responses into structured FHIR resources. This bridges the gap between form-based data collection and your clinical data model-automatically converting patient intake forms, assessments, or surveys into Observations, Conditions, Procedures, and other FHIR resources.
+
+This is a key component of the [Structured Data Capture][data-capture] workflow, allowing you to design forms that both collect information from users and populate your FHIR database without custom mapping code.
+
+## Use Cases
+
+- **Patient Intake**: Convert registration forms into Patient, Coverage, and RelatedPerson resources
+- **Clinical Assessments**: Transform PHQ-9, GAD-7, or other assessment questionnaires into Observation resources with proper coding
+- **History Collection**: Extract past medical history responses into Condition resources
+- **Prior Authorization**: Generate ServiceRequest and supporting documentation from PA request forms
+- **Research Data Collection**: Convert study questionnaires into Observation resources for analysis
+
+[template-extract]: https://build.fhir.org/ig/HL7/sdc/extraction.html#template-extract
+[sdc-ig]: https://build.fhir.org/ig/HL7/sdc/
+[data-capture]: /docs/questionnaires/structured-data-capture
+
+## Invoke the `$extract` operation
 
 ```
 [baseUrl]/QuestionnaireResponse/$extract
 [baseUrl]/QuestionnaireResponse/[id]/$extract
 ```
-
-[template-extract]: https://build.fhir.org/ig/HL7/sdc/extraction.html#template-extract
-[sdc-ig]: https://build.fhir.org/ig/HL7/sdc/
-[data-capture]: /docs/questionnaires/structured-data-capture
 
 ## Parameters
 
@@ -62,3 +72,11 @@ curl 'https://api.medplum.com/fhir/R4/QuestionnaireResponse/1c503f4e-a08c-4b7d-8
   ]
 }
 ```
+
+## Related
+
+- [Structured Data Capture Guide](/docs/questionnaires/structured-data-capture) - Complete guide to SDC workflows
+- [FHIR Questionnaire Resource](https://hl7.org/fhir/R4/questionnaire.html) - FHIR specification for Questionnaire
+- [FHIR QuestionnaireResponse Resource](https://hl7.org/fhir/R4/questionnaireresponse.html) - FHIR specification for QuestionnaireResponse
+- [HL7 SDC Implementation Guide](https://build.fhir.org/ig/HL7/sdc/) - Official Structured Data Capture IG
+- [Medplum Questionnaires Guide](/docs/questionnaires) - Building and using questionnaires in Medplum

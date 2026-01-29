@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { LogMessage } from './logger';
 
+export const ReturnAckCategory = {
+  /** The first ACK message received is the one returned */
+  FIRST: 'first',
+  /** Only return upon receiving a positive application-level ACK (AA, AE, or AR), or if a commit-level error occurred */
+  APPLICATION: 'application',
+} as const;
+export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAckCategory];
+
 export interface BaseAgentMessage {
   type: string;
   callback?: string;
@@ -40,6 +48,7 @@ export interface AgentTransmitRequest extends BaseAgentRequestMessage {
   remote: string;
   contentType: string;
   body: string;
+  returnAck?: ReturnAckCategory;
 }
 
 export interface AgentTransmitResponse extends BaseAgentMessage {

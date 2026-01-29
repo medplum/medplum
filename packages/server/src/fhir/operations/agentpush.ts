@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { AgentTransmitRequest, AgentTransmitResponse } from '@medplum/core';
+import type { AgentTransmitRequest, AgentTransmitResponse, ReturnAckCategory } from '@medplum/core';
 import { ContentType, OperationOutcomeError, badRequest } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -16,6 +16,7 @@ export interface AgentPushParameters {
   destination: string;
   waitForResponse?: boolean;
   waitTimeout?: number;
+  returnAck?: ReturnAckCategory;
 }
 
 const DEFAULT_WAIT_TIMEOUT = 10000;
@@ -95,6 +96,7 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
     remote: device.url,
     contentType: params.contentType,
     body: params.body,
+    ...(params.returnAck ? { returnAck: params.returnAck } : undefined),
   };
 
   // Publish the message to the agent channel
