@@ -24,6 +24,49 @@ In the example below, this application is configured to launch Inferno, the test
 }
 ```
 
+## Using Custom Patient Identifiers
+
+Some SMART apps require a specific external patient identifier rather than the Medplum FHIR resource ID. For example, when integrating with external systems like Health Gorilla, you may need to pass their patient ID instead of your internal Medplum Patient ID.
+
+To configure this, add an extension to your `ClientApplication` that specifies which identifier system to use:
+
+```json
+{
+  "resourceType": "ClientApplication",
+  "name": "Health Gorilla",
+  "launchUri": "https://sandbox.healthgorilla.com/app/patient-chart/launch",
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/smart-app-launch-patient-identifier-system",
+      "valueString": "https://healthgorilla.com/patient-id"
+    }
+  ]
+}
+```
+
+When this extension is present:
+
+1. The `SmartAppLaunchLink` component looks up the patient's identifier with the specified system
+2. The identifier is stored in the `SmartAppLaunch` resource's `patient.identifier` field
+3. The OAuth token response returns this identifier value in the `patient` field instead of the FHIR resource ID
+
+For this to work, your `Patient` resources must have an identifier with the matching system:
+
+```json
+{
+  "resourceType": "Patient",
+  "name": [{ "given": ["John"], "family": "Smith" }],
+  "identifier": [
+    {
+      "system": "https://healthgorilla.com/patient-id",
+      "value": "0e4af968e733693405e943e1"
+    }
+  ]
+}
+```
+
+The SMART app will then receive the external identifier (`0e4af968e733693405e943e1`) in the token response, allowing seamless integration with external systems.
+
 ## Registering Patients
 
 To test, you will need to have registered patients in your user account with credentials to sign in. You can [invite a patient](https://app.medplum.com/admin/invite) from your admin panel, remember to select "Patient" in the drop down at the top of the page.
