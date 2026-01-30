@@ -88,7 +88,7 @@ export function SuperAdminPage(): JSX.Element {
 
   function getDatabaseStats(formData: Record<string, string>): void {
     medplum
-      .post(
+      .post<Parameters>(
         'fhir/R4/$db-stats',
         formData.tableNames
           ? {
@@ -97,7 +97,7 @@ export function SuperAdminPage(): JSX.Element {
             }
           : undefined
       )
-      .then((params: Parameters) => {
+      .then((params) => {
         setModalTitle('Database Stats');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
         open();
@@ -107,8 +107,8 @@ export function SuperAdminPage(): JSX.Element {
 
   function getDatabaseInvalidIndexes(): void {
     medplum
-      .post('fhir/R4/$db-invalid-indexes')
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$db-invalid-indexes')
+      .then((params) => {
         setModalTitle('Database Invalid Indexes');
         setModalContent(
           <pre>
@@ -125,8 +125,8 @@ export function SuperAdminPage(): JSX.Element {
 
   function getSchemaDiff(): void {
     medplum
-      .post('fhir/R4/$db-schema-diff')
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$db-schema-diff')
+      .then((params) => {
         setModalTitle('Schema Diff');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
@@ -488,8 +488,8 @@ export function ExplainSearchForm({
     }
 
     medplum
-      .post('fhir/R4/$explain', toSubmit, undefined, { headers })
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$explain', toSubmit, undefined, { headers })
+      .then((params) => {
         setModalTitle('Database Explain');
         const explainLine = params.parameter?.find((p) => p.name === 'explain')?.valueString;
         const queryLine = params.parameter?.find((p) => p.name === 'query')?.valueString;

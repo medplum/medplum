@@ -463,6 +463,66 @@ describe('GraphQL', () => {
     );
   });
 
+  test('Reverse lookup with Connection API and count', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        PatientList(_count: 2) {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+            edges {
+              resource {
+                id
+                status
+                code {
+                  text
+                }
+              }
+            }
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientList).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection.count).toBeDefined();
+    expect(typeof data.PatientList[0].ObservationConnection.count).toBe('number');
+    // Patient has 1 observation, patient2 has 2 observations
+    const patient1ObsCount = data.PatientList.find((p: Patient) => p.id === patient.id)?.ObservationConnection?.count;
+    const patient2ObsCount = data.PatientList.find((p: Patient) => p.id === patient2.id)?.ObservationConnection?.count;
+    expect(patient1ObsCount).toBe(1);
+    expect(patient2ObsCount).toBe(2);
+  });
+
+  test('Reverse lookup with Connection API count only (no edges)', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${patient.id}") {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.ObservationConnection).toBeDefined();
+    expect(data.Patient.ObservationConnection.count).toBe(1);
+    expect(data.Patient.ObservationConnection.edges).toBeUndefined();
+  });
+
   test.skip('Max depth', async () => {
     // The definition of "depth" is a little abstract in GraphQL
     // We use field depth, where fragment expansion does not contribute to depth

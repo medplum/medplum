@@ -32,8 +32,8 @@ export function CreateClientPage(): JSX.Element {
             accessPolicy,
           };
           medplum
-            .post('admin/projects/' + projectId + '/client', body)
-            .then((result: ClientApplication) => {
+            .post<ClientApplication>('admin/projects/' + projectId + '/client', body)
+            .then((result) => {
               medplum.invalidateSearches('ClientApplication');
               medplum.invalidateSearches('ProjectMembership');
               setClient(result);

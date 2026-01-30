@@ -1,6 +1,6 @@
 {
   "name": "medplum-demo-bots",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -22,12 +22,12 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@medplum/bot-layer": "5.0.12",
-    "@medplum/cli": "5.0.12",
-    "@medplum/core": "5.0.12",
-    "@medplum/eslint-config": "5.0.12",
-    "@medplum/fhirtypes": "5.0.12",
-    "@medplum/mock": "5.0.12",
+    "@medplum/bot-layer": "5.0.13",
+    "@medplum/cli": "5.0.13",
+    "@medplum/core": "5.0.13",
+    "@medplum/eslint-config": "5.0.13",
+    "@medplum/fhirtypes": "5.0.13",
+    "@medplum/mock": "5.0.13",
     "@metriport/api-sdk": "18.5.0",
     "@types/node": "22.19.7",
     "@types/ssh2-sftp-client": "9.0.6",

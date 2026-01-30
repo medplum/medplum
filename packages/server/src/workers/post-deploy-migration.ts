@@ -28,6 +28,7 @@ import {
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
+import { reconnectOnError } from '../redis';
 import { getRegisteredServers } from '../server-registry';
 import type { WorkerInitializer } from './utils';
 import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
@@ -43,7 +44,7 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
 
 export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {

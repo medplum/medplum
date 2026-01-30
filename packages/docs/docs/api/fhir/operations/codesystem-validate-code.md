@@ -1,6 +1,17 @@
-# CodeSystem Validate Code
+# CodeSystem $validate-code
 
-Validates whether a specified code is part of the given `CodeSystem`.
+Validating codes at the point of entry is necessary to prevent data quality issues that can cascade through analytics, clinical decision support, and interoperability workflows. Invalid codes can cause workflow failures, incorrect reports, and missed clinical alerts - all of which degrade clinical experiences.
+
+The `$validate-code` operation checks whether a code exists within a specific code system and returns its display text if found. This is fundamental for data quality-ensuring that clinical data uses valid, recognized codes before storing or processing it.
+
+## Use Cases
+
+- **Form and Input Validation**: Verify user-entered codes or confirm selected codes from autocomplete/typeahead are valid before saving clinical data
+- **Interface Validation**: Check incoming codes from external systems (labs, pharmacies, EHRs) before processing
+- **Data Quality Checks**: Audit existing data to identify invalid or deprecated codes
+- **Migration Validation**: Ensure codes are valid when importing data from legacy systems
+
+## Invoke the `$validate-code` operation
 
 ```
 [baseUrl]/CodeSystem/$validate-code
@@ -52,3 +63,11 @@ curl 'https://api.medplum.com/fhir/R4/CodeSystem/$validate-code' \
   ]
 }
 ```
+
+## Related
+
+- [ValueSet $validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate codes against value sets
+- [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Get detailed information about a code
+- [CodeSystem $subsumes](/docs/api/fhir/operations/codesystem-subsumes) - Check hierarchical relationships
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [FHIR CodeSystem $validate-code](https://hl7.org/fhir/R4/codesystem-operation-validate-code.html) - FHIR specification

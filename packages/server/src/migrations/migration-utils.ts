@@ -5,7 +5,7 @@ import { badRequest, getReferenceString, OperationOutcomeError, parseSearchReque
 import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import type { Repository } from '../fhir/repo';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -182,14 +182,13 @@ export async function withLongRunningDatabaseClient<TResult>(
   callback: (client: PoolClient) => Promise<TResult>,
   databaseMode?: DatabaseMode
 ): Promise<TResult> {
-  const pool = getDatabasePool(databaseMode ?? DatabaseMode.WRITER);
-  const client = await pool.connect();
-  try {
-    await client.query(`SET statement_timeout TO 0`);
-    return await callback(client);
-  } finally {
-    client.release(true);
-  }
+  return withPoolClient(
+    async (client) => {
+      await client.query(`SET statement_timeout TO 0`);
+      return callback(client);
+    },
+    getDatabasePool(databaseMode ?? DatabaseMode.WRITER)
+  );
 }
 
 export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {

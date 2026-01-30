@@ -30,8 +30,8 @@ export function CreateBotPage(): JSX.Element {
             accessPolicy,
           };
           medplum
-            .post('admin/projects/' + projectId + '/bot', body)
-            .then((result: Bot) => {
+            .post<Bot>('admin/projects/' + projectId + '/bot', body)
+            .then((result) => {
               medplum.invalidateSearches('Bot');
               medplum.invalidateSearches('ProjectMembership');
               setBot(result);

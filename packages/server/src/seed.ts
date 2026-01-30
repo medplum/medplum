@@ -5,6 +5,7 @@ import type { ClientApplication, Practitioner, Project, ProjectMembership, User 
 import { bcryptHashPassword } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
+import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
@@ -13,31 +14,33 @@ import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
-  const systemRepo = getSystemRepo();
+  await withPoolClient(async (client) => {
+    const systemRepo = getSystemRepo(client);
 
-  if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded');
-    return;
-  }
+    if (await isSeeded(systemRepo)) {
+      globalLogger.info('Already seeded');
+      return;
+    }
 
-  await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo, config);
+    await systemRepo.withTransaction(async () => {
+      await createSuperAdmin(systemRepo, config);
 
-    globalLogger.info('Building structure definitions...');
-    let startTime = Date.now();
-    await rebuildR4StructureDefinitions(systemRepo);
-    globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+      globalLogger.info('Building structure definitions...');
+      let startTime = Date.now();
+      await rebuildR4StructureDefinitions(systemRepo);
+      globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
 
-    globalLogger.info('Building value sets...');
-    startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
-    globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+      globalLogger.info('Building value sets...');
+      startTime = Date.now();
+      await rebuildR4ValueSets(systemRepo);
+      globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
 
-    globalLogger.info('Building search parameters...');
-    startTime = Date.now();
-    await rebuildR4SearchParameters(systemRepo);
-    globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
-  });
+      globalLogger.info('Building search parameters...');
+      startTime = Date.now();
+      await rebuildR4SearchParameters(systemRepo);
+      globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+    });
+  }, getDatabasePool(DatabaseMode.WRITER));
 }
 
 async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {

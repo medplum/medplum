@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
 import { Hl7Message, TypedEventTarget } from '@medplum/core';
-import { Hl7Server } from '@medplum/hl7';
+import { Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import { EnhancedHl7Client } from './enhanced-hl7-client';
 import { createMockLogger } from './test-utils';
 import type { HeartbeatEmitter } from './types';
@@ -348,6 +348,128 @@ describe('EnhancedHl7Client', () => {
       expect(() => client.stopTrackingStats()).not.toThrow();
 
       await client.close();
+    });
+  });
+
+  describe('sendAndWait with returnAck options', () => {
+    test('Passes returnAck option to parent sendAndWait', async () => {
+      const port = getRandomPort();
+
+      // Server sends CA first, then AA after a delay
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          // Send CA immediately
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          connection.send(caAck);
+          // Send AA after a short delay
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            connection.send(aaAck);
+          }, 50);
+        });
+      });
+      await server.start(port);
+
+      const client = new EnhancedHl7Client({
+        host: 'localhost',
+        port,
+        log: mockLogger,
+      });
+
+      const message = Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      );
+
+      // With returnAck: 'application', should wait for AA, not return on CA
+      const response = await client.sendAndWait(message, { returnAck: ReturnAckCategory.APPLICATION });
+
+      // Should have received AA, not CA
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('AA');
+
+      await client.close();
+      await server.stop();
+    });
+
+    test('Default returnAck behavior returns first ACK (CA)', async () => {
+      const port = getRandomPort();
+
+      // Server sends CA first, then AA after a delay
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          // Send CA immediately
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          connection.send(caAck);
+          // Send AA after a short delay
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            connection.send(aaAck);
+          }, 50);
+        });
+      });
+      await server.start(port);
+
+      const client = new EnhancedHl7Client({
+        host: 'localhost',
+        port,
+        log: mockLogger,
+      });
+
+      const message = Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      );
+
+      // With returnAck: 'first', should return on CA immediately
+      const response = await client.sendAndWait(message, { returnAck: ReturnAckCategory.FIRST });
+
+      // Should have received CA (the first ACK)
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString();
+      expect(ackCode).toBe('CA');
+
+      await client.close();
+      await server.stop();
+    });
+
+    test('sendAndWait records stats correctly with returnAck options', async () => {
+      const port = getRandomPort();
+
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          const caAck = message.buildAck({ ackCode: 'CA' });
+          connection.send(caAck);
+          setTimeout(() => {
+            const aaAck = message.buildAck({ ackCode: 'AA' });
+            connection.send(aaAck);
+          }, 50);
+        });
+      });
+      await server.start(port);
+
+      const client = new EnhancedHl7Client({
+        host: 'localhost',
+        port,
+        log: mockLogger,
+      });
+
+      client.startTrackingStats({
+        heartbeatEmitter: mockHeartbeatEmitter,
+      });
+
+      const message = Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      );
+
+      await client.sendAndWait(message, { returnAck: ReturnAckCategory.APPLICATION });
+
+      // Stats should have been recorded
+      expect(client.stats?.getSampleCount()).toBe(1);
+      expect(client.stats?.getPendingCount()).toBe(0);
+
+      await client.close();
+      await server.stop();
     });
   });
 });
