@@ -251,4 +251,51 @@ describe('update-config command', () => {
 
     expect(ssmClient).toHaveReceivedCommandTimes(PutParameterCommand, 4);
   });
+
+  test('Configuration is merged properly', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+
+    await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
+    unlinkSync(infraFileName);
+
+    // Verify that storageBaseUrl parameter includes the /binary/ path
+    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
+      Name: `/medplum/${tag}/storageBaseUrl`,
+      Value: 'https://storage.test.example.com/binary/',
+      Type: 'SecureString',
+      Overwrite: true,
+    });
+    // Verify that appBaseUrl has protocol and trailing slash
+    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
+      Name: `/medplum/${tag}/appBaseUrl`,
+      Value: 'https://app.test.example.com/',
+      Type: 'SecureString',
+      Overwrite: true,
+    });
+  });
 });
