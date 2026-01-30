@@ -129,7 +129,7 @@ async function searchGroupCompartments(
   search?: Partial<SearchRequest>
 ): Promise<Bundle<WithId<Resource>>> {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = search?.types ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  const types = search?.types ?? resourceList.map((r) => r.code).filter((t) => t !== 'Binary');
 
   // Include Group in the types
   if (!types.includes('Group')) {
