@@ -70,6 +70,23 @@ describe('fetchMedications', () => {
       })
     );
   });
+
+  // Note: Healthie's medications API doesn't support pagination,
+  // so all medications are fetched in a single request
+
+  test('returns empty array when no medications found', async () => {
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { medications: [] } }),
+          ok: true,
+          status: 200,
+        })
+    );
+
+    const result = await fetchMedications(healthieClient, 'patient123');
+    expect(result).toEqual([]);
+  });
 });
 
 describe('convertHealthieMedicationToFhir', () => {

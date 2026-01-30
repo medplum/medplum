@@ -413,6 +413,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/aws-athena-guide' },
         { type: 'html', value: '<strong class="menu__link">Advanced</strong>' },
         { type: 'doc', id: 'self-hosting/considerations' },
+        { type: 'doc', id: 'self-hosting/best-practices' },
         { type: 'doc', id: 'self-hosting/upgrading-server' },
         { type: 'doc', id: 'self-hosting/upgrade-rds-database' },
         { type: 'doc', id: 'self-hosting/disaster-recovery' },
