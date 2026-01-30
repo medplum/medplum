@@ -4,12 +4,14 @@ import { Tabs, Title } from '@mantine/core';
 import { forbidden } from '@medplum/core';
 import { Container, LinkTabs, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
+import { ArrayColumnPadding } from './db/ArrayColumnPadding';
 import { ColumnStatistics } from './db/ColumnStatistics';
 import { GINIndexes } from './db/GINIndexes';
 
 const tabs = [
   { label: 'GIN Indexes', value: 'gin-indexes' },
   { label: 'Column Statistics', value: 'column-statistics' },
+  { label: 'Array Column Padding', value: 'array-padding' },
 ];
 
 export function DatabaseToolsPage(): JSX.Element {
@@ -29,6 +31,9 @@ export function DatabaseToolsPage(): JSX.Element {
           </Tabs.Panel>
           <Tabs.Panel value="column-statistics" pt="md">
             <ColumnStatistics />
+          </Tabs.Panel>
+          <Tabs.Panel value="array-padding" pt="md">
+            <ArrayColumnPadding />
           </Tabs.Panel>
         </LinkTabs>
       </Panel>
