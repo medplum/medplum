@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Drawer, Group, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, isDefined, formatDateTime, getExtensionValue, getReferenceString } from '@medplum/core';
+import {
+  createReference,
+  EMPTY,
+  isDefined,
+  formatDateTime,
+  getExtensionValue,
+  getReferenceString,
+} from '@medplum/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodingDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -18,6 +25,7 @@ import type { Range } from '../../types/scheduling';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import classes from './SchedulePage.module.css';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
+import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 
 type ScheduleFindPaneProps = {
   schedule: WithId<Schedule>;
@@ -78,6 +86,7 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
       .then((bundle) => {
         if (!signal.aborted) {
           if (bundle.entry) {
+            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
             onChange(bundle.entry.map((entry) => entry.resource).filter(isDefined));
           } else {
             onChange([]);
@@ -112,9 +121,9 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
             )}
           </Group>
         </Title>
-        {(props.slots ?? []).map((slot) => (
+        {(props.slots ?? EMPTY).map((slot) => (
           <Button
-            key={slot.id ?? slot.start}
+            key={SchedulingTransientIdentifier.get(slot)}
             variant="outline"
             color="gray.3"
             styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
