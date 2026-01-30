@@ -19,7 +19,8 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { getSystemRepo } from '../repo';
+import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../repo-constants';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
@@ -101,7 +102,7 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     ownerRef = login.user as Reference;
   }
 
-  const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
@@ -129,7 +130,7 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
 
   log.info('Project creation request received', { name: projectName });
@@ -154,6 +155,7 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
+      systemRepo,
       project,
       'Practitioner',
       admin.firstName,

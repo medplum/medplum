@@ -18,7 +18,8 @@ import type {
 import type { BotExecutionRequest } from '../bots/types';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, tryGetRequestContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -318,12 +319,14 @@ export async function createBotAuditEvent(
   const config = getConfig();
   for (const destination of bot.auditEventDestination ?? ['resource']) {
     switch (destination) {
-      case 'resource':
-        await getSystemRepo().createResource<AuditEvent>({
+      case 'resource': {
+        const systemRepo = await getProjectSystemRepo(runAs.project);
+        await systemRepo.createResource<AuditEvent>({
           ...auditEvent,
           outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),
         });
         break;
+      }
       case 'log':
         logAuditEvent({
           ...auditEvent,
@@ -343,6 +346,7 @@ const SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL =
 
 /**
  * Creates an AuditEvent for a subscription attempt.
+ * @param systemRepo - The system repository.
  * @param resource - The resource that triggered the subscription.
  * @param startTime - The time the subscription attempt started.
  * @param outcome - The outcome code.
@@ -351,6 +355,7 @@ const SUBSCRIPTION_AUDIT_EVENT_DESTINATION_URL =
  * @param bot - Optional bot that was executed.
  */
 export async function createSubscriptionAuditEvent(
+  systemRepo: SystemRepository,
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
@@ -358,7 +363,6 @@ export async function createSubscriptionAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
-  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   let extension: Extension[] | undefined;

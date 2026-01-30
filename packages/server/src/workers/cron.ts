@@ -7,7 +7,8 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/repo-constants';
 import { getLogger, globalLogger } from '../logger';
 import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
@@ -76,7 +77,7 @@ export async function addCronJobs(
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
 ): Promise<void> {
-  const queue = queueRegistry.get(queueName);
+  const queue = queueRegistry.get<CronJobData>(queueName);
   if (!queue) {
     // The queue is not available
     return;
@@ -186,7 +187,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
@@ -211,7 +212,7 @@ export async function reloadCronBots(): Promise<void> {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a function parameter in the future
 
     await systemRepo.processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },

@@ -8,7 +8,8 @@ import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
@@ -54,7 +55,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   }
 
   // Search for a user based on the defined filters
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
     filters,
@@ -67,7 +68,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const url = await resetPassword(user, 'reset', req.body.redirectUri);
+  const url = await resetPassword(systemRepo, user, 'reset', req.body.redirectUri);
 
   if (req.body.sendEmail !== false) {
     await sendEmail(systemRepo, {
@@ -95,18 +96,19 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
 /**
  * Creates a "password change request" for the user.
  * Returns the URL to the password change request.
+ * @param systemRepo - The system repository to use.
  * @param user - The user to create the password change request for.
  * @param type - The type of password change request.
  * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
 export async function resetPassword(
+  systemRepo: SystemRepository,
   user: User,
   type: UserSecurityRequest['type'],
   redirectUri?: string
 ): Promise<string> {
   // Create the password change request
-  const systemRepo = getSystemRepo();
   const { id, secret } = await systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },

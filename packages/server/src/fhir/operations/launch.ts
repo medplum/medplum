@@ -5,7 +5,6 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -31,13 +30,14 @@ type LaunchOperationParameters = {
 };
 
 export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> {
+  const ctx = getAuthenticatedContext();
   if (!req.params.id) {
     return [badRequest('ClientApplication to launch must be specified')];
   }
 
   const params = parseInputParameters<LaunchOperationParameters>(operation, req);
 
-  const clientApp = await getSystemRepo().readResource<ClientApplication>('ClientApplication', req.params.id);
+  const clientApp = await ctx.systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
 
   if (!clientApp.launchUri) {
     return [badRequest('ClientApplication not configured for launch')];
@@ -46,7 +46,7 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
     return [badRequest('Only one launch context can be specified')];
   }
 
-  const launch = await getAuthenticatedContext().repo.createResource<SmartAppLaunch>({
+  const launch = await ctx.repo.createResource<SmartAppLaunch>({
     resourceType: 'SmartAppLaunch',
     patient: params.patient ? { reference: `Patient/${params.patient}` } : undefined,
     encounter: params.encounter ? { reference: `Encounter/${params.encounter}` } : undefined,

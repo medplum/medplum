@@ -17,11 +17,10 @@ import {
 import type { Bot, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
 import type { Repository } from './repo';
-import { getSystemRepo } from './repo';
 import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
@@ -51,7 +50,7 @@ export async function preCommitValidation<T extends Resource>(
     getCriticalReferenceTargets().includes(resource.resourceType)
   ) {
     try {
-      await checkReferencesForDelete(resource);
+      await checkReferencesForDelete(repo, resource);
     } catch (err) {
       logger.warn('Deleting resource referenced by ProjectMembership', err as Error);
     }
@@ -69,7 +68,7 @@ export async function preCommitValidation<T extends Resource>(
   }
 
   resource.meta = { ...resource.meta, author: repo.getAuthor() };
-  const systemRepo = getSystemRepo();
+  const systemRepo = repo.getShardSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -170,11 +169,12 @@ function getTargetResourceTypes(element: InternalSchemaElement | undefined): Res
  * Ensures that critical references are not left dangling when a resource is deleted.
  * Specifically, resources referenced by a ProjectMembership should not be deleted until all memberships
  * that refer to them are deleted.
+ * @param repo - The FHIR repository.
  * @param resource - The resource to be deleted.
  * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
  */
-async function checkReferencesForDelete(resource: WithId<Resource>): Promise<void> {
-  const db = getDatabasePool(DatabaseMode.WRITER);
+async function checkReferencesForDelete(repo: Repository, resource: WithId<Resource>): Promise<void> {
+  const db = repo.getDatabaseClient(DatabaseMode.WRITER);
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
     .where('targetId', '=', resource.id)

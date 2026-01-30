@@ -24,8 +24,8 @@ import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
@@ -50,8 +50,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (ctx.project.superAdmin) {
-    const systemRepo = getSystemRepo();
-    inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
+    inviteRequest.project = await ctx.systemRepo.readResource('Project', projectId as string);
   } else {
     inviteRequest.project = ctx.project;
   }
@@ -71,7 +70,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = await getProjectSystemRepo(request.project.id);
   const logger = getLogger();
 
   if (request.email) {
@@ -139,7 +138,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   logger.info('User created', { id: user.id, email });
   if (!existingUser) {
-    passwordResetUrl = await resetPassword(user, 'invite');
+    passwordResetUrl = await resetPassword(systemRepo, user, 'invite');
   }
 
   // Upsert profile Resource (e.g. Patient or Practitioner)
@@ -189,7 +188,7 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
 }
 
 async function upsertProfileResource(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest
 ): Promise<WithId<ProfileResource>> {
   if (request.membership?.profile) {
@@ -263,7 +262,7 @@ async function upsertProfileResource(
  * @throws OperationOutcomeError if any access policy is invalid.
  */
 async function validateAccessPolicies(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest,
   project: WithId<Project>
 ): Promise<void> {
@@ -321,7 +320,7 @@ async function validateAccessPolicies(
 }
 
 async function upsertProjectMembership(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest,
   project: WithId<Project>,
   user: WithId<User>,
@@ -379,7 +378,7 @@ async function upsertProjectMembership(
 }
 
 async function searchForExistingMembership(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   user: WithId<User>,
   project: WithId<Project>
 ): Promise<ProjectMembership | undefined> {
@@ -401,7 +400,7 @@ async function searchForExistingMembership(
 }
 
 async function sendInviteEmail(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   request: ServerInviteRequest,
   user: User,
   existing: boolean,

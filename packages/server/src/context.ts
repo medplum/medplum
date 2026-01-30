@@ -16,7 +16,7 @@ import { randomUUID } from 'node:crypto';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
-import type { Repository } from './fhir/repo';
+import type { Repository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -105,6 +105,14 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   get authentication(): Readonly<AuthState> {
     return this.authState;
+  }
+
+  /**
+   * @returns a SystemRepository for the same shard as this context's repository.
+   * Use this when you need elevated privileges within request handling.
+   */
+  get systemRepo(): SystemRepository {
+    return this.repo.getShardSystemRepo();
   }
 
   [Symbol.dispose](): void {

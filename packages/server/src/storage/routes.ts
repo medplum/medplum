@@ -9,7 +9,8 @@ import { createPrivateKey, createPublicKey, createVerify } from 'node:crypto';
 import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/repo-constants';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
@@ -46,7 +47,7 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const id = singularize(req.params.id) ?? '';
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
