@@ -50,7 +50,6 @@ import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
 import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
-import { groupEverythingHandler } from './operations/groupeverything';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -299,10 +298,6 @@ function initInternalFhirRouter(): FhirRouter {
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
   router.add('POST', '/Group/:id/$export', groupExportHandler);
-
-  // Group $everything operation
-  router.add('GET', '/Group/:id/$everything', groupEverythingHandler);
-  router.add('POST', '/Group/:id/$everything', groupEverythingHandler);
 
   // Patient $export operation
   router.add('GET', '/Patient/$export', patientExportHandler);
