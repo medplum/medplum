@@ -2,7 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Drawer, Group, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, isDefined, formatDateTime, getExtensionValue, getReferenceString } from '@medplum/core';
+import {
+  createReference,
+  EMPTY,
+  isDefined,
+  formatDateTime,
+  getExtensionValue,
+  getReferenceString,
+} from '@medplum/core';
 import type { WithId } from '@medplum/core';
 import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodingDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -114,9 +121,9 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
             )}
           </Group>
         </Title>
-        {(props.slots ?? []).map((slot) => (
+        {(props.slots ?? EMPTY).map((slot) => (
           <Button
-            key={SchedulingTransientIdentifier.get(slot) ?? slot.id ?? slot.start}
+            key={SchedulingTransientIdentifier.get(slot)}
             variant="outline"
             color="gray.3"
             styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
