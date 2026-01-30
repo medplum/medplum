@@ -57,6 +57,7 @@ describe('fetchAllergySensitivities', () => {
       },
     ];
 
+    // Allergies are queried through the User object
     mockFetch.mockImplementationOnce(
       (): Promise<MockResponse> =>
         Promise.resolve({
@@ -75,6 +76,20 @@ describe('fetchAllergySensitivities', () => {
       (): Promise<MockResponse> =>
         Promise.resolve({
           json: () => Promise.resolve({ data: { user: { allergy_sensitivities: [] } } }),
+          ok: true,
+          status: 200,
+        })
+    );
+
+    const result = await fetchAllergySensitivities(healthieClient, 'patient123');
+    expect(result).toEqual([]);
+  });
+
+  test('returns empty array when user is null', async () => {
+    mockFetch.mockImplementationOnce(
+      (): Promise<MockResponse> =>
+        Promise.resolve({
+          json: () => Promise.resolve({ data: { user: null } }),
           ok: true,
           status: 200,
         })

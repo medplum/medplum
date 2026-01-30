@@ -7,7 +7,7 @@ import type {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import type { HealthieClient } from './client';
+import type { HealthieClient, WithCursor } from './client';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
 
 // TypeScript interfaces for Healthie API structures
@@ -35,15 +35,21 @@ export interface HealthieCustomModule {
   required?: boolean;
 }
 
-// GraphQL query for fetching form answer groups
+// GraphQL query for fetching form answer groups with cursor pagination
 const GET_FORM_ANSWER_GROUPS_QUERY = `
-  query formAnswerGroups($userId: String!) {
-    formAnswerGroups(user_id: $userId, page_size: 100) {
+  query formAnswerGroups($userId: String!, $after: Cursor, $pageSize: Int) {
+    formAnswerGroups(
+      user_id: $userId,
+      should_paginate: true,
+      after: $after,
+      page_size: $pageSize
+    ) {
       id
       user_id
       name
       created_at
       finished
+      cursor
       form_answers {
         label
         displayed_answer
@@ -61,7 +67,7 @@ const GET_FORM_ANSWER_GROUPS_QUERY = `
 `;
 
 /**
- * Fetches Healthie FormAnswerGroups for a patient from the API
+ * Fetches Healthie FormAnswerGroups for a patient from the API using cursor pagination.
  * @param patientId - The Healthie patient ID
  * @param healthieClient - The Healthie API client
  * @returns Array of Healthie FormAnswerGroup objects
@@ -70,12 +76,43 @@ export async function fetchHealthieFormAnswerGroups(
   patientId: string,
   healthieClient: HealthieClient
 ): Promise<HealthieFormAnswerGroup[]> {
-  const result = await healthieClient.query<{ formAnswerGroups: HealthieFormAnswerGroup[] }>(
-    GET_FORM_ANSWER_GROUPS_QUERY,
-    { userId: patientId }
-  );
+  type HealthieFormAnswerGroupWithCursor = WithCursor<HealthieFormAnswerGroup>;
+  const allFormGroups: HealthieFormAnswerGroup[] = [];
+  let cursor: string | undefined = undefined;
+  let loopCount = 0;
+  const pageSize = 100;
 
-  return result.formAnswerGroups;
+  while (true) {
+    const result: { formAnswerGroups: HealthieFormAnswerGroupWithCursor[] } = await healthieClient.query<{
+      formAnswerGroups: HealthieFormAnswerGroupWithCursor[];
+    }>(GET_FORM_ANSWER_GROUPS_QUERY, {
+      userId: patientId,
+      after: cursor,
+      pageSize,
+    });
+
+    const formGroups: HealthieFormAnswerGroupWithCursor[] = result.formAnswerGroups ?? [];
+    allFormGroups.push(...formGroups);
+
+    // Check if we've reached the end
+    if (formGroups.length < pageSize) {
+      break;
+    }
+
+    // Get cursor for next page
+    cursor = formGroups.at(-1)?.cursor;
+    if (!cursor) {
+      break;
+    }
+
+    // Prevent infinite loop
+    loopCount++;
+    if (loopCount > 10000) {
+      throw new Error('Exiting fetchHealthieFormAnswerGroups due to too many pages');
+    }
+  }
+
+  return allFormGroups;
 }
 
 /**
