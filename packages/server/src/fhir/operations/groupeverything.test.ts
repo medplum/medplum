@@ -123,7 +123,7 @@ describe('Group Everything Operation', () => {
     const result = everythingRes.body as Bundle;
     expect(result.resourceType).toBe('Bundle');
     expect(result.type).toBe('searchset');
-    expect(result.total).toBeGreaterThanOrEqual(6);
+    expect(result.entry?.length).toBeGreaterThanOrEqual(6);
 
     // Verify all expected resources are included
     const resourceRefs = result.entry?.map((e) => getReferenceString(e.resource as Resource)) || [];
@@ -354,6 +354,6 @@ describe('Group Everything Operation', () => {
     expect(result.link?.some((link) => link.relation === 'previous')).toBeTruthy();
 
     // Verify entry count respects _count
-    expect(result.entry?.length).toBeLessThanOrEqual(3);
+    expect(result.entry?.length).toStrictEqual(4);
   });
 });

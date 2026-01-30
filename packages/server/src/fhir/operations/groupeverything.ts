@@ -172,6 +172,7 @@ async function searchGroupCompartments(
     count: search?.count ?? defaultMaxResults,
     offset: search?.offset,
     sortRules: [{ code: '_id' }], // Must make sort deterministic to ensure pagination works correctly
+    total: 'accurate',
   });
 
   // Add the group itself to the results
