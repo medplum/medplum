@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -208,7 +208,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -261,7 +261,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -313,7 +313,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -376,7 +376,7 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [

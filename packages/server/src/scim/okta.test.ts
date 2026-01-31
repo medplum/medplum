@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 
 // Based on: https://developer.okta.com/docs/guides/scim-provisioning-integration-prepare/main/
 
@@ -29,7 +29,7 @@ describe('Okta SCIM Tests', () => {
     });
     accessToken = registration.accessToken;
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = await getProjectSystemRepo(registration.project);
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({

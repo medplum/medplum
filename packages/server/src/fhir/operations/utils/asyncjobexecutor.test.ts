@@ -4,12 +4,12 @@ import express from 'express';
 import { initApp, shutdownApp } from '../../../app';
 import { loadTestConfig } from '../../../config/loader';
 import { initTestAuth, waitForAsyncJob, withTestContext } from '../../../test.setup';
-import { getSystemRepo } from '../../repo';
+import { getGlobalSystemRepo } from '../../repo';
 import { AsyncJobExecutor } from './asyncjobexecutor';
 
 describe('AsyncJobExecutor', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   let accessToken: string;
 

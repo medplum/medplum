@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -35,7 +35,7 @@ describe('New patient', () => {
   });
 
   test('Patient registration', async () => {
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
 
     // Register as Christina
     const res1 = await request(app)

@@ -9,7 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
@@ -46,11 +46,12 @@ describe('Super Admin routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+    let repo: Repository;
+    ({ project, repo } = await createTestProject({ withClient: true, superAdmin: true, withRepo: true }));
 
     const normalProject = await createTestProject();
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = repo.getShardSystemRepo();
 
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 

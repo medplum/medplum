@@ -7,11 +7,11 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSystemRepo } from '../../fhir/repo';
+import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
 
-const systemRepo = getSystemRepo();
+const systemRepo = getGlobalSystemRepo();
 const app = express();
 const request = supertest(app);
 

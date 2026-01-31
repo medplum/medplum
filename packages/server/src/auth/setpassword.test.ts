@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -125,8 +125,9 @@ describe('Set Password', () => {
       })
     );
 
+    const systemRepo = await getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,
@@ -167,8 +168,9 @@ describe('Set Password', () => {
       })
     );
 
+    const systemRepo = await getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
-      getSystemRepo().createResource<UserSecurityRequest>({
+      systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
         meta: {
           project: project.id,

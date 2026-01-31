@@ -12,7 +12,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import type { ReferenceTableRow } from './lookups/reference';
 import { ReferenceTable } from './lookups/reference';
-import { getSystemRepo } from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -33,7 +33,8 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      await getSystemRepo().updateResource({
+      const systemRepo = await getProjectSystemRepo(project);
+      await systemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,
       });
@@ -89,7 +90,6 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -105,7 +105,8 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const updatedProject = await systemRepo.updateResource({
+      const globalSystemRepo = getGlobalSystemRepo();
+      const updatedProject = await globalSystemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,
         link: [{ project: createReference(project2) }],
@@ -135,7 +136,7 @@ describe('Reference checks', () => {
       expect(patient.link?.[0]?.other).toStrictEqual(createReference(patient2));
 
       // Unlink Project and verify that access is revoked
-      const unlinkedProject = await systemRepo.updateResource({
+      const unlinkedProject = await globalSystemRepo.updateResource({
         ...updatedProject,
         link: undefined,
       });
@@ -172,8 +173,7 @@ describe('Reference checks', () => {
       });
       project1.checkReferencesOnWrite = true;
       project1.link = [{ project: createReference(project2) }];
-      const systemRepo = getSystemRepo();
-      await systemRepo.updateResource(project1);
+      await getGlobalSystemRepo().updateResource(project1);
 
       const repo = await getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
@@ -201,7 +201,7 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = await getProjectSystemRepo(project);
       project = await systemRepo.updateResource({ ...project, checkReferencesOnWrite: true });
 
       const repo = await getRepoForLogin({
