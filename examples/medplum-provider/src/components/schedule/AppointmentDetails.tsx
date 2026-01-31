@@ -9,36 +9,39 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
-function UpdateAppointmentForm(props: {
+type UpdateAppointmentFormProps = {
   appointment: Appointment;
   onUpdate: (appointment: Appointment) => void;
-}): JSX.Element {
+};
+
+function UpdateAppointmentForm(props: UpdateAppointmentFormProps): JSX.Element {
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient | undefined>(undefined);
 
   const { appointment, onUpdate } = props;
   const handleSubmit = useCallback(async () => {
-    if (patient) {
-      const updated = {
-        ...appointment,
-        participant: [
-          ...appointment.participant,
-          {
-            actor: createReference(patient),
-            status: 'tentative',
-          },
-        ],
-      } satisfies Appointment;
-
-      let result: Appointment;
-      try {
-        result = await medplum.updateResource(updated);
-      } catch (error) {
-        showErrorNotification(error);
-        return;
-      }
-      onUpdate?.(result);
+    if (!patient) {
+      return;
     }
+    const updated = {
+      ...appointment,
+      participant: [
+        ...appointment.participant,
+        {
+          actor: createReference(patient),
+          status: 'tentative',
+        },
+      ],
+    } satisfies Appointment;
+
+    let result: Appointment;
+    try {
+      result = await medplum.updateResource(updated);
+    } catch (error) {
+      showErrorNotification(error);
+      return;
+    }
+    onUpdate?.(result);
   }, [medplum, patient, appointment, onUpdate]);
 
   return (
