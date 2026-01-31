@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Drawer, Group, Stack, Text, Title } from '@mantine/core';
+import { Box, Button, Center, Drawer, Group, Loader, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
   createReference,
@@ -291,12 +291,17 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, appointmentDetailsHandlers]
   );
 
+  const [bookLoading, setBookLoading] = useState(false);
+
   const handleSelectSlot = useCallback(
     (slot: Slot) => {
       // If selecting a slot from "$find", run it through "$book" to create an
       // appointment and slots
       if (SchedulingTransientIdentifier.get(slot)) {
-        bookSlot(slot).catch(showErrorNotification);
+        setBookLoading(true);
+        bookSlot(slot)
+          .catch(showErrorNotification)
+          .finally(() => setBookLoading(false));
         return;
       }
 
@@ -365,7 +370,7 @@ export function SchedulePage(): JSX.Element | null {
         </div>
 
         {serviceTypes?.length && schedule && range && (
-          <div className={classes.findPane}>
+          <Stack gap="md" justify="space-between" className={classes.findPane}>
             <ScheduleFindPane
               key={schedule.id}
               schedule={schedule}
@@ -374,7 +379,12 @@ export function SchedulePage(): JSX.Element | null {
               onSelectSlot={(slot) => handleSelectSlot(slot)}
               slots={findSlots}
             />
-          </div>
+            {bookLoading && (
+              <Center>
+                <Loader />
+              </Center>
+            )}
+          </Stack>
         )}
       </div>
 
