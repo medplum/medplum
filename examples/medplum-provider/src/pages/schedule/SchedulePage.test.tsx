@@ -8,7 +8,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
 import { SchedulePage, ScheduleFindPane } from './SchedulePage';
 
@@ -305,26 +305,34 @@ describe('SchedulePage', () => {
   });
 
   describe('ScheduleFindPane Integration', () => {
-    const serviceType1: Coding = {
-      system: 'http://example.com/service-types',
-      code: 'checkup',
-      display: 'Annual Checkup',
+    const serviceType1: CodeableConcept = {
+      coding: [
+        {
+          system: 'http://example.com/service-types',
+          code: 'checkup',
+        },
+      ],
+      text: 'Annual Checkup',
     };
 
-    const serviceType2: Coding = {
-      system: 'http://example.com/service-types',
-      code: 'followup',
-      display: 'Follow-up Visit',
+    const serviceType2: CodeableConcept = {
+      coding: [
+        {
+          system: 'http://example.com/service-types',
+          code: 'followup',
+        },
+      ],
+      text: 'Follow-up Visit',
     };
 
-    const createScheduleWithServiceTypes = (serviceTypes: (Coding | undefined)[]): Schedule => ({
+    const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): Schedule => ({
       resourceType: 'Schedule',
       id: 'schedule-1',
       actor: [{ reference: 'Practitioner/practitioner-1' }],
       active: true,
       extension: serviceTypes.map((st) => ({
         url: SchedulingParametersURI,
-        extension: st ? [{ url: 'serviceType', valueCoding: st }] : [],
+        extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
       })),
     });
 
@@ -487,26 +495,34 @@ describe('SchedulePage', () => {
 describe('ScheduleFindPane', () => {
   let medplum: MockClient;
 
-  const serviceType1: Coding = {
-    system: 'http://example.com/service-types',
-    code: 'checkup',
-    display: 'Annual Checkup',
+  const serviceType1: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'checkup',
+      },
+    ],
+    text: 'Annual Checkup',
   };
 
-  const serviceType2: Coding = {
-    system: 'http://example.com/service-types',
-    code: 'followup',
-    display: 'Follow-up Visit',
+  const serviceType2: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'followup',
+      },
+    ],
+    text: 'Follow-up Visit',
   };
 
-  const createScheduleWithServiceTypes = (serviceTypes: (Coding | undefined)[]): WithId<Schedule> => ({
+  const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): WithId<Schedule> => ({
     resourceType: 'Schedule',
     id: 'schedule-1',
     actor: [{ reference: 'Practitioner/practitioner-1' }],
     active: true,
     extension: serviceTypes.map((st) => ({
       url: SchedulingParametersURI,
-      extension: st ? [{ url: 'serviceType', valueCoding: st }] : [],
+      extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
     })),
   });
 
