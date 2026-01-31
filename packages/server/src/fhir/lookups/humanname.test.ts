@@ -8,12 +8,12 @@ import type { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import type { HumanNameTableRow } from './humanname';
 import { getHumanNameSortValue, HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();

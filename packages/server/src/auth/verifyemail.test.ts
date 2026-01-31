@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { verifyEmail } from './verifyemail';
@@ -32,6 +32,8 @@ export async function createUserSecurityRequest(
 }
 
 describe('Verify email handler', () => {
+  const systemRepo = getGlobalSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -56,7 +58,6 @@ describe('Verify email handler', () => {
 
   test('Success', async () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const usr = await verifyEmail(user);
 
       // Attempt verification with incorrect secret
@@ -93,7 +94,6 @@ describe('Verify email handler', () => {
     }));
 
   test('Incorrect UserSecurityRequest.type', async () => {
-    const systemRepo = getSystemRepo();
     const invite = await createUserSecurityRequest(systemRepo, user, 'invite');
     const res1 = await request(app).post('/auth/verifyemail').type('json').send({
       id: invite.id,
