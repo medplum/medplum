@@ -305,6 +305,7 @@ describe('SchedulePage', () => {
   });
 
   describe('ScheduleFindPane Integration', () => {
+    
     const serviceType1: CodeableConcept = {
       coding: [
         {
