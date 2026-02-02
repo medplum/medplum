@@ -371,7 +371,7 @@ describe('SchedulePage', () => {
       expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
     });
 
-    test('opens drawer when slot from ScheduleFindPane is selected', async () => {
+    test('uses $book to create an appointment when a slot from ScheduleFindPane is chosen', async () => {
       const user = userEvent.setup();
       const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
       medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
@@ -393,6 +393,24 @@ describe('SchedulePage', () => {
         entry: mockFindSlots.map((slot) => ({ resource: slot })),
       } as Bundle<Slot>);
 
+      const mockBookResponse: Bundle<Appointment | Slot> = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Appointment',
+              id: 'appointment-123',
+              status: 'booked',
+              start: '2024-01-16T10:00:00Z',
+              end: '2024-01-16T10:30:00Z',
+              participant: [{ actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' }],
+            },
+          },
+        ],
+      };
+      medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
+
       await act(async () => {
         setup();
       });
@@ -405,9 +423,15 @@ describe('SchedulePage', () => {
       expect(slotButtons.length).toEqual(1);
       await user.click(slotButtons[0]);
 
-      // Drawer should open
+      // Test that the right operation was invoked
+      expect(medplum.post).toHaveBeenCalledWith(new URL('https://example.com/fhir/R4/Appointment/$book'), {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'slot', resource: mockFindSlots[0] }],
+      });
+
+      // Appointment Details Drawer should open
       await waitFor(() => {
-        expect(screen.getByText('New Calendar Event')).toBeInTheDocument();
+        expect(screen.getByText('Appointment Details')).toBeInTheDocument();
       });
     });
 

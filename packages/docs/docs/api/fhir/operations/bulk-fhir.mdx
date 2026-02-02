@@ -9,6 +9,14 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 Medplum supports the [Bulk FHIR API 2.0.0](https://hl7.org/fhir/uv/bulkdata/STU2/). The Bulk FHIR API uses [Backend Services Authorization](https://www.hl7.org/fhir/smart-app-launch/backend-services.html).
 
+## Use Cases
+
+- **Population Health Reporting**: Export data for entire patient populations for analytics and reporting dashboards
+- **Data Migration**: Transfer large datasets between FHIR-compliant systems during system migrations
+- **Regulatory Compliance**: Meet ONC, MIPS, and other regulatory requirements for bulk data access
+- **Research Data Extraction**: Export de-identified or consented patient data for clinical research studies
+- **Data Warehousing**: Populate analytics data warehouses with comprehensive FHIR data exports
+
 The premise of the Bulk FHIR API is that it allows you to create a **bulk export of data for multiple patients**. There are different ways to export data:
 
 - From a Group of patients, which will export everything in each patient's compartment
