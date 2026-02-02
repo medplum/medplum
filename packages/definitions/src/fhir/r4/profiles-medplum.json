@@ -933,6 +933,21 @@
             }
           },
           {
+            "id" : "ClientApplication.launchIdentifierSystem",
+            "path" : "ClientApplication.launchIdentifierSystem",
+            "definition" : "Optional patient identifier system to use in SMART launch context. When specified, the patient's identifier with the matching system will be included in the SmartAppLaunch resource's patient reference and returned to the SMART app in the token response.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base": {
+              "path" : "ClientApplication.launchIdentifierSystem",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.pkceOptional",
             "path" : "ClientApplication.pkceOptional",
             "definition" : "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",

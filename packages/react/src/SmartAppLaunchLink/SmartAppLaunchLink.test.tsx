@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM, SmartAppLaunchLink } from './SmartAppLaunchLink';
+import { SmartAppLaunchLink } from './SmartAppLaunchLink';
 
 describe('SmartAppLaunchLink', () => {
   function setup(children: ReactNode, medplum: MockClient): void {
@@ -49,7 +49,7 @@ describe('SmartAppLaunchLink', () => {
     expect(url).toContain('iss=');
   });
 
-  test('Includes patient identifier in SmartAppLaunch when extension is present', async () => {
+  test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystem is present', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -60,7 +60,7 @@ describe('SmartAppLaunchLink', () => {
       id: 'test-patient-with-hg-id',
       identifier: [
         {
-          system: 'https://healthgorilla.com/patient-id',
+          system: 'https://healthgorilla.com',
           value: '0e4af968e733693405e943e1',
         },
         {
@@ -71,22 +71,17 @@ describe('SmartAppLaunchLink', () => {
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithExtension: ClientApplication = {
+    const clientWithLaunchIdentifierSystem: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://sandbox.healthgorilla.com/app/patient-chart/launch',
-      extension: [
-        {
-          url: SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM,
-          valueString: 'https://healthgorilla.com/patient-id',
-        },
-      ],
+      launchIdentifierSystem: 'https://healthgorilla.com',
     };
 
     // Pre-load the patient in the mock client
     await medplum.createResource(patientWithIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithIdentifier)}>
+      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystem} patient={createReference(patientWithIdentifier)}>
         Health Gorilla App
       </SmartAppLaunchLink>,
       medplum
@@ -113,12 +108,12 @@ describe('SmartAppLaunchLink', () => {
     const smartAppLaunch = await medplum.readResource('SmartAppLaunch', launchId as string);
     expect(smartAppLaunch.patient?.reference).toBe('Patient/test-patient-with-hg-id');
     expect(smartAppLaunch.patient?.identifier).toEqual({
-      system: 'https://healthgorilla.com/patient-id',
+      system: 'https://healthgorilla.com',
       value: '0e4af968e733693405e943e1',
     });
   });
 
-  test('Does not include identifier in SmartAppLaunch when extension is absent', async () => {
+  test('Does not include identifier in SmartAppLaunch when launchIdentifierSystem is absent', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -129,14 +124,14 @@ describe('SmartAppLaunchLink', () => {
       id: 'test-patient-no-ext',
       identifier: [
         {
-          system: 'https://healthgorilla.com/patient-id',
+          system: 'https://healthgorilla.com',
           value: '0e4af968e733693405e943e1',
         },
       ],
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithoutExtension: ClientApplication = {
+    const clientWithoutLaunchIdentifierSystem: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://example.com/launch',
     };
@@ -144,14 +139,14 @@ describe('SmartAppLaunchLink', () => {
     await medplum.createResource(patientWithIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithoutExtension} patient={createReference(patientWithIdentifier)}>
-        App Without Extension
+      <SmartAppLaunchLink client={clientWithoutLaunchIdentifierSystem} patient={createReference(patientWithIdentifier)}>
+        App Without Launch Identifier System
       </SmartAppLaunchLink>,
       medplum
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText('App Without Extension'));
+      fireEvent.click(screen.getByText('App Without Launch Identifier System'));
     });
 
     await waitFor(() => expect(mockAssign).toHaveBeenCalled());
@@ -184,21 +179,16 @@ describe('SmartAppLaunchLink', () => {
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithExtension: ClientApplication = {
+    const clientWithLaunchIdentifierSystem: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://example.com/launch',
-      extension: [
-        {
-          url: SMART_APP_LAUNCH_PATIENT_IDENTIFIER_SYSTEM,
-          valueString: 'https://healthgorilla.com/patient-id',
-        },
-      ],
+      launchIdentifierSystem: 'https://healthgorilla.com',
     };
 
     await medplum.createResource(patientWithDifferentIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithExtension} patient={createReference(patientWithDifferentIdentifier)}>
+      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystem} patient={createReference(patientWithDifferentIdentifier)}>
         App With Missing Identifier
       </SmartAppLaunchLink>,
       medplum

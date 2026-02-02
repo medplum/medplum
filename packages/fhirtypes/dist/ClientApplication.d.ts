@@ -151,6 +151,11 @@ export interface ClientApplication {
   launchUri?: string;
 
   /**
+   * Optional patient identifier system to use in SMART launch context. When specified, the patient's identifier with the matching system will be included in the SmartAppLaunch resource's patient reference and returned to the SMART app in the token response.
+   */
+  launchIdentifierSystem?: string;
+
+  /**
    * Flag to make PKCE optional for this client application. PKCE is
    * required by default for compliance with Smart App Launch. It can be
    * disabled for compatibility with legacy client applications.
