@@ -24,48 +24,68 @@ In the example below, this application is configured to launch Inferno, the test
 }
 ```
 
-## Using Custom Patient Identifiers
+## Using Custom Patient and Encounter Identifiers
 
-Some SMART apps require a specific external patient identifier rather than the Medplum FHIR resource ID. For example, when integrating with external systems like Health Gorilla, you may need to pass their patient ID instead of your internal Medplum Patient ID.
+Some SMART apps require specific external identifiers rather than the Medplum FHIR resource IDs. In these cases, you may need to pass the external system's patient ID or visit ID instead of your internal Medplum resource IDs.
 
-To configure this, add an extension to your `ClientApplication` that specifies which identifier system to use:
+To configure this, add the `launchIdentifierSystems` field to your `ClientApplication` that specifies which identifier systems to use for each resource type:
 
 ```json
 {
   "resourceType": "ClientApplication",
-  "name": "Health Gorilla",
-  "launchUri": "https://sandbox.healthgorilla.com/app/patient-chart/launch",
-  "extension": [
+  "name": "External Smart on FHIR App",
+  "launchUri": "https://example.com/app/patient-chart/launch",
+  "launchIdentifierSystems": [
     {
-      "url": "https://medplum.com/fhir/StructureDefinition/smart-app-launch-patient-identifier-system",
-      "valueString": "https://healthgorilla.com/patient-id"
+      "resourceType": "Patient",
+      "system": "https://example.com/patient-id"
+    },
+    {
+      "resourceType": "Encounter",
+      "system": "https://example.com/visit-id"
     }
   ]
 }
 ```
 
-When this extension is present:
+You can specify identifier systems for `Patient`, `Encounter`, or both. When `launchIdentifierSystems` is configured:
 
-1. The `SmartAppLaunchLink` component looks up the patient's identifier with the specified system
-2. The identifier is stored in the `SmartAppLaunch` resource's `patient.identifier` field
-3. The OAuth token response returns this identifier value in the `patient` field instead of the FHIR resource ID
+1. The `SmartAppLaunchLink` component looks up the resource's identifier with the specified system for each configured resource type
+2. The identifier is stored in the `SmartAppLaunch` resource's reference (e.g., `patient.identifier` or `encounter.identifier`)
+3. The OAuth token response returns the identifier value instead of the FHIR resource ID for the configured resource types
 
-For this to work, your `Patient` resources must have an identifier with the matching system:
+For this to work, your resources must have identifiers with the matching systems:
 
+**Patient with identifier:**
 ```json
 {
   "resourceType": "Patient",
   "name": [{ "given": ["John"], "family": "Smith" }],
   "identifier": [
     {
-      "system": "https://healthgorilla.com/patient-id",
+      "system": "https://example.com/patient-id",
       "value": "0e4af968e733693405e943e1"
     }
   ]
 }
 ```
 
-The SMART app will then receive the external identifier (`0e4af968e733693405e943e1`) in the token response, allowing seamless integration with external systems.
+**Encounter with identifier:**
+```json
+{
+  "resourceType": "Encounter",
+  "status": "finished",
+  "class": { "code": "AMB" },
+  "identifier": [
+    {
+      "system": "https://example.com/visit-id",
+      "value": "VISIT-12345"
+    }
+  ]
+}
+```
+
+The SMART app will then receive the external identifiers (e.g., `0e4af968e733693405e943e1` for patient, `VISIT-12345` for encounter) in the token response, allowing seamless integration with external systems.
 
 ## Registering Patients
 
