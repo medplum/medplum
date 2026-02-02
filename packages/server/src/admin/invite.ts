@@ -29,6 +29,7 @@ import { getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const inviteValidator = makeValidationMiddleware([
@@ -50,7 +51,12 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   const inviteRequest = { ...req.body } as ServerInviteRequest;
   const { projectId } = req.params;
   if (ctx.project.superAdmin) {
+<<<<<<< HEAD
     inviteRequest.project = await ctx.systemRepo.readResource('Project', projectId as string);
+=======
+    const { project } = await getProjectAndProjectShardId({ reference: 'Project/' + projectId });
+    inviteRequest.project = project;
+>>>>>>> 1ce8099b2 (temp)
   } else {
     inviteRequest.project = ctx.project;
   }
@@ -70,7 +76,11 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
+<<<<<<< HEAD
   const systemRepo = getProjectSystemRepo(request.project);
+=======
+  const systemRepo = await getProjectSystemRepo(request.project.id);
+>>>>>>> 1ce8099b2 (temp)
   const logger = getLogger();
 
   if (request.email) {

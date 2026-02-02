@@ -9,7 +9,11 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -199,7 +203,7 @@ describe('New user', () => {
 
     const project = await withTestContext(async () => {
       // Register and create a project
-      const { project } = await registerNew({
+      const { project, projectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -208,7 +212,11 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -252,7 +260,7 @@ describe('New user', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, projectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -261,7 +269,11 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -304,7 +316,7 @@ describe('New user', () => {
 
     // Register and create a project
     const project = await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, projectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -313,7 +325,11 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -368,7 +384,7 @@ describe('New user', () => {
 
     // Register and create a project
     const project = await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project, projectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -376,7 +392,11 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
       await systemRepo.updateResource({
         ...project,
         site: [

@@ -70,8 +70,13 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
  * @returns The domain configuration for the domain name if available.
  */
 export async function getDomainConfiguration(domain: string): Promise<DomainConfiguration | undefined> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
   const results = await systemRepo.search<DomainConfiguration>({
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+  const results = await globalSystemRepo.search<DomainConfiguration>({
+>>>>>>> 1ce8099b2 (temp)
     resourceType: 'DomainConfiguration',
     filters: [
       {

@@ -11,7 +11,7 @@ import { getAuthenticatedContext } from '../../../context';
 import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -112,6 +112,7 @@ export class AsyncJobExecutor {
       output,
     };
     if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
+<<<<<<< HEAD
       // This probably needs more validation that its a system-owned AsyncJob.
       const completedDataVersion = updatedJob.dataVersion;
       getLogger().info('Marking post-deploy migration complete', {
@@ -123,6 +124,25 @@ export class AsyncJobExecutor {
       return updatedJob;
     } else {
       return this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
+=======
+      //TODO - This needs more validation to check that it's a system resource
+      const completedDataVersion = updatedJob.dataVersion;
+      getLogger().info('Marking post-deploy migration complete', {
+        shardId: this.repo.shardId,
+        version: `v${completedDataVersion}`,
+      });
+      await this.repo.withTransaction(async () => {
+        await markPostDeployMigrationCompleted(
+          getDatabasePool(DatabaseMode.WRITER, this.repo.shardId),
+          completedDataVersion
+        );
+        updatedJob = await this.repo.updateResource<AsyncJob>(updatedJob);
+      });
+      await maybeAutoRunPendingPostDeployMigrationOnShard(this.repo.shardId);
+      return updatedJob;
+    } else {
+      return this.repo.updateResource<AsyncJob>(updatedJob);
+>>>>>>> 1ce8099b2 (temp)
     }
   }
 
@@ -159,7 +179,11 @@ export class AsyncJobExecutor {
         );
       }
     }
+<<<<<<< HEAD
     return this.repo.getSystemRepo().updateResource<AsyncJob>(failedJob);
+=======
+    return this.repo.updateResource<AsyncJob>(failedJob);
+>>>>>>> 1ce8099b2 (temp)
   }
 
   getContentLocation(baseUrl: string): string {
@@ -178,6 +202,7 @@ export async function sendAsyncResponse(
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+  //TODO{sharding} - The repo used in AsyncJobExecutor should be parameterized
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);

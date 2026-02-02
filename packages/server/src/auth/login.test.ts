@@ -14,7 +14,11 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
@@ -42,7 +46,11 @@ describe('Login', () => {
       ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
 
       // Create another client with CORS "allowed origins"
+<<<<<<< HEAD
       corsClient = await repo.getSystemRepo().createResource<ClientApplication>({
+=======
+      corsClient = await getShardSystemRepo(repo.shardId).createResource<ClientApplication>({
+>>>>>>> 1ce8099b2 (temp)
         resourceType: 'ClientApplication',
         meta: {
           project: project.id,
@@ -353,7 +361,7 @@ describe('Login', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project: newProject, projectShardId: newProjectShardId } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -362,9 +370,13 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = getShardSystemRepo(newProjectShardId);
+>>>>>>> 1ce8099b2 (temp)
       await systemRepo.updateResource({
-        ...project,
+        ...newProject,
         features: ['google-auth-required'],
       });
     });
@@ -526,7 +538,11 @@ describe('Login', () => {
     );
 
     // Mark the membership as inactive
+<<<<<<< HEAD
     await repo.getSystemRepo().updateResource({ ...membership, active: false });
+=======
+    await getShardSystemRepo(repo.shardId).updateResource({ ...membership, active: false });
+>>>>>>> 1ce8099b2 (temp)
 
     // User should not be able to login
     const res = await request(app).post('/auth/login').type('json').send({

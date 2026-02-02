@@ -21,6 +21,10 @@ import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
 import type { Repository } from './repo';
+<<<<<<< HEAD
+=======
+import { getProjectSystemRepo } from './repo';
+>>>>>>> 1ce8099b2 (temp)
 import { SelectQuery } from './sql';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';
@@ -68,7 +72,11 @@ export async function preCommitValidation<T extends Resource>(
   }
 
   resource.meta = { ...resource.meta, author: repo.getAuthor() };
+<<<<<<< HEAD
   const systemRepo = repo.getSystemRepo();
+=======
+  const systemRepo = await getProjectSystemRepo(project.id);
+>>>>>>> 1ce8099b2 (temp)
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -169,12 +177,20 @@ function getTargetResourceTypes(element: InternalSchemaElement | undefined): Res
  * Ensures that critical references are not left dangling when a resource is deleted.
  * Specifically, resources referenced by a ProjectMembership should not be deleted until all memberships
  * that refer to them are deleted.
+<<<<<<< HEAD
  * @param repo - The FHIR repository.
+=======
+ * @param repo - The repository.
+>>>>>>> 1ce8099b2 (temp)
  * @param resource - The resource to be deleted.
  * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
  */
 async function checkReferencesForDelete(repo: Repository, resource: WithId<Resource>): Promise<void> {
+<<<<<<< HEAD
   const db = repo.getDatabaseClient(DatabaseMode.WRITER);
+=======
+  const db = repo.getDatabaseClient(DatabaseMode.WRITER, 'ProjectMembership');
+>>>>>>> 1ce8099b2 (temp)
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
     .where('targetId', '=', resource.id)

@@ -14,6 +14,10 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
+<<<<<<< HEAD
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -53,7 +57,11 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
+<<<<<<< HEAD
   const systemRepo = repo.getSystemRepo();
+=======
+  const systemRepo = getShardSystemRepo(repo.shardId);
+>>>>>>> 1ce8099b2 (temp)
   const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,

@@ -6,6 +6,7 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { Column, SelectQuery, UpdateQuery } from '../fhir/sql';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import {
   addCheckConstraint,
   analyzeTable,
@@ -48,13 +49,14 @@ async function getTableIndexes(client: Client | Pool, tableName: string): Promis
 }
 
 describe('migrate-functions', () => {
+  const shardId = GLOBAL_SHARD_ID;
   let config: MedplumServerConfig;
   let client: Pool;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initDatabase(config);
-    client = getDatabasePool(DatabaseMode.WRITER);
+    client = getDatabasePool(DatabaseMode.WRITER, shardId);
   });
 
   afterAll(async () => {

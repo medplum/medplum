@@ -14,6 +14,10 @@ import { executeBot } from '../../bots/execute';
 import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../repo';
+<<<<<<< HEAD
+=======
+import { getShardSystemRepo } from '../repo';
+>>>>>>> 1ce8099b2 (temp)
 import { buildOutputParameters } from './utils/parameters';
 
 export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
@@ -65,7 +69,11 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   const userBot = await repo.readReference<Bot>(botReference as Reference<Bot>);
 
   // Then read the bot as system user to load extended metadata
+<<<<<<< HEAD
   const systemRepo = repo.getSystemRepo();
+=======
+  const systemRepo = getShardSystemRepo(repo.shardId);
+>>>>>>> 1ce8099b2 (temp)
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Determine the input for the bot

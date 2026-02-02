@@ -42,7 +42,11 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
     return { success: false, logResult: 'Executable code is not a Binary' };
   }
 
+<<<<<<< HEAD
   const systemRepo = getProjectSystemRepo(runAs.project);
+=======
+  const systemRepo = await getProjectSystemRepo(runAs.project);
+>>>>>>> 1ce8099b2 (temp)
   const binary = await systemRepo.readReference<Binary>({ reference: codeUrl } as Reference<Binary>);
   const stream = await getBinaryStorage().readBinary(binary);
   const code = await readStreamToString(stream);

@@ -55,8 +55,13 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   }
 
   // Search for a user based on the defined filters
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.searchOne<User>({
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+  const user = await globalSystemRepo.searchOne<User>({
+>>>>>>> 1ce8099b2 (temp)
     resourceType: 'User',
     filters,
   });
@@ -68,10 +73,14 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
+<<<<<<< HEAD
   const url = await resetPassword(systemRepo, user, 'reset', req.body.redirectUri);
+=======
+  const url = await resetPassword(globalSystemRepo, user, 'reset', req.body.redirectUri);
+>>>>>>> 1ce8099b2 (temp)
 
   if (req.body.sendEmail !== false) {
-    await sendEmail(systemRepo, {
+    await sendEmail(globalSystemRepo, {
       to: user.email,
       subject: 'Medplum Password Reset',
       text: [

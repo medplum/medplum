@@ -8,8 +8,12 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
@@ -33,6 +37,7 @@ describe('SCIM Routes', () => {
     systemRepo = getProjectSystemRepo(registration.project);
 
     // Create default access policy
+    const systemRepo = getShardSystemRepo(registration.projectShardId);
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
       resourceType: 'AccessPolicy',
       resource: [{ resourceType: 'Patient' }],
@@ -194,8 +199,12 @@ describe('SCIM Routes', () => {
       });
 
       // Make the project super admin
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(reg.project);
       await systemRepo.updateResource({
+=======
+      await getShardSystemRepo(reg.projectShardId).updateResource({
+>>>>>>> 1ce8099b2 (temp)
         ...reg.project,
         superAdmin: true,
       });

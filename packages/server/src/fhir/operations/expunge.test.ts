@@ -19,12 +19,16 @@ const systemRepo = getGlobalSystemRepo();
 describe('Expunge', () => {
   const app = express();
   let superAdminAccessToken: string;
+  let projectShardId: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    ({ accessToken: superAdminAccessToken, projectShardId } = await createTestProject({
+      superAdmin: true,
+      withAccessToken: true,
+    }));
   });
 
   afterAll(async () => {
@@ -183,18 +187,25 @@ describe('Expunge', () => {
     expect(await existsInCache('Patient', patient3.id)).toBe(false);
     expect(await existsInCache('Observation', obs.id)).toBe(false);
   });
-});
 
+<<<<<<< HEAD
 async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
   const redis = await getCacheRedis().get(`${resourceType}/${id}`);
   return !!redis;
 }
+=======
+  async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
+    const redis = await getRedis(projectShardId).get(`${resourceType}/${id}`);
+    return !!redis;
+  }
+});
+>>>>>>> 1ce8099b2 (temp)
 
 async function existsInDatabase(tableName: string, id: string | undefined): Promise<boolean> {
   const rows = await new SelectQuery(tableName)
     .column('id')
     .where('id', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, systemRepo.shardId));
   return rows.length > 0;
 }
 
@@ -202,6 +213,6 @@ async function existsInLookupTable(tableName: string, id: string | undefined): P
   const rows = await new SelectQuery(tableName)
     .column('resourceId')
     .where('resourceId', '=', id)
-    .execute(getDatabasePool(DatabaseMode.READER));
+    .execute(getDatabasePool(DatabaseMode.READER, systemRepo.shardId));
   return rows.length > 0;
 }

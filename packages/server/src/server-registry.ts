@@ -3,7 +3,11 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { heartbeat } from './heartbeat';
+<<<<<<< HEAD
 import { getCacheRedis } from './redis';
+=======
+import { getGlobalRedis } from './redis';
+>>>>>>> 1ce8099b2 (temp)
 import { getServerVersion } from './util/version';
 
 const SERVER_REGISTRY_KEY_PREFIX = 'medplum:server-registry:';
@@ -23,7 +27,11 @@ export type ServerRegistryInfo = {
 };
 
 export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
+<<<<<<< HEAD
   const redis = getCacheRedis();
+=======
+  const redis = getGlobalRedis();
+>>>>>>> 1ce8099b2 (temp)
   await redis.setex(SERVER_REGISTRY_KEY_PREFIX + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
 }
 
@@ -84,7 +92,11 @@ export type ClusterStatus = {
  * @returns A list of registered servers.
  */
 export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerRegistryInfo[]> {
+<<<<<<< HEAD
   const redis = getCacheRedis();
+=======
+  const redis = getGlobalRedis();
+>>>>>>> 1ce8099b2 (temp)
   const servers: ServerRegistryInfo[] = [];
   const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + '*');
 

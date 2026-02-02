@@ -9,18 +9,24 @@ import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+<<<<<<< HEAD
 import { getCacheRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+=======
+import { getRedis } from '../../redis';
+import { createTestProject } from '../../test.setup';
+>>>>>>> 1ce8099b2 (temp)
 
 const app = express();
 let accessToken: string;
+let projectShardId: string;
 let agent: Agent;
 
 describe('Agent Status', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res1 = await request(app)
       .post(`/fhir/R4/Agent`)
@@ -53,7 +59,11 @@ describe('Agent Status', () => {
     expect(parameters1.parameter?.find((p) => p.name === 'version')?.valueString).toBe('unknown');
 
     // Emulate a connection
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.CONNECTED,
@@ -78,7 +88,11 @@ describe('Agent Status', () => {
   });
 
   test('Get agent status by ID -- invalid AgentInfo from Redis', async () => {
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         version: '3.1.4',
@@ -104,7 +118,11 @@ describe('Agent Status', () => {
       ],
     });
 
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${agent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,

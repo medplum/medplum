@@ -18,9 +18,13 @@ export const setPasswordValidator = makeValidationMiddleware([
 ]);
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+>>>>>>> 1ce8099b2 (temp)
 
-  const securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+  const securityRequest = await globalSystemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
 
   if (securityRequest.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -37,7 +41,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const user = await systemRepo.readReference(securityRequest.user);
+  const user = await globalSystemRepo.readReference(securityRequest.user);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
@@ -46,7 +50,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   await setPassword({ ...user, emailVerified: true }, req.body.password);
-  await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
+  await globalSystemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
   sendOutcome(res, allOk);
 }
 

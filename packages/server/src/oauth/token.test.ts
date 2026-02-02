@@ -32,7 +32,11 @@ import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import type { SystemRepository } from '../fhir/repo';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -79,6 +83,7 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let projectShardId: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
@@ -89,8 +94,13 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
+<<<<<<< HEAD
     ({ project, client } = await createTestProject({ withClient: true }));
     systemRepo = getProjectSystemRepo(project);
+=======
+    ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
+    systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -2042,7 +2052,13 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
+<<<<<<< HEAD
     const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
+=======
+    const { project: superAdminProject } = await createTestProject({
+      project: { superAdmin: true },
+    });
+>>>>>>> 1ce8099b2 (temp)
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;

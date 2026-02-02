@@ -18,8 +18,13 @@ import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+<<<<<<< HEAD
 import { getCacheRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+=======
+import { getRedis } from '../../redis';
+import { createTestProject } from '../../test.setup';
+>>>>>>> 1ce8099b2 (temp)
 import { expectBundleToContainOutcome } from './utils/agenttestutils';
 import { MAX_AGENTS_PER_PAGE } from './utils/agentutils';
 
@@ -28,6 +33,7 @@ const NUM_DEFAULT_AGENTS = 2;
 describe('Agent/$bulk-status', () => {
   const app = express();
   let accessToken: string;
+  let projectShardId: string;
   const agents: Agent[] = [];
   let connectedAgent: Agent;
   let disabledAgent: Agent;
@@ -35,7 +41,7 @@ describe('Agent/$bulk-status', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const promises: Promise<Response>[] = Array.from({ length: NUM_DEFAULT_AGENTS });
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
@@ -85,7 +91,11 @@ describe('Agent/$bulk-status', () => {
     disabledAgent = agent2Res.body;
 
     // Emulate a connection
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${connectedAgent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.CONNECTED,
@@ -97,7 +107,11 @@ describe('Agent/$bulk-status', () => {
     );
 
     // Emulate a disconnected agent
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${disabledAgent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.DISCONNECTED,
@@ -223,7 +237,11 @@ describe('Agent/$bulk-status', () => {
   });
 
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         version: '3.1.4',
@@ -253,7 +271,11 @@ describe('Agent/$bulk-status', () => {
       ],
     });
 
+<<<<<<< HEAD
     await getCacheRedis().set(
+=======
+    await getRedis(projectShardId).set(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,

@@ -7,10 +7,18 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+<<<<<<< HEAD
 import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
 import { getProjectSystemRepo } from './repo';
+=======
+import { getRedis } from '../redis';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
+import type { TestRedisConfig } from '../test.setup';
+import { createTestProject, deleteRedisKeys } from '../test.setup';
+import { getShardSystemRepo } from './repo';
+>>>>>>> 1ce8099b2 (temp)
 
 describe('FHIR Resource Limits', () => {
   let app: Express;
@@ -31,7 +39,11 @@ describe('FHIR Resource Limits', () => {
   });
 
   afterEach(async () => {
+<<<<<<< HEAD
     await deleteRedisKeys(getRateLimitRedis(), redisConfig.keyPrefix);
+=======
+    await deleteRedisKeys(getRedis(GLOBAL_SHARD_ID), redisConfig.keyPrefix);
+>>>>>>> 1ce8099b2 (temp)
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -69,7 +81,7 @@ describe('FHIR Resource Limits', () => {
   });
 
   test('Loads current count', async () => {
-    const { accessToken, project } = await createTestProject({
+    const { accessToken, project, projectShardId } = await createTestProject({
       withAccessToken: true,
       project: {
         systemSetting: [
@@ -79,7 +91,11 @@ describe('FHIR Resource Limits', () => {
       },
     });
 
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
+=======
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     await systemRepo.createResource({ resourceType: 'Patient', meta: { project: project.id } });
 
     const res = await request(app)

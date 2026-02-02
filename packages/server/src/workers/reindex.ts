@@ -44,6 +44,7 @@ import {
 
 export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
+  readonly shardId: string;
   readonly resourceTypes: ResourceType[];
   readonly minReindexWorkerVersion?: number;
   readonly maxResourceVersion?: number;
@@ -132,8 +133,12 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
 };
 
 export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
   const result = await new ReindexJob(systemRepo).execute(job, job.data);
+=======
+  const result = await new ReindexJob(getShardSystemRepo(job.data.shardId)).execute(job, job.data);
+>>>>>>> 1ce8099b2 (temp)
   if (result === 'ineligible') {
     await moveToDelayedAndThrow(job, 'Reindex job delayed since worker is not eligible to execute it');
   }
@@ -170,7 +175,7 @@ export class ReindexJob {
   }
 
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
-    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
+    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER, this.systemRepo.shardId));
     if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
       this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
@@ -574,15 +579,17 @@ export interface ReindexJobOptions {
 }
 
 export async function addReindexJob(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJob: WithId<AsyncJob>,
   options?: ReindexJobOptions
 ): Promise<Job<ReindexJobData>> {
-  const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, options);
+  const jobData = prepareReindexJobData(shardId, resourceTypes, asyncJob.id, options);
   return addReindexJobData(jobData);
 }
 
 export function prepareReindexJobData(
+  shardId: string,
   resourceTypes: ResourceType[],
   asyncJobId: string,
   options?: ReindexJobOptions
@@ -594,6 +601,7 @@ export function prepareReindexJobData(
 
   return {
     type: 'reindex',
+    shardId,
     minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
     endTimestamp,

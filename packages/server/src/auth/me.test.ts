@@ -8,7 +8,11 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestProject, withTestContext } from '../test.setup';
 import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
@@ -31,7 +35,7 @@ describe('Me', () => {
   });
 
   test('User configuration', async () => {
-    const { project, membership, accessToken } = await withTestContext(() =>
+    const { project, projectShardId, membership, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -91,7 +95,11 @@ describe('Me', () => {
     expect(res5.status).toBe(200);
 
     // As super admin user, add an identifier to the user
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
+=======
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     await systemRepo.patchResource('User', resolveId(res4.body.user) as string, [
       {
         op: 'add',
@@ -218,7 +226,7 @@ describe('Me', () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { project, membership, accessToken } = await withTestContext(() =>
+    const { project, projectShardId, membership, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alexander',
         lastName: 'Hamilton',
@@ -279,8 +287,12 @@ describe('Me', () => {
     expect(res3.body.security.memberships).toHaveLength(2);
 
     // Mark the 2nd ProjectMembership as inactive
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
     await systemRepo.patchResource('ProjectMembership', inviteResponse.membership.id, [
+=======
+    await getShardSystemRepo(projectShardId).patchResource('ProjectMembership', inviteResponse.membership.id, [
+>>>>>>> 1ce8099b2 (temp)
       {
         op: 'add',
         path: '/active',

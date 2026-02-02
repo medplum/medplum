@@ -17,10 +17,14 @@ import { sendLoginResult } from './utils';
 export const statusValidator = makeValidationMiddleware([param('login').isUUID().withMessage('Login ID is required')]);
 
 export async function statusHandler(req: Request, res: Response): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+>>>>>>> 1ce8099b2 (temp)
 
   const loginId = singularize(req.params.login) ?? '';
-  const login = await systemRepo.readResource<Login>('Login', loginId);
+  const login = await globalSystemRepo.readResource<Login>('Login', loginId);
 
   if (login.granted) {
     sendOutcome(res, badRequest('Login already granted'));

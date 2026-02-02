@@ -3,10 +3,17 @@
 import { OperationOutcomeError, generateId } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import { closeRedis, getCacheRedis, initRedis } from '../redis';
+=======
+import { closeRedis, getRedis, initRedis } from '../redis';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
+>>>>>>> 1ce8099b2 (temp)
 import { getTopicForUser } from './utils';
 
 describe('FHIRcast Utils', () => {
+  const shardId = GLOBAL_SHARD_ID;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     initRedis(config);
@@ -19,15 +26,19 @@ describe('FHIRcast Utils', () => {
   describe('getTopicForUser', () => {
     test("User doesn't have an existing topic", async () => {
       const userId = generateId();
-      await expect(getTopicForUser(userId)).resolves.toBeDefined();
+      await expect(getTopicForUser(shardId, userId)).resolves.toBeDefined();
     });
 
     test('User has existing topic', async () => {
       const userId = generateId();
       const topic = generateId();
+<<<<<<< HEAD
       await getCacheRedis().set(`medplum:fhircast:topic:${userId}`, topic);
+=======
+      await getRedis(shardId).set(`medplum:fhircast:topic:${userId}`, topic);
+>>>>>>> 1ce8099b2 (temp)
 
-      await expect(getTopicForUser(userId)).resolves.toBe(topic);
+      await expect(getTopicForUser(shardId, userId)).resolves.toBe(topic);
     });
 
     test('Failed to get key from Redis', async () => {
@@ -42,7 +53,11 @@ describe('FHIRcast Utils', () => {
           return null;
         }
       }
+<<<<<<< HEAD
       const redis = getCacheRedis();
+=======
+      const redis = getRedis(shardId);
+>>>>>>> 1ce8099b2 (temp)
       const originalMulti = redis.multi;
       const mockMulti = jest.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
@@ -52,7 +67,7 @@ describe('FHIRcast Utils', () => {
 
       let err!: OperationOutcomeError;
       try {
-        await getTopicForUser(userId);
+        await getTopicForUser(shardId, userId);
         // Should not get here
         expect(true).toBeFalsy();
       } catch (_err: unknown) {
@@ -83,7 +98,11 @@ describe('FHIRcast Utils', () => {
           return [null, [new Error('Something went wrong!'), null]];
         }
       }
+<<<<<<< HEAD
       const redis = getCacheRedis();
+=======
+      const redis = getRedis(shardId);
+>>>>>>> 1ce8099b2 (temp)
       const originalMulti = redis.multi;
       const mockMulti = jest.fn(() => new MockCommander());
       // @ts-expect-error Replacing multi with partial mock implementation
@@ -93,7 +112,7 @@ describe('FHIRcast Utils', () => {
 
       let err!: OperationOutcomeError;
       try {
-        await getTopicForUser(userId);
+        await getTopicForUser(shardId, userId);
         // Should not get here
         expect(true).toBeFalsy();
       } catch (_err: unknown) {

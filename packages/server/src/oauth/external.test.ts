@@ -10,8 +10,12 @@ import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestProject } from '../test.setup';
 
 jest.mock('node-fetch');
@@ -39,8 +43,12 @@ describe('External auth', () => {
     await initApp(app, config);
 
     // Create a test project
+<<<<<<< HEAD
     const { project } = await createTestProject();
     testProject = project;
+=======
+    const { project, projectShardId } = await createTestProject();
+>>>>>>> 1ce8099b2 (temp)
 
     // Invite a normal Practitioner user to the project
     const inviteResult = await inviteUser({
@@ -52,7 +60,11 @@ describe('External auth', () => {
     systemRepo = getProjectSystemRepo(project);
 
     // Add NPI identifier to the practitioner
+<<<<<<< HEAD
     practitioner = await systemRepo.updateResource<ProfileResource>({
+=======
+    practitioner = await getShardSystemRepo(projectShardId).updateResource<ProfileResource>({
+>>>>>>> 1ce8099b2 (temp)
       ...inviteResult.profile,
       identifier: [{ system: 'npi', value: npi }],
     });
@@ -142,7 +154,11 @@ describe('External auth', () => {
     }));
 
     // Create a Practitioner profile that is not a member of the project
+<<<<<<< HEAD
     const p2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+=======
+    const p2 = await getGlobalSystemRepo().createResource<Practitioner>({ resourceType: 'Practitioner' });
+>>>>>>> 1ce8099b2 (temp)
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
       fhirUser: getReferenceString(p2),

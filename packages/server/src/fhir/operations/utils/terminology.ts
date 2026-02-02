@@ -13,6 +13,10 @@ import type {
 import type { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../../../constants';
 import type { Repository } from '../../repo';
+<<<<<<< HEAD
+=======
+import { getShardSystemRepo } from '../../repo';
+>>>>>>> 1ce8099b2 (temp)
 import { Column, Condition, Conjunction, Disjunction, SelectQuery, SqlFunction, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -56,7 +60,12 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     ],
   });
 
+<<<<<<< HEAD
   const systemRepo = repo.getSystemRepo();
+=======
+  const systemRepo = getShardSystemRepo(repo.shardId);
+
+>>>>>>> 1ce8099b2 (temp)
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {

@@ -22,8 +22,13 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
   try {
     const decodedToken = await verifyJwt(token);
 
+<<<<<<< HEAD
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);
+=======
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = await globalSystemRepo.readResource<Login>('Login', decodedToken.payload.login_id as string);
+>>>>>>> 1ce8099b2 (temp)
     if (!login.granted || login.revoked) {
       writeInactiveResponse(res);
       return;
@@ -31,7 +36,7 @@ export const tokenIntrospectHandler: RequestHandler = async (req: Request, res: 
 
     let launch: SmartAppLaunch | undefined;
     if (login.launch) {
-      launch = await systemRepo.readReference(login.launch);
+      launch = await globalSystemRepo.readReference(login.launch);
     }
 
     writeActiveResponse(res, decodedToken.payload, login, launch);

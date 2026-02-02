@@ -7,8 +7,14 @@ import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+<<<<<<< HEAD
 import type { SystemRepository } from '../../fhir/repo';
+=======
+import type { TestProjectResult } from '../../test.setup';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestProject } from '../../test.setup';
+import type { SystemRepository } from '../repo';
+import { getShardSystemRepo } from '../repo';
 
 const app = express();
 const request = supertest(app);
@@ -50,18 +56,27 @@ const fridayOnly: Timing['repeat'] = {
 describe('Schedule/:id/$find', () => {
   let location: Location;
   let practitioner: Practitioner;
+<<<<<<< HEAD
   let project: WithId<Project>;
   let accessToken: string;
+=======
+  let project: TestProjectResult<{ withAccessToken: true }>;
+>>>>>>> 1ce8099b2 (temp)
   let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+<<<<<<< HEAD
     const projectResult = await createTestProject({ withAccessToken: true, withRepo: true });
     project = projectResult.project;
     accessToken = projectResult.accessToken;
     systemRepo = projectResult.repo.getSystemRepo();
 
+=======
+    project = await createTestProject({ withAccessToken: true });
+    systemRepo = getShardSystemRepo(project.projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.id },

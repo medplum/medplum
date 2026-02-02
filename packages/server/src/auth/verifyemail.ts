@@ -18,7 +18,11 @@ export const verifyEmailValidator = makeValidationMiddleware([
 
 export async function verifyEmailHandler(req: Request, res: Response): Promise<void> {
   const systemRepo = getGlobalSystemRepo();
+<<<<<<< HEAD
   const securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+=======
+  const pcr = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
+>>>>>>> 1ce8099b2 (temp)
 
   if (securityRequest.type !== 'verify-email') {
     sendOutcome(res, badRequest('Invalid user security request type'));

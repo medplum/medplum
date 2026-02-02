@@ -9,13 +9,18 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import { Repository } from '../fhir/repo';
+=======
+import { getShardSystemRepo, Repository } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { minCursorBasedSearchPageSize } from '../fhir/search';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
@@ -26,11 +31,6 @@ jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
 jest.mock('../seeds/searchparameters');
 
-const app = express();
-let project: Project;
-let adminAccessToken: string;
-let nonAdminAccessToken: string;
-
 jest.mock('../migrations/data/index', () => {
   return {
     v1: jest.requireMock('../migrations/data/v1'),
@@ -40,18 +40,32 @@ jest.mock('../migrations/data/index', () => {
 });
 
 describe('Super Admin routes', () => {
+  const shardId = GLOBAL_SHARD_ID;
+  const app = express();
+  let project: Project;
+  let projectShardId: string;
+  let adminAccessToken: string;
+  let nonAdminAccessToken: string;
   let processStdoutWriteSpy: jest.SpyInstance;
   beforeAll(async () => {
     processStdoutWriteSpy = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     const config = await loadTestConfig();
     await initApp(app, config);
 
+<<<<<<< HEAD
     let repo: Repository;
     ({ project, repo } = await createTestProject({ withClient: true, superAdmin: true, withRepo: true }));
 
     const normalProject = await createTestProject();
 
     const systemRepo = repo.getSystemRepo();
+=======
+    ({ project, projectShardId } = await createTestProject({ withClient: true, superAdmin: true }));
+
+    const normalProject = await createTestProject();
+
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
 
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -283,6 +297,7 @@ describe('Super Admin routes', () => {
       .set('Authorization', 'Bearer ' + nonAdminAccessToken)
       .type('json')
       .send({
+        shardId,
         resourceType: 'PaymentNotice',
       });
 
@@ -295,6 +310,7 @@ describe('Super Admin routes', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({
+        shardId,
         resourceType: 'PaymentNotice',
       });
 
@@ -308,6 +324,7 @@ describe('Super Admin routes', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({
+        shardId,
         resourceType: 'XYZ',
       });
 
@@ -328,6 +345,7 @@ describe('Super Admin routes', () => {
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
+        shardId,
         resourceType: 'PaymentNotice',
         reindexType,
         maxResourceVersion,
@@ -363,6 +381,7 @@ describe('Super Admin routes', () => {
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
+        shardId,
         resourceType: 'PaymentNotice',
         reindexType,
         maxResourceVersion,
@@ -382,6 +401,7 @@ describe('Super Admin routes', () => {
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
+        shardId,
         resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
         reindexType: 'outdated',
       });
@@ -797,7 +817,7 @@ describe('Super Admin routes', () => {
   describe('/migrations', () => {
     test('Migrate', async () => {
       const res1 = await request(app)
-        .get('/admin/super/migrations')
+        .get(`/admin/super/migrations?shardId=${shardId}`)
         .set('Authorization', 'Bearer ' + adminAccessToken);
 
       expect(res1.body).toStrictEqual({
@@ -816,7 +836,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 0.005 } });
+        .send({ shardId, tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
       expect(res1.status).toStrictEqual(200);
       expect(res1.body).toMatchObject(allOk);
@@ -838,7 +858,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ settings: { autovacuum_analyze_scale_factor: 0.005 } });
+        .send({ shardId, settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a string'));
@@ -854,7 +874,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation' });
+        .send({ shardId, tableName: 'Observation' });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject({
@@ -890,7 +910,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale: 0.005 } });
+        .send({ shardId, tableName: 'Observation', settings: { autovacuum_analyze_scale: 0.005 } });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject({
@@ -918,7 +938,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation', settings: { autovacuum_analyze_threshold: 0.005 } });
+        .send({ shardId, tableName: 'Observation', settings: { autovacuum_analyze_threshold: 0.005 } });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_threshold must be an integer value'));
@@ -934,7 +954,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 'testing' } });
+        .send({ shardId, tableName: 'Observation', settings: { autovacuum_analyze_scale_factor: 'testing' } });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject(badRequest('settings.autovacuum_analyze_scale_factor must be a float value'));
@@ -951,6 +971,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
         .send({
+          shardId,
           tableName: 'Observation',
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale_factor: 0.01 },
         });
@@ -976,6 +997,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
         .send({
+          shardId,
           tableName: 'Observation',
           settings: { autovacuum_analyze_scale_factor: 0.005, autovacuum_vacuum_scale: 0.01 },
         });
@@ -996,7 +1018,8 @@ describe('Super Admin routes', () => {
         .post('/admin/super/vacuum')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
-        .type('json');
+        .type('json')
+        .send({ shardId });
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
@@ -1023,7 +1046,7 @@ describe('Super Admin routes', () => {
         .post('/admin/super/tablesettings')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ tableName: 'Observation History', settings: { autovacuum_analyze_scale_factor: 0.005 } });
+        .send({ shardId, tableName: 'Observation History', settings: { autovacuum_analyze_scale_factor: 0.005 } });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.body).toMatchObject(badRequest('Table name must be a snake_cased_string'));
@@ -1040,7 +1063,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableNames: ['Observation', 'Observation_History'] });
+        .send({ shardId, tableNames: ['Observation', 'Observation_History'] });
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
@@ -1064,7 +1087,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableNames: ['Observation', 'Observation_History'], analyze: true });
+        .send({ shardId, tableNames: ['Observation', 'Observation_History'], analyze: true });
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
@@ -1088,7 +1111,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableNames: ['Observation', 'Observation_History'], analyze: true, vacuum: false });
+        .send({ shardId, tableNames: ['Observation', 'Observation_History'], analyze: true, vacuum: false });
 
       expect(res1.status).toStrictEqual(202);
       expect(res1.headers['content-location']).toBeDefined();
@@ -1123,7 +1146,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableNames: ['Observation', 123] });
+        .send({ shardId, tableNames: ['Observation', 123] });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
@@ -1141,7 +1164,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableNames: ['Observation', 'Observation History'] });
+        .send({ shardId, tableNames: ['Observation', 'Observation History'] });
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
@@ -1159,7 +1182,7 @@ describe('Super Admin routes', () => {
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .set('Prefer', 'respond-async')
         .type('json')
-        .send({ tableName: ['Observation', 123] }); // should be tableNames
+        .send({ shardId, tableName: ['Observation', 123] }); // should be tableNames
 
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
@@ -1218,6 +1241,7 @@ describe('Super Admin routes', () => {
         },
         {
           data: {
+            shardId,
             resourceType: bot.resourceType,
             botId: bot.id,
           },

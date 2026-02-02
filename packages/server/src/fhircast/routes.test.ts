@@ -42,6 +42,7 @@ describe('FHIRcast routes', () => {
   let server: Server;
   let project: WithId<Project>;
   let accessToken: string;
+  let projectShardId: string;
   let tokenForAnotherProject: string;
 
   beforeAll(async () => {
@@ -50,16 +51,15 @@ describe('FHIRcast routes', () => {
     config.heartbeatEnabled = false;
     server = await initApp(app, config);
 
-    const { accessToken: _accessToken1, project: _project1 } = await withTestContext(() =>
-      createTestProject({ membership: { admin: true }, withAccessToken: true })
-    );
-    const { accessToken: _accessToken2 } = await withTestContext(() =>
-      createTestProject({ membership: { admin: true }, withAccessToken: true })
-    );
+    const res1 = await withTestContext(() => createTestProject({ membership: { admin: true }, withAccessToken: true }));
+    const res2 = await withTestContext(() => createTestProject({ membership: { admin: true }, withAccessToken: true }));
 
-    accessToken = _accessToken1;
-    project = _project1;
-    tokenForAnotherProject = _accessToken2;
+    expect(res1.projectShardId).toStrictEqual(res2.projectShardId);
+
+    accessToken = res1.accessToken;
+    project = res1.project;
+    projectShardId = res1.projectShardId;
+    tokenForAnotherProject = res2.accessToken;
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8517, resolve);
@@ -231,7 +231,11 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis returns `null`', async () => {
+<<<<<<< HEAD
     const redis = getCacheRedis();
+=======
+    const redis = getRedis(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -269,7 +273,11 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis result contains error', async () => {
+<<<<<<< HEAD
     const redis = getCacheRedis();
+=======
+    const redis = getRedis(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -721,7 +729,7 @@ describe('FHIRcast routes', () => {
     const contentBundleId = generateId();
 
     // Setup the key as if we have already opened this resource
-    await setTopicCurrentContext(project.id, topic, {
+    await setTopicCurrentContext(projectShardId, project.id, topic, {
       'context.type': 'DiagnosticReport',
       'context.versionId': generateId(),
       context: [
@@ -794,7 +802,11 @@ describe('FHIRcast routes', () => {
     expect(publishRes.status).toBe(202);
     expect(publishRes.body.event?.event?.['context.versionId']).toBeDefined();
 
+<<<<<<< HEAD
     const latestContextStr = (await getCacheRedis().get(
+=======
+    const latestContextStr = (await getRedis(projectShardId).get(
+>>>>>>> 1ce8099b2 (temp)
       `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestContextStr).toBeTruthy();
@@ -808,7 +820,7 @@ describe('FHIRcast routes', () => {
     const versionId = generateId();
 
     // Setup the key as if we have already opened this resource
-    await setTopicCurrentContext(project.id, topic, {
+    await setTopicCurrentContext(projectShardId, project.id, topic, {
       'context.type': 'DiagnosticReport',
       'context.versionId': versionId,
       context: [

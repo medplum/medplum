@@ -25,8 +25,14 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+<<<<<<< HEAD
 import type { SystemRepository } from './repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+=======
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
+import type { SystemRepository } from './repo';
+import { getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+>>>>>>> 1ce8099b2 (temp)
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -45,9 +51,14 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
+<<<<<<< HEAD
   const globalSystemRepo = getGlobalSystemRepo();
   const refs: Reference[] = [membership.project, realMembership.profile];
   const resolved = await globalSystemRepo.readReferences<Resource>(refs);
+=======
+  const { project, projectShardId } = await getProjectAndProjectShardId(membership.project);
+  const allowedProjects: WithId<Project>[] = [project];
+>>>>>>> 1ce8099b2 (temp)
 
   if (resolved[0] instanceof Error) {
     throw resolved[0];
@@ -69,7 +80,11 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
+=======
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -96,6 +111,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     validateTerminology: project.features?.includes('validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    projectShardId,
   });
 }
 
@@ -105,6 +121,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
  * @returns The finalized access policy.
  */
 export async function getAccessPolicyForLogin(authState: AuthState): Promise<AccessPolicy | undefined> {
+  // TODO{sharding} check this function to be sure it is correct for sharding
   const { project, login } = authState;
   const membership = authState.onBehalfOfMembership ?? authState.membership;
 
@@ -138,7 +155,11 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     access.push(...membership.access);
   }
 
+<<<<<<< HEAD
   const systemRepo = getProjectSystemRepo(membership.project);
+=======
+  const systemRepo = await getProjectSystemRepo(membership.project);
+>>>>>>> 1ce8099b2 (temp)
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];

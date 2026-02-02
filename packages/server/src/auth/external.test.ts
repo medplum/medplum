@@ -12,7 +12,11 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -33,8 +37,14 @@ const identityProvider = {
 };
 
 let project: WithId<Project>;
+<<<<<<< HEAD
 let systemRepo: SystemRepository;
 let defaultClient: ClientApplication;
+=======
+let projectShardId: string;
+let client: ClientApplication;
+let systemRepo: SystemRepository;
+>>>>>>> 1ce8099b2 (temp)
 let externalAuthClient: ClientApplication;
 
 describe('External', () => {
@@ -53,10 +63,13 @@ describe('External', () => {
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
-      project = registerResult.project;
-      defaultClient = registerResult.client;
+      ({ project, projectShardId, client } = registerResult);
 
+<<<<<<< HEAD
       systemRepo = getProjectSystemRepo(project);
+=======
+      systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -277,7 +290,7 @@ describe('External', () => {
   test('Invalid client', async () => {
     const url = appendQueryParams('/auth/external', {
       code: randomUUID(),
-      state: JSON.stringify({ redirectUri, clientId: defaultClient.id }),
+      state: JSON.stringify({ redirectUri, clientId: client.id }),
     });
 
     // Mock the external identity provider

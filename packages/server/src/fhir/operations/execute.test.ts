@@ -30,7 +30,11 @@ import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../repo';
+=======
+import { getProjectSystemRepo, getShardSystemRepo } from '../repo';
+>>>>>>> 1ce8099b2 (temp)
 
 const botCodes = [
   [
@@ -706,7 +710,11 @@ describe('Execute', () => {
       project2 = testSetup2.project;
       accessToken2 = testSetup2.accessToken;
 
+<<<<<<< HEAD
       const systemRepo = testSetup2.repo.getSystemRepo();
+=======
+      const systemRepo = getShardSystemRepo(testSetup2.projectShardId);
+>>>>>>> 1ce8099b2 (temp)
       for (const bot of [bots.echoBot, bots.systemEchoBot]) {
         await systemRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
@@ -790,7 +798,11 @@ describe('Execute', () => {
       // execute the bot in the appropriate project context
       const project = whichProject === 'own' ? project1 : project2;
       const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+<<<<<<< HEAD
       const systemRepo = getProjectSystemRepo(project);
+=======
+      const systemRepo = await getProjectSystemRepo(project.id);
+>>>>>>> 1ce8099b2 (temp)
 
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$execute`)

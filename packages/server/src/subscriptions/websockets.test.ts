@@ -146,11 +146,20 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
+<<<<<<< HEAD
               (await isSubscriptionActive(
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
+=======
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${patientSubscription?.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -184,6 +193,7 @@ describe('WebSocket Subscription', () => {
       while (subActive || inCache) {
         await sleep(0);
         subActive =
+<<<<<<< HEAD
           (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
           1;
         try {
@@ -192,6 +202,14 @@ describe('WebSocket Subscription', () => {
         } catch {
           inCache = false;
         }
+=======
+          (
+            await getRedis(repo.shardId).smismember(
+              `medplum:subscriptions:r4:project:${project.id}:active`,
+              `Subscription/${patientSubscription?.id}`
+            )
+          )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
       }
       expect(subActive).toStrictEqual(false);
 
@@ -277,11 +295,20 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
+<<<<<<< HEAD
               (await isSubscriptionActive(
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
+=======
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${patientSubscription?.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -308,11 +335,20 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
+<<<<<<< HEAD
               (await isSubscriptionActive(
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
+=======
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${patientSubscription?.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -817,11 +853,20 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
+<<<<<<< HEAD
               (await isSubscriptionActive(
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
               )) === 1;
+=======
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${subscription.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1022,11 +1067,20 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
+<<<<<<< HEAD
               (await isSubscriptionActive(
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
               )) === 1;
+=======
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${subscription.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1155,6 +1209,16 @@ describe('WebSocket Subscription', () => {
             )
           ) {
             await sleep(0);
+<<<<<<< HEAD
+=======
+            subActive =
+              (
+                await getRedis(repo.shardId).smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${subscription.id}`
+                )
+              )[0] === 1;
+>>>>>>> 1ce8099b2 (temp)
           }
         })
         .close()
@@ -1502,6 +1566,7 @@ describe('Subscription Heartbeat', () => {
     accessToken = result.accessToken;
 
     repo = new Repository({
+      projectShardId: result.projectShardId,
       extendedMode: true,
       projects: [project],
       author: {

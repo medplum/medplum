@@ -32,7 +32,11 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     return;
   }
 
+<<<<<<< HEAD
   const systemRepo = getProjectSystemRepo(runAs.project);
+=======
+  const systemRepo = await getProjectSystemRepo(runAs.project);
+>>>>>>> 1ce8099b2 (temp)
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
 
   // The Bot must have a publicWebhook flag set to true

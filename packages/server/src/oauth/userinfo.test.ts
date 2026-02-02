@@ -8,7 +8,11 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import { getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 
 const app = express();
 
@@ -55,7 +59,11 @@ describe('OAuth2 UserInfo', () => {
   test('Get userinfo with profile email', async () => {
     const email = `profile${randomUUID()}@example.com`;
     const password = randomUUID();
+<<<<<<< HEAD
     const { user, project } = await registerNew({
+=======
+    const { user, projectShardId } = await registerNew({
+>>>>>>> 1ce8099b2 (temp)
       email,
       password,
       firstName: 'Profile',
@@ -81,8 +89,12 @@ describe('OAuth2 UserInfo', () => {
     const accessToken = res2.body.access_token;
 
     // Clear out `email` field
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
     await systemRepo.updateResource({
+=======
+    await getShardSystemRepo(projectShardId).updateResource({
+>>>>>>> 1ce8099b2 (temp)
       ...user,
       email: undefined,
     });

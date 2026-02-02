@@ -6,10 +6,12 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth } from '../../test.setup';
 
 describe('$db-invalid-indexes', () => {
   const app = express();
+  const shardId = GLOBAL_SHARD_ID;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -21,12 +23,12 @@ describe('$db-invalid-indexes', () => {
   });
 
   afterEach(async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, shardId);
     await client.query(`REINDEX INDEX CONCURRENTLY "CarePlan_replaces_idx"`);
   });
 
   test('Success', async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, shardId);
     await client.query(
       `UPDATE pg_index SET indislive = false 
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
@@ -39,7 +41,7 @@ describe('$db-invalid-indexes', () => {
     const res = await request(app)
       .post('/fhir/R4/$db-invalid-indexes')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
+      .send({ shardId: GLOBAL_SHARD_ID });
     expect(res.status).toBe(200);
     const params = res.body as Parameters;
     const invalidIndex = params.parameter?.find(

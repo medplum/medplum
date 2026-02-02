@@ -7,7 +7,11 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository, SystemRepository } from '../fhir/repo';
+<<<<<<< HEAD
 import {} from '../fhir/repo';
+=======
+import { getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -442,7 +446,11 @@ describe('OAuth utils', () => {
         const result = await createTestProject({ withRepo: true });
         project = result.project;
         repo = result.repo;
+<<<<<<< HEAD
         systemRepo = repo.getSystemRepo();
+=======
+        systemRepo = getShardSystemRepo(repo.shardId);
+>>>>>>> 1ce8099b2 (temp)
       });
     });
 
@@ -450,7 +458,7 @@ describe('OAuth utils', () => {
       await withTestContext(async () => {
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
-        const user = await systemRepo.createResource<User>({
+        const user = await repo.createResource<User>({
           resourceType: 'User',
           email: userEmail,
           firstName: 'Test',

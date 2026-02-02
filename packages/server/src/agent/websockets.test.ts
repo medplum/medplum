@@ -11,8 +11,13 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
+<<<<<<< HEAD
 import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
+=======
+import { getRedis } from '../redis';
+import { createTestProject } from '../test.setup';
+>>>>>>> 1ce8099b2 (temp)
 import type { AgentInfo } from './utils';
 import { AgentConnectionState } from './utils';
 
@@ -20,6 +25,7 @@ const app = express();
 let config: MedplumServerConfig;
 let server: Server;
 let accessToken: string;
+let shardId: string;
 let bot: Bot;
 let agent: Agent;
 let device: Device;
@@ -31,7 +37,9 @@ describe('Agent WebSockets', () => {
     config.heartbeatMilliseconds = 5000;
 
     server = await initApp(app, config);
-    accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await createTestProject({ membership: { admin: true }, withAccessToken: true, withRepo: true });
+    accessToken = res.accessToken;
+    shardId = res.repo.shardId;
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8512, resolve);
@@ -442,7 +450,11 @@ describe('Agent WebSockets', () => {
     let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
     for (let i = 0; i < 5; i++) {
       await sleep(50);
+<<<<<<< HEAD
       const infoStr = (await getCacheRedis().get(`medplum:agent:${agent.id}:info`)) as string;
+=======
+      const infoStr = (await getRedis(shardId).get(`medplum:agent:${agent.id}:info`)) as string;
+>>>>>>> 1ce8099b2 (temp)
       info = JSON.parse(infoStr) as AgentInfo;
       if (info.status === AgentConnectionState.DISCONNECTED) {
         break;

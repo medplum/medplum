@@ -12,7 +12,11 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
+<<<<<<< HEAD
 import type { Repository, SystemRepository } from '../fhir/repo';
+=======
+import type { SystemRepository } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
@@ -30,9 +34,14 @@ describe('OAuth Authorize', () => {
     await initApp(app, config);
 
     // Create a test project
+<<<<<<< HEAD
     let repo: Repository;
     ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
     systemRepo = repo.getSystemRepo();
+=======
+    ({ project, client } = await createTestProject({ withClient: true }));
+    systemRepo = getGlobalSystemRepo();
+>>>>>>> 1ce8099b2 (temp)
 
     // Create a test user
     const { user } = await inviteUser({
@@ -407,7 +416,13 @@ describe('OAuth Authorize', () => {
         filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
       })
     ).entry?.[0]?.resource;
+<<<<<<< HEAD
     assert(login);
+=======
+    if (!login) {
+      throw new Error('Login not found');
+    }
+>>>>>>> 1ce8099b2 (temp)
     await withTestContext(async () => revokeLogin(globalSystemRepo, login));
 
     const params = new URLSearchParams({

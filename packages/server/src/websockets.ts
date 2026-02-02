@@ -15,9 +15,14 @@ import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat 
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from './heartbeat';
 import { globalLogger } from './logger';
 import { setGauge } from './otel/otel';
+<<<<<<< HEAD
 import { publish } from './pubsub';
 import { getPubSubRedisSubscriber } from './redis';
+=======
+import { getGlobalRedis, getRedisSubscriber } from './redis';
+>>>>>>> 1ce8099b2 (temp)
 import { requestContextStore } from './request-context-store';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: WebSocket, request: IncomingMessage) => Promise<void>>();
@@ -139,7 +144,12 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+<<<<<<< HEAD
   const redisSubscriber = getPubSubRedisSubscriber();
+=======
+  // TODO{sharding} echo is an unauthenticated endpoint, so we use the global redis subscriber. Is this correct?
+  const redisSubscriber = getRedisSubscriber(GLOBAL_SHARD_ID);
+>>>>>>> 1ce8099b2 (temp)
   const channel = randomUUID();
 
   await redisSubscriber.subscribe(channel);
@@ -154,7 +164,11 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
+<<<<<<< HEAD
       await publish(channel, data as Buffer);
+=======
+      await getGlobalRedis().publish(channel, data as Buffer);
+>>>>>>> 1ce8099b2 (temp)
     })
   );
 

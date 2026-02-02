@@ -17,6 +17,7 @@ import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
 import type { Repository, SystemRepository } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
@@ -117,6 +118,10 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   [Symbol.dispose](): void {
     this.repo[Symbol.dispose]();
+  }
+
+  getProjectSystemRepo(): Repository {
+    return getShardSystemRepo(this.authState.projectShardId);
   }
 }
 
@@ -264,13 +269,20 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boole
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
-    ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    ? new FhirRateLimiter(
+        getRateLimitRedis(authState.projectShardId),
+        authState,
+        userLimit,
+        projectLimit,
+        logger ?? globalLogger,
+        async
+      )
     : undefined;
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
   const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
   return authState.membership && projectLimit
-    ? new ResourceCap(getRateLimitRedis(), authState, projectLimit, logger ?? globalLogger)
+    ? new ResourceCap(getRateLimitRedis(authState.projectShardId), authState, projectLimit, logger ?? globalLogger)
     : undefined;
 }

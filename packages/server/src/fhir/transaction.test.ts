@@ -8,7 +8,11 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { Repository, SystemRepository } from './repo';
+<<<<<<< HEAD
 import {} from './repo';
+=======
+import { getShardSystemRepo } from './repo';
+>>>>>>> 1ce8099b2 (temp)
 import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
@@ -19,8 +23,14 @@ describe('FHIR Repo Transactions', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
+<<<<<<< HEAD
     repo = (await createTestProject({ withRepo: true })).repo;
     systemRepo = repo.getSystemRepo();
+=======
+    const createResult = await createTestProject({ withRepo: true });
+    repo = createResult.repo;
+    systemRepo = getShardSystemRepo(createResult.projectShardId);
+>>>>>>> 1ce8099b2 (temp)
   });
 
   afterAll(async () => {

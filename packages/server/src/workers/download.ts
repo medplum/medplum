@@ -19,8 +19,14 @@ import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
+<<<<<<< HEAD
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
+=======
+import { getLogger, globalLogger } from '../logger';
+import { reconnectOnError } from '../redis';
+import { getProjectShardId } from '../sharding/sharding-utils';
+>>>>>>> 1ce8099b2 (temp)
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -38,6 +44,7 @@ import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry }
  */
 
 export interface DownloadJobData {
+  readonly shardId: string;
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
@@ -121,6 +128,7 @@ export async function addDownloadJobs(
     return;
   }
 
+  const projectShardId = await getProjectShardId(project.id);
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     // Only process allowed external URLs
@@ -144,6 +152,7 @@ export async function addDownloadJobs(
     }
 
     await addDownloadJobData({
+      shardId: projectShardId,
       resourceType: resource.resourceType,
       id: resource.id,
       url,
@@ -218,7 +227,11 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
+=======
+  const systemRepo = getShardSystemRepo(job.data.shardId);
+>>>>>>> 1ce8099b2 (temp)
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import type { PoolClient } from 'pg';
-import { Pool } from 'pg';
 import * as semver from 'semver';
 import type { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
@@ -14,6 +13,9 @@ import {
   getPreDeployMigration,
 } from './migrations/migration-utils';
 import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
+import { DefaultShardPool } from './sharding/shard-pool';
+import type { ShardPool, ShardPoolClient } from './sharding/sharding-types';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {
@@ -22,19 +24,29 @@ export const DatabaseMode = {
 } as const;
 export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
-let pool: Pool | undefined;
-let readonlyPool: Pool | undefined;
+const globalPools: { pool: ShardPool | undefined; readonlyPool: ShardPool | undefined } = {
+  pool: undefined,
+  readonlyPool: undefined,
+};
+const shardPools: Record<string, { pool: ShardPool | undefined; readonlyPool: ShardPool | undefined }> = {};
 
-export function getDatabasePool(mode: DatabaseMode): Pool {
-  if (!pool) {
+export function getDatabasePool(mode: DatabaseMode, shardId: string): ShardPool {
+  if (shardId.startsWith('TODO')) {
+    console.warn(`getDatabasePool called with shardId ${shardId}`);
+    shardId = GLOBAL_SHARD_ID;
+  }
+
+  const pools = shardId && shardId !== GLOBAL_SHARD_ID ? shardPools[shardId] : globalPools;
+
+  if (!pools.pool) {
     throw new Error('Database not setup');
   }
 
-  if (mode === DatabaseMode.READER && readonlyPool) {
-    return readonlyPool;
+  if (mode === DatabaseMode.READER && pools.readonlyPool) {
+    return pools.readonlyPool;
   }
 
-  return pool;
+  return pools.pool;
 }
 
 export const locks = {
@@ -42,18 +54,42 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
-  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
-
+  globalPools.pool = await initPool(GLOBAL_SHARD_ID, serverConfig.database, serverConfig.databaseProxyEndpoint);
+  if (serverConfig.readonlyDatabase) {
+    globalPools.readonlyPool = await initPool(
+      GLOBAL_SHARD_ID,
+      serverConfig.readonlyDatabase,
+      serverConfig.readonlyDatabaseProxyEndpoint
+    );
+  }
   if (serverConfig.database.runMigrations !== false) {
-    await runMigrations(pool);
+    await runMigrations(globalPools.pool);
   }
 
-  if (serverConfig.readonlyDatabase) {
-    readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+  for (const [shardId, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
+    if (shardId === GLOBAL_SHARD_ID) {
+      continue;
+    }
+    const shardPool = await initPool(shardId, shardConfig.database, undefined);
+    const readonlyShardPool =
+      shardConfig.readonlyDatabase && (await initPool(shardId, shardConfig.readonlyDatabase, undefined));
+
+    shardPools[shardId] = {
+      pool: shardPool,
+      readonlyPool: readonlyShardPool,
+    };
+
+    if (shardConfig.database.runMigrations !== false) {
+      await runMigrations(shardPool);
+    }
   }
 }
 
-async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
+async function initPool(
+  shardId: string,
+  config: MedplumDatabaseConfig,
+  proxyEndpoint: string | undefined
+): Promise<ShardPool> {
   const poolConfig = {
     host: config.host,
     port: config.port,
@@ -71,7 +107,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     poolConfig.ssl.require = true;
   }
 
-  const pool = new Pool(poolConfig);
+  const pool = new DefaultShardPool(poolConfig, shardId);
 
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
@@ -101,18 +137,31 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (pool) {
-    await pool.end();
-    pool = undefined;
-  }
-
-  if (readonlyPool) {
-    await readonlyPool.end();
-    readonlyPool = undefined;
+  for (const pools of [globalPools, ...Object.values(shardPools)]) {
+    if (pools.pool) {
+      globalLogger.info('Closing database pool', {
+        shardId: pools.pool.shardId,
+        totalCount: pools.pool.totalCount,
+        idleCount: pools.pool.idleCount,
+        waitingCount: pools.pool.waitingCount,
+      });
+      await pools.pool.end();
+      pools.pool = undefined;
+    }
+    if (pools.readonlyPool) {
+      globalLogger.info('Closing readonly database pool', {
+        shardId: pools.readonlyPool.shardId,
+        totalCount: pools.readonlyPool.totalCount,
+        idleCount: pools.readonlyPool.idleCount,
+        waitingCount: pools.readonlyPool.waitingCount,
+      });
+      await pools.readonlyPool.end();
+      pools.readonlyPool = undefined;
+    }
   }
 }
 
-async function runMigrations(pool: Pool): Promise<void> {
+async function runMigrations(pool: ShardPool): Promise<void> {
   return withPoolClient(async (client) => {
     let hasLock = false;
     try {
@@ -134,8 +183,8 @@ async function runMigrations(pool: Pool): Promise<void> {
 }
 
 export async function withPoolClient<TResult>(
-  callback: (client: PoolClient) => Promise<TResult>,
-  pool: Pool
+  callback: (client: ShardPoolClient) => Promise<TResult>,
+  pool: ShardPool
 ): Promise<TResult> {
   const client = await pool.connect();
   try {
@@ -176,7 +225,7 @@ export async function releaseAdvisoryLock(client: PoolClient, lockId: number): P
   await client.query('SELECT pg_advisory_unlock($1)', [lockId]);
 }
 
-async function migrate(client: PoolClient): Promise<void> {
+async function migrate(client: ShardPoolClient): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "version" INTEGER NOT NULL,
@@ -230,13 +279,17 @@ async function migrate(client: PoolClient): Promise<void> {
   }
 }
 
-async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersion: number): Promise<void> {
+async function runAllPendingPreDeployMigrations(client: ShardPoolClient, currentVersion: number): Promise<void> {
   for (let i = currentVersion + 1; i <= getPreDeployMigrationVersions().length; i++) {
     const migration = getPreDeployMigration(i);
     if (migration) {
       const start = Date.now();
       await migration.run(client);
-      globalLogger.info('Database pre-deploy migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
+      globalLogger.info('Database pre-deploy migration', {
+        shardId: client.shardId,
+        version: `v${i}`,
+        duration: `${Date.now() - start} ms`,
+      });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }

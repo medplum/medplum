@@ -10,6 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { createTestProject } from '../../test.setup';
 import type { Repository } from '../repo';
 import { Column, Condition, SelectQuery } from '../sql';
@@ -19,6 +20,7 @@ const app = express();
 const ICD10 = 'http://hl7.org/fhir/sid/icd-10-us';
 
 describe('importConceptMap()', () => {
+  const shardId = GLOBAL_SHARD_ID;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -62,7 +64,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const db = await pool.connect();
     await importConceptMap(db, resource);
     db.release();
@@ -130,7 +132,7 @@ describe('importConceptMap()', () => {
       ],
     };
 
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, shardId);
     const db = await pool.connect();
     await importConceptMap(db, resource);
     db.release();
@@ -259,7 +261,7 @@ describe('ConceptMap/$import', () => {
       } satisfies Parameters);
     expect(res.status).toBe(200);
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
 
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
@@ -447,7 +449,7 @@ describe('ConceptMap/$import', () => {
       ],
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
     const results = await getMappingRows(pool, conceptMap);
     expect(results).toHaveLength(1);
   });
@@ -464,7 +466,7 @@ describe('ConceptMap/$import', () => {
       status: 'active',
     });
 
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
     const results = await getMappingRows(pool, map);
     expect(results).toHaveLength(0);
   });

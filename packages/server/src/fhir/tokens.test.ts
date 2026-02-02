@@ -736,13 +736,15 @@ describe('Non-strict mode', () => {
   const val1 = 'ABCDEFGHIJ';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
     nonStrictRepo = new Repository({
+      projectShardId,
       strictMode: false,
       projects: [project],
       author: { reference: 'User/' + randomUUID() },
     });
     repo = new Repository({
+      projectShardId,
       strictMode: true,
       projects: [project],
       author: { reference: 'User/' + randomUUID() },
@@ -841,8 +843,9 @@ describe('Condition.code token queries', () => {
   const disp1 = 'The Quick Brown Fox';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
     repo = new Repository({
+      projectShardId,
       strictMode: true,
       projects: [project],
       author: { reference: 'User/' + randomUUID() },
@@ -1265,8 +1268,9 @@ describe('MedicationRequest.code legacy behavior', () => {
   const val2 = 'ZZZZZZZZZZ';
 
   beforeAll(async () => {
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
     repo = new Repository({
+      projectShardId,
       strictMode: true,
       projects: [project],
       author: { reference: 'User/' + randomUUID() },

@@ -19,6 +19,8 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
+import type { ShardPool } from '../sharding/sharding-types';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -27,12 +29,14 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('Admin Invite', () => {
+  let dbPool: ShardPool;
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     config.emailProvider = 'awsses';
     await withTestContext(() => initApp(app, config));
+    dbPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
   });
 
   afterAll(async () => {
@@ -88,10 +92,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
     expect(parsed.subject).toBe('Welcome to Medplum');
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -143,10 +144,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -193,10 +191,7 @@ describe('Admin Invite', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -245,10 +240,7 @@ describe('Admin Invite', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -380,10 +372,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(dbPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -565,10 +554,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(dbPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 

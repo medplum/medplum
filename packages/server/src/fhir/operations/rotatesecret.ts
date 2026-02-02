@@ -40,8 +40,13 @@ type RotateSecretParameters = {
  * @returns The FHIR response.
  */
 export async function rotateSecretHandler(req: FhirRequest): Promise<FhirResponse> {
+<<<<<<< HEAD
   const ctx = getAuthenticatedContext();
   if (!ctx.repo.isSuperAdmin() && !ctx.repo.isProjectAdmin()) {
+=======
+  const { repo, systemRepo } = getAuthenticatedContext();
+  if (!repo.isSuperAdmin() && !repo.isProjectAdmin()) {
+>>>>>>> 1ce8099b2 (temp)
     return [forbidden];
   }
 
@@ -54,7 +59,10 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   // Patch using system repo since the secret fields should not generally be user-writeable
+<<<<<<< HEAD
   const systemRepo = ctx.systemRepo;
+=======
+>>>>>>> 1ce8099b2 (temp)
   const clientApp = await systemRepo.withTransaction(async () => {
     let clientApp = await systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
     if (params.secret && params.secret === clientApp.secret) {

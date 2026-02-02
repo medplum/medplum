@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
-import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Login, Patient, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
+<<<<<<< HEAD
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+=======
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import { setLoginMembership } from '../oauth/utils';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { createProfile, createProjectMembership } from './utils';
 
@@ -23,8 +28,13 @@ export const newPatientValidator = makeValidationMiddleware([
  * @param res - The HTTP response.
  */
 export async function newPatientHandler(req: Request, res: Response): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
+>>>>>>> 1ce8099b2 (temp)
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
@@ -33,7 +43,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
 
   const { projectId } = req.body;
 
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
   if (!user.project) {
     sendOutcome(res, badRequest('User must be scoped to the project'));
     return;
@@ -59,15 +69,20 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
  * @param lastName - The patient's last name.
  * @returns The new project membership.
  */
-export async function createPatient(
+async function createPatient(
   login: Login,
   projectId: string,
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
+<<<<<<< HEAD
   const systemRepo = getProjectSystemRepo(projectId);
+=======
+  const { project, projectShardId } = await getProjectAndProjectShardId(projectId);
+  const systemRepo = getShardSystemRepo(projectShardId);
+
+>>>>>>> 1ce8099b2 (temp)
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  const project = await systemRepo.readResource<Project>('Project', projectId);
 
   if (!project.defaultPatientAccessPolicy) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));

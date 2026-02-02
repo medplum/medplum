@@ -8,8 +8,13 @@ import type { RawData, WebSocket } from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
+<<<<<<< HEAD
 import { publish } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+=======
+import { getGlobalRedis, getRedisSubscriber } from '../redis';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
+>>>>>>> 1ce8099b2 (temp)
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -32,6 +37,10 @@ export function initFhircastHeartbeat(): void {
         },
       };
 
+<<<<<<< HEAD
+=======
+      const redis = getGlobalRedis();
+>>>>>>> 1ce8099b2 (temp)
       for (const projectAndTopic of topicRefCountMap.keys()) {
         publish(
           projectAndTopic,
@@ -71,7 +80,11 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
   const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
 
+<<<<<<< HEAD
   const projectAndTopic = await getCacheRedis().get(endpointTopicKey);
+=======
+  const projectAndTopic = await getGlobalRedis().get(endpointTopicKey);
+>>>>>>> 1ce8099b2 (temp)
   if (!projectAndTopic) {
     globalLogger.error(`[FHIRcast]: No topic associated with the endpoint '${topicEndpoint}'`);
     // Close the socket since this endpoint is not valid
@@ -93,7 +106,11 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
+<<<<<<< HEAD
   const redisSubscriber = getPubSubRedisSubscriber();
+=======
+  const redisSubscriber = getRedisSubscriber(GLOBAL_SHARD_ID);
+>>>>>>> 1ce8099b2 (temp)
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(projectAndTopic);

@@ -7,13 +7,14 @@ import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migrat
 import type { CustomPostDeployMigration } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationActionResult } from './migrations/types';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 
 jest.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { prepareCustomMigrationJobData, runCustomMigration } = require('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
-    prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+    prepareJobData: (config) => prepareCustomMigrationJobData(config),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
         const results: MigrationActionResult[] = [];
@@ -37,11 +38,12 @@ jest.mock('./migrations/data/index', () => {
 describe('markPostDeployMigrationCompleted', () => {
   let client: Pool;
   let rowId: number;
+  const shardId = GLOBAL_SHARD_ID;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
 
-    client = getDatabasePool(DatabaseMode.WRITER);
+    client = getDatabasePool(DatabaseMode.WRITER, shardId);
     const result = await client.query<{ id: number }>(
       `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (2, 0, $1, true)
         ON CONFLICT("id") DO UPDATE SET "id" = EXCLUDED."id", "version" = EXCLUDED."version", "dataVersion" = EXCLUDED."dataVersion"

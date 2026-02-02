@@ -30,7 +30,11 @@ import {
   setupRecaptchaMock,
   withTestContext,
 } from '../../test.setup';
+<<<<<<< HEAD
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../repo';
+=======
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
+>>>>>>> 1ce8099b2 (temp)
 import { createProject } from './projectinit';
 
 jest.mock('node-fetch');
@@ -63,8 +67,13 @@ describe('Project clone', () => {
   });
 
   test('Success', async () => {
+<<<<<<< HEAD
     const { project, repo } = await createTestProject({ withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, projectShardId } = await createTestProject();
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     expect(project).toBeDefined();
 
     const patient = await systemRepo.createResource<Patient>({
@@ -121,8 +130,13 @@ describe('Project clone', () => {
   });
 
   test('Success with project name in body', async () => {
+<<<<<<< HEAD
     const { project, repo } = await createTestProject({ withClient: true, withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, projectShardId } = await createTestProject({ withClient: true });
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const newProjectName = 'A New Name for cloned project';
     expect(project).toBeDefined();
 
@@ -186,7 +200,7 @@ describe('Project clone', () => {
     const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
 
     expect(res1.status).toBe(200);
-    const { project } = await withTestContext(() => createProject('Test Project Name', user));
+    const { project, projectShardId } = await withTestContext(() => createProject('Test Project Name', user));
     const newProjectName = 'A New Name for a cloned project';
     expect(project).toBeDefined();
 
@@ -201,8 +215,12 @@ describe('Project clone', () => {
       .send({ name: newProjectName });
     expect(res.status).toBe(201);
 
+<<<<<<< HEAD
     const systemRepo = getProjectSystemRepo(project);
     const ClientApplicationBundle = await systemRepo.search({
+=======
+    const ClientApplicationBundle = await getShardSystemRepo(projectShardId).search({
+>>>>>>> 1ce8099b2 (temp)
       resourceType: 'ClientApplication',
       filters: [{ code: '_project', operator: Operator.EQUALS, value: res.body.id }],
     });
@@ -217,8 +235,13 @@ describe('Project clone', () => {
   });
 
   test('Success with resource type in body', async () => {
+<<<<<<< HEAD
     const { project, repo } = await createTestProject({ withClient: true, withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, projectShardId } = await createTestProject({ withClient: true });
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const resourceTypes = ['ProjectMembership'];
     expect(project).toBeDefined();
 
@@ -254,8 +277,13 @@ describe('Project clone', () => {
   });
 
   test.skip('Success with includeIds in body', async () => {
+<<<<<<< HEAD
     const { project, membership, repo } = await createTestProject({ withClient: true, withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, membership, projectShardId } = await createTestProject({ withClient: true });
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const includeIds = [membership.id];
     expect(project).toBeDefined();
 
@@ -291,8 +319,13 @@ describe('Project clone', () => {
   });
 
   test('Success with excludeIds in body', async () => {
+<<<<<<< HEAD
     const { project, membership, repo } = await createTestProject({ withClient: true, withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, membership, projectShardId } = await createTestProject({ withClient: true });
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     const excludeIds = [membership.id];
     expect(project).toBeDefined();
 
@@ -328,8 +361,13 @@ describe('Project clone', () => {
   });
 
   test('Success with Bot attachments', async () => {
+<<<<<<< HEAD
     const { project, repo } = await createTestProject({ withRepo: true });
     const systemRepo = repo.getSystemRepo();
+=======
+    const { project, repo, projectShardId } = await createTestProject({ withRepo: true });
+    const systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
     expect(project).toBeDefined();
 
     await withTestContext(async () => {

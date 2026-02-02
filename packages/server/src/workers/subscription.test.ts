@@ -4,11 +4,11 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import type { SearchRequest } from '@medplum/core';
 import {
   ContentType,
-  LogLevel,
-  Operator,
   createReference,
   generateId,
   getReferenceString,
+  LogLevel,
+  Operator,
   stringify,
 } from '@medplum/core';
 import type {
@@ -37,7 +37,11 @@ import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext } from '../context';
 import type { SystemRepository } from '../fhir/repo';
+<<<<<<< HEAD
 import { Repository } from '../fhir/repo';
+=======
+import { getShardSystemRepo, Repository } from '../fhir/repo';
+>>>>>>> 1ce8099b2 (temp)
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
@@ -73,7 +77,11 @@ describe('Subscription Worker', () => {
     (fetch as unknown as jest.Mock).mockClear();
 
     // Create one simple project with no advanced features enabled
-    const { client, repo: _repo } = await withTestContext(() =>
+    const {
+      client,
+      repo: _repo,
+      projectShardId,
+    } = await withTestContext(() =>
       createTestProject({
         withClient: true,
         withRepo: true,
@@ -85,12 +93,23 @@ describe('Subscription Worker', () => {
     );
 
     repo = _repo;
+<<<<<<< HEAD
     systemRepo = repo.getSystemRepo();
     superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
+=======
+    systemRepo = getShardSystemRepo(projectShardId);
+    superAdminRepo = new Repository({
+      projectShardId,
+      extendedMode: true,
+      superAdmin: true,
+      author: createReference(client),
+    });
+>>>>>>> 1ce8099b2 (temp)
 
     // Create another project, this one with bots enabled
     const botProjectDetails = await createTestProject({ withClient: true });
     botRepo = new Repository({
+      projectShardId,
       extendedMode: true,
       projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
@@ -2103,6 +2122,7 @@ describe('Subscription Worker', () => {
     let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
 
     beforeAll(async () => {
+<<<<<<< HEAD
       subscriber = getPubSubRedisSubscriber();
       subscriber.on('message', (_channel, payload) => {
         const parsed = JSON.parse(payload) as WsSubMessage;
@@ -2112,6 +2132,11 @@ describe('Subscription Worker', () => {
           return;
         }
         const args: EventNotificationArgs<Resource> = [parsed.resource, parsed.events[0][0], parsed.events[0][1]];
+=======
+      subscriber = getRedisSubscriber(repo.shardId);
+      subscriber.on('message', (_channel, argsArr) => {
+        const parsedArgsArr = JSON.parse(argsArr) as [Resource, string, SubEventsOptions][];
+>>>>>>> 1ce8099b2 (temp)
         if (resolveExpected) {
           resolveExpected(args);
         } else if (rejectNotExpected) {
@@ -2336,6 +2361,7 @@ describe('Subscription Worker', () => {
           requestId: ctx?.requestId,
           traceId: ctx?.traceId,
           authState: ctx?.authState,
+          shardId: repo.shardId,
         };
 
         // For a websocket subscription, this results in "not found" instead of "gone"

@@ -18,11 +18,19 @@ export const scopeValidator = makeValidationMiddleware([
 ]);
 
 export async function scopeHandler(req: Request, res: Response): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   // Update the login
   const updated = await setLoginScope(systemRepo, login, req.body.scope);
+=======
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
+
+  // Update the login
+  const updated = await setLoginScope(globalSystemRepo, login, req.body.scope);
+>>>>>>> 1ce8099b2 (temp)
 
   // Send code
   res.status(200).json({

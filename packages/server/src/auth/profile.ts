@@ -19,8 +19,12 @@ export const profileValidator = makeValidationMiddleware([
 ]);
 
 export async function profileHandler(req: Request, res: Response): Promise<void> {
+<<<<<<< HEAD
   const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
+=======
+  const login = await getGlobalSystemRepo().readResource<Login>('Login', req.body.login);
+>>>>>>> 1ce8099b2 (temp)
 
   // Update the login
   const updated = await setLoginMembership(login, req.body.profile);

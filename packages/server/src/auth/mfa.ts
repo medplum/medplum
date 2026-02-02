@@ -118,8 +118,13 @@ mfaRouter.post(
       return;
     }
 
+<<<<<<< HEAD
     const systemRepo = getGlobalSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', req.body.login);
+=======
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
+>>>>>>> 1ce8099b2 (temp)
     const result = await verifyMfaToken(login, req.body.token);
     await sendLoginResult(res, result);
   }

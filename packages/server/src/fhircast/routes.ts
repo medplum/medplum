@@ -25,6 +25,7 @@ import type { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
+import type Redis from 'ioredis';
 import assert from 'node:assert';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
@@ -178,7 +179,11 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   let subscriptionEndpoint: string;
   try {
     const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id}:topic:${topic}:endpoint`;
+<<<<<<< HEAD
     const results = await getCacheRedis()
+=======
+    const results = await getRedis(ctx.repo.shardId)
+>>>>>>> 1ce8099b2 (temp)
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
       // Sets the endpoint key for this topic if it doesn't exist
@@ -200,7 +205,11 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     }
     subscriptionEndpoint = result as string;
     const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
+<<<<<<< HEAD
     await getCacheRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
+=======
+    await getRedis(ctx.repo.shardId).setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
+>>>>>>> 1ce8099b2 (temp)
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
@@ -221,6 +230,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       res.status(202).json({
         'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
       });
+<<<<<<< HEAD
       publish(
         `${ctx.project.id}:${topic}`,
         JSON.stringify({
@@ -235,6 +245,24 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
           { topic }
         );
       });
+=======
+      getRedis(ctx.repo.shardId)
+        .publish(
+          `${ctx.project.id}:${topic}`,
+          JSON.stringify({
+            'hub.mode': 'denied',
+            'hub.topic': topic,
+            'hub.events': req.body['hub.events'],
+            'hub.reason': 'Subscriber unsubscribed from topic',
+          })
+        )
+        .catch((err: Error) => {
+          getLogger().error(
+            `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
+            { topic }
+          );
+        });
+>>>>>>> 1ce8099b2 (temp)
       break;
   }
 }
@@ -251,7 +279,7 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
   } else {
     // Default handler just to publishes the message to all subscribers
     const ctx = getAuthenticatedContext();
-    await finalizeContextChangeRequest(res, ctx.project.id, req.body);
+    await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, ctx.project.id, req.body);
   }
 }
 
@@ -262,7 +290,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
   >;
   const projectId = ctx.project.id;
 
-  const currentContext = await getCurrentContext(projectId, event['hub.topic']);
+  const currentContext = await getCurrentContext(ctx.repo.shardId, projectId, event['hub.topic']);
   // If the current context is a DiagnosticReport anchor context, then store it for later
   if (currentContext?.['context.type'] === 'DiagnosticReport') {
     const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource;
@@ -270,7 +298,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
       sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
       return;
     }
-    await storeContext(projectId, event['hub.topic'], report, currentContext);
+    await storeContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], report, currentContext);
   }
 
   // Separately, check if we already have a context for this DiagnosticReport
@@ -279,11 +307,16 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
     (ctx) => ctx.key === 'report'
   )?.resource;
   if (anchorReport) {
-    const storedContext = await fetchStoredContext(ctx.project.id, event['hub.topic'], anchorReport.id as string);
+    const storedContext = await fetchStoredContext(
+      getRedis(ctx.repo.shardId),
+      ctx.project.id,
+      event['hub.topic'],
+      anchorReport.id as string
+    );
     if (storedContext) {
-      await setTopicCurrentContext(projectId, event['hub.topic'], storedContext);
+      await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], storedContext);
       event['context.versionId'] = storedContext['context.versionId'];
-      await finalizeContextChangeRequest(res, projectId, req.body);
+      await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
       return;
     }
   }
@@ -292,7 +325,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
 
   const anchorResourceType = extractAnchorResourceType(event['hub.event']);
   if (anchorResourceType === 'DiagnosticReport') {
-    await setTopicCurrentContext(projectId, event['hub.topic'], {
+    await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], {
       'context.type': 'DiagnosticReport',
       context: [
         ...(event as FhircastEventPayload<'DiagnosticReport-open'>).context,
@@ -308,13 +341,13 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
       'context.versionId': event['context.versionId'],
     });
   } else {
-    await setTopicCurrentContext(projectId, event['hub.topic'], {
+    await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], {
       'context.type': anchorResourceType,
       context: event.context,
       'context.versionId': event['context.versionId'],
     } as unknown as CurrentContext<typeof anchorResourceType>);
   }
-  await finalizeContextChangeRequest(res, projectId, req.body);
+  await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
 }
 
 async function handleCloseContextChangeRequest(req: Request, res: Response): Promise<void> {
@@ -326,12 +359,12 @@ async function handleCloseContextChangeRequest(req: Request, res: Response): Pro
     (ctx) => ctx.key === 'report'
   )?.resource;
   // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
-  await closeCurrentContext(projectId, event['hub.topic']);
+  await closeCurrentContext(getRedis(ctx.repo.shardId), projectId, event['hub.topic']);
   // If this is a DiagnosticReport-close, delete this context
   if (report) {
-    await cleanupContextForResource(projectId, event['hub.topic'], report);
+    await cleanupContextForResource(getRedis(ctx.repo.shardId), projectId, event['hub.topic'], report);
   }
-  await finalizeContextChangeRequest(res, projectId, req.body);
+  await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
 }
 
 // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html
@@ -340,7 +373,7 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   const { event } = req.body as FhircastMessagePayload;
   const projectId = ctx.project.id;
 
-  const currentContext = await getCurrentContext<'DiagnosticReport'>(projectId, event['hub.topic']);
+  const currentContext = await getCurrentContext<'DiagnosticReport'>(ctx.repo.shardId, projectId, event['hub.topic']);
   if (!currentContext) {
     sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
     return;
@@ -373,8 +406,8 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   event['context.priorVersionId'] = priorVersionId;
   currentContext['context.versionId'] = event['context.versionId'] = generateId();
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html
-  await setTopicCurrentContext(projectId, event['hub.topic'], currentContext);
-  await finalizeContextChangeRequest(res, projectId, req.body);
+  await setTopicCurrentContext(ctx.repo.shardId, projectId, event['hub.topic'], currentContext);
+  await finalizeContextChangeRequest(getRedis(ctx.repo.shardId), res, projectId, req.body);
 }
 
 function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext<'DiagnosticReport'>): void {
@@ -461,12 +494,17 @@ function processUpdateBundleDeleteEntry(
 }
 
 async function fetchStoredContext(
+  redis: Redis,
   projectId: string,
   topic: string,
   resourceId: string
 ): Promise<CurrentContext<FhircastAnchorResourceType> | undefined> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
+<<<<<<< HEAD
   const storedContextStr = await getCacheRedis().hget(topicContextsStorageKey, resourceId);
+=======
+  const storedContextStr = await redis.hget(topicContextsStorageKey, resourceId);
+>>>>>>> 1ce8099b2 (temp)
   if (!storedContextStr) {
     return undefined;
   }
@@ -474,36 +512,50 @@ async function fetchStoredContext(
 }
 
 async function storeContext(
+  redis: Redis,
   projectId: string,
   topic: string,
   anchorResource: Resource,
   currentContext: CurrentContext<FhircastAnchorResourceType>
 ): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
+<<<<<<< HEAD
   await getCacheRedis().hset(topicContextsStorageKey, anchorResource.id as string, JSON.stringify(currentContext));
+=======
+  await redis.hset(topicContextsStorageKey, anchorResource.id as string, JSON.stringify(currentContext));
+>>>>>>> 1ce8099b2 (temp)
 }
 
 async function finalizeContextChangeRequest(
+  redis: Redis,
   res: Response,
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
+<<<<<<< HEAD
   await publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+=======
+  await redis.publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+>>>>>>> 1ce8099b2 (temp)
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });
 }
 
-async function closeCurrentContext(projectId: string, topic: string): Promise<void> {
+async function closeCurrentContext(redis: Redis, projectId: string, topic: string): Promise<void> {
   const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
+<<<<<<< HEAD
   await getCacheRedis().del(topicCurrentContextKey);
+=======
+  await redis.del(topicCurrentContextKey);
+>>>>>>> 1ce8099b2 (temp)
 }
 
 // Get the current subscription status
 protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
+  const { project, repo } = getAuthenticatedContext();
   const topic = singularize(req.params.topic) ?? '';
-  const currentContext = await getCurrentContext(project.id, topic);
+  const currentContext = await getCurrentContext(repo.shardId, project.id, topic);
   // Non-standard FHIRcast extension to support Nuance PowerCast Hub
   if (!currentContext) {
     res.status(200).json([]);
@@ -513,9 +565,9 @@ protectedSTU2Routes.get('/:topic', async (req: Request, res: Response) => {
 });
 
 protectedSTU3Routes.get('/:topic', async (req: Request, res: Response) => {
-  const { project } = getAuthenticatedContext();
+  const { project, repo } = getAuthenticatedContext();
   const topic = singularize(req.params.topic) ?? '';
-  const currentContext = await getCurrentContext(project.id, topic);
+  const currentContext = await getCurrentContext(repo.shardId, project.id, topic);
   if (!currentContext) {
     // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
     res.status(200).json({

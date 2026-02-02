@@ -12,6 +12,7 @@ import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
+import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
@@ -591,12 +592,20 @@ export class SqlBuilder {
     return this.values;
   }
 
-  async execute(conn: Client | Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
+  async execute(
+    conn: Client | Pool | PoolClient | ShardPoolClient | ShardPool
+  ): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
+    let debugPrefix = '';
     if (this.debug) {
-      console.log('sql', sql);
-      console.log('values', this.values);
+      if ('shardId' in conn && conn.shardId) {
+        const hash = hashString(conn.shardId);
+        debugPrefix = `[${colorize(hash, conn.shardId)}] `;
+      }
+
+      console.log(debugPrefix + 'sql', sql);
+      console.log(debugPrefix + 'values', this.values);
       startTime = Date.now();
     }
     try {
@@ -604,7 +613,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
+        console.log(`${debugPrefix}result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
@@ -612,6 +621,35 @@ export class SqlBuilder {
       throw normalizeDatabaseError(err);
     }
   }
+}
+
+const COLORS = {
+  RED: 31,
+  GREEN: 32,
+  YELLOW: 33,
+  BLUE: 34,
+  MAGENTA: 35,
+  CYAN: 36,
+  // WHITE: 37,
+  BRIGHT_RED: 91,
+  BRIGHT_GREEN: 92,
+  BRIGHT_YELLOW: 93,
+  BRIGHT_BLUE: 94,
+  BRIGHT_MAGENTA: 95,
+  BRIGHT_CYAN: 96,
+  // BRIGHT_WHITE: 97,
+};
+const COLORS_ARRAY = Object.values(COLORS);
+function colorize(hash: number, str: string): string {
+  return `\x1b[${COLORS_ARRAY[hash % COLORS_ARRAY.length]}m${str}\x1b[0m`;
+}
+
+function hashString(str: string): number {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 33) ^ str.charCodeAt(i);
+  }
+  return hash >>> 0; // Convert to unsigned 32-bit integer
 }
 
 export const PostgresError = {

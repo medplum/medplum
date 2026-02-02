@@ -55,8 +55,13 @@ import type { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import type { SystemRepository } from './repo';
+<<<<<<< HEAD
 import { getGlobalSystemRepo, Repository } from './repo';
 import { clampEstimateCount, getCount } from './search';
+=======
+import { getGlobalSystemRepo, getShardSystemRepo, Repository } from './repo';
+import { clampEstimateCount } from './search';
+>>>>>>> 1ce8099b2 (temp)
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
@@ -73,14 +78,19 @@ describe('project-scoped Repository', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project, projectShardId } = await createTestProject();
     repo = new Repository({
+      projectShardId,
       strictMode: true,
       projects: [project],
       currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
+<<<<<<< HEAD
     systemRepo = repo.getSystemRepo();
+=======
+    systemRepo = getShardSystemRepo(projectShardId);
+>>>>>>> 1ce8099b2 (temp)
   });
 
   afterAll(async () => {
