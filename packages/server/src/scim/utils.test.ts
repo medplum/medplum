@@ -146,7 +146,7 @@ describe('createScimUser', () => {
     });
     user = registration.user;
     project = registration.project;
-    systemRepo = await getProjectSystemRepo(project);
+    systemRepo = getProjectSystemRepo(project);
   });
   afterAll(shutdownApp);
 

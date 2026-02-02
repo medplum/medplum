@@ -90,7 +90,7 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
-    systemRepo = await getProjectSystemRepo(project);
+    systemRepo = getProjectSystemRepo(project);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);

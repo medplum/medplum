@@ -54,7 +54,7 @@ describe('Token Exchange', () => {
         clientSecret: '456',
       };
 
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = getProjectSystemRepo(project);
 
       // Create a new client application with external auth
       externalAuthClient = await createClient(systemRepo, {

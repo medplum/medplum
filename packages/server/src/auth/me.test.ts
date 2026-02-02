@@ -91,7 +91,7 @@ describe('Me', () => {
     expect(res5.status).toBe(200);
 
     // As super admin user, add an identifier to the user
-    const systemRepo = await getProjectSystemRepo(project);
+    const systemRepo = getProjectSystemRepo(project);
     await systemRepo.patchResource('User', resolveId(res4.body.user) as string, [
       {
         op: 'add',
@@ -279,7 +279,7 @@ describe('Me', () => {
     expect(res3.body.security.memberships).toHaveLength(2);
 
     // Mark the 2nd ProjectMembership as inactive
-    const systemRepo = await getProjectSystemRepo(project);
+    const systemRepo = getProjectSystemRepo(project);
     await systemRepo.patchResource('ProjectMembership', inviteResponse.membership.id, [
       {
         op: 'add',

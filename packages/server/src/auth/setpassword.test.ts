@@ -125,7 +125,7 @@ describe('Set Password', () => {
       })
     );
 
-    const systemRepo = await getProjectSystemRepo(project);
+    const systemRepo = getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
       systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',
@@ -168,7 +168,7 @@ describe('Set Password', () => {
       })
     );
 
-    const systemRepo = await getProjectSystemRepo(project);
+    const systemRepo = getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
       systemRepo.createResource<UserSecurityRequest>({
         resourceType: 'UserSecurityRequest',

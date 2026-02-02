@@ -79,7 +79,7 @@ describe('FHIR Resource Limits', () => {
       },
     });
 
-    const systemRepo = await getProjectSystemRepo(project);
+    const systemRepo = getProjectSystemRepo(project);
     await systemRepo.createResource({ resourceType: 'Patient', meta: { project: project.id } });
 
     const res = await request(app)

@@ -208,7 +208,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -261,7 +261,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -313,7 +313,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -376,7 +376,7 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         site: [

@@ -78,7 +78,7 @@ describe('FHIR Repo', () => {
       resourceType: 'Project',
       id: randomUUID(),
     });
-    systemRepo = await getProjectSystemRepo(testProject);
+    systemRepo = getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,

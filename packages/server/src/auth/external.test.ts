@@ -56,7 +56,7 @@ describe('External', () => {
       project = registerResult.project;
       defaultClient = registerResult.client;
 
-      systemRepo = await getProjectSystemRepo(project);
+      systemRepo = getProjectSystemRepo(project);
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
