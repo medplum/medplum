@@ -26,6 +26,7 @@ import { runInAsyncContext } from '../../context';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
+import { FhirRateLimiter } from '../fhirquota';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
@@ -494,9 +495,8 @@ describe('Patient Set Accounts Operation', () => {
     // Mock out rate limiter to periodically block the user
     let count = 0;
     const consumeMock = jest.spyOn(RateLimiterRedis.prototype, 'consume').mockImplementation(async (key, _points) => {
-      count = (count + 1) % 3;
       if (!key.toString().includes(membership.id)) {
-        // allowed
+        // projectLimiter allowed
         return {
           remainingPoints: 100,
           msBeforeNext: 100,
@@ -505,6 +505,7 @@ describe('Patient Set Accounts Operation', () => {
         } as RateLimiterRes;
       }
 
+      count = (count + 1) % 3;
       return {
         remainingPoints: 200 - count * 100, // Allow every third call
         msBeforeNext: 20, // Wait for one fake timers tick before next retry
@@ -512,6 +513,7 @@ describe('Patient Set Accounts Operation', () => {
         isFirstInDuration: false,
       } as RateLimiterRes;
     });
+    const blockMock = jest.spyOn(FhirRateLimiter.prototype, 'block');
 
     // Manually execute worker
     await runInAsyncContext(
@@ -520,7 +522,9 @@ describe('Patient Set Accounts Operation', () => {
       undefined,
       () => execSetAccountsJob(job)
     );
-    expect(consumeMock).toHaveBeenCalledTimes(10); // Rate limits applied
+    expect(blockMock).toHaveBeenCalledTimes(1);
+    blockMock.mockRestore();
+    consumeMock.mockRestore();
 
     // Check the export status
     const contentLocation = new URL(initRes.headers['content-location']);
