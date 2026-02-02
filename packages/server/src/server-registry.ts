@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { heartbeat } from './heartbeat';
 import { getCacheRedis } from './redis';
 import { getServerVersion } from './util/version';
@@ -23,7 +24,7 @@ export type ServerRegistryInfo = {
 };
 
 export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
-  const redis = getCacheRedis();
+  const redis = getCacheRedis(GLOBAL_SHARD_ID);
   await redis.setex(SERVER_REGISTRY_KEY_PREFIX + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
 }
 
@@ -84,7 +85,7 @@ export type ClusterStatus = {
  * @returns A list of registered servers.
  */
 export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerRegistryInfo[]> {
-  const redis = getCacheRedis();
+  const redis = getCacheRedis(GLOBAL_SHARD_ID);
   const servers: ServerRegistryInfo[] = [];
   const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + '*');
 

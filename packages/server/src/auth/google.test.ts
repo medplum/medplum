@@ -8,7 +8,6 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -39,7 +38,7 @@ describe('Google Auth', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    systemRepo = await getShardSystemRepo(PLACEHOLDER_SHARD_ID); // eventually use default shardId from server config
+    systemRepo = getShardSystemRepo(getConfig().defaultShardId);
   });
 
   beforeEach(() => {

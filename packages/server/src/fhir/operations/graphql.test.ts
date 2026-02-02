@@ -22,6 +22,7 @@ let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
 let bobAccessToken: string;
+let shardId: string;
 
 describe('GraphQL', () => {
   beforeAll(async () => {
@@ -39,8 +40,10 @@ describe('GraphQL', () => {
       });
       accessToken = aliceRegistration.accessToken;
       practitioner = aliceRegistration.profile as Practitioner;
+      shardId = aliceRegistration.shardId;
 
       const aliceRepo = new Repository({
+        shardId,
         author: createReference(aliceRegistration.profile),
         projects: [aliceRegistration.project],
       });
@@ -1132,8 +1135,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1146,8 +1149,8 @@ describe('GraphQL', () => {
   });
 
   test('GraphQL in batch users writer', async () => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER, shardId), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER, shardId), 'query');
 
     const batch: Bundle = {
       resourceType: 'Bundle',

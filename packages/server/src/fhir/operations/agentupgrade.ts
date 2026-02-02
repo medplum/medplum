@@ -3,6 +3,7 @@
 import type { AgentUpgradeResponse, WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import type { Repository } from '../repo';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 import { parseInputParameters } from './utils/parameters';
 
@@ -43,7 +44,7 @@ export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirRespons
   const params = parseInputParameters<AgentUpgradeOptions>(operation, req);
   req.query = rest;
 
-  return handleBulkAgentOperation(req, async (agent) => upgradeAgent(agent, params));
+  return handleBulkAgentOperation(req, async (repo, agent) => upgradeAgent(repo, agent, params));
 }
 
 export type AgentUpgradeOptions = {
@@ -52,13 +53,18 @@ export type AgentUpgradeOptions = {
   force?: boolean;
 };
 
-async function upgradeAgent(agent: WithId<Agent>, options?: AgentUpgradeOptions): Promise<FhirResponse> {
+async function upgradeAgent(
+  repo: Repository,
+  agent: WithId<Agent>,
+  options?: AgentUpgradeOptions
+): Promise<FhirResponse> {
   let timeout = options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT;
   if (timeout > MAX_UPGRADE_TIMEOUT) {
     timeout = MAX_UPGRADE_TIMEOUT;
   }
 
   return sendAndHandleAgentRequest<AgentUpgradeResponse>(
+    repo,
     agent,
     {
       type: 'agent:upgrade:request',

@@ -8,10 +8,12 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { TEST_SHARD_ID } from '../sharding';
 import type { WsSubProjectDetailStats } from './getwssubstats';
 
 describe('$get-ws-sub-project-stats', () => {
   const app = express();
+  const shardId = TEST_SHARD_ID;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -59,7 +61,7 @@ describe('$get-ws-sub-project-stats', () => {
   });
 
   test('Returns resource types with criteria for a project', async () => {
-    const redis = getPubSubRedis();
+    const redis = getPubSubRedis(shardId);
     const projectId = randomUUID();
 
     await redis.hset(
@@ -116,7 +118,7 @@ describe('$get-ws-sub-project-stats', () => {
   });
 
   test('Ignores legacy v2 keys in project stats', async () => {
-    const redis = getPubSubRedis();
+    const redis = getPubSubRedis(shardId);
     const projectId = randomUUID();
 
     await redis.hset(

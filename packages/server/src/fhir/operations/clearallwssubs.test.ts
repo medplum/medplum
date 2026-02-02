@@ -9,9 +9,11 @@ import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { TEST_SHARD_ID } from '../sharding';
 
 describe('$clear-all-ws-subs', () => {
   const app = express();
+  const shardId = TEST_SHARD_ID;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -50,8 +52,8 @@ describe('$clear-all-ws-subs', () => {
   });
 
   test('Clears all WS subscription hashes, cache entries, and user keys', async () => {
-    const pubSubRedis = getPubSubRedis();
-    const cacheRedis = getCacheRedis();
+    const pubSubRedis = getPubSubRedis(shardId);
+    const cacheRedis = getCacheRedis(shardId);
     const projectId = randomUUID();
     const sub1Id = randomUUID();
     const sub2Id = randomUUID();
@@ -106,8 +108,8 @@ describe('$clear-all-ws-subs', () => {
   });
 
   test('Clears WS subscription hashes, cache entries, and user keys for a specific project only', async () => {
-    const pubSubRedis = getPubSubRedis();
-    const cacheRedis = getCacheRedis();
+    const pubSubRedis = getPubSubRedis(shardId);
+    const cacheRedis = getCacheRedis(shardId);
     const projectId1 = randomUUID();
     const projectId2 = randomUUID();
     const sub1Id = randomUUID();

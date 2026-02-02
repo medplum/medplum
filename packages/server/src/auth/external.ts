@@ -101,7 +101,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     authMethod: 'external',
     email,
     externalId,
-    projectId: projectId,
+    projectId,
     clientId: body.clientId,
     scope: body.scope ?? 'openid offline',
     nonce: body.nonce ?? randomUUID(),

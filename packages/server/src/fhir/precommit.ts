@@ -174,7 +174,7 @@ function getTargetResourceTypes(element: InternalSchemaElement | undefined): Res
  * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
  */
 async function checkReferencesForDelete(repo: Repository, resource: WithId<Resource>): Promise<void> {
-  const db = repo.getDatabaseClient(DatabaseMode.WRITER);
+  const db = repo.getDatabaseClient(DatabaseMode.WRITER, 'ProjectMembership');
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
     .where('targetId', '=', resource.id)

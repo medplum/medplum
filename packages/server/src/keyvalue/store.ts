@@ -17,7 +17,7 @@ export const MAX_ITEMS = 10;
 export async function getValue(key: string): Promise<string> {
   validateKey(key);
   const ctx = getAuthenticatedContext();
-  const value = await getCacheRedis().hget(getCacheKey(ctx), key);
+  const value = await getCacheRedis(ctx.repo.shardId).hget(getCacheKey(ctx), key);
   if (value === null) {
     throw new OperationOutcomeError(notFound);
   }
@@ -39,7 +39,7 @@ export async function setValue(key: string, value: string): Promise<void> {
   }
   const ctx = getAuthenticatedContext();
   const cacheKey = getCacheKey(ctx);
-  const redis = getCacheRedis();
+  const redis = getCacheRedis(ctx.repo.shardId);
   const exists = await redis.hexists(cacheKey, key);
   if (!exists) {
     const length = await redis.hlen(cacheKey);
@@ -57,7 +57,7 @@ export async function setValue(key: string, value: string): Promise<void> {
 export async function deleteValue(key: string): Promise<void> {
   validateKey(key);
   const ctx = getAuthenticatedContext();
-  await getCacheRedis().hdel(getCacheKey(ctx), key);
+  await getCacheRedis(ctx.repo.shardId).hdel(getCacheKey(ctx), key);
 }
 
 /**

@@ -35,6 +35,7 @@ setDefaultResultOrder('ipv4first');
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
+  shardId?: string;
   accessPolicy?: Partial<AccessPolicy>;
   membership?: Partial<ProjectMembership>;
   superAdmin?: boolean;
@@ -48,6 +49,7 @@ type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectO
 
 export type TestProjectResult<T extends TestProjectOptions> = {
   project: WithId<Project>;
+  shardId: string;
   accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? WithId<AccessPolicy> : undefined;
   client: T['withClient'] extends true ? WithId<ClientApplication> : undefined;
   membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
@@ -59,7 +61,9 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an optional input parameter
+  const shardId = options?.shardId ?? PLACEHOLDER_SHARD_ID;
+  const systemRepo = getShardSystemRepo(shardId);
+
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -145,6 +149,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     if (options?.withRepo) {
       const repoContext: RepositoryContext = {
         projects: [project],
+        shardId,
         currentProject: project,
         author: createReference(client),
         superAdmin: options?.superAdmin,
@@ -164,6 +169,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
   return {
     project,
+    shardId,
     accessPolicy,
     client,
     membership,
@@ -186,7 +192,7 @@ export async function addTestUser(
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   if (accessPolicy) {
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },

@@ -30,11 +30,12 @@ export function extractAnchorResourceType(eventName: string): FhircastAnchorReso
 }
 
 export async function getCurrentContext<ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType>(
+  shardId: string,
   projectId: string,
   topic: string
 ): Promise<CurrentContext<ResourceType> | undefined> {
   const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
-  const currentContextStr = await getCacheRedis().get(topicCurrentContextKey);
+  const currentContextStr = await getCacheRedis(shardId).get(topicCurrentContextKey);
   if (!currentContextStr) {
     return undefined;
   }
@@ -43,26 +44,27 @@ export async function getCurrentContext<ResourceType extends FhircastAnchorResou
 
 export async function setTopicCurrentContext<
   ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType,
->(projectId: string, topic: string, currentContext: CurrentContext<ResourceType>): Promise<void> {
+>(shardId: string, projectId: string, topic: string, currentContext: CurrentContext<ResourceType>): Promise<void> {
   const topicCurrentContextKey = `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
-  await getCacheRedis().set(topicCurrentContextKey, JSON.stringify(currentContext));
+  await getCacheRedis(shardId).set(topicCurrentContextKey, JSON.stringify(currentContext));
 }
 
 export async function cleanupContextForResource(
+  shardId: string,
   projectId: string,
   topic: string,
   anchorResource: Resource
 ): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  await getCacheRedis().hdel(topicContextsStorageKey, anchorResource.id as string);
+  await getCacheRedis(shardId).hdel(topicContextsStorageKey, anchorResource.id as string);
 }
 
-export async function cleanupAllContextsForTopic(projectId: string, topic: string): Promise<void> {
+export async function cleanupAllContextsForTopic(shardId: string, projectId: string, topic: string): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  await getCacheRedis().del(topicContextsStorageKey);
+  await getCacheRedis(shardId).del(topicContextsStorageKey);
 }
 
-export async function getTopicForUser(userId: string): Promise<string> {
+export async function getTopicForUser(shardId: string, userId: string): Promise<string> {
   const newTopic = generateId();
   const topicKey = `medplum:fhircast:topic:${userId}`;
 
@@ -71,7 +73,7 @@ export async function getTopicForUser(userId: string): Promise<string> {
   // Per the spec, the lease time of a subscription should not exceed the token expiry time
   // Source: https://fhircast.org/specification/STU2/#session-discovery:~:text=.%20If%20using%20OAuth%202.0%2C%20the%20Hub%20SHALL%20limit%20the%20subscription%20lease%20seconds%20to%20be%20less%20than%20or%20equal%20to%20the%20access%20token%27s%20expiration.
 
-  const results = await getCacheRedis().multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
+  const results = await getCacheRedis(shardId).multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
   if (!results) {
     throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${topicKey} from Redis`)));
   }

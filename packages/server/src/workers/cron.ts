@@ -8,7 +8,6 @@ import { Queue, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { findProjectMembership, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
@@ -23,6 +22,7 @@ const MAX_BOTS_PER_PAGE = 500;
  */
 
 export interface CronJobData {
+  readonly shardId: string;
   readonly resourceType: string;
   readonly botId: string;
 }
@@ -71,11 +71,13 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
 /**
  * Updates the Cron job for the given resource.
  * Only applies changes if the effective cron string has changed.
+ * @param shardId - The shard ID.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
 export async function addCronJobs(
+  shardId: string,
   resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
@@ -119,6 +121,7 @@ export async function addCronJobs(
       },
       {
         data: {
+          shardId,
           resourceType: bot.resourceType,
           botId: bot.id,
         },
@@ -190,7 +193,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
+  const systemRepo = getShardSystemRepo(job.data.shardId);
   const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
@@ -209,13 +212,13 @@ export async function removeBullMQJobByKey(botId: string): Promise<void> {
   }
 }
 
-export async function reloadCronBots(): Promise<void> {
+export async function reloadCronBots(shardId: string): Promise<void> {
   const queue = queueRegistry.get(queueName);
   if (queue) {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a function parameter in the future
+    const systemRepo = getShardSystemRepo(shardId);
 
     await systemRepo.processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
@@ -224,7 +227,7 @@ export async function reloadCronBots(): Promise<void> {
         if (bot.cronString || bot.cronTiming) {
           // We pass `undefined` as previous version to make sure that the latest cron string is used
           const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-          await addCronJobs(bot, undefined, { project, interaction: 'update' });
+          await addCronJobs(shardId, bot, undefined, { project, interaction: 'update' });
         }
       },
       { delayBetweenPagesMs: 1000 }

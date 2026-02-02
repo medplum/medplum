@@ -96,7 +96,7 @@ export async function validateCodingInValueSet(
   const systemUrl = found?.system ?? valueSet.compose?.include?.[0]?.system;
   if (found && systemUrl) {
     const codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', systemUrl).catch(() => undefined);
-    return validateCoding(codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
+    return validateCoding(repo, codeSystem && codeSystem.content !== 'example' ? codeSystem : systemUrl, found);
   }
   return undefined;
 }

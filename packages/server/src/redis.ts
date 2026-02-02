@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
-import type { MedplumServerConfig } from './config/types';
-import { getLogger } from './logger';
+import type { MedplumRedisConfig, MedplumServerConfig } from './config/types';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
+import { getLogger, globalLogger } from './logger';
 
 /*
  * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
@@ -12,19 +13,12 @@ import { getLogger } from './logger';
 export type RedisWithoutDuplicate = Redis & { duplicate: never };
 
 type RedisInstance = { redis: RedisWithoutDuplicate | undefined };
-
-const redisInstances: {
+type RedisInstances = {
   cache: RedisInstance;
   rateLimit: RedisInstance;
   pubSub: RedisInstance & { subscribers: Set<Redis> };
   backgroundJobs: RedisInstance;
   default: RedisInstance;
-} = {
-  cache: { redis: undefined },
-  rateLimit: { redis: undefined },
-  pubSub: { redis: undefined, subscribers: new Set() },
-  backgroundJobs: { redis: undefined },
-  default: { redis: undefined },
 };
 
 const transientErrorTypes = /READONLY|LOADING/;
@@ -40,7 +34,40 @@ export function reconnectOnError(err: Error): boolean | 1 | 2 {
   return false; // Do not reconnect on other errors
 }
 
+const redisShards: Record<string, RedisInstances> = {};
+
 export function initRedis(config: MedplumServerConfig): void {
+  // Global shard is initialized from the top-level server config
+  redisShards[GLOBAL_SHARD_ID] = initRedisShard(config);
+
+  // other shards come from the config.shards object
+  for (const [shardId, shardConfig] of Object.entries(config.shards ?? {})) {
+    // SHARDING - global shard will be removed from the config.shards object
+    if (shardId === GLOBAL_SHARD_ID) {
+      continue;
+    }
+    globalLogger.info(`Initializing Redis shard ${shardId}`);
+    redisShards[shardId] = initRedisShard(shardConfig);
+  }
+}
+
+interface RedisShardConfig {
+  redis: MedplumRedisConfig;
+  cacheRedis?: MedplumRedisConfig;
+  rateLimitRedis?: MedplumRedisConfig;
+  pubSubRedis?: MedplumRedisConfig;
+  backgroundJobsRedis?: MedplumRedisConfig;
+}
+
+function initRedisShard(config: RedisShardConfig): RedisInstances {
+  const redisInstances: RedisInstances = {
+    cache: { redis: undefined },
+    rateLimit: { redis: undefined },
+    pubSub: { redis: undefined, subscribers: new Set() },
+    backgroundJobs: { redis: undefined },
+    default: { redis: undefined },
+  };
+
   redisInstances.default.redis = new Redis({
     ...config.redis,
     reconnectOnError,
@@ -70,10 +97,26 @@ export function initRedis(config: MedplumServerConfig): void {
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }
+
+  return redisInstances;
+}
+
+function getShardRedisInstances(shardId: string): RedisInstances {
+  const redisInstances = redisShards[shardId];
+  if (!redisInstances) {
+    throw new Error('Redis shard not initialized', { cause: { shardId } });
+  }
+  return redisInstances;
 }
 
 let closing = false;
 export async function closeRedis(): Promise<void> {
+  for (const redisShard of Object.values(redisShards)) {
+    await closeRedisInstances(redisShard);
+  }
+}
+
+async function closeRedisInstances(redisInstances: RedisInstances): Promise<void> {
   try {
     closing = true;
 
@@ -103,7 +146,7 @@ export async function closeRedis(): Promise<void> {
   }
 }
 
-function getRedisInstance(label: keyof typeof redisInstances): RedisWithoutDuplicate {
+function getRedisInstance(redisInstances: RedisInstances, label: keyof RedisInstances): RedisWithoutDuplicate {
   if (closing) {
     throw new Error('Redis is closing, cannot get cache Redis');
   }
@@ -118,30 +161,36 @@ function getRedisInstance(label: keyof typeof redisInstances): RedisWithoutDupli
  * Gets the `Redis` instance designated for caching operations.
  * Falls back to the default instance if no separate cache Redis is configured.
  *
+ * @param shardId - The shard ID to use.
  * @returns The cache `Redis` instance.
  */
-export function getCacheRedis(): RedisWithoutDuplicate {
-  return getRedisInstance('cache');
+export function getCacheRedis(shardId: string): RedisWithoutDuplicate {
+  const redisInstances = getShardRedisInstances(shardId);
+  return getRedisInstance(redisInstances, 'cache');
 }
 
 /**
  * Gets the `Redis` instance designated for rate limiting operations.
  * Falls back to the default instance if no separate rate limit Redis is configured.
  *
+ * @param shardId - The shard ID to use.
  * @returns The rate limit `Redis` instance.
  */
-export function getRateLimitRedis(): RedisWithoutDuplicate {
-  return getRedisInstance('rateLimit');
+export function getRateLimitRedis(shardId: string): RedisWithoutDuplicate {
+  const redisInstances = getShardRedisInstances(shardId);
+  return getRedisInstance(redisInstances, 'rateLimit');
 }
 
 /**
  * Gets the `Redis` instance designated for pub/sub operations (publishing).
  * Falls back to the default instance if no separate pub/sub Redis is configured.
  *
+ * @param shardId - The shard ID to use.
  * @returns The pub/sub `Redis` instance.
  */
-export function getPubSubRedis(): RedisWithoutDuplicate {
-  return getRedisInstance('pubSub');
+export function getPubSubRedis(shardId: string): RedisWithoutDuplicate {
+  const redisInstances = getShardRedisInstances(shardId);
+  return getRedisInstance(redisInstances, 'pubSub');
 }
 
 /**
@@ -150,13 +199,15 @@ export function getPubSubRedis(): RedisWithoutDuplicate {
  *
  * The synchronous `.disconnect()` on this instance should be called instead of `.quit()` when you want to disconnect.
  *
+ * @param shardId - The shard ID to use.
  * @returns A `Redis` instance to use as a subscriber client.
  */
-export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: never } {
+export function getPubSubRedisSubscriber(shardId: string): RedisWithoutDuplicate & { quit: never } {
   if (closing) {
     throw new Error('Redis is closing, cannot create subscriber');
   }
 
+  const redisInstances = getShardRedisInstances(shardId);
   const sourceInstance = redisInstances.pubSub.redis ?? redisInstances.default.redis;
   if (!sourceInstance) {
     throw new Error('Redis not initialized');
@@ -173,9 +224,11 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
 }
 
 /**
+ * @param shardId - The shard ID to use.
  * @returns The amount of active `Redis` subscriber instances.
  */
-export function getPubSubRedisSubscriberCount(): number {
+export function getPubSubRedisSubscriberCount(shardId: string): number {
+  const redisInstances = getShardRedisInstances(shardId);
   return redisInstances.pubSub.subscribers?.size ?? 0;
 }
 
@@ -184,9 +237,13 @@ export function getPubSubRedisSubscriberCount(): number {
  * Always includes the default instance first, followed by any purpose-specific instances
  * that are configured separately from the default.
  *
+ * @param shardId - The shard ID to use.
  * @returns An array of `{ label, instance }` for each active Redis instance.
  */
-export function getAllRedisInstances(): { label: keyof typeof redisInstances; instance: RedisWithoutDuplicate }[] {
+export function getAllRedisInstances(
+  shardId: string
+): { label: keyof RedisInstances; instance: RedisWithoutDuplicate }[] {
+  const redisInstances = getShardRedisInstances(shardId);
   const results: { label: keyof typeof redisInstances; instance: RedisWithoutDuplicate }[] = [];
   let label: keyof typeof redisInstances;
   // eslint-disable-next-line guard-for-in

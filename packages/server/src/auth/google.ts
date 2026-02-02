@@ -12,6 +12,7 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
+import type { GlobalProject } from '../sharding/sharding-types';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -143,7 +144,7 @@ function validateProjectId(inputProjectId: unknown): string | undefined {
   return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
-function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
+function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<GlobalProject[]> {
   const filters = [
     {
       code: 'google-client-id',

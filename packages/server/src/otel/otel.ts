@@ -6,6 +6,7 @@ import type { Queue } from 'bullmq';
 import os from 'node:os';
 import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { heartbeat } from '../heartbeat';
 import { getBatchQueue } from '../workers/batch';
 import { getCronQueue } from '../workers/cron';
@@ -114,8 +115,9 @@ export function initOtelHeartbeat(): void {
     return;
   }
   otelHeartbeatListener = async () => {
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
+    // SHARDING global feels like the correct destination here, but needs to be confirmed
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    const readerPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
 
     setGauge('medplum.db.idleConnections', writerPool.idleCount, {
       ...BASE_METRIC_OPTIONS,

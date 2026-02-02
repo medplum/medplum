@@ -12,7 +12,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import type { ReferenceTableRow } from './lookups/reference';
 import { ReferenceTable } from './lookups/reference';
-import { getGlobalSystemRepo, getProjectSystemRepo } from './repo';
+import { getProjectSystemRepo, getShardSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -26,14 +26,18 @@ describe('Reference checks', () => {
 
   test('Check references on write', () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
+      const {
+        membership,
+        project,
+        shardId: projectShardId,
+      } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       const updatedProject = await systemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,
@@ -43,6 +47,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership,
         project: updatedProject,
+        shardId: projectShardId,
         userConfig: {} as UserConfiguration,
       };
 
@@ -90,7 +95,7 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
+      const { membership, project, shardId } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -98,15 +103,18 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
 
-      const { membership: membership2, project: project2 } = await registerNew({
+      const {
+        membership: membership2,
+        project: project2,
+        shardId: shardId2,
+      } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const globalSystemRepo = getGlobalSystemRepo();
-      const updatedProject = await globalSystemRepo.updateResource({
+      const updatedProject = await getShardSystemRepo(shardId).updateResource({
         ...project,
         checkReferencesOnWrite: true,
         link: [{ project: createReference(project2) }],
@@ -116,6 +124,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership: membership2,
         project: project2,
+        shardId: shardId2,
         userConfig: {} as UserConfiguration,
       });
       const patient2 = await repo2.createResource({
@@ -127,6 +136,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership,
         project: updatedProject,
+        shardId: shardId,
         userConfig: {} as UserConfiguration,
       });
       const patient = await repo.createResource({
@@ -136,7 +146,7 @@ describe('Reference checks', () => {
       expect(patient.link?.[0]?.other).toStrictEqual(createReference(patient2));
 
       // Unlink Project and verify that access is revoked
-      const unlinkedProject = await globalSystemRepo.updateResource({
+      const unlinkedProject = await getShardSystemRepo(shardId).updateResource({
         ...updatedProject,
         link: undefined,
       });
@@ -144,6 +154,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership,
         project: unlinkedProject,
+        shardId,
         userConfig: {} as UserConfiguration,
       });
       await expect(
@@ -156,7 +167,11 @@ describe('Reference checks', () => {
 
   test('Project reference validation', () =>
     withTestContext(async () => {
-      const { membership, project: project1 } = await registerNew({
+      const {
+        membership,
+        project: project1,
+        shardId: shardId1,
+      } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -173,12 +188,13 @@ describe('Reference checks', () => {
       });
       project1.checkReferencesOnWrite = true;
       project1.link = [{ project: createReference(project2) }];
-      await getGlobalSystemRepo().updateResource(project1);
+      await getShardSystemRepo(shardId1).updateResource(project1);
 
       const repo = await getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
         membership,
         project: project1,
+        shardId: shardId1,
         userConfig: {} as UserConfiguration,
       });
       let project = await repo.readResource<Project>('Project', project1.id);
@@ -193,7 +209,7 @@ describe('Reference checks', () => {
 
   test('ProjectMembership reference validation', () =>
     withTestContext(async () => {
-      let { membership, project } = await registerNew({
+      const result = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -201,13 +217,17 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
 
-      const systemRepo = getProjectSystemRepo(project);
+      const { shardId } = result;
+      let { membership, project } = result;
+
+      const systemRepo = getShardSystemRepo(shardId);
       project = await systemRepo.updateResource({ ...project, checkReferencesOnWrite: true });
 
       const repo = await getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
         membership,
         project,
+        shardId,
         userConfig: {} as UserConfiguration,
       });
 

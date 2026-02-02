@@ -5,6 +5,7 @@ import type { Request, Response } from 'express';
 import os from 'node:os';
 import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
+import { GLOBAL_SHARD_ID, PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
 import type { RedisWithoutDuplicate } from './redis';
@@ -18,6 +19,8 @@ let readerConn: PoolClient | undefined;
 let writerConn: PoolClient | undefined;
 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
+  // SHARDING Should this test redis/postgres on every shard?
+
   writerConn ??= await getReservedDatabaseConnection(DatabaseMode.WRITER);
   let startTime = Date.now();
   const postgresWriterOk = await testPostgres(writerConn);
@@ -38,7 +41,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     });
   }
 
-  const redisChecks = getAllRedisInstances();
+  const redisChecks = getAllRedisInstances(PLACEHOLDER_SHARD_ID); // SHARDING This should eventually do all shards?
   const redisResults = await Promise.all(
     redisChecks.map(async ({ label, instance }) => {
       const t0 = Date.now();
@@ -69,7 +72,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
 }
 
 async function getReservedDatabaseConnection(mode: DatabaseMode): Promise<PoolClient> {
-  return getDatabasePool(mode).connect();
+  return getDatabasePool(mode, GLOBAL_SHARD_ID).connect();
 }
 
 export function cleanupReservedDatabaseConnections(): void {
@@ -80,7 +83,7 @@ export function cleanupReservedDatabaseConnections(): void {
 }
 
 function hasSeparateReaderPool(): boolean {
-  return getDatabasePool(DatabaseMode.WRITER) !== getDatabasePool(DatabaseMode.READER);
+  return getDatabasePool(DatabaseMode.WRITER, 'global') !== getDatabasePool(DatabaseMode.READER, 'global');
 }
 
 async function testPostgres(pool: PoolClient): Promise<boolean> {

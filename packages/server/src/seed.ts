@@ -6,45 +6,70 @@ import { bcryptHashPassword } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
-import type { Repository, SystemRepository } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
+import type { ShardPool } from './sharding/sharding-types';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
+  // Ensure global shard is run first
+  const globalPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+  await seedDatabaseShard(globalPool, config);
+
+  // Seed all other shards
+  if (config.shards) {
+    for (const shardName of Object.keys(config.shards)) {
+      // SHARDING - global shard will be removed from the config.shards object
+      if (shardName === GLOBAL_SHARD_ID) {
+        continue;
+      }
+      const pool = getDatabasePool(DatabaseMode.WRITER, shardName);
+      await seedDatabaseShard(pool, config);
+    }
+  }
+}
+
+export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerConfig): Promise<void> {
   await withPoolClient(async (client) => {
-    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client); // client will eventually know its shard ID
+    const systemRepo = getShardSystemRepo(client.shardId, client);
 
     if (await isSeeded(systemRepo)) {
-      globalLogger.info('Already seeded');
+      globalLogger.info('Already seeded', { shardId: pool.shardId });
       return;
     }
 
     await systemRepo.withTransaction(async () => {
       await createSuperAdmin(systemRepo, config);
 
-      globalLogger.info('Building structure definitions...');
+      globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
       let startTime = Date.now();
       await rebuildR4StructureDefinitions(systemRepo);
-      globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+      globalLogger.info('Finished building structure definitions', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
 
-      globalLogger.info('Building value sets...');
+      globalLogger.info('Building value sets...', { shardId: pool.shardId });
       startTime = Date.now();
       await rebuildR4ValueSets(systemRepo);
-      globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+      globalLogger.info('Finished building value sets', { shardId: pool.shardId, durationMs: Date.now() - startTime });
 
-      globalLogger.info('Building search parameters...');
+      globalLogger.info('Building search parameters...', { shardId: pool.shardId });
       startTime = Date.now();
       await rebuildR4SearchParameters(systemRepo);
-      globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+      globalLogger.info('Finished building search parameters', {
+        shardId: pool.shardId,
+        durationMs: Date.now() - startTime,
+      });
     });
-  }, getDatabasePool(DatabaseMode.WRITER));
+  }, pool);
 }
 
-async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
+async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumServerConfig): Promise<void> {
   const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
   const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
   const [firstName, lastName] = ['Medplum', 'Admin'];

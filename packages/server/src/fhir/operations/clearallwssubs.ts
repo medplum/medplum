@@ -7,6 +7,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import type { CacheEntry } from '../repo';
+import { TODO_SHARD_ID } from '../sharding';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -58,7 +59,7 @@ export async function clearAllWsSubsHandler(req: FhirRequest): Promise<FhirRespo
   if (projectId && !isUUID(projectId)) {
     return [badRequest('projectId must be a valid UUID')];
   }
-  const { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted } = await clearAllWsSubs(projectId);
+  const { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted } = await clearAllWsSubs(TODO_SHARD_ID, projectId);
 
   return [allOk, buildOutputParameters(operation, { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted })];
 }
@@ -86,12 +87,13 @@ const USER_ACTIVE_SUBS_PATTERN = 'medplum:subscriptions:r4:user:*:active';
  * first to resolve author refs, then the affected subscription refs are SREMed from
  * the corresponding user sets.
  *
+ * @param shardId - The shard ID.
  * @param projectId - Optional project ID to scope the clear. Clears all projects when omitted.
  * @returns Counts of pubsub hash keys, cache keys, and user keys affected.
  */
-export async function clearAllWsSubs(projectId?: string): Promise<ClearAllWsSubsResult> {
-  const pubSubRedis = getPubSubRedis();
-  const cacheRedis = getCacheRedis();
+async function clearAllWsSubs(shardId: string, projectId?: string): Promise<ClearAllWsSubsResult> {
+  const pubSubRedis = getPubSubRedis(shardId);
+  const cacheRedis = getCacheRedis(shardId);
   const pattern = projectId ? getActiveSubsKey(projectId, '*') : getActiveSubsKey('*', '*');
 
   let pubSubKeysDeleted = 0;

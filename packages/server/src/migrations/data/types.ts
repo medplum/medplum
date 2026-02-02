@@ -8,16 +8,23 @@ import type { PhasalMigration } from '../types';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom' | 'dynamic';
+  readonly shardId: string;
   readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;
 }
 
 export type PostDeployJobRunResult = 'finished' | 'interrupted' | 'ineligible';
+
+export type PostDeployJobConfig = {
+  asyncJob: WithId<AsyncJob>;
+  shardId: string;
+};
+
 export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJobData> {
   readonly type: T['type'];
   /** Prepares the job data needed to run the migration */
-  prepareJobData(asyncJob: WithId<AsyncJob>): T;
+  prepareJobData(config: PostDeployJobConfig): T;
   /**
    * Runs the migration. Is responsible for updating AsyncJob.status and AsyncJob.output,
    * generally through usage `AsyncJobExecutor`

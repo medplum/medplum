@@ -5,6 +5,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
@@ -34,6 +35,7 @@ export function initFhircastHeartbeat(): void {
 
       for (const projectAndTopic of topicRefCountMap.keys()) {
         publish(
+          PLACEHOLDER_SHARD_ID,
           projectAndTopic,
           JSON.stringify({
             ...baseHeartbeatPayload,
@@ -71,7 +73,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
   const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
 
-  const projectAndTopic = await getCacheRedis().get(endpointTopicKey);
+  const projectAndTopic = await getCacheRedis(PLACEHOLDER_SHARD_ID).get(endpointTopicKey);
   if (!projectAndTopic) {
     globalLogger.error(`[FHIRcast]: No topic associated with the endpoint '${topicEndpoint}'`);
     // Close the socket since this endpoint is not valid
@@ -93,7 +95,7 @@ export async function handleFhircastConnection(socket: WebSocket, request: Incom
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getPubSubRedisSubscriber();
+  const redisSubscriber = getPubSubRedisSubscriber(PLACEHOLDER_SHARD_ID);
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(projectAndTopic);

@@ -19,7 +19,7 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
@@ -123,18 +123,23 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
-  const redactedMemberships = memberships.map((m) => ({
-    id: m.id,
-    project: m.project,
-    profile: m.profile,
-    identifier: m.identifier,
-  }));
-  res.json(
-    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      login: login.id,
-      memberships: redactedMemberships,
+  const redactedMemberships = await Promise.all(
+    memberships.map(async (m) => {
+      // SHARDING - project system repos could probably be cached across promises
+      const systemRepo = await getProjectSystemRepo(m.project);
+      return rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
+        id: m.id,
+        project: m.project,
+        profile: m.profile,
+        identifier: m.identifier,
+      });
     })
   );
+
+  res.json({
+    login: login.id,
+    memberships: redactedMemberships,
+  });
 }
 
 /**

@@ -25,6 +25,7 @@ const LookupOperation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
+    param('in', 'shardId', 'string', 1, '1'),
     param('in', 'tableName', 'string', 0, '1'),
     param('out', 'defaultStatisticsTarget', 'integer', 1, '1'),
     param('out', 'table', undefined, 0, '1', [
@@ -55,14 +56,14 @@ const LookupOperation: OperationDefinition = {
 export async function getColumnStatisticsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const params = parseInputParameters<{ tableName?: string }>(LookupOperation, req);
+  const params = parseInputParameters<{ shardId: string; tableName?: string }>(LookupOperation, req);
 
   if (params.tableName && !isValidTableName(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 
-  const defaultStatisticsTarget = await getDefaultStatisticsTarget();
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const defaultStatisticsTarget = await getDefaultStatisticsTarget(params.shardId);
+  const client = getDatabasePool(DatabaseMode.WRITER, params.shardId);
   let columns: ColumnInfo[] | undefined;
   const output: { defaultStatisticsTarget: number; table?: { tableName: string; column: ColumnInfo[] } } = {
     defaultStatisticsTarget,
@@ -79,8 +80,8 @@ export async function getColumnStatisticsHandler(req: FhirRequest): Promise<Fhir
   return [allOk, buildOutputParameters(LookupOperation, output)];
 }
 
-async function getDefaultStatisticsTarget(): Promise<number> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
+async function getDefaultStatisticsTarget(shardId: string): Promise<number> {
+  const client = getDatabasePool(DatabaseMode.WRITER, shardId);
   const defaultStatisticsTarget = await client.query('SELECT setting FROM pg_settings WHERE name = $1', [
     'default_statistics_target',
   ]);

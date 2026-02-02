@@ -42,7 +42,7 @@ export async function refreshReferenceDisplayHandler(req: FhirRequest): Promise<
   }
 
   const { repo } = getAuthenticatedContext();
-  const updated = await repo.ensureInTransaction(async () => {
+  const updated = await repo.ensureInTransaction(resourceType, async () => {
     const resource = await repo.readResource(resourceType, id);
 
     const referenceMap = collectReferences(resource);

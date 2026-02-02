@@ -10,6 +10,7 @@ import { loadStructureDefinitions } from '../fhir/structure';
 import { getLogger } from '../logger';
 import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { initBinaryStorage } from '../storage/loader';
 import * as cronModule from './cron';
 import * as dispatchModule from './dispatch';
@@ -18,6 +19,7 @@ import * as subscriptionModule from './subscription';
 import { queueRegistry } from './utils';
 
 describe('Workers', () => {
+  const shardId = GLOBAL_SHARD_ID;
   beforeAll(() => {
     loadStructureDefinitions();
   });
@@ -104,7 +106,7 @@ describe('Workers', () => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
 
-      await addBackgroundJobs(resource, undefined, {} as BackgroundJobContext);
+      await addBackgroundJobs(shardId, resource, undefined, {} as BackgroundJobContext);
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(subSpy).toHaveBeenCalledTimes(0);

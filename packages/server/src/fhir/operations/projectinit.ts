@@ -19,8 +19,9 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import type { GlobalProject } from '../../sharding/sharding-types';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
@@ -125,29 +126,48 @@ export async function createProject(
   admin?: User
 ): Promise<{
   project: WithId<Project>;
+  shardId: string;
   client: WithId<ClientApplication>;
   profile?: WithId<ProfileResource>;
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
+  const shardId = config.defaultShardId ?? GLOBAL_SHARD_ID;
+  const shardSystemRepo = getShardSystemRepo(shardId);
 
-  log.info('Project creation request received', { name: projectName });
-  const project = await systemRepo.createResource<Project>({
+  log.info('Project creation request received', { shardId: shardSystemRepo.shardId, name: projectName });
+  const partialProject: Project = {
     resourceType: 'Project',
     name: projectName,
     owner: admin ? createReference(admin) : undefined,
     strictMode: true,
     features: config.defaultProjectFeatures,
     systemSetting: config.defaultProjectSystemSetting,
+  };
+
+  if (shardId === GLOBAL_SHARD_ID) {
+    partialProject.shard = [{ id: shardId }];
+  } else {
+    const globalSystemRepo = getGlobalSystemRepo();
+    const globalProject: GlobalProject = await globalSystemRepo.createResource<Project>({
+      resourceType: 'Project',
+      shard: [{ id: shardId }],
+      strictMode: true,
+    });
+    partialProject.id = globalProject.id;
+  }
+
+  const project = await shardSystemRepo.createResource<Project>(partialProject, {
+    assignedId: Boolean(partialProject.id),
   });
 
   log.info('Project created', {
     id: project.id,
     name: projectName,
+    shardId,
   });
-  const client = await createClient(systemRepo, {
+  const client = await createClient(shardSystemRepo, {
     project,
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,
@@ -155,15 +175,15 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
-      systemRepo,
+      shardSystemRepo,
       project,
       'Practitioner',
       admin.firstName,
       admin.lastName,
       admin.email as string
     );
-    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
-    return { project, profile, membership, client };
+    const membership = await createProjectMembership(shardSystemRepo, admin, project, profile, { admin: true });
+    return { project, shardId, profile, membership, client };
   }
-  return { project, client };
+  return { project, shardId, client };
 }

@@ -45,13 +45,13 @@ import { isPreCommitSubscription } from '../fhir/precommit';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import type { ActiveSubscriptionEntry } from '../pubsub';
 import { cleanupActiveSubs, getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
 import { getCacheRedis } from '../redis';
+import { getProjectShardId } from '../sharding/sharding-utils';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
@@ -107,6 +107,7 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
+  readonly shardId: string;
   readonly requestId?: string;
   readonly traceId?: string;
   readonly authState?: AuthState;
@@ -299,6 +300,7 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  const projectShardId = await getProjectShardId(project.id);
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
@@ -360,6 +362,7 @@ export async function addSubscriptionJobs(
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
+        shardId: projectShardId,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
         authState: ctx?.authState,
@@ -369,7 +372,11 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(
+      projectShardId,
+      'medplum:subscriptions:r4:websockets',
+      JSON.stringify({ resource, events: wsSubEvents })
+    );
   }
 }
 
@@ -417,7 +424,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -437,8 +444,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 
   const redisOnlySubRefStrs: string[] = [];
   const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
-  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
-
+  const entries = await getActiveSubscriptions(systemRepo.shardId, projectId, resource.resourceType);
   if (Object.keys(entries).length) {
     const cachedCriteriaEvalMap = new Map<string, boolean>();
     const wsEvalStartTime = Date.now();
@@ -480,11 +486,11 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 
   // We should clean up all expired sub entries ASAP
   if (Object.keys(expiredSubEntries).length) {
-    await cleanupActiveSubs(projectId, expiredSubEntries);
+    await cleanupActiveSubs(systemRepo.shardId, projectId, expiredSubEntries);
   }
 
   if (redisOnlySubRefStrs.length) {
-    const cacheRedis = getCacheRedis();
+    const cacheRedis = getCacheRedis(systemRepo.shardId);
     const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
@@ -506,7 +512,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
+        await removeActiveSubscriptions(systemRepo.shardId, projectId, resource.resourceType, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
@@ -532,8 +538,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   let rewrittenResource: Resource;
 
   try {
-    const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
-    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
+    const { subscriptionId, resourceType, id, versionId, verbose, shardId } = job.data;
+    systemRepo = getShardSystemRepo(shardId);
     const logger = getLogger();
     const logFn = verbose ? logger.info : logger.debug;
 
@@ -669,7 +675,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = getProjectSystemRepo(subscription.meta.project);
+    systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }
