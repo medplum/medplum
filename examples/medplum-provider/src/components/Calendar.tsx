@@ -12,6 +12,7 @@ import utc from 'dayjs/plugin/utc';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Range } from '../types/scheduling';
+import { SchedulingTransientIdentifier } from '../utils/scheduling';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -76,10 +77,12 @@ function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
         ? ` (${appointment.status})`
         : '';
 
+      const name = patientParticipant ? patientParticipant.actor?.display : 'No Patient';
+
       return {
         type: 'appointment',
         appointment,
-        title: `${patientParticipant?.actor?.display} ${status}`,
+        title: `${name} ${status}`,
         start: new Date(appointment.start as string),
         end: new Date(appointment.end as string),
         resource: appointment,
@@ -178,15 +181,22 @@ export function Calendar(props: {
     [onSelectAppointment, onSelectSlot]
   );
 
+  const events = [
+    ...appointmentsToEvents(props.appointments),
+    ...slotsToEvents(props.slots.filter((slot) => SchedulingTransientIdentifier.get(slot))),
+  ];
+
+  const backgroundEvents = slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot)));
+
   return (
     <ReactBigCalendar
       components={{ toolbar: CalendarToolbar }}
       view={view}
       date={date}
       localizer={dayjsLocalizer(dayjs)}
-      events={appointmentsToEvents(props.appointments)}
+      events={events}
       // Background events don't show in the month view
-      backgroundEvents={slotsToEvents(props.slots)}
+      backgroundEvents={backgroundEvents}
       onNavigate={(newDate: Date, newView: View) => {
         setDate(newDate);
         setView(newView);

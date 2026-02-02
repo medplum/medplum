@@ -666,6 +666,36 @@ describe('Client', () => {
     );
   });
 
+  test('External auth token exchange with membershipId', async () => {
+    const clientId = 'medplum-client-123';
+    const membershipId = 'membership-456';
+    let requestBody: string | undefined;
+    const fetch = mockFetch(200, (url, options) => {
+      if (url.includes('/oauth2/token')) {
+        requestBody = options?.body as string;
+        return {
+          access_token: createFakeJwt({ client_id: clientId, login_id: '123' }),
+          refresh_token: createFakeJwt({ client_id: clientId }),
+          profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'Patient', id: '123' } };
+      }
+      return {};
+    });
+    const client = new MedplumClient({ fetch, clientId });
+
+    const result = await client.exchangeExternalAccessToken('external-token-123', clientId, membershipId);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBeDefined();
+    expect(client.getAccessToken()).toBeDefined();
+
+    // Verify that the membership_id was included in the request
+    expect(requestBody).toBeDefined();
+    expect(requestBody).toContain('membership_id=' + membershipId);
+  });
+
   describe('Get external auth redirect URI', () => {
     let client: MedplumClient;
 
