@@ -24,7 +24,8 @@ import type {
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { SystemRepository } from './repo';
-import { getProjectByReferenceOrId, getProjectSystemRepo, Repository } from './repo';
+import { getProjectSystemRepo, Repository } from './repo';
+import { getProjectByReferenceOrId } from './sharding';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };

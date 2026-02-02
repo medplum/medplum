@@ -2910,19 +2910,6 @@ export function getProjectSystemRepo(_projectId: string | Reference<Project> | W
   return getGlobalSystemRepo();
 }
 
-export async function getProjectByReferenceOrId(
-  projectOrReferenceOrId: string | Reference<Project> | undefined
-): Promise<WithId<Project>> {
-  let project: WithId<Project>;
-  if (typeof projectOrReferenceOrId === 'string' || projectOrReferenceOrId === undefined) {
-    // cast undefined to string to trigger readResource to throw not found
-    project = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId as string);
-  } else {
-    project = await getGlobalSystemRepo().readReference<Project>(projectOrReferenceOrId);
-  }
-  return project;
-}
-
 function lowercaseFirstLetter(str: string): string {
   return str.charAt(0).toLowerCase() + str.slice(1);
 }
