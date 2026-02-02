@@ -24,8 +24,7 @@ import type {
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { SystemRepository } from './repo';
-import { getProjectSystemRepo, Repository } from './repo';
-import { getProjectByReferenceOrId } from './sharding';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -44,7 +43,8 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await getProjectByReferenceOrId(membership.project);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const project = await globalSystemRepo.readReference(membership.project);
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {

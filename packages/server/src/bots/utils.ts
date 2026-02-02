@@ -19,6 +19,7 @@ import type {
   Login,
   OperationOutcome,
   Parameters,
+  Project,
   ProjectMembership,
   ProjectSetting,
   Reference,
@@ -27,8 +28,8 @@ import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { getProjectByReferenceOrId } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -124,7 +125,8 @@ export function getOutParametersFromResult(result: OperationOutcome | BotExecuti
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const project = await getProjectByReferenceOrId(bot.meta?.project);
+  const systemRepo = getGlobalSystemRepo();
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
 
@@ -247,15 +249,21 @@ export async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise
   const runAsProjectId = resolveId(runAs.project) as string;
   const system = !!bot.system;
   const secrets: ProjectSetting[] = [];
+  const systemRepo = getGlobalSystemRepo();
   if (botProjectId !== runAsProjectId) {
-    await addBotSecrets(botProjectId, system, secrets);
+    await addBotSecrets(systemRepo, botProjectId, system, secrets);
   }
-  await addBotSecrets(runAsProjectId, system, secrets);
+  await addBotSecrets(systemRepo, runAsProjectId, system, secrets);
   return Object.fromEntries(secrets.map((s) => [s.name, s]));
 }
 
-async function addBotSecrets(projectId: string, system: boolean, out: ProjectSetting[]): Promise<void> {
-  const project = await getProjectByReferenceOrId(projectId);
+async function addBotSecrets(
+  systemRepo: SystemRepository,
+  projectId: string,
+  system: boolean,
+  out: ProjectSetting[]
+): Promise<void> {
+  const project = await systemRepo.readResource<Project>('Project', projectId);
   if (system && project.systemSecret) {
     out.push(...project.systemSecret);
   }
