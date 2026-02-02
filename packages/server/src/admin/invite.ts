@@ -70,7 +70,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const systemRepo = await getProjectSystemRepo(request.project);
+  const systemRepo = getProjectSystemRepo(request.project);
   const logger = getLogger();
 
   if (request.email) {

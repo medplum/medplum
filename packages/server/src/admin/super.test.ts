@@ -51,7 +51,7 @@ describe('Super Admin routes', () => {
 
     const normalProject = await createTestProject();
 
-    const systemRepo = repo.getShardSystemRepo();
+    const systemRepo = repo.getSystemRepo();
 
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 

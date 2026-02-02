@@ -65,7 +65,7 @@ export async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
-  const systemRepo = await getProjectSystemRepo(projectId);
+  const systemRepo = getProjectSystemRepo(projectId);
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 

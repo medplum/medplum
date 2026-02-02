@@ -8,7 +8,7 @@ import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
 import type { Repository, SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/repo-constants';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';

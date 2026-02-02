@@ -31,7 +31,7 @@ describe('Cron Worker', () => {
       projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
     });
-    systemRepo = botRepo.getShardSystemRepo();
+    systemRepo = botRepo.getSystemRepo();
   });
 
   afterAll(async () => {

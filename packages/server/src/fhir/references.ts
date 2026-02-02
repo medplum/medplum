@@ -98,7 +98,7 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 
   const issues: OperationOutcomeIssue[] = [];
   await validateReferences(repo, references, issues);
-  await validateReferences(repo.getShardSystemRepo(), systemReferences, issues);
+  await validateReferences(repo.getSystemRepo(), systemReferences, issues);
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({

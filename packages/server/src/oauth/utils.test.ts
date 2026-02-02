@@ -442,7 +442,7 @@ describe('OAuth utils', () => {
         const result = await createTestProject({ withRepo: true });
         project = result.project;
         repo = result.repo;
-        systemRepo = repo.getShardSystemRepo();
+        systemRepo = repo.getSystemRepo();
       });
     });
 

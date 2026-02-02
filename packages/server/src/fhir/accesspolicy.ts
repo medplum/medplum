@@ -24,7 +24,7 @@ import type {
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { SystemRepository } from './repo';
-import { getProject, getProjectSystemRepo, getShardSystemRepo, Repository } from './repo';
+import { getProjectByReferenceOrId, getProjectSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -43,7 +43,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const { project, projectShardId } = await getProject(membership.project);
+  const project = await getProjectByReferenceOrId(membership.project);
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -54,7 +54,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
-    const systemRepo = getShardSystemRepo(projectShardId);
+    const systemRepo = getProjectSystemRepo(project);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -123,7 +123,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     access.push(...membership.access);
   }
 
-  const systemRepo = await getProjectSystemRepo(membership.project);
+  const systemRepo = getProjectSystemRepo(membership.project);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];

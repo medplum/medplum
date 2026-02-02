@@ -83,7 +83,7 @@ describe('Subscription Worker', () => {
     );
 
     repo = _repo;
-    systemRepo = repo.getShardSystemRepo();
+    systemRepo = repo.getSystemRepo();
     superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
 
     // Create another project, this one with bots enabled

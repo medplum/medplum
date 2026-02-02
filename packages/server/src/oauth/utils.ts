@@ -44,7 +44,7 @@ import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProject, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectByReferenceOrId, getProjectSystemRepo } from '../fhir/repo';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
@@ -433,8 +433,8 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
   }
 
   // Get the project
-  const { project, projectShardId } = await getProject(membership.project);
-  const projectSystemRepo = getShardSystemRepo(projectShardId);
+  const project = await getProjectByReferenceOrId(membership.project);
+  const projectSystemRepo = getProjectSystemRepo(project);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -944,8 +944,9 @@ export async function getLoginForAccessToken(
   if (membership.active === false) {
     return undefined;
   }
-  const { project, projectShardId } = await getProject(membership.project);
-  const userConfig = await getUserConfiguration(getShardSystemRepo(projectShardId), project, membership);
+  const project = await getProjectByReferenceOrId(membership.project);
+  const systemRepo = getProjectSystemRepo(project);
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const authState = { login, project, membership, userConfig, accessToken };
   await tryAddOnBehalfOf(req, authState);
   return authState;
@@ -982,7 +983,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     return undefined;
   }
 
-  const { project } = await getProject(membership.project);
+  const project = await getProjectByReferenceOrId(membership.project);
   const login: Login = {
     resourceType: 'Login',
     user: createReference(client),
@@ -1082,7 +1083,7 @@ async function tryExternalAuth(
     // Use cached login if available
     login = JSON.parse(cachedValue) as Login;
     membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
-    ({ project } = await getProject(membership.project));
+    project = await getProjectByReferenceOrId(membership.project);
   } else {
     // If not cached, try to authenticate the user with the external auth provider
     const externalAuthState = await tryExternalAuthLogin(systemRepo, req, accessToken, claims, externalAuthConfig);
@@ -1166,7 +1167,7 @@ async function tryExternalAuthLogin(
     userAgent: req?.get('User-Agent'),
   });
 
-  const { project } = await getProject(membership.project);
+  const project = await getProjectByReferenceOrId(membership.project);
 
   logAuditEvent(
     createAuditEvent(

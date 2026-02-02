@@ -25,7 +25,7 @@ import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getGlobalSystemRepo, getProject } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectByReferenceOrId } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -134,7 +134,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const { project } = await getProject(membership.project);
+  const project = await getProjectByReferenceOrId(membership.project);
   const scope = (req.body.scope || 'openid') as string;
 
   const login = await systemRepo.createResource<Login>({

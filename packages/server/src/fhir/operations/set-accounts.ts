@@ -133,7 +133,7 @@ export async function setResourceAccounts(
   }
 
   // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
-  const systemRepo = repo.getShardSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
   if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {

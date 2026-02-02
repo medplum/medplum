@@ -10,7 +10,7 @@ import { getConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../repo-constants';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidTableName } from '../sql';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {

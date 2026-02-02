@@ -80,7 +80,7 @@ describe('project-scoped Repository', () => {
       currentProject: project,
       author: { reference: 'User/' + randomUUID() },
     });
-    systemRepo = repo.getShardSystemRepo();
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {

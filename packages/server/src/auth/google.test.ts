@@ -8,7 +8,7 @@ import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/repo-constants';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';

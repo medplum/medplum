@@ -27,7 +27,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { extname } from 'node:path';
 import type { AuthenticatedRequestContext } from '../context';
-import { getGlobalSystemRepo, getProject } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectByReferenceOrId } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { getBinaryStorage } from '../storage/loader';
@@ -123,7 +123,7 @@ export function getOutParametersFromResult(result: OperationOutcome | BotExecuti
  * @returns True if the bot is enabled.
  */
 export async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const { project } = await getProject(bot.meta?.project);
+  const project = await getProjectByReferenceOrId(bot.meta?.project);
   return !!project.features?.includes('bots');
 }
 
@@ -254,7 +254,7 @@ export async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise
 }
 
 async function addBotSecrets(projectId: string, system: boolean, out: ProjectSetting[]): Promise<void> {
-  const { project } = await getProject(projectId);
+  const project = await getProjectByReferenceOrId(projectId);
   if (system && project.systemSecret) {
     out.push(...project.systemSecret);
   }

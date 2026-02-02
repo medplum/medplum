@@ -20,8 +20,8 @@ import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import type { Repository, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/repo-constants';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -206,7 +206,7 @@ export async function getProjectIdByClientId(
 export function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
-): Promise<Project | undefined> {
+): Promise<WithId<Project> | undefined> {
   const filters = [
     {
       code: 'recaptcha-site-key',

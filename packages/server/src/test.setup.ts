@@ -24,8 +24,8 @@ import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
 import type { RepositoryContext } from './fhir/repo';
-import { getProject, getShardSystemRepo, Repository } from './fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from './fhir/repo-constants';
+import { getProjectSystemRepo, getShardSystemRepo, Repository } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
@@ -186,8 +186,7 @@ export async function addTestUser(
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   if (accessPolicy) {
-    const { projectShardId } = await getProject(project.id);
-    const systemRepo = getShardSystemRepo(projectShardId);
+    const systemRepo = getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },

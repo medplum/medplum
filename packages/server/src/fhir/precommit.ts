@@ -68,7 +68,7 @@ export async function preCommitValidation<T extends Resource>(
   }
 
   resource.meta = { ...resource.meta, author: repo.getAuthor() };
-  const systemRepo = repo.getShardSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,

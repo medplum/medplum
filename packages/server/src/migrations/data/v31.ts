@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { PoolClient } from 'pg';
 import { getShardSystemRepo } from '../../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../../fhir/repo-constants';
+import { PLACEHOLDER_SHARD_ID } from '../../fhir/sharding';
 import { rebuildR4ValueSets } from '../../seeds/valuesets';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import type { MigrationActionResult } from '../types';

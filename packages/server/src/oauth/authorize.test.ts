@@ -32,7 +32,7 @@ describe('OAuth Authorize', () => {
     // Create a test project
     let repo: Repository;
     ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
-    systemRepo = repo.getShardSystemRepo();
+    systemRepo = repo.getSystemRepo();
 
     // Create a test user
     const { user } = await inviteUser({

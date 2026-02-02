@@ -42,8 +42,8 @@ import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/repo-constants';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -387,7 +387,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = await getProjectSystemRepo(projectId);
+  const systemRepo = getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -586,7 +586,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = await getProjectSystemRepo(subscription.meta.project);
+    systemRepo = getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }

@@ -112,7 +112,7 @@ export class AuthenticatedRequestContext extends RequestContext {
    * Use this when you need elevated privileges within request handling.
    */
   get systemRepo(): SystemRepository {
-    return this.repo.getShardSystemRepo();
+    return this.repo.getSystemRepo();
   }
 
   [Symbol.dispose](): void {

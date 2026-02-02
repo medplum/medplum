@@ -320,7 +320,7 @@ export async function createBotAuditEvent(
   for (const destination of bot.auditEventDestination ?? ['resource']) {
     switch (destination) {
       case 'resource': {
-        const systemRepo = await getProjectSystemRepo(runAs.project);
+        const systemRepo = getProjectSystemRepo(runAs.project);
         await systemRepo.createResource<AuditEvent>({
           ...auditEvent,
           outcomeDesc: tail(outcomeDesc, config.maxBotLogLengthForResource ?? defaultBotOutputLength),

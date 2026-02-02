@@ -65,7 +65,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   const userBot = await repo.readReference<Bot>(botReference as Reference<Bot>);
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = repo.getShardSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Execute the bot

@@ -129,7 +129,6 @@ import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
-import { GLOBAL_SHARD_ID, TODO_SHARD_ID } from './repo-constants';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -137,6 +136,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
@@ -150,8 +150,6 @@ import {
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
-export { GLOBAL_SHARD_ID } from './repo-constants';
-
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
@@ -164,7 +162,7 @@ const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFai
  */
 export interface RepositoryContext {
   /**
-   * The shard ID for this repository.
+   * The shard ID for this repository. Currently ignored.
    * Defaults to GLOBAL_SHARD_ID if not specified.
    */
   shardId?: string;
@@ -342,7 +340,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param conn - Optional database client.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getShardSystemRepo(conn?: PoolClient): SystemRepository {
+  getSystemRepo(conn?: PoolClient): SystemRepository {
     return getGlobalSystemRepo(conn);
   }
 
@@ -377,7 +375,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId === this.context.currentProject?.id) {
       return this.context.currentProject;
     }
-    return this.getShardSystemRepo().readResource<Project>('Project', projectId);
+    return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
@@ -386,7 +384,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
-      const systemRepo = this.getShardSystemRepo();
+      const systemRepo = this.getSystemRepo();
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -1131,7 +1129,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (this.context.projects?.length && profile) {
       // Store loaded profile in cache
-      await cacheProfile(this.getShardSystemRepo(), profile);
+      await cacheProfile(this.getSystemRepo(), profile);
     }
     return profile;
   }
@@ -2083,7 +2081,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         accounts.add(account.reference as string);
       }
     } else {
-      const systemRepo = this.getShardSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = this.getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
@@ -2877,14 +2875,22 @@ function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepos
  * - Looking up Users, Logins, ClientApplications
  * - Cross-project operations by super admins
  *
- * @param conn - Optional database connection for transaction support.
+ * @param client - Option database client connection to use in new Repository.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(conn?: PoolClient): SystemRepository {
-  return createSystemRepository(GLOBAL_SHARD_ID, conn);
+export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
+  return createSystemRepository(GLOBAL_SHARD_ID, client);
 }
 
-export function getShardSystemRepo(shardId: string, client?: PoolClient): Repository {
+/**
+ * This is a sharding future-proofing function that returns a SystemRepository for the specified shard.
+ * Prefer using `Repository.getSystemRepo` or `getProjectSystemRepo` if working in the context of a project
+ * or `getGlobalSystemRepo` if intentionally working in the global shard.
+ * @param shardId - The shard ID. Currently ignored.
+ * @param client - Option database client connection to use in new Repository.
+ * @returns A SystemRepository for the specified shard.
+ */
+export function getShardSystemRepo(shardId: string, client?: PoolClient): SystemRepository {
   return createSystemRepository(shardId, client);
 }
 
@@ -2897,28 +2903,24 @@ export function getShardSystemRepo(shardId: string, client?: PoolClient): Reposi
  * @param _projectId - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
  */
-export async function getProjectSystemRepo(
-  _projectId: string | Reference<Project> | WithId<Project>
-): Promise<SystemRepository> {
+export function getProjectSystemRepo(_projectId: string | Reference<Project> | WithId<Project>): SystemRepository {
   // Eventually, this will resolve the project's shard and return
   // a SystemRepository for that shard.
   // But for now, all projects are on the global shard.
   return getGlobalSystemRepo();
 }
 
-export async function getProject(
-  projectOrReferenceOrId: string | Reference<Project> | WithId<Project> | undefined
-): Promise<{ project: WithId<Project>; projectShardId: string }> {
+export async function getProjectByReferenceOrId(
+  projectOrReferenceOrId: string | Reference<Project> | undefined
+): Promise<WithId<Project>> {
   let project: WithId<Project>;
   if (typeof projectOrReferenceOrId === 'string' || projectOrReferenceOrId === undefined) {
     // cast undefined to string to trigger readResource to throw not found
     project = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId as string);
-  } else if (isResourceWithId(projectOrReferenceOrId, 'Project')) {
-    project = projectOrReferenceOrId;
   } else {
     project = await getGlobalSystemRepo().readReference<Project>(projectOrReferenceOrId);
   }
-  return { project, projectShardId: TODO_SHARD_ID };
+  return project;
 }
 
 function lowercaseFirstLetter(str: string): string {

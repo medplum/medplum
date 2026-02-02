@@ -123,7 +123,7 @@ export class BulkExporter {
     this.resourceSets.clear();
 
     // Update the AsyncJob
-    const systemRepo = this.repo.getShardSystemRepo();
+    const systemRepo = this.repo.getSystemRepo();
     const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id);
     if (asyncJob.status !== 'cancelled') {
       return systemRepo.updateResource<AsyncJob>({

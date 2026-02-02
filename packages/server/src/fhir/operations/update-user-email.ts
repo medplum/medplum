@@ -89,7 +89,7 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
 }
 
 async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
-  const systemRepo = await getProjectSystemRepo(project);
+  const systemRepo = getProjectSystemRepo(project);
   return systemRepo.withTransaction(async () => {
     let user = await systemRepo.readResource<User>('User', userId);
     if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {

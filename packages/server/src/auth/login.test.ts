@@ -42,7 +42,7 @@ describe('Login', () => {
       ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
 
       // Create another client with CORS "allowed origins"
-      corsClient = await repo.getShardSystemRepo().createResource<ClientApplication>({
+      corsClient = await repo.getSystemRepo().createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         meta: {
           project: project.id,
@@ -526,7 +526,7 @@ describe('Login', () => {
     );
 
     // Mark the membership as inactive
-    await repo.getShardSystemRepo().updateResource({ ...membership, active: false });
+    await repo.getSystemRepo().updateResource({ ...membership, active: false });
 
     // User should not be able to login
     const res = await request(app).post('/auth/login').type('json').send({

@@ -10,7 +10,7 @@ import { pipeline } from 'node:stream';
 import { promisify } from 'node:util';
 import { getConfig } from '../config/loader';
 import { getShardSystemRepo } from '../fhir/repo';
-import { TODO_SHARD_ID } from '../fhir/repo-constants';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();

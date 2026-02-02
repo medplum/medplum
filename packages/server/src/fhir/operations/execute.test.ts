@@ -699,7 +699,7 @@ describe('Execute', () => {
       project2 = testSetup2.project;
       accessToken2 = testSetup2.accessToken;
 
-      const systemRepo = testSetup2.repo.getShardSystemRepo();
+      const systemRepo = testSetup2.repo.getSystemRepo();
       for (const bot of [bots.echoBot, bots.systemEchoBot]) {
         await systemRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',

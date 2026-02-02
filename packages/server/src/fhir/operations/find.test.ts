@@ -60,7 +60,7 @@ describe('Schedule/:id/$find', () => {
     const projectResult = await createTestProject({ withAccessToken: true, withRepo: true });
     project = projectResult.project;
     accessToken = projectResult.accessToken;
-    systemRepo = projectResult.repo.getShardSystemRepo();
+    systemRepo = projectResult.repo.getSystemRepo();
 
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',

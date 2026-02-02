@@ -56,7 +56,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     ],
   });
 
-  const systemRepo = repo.getShardSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {

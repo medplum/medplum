@@ -118,11 +118,11 @@ export class AsyncJobExecutor {
         version: `v${completedDataVersion}`,
       });
       await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getShardSystemRepo().updateResource<AsyncJob>(updatedJob);
+      updatedJob = await this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
       await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
     } else {
-      return this.repo.getShardSystemRepo().updateResource<AsyncJob>(updatedJob);
+      return this.repo.getSystemRepo().updateResource<AsyncJob>(updatedJob);
     }
   }
 
@@ -159,7 +159,7 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return this.repo.getShardSystemRepo().updateResource<AsyncJob>(failedJob);
+    return this.repo.getSystemRepo().updateResource<AsyncJob>(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {

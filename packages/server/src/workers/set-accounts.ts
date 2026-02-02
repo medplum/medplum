@@ -10,7 +10,7 @@ import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/repo-constants';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
 import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';

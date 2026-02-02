@@ -5,7 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../repo-constants';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidColumnName, isValidTableName } from '../sql';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 

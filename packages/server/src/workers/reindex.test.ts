@@ -48,7 +48,7 @@ describe('Reindex Worker', () => {
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
-    systemRepo = repo.getShardSystemRepo();
+    systemRepo = repo.getSystemRepo();
   });
 
   beforeEach(() => {
@@ -878,7 +878,7 @@ describe('Job cancellation', () => {
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
-    systemRepo = repo.getShardSystemRepo();
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
