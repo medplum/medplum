@@ -4,6 +4,7 @@
     "globalsCleanup": "on"
   },
   "testTimeout": 120000,
+  "maxWorkers": "50%",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Group, Loader, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { formatAddress, getReferenceString } from '@medplum/core';
+import { formatAddress, getReferenceString, OperationOutcomeError } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
@@ -75,7 +75,9 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
               const org = await medplum.readReference(ref.organizationRef);
               return { ...org, isPrimary: ref.isPrimary } as PharmacyWithPrimary;
             } catch (error) {
-              console.error('Error resolving pharmacy reference:', ref.organizationRef, error);
+              if (!isNotFoundError(error)) {
+                console.error('Error resolving pharmacy reference:', ref.organizationRef, error);
+              }
               return null;
             }
           })
@@ -167,4 +169,12 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
       </Modal>
     </>
   );
+}
+
+function isNotFoundError(error: unknown): boolean {
+  if (!(error instanceof OperationOutcomeError)) {
+    return false;
+  }
+
+  return error.outcome.issue?.some((issue) => issue.code === 'not-found') ?? false;
 }
