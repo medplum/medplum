@@ -90,10 +90,7 @@ export function extractCodeFromResponse(response: string): string | undefined {
   return undefined;
 }
 
-export async function collectFhirData(
-  medplum: ReturnType<typeof useMedplum>,
-  refs: string[]
-): Promise<any[]> {
+export async function collectFhirData(medplum: ReturnType<typeof useMedplum>, refs: string[]): Promise<any[]> {
   const resources: any[] = [];
   for (const ref of refs) {
     try {
@@ -417,7 +414,13 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
     // Get summary response after tool execution (streaming if callback provided)
     if (onStreamChunk) {
-      content = await sendToBotStreaming(medplum, resourceSummaryBotSseId, currentMessages, selectedModel, onStreamChunk);
+      content = await sendToBotStreaming(
+        medplum,
+        resourceSummaryBotSseId,
+        currentMessages,
+        selectedModel,
+        onStreamChunk
+      );
     } else {
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;
