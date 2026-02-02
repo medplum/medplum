@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, locationUtils } from '@medplum/core';
-import type { ClientApplication, Patient } from '@medplum/fhirtypes';
+import type { ClientApplication, Encounter, Patient } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import type { ReactNode } from 'react';
@@ -49,7 +49,7 @@ describe('SmartAppLaunchLink', () => {
     expect(url).toContain('iss=');
   });
 
-  test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystem is present', async () => {
+  test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystems is present', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -60,7 +60,7 @@ describe('SmartAppLaunchLink', () => {
       id: 'test-patient-with-hg-id',
       identifier: [
         {
-          system: 'https://healthgorilla.com',
+          system: 'https://healthgorilla.com/patient-id',
           value: '0e4af968e733693405e943e1',
         },
         {
@@ -71,17 +71,22 @@ describe('SmartAppLaunchLink', () => {
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithLaunchIdentifierSystem: ClientApplication = {
+    const clientWithLaunchIdentifierSystems: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://sandbox.healthgorilla.com/app/patient-chart/launch',
-      launchIdentifierSystem: 'https://healthgorilla.com',
+      launchIdentifierSystems: [
+        {
+          resourceType: 'Patient',
+          system: 'https://healthgorilla.com/patient-id',
+        },
+      ],
     };
 
     // Pre-load the patient in the mock client
     await medplum.createResource(patientWithIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystem} patient={createReference(patientWithIdentifier)}>
+      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystems} patient={createReference(patientWithIdentifier)}>
         Health Gorilla App
       </SmartAppLaunchLink>,
       medplum
@@ -108,12 +113,12 @@ describe('SmartAppLaunchLink', () => {
     const smartAppLaunch = await medplum.readResource('SmartAppLaunch', launchId as string);
     expect(smartAppLaunch.patient?.reference).toBe('Patient/test-patient-with-hg-id');
     expect(smartAppLaunch.patient?.identifier).toEqual({
-      system: 'https://healthgorilla.com',
+      system: 'https://healthgorilla.com/patient-id',
       value: '0e4af968e733693405e943e1',
     });
   });
 
-  test('Does not include identifier in SmartAppLaunch when launchIdentifierSystem is absent', async () => {
+  test('Does not include identifier in SmartAppLaunch when launchIdentifierSystems is absent', async () => {
     const mockAssign = jest.fn();
     locationUtils.assign = mockAssign;
 
@@ -124,14 +129,14 @@ describe('SmartAppLaunchLink', () => {
       id: 'test-patient-no-ext',
       identifier: [
         {
-          system: 'https://healthgorilla.com',
+          system: 'https://healthgorilla.com/patient-id',
           value: '0e4af968e733693405e943e1',
         },
       ],
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithoutLaunchIdentifierSystem: ClientApplication = {
+    const clientWithoutLaunchIdentifierSystems: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://example.com/launch',
     };
@@ -139,14 +144,14 @@ describe('SmartAppLaunchLink', () => {
     await medplum.createResource(patientWithIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithoutLaunchIdentifierSystem} patient={createReference(patientWithIdentifier)}>
-        App Without Launch Identifier System
+      <SmartAppLaunchLink client={clientWithoutLaunchIdentifierSystems} patient={createReference(patientWithIdentifier)}>
+        App Without Launch Identifier Systems
       </SmartAppLaunchLink>,
       medplum
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText('App Without Launch Identifier System'));
+      fireEvent.click(screen.getByText('App Without Launch Identifier Systems'));
     });
 
     await waitFor(() => expect(mockAssign).toHaveBeenCalled());
@@ -179,16 +184,21 @@ describe('SmartAppLaunchLink', () => {
       name: [{ given: ['Test'], family: 'Patient' }],
     };
 
-    const clientWithLaunchIdentifierSystem: ClientApplication = {
+    const clientWithLaunchIdentifierSystems: ClientApplication = {
       resourceType: 'ClientApplication',
       launchUri: 'https://example.com/launch',
-      launchIdentifierSystem: 'https://healthgorilla.com',
+      launchIdentifierSystems: [
+        {
+          resourceType: 'Patient',
+          system: 'https://healthgorilla.com/patient-id',
+        },
+      ],
     };
 
     await medplum.createResource(patientWithDifferentIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystem} patient={createReference(patientWithDifferentIdentifier)}>
+      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystems} patient={createReference(patientWithDifferentIdentifier)}>
         App With Missing Identifier
       </SmartAppLaunchLink>,
       medplum
@@ -208,5 +218,149 @@ describe('SmartAppLaunchLink', () => {
     const smartAppLaunch = await medplum.readResource('SmartAppLaunch', launchId as string);
     expect(smartAppLaunch.patient?.reference).toBe('Patient/test-patient-diff-id');
     expect(smartAppLaunch.patient?.identifier).toBeUndefined();
+  });
+
+  test('Includes encounter identifier in SmartAppLaunch when launchIdentifierSystems includes Encounter', async () => {
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
+
+    const medplum = new MockClient();
+
+    const encounterWithIdentifier: Encounter = {
+      resourceType: 'Encounter',
+      id: 'test-encounter-with-id',
+      identifier: [
+        {
+          system: 'https://example.com/visit-id',
+          value: 'VISIT-12345',
+        },
+        {
+          system: 'http://example.com/episode',
+          value: 'EP-67890',
+        },
+      ],
+      status: 'finished',
+      class: { code: 'AMB' },
+    };
+
+    const clientWithEncounterIdentifierSystem: ClientApplication = {
+      resourceType: 'ClientApplication',
+      launchUri: 'https://example.com/launch',
+      launchIdentifierSystems: [
+        {
+          resourceType: 'Encounter',
+          system: 'https://example.com/visit-id',
+        },
+      ],
+    };
+
+    await medplum.createResource(encounterWithIdentifier);
+
+    setup(
+      <SmartAppLaunchLink client={clientWithEncounterIdentifierSystem} encounter={createReference(encounterWithIdentifier)}>
+        App With Encounter Identifier
+      </SmartAppLaunchLink>,
+      medplum
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('App With Encounter Identifier'));
+    });
+
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+
+    const url = mockAssign.mock.calls[0][0];
+    const launchId = new URL(url).searchParams.get('launch');
+    expect(launchId).toBeDefined();
+
+    const smartAppLaunch = await medplum.readResource('SmartAppLaunch', launchId as string);
+    expect(smartAppLaunch.encounter?.reference).toBe('Encounter/test-encounter-with-id');
+    expect(smartAppLaunch.encounter?.identifier).toEqual({
+      system: 'https://example.com/visit-id',
+      value: 'VISIT-12345',
+    });
+  });
+
+  test('Includes both patient and encounter identifiers when both are configured', async () => {
+    const mockAssign = jest.fn();
+    locationUtils.assign = mockAssign;
+
+    const medplum = new MockClient();
+
+    const patientWithIdentifier: Patient = {
+      resourceType: 'Patient',
+      id: 'test-patient-both',
+      identifier: [
+        {
+          system: 'https://healthgorilla.com/patient-id',
+          value: 'PATIENT-123',
+        },
+      ],
+      name: [{ given: ['Test'], family: 'Patient' }],
+    };
+
+    const encounterWithIdentifier: Encounter = {
+      resourceType: 'Encounter',
+      id: 'test-encounter-both',
+      identifier: [
+        {
+          system: 'https://example.com/visit-id',
+          value: 'VISIT-456',
+        },
+      ],
+      status: 'finished',
+      class: { code: 'AMB' },
+    };
+
+    const clientWithBothIdentifierSystems: ClientApplication = {
+      resourceType: 'ClientApplication',
+      launchUri: 'https://example.com/launch',
+      launchIdentifierSystems: [
+        {
+          resourceType: 'Patient',
+          system: 'https://healthgorilla.com/patient-id',
+        },
+        {
+          resourceType: 'Encounter',
+          system: 'https://example.com/visit-id',
+        },
+      ],
+    };
+
+    await medplum.createResource(patientWithIdentifier);
+    await medplum.createResource(encounterWithIdentifier);
+
+    setup(
+      <SmartAppLaunchLink
+        client={clientWithBothIdentifierSystems}
+        patient={createReference(patientWithIdentifier)}
+        encounter={createReference(encounterWithIdentifier)}
+      >
+        App With Both Identifiers
+      </SmartAppLaunchLink>,
+      medplum
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('App With Both Identifiers'));
+    });
+
+    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+
+    const url = mockAssign.mock.calls[0][0];
+    const launchId = new URL(url).searchParams.get('launch');
+    expect(launchId).toBeDefined();
+
+    const smartAppLaunch = await medplum.readResource('SmartAppLaunch', launchId as string);
+    expect(smartAppLaunch.patient?.reference).toBe('Patient/test-patient-both');
+    expect(smartAppLaunch.patient?.identifier).toEqual({
+      system: 'https://healthgorilla.com/patient-id',
+      value: 'PATIENT-123',
+    });
+    expect(smartAppLaunch.encounter?.reference).toBe('Encounter/test-encounter-both');
+    expect(smartAppLaunch.encounter?.identifier).toEqual({
+      system: 'https://example.com/visit-id',
+      value: 'VISIT-456',
+    });
   });
 });

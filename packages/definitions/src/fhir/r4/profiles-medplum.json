@@ -933,17 +933,47 @@
             }
           },
           {
-            "id" : "ClientApplication.launchIdentifierSystem",
-            "path" : "ClientApplication.launchIdentifierSystem",
-            "definition" : "Optional patient identifier system to use in SMART launch context. When specified, the patient's identifier with the matching system will be included in the SmartAppLaunch resource's patient reference and returned to the SMART app in the token response.",
+            "id" : "ClientApplication.launchIdentifierSystems",
+            "path" : "ClientApplication.launchIdentifierSystems",
+            "definition" : "Optional array of identifier systems to use in SMART launch context. When specified, the resource's identifier with the matching system will be included in the SmartAppLaunch resource's reference and returned to the SMART app in the token response.",
             "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base": {
+              "path" : "ClientApplication.launchIdentifierSystems",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.launchIdentifierSystems.resourceType",
+            "path" : "ClientApplication.launchIdentifierSystems.resourceType",
+            "definition" : "The resource type for which to use the identifier system (e.g., 'Patient', 'Encounter').",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base": {
+              "path" : "ClientApplication.launchIdentifierSystems.resourceType",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.launchIdentifierSystems.system",
+            "path" : "ClientApplication.launchIdentifierSystems.system",
+            "definition" : "The identifier system URI to use for the specified resource type.",
+            "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "uri"
             }],
             "base": {
-              "path" : "ClientApplication.launchIdentifierSystem",
-              "min" : 0,
+              "path" : "ClientApplication.launchIdentifierSystems.system",
+              "min" : 1,
               "max" : "1"
             }
           },

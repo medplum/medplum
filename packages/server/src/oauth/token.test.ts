@@ -1812,6 +1812,46 @@ describe('OAuth2 Token', () => {
     expect(res2.body.patient).toBe(externalPatientId);
   });
 
+  test('Smart App Launch with encounter identifier returns identifier value', async () => {
+    const encounterFhirId = randomUUID();
+    const externalEncounterId = 'VISIT-12345';
+
+    // Create a SmartAppLaunch with both reference and identifier
+    const launch = await withTestContext(() =>
+      systemRepo.createResource<SmartAppLaunch>({
+        resourceType: 'SmartAppLaunch',
+        encounter: {
+          reference: `Encounter/${encounterFhirId}`,
+          identifier: {
+            system: 'https://example.com/visit-id',
+            value: externalEncounterId,
+          },
+        },
+      })
+    );
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      launch: launch.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.secret,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    // When identifier is present, it should be returned instead of the FHIR resource ID
+    expect(res2.body.encounter).toBe(externalEncounterId);
+  });
+
   test('IP address allow', async () => {
     const res = await request(app).post('/auth/login').set('X-Forwarded-For', '5.5.5.5').type('json').send({
       clientId: client.id,

@@ -626,7 +626,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     // Prefer identifier.value if present (for SMART apps that need a specific external identifier),
     // otherwise fall back to the FHIR resource ID
     patient = launch.patient?.identifier?.value ?? resolveId(launch.patient);
-    encounter = resolveId(launch.encounter);
+    encounter = launch.encounter?.identifier?.value ?? resolveId(launch.encounter);
   }
 
   if (membership.profile?.reference?.startsWith('Patient/')) {
