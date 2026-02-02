@@ -99,7 +99,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
 
 export async function handleBulkAgentOperation(
   req: FhirRequest,
-  handler: (agent: WithId<Agent>) => Promise<FhirResponse>
+  handler: (repo: Repository, agent: WithId<Agent>) => Promise<FhirResponse>
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
@@ -114,10 +114,10 @@ export async function handleBulkAgentOperation(
   }
 
   if (req.params.id) {
-    return handler(agents[0]);
+    return handler(repo, agents[0]);
   }
 
-  const promises = agents.map((agent) => handler(agent));
+  const promises = agents.map((agent) => handler(repo, agent));
   const results = await Promise.allSettled(promises);
   const entries: BundleEntry<Parameters>[] = [];
 
@@ -168,6 +168,7 @@ export interface AgentMessageOptions {
 }
 
 export async function publishAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
+  repo: Repository,
   agent: WithId<Agent>,
   message: AgentRequestMessage,
   options?: AgentMessageOptions
@@ -176,7 +177,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
     message.callback = getReferenceString(agent) + '-' + randomUUID();
 
-    const redisSubscriber = getRedisSubscriber();
+    const redisSubscriber = getRedisSubscriber(repo.shardId);
     await redisSubscriber.subscribe(message.callback);
 
     const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
@@ -199,12 +200,12 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
       };
     });
 
-    await publishRequestMessage(agent, message);
+    await publishRequestMessage(repo, agent, message);
     const result = await resultPromise;
     return result;
   }
 
-  await publishRequestMessage(agent, message);
+  await publishRequestMessage(repo, agent, message);
   return [allOk];
 }
 
@@ -214,13 +215,14 @@ export interface SendAndHandleAgentRequestOptions<T extends AgentResponseMessage
 }
 
 export async function sendAndHandleAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
+  repo: Repository,
   agent: WithId<Agent>,
   message: AgentRequestMessage,
   expectedResponseType: T['type'],
   options?: SendAndHandleAgentRequestOptions<T>
 ): Promise<FhirResponse> {
   // Send agent message
-  const [outcome, result] = await publishAgentRequest<T>(agent, message, {
+  const [outcome, result] = await publishAgentRequest<T>(repo, agent, message, {
     ...options?.messageOptions,
     waitForResponse: true,
   });
@@ -242,8 +244,9 @@ export async function sendAndHandleAgentRequest<T extends AgentResponseMessage =
 }
 
 function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(
+  repo: Repository,
   agent: WithId<Agent>,
   message: T
 ): Promise<number> {
-  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  return getRedis(repo.shardId).publish(getReferenceString(agent), JSON.stringify(message));
 }

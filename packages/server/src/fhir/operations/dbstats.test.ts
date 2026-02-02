@@ -6,9 +6,11 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth } from '../../test.setup';
 
 describe('$db-stats', () => {
+  const shardId = GLOBAL_SHARD_ID;
   const app = express();
 
   beforeAll(async () => {
@@ -27,7 +29,7 @@ describe('$db-stats', () => {
       .post('/fhir/R4/$db-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .send({ shardId });
     expect(res1.status).toBe(200);
   });
 
@@ -40,7 +42,10 @@ describe('$db-stats', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'tableNames', valueString: 'Observation,Observation_History' }],
+        parameter: [
+          { name: 'shardId', valueString: shardId },
+          { name: 'tableNames', valueString: 'Observation,Observation_History' },
+        ],
       } satisfies Parameters);
     expect(res1.status).toBe(200);
   });
@@ -51,8 +56,7 @@ describe('$db-stats', () => {
     const res1 = await request(app)
       .post('/fhir/R4/$db-stats')
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .set('Content-Type', ContentType.FHIR_JSON);
     expect(res1.status).toBe(403);
   });
 });

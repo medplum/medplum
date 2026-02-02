@@ -6,7 +6,7 @@ import type { JWK, JWSHeaderParameters, JWTPayload, JWTVerifyOptions, KeyLike } 
 import { exportJWK, generateKeyPair, importJWK, jwtVerify, SignJWT } from 'jose';
 import { randomBytes } from 'node:crypto';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {
@@ -112,7 +112,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const searchResult = await systemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],

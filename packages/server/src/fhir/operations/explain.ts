@@ -95,7 +95,11 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const result = await withLongRunningDatabaseClient((client) => selectQuery.execute(client), DatabaseMode.READER);
+  const result = await withLongRunningDatabaseClient(
+    (client) => selectQuery.execute(client),
+    repo.shardId,
+    DatabaseMode.READER
+  );
 
   let explain: string;
   if (params.format === 'json') {

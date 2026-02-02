@@ -19,13 +19,14 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
-import { initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { createTestProject, waitForAsyncJob } from '../../test.setup';
 import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
 describe('Agent Push', () => {
   const app = express();
   let accessToken: string;
+  let projectShardId: string;
   let agent: WithId<Agent>;
   let device: WithId<Device>;
   let server: Server;
@@ -34,7 +35,6 @@ describe('Agent Push', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     server = await initApp(app, config);
-    accessToken = await initTestAuth();
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8514, () => {
@@ -42,7 +42,7 @@ describe('Agent Push', () => {
         resolve();
       });
     });
-    accessToken = await initTestAuth();
+    ({ accessToken, projectShardId } = await createTestProject({ withAccessToken: true }));
 
     const res1 = await request(app)
       .post(`/fhir/R4/Agent`)
@@ -279,7 +279,7 @@ describe('Agent Push', () => {
   });
 
   test('Ping -- Successful ping to IP', async () => {
-    const redis = getRedis();
+    const redis = getRedis(projectShardId);
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -320,7 +320,7 @@ describe('Agent Push', () => {
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await redis.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -345,7 +345,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
   });
 
   test('Ping -- Successful ping to hostname', async () => {
-    const redis = getRedis();
+    const redis = getRedis(projectShardId);
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -386,7 +386,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await redis.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -411,7 +411,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Ping -- Error', async () => {
-    const redis = getRedis();
+    const redis = getRedis(projectShardId);
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -452,7 +452,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await redis.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -475,7 +475,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Prefer: respond-async', async () => {
-    const redis = getRedis();
+    const redis = getRedis(projectShardId);
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -517,7 +517,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await redis.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,

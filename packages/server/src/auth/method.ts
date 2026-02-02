@@ -5,7 +5,7 @@ import type { DomainConfiguration } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -70,8 +70,8 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
  * @returns The domain configuration for the domain name if available.
  */
 export async function getDomainConfiguration(domain: string): Promise<DomainConfiguration | undefined> {
-  const systemRepo = getSystemRepo();
-  const results = await systemRepo.search<DomainConfiguration>({
+  const globalSystemRepo = getGlobalSystemRepo();
+  const results = await globalSystemRepo.search<DomainConfiguration>({
     resourceType: 'DomainConfiguration',
     filters: [
       {

@@ -5,7 +5,6 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { ClientApplication, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { generateSecret } from '../../oauth/keys';
-import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -41,7 +40,7 @@ type RotateSecretParameters = {
  * @returns The FHIR response.
  */
 export async function rotateSecretHandler(req: FhirRequest): Promise<FhirResponse> {
-  const repo = getAuthenticatedContext().repo;
+  const { repo, systemRepo } = getAuthenticatedContext();
   if (!repo.isSuperAdmin() && !repo.isProjectAdmin()) {
     return [forbidden];
   }
@@ -55,7 +54,6 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   // Patch using system repo since the secret fields should not generally be user-writeable
-  const systemRepo = getSystemRepo();
   const clientApp = await systemRepo.withTransaction(async () => {
     let clientApp = await systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);
     if (params.secret && params.secret === clientApp.secret) {

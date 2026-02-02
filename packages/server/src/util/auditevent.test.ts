@@ -103,6 +103,9 @@ describe('AuditEvent utils', () => {
   );
 
   test('Logs Bot output', async () => {
+    const config = await loadTestConfig();
+    config.logAuditEvents = true;
+
     const bot: WithId<Bot> = {
       resourceType: 'Bot',
       id: randomUUID(),
@@ -116,10 +119,10 @@ describe('AuditEvent utils', () => {
       user: { reference: `User/${randomUUID()}` },
       profile: { reference: `Practitioner/${randomUUID()}` },
     };
-    const req: BotExecutionRequest = { bot, runAs, input: 'foo', contentType: 'text/plain' };
+    const req: BotExecutionRequest = { bot, runAs, input: 'some-input', contentType: 'text/plain' };
 
     console.log = jest.fn();
-    await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'foo');
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"foo"`));
+    await createBotAuditEvent(req, new Date().toISOString(), AuditEventOutcome.Success, 'some-output');
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`,"outcomeDesc":"some-output"`));
   });
 });

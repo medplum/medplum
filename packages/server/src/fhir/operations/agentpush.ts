@@ -101,6 +101,7 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
 
   // Publish the message to the agent channel
   const [outcome, response] = await publishAgentRequest<AgentTransmitResponse>(
+    repo,
     agent,
     message,
     params.waitForResponse ? { waitForResponse: true, timeout: waitTimeout } : undefined

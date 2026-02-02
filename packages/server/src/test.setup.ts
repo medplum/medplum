@@ -24,16 +24,18 @@ import { inviteUser } from './admin/invite';
 import type { MedplumRedisConfig } from './config/types';
 import { RequestContext } from './context';
 import type { RepositoryContext } from './fhir/repo';
-import { Repository, getSystemRepo } from './fhir/repo';
+import { getShardSystemRepo, Repository } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
+import { getProjectAndProjectShardId, GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 
 // supertest v7 can cause websocket tests to hang without this
 setDefaultResultOrder('ipv4first');
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
+  projectShardId?: string;
   accessPolicy?: Partial<AccessPolicy>;
   membership?: Partial<ProjectMembership>;
   superAdmin?: boolean;
@@ -47,6 +49,7 @@ type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectO
 
 export type TestProjectResult<T extends TestProjectOptions> = {
   project: WithId<Project>;
+  projectShardId: string;
   accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? WithId<AccessPolicy> : undefined;
   client: T['withClient'] extends true ? WithId<ClientApplication> : undefined;
   membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
@@ -58,7 +61,8 @@ export type TestProjectResult<T extends TestProjectOptions> = {
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
   options?: T
 ): Promise<TestProjectResult<T>> {
-  const systemRepo = getSystemRepo();
+  const projectShardId = options?.projectShardId ?? GLOBAL_SHARD_ID;
+  const systemRepo = getShardSystemRepo(projectShardId);
 
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
@@ -145,6 +149,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
     if (options?.withRepo) {
       const repoContext: RepositoryContext = {
         projects: [project],
+        projectShardId,
         currentProject: project,
         author: createReference(client),
         superAdmin: options?.superAdmin,
@@ -164,6 +169,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
   return {
     project,
+    projectShardId,
     accessPolicy,
     client,
     membership,
@@ -185,8 +191,9 @@ export async function addTestUser(
   project: WithId<Project>,
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
+  const { projectShardId } = await getProjectAndProjectShardId({ reference: 'Project/' + project.id });
+  const systemRepo = getShardSystemRepo(projectShardId);
   if (accessPolicy) {
-    const systemRepo = getSystemRepo();
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },

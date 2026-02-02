@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import type { Pool } from 'pg';
 import * as databaseModule from '../database';
 import { heartbeat } from '../heartbeat';
 import {
@@ -12,6 +11,7 @@ import {
   recordHistogramValue,
   setGauge,
 } from '../otel/otel';
+import type { ShardPool } from '../sharding/sharding-types';
 
 // Create shared mock queue that all mocks will return
 const createMockQueue = (): any => ({
@@ -148,7 +148,8 @@ describe('OpenTelemetry', () => {
       () =>
         ({
           query: async () => undefined,
-        }) as unknown as Pool
+          shardId: 'mock-shard-1',
+        }) as unknown as ShardPool
     );
 
     initOtelHeartbeat();
@@ -175,7 +176,8 @@ describe('OpenTelemetry', () => {
       () =>
         ({
           query: async () => undefined,
-        }) as unknown as Pool
+          shardId: 'mock-shard-1',
+        }) as unknown as ShardPool
     );
 
     // Initialize heartbeat with valid queues first

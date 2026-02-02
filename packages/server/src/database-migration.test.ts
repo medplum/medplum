@@ -11,8 +11,8 @@ import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import type {
@@ -25,6 +25,7 @@ import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
@@ -62,7 +63,7 @@ jest.mock('./migrations/data/v1', () => {
   const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
-    prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
+    prepareJobData: (config) => prepareCustomMigrationJobData(config),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
         const results: MigrationActionResult[] = [];
@@ -103,7 +104,7 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
   config.database.disableRunPostDeployMigrations = !postDeploy;
 }
 
-async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
+async function expungePostDeployMigrationAsyncJob(repo: SystemRepository): Promise<void> {
   const jobs = await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'));
   await repo.expungeResources(
     'AsyncJob',
@@ -112,6 +113,8 @@ async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<voi
 }
 
 describe('Database migrations', () => {
+  let systemRepo: SystemRepository;
+
   beforeAll(async () => {
     console.log = jest.fn();
 
@@ -121,11 +124,12 @@ describe('Database migrations', () => {
       .mockImplementation(mockMarkPostDeployMigrationCompleted);
     jest.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
 
+    systemRepo = getGlobalSystemRepo();
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
     await initAppServices(getConfig());
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
+    await expungePostDeployMigrationAsyncJob(systemRepo);
     await shutdownApp();
   });
 
@@ -147,7 +151,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -185,11 +189,11 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
-              ...prepareCustomMigrationJobData(asyncJob),
+              ...prepareCustomMigrationJobData({ asyncJob, shardId: GLOBAL_SHARD_ID }),
               // requestId and traceId will likely be different since in the mocked v1 migration,
               // the call to prepareJobData is not within `withTestContext`
               requestId: expect.any(String),
@@ -215,13 +219,13 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
-        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID)).rejects.toThrow(
           'Cannot run post-deploy migration since pre-deploy migrations are disabled'
         );
       }));
@@ -240,14 +244,14 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
         mockValues.serverVersion = '3.3.0';
-        const asyncJob = await maybeStartPostDeployMigration();
+        const asyncJob = await maybeStartPostDeployMigration(GLOBAL_SHARD_ID);
         if (!asyncJob) {
           throw new Error('Expected to start post-deploy migration');
         }
@@ -263,7 +267,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: GLOBAL_SHARD_ID });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
       }));
@@ -273,13 +277,13 @@ describe('Database migrations', () => {
         const lastVersion = getLatestPostDeployMigrationVersion();
         mockValues.postDeployVersion = lastVersion;
 
-        await expect(maybeStartPostDeployMigration()).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID)).resolves.toBeUndefined();
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
 
     test('Existing AsyncJob that gets requeued and completes', () =>
       withTestContext(async () => {
-        const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+        const asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -288,23 +292,23 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartPostDeployMigration()).resolves.toMatchObject({
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID)).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: GLOBAL_SHARD_ID });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
       }));
 
     test('Existing data migration job in a project is ignored', () =>
       withTestContext(async () => {
-        const project = await getSystemRepo().createResource<Project>({ resourceType: 'Project' });
+        const project = await systemRepo.createResource<Project>({ resourceType: 'Project' });
 
         // Not using system repo to create the job so that AsyncJob is in a project
-        const projectAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+        const projectAsyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           meta: {
             project: project.id,
@@ -317,7 +321,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const asyncJob = await maybeStartPostDeployMigration();
+        const asyncJob = await maybeStartPostDeployMigration(GLOBAL_SHARD_ID);
         if (!asyncJob) {
           throw new Error('Expected to start post-deploy migration');
         }
@@ -333,7 +337,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const expectedJobData = prepareCustomMigrationJobData(asyncJob);
+        const expectedJobData = prepareCustomMigrationJobData({ asyncJob, shardId: GLOBAL_SHARD_ID });
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         expect(queueAddSpy.mock.lastCall[1]).toEqual(expectedJobData);
 
@@ -344,7 +348,6 @@ describe('Database migrations', () => {
 
     test('Multiple data migration jobs with accepted status', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -365,7 +368,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID)).rejects.toThrow(
           'Unable to start post-deploy migration since there are more than one existing data-migration AsyncJob with accepted status'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -375,7 +378,7 @@ describe('Database migrations', () => {
       withTestContext(async () => {
         mockValues.postDeployVersion = 2;
 
-        await expect(maybeStartPostDeployMigration(1)).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID, 1)).resolves.toBeUndefined();
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
 
@@ -383,7 +386,7 @@ describe('Database migrations', () => {
       withTestContext(async () => {
         mockValues.postDeployVersion = 1;
 
-        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID, 2)).rejects.toThrow(
           'Requested post-deploy migration v2, but there are no pending post-deploy migrations.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -394,14 +397,14 @@ describe('Database migrations', () => {
         mockValues.postDeployVersion = 0;
 
         await expect(
-          getSystemRepo().searchOne<AsyncJob>(
-            parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' })
-          )
+          systemRepo.searchOne<AsyncJob>(parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' }))
         ).resolves.toBeUndefined();
 
-        expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
+        expect(
+          await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID))
+        ).toStrictEqual(1);
 
-        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(GLOBAL_SHARD_ID, 2)).rejects.toThrow(
           'Requested post-deploy migration v2, but the pending post-deploy migration is v1.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
@@ -416,7 +419,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -428,7 +431,6 @@ describe('Database migrations', () => {
         mockValues.serverVersion = '3.2.4';
         setMigrationsConfig(true, postDeploy);
 
-        const systemRepo = getSystemRepo();
         let asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -439,8 +441,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob().execute(undefined, jobData);
+        const jobData = prepareReindexJobData(GLOBAL_SHARD_ID, ['ImmunizationEvaluation'], asyncJob.id);
+        const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -459,7 +461,7 @@ describe('Database migrations', () => {
         mockValues.serverVersion = serverVersion;
         setMigrationsConfig(true, postDeploy);
 
-        const systemRepo = getSystemRepo();
+        const systemRepo = getShardSystemRepo(GLOBAL_SHARD_ID);
         let asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -472,8 +474,8 @@ describe('Database migrations', () => {
 
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
-        const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob().execute(undefined, jobData);
+        const jobData = prepareReindexJobData(GLOBAL_SHARD_ID, ['MedicinalProductContraindication'], asyncJob.id);
+        await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -505,7 +507,6 @@ describe('Database migrations', () => {
       [false, undefined],
     ])('Skips only if in firstBoot mode [%s] and has dataVersion [%s]', async (firstBootMode, dataVersion) => {
       mockValues.postDeployVersion = firstBootMode ? MigrationVersion.FIRST_BOOT : MigrationVersion.NONE;
-      const systemRepo = getSystemRepo();
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -517,7 +518,7 @@ describe('Database migrations', () => {
 
       let jobData: ReindexJobData = {} as unknown as ReindexJobData;
       await withTestContext(async () => {
-        jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+        jobData = prepareReindexJobData(GLOBAL_SHARD_ID, ['ValueSet'], asyncJob.id);
       });
 
       const reindexJob = new ReindexJob(systemRepo);
@@ -553,6 +554,7 @@ describe('Database migrations', () => {
   // has a beforeEach that initializes and shuts down the app repeatedly.
   // Here, we want one long-running app
   describe('Super Admin routes', () => {
+    const shardId = GLOBAL_SHARD_ID;
     const app = express();
 
     let adminAccessToken: string;
@@ -561,11 +563,9 @@ describe('Database migrations', () => {
     beforeAll(async () => {
       const config = await loadTestConfig();
       await initApp(app, config);
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
 
       ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
-
-      const systemRepo = getSystemRepo();
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -607,7 +607,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
     });
 
     afterAll(async () => {
@@ -617,6 +617,18 @@ describe('Database migrations', () => {
     describe('Manually run post-deploy migration', () => {
       beforeEach(() => {
         setMigrationsConfig(true, false);
+      });
+
+      test('missing shardId', async () => {
+        const res = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({});
+
+        expect(res.status).toStrictEqual(400);
+        expect(res.body).toMatchObject(badRequest('shardId is required'));
       });
 
       test.each<[boolean, boolean, 'fail' | 'pass']>([
@@ -634,7 +646,7 @@ describe('Database migrations', () => {
             .set('Authorization', 'Bearer ' + adminAccessToken)
             .set('Prefer', 'respond-async')
             .type('json')
-            .send({});
+            .send({ shardId });
 
           const queueAdd = getQueueAddSpy();
 
@@ -660,7 +672,7 @@ describe('Database migrations', () => {
             .set('Authorization', 'Bearer ' + adminAccessToken)
             .set('Prefer', 'respond-async')
             .type('json')
-            .send({ dataVersion });
+            .send({ shardId, dataVersion });
 
           expect(res1.status).toStrictEqual(400);
           expect(res1.headers['content-location']).not.toBeDefined();
@@ -676,7 +688,7 @@ describe('Database migrations', () => {
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ dataVersion: 1 });
+          .send({ shardId, dataVersion: 1 });
 
         // Since the version is less than or equal to the current version,
         // nothing to do, so no AsyncJob was created and no content-location header
@@ -698,7 +710,7 @@ describe('Database migrations', () => {
           .post('/admin/super/setdataversion')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
-          .send({ dataVersion: 1337 });
+          .send({ shardId, dataVersion: 1337 });
 
         expect(res1.status).toStrictEqual(200);
         expect(res1.body).toMatchObject(allOk);
@@ -710,7 +722,7 @@ describe('Database migrations', () => {
           .post('/admin/super/setdataversion')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
-          .send({ dataVersion });
+          .send({ shardId, dataVersion });
 
         expect(res1.status).toStrictEqual(400);
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
@@ -736,7 +748,8 @@ describe('Database migrations', () => {
           .post('/admin/super/reconcile-db-schema-drift')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
-          .type('json');
+          .type('json')
+          .send({ shardId });
 
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         expect(res1.status).toStrictEqual(200);
@@ -758,7 +771,8 @@ describe('Database migrations', () => {
           .post('/admin/super/reconcile-db-schema-drift')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
-          .type('json');
+          .type('json')
+          .send({ shardId });
 
         expect(queueAddSpy).toHaveBeenCalledTimes(1);
         const jobData = queueAddSpy.mock.calls[0][1];

@@ -29,7 +29,8 @@ export async function conceptMapTranslateHandler(req: FhirRequest): Promise<Fhir
   const params = parseInputParameters<ConceptMapTranslateParameters>(operation, req);
   const map = await lookupConceptMap(params, req.params.id);
 
-  const output = await translateConcept(map, params);
+  const ctx = getAuthenticatedContext();
+  const output = await translateConcept(ctx.repo.shardId, map, params);
   return [allOk, buildOutputParameters(operation, output)];
 }
 
@@ -55,6 +56,7 @@ async function lookupConceptMap(params: ConceptMapTranslateParameters, id?: stri
 }
 
 export async function translateConcept(
+  shardId: string,
   conceptMap: WithId<ConceptMap>,
   params: ConceptMapTranslateParameters
 ): Promise<ConceptMapTranslateOutput> {
@@ -62,12 +64,12 @@ export async function translateConcept(
   const sourceCodes = indexConceptMapCodings(params);
 
   for (const [system, codes] of Object.entries(sourceCodes)) {
-    const results = await findConceptMappings(conceptMap, params, system, codes);
+    const results = await findConceptMappings(shardId, conceptMap, params, system, codes);
     if (results.length) {
       matches.push(...results);
     } else {
       // Unmapped codes from this map can produce values via defaults or by falling back to another ConceptMap
-      await handleUnmappedCodes(conceptMap, params, system, codes, matches);
+      await handleUnmappedCodes(shardId, conceptMap, params, system, codes, matches);
     }
   }
 
@@ -78,6 +80,7 @@ export async function translateConcept(
 }
 
 async function findConceptMappings(
+  shardId: string,
   conceptMap: WithId<ConceptMap>,
   params: ConceptMapTranslateParameters,
   system: string,
@@ -123,13 +126,14 @@ async function findConceptMappings(
     query.where(new Column('target', 'system'), '=', params.targetsystem);
   }
 
-  const db = getDatabasePool(DatabaseMode.READER);
+  const db = getDatabasePool(DatabaseMode.READER, shardId);
   const results = await query.execute(db);
 
   return parseDatabaseRows(results);
 }
 
 async function handleUnmappedCodes(
+  shardId: string,
   conceptMap: ConceptMap,
   params: ConceptMapTranslateParameters,
   system: string,
@@ -156,7 +160,7 @@ async function handleUnmappedCodes(
         break;
       case 'other-map': {
         const otherMap = await lookupConceptMap({ url: unmapped.url });
-        const results = await translateConcept(otherMap, params);
+        const results = await translateConcept(shardId, otherMap, params);
         for (const otherMatch of results.match ?? EMPTY) {
           matches.push({ ...otherMatch, source: unmapped.url });
         }

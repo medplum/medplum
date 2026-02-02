@@ -8,7 +8,7 @@ import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getAuthenticatedContext } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { makeValidationMiddleware } from '../util/validator';
 import { bcryptHashPassword } from './utils';
 
@@ -20,10 +20,9 @@ export const changePasswordValidator = makeValidationMiddleware([
 export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
 
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+  const user = await ctx.systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
 
-  await changePassword({
+  await changePassword(ctx.systemRepo, {
     user,
     oldPassword: req.body.oldPassword,
     newPassword: req.body.newPassword,
@@ -38,7 +37,7 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
-async function changePassword(request: ChangePasswordRequest): Promise<void> {
+async function changePassword(systemRepo: SystemRepository, request: ChangePasswordRequest): Promise<void> {
   const oldPasswordHash = request.user.passwordHash;
   if (!oldPasswordHash) {
     throw new OperationOutcomeError(badRequest('Existing password not set', 'oldPassword'));
@@ -55,7 +54,6 @@ async function changePassword(request: ChangePasswordRequest): Promise<void> {
   }
 
   const newPasswordHash = await bcryptHashPassword(request.newPassword);
-  const systemRepo = getSystemRepo();
   await systemRepo.updateResource<User>({
     ...request.user,
     passwordHash: newPasswordHash,

@@ -10,6 +10,7 @@ import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
@@ -246,7 +247,7 @@ describe('App', () => {
 
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -289,7 +290,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRedis(GLOBAL_SHARD_ID), testRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

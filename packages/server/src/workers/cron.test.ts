@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import type { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import type { CronJobData } from './cron';
 import { convertTimingToCron, execBot, getCronQueue } from './cron';
@@ -14,9 +16,9 @@ import { convertTimingToCron, execBot, getCronQueue } from './cron';
 jest.mock('node-fetch');
 
 describe('Cron Worker', () => {
-  const systemRepo = getSystemRepo();
-  let botProject: Project;
+  let botProject: WithId<Project>;
   let botRepo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -26,10 +28,12 @@ describe('Cron Worker', () => {
     const botProjectDetails = await createTestProject({ withClient: true });
     botProject = botProjectDetails.project;
     botRepo = new Repository({
+      projectShardId: botProjectDetails.projectShardId,
       extendedMode: true,
       projects: [botProjectDetails.project],
       author: createReference(botProjectDetails.client),
     });
+    systemRepo = getShardSystemRepo(botProjectDetails.projectShardId);
   });
 
   afterAll(async () => {
@@ -174,6 +178,7 @@ describe('Cron Worker', () => {
       });
 
       const repo = new Repository({
+        projectShardId: systemRepo.shardId,
         extendedMode: true,
         projects: [testProject],
         author: {
@@ -218,12 +223,15 @@ describe('Cron Worker', () => {
       });
 
       // Create a job object to pass to execBot
-      const job: Job<CronJobData> = {
+      const data: CronJobData = {
+        shardId: botRepo.shardId,
+        resourceType: 'Bot',
+        botId: bot.id,
+      };
+
+      const job = {
         id: bot.id,
-        data: {
-          resourceType: 'Bot',
-          botId: bot.id,
-        },
+        data,
       } as Job<CronJobData>;
 
       await execBot(job);

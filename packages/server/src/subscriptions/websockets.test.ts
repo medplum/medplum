@@ -147,7 +147,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${patientSubscription?.id}`
                 )
@@ -183,7 +183,7 @@ describe('WebSocket Subscription', () => {
         await sleep(0);
         subActive =
           (
-            await getRedis().smismember(
+            await getRedis(repo.shardId).smismember(
               `medplum:subscriptions:r4:project:${project.id}:active`,
               `Subscription/${patientSubscription?.id}`
             )
@@ -274,7 +274,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${patientSubscription?.id}`
                 )
@@ -306,7 +306,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${patientSubscription?.id}`
                 )
@@ -473,7 +473,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${subscription.id}`
                 )
@@ -679,7 +679,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${subscription.id}`
                 )
@@ -808,7 +808,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (
-                await getRedis().smismember(
+                await getRedis(repo.shardId).smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
                   `Subscription/${subscription.id}`
                 )
@@ -860,6 +860,7 @@ describe('Subscription Heartbeat', () => {
     accessToken = result.accessToken;
 
     repo = new Repository({
+      projectShardId: result.projectShardId,
       extendedMode: true,
       projects: [project],
       author: {

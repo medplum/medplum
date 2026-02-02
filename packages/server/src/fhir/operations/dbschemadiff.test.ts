@@ -6,6 +6,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth } from '../../test.setup';
 
 describe('$db-schema-diff', () => {
@@ -30,7 +31,7 @@ describe('$db-schema-diff', () => {
       .post('/fhir/R4/$db-schema-diff')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .send({ shardId: GLOBAL_SHARD_ID });
     expect(res1.status).toBe(200);
     const params = res1.body as Parameters;
     const migrationString = params.parameter?.find((p) => p.name === 'migrationString')?.valueString;

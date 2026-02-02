@@ -11,10 +11,9 @@ import { getAuthenticatedContext } from '../../../context';
 import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
-import { getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -57,7 +56,6 @@ export class AsyncJobExecutor {
     }
 
     const startTime = Date.now();
-    const systemRepo = getSystemRepo();
     log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
 
     return this.run(callback)
@@ -67,7 +65,7 @@ export class AsyncJobExecutor {
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
         });
-        return this.completeJob(systemRepo, output);
+        return this.completeJob(output);
       })
       .catch(async (err) => {
         log.error('AsyncJob execution failed', {
@@ -76,7 +74,7 @@ export class AsyncJobExecutor {
           error: err instanceof Error ? err.message : err.toString(),
           stack: err instanceof Error ? err.stack : undefined,
         });
-        return this.failJob(systemRepo, err);
+        return this.failJob(err);
       })
       .finally(() => {
         this.repo[Symbol.dispose]();
@@ -103,7 +101,7 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob> {
+  async completeJob(output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
@@ -114,16 +112,27 @@ export class AsyncJobExecutor {
       output,
     };
     if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), updatedJob.dataVersion);
-      updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
+      //TODO - This needs more validation to check that it's a system resource
+      const completedDataVersion = updatedJob.dataVersion;
+      getLogger().info('Marking post-deploy migration complete', {
+        shardId: this.repo.shardId,
+        version: `v${completedDataVersion}`,
+      });
+      await this.repo.withTransaction(async () => {
+        await markPostDeployMigrationCompleted(
+          getDatabasePool(DatabaseMode.WRITER, this.repo.shardId),
+          completedDataVersion
+        );
+        updatedJob = await this.repo.updateResource<AsyncJob>(updatedJob);
+      });
+      await maybeAutoRunPendingPostDeployMigrationOnShard(this.repo.shardId);
       return updatedJob;
     } else {
-      return repo.updateResource<AsyncJob>(updatedJob);
+      return this.repo.updateResource<AsyncJob>(updatedJob);
     }
   }
 
-  async failJob(repo: Repository, err?: Error, output?: Parameters): Promise<AsyncJob> {
+  async failJob(err?: Error, output?: Parameters): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
@@ -156,7 +165,7 @@ export class AsyncJobExecutor {
         );
       }
     }
-    return repo.updateResource<AsyncJob>(failedJob);
+    return this.repo.updateResource<AsyncJob>(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {
@@ -175,6 +184,7 @@ export async function sendAsyncResponse(
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+  //TODO{sharding} - The repo used in AsyncJobExecutor should be parameterized
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);

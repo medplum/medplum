@@ -11,7 +11,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -23,6 +23,7 @@ const email = `text@${domain}`;
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
 let project: WithId<Project>;
+let projectShardId: string;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
@@ -43,8 +44,7 @@ describe('Token Exchange', () => {
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
-      project = registration.project;
-      defaultClient = registration.client;
+      ({ project, projectShardId, client: defaultClient } = registration);
 
       const identityProvider = {
         authorizeUrl: 'https://example.com/oauth2/authorize',
@@ -54,7 +54,7 @@ describe('Token Exchange', () => {
         clientSecret: '456',
       };
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = getShardSystemRepo(projectShardId);
 
       // Create a new client application with external auth
       externalAuthClient = await createClient(systemRepo, {

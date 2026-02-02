@@ -5,42 +5,44 @@ import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
 import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
+import { GLOBAL_SHARD_ID } from './sharding/sharding-utils';
 import { deleteRedisKeys } from './test.setup';
 
 describe('Redis', () => {
   let config: MedplumServerConfig;
+  const shardId = GLOBAL_SHARD_ID;
 
   beforeAll(async () => {
     config = await loadTestConfig();
   });
 
   test('Get redis', async () => {
-    initRedis(config.redis);
-    expect(getRedis()).toBeDefined();
+    initRedis(config);
+    expect(getRedis(shardId)).toBeDefined();
     await closeRedis();
   });
 
   test('Not initialized', async () => {
-    expect(() => getRedis()).toThrow();
+    expect(() => getRedis(shardId)).toThrow();
     await expect(closeRedis()).resolves.toBeUndefined();
   });
 
   describe('getRedisSubscriber', () => {
     test('Not initialized', async () => {
       await closeRedis();
-      expect(() => getRedisSubscriber()).toThrow();
+      expect(() => getRedisSubscriber(shardId)).toThrow();
     });
 
     test('Getting a subscriber', async () => {
-      initRedis(config.redis);
-      const subscriber = getRedisSubscriber();
+      initRedis(config);
+      const subscriber = getRedisSubscriber(shardId);
       expect(subscriber).toBeInstanceOf(Redis);
       await closeRedis();
     });
 
     test('Hanging subscriber still disconnects on closeRedis', async () => {
-      initRedis(config.redis);
-      const subscriber = getRedisSubscriber();
+      initRedis(config);
+      const subscriber = getRedisSubscriber(shardId);
 
       let reject: (err: Error) => void;
       const closePromise = new Promise<void>((resolve, _reject) => {
@@ -62,10 +64,10 @@ describe('Redis', () => {
     });
 
     test('Disconnecting a subscriber removes it from the list', async () => {
-      initRedis(config.redis);
-      expect(getRedisSubscriberCount()).toStrictEqual(0);
-      const subscriber = getRedisSubscriber();
-      expect(getRedisSubscriberCount()).toStrictEqual(1);
+      initRedis(config);
+      expect(getRedisSubscriberCount(shardId)).toStrictEqual(0);
+      const subscriber = getRedisSubscriber(shardId);
+      expect(getRedisSubscriberCount(shardId)).toStrictEqual(1);
       subscriber.disconnect();
 
       let reject: (err: Error) => void;
@@ -84,7 +86,7 @@ describe('Redis', () => {
       }, 3500);
 
       await expect(closePromise).resolves.toBeUndefined();
-      expect(getRedisSubscriberCount()).toStrictEqual(0);
+      expect(getRedisSubscriberCount(shardId)).toStrictEqual(0);
       clearTimeout(timer);
 
       await closeRedis();

@@ -8,9 +8,11 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { GLOBAL_SHARD_ID } from '../../sharding/sharding-utils';
 import { initTestAuth } from '../../test.setup';
 
 describe('dbgetginindexes', () => {
+  const shardId = GLOBAL_SHARD_ID;
   const app = express();
 
   let accessToken: string;
@@ -21,7 +23,7 @@ describe('dbgetginindexes', () => {
     accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     // Create a test table
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    const client = getDatabasePool(DatabaseMode.WRITER, shardId);
     await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
     await client.query(`CREATE TABLE ${escapedTableName} (aaa UUID[], bbb TEXT[])`);
     await client.query(
@@ -41,7 +43,7 @@ describe('dbgetginindexes', () => {
 
   test('Success without tableName', async () => {
     const res = await request(app)
-      .get('/fhir/R4/$db-indexes?tableName=')
+      .get(`/fhir/R4/$db-indexes?shardId=${shardId}&tableName=`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -58,7 +60,7 @@ describe('dbgetginindexes', () => {
 
   test('Success with tableName', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/$db-indexes?tableName=${tableName}`)
+      .get(`/fhir/R4/$db-indexes?shardId=${shardId}&tableName=${tableName}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(200);
@@ -94,7 +96,7 @@ describe('dbgetginindexes', () => {
 
   test('Invalid tableName', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/$db-indexes?tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
+      .get(`/fhir/R4/$db-indexes?shardId=${shardId}&tableName=${encodeURIComponent('Robert"; DROP TABLE Students;')}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res.status).toBe(400);

@@ -3,7 +3,7 @@
 import type { Login } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { setLoginScope } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -18,11 +18,11 @@ export const scopeValidator = makeValidationMiddleware([
 ]);
 
 export async function scopeHandler(req: Request, res: Response): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const login = await systemRepo.readResource<Login>('Login', req.body.login);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const login = await globalSystemRepo.readResource<Login>('Login', req.body.login);
 
   // Update the login
-  const updated = await setLoginScope(login, req.body.scope);
+  const updated = await setLoginScope(globalSystemRepo, login, req.body.scope);
 
   // Send code
   res.status(200).json({

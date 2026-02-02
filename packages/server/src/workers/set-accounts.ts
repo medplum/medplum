@@ -9,7 +9,7 @@ import { runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import type { AuthState } from '../oauth/middleware';
 import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
@@ -26,6 +26,7 @@ export interface SetAccountsJobData {
   readonly id: string;
   readonly accounts: Reference[];
   readonly authState: Readonly<AuthState>;
+  readonly shardId: string;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -82,18 +83,14 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
   const { resourceType, id, accounts } = job.data;
-  const { login, project, membership } = job.data.authState;
-  const systemRepo = getSystemRepo();
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+  const { login, project, membership, projectShardId } = job.data.authState;
+  const systemRepo = getShardSystemRepo(job.data.shardId);
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
-
-  try {
-    const result = await setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
-    await exec.completeJob(repo, result);
-  } catch (err) {
-    await exec.failJob(repo, err as Error);
-  }
+  const repo = await getRepoForLogin({ login, project, projectShardId, membership, userConfig }, true);
+  const exec = new AsyncJobExecutor(repo, job.data.asyncJob);
+  await exec.startAsync(async () => {
+    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
+  });
 }

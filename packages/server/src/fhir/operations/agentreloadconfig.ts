@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import type { Repository } from '../repo';
 import { handleBulkAgentOperation, sendAndHandleAgentRequest } from './utils/agentutils';
 
 export const operation: OperationDefinition = {
@@ -30,9 +31,9 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentReloadConfigHandler(req: FhirRequest): Promise<FhirResponse> {
-  return handleBulkAgentOperation(req, async (agent) => reloadConfig(agent));
+  return handleBulkAgentOperation(req, reloadConfig);
 }
 
-async function reloadConfig(agent: WithId<Agent>): Promise<FhirResponse> {
-  return sendAndHandleAgentRequest(agent, { type: 'agent:reloadconfig:request' }, 'agent:reloadconfig:response');
+async function reloadConfig(repo: Repository, agent: WithId<Agent>): Promise<FhirResponse> {
+  return sendAndHandleAgentRequest(repo, agent, { type: 'agent:reloadconfig:request' }, 'agent:reloadconfig:response');
 }

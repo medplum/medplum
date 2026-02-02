@@ -25,6 +25,7 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
+    param('in', 'shardId', 'string', 1, '1'),
     param('in', 'tableName', 'string', 0, '*'),
     param('out', 'defaultGinPendingListLimit', 'integer', 1, '1'),
     param('out', 'index', undefined, 0, '*', [
@@ -50,7 +51,7 @@ interface GinIndexInfo {
 export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const params = parseInputParameters<{ tableName?: string }>(operation, req);
+  const params = parseInputParameters<{ shardId: string; tableName?: string }>(operation, req);
 
   const tableNames = [];
   for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
@@ -60,12 +61,12 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
     tableNames.push(tableName);
   }
 
-  const defaultGinPendingListLimit = await getDefaultGinPendingListLimit();
-  const client = getDatabasePool(DatabaseMode.WRITER);
+  const pool = getDatabasePool(DatabaseMode.WRITER, params.shardId);
+  const defaultGinPendingListLimit = await getDefaultGinPendingListLimit(pool);
 
   let index: GinIndexInfo[] | undefined;
   if (tableNames.length > 0) {
-    index = await getGinIndexInfo(client, tableNames);
+    index = await getGinIndexInfo(pool, tableNames);
   }
   const output: { defaultGinPendingListLimit: number; index?: GinIndexInfo[] } = {
     defaultGinPendingListLimit,
@@ -75,9 +76,8 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-async function getDefaultGinPendingListLimit(): Promise<number> {
-  const client = getDatabasePool(DatabaseMode.WRITER);
-  const defaultStatisticsTarget = await client.query('SELECT setting FROM pg_settings WHERE name = $1', [
+async function getDefaultGinPendingListLimit(pool: PoolClient | Pool): Promise<number> {
+  const defaultStatisticsTarget = await pool.query('SELECT setting FROM pg_settings WHERE name = $1', [
     'gin_pending_list_limit',
   ]);
   return Number(defaultStatisticsTarget.rows[0].setting);

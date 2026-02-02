@@ -218,7 +218,7 @@ async function computeExpansion(
 
     if (include.concept) {
       const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
-      const validCodings = await validateCodings(codeSystem, filteredCodings, params);
+      const validCodings = await validateCodings(repo, codeSystem, filteredCodings, params);
       for (const c of validCodings) {
         if (c) {
           c.id = undefined;

@@ -31,7 +31,8 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -71,7 +72,6 @@ jest.mock('node-fetch');
 
 describe('OAuth2 Token', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   const domain = randomUUID() + '.example.com';
   const email = `text@${domain}`;
   const password = randomUUID();
@@ -79,16 +79,19 @@ describe('OAuth2 Token', () => {
   let config: MedplumServerConfig;
   let project: WithId<Project>;
   let client: WithId<ClientApplication>;
+  let projectShardId: string;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    ({ project, projectShardId, client } = await createTestProject({ withClient: true }));
+    systemRepo = getShardSystemRepo(projectShardId);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -1962,13 +1965,15 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await createTestProject({
+      project: { superAdmin: true },
+    });
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;
     const password = 'test-password';
     await inviteUser({
-      project,
+      project: superAdminProject,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',

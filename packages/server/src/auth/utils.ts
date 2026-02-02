@@ -18,13 +18,14 @@ import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
+  systemRepo: SystemRepository,
   project: Project,
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
@@ -38,7 +39,6 @@ export async function createProfile(
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
 
-  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
@@ -85,8 +85,8 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const user = await globalSystemRepo.readReference<User>(login.user as Reference<User>);
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
     const accountName = `Medplum - ${user.email}`;
@@ -122,18 +122,23 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
-  const redactedMemberships = memberships.map((m) => ({
-    id: m.id,
-    project: m.project,
-    profile: m.profile,
-    identifier: m.identifier,
-  }));
-  res.json(
-    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      login: login.id,
-      memberships: redactedMemberships,
+  const redactedMemberships = await Promise.all(
+    memberships.map(async (m) => {
+      // TODO{sharding} - project system repos could probably be cached across promises
+      const systemRepo = await getProjectSystemRepo(m.project);
+      return rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
+        id: m.id,
+        project: m.project,
+        profile: m.profile,
+        identifier: m.identifier,
+      });
     })
   );
+
+  res.json({
+    login: login.id,
+    memberships: redactedMemberships,
+  });
 }
 
 /**
@@ -222,7 +227,8 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getSystemRepo();
+  // TODO{sharding} - Requires searching across all shards for a project
+  const systemRepo = getShardSystemRepo('TODO{sharding}-getProjectByRecaptchaSiteKey');
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

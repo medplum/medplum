@@ -4,14 +4,14 @@ import { readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode } from '../database';
-import type { Repository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
 /**
  * Creates all StructureDefinition resources.
  * @param systemRepo - The system repository to use
  */
-export async function rebuildR4StructureDefinitions(systemRepo: Repository): Promise<void> {
+export async function rebuildR4StructureDefinitions(systemRepo: SystemRepository): Promise<void> {
   const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
   await client.query(`DELETE FROM "StructureDefinition" WHERE "projectId" = $1`, [r4ProjectId]);
 
@@ -21,7 +21,7 @@ export async function rebuildR4StructureDefinitions(systemRepo: Repository): Pro
 }
 
 async function createStructureDefinitionsForBundle(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   structureDefinitions: Bundle
 ): Promise<void> {
   for (const entry of structureDefinitions.entry as BundleEntry[]) {

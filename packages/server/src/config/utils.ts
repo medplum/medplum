@@ -3,6 +3,7 @@
 import { concatUrls } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { getLogger } from '../logger';
+import { GLOBAL_SHARD_ID } from '../sharding/sharding-utils';
 import type { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
@@ -72,6 +73,17 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
     config.signingKeyPassphrase = passphrase;
   }
 
+  config.defaultShardId ||= GLOBAL_SHARD_ID;
+  config.shards ??= {};
+  config.shards[GLOBAL_SHARD_ID] = {
+    id: GLOBAL_SHARD_ID,
+    database: config.database,
+    readonlyDatabase: config.readonlyDatabase,
+    redis: config.redis,
+  };
+  for (const [shardId, shardConfig] of Object.entries(config.shards)) {
+    shardConfig.id = shardId;
+  }
   return config as ServerConfig;
 }
 
@@ -100,7 +112,9 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota';
+  | 'defaultFhirQuota'
+  | 'shards'
+  | 'defaultShardId';
 
 const integerKeys = new Set([
   'accurateCountThreshold',

@@ -5,10 +5,10 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 
 describe('Coding lookup table', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -35,7 +35,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
       const results = await db.query('SELECT id, code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toStrictEqual([
         'AB (Ambulance)',
@@ -70,7 +70,7 @@ describe('Coding lookup table', () => {
 
       const systemResource = await systemRepo.createResource(codeSystem);
 
-      const db = getDatabasePool(DatabaseMode.READER);
+      const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
       const results = await db.query('SELECT code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
       expect(results.rowCount).toStrictEqual(0);
     }));
