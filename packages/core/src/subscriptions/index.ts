@@ -497,10 +497,10 @@ export class SubscriptionManager {
 
   async reconnectIfNeeded(): Promise<void> {
     if (!(WS_STATES_THAT_NEED_RECONNECT as readonly number[]).includes(this.getWebSocket().readyState)) {
-      return Promise.resolve();
+      return;
     }
 
-    return new Promise<void>((resolve) => {
+    await new Promise<void>((resolve) => {
       const tmpCb = (): void => {
         resolve();
         this.getWebSocket().removeEventListener('open', tmpCb);
