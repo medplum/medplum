@@ -78,8 +78,14 @@ describe('parseSchedulingParametersExtensions', () => {
             { url: 'alignmentOffset', valueDuration: { unit: 'min', value: 5 } },
             { url: 'bufferAfter', valueDuration: { unit: 'min', value: 15 } },
             { url: 'bufferBefore', valueDuration: { unit: 'min', value: 10 } },
-            { url: 'serviceType', valueCoding: { code: 'new-patient', system: 'http://example.com' } },
-            { url: 'serviceType', valueCoding: { code: 'office-visit', system: 'http://example.com' } },
+            {
+              url: 'serviceType',
+              valueCodeableConcept: { coding: [{ code: 'new-patient', system: 'http://example.com' }] },
+            },
+            {
+              url: 'serviceType',
+              valueCodeableConcept: { coding: [{ code: 'office-visit', system: 'http://example.com' }] },
+            },
             { url: 'duration', valueDuration: { unit: 'h', value: 2 } },
             { url: 'timezone', valueCode: 'America/Phoenix' },
             {
@@ -129,8 +135,8 @@ describe('parseSchedulingParametersExtensions', () => {
         alignmentOffset: 5,
         duration: 120,
         serviceType: [
-          { code: 'new-patient', system: 'http://example.com' },
-          { code: 'office-visit', system: 'http://example.com' },
+          { coding: [{ code: 'new-patient', system: 'http://example.com' }] },
+          { coding: [{ code: 'office-visit', system: 'http://example.com' }] },
         ],
         timezone: 'America/Phoenix',
       },

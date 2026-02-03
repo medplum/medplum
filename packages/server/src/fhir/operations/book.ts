@@ -64,8 +64,8 @@ function makeMatcher(slot: Slot): Matcher {
   );
   const codeSet = new Set(codes);
   return (schedulingParams: SchedulingParameters) => {
-    return schedulingParams.serviceType.some((coding) => {
-      return codeSet.has(`${coding.system}|${coding.code}`);
+    return schedulingParams.serviceType.some((codeableConcept) => {
+      return codeableConcept.coding?.some((coding) => codeSet.has(`${coding.system}|${coding.code}`));
     });
   };
 }
