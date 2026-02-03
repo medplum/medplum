@@ -70,12 +70,7 @@ const WRAPPER_CODE = `
       result = result.toString();
     }
     if (!streaming || !botResponseStream.streamStarted) {
-      responseStream = awslambda.HttpResponseStream.from(responseStream, {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-      responseStream.write(JSON.stringify(result));
-      responseStream.end();
+      writeResponse(responseStream, 200, result);
     }
   } catch (err) {
     if (err instanceof Error) {
@@ -85,8 +80,9 @@ const WRAPPER_CODE = `
     } else {
       console.log("Unhandled error: " + err);
     }
-    responseStream.end();
-    throw err;
+    if (!streaming || !botResponseStream.streamStarted) {
+      writeResponse(responseStream, 500, result);
+    }
   }
 });
 
@@ -163,6 +159,17 @@ function createPdf(docDefinition, tableLayouts, fonts) {
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
+}
+
+function writeResponse(responseStream, statusCode, body) {
+  responseStream = awslambda.HttpResponseStream.from(responseStream, {
+    statusCode,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (body !== undefined) {
+    responseStream.write(JSON.stringify(body));
+  }
+  responseStream.end();
 }
 `;
 
