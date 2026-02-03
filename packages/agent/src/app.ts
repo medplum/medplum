@@ -82,7 +82,7 @@ const ROLLBACK_TIMEOUT_MS = 10000;
 // require the handoff signal. When upgrading FROM a version >= this, we require
 // the handoff signal and abort if we don't receive it.
 // TODO: Fix this when finalizing branch
-const MIN_HANDOFF_PROTOCOL_VERSION = '5.0.12';
+const MIN_HANDOFF_PROTOCOL_VERSION = '5.0.13';
 
 async function execAsync(
   command: string,
