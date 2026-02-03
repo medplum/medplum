@@ -5,7 +5,16 @@ sidebar_position: 2
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/validate-a-resource.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Validate a resource
+# Resource $validate
+
+The `$validate` operation checks whether a FHIR resource conforms to the base specification and any applicable profiles without actually creating or updating it. This is essential for catching data quality issues early, providing real-time feedback in forms, and testing integrations before committing data to the system.
+
+**Use Cases:**
+
+- **Form validation**: Validate resources as users complete forms to provide immediate feedback on data entry errors before submission
+- **Integration testing**: Pre-validate incoming data from external systems to catch structural issues before attempting to persist records
+- **Development and debugging**: Test resource structures during development to ensure compliance with FHIR specifications and custom profiles
+- **Two-phase commits**: Check validity of proposed changes before executing transactions, enabling rollback-safe workflows
 
 Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
 
@@ -71,3 +80,11 @@ Example outcome when the resource is not valid:
   ]
 }
 ```
+
+## Related
+
+- [MedplumClient.validateResource](/docs/sdk/core.validateresource) - TypeScript SDK method
+- [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate coded values
+- [ValueSet $validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate codes against value sets
+- [FHIR Basics](/docs/fhir-basics) - Understanding FHIR resources and data structures
+- [FHIR $validate Operation](https://www.hl7.org/fhir/resource-operation-validate.html) - FHIR specification

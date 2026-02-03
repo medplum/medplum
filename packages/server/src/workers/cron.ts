@@ -9,6 +9,7 @@ import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
 import { findProjectMembership, queueRegistry } from './utils';
 
@@ -30,7 +31,7 @@ const queueName = 'CronQueue';
 
 export const initCronWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   const queue = new Queue<CronJobData>(queueName, {

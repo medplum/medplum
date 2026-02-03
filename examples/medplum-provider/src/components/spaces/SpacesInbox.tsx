@@ -31,13 +31,14 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-5');
+  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
+  const [streamingContent, setStreamingContent] = useState<string | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
 
@@ -79,7 +80,22 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         behavior: 'smooth',
       });
     }
-  }, [messages, hasStarted]);
+  }, [messages, hasStarted, streamingContent]);
+
+  // Scroll again after loading finishes to show resources
+  useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (viewport && hasStarted && !loading) {
+      const timer = setTimeout(() => {
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior: 'smooth',
+        });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [loading, hasStarted]);
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
     try {
@@ -111,6 +127,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setMessages(currentMessages);
     setInput('');
     setCurrentFhirRequest(undefined);
+    setStreamingContent(undefined);
     setLoading(true);
     isSendingRef.current = true;
 
@@ -127,13 +144,19 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         setRefreshKey,
         setCurrentFhirRequest,
         onNewTopic,
+        onStreamChunk: (chunk) => {
+          setStreamingContent((prev) => (prev ?? '') + chunk);
+          setCurrentFhirRequest(undefined);
+        },
       });
+      setStreamingContent(undefined);
       setMessages(result.updatedMessages);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setMessages([...currentMessages, { role: 'assistant', content: `Error: ${errorMessage}` }]);
     } finally {
       isSendingRef.current = false;
+      setStreamingContent(undefined);
       setLoading(false);
     }
   };
@@ -234,16 +257,23 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 ))}
                 {loading && (
                   <div className={cx(classes.messageWrapper, classes.assistantMessage)}>
-                    <Group align="center" gap="sm" wrap="nowrap">
+                    <Group align="flex-start" gap="sm" mb={4}>
                       <Avatar radius="xl" size="sm" color="blue">
                         <IconRobot size={14} />
                       </Avatar>
-                      <Box style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="sm" c="dimmed" fs="italic" truncate>
+                      <Text fw={600} size="sm" c="dimmed">
+                        AI Assistant
+                      </Text>
+                    </Group>
+                    <div className={classes.messageContent}>
+                      {streamingContent ? (
+                        <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>
+                      ) : (
+                        <Text size="sm" c="dimmed" fs="italic">
                           {currentFhirRequest ? `Executing ${currentFhirRequest}...` : 'Thinking...'}
                         </Text>
-                      </Box>
-                    </Group>
+                      )}
+                    </div>
                   </div>
                 )}
               </Stack>

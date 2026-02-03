@@ -15,6 +15,7 @@ import { getAppName } from '../utils/app';
 
 export interface HeaderDropdownProps {
   readonly version?: string;
+  readonly showLayoutVersionToggle?: boolean;
 }
 
 export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
@@ -23,6 +24,7 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
   const logins = medplum.getLogins();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const [layoutVersion] = useState((localStorage['appShellLayoutVersion'] as 'v1' | 'v2' | undefined) ?? 'v1');
+  const showLayoutToggle = props.showLayoutVersionToggle ?? true;
 
   function setAppShellVersion(version: 'v1' | 'v2'): void {
     localStorage['appShellLayoutVersion'] = version;
@@ -81,15 +83,17 @@ export function HeaderDropdown(props: HeaderDropdownProps): JSX.Element {
             { label: 'Auto', value: 'auto' },
           ]}
         />
-        <SegmentedControl
-          size="xs"
-          value={layoutVersion}
-          onChange={(newValue) => setAppShellVersion(newValue as 'v1' | 'v2')}
-          data={[
-            { label: 'v1', value: 'v1' },
-            { label: 'v2', value: 'v2' },
-          ]}
-        />
+        {showLayoutToggle && (
+          <SegmentedControl
+            size="xs"
+            value={layoutVersion}
+            onChange={(newValue) => setAppShellVersion(newValue as 'v1' | 'v2')}
+            data={[
+              { label: 'v1', value: 'v1' },
+              { label: 'v2', value: 'v2' },
+            ]}
+          />
+        )}
       </Group>
       <Menu.Divider />
       <Menu.Item

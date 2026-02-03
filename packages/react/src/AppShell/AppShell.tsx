@@ -27,6 +27,7 @@ export interface AppShellProps {
   readonly resourceTypeSearchDisabled?: boolean;
   readonly notifications?: ReactNode;
   readonly layoutVersion?: 'v1' | 'v2';
+  readonly showLayoutVersionToggle?: boolean;
   readonly spotlightPatientsOnly?: boolean;
 }
 
@@ -89,6 +90,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
         patientsOnly={props.spotlightPatientsOnly}
         userMenuEnabled={true}
         version={props.version}
+        showLayoutVersionToggle={props.showLayoutVersionToggle}
       />
     ) : undefined;
   } else {

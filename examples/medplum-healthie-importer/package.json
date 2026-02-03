@@ -1,6 +1,6 @@
 {
   "name": "medplum-healthie-importer",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "description": "Medplum Healthie Importer",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -23,24 +23,22 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@medplum/bot-layer": "5.0.12",
-    "@medplum/cli": "5.0.12",
-    "@medplum/core": "5.0.12",
-    "@medplum/eslint-config": "5.0.12",
-    "@medplum/fhirtypes": "5.0.12",
-    "@medplum/mock": "5.0.12",
-    "@types/node": "22.19.3",
-    "@types/node-fetch": "2.6.13",
+    "@medplum/bot-layer": "5.0.13",
+    "@medplum/cli": "5.0.13",
+    "@medplum/core": "5.0.13",
+    "@medplum/eslint-config": "5.0.13",
+    "@medplum/fhirtypes": "5.0.13",
+    "@medplum/mock": "5.0.13",
+    "@types/node": "22.19.7",
     "@types/ssh2-sftp-client": "9.0.6",
-    "@vitest/coverage-v8": "4.0.16",
-    "@vitest/ui": "4.0.16",
+    "@vitest/coverage-v8": "4.0.18",
+    "@vitest/ui": "4.0.18",
     "commander": "12.1.0",
     "dotenv": "17.2.3",
     "esbuild": "0.27.2",
     "fast-glob": "3.3.3",
-    "node-fetch": "2.7.0",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
-    "vitest": "4.0.16"
+    "vitest": "4.0.18"
   }
 }

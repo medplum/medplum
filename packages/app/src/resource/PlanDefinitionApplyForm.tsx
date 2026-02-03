@@ -38,7 +38,7 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
     <Form
       onSubmit={() => {
         medplum
-          .post(medplum.fhirUrl('PlanDefinition', props.planDefinition.id as string, '$apply'), {
+          .post<RequestGroup>(medplum.fhirUrl('PlanDefinition', props.planDefinition.id as string, '$apply'), {
             resourceType: 'Parameters',
             parameter: [
               {
