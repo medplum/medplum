@@ -3654,47 +3654,101 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(bundle, s)).toBeTruthy();
     }));
 
-  test('Filter task by due date', () =>
-    withTestContext(async () => {
-      const code = randomUUID();
+  describe('Filter Task by due-date', () => {
+    const code = randomUUID();
+    let task: WithId<Task>;
+    const start = '2025-05-15T12:00:00.000Z';
+    const startPlusOneSecond = '2025-05-15T12:00:01.000Z';
+    beforeAll(async () => {
+      task = await repo.createResource<Task>({
+        resourceType: 'Task',
+        status: 'requested',
+        intent: 'order',
+        code: { coding: [{ code }] },
+        restriction: {
+          period: {
+            start,
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
+      });
+    });
 
-      // Create 3 tasks
-      // Mix of "no due date", using "start", and using "end"
-      const task1 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-      });
-      const task2 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
-      });
-      const task3 = await repo.createResource<Task>({
-        resourceType: 'Task',
-        status: 'requested',
-        intent: 'order',
-        code: { coding: [{ code }] },
-        restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
-      });
+    test.each([
+      [Operator.LESS_THAN, start, false],
+      [Operator.LESS_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN_OR_EQUALS, start, true],
+      [Operator.GREATER_THAN, start, false],
 
-      // Sort and filter by due date
-      const bundle = await repo.search<Task>({
-        resourceType: 'Task',
-        filters: [
-          { code: 'code', operator: Operator.EQUALS, value: code },
-          { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
-        ],
-        sortRules: [{ code: 'due-date' }],
-      });
-      expect(bundle.entry?.length).toStrictEqual(2);
-      expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
-      expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
-      expect(bundleContains(bundle, task1)).not.toBeTruthy();
-    }));
+      [Operator.LESS_THAN, startPlusOneSecond, true],
+      [Operator.LESS_THAN_OR_EQUALS, startPlusOneSecond, true],
+      [Operator.GREATER_THAN_OR_EQUALS, startPlusOneSecond, false],
+      [Operator.GREATER_THAN, startPlusOneSecond, false],
+
+      [Operator.GREATER_THAN, '2025-05-01', true],
+      [Operator.GREATER_THAN, '2025-06-01', false],
+    ])('with %s %s', (operator, value, expected) =>
+      withTestContext(async () => {
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator, value },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+
+        if (expected) {
+          expect(bundle.entry?.length).toStrictEqual(1);
+          expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task.id);
+        } else {
+          expect(bundle.entry?.length).toStrictEqual(0);
+        }
+      })
+    );
+
+    test('multiple resources', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+
+        // Create 3 tasks
+        // Mix of "no due date", using "start", and using "end"
+        const task1 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+        });
+        const task2 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
+        });
+        const task3 = await repo.createResource<Task>({
+          resourceType: 'Task',
+          status: 'requested',
+          intent: 'order',
+          code: { coding: [{ code }] },
+          restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
+        });
+
+        // Sort and filter by due date
+        const bundle = await repo.search<Task>({
+          resourceType: 'Task',
+          filters: [
+            { code: 'code', operator: Operator.EQUALS, value: code },
+            { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
+          ],
+          sortRules: [{ code: 'due-date' }],
+        });
+        expect(bundle.entry?.length).toStrictEqual(2);
+        expect(bundle.entry?.[0]?.resource?.id).toStrictEqual(task2.id);
+        expect(bundle.entry?.[1]?.resource?.id).toStrictEqual(task3.id);
+        expect(bundleContains(bundle, task1)).not.toBeTruthy();
+      }));
+  });
 
   test('Get estimated count with filter on human name', async () =>
     withTestContext(async () => {
