@@ -20,6 +20,7 @@ import type {
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
+  Resource,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
@@ -43,7 +44,13 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await systemRepo.readReference(membership.project);
+  const resolved = await systemRepo.readReferences<Resource>([membership.project, realMembership.profile]);
+  const err = resolved.find((r) => r instanceof Error);
+  if (err) {
+    throw err;
+  }
+  const project = resolved[0] as WithId<Project>;
+  const profile = resolved[1] as WithId<ProfileResource>;
   const allowedProjects: WithId<Project>[] = [project];
 
   if (project.link) {
@@ -70,7 +77,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: realMembership.profile as Reference,
+    author: createReference(profile),
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
     projectAdmin: membership.admin,

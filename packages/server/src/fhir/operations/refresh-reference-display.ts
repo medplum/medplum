@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, getDisplayString, isResource, isResourceType, pathToJSONPointer } from '@medplum/core';
+import type { TypedValueWithPath } from '@medplum/core';
+import { allOk, badRequest, getDisplayString, isResourceType, pathToJSONPointer } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, ResourceType } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { collectReferences } from '../references';
-import { buildOutputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
+const _operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'RefreshReferenceDisplayStrings',
   status: 'active',
@@ -43,22 +43,25 @@ export async function refreshReferenceDisplayHandler(req: FhirRequest): Promise<
   const { repo } = getAuthenticatedContext();
   const resource = await repo.readResource(resourceType, id);
 
-  const referenceValues = collectReferences(resource);
-  const resolved = (await repo.readReferences(referenceValues.map((r) => r.value))).map((r) =>
-    isResource(r) ? getDisplayString(r) : ''
-  );
+  const referenceMap = collectReferences(resource);
+  const references: TypedValueWithPath[] = [];
+  for (const path of Object.keys(referenceMap)) {
+    references.push(...referenceMap[path]);
+  }
+  const resolved = await repo.readReferences(references.map((r) => r.value));
 
   const patch: Operation[] = [];
   for (let i = 0; i < resolved.length; i++) {
-    const value = resolved[i];
-    if (!value) {
+    const resource = resolved[i];
+    if (resource instanceof Error) {
       continue;
     }
 
-    const path = referenceValues[i].path;
-    patch.push({ op: 'add', path: pathToJSONPointer(path) + '/display', value });
+    const path = pathToJSONPointer(references[i].path) + '/display';
+    const value = getDisplayString(resource);
+    patch.push({ op: 'add', path, value });
   }
 
   const updated = await repo.patchResource(resourceType, id, patch);
-  return [allOk, buildOutputParameters(operation, updated)];
+  return [allOk, updated];
 }

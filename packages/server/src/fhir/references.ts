@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { CrawlerVisitor, InternalTypeSchema, TypedValue, TypedValueWithPath } from '@medplum/core';
 import {
+  append,
   badRequest,
   crawlTypedValue,
   crawlTypedValueAsync,
@@ -35,17 +36,14 @@ const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'Projec
 
 async function validateReferences(
   repo: Repository,
-  references: Record<string, Reference>,
+  references: TypedValueWithPath[],
   issues: OperationOutcomeIssue[]
 ): Promise<void> {
-  const toValidate = Object.values(references);
-  const paths = Object.keys(references);
-
-  const validated = await repo.readReferences(toValidate);
+  const validated = await repo.readReferences(references.map((r) => r.value));
   for (let i = 0; i < validated.length; i++) {
     const reference = validated[i];
     if (reference instanceof Error) {
-      const path = paths[i];
+      const path = references[i].path;
       issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(reference)})`));
     }
   }
@@ -61,7 +59,7 @@ function shouldValidateReference(ref: Reference): boolean {
 }
 
 class ReferenceCollector implements CrawlerVisitor {
-  private references: TypedValueWithPath[] = [];
+  private referencesByPath: Record<string, TypedValueWithPath[]> = Object.create(null);
 
   visitProperty(
     parent: TypedValueWithPath,
@@ -77,36 +75,42 @@ class ReferenceCollector implements CrawlerVisitor {
       }
 
       if (shouldValidateReference(propertyValue.value)) {
-        this.references.push(propertyValue);
-
-        const reference = propertyValue.value as Reference;
-        if (SYSTEM_REFERENCE_PATHS.includes(path)) {
-          systemReferences[path] = reference;
-        } else {
-          references[path] = reference;
-        }
+        this.referencesByPath[path] = append(this.referencesByPath[path], propertyValue);
       }
     }
   }
 
-  getReferences(): TypedValueWithPath[] {
-    return this.references;
+  getReferences(): Record<string, TypedValueWithPath[]> {
+    return this.referencesByPath;
   }
 }
 
-export function collectReferences(resource: Resource): TypedValueWithPath[] {
+/**
+ * Collects the Reference values present in the given resource, indexed by FHIR path.
+ * @param resource - The resource to scan for references.
+ * @returns A mapping of FHIR path to reference values (with JSON path)
+ */
+export function collectReferences(resource: Resource): Record<string, TypedValueWithPath[]> {
   const collector = new ReferenceCollector();
   crawlTypedValue(toTypedValue(resource), collector, { skipMissingProperties: true });
   return collector.getReferences();
 }
 
 export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
-  // const references: Record<string, Reference> = Object.create(null);
-  const systemReferences: Record<string, Reference> = Object.create(null);
   const references = collectReferences(resource);
+  const userReferences: TypedValueWithPath[] = [];
+  const systemReferences: TypedValueWithPath[] = [];
+
+  for (const path of Object.keys(references)) {
+    if (SYSTEM_REFERENCE_PATHS.includes(path)) {
+      systemReferences.push(...references[path]);
+    } else {
+      userReferences.push(...references[path]);
+    }
+  }
 
   const issues: OperationOutcomeIssue[] = [];
-  await validateReferences(repo, references, issues);
+  await validateReferences(repo, userReferences, issues);
   await validateReferences(getSystemRepo(), systemReferences, issues);
 
   if (issues.length > 0) {
