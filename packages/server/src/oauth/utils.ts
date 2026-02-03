@@ -30,7 +30,7 @@ import type {
   SmartAppLaunch,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
