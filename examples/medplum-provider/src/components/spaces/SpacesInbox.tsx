@@ -49,6 +49,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [componentPreview, setComponentPreview] = useState<{ code: string } | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
+  const loadVersionRef = useRef(0);
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -57,10 +58,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       if (isSendingRef.current) {
         return;
       }
+      loadVersionRef.current++;
+      const myVersion = loadVersionRef.current;
       const loadTopic = async (): Promise<void> => {
         try {
           setLoading(true);
           const loadedMessages = await loadConversationMessages(medplum, topicId);
+          // Check if this load is stale (a newer load or send has started)
+          if (myVersion !== loadVersionRef.current) {
+            return;
+          }
           setMessages([...loadedMessages]);
           setCurrentTopicId(topicId);
           setHasStarted(true);
@@ -69,7 +76,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
         } catch (error) {
           showErrorNotification(error);
         } finally {
-          setLoading(false);
+          if (myVersion === loadVersionRef.current) {
+            setLoading(false);
+          }
         }
       };
       loadTopic().catch(showErrorNotification);
@@ -108,9 +117,14 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   }, [loading, hasStarted]);
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
+    loadVersionRef.current++;
+    const myVersion = loadVersionRef.current;
     try {
       setLoading(true);
       const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
+      if (myVersion !== loadVersionRef.current) {
+        return;
+      }
       setMessages([...loadedMessages]);
       setCurrentTopicId(selectedTopicId);
       setHasStarted(true);
@@ -119,7 +133,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     } catch (error) {
       showErrorNotification(error);
     } finally {
-      setLoading(false);
+      if (myVersion === loadVersionRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -141,6 +157,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setStreamingContent(undefined);
     setLoading(true);
     isSendingRef.current = true;
+    loadVersionRef.current++;
 
     try {
       const result = await processMessage({
