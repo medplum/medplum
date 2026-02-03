@@ -77,7 +77,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world!');
+    expect(result.content).toBe('Hello world!');
     expect(receivedChunks).toEqual(['Hello', ' world', '!']);
   });
 
@@ -89,7 +89,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('This is a buffered response');
+    expect(result.content).toBe('This is a buffered response');
     expect(receivedChunks).toEqual(['This is a buffered response']);
   });
 
@@ -165,7 +165,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('');
+    expect(result.content).toBe('');
     expect(receivedChunks).toEqual([]);
   });
 
@@ -191,7 +191,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello there');
+    expect(result.content).toBe('Hello there');
     expect(receivedChunks).toEqual(['Hello', ' there']);
   });
 
@@ -218,7 +218,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world');
+    expect(result.content).toBe('Hello world');
     expect(receivedChunks).toEqual(['Hello', ' world']);
   });
 
@@ -246,6 +246,6 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world');
+    expect(result.content).toBe('Hello world');
   });
 });
