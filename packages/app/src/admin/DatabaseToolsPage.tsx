@@ -2,23 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Tabs, Title } from '@mantine/core';
 import { forbidden } from '@medplum/core';
-import { Container, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/react';
+import { Container, LinkTabs, OperationOutcomeAlert, Panel, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { ArrayColumnPadding } from './db/ArrayColumnPadding';
 import { ColumnStatistics } from './db/ColumnStatistics';
 import { GINIndexes } from './db/GINIndexes';
 
+const tabs = [
+  { label: 'GIN Indexes', value: 'gin-indexes' },
+  { label: 'Column Statistics', value: 'column-statistics' },
+  { label: 'Array Column Padding', value: 'array-padding' },
+];
+
 export function DatabaseToolsPage(): JSX.Element {
   const medplum = useMedplum();
-  const tabs = ['GIN Indexes', 'Column Statistics'];
-  const [currentTab, setCurrentTab] = useState(tabs[0]);
-
-  function onTabChange(newTabName: string | null): void {
-    if (!newTabName) {
-      newTabName = tabs[0];
-    }
-    setCurrentTab(newTabName);
-  }
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -28,21 +25,17 @@ export function DatabaseToolsPage(): JSX.Element {
     <Container maw="100%">
       <Panel>
         <Title order={1}>Database Tools</Title>
-        <Tabs value={currentTab} onChange={onTabChange}>
-          <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-            {tabs.map((t) => (
-              <Tabs.Tab key={t} value={t}>
-                {t}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-          <Tabs.Panel value="GIN Indexes" pt="md">
+        <LinkTabs baseUrl="/admin/super/db" tabs={tabs}>
+          <Tabs.Panel value="gin-indexes" pt="md">
             <GINIndexes />
           </Tabs.Panel>
-          <Tabs.Panel value="Column Statistics" pt="md">
+          <Tabs.Panel value="column-statistics" pt="md">
             <ColumnStatistics />
           </Tabs.Panel>
-        </Tabs>
+          <Tabs.Panel value="array-padding" pt="md">
+            <ArrayColumnPadding />
+          </Tabs.Panel>
+        </LinkTabs>
       </Panel>
     </Container>
   );

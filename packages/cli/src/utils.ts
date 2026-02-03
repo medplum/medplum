@@ -80,10 +80,10 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   }
 
   console.log('Deploying bot...');
-  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
+  const deployResult = await medplum.post<OperationOutcome>(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
     code,
     filename: basename(codePath),
-  })) as OperationOutcome;
+  });
   console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
 }
 
@@ -101,7 +101,7 @@ export async function createBot(
     description: '',
     runtimeVersion,
   };
-  const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
+  const newBot = await medplum.post<WithId<Bot>>('admin/projects/' + projectId + '/bot', body);
   const bot = await medplum.readResource('Bot', newBot.id);
 
   const botConfig = {

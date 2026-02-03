@@ -204,6 +204,12 @@ describe('Calendar', () => {
       expect(screen.getByText(/John Doe/)).toBeInTheDocument();
     });
 
+    test('renders appointments without a patient', async () => {
+      const appointment = { ...createAppointment(), participant: [] };
+      setup({ appointments: [appointment] });
+      expect(screen.getByText(/No Patient/)).toBeInTheDocument();
+    });
+
     test('filters out cancelled appointments', async () => {
       const cancelledAppointment = createAppointment({
         id: 'cancelled-1',
@@ -289,6 +295,22 @@ describe('Calendar', () => {
       setup({ slots: [slot] });
 
       expect(screen.getByText('Available')).toBeInTheDocument();
+    });
+
+    test('clicking on a $find slots', async () => {
+      const onSelectAppointment = vi.fn();
+      const onSelectInterval = vi.fn();
+      const onSelectSlot = vi.fn();
+      const slot = createSlot({
+        identifier: [{ system: 'https://medplum.com/fhir/scheduling-transient-id', value: 'abcde', use: 'temp' }],
+      });
+      setup({ onSelectAppointment, onSelectInterval, onSelectSlot, slots: [slot] });
+
+      expect(screen.getByText('Available')).toBeInTheDocument();
+      await userEvent.click(screen.getByText('Available'));
+      expect(onSelectSlot).toHaveBeenCalledWith(slot);
+      expect(onSelectAppointment).not.toHaveBeenCalled();
+      expect(onSelectInterval).not.toHaveBeenCalled();
     });
 
     test('renders multiple slots', async () => {

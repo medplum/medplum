@@ -72,6 +72,7 @@ describe('SignInPage', () => {
       fireEvent.click(submitButton);
     });
 
-    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    // After successful sign-in, user is redirected to /getstarted
+    expect(await screen.findByText('Get Started with Medplum Provider')).toBeInTheDocument();
   });
 });

@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { AckCode } from '@medplum/core';
-import { Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
+import { Hl7Message, isOperationOutcome, OperationOutcomeError, ReturnAckCategory, sleep } from '@medplum/core';
 import type { Socket } from 'node:net';
 import net, { createServer } from 'node:net';
 import { Hl7Client } from './client';
 import type { Hl7Connection } from './connection';
-import { ReturnAckCategory } from './connection';
 import type { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 import { MockServer, MockSocket } from './test-utils';

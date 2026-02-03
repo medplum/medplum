@@ -2,10 +2,19 @@
 sidebar_position: 9
 ---
 
-# ConceptMap Translate
+# ConceptMap $translate
 
-Medplum implements the [`ConceptMap/$translate`][translate-operation] operation, which allows mapping a coded value
-between code systems.
+Code translation enables seamless data exchange between systems that speak different "clinical languages," ensuring that a diagnosis recorded in one system can be understood and processed correctly by another.
+
+The `$translate` operation converts codes from one code system to another using predefined mappings. This is essential for healthcare interoperability, where different systems use different terminologies-for example, translating SNOMED CT diagnoses to ICD-10 for billing, or mapping internal lab codes to LOINC for reporting.
+
+## Use Cases
+
+- **Billing Code Translation**: Convert clinical SNOMED CT codes to ICD-10 codes for claims submission
+- **Lab Interface Mapping**: Translate internal lab system codes to standard LOINC codes for external reporting
+- **EHR Integration**: Map codes from one EHR's proprietary system to another during data migration or exchange
+- **Quality Reporting**: Convert clinical codes to the specific code systems required by quality measure programs
+- **Cross-System Analytics**: Normalize codes from multiple source systems to a common terminology for population health analysis
 
 [translate-operation]: http://hl7.org/fhir/R4/conceptmap-operation-translate.html
 
@@ -167,3 +176,11 @@ POST /fhir/R4/ConceptMap/$translate
   ]
 }
 ```
+
+## Related
+
+- [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up code details in source or target systems
+- [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate codes before translation
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [FHIR ConceptMap Resource](https://hl7.org/fhir/R4/conceptmap.html) - FHIR specification for ConceptMap
+- [FHIR $translate Operation](https://hl7.org/fhir/R4/conceptmap-operation-translate.html) - FHIR specification for $translate

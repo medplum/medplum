@@ -184,6 +184,15 @@ export default function AboutPage(): JSX.Element {
               githubUrl="https://github.com/everett-williams"
             />
           </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Aditya Suri"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/aditya-suri.png"
+              linkedInUrl="https://www.linkedin.com/in/adityasuri1/"
+              githubUrl="https://github.com/Ljeytl"
+            />
+          </CardContainer>
         </Section>
       </Container>
     </Layout>

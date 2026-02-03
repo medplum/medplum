@@ -5,11 +5,19 @@ sidebar_position: 4
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/valueset-expand.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# ValueSet $expand Operation
+# ValueSet $expand
 
-Medplum implements the FHIR [`$expand` operation](https://hl7.org/fhir/valueset-operation-expand.html)
+The `$expand` operation returns all codes contained in a ValueSet, making it ideal for populating dropdown menus, typeahead search fields, and code pickers in clinical applications. Instead of storing and managing large code lists client-side, you can dynamically fetch the allowed values for any coded field.
 
-> This operation may be used during design and development to validate application design. It can also be used at run-time. One possible use might be that a client asks the server whether a proposed update is valid as the user is editing a dialog and displays an updated error to the user. The operation can be used as part of a light-weight two phase commit protocol but there is no expectation that the server will hold the content of the resource after this operation is used, or that the server guarantees to successfully perform an actual create, update or delete after the validation operation completes.
+This operation supports filtering and pagination, enabling responsive user interfaces that can search through thousands of codes (like SNOMED CT or LOINC) while only loading relevant results as the user types.
+
+## Use Cases
+
+- **Dropdown Population**: Fetch all valid options for coded fields like gender, marital status, or allergy types
+- **Typeahead Search**: Power autocomplete fields that search through large code systems as users type
+- **Form Builders**: Dynamically load code options when rendering questionnaires or data entry forms
+- **Code Picker Components**: Build searchable code selection interfaces with pagination support
+- **Validation UI**: Show users the valid options when they've entered an invalid code
 
 ## Invoke the `$expand` operation
 
@@ -19,13 +27,16 @@ Medplum implements the FHIR [`$expand` operation](https://hl7.org/fhir/valueset-
 
 ### Parameters
 
-| Name              | Type     | Description                                        | Required |
-| ----------------- | -------- | -------------------------------------------------- | -------- |
-| `url`             | `string` | The URL of the value set to expand                 | Yes      |
-| `filter`          | `string` | A filter to apply to the value set                 | No       |
-| `offset`          | `number` | The offset to start the expansion                  | No       |
-| `count`           | `number` | The number of results to return                    | No       |
-| `displayLanguage` | `string` | The [language code][bcp47] to search with `filter` | No       |
+| Name                  | Type       | Description                                                                 | Required |
+| --------------------- | ---------- | --------------------------------------------------------------------------- | -------- |
+| `url`                 | `string`   | The URL of the value set to expand                                          | Yes      |
+| `filter`              | `string`   | A filter to apply to the value set                                          | No       |
+| `offset`              | `number`   | The offset to start the expansion                                           | No       |
+| `count`               | `number`   | The number of results to return                                             | No       |
+| `displayLanguage`     | `string`   | The [language code][bcp47] to search with `filter`                          | No       |
+| `excludeNotForUI`     | `boolean`  | Exclude abstract concepts that shouldn't be displayed in user interfaces    | No       |
+| `includeDesignations` | `boolean`  | Include translations and synonyms (designations) in the expansion results   | No       |
+| `valueSet`            | `ValueSet` | An inline ValueSet resource to expand (alternative to providing a URL)      | No       |
 
 [bcp47]: https://developer.mozilla.org/en-US/docs/Glossary/BCP_47_language_tag
 
@@ -106,3 +117,11 @@ The [MedplumClient](/docs/sdk/core.medplumclient) TypeScript class provides a `v
 <MedplumCodeBlock language="ts" selectBlocks="expand" showLineNumbers>
   {ExampleCode}
 </MedplumCodeBlock>
+
+## Related
+
+- [ValueSet $validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate codes against expanded value sets
+- [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up details about individual codes
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [React Components](/docs/react) - Medplum React components including code inputs
+- [FHIR ValueSet $expand](https://hl7.org/fhir/R4/valueset-operation-expand.html) - FHIR specification for $expand

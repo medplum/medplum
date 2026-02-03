@@ -51,6 +51,7 @@ export interface NavbarProps {
   readonly resourceTypeSearchDisabled?: boolean;
   readonly opened?: boolean;
   readonly version?: string;
+  readonly showLayoutVersionToggle?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -87,6 +88,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               onClick={props.navbarToggle}
               aria-expanded={opened}
               aria-controls="navbar"
+              aria-label="Medplum Logo"
             >
               {props.logo}
             </UnstyledButton>
@@ -97,7 +99,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             {props.spotlightEnabled && (
               <Box mb={2}>
                 <Tooltip label="Search" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
-                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()}>
+                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()} aria-label="Search">
                     <IconSearch size="1.2rem" />
                     <span className={classes.linkLabel} data-opened={opened || undefined}>
                       Search
@@ -197,7 +199,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </UnstyledButton>
               </Menu.Target>
               <Menu.Dropdown>
-                <HeaderDropdown version={props.version} />
+                <HeaderDropdown version={props.version} showLayoutVersionToggle={props.showLayoutVersionToggle} />
               </Menu.Dropdown>
             </Menu>
           </MantineAppShell.Section>

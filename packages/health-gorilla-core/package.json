@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-core",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "description": "Medplum Health Gorilla SDK",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -42,16 +42,16 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "5.0.12",
-    "@medplum/definitions": "5.0.12",
-    "@medplum/fhirtypes": "5.0.12",
-    "@medplum/mock": "5.0.12",
-    "@types/node": "22.19.3",
-    "vitest": "4.0.16"
+    "@medplum/core": "5.0.13",
+    "@medplum/definitions": "5.0.13",
+    "@medplum/fhirtypes": "5.0.13",
+    "@medplum/mock": "5.0.13",
+    "@types/node": "22.19.7",
+    "vitest": "4.0.18"
   },
   "peerDependencies": {
-    "@medplum/core": "5.0.12",
-    "@medplum/fhirtypes": "5.0.12"
+    "@medplum/core": "5.0.13",
+    "@medplum/fhirtypes": "5.0.13"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

@@ -34,6 +34,7 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
+import { getConnectionType, resolveByConnectionApi } from './graphql';
 import type { GraphQLContext } from './utils';
 import { buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
 
@@ -261,10 +262,17 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
         type: new GraphQLNonNull(enumType),
         description: `Specify which property to use for reverse lookup for ${childResourceType}`,
       };
+      // Add List field for backward compatibility
       fields[childResourceType + 'List'] = {
         type: new GraphQLList(childGraphQLType),
         args,
         resolve: resolveBySearch,
+      };
+      // Add Connection field for count support
+      fields[childResourceType + 'Connection'] = {
+        type: getConnectionType(childResourceType, childGraphQLType),
+        args,
+        resolve: resolveByConnectionApi,
       };
     }
   }
