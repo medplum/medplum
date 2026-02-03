@@ -9,6 +9,7 @@ import {
   normalizeOperationOutcome,
 } from '@medplum/core';
 import type { Binary, Reference } from '@medplum/fhirtypes';
+import fetch from 'node-fetch';
 import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import { getConfig } from '../config/loader';
@@ -49,7 +50,7 @@ export async function runInVmContext(request: BotExecutionContext): Promise<BotE
 
   const sandbox = {
     console: botConsole,
-    fetch: globalThis.fetch,
+    fetch,
     require: createRequire(typeof __filename === 'undefined' ? import.meta.url : __filename),
     process,
     ContentType,

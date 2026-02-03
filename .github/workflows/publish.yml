@@ -100,13 +100,13 @@ jobs:
         run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
 
       - name: Login to Docker Hub
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Docker Hub Hardened Images
-        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc # v2.2.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: dhi.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
