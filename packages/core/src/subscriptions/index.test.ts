@@ -744,6 +744,7 @@ describe('SubscriptionManager', () => {
 
     afterEach(async () => {
       defaultManager.closeWebSocket();
+      wsServer.close();
       await wsServer.closed;
       WS.clean();
     });
