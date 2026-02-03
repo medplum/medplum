@@ -5,21 +5,21 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { DataRequirement } from './DataRequirement';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { ParameterDefinition } from './ParameterDefinition';
-import { Period } from './Period';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { Resource } from './Resource';
-import { UsageContext } from './UsageContext';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { ParameterDefinition } from './ParameterDefinition.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * The Library resource is a general-purpose container for knowledge

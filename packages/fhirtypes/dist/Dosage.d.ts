@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Ratio } from './Ratio';
-import { Timing } from './Timing';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Ratio } from './Ratio.d.ts';
+import type { Timing } from './Timing.d.ts';
 
 /**
  * Indicates how the medication is/was taken or should be taken by the

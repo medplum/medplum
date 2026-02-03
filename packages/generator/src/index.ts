@@ -45,7 +45,7 @@ function writeIndexFile(): void {
 
   const b = new FileBuilder();
   for (const resourceType of names) {
-    b.append("export * from './" + resourceType + ".js';");
+    b.append("export type * from './" + resourceType + ".d.ts';");
   }
   writeFileSync(resolve(import.meta.dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
@@ -58,7 +58,7 @@ function writeResourceFile(): void {
 
   const b = new FileBuilder();
   for (const resourceType of names) {
-    b.append('import { ' + resourceType + " } from './" + resourceType + ".js';");
+    b.append('import type { ' + resourceType + " } from './" + resourceType + ".d.ts';");
   }
   b.newLine();
   for (let i = 0; i < names.length; i++) {
@@ -76,7 +76,7 @@ function writeResourceFile(): void {
 
 function writeResourceTypeFile(): void {
   const b = new FileBuilder();
-  b.append("import { Resource } from './Resource.js';");
+  b.append("import type { Resource } from './Resource.d.ts';");
   b.newLine();
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
@@ -95,7 +95,7 @@ function writeInterfaceFile(fhirType: InternalTypeSchema): void {
   const b = new FileBuilder();
   for (const referencedType of Array.from(referencedTypes).sort()) {
     if (!includedTypes.has(referencedType)) {
-      b.append('import { ' + referencedType + " } from './" + referencedType + ".js';");
+      b.append('import type { ' + referencedType + " } from './" + referencedType + ".d.ts';");
     }
   }
 

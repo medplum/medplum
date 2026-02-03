@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Coding } from './Coding';
-import { Extension } from './Extension';
+import type { Coding } from './Coding.d.ts';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * A concept that may be defined by a formal reference to a terminology

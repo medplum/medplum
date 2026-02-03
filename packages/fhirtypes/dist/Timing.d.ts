@@ -5,11 +5,11 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Duration } from './Duration';
-import { Extension } from './Extension';
-import { Period } from './Period';
-import { Range } from './Range';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Range } from './Range.d.ts';
 
 /**
  * Specifies an event that may occur multiple times. Timing schedules are

@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Period } from './Period';
+import type { Extension } from './Extension.d.ts';
+import type { Period } from './Period.d.ts';
 
 /**
  * A human's name with the ability to identify parts and usage.

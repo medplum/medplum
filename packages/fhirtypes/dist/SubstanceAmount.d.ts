@@ -5,10 +5,10 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
 
 /**
  * Chemical substances are a single substance type whose primary defining
