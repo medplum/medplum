@@ -733,6 +733,41 @@ describe('SubscriptionManager', () => {
     });
   });
 
+  describe('reconnectIfNeeded()', () => {
+    let _wsServer: WS;
+    let defaultManager: SubscriptionManager;
+
+    beforeEach(() => {
+      _wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
+    });
+
+    afterEach(async () => {
+      defaultManager.closeWebSocket();
+      await sleep(0);
+      WS.clean();
+    });
+
+    test('should be a no-op if WebSocket is connecting', async () => {
+      // WebSocket starts in CONNECTING state before the server accepts the connection
+      expect(defaultManager.getWebSocket().readyState).toStrictEqual(WebSocket.CONNECTING);
+
+      // Spy on reconnectWebSocket to verify it's not called
+      const reconnectSpy = jest.spyOn(defaultManager, 'reconnectWebSocket');
+
+      // Call reconnectIfNeeded - should return immediately without reconnecting
+      await defaultManager.reconnectIfNeeded();
+
+      // Verify reconnectWebSocket was NOT called
+      expect(reconnectSpy).not.toHaveBeenCalled();
+
+      // WebSocket should still be in CONNECTING state (unchanged)
+      expect(defaultManager.getWebSocket().readyState).toStrictEqual(WebSocket.CONNECTING);
+
+      reconnectSpy.mockRestore();
+    });
+  });
+
   describe('Scenarios', () => {
     let medplum: MockMedplumClient;
     let wsServer: WS;
