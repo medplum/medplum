@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * A measured amount (or an amount that can potentially be measured).

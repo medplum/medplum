@@ -5,27 +5,27 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CarePlan } from './CarePlan';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { DataRequirement } from './DataRequirement';
-import { Device } from './Device';
-import { DiagnosticReport } from './DiagnosticReport';
-import { DocumentReference } from './DocumentReference';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { OperationOutcome } from './OperationOutcome';
-import { Parameters } from './Parameters';
-import { Patient } from './Patient';
-import { Reference } from './Reference';
-import { RequestGroup } from './RequestGroup';
-import { Resource } from './Resource';
+import type { Annotation } from './Annotation.d.ts';
+import type { CarePlan } from './CarePlan.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { OperationOutcome } from './OperationOutcome.d.ts';
+import type { Parameters } from './Parameters.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RequestGroup } from './RequestGroup.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A guidance response is the formal response to a guidance request,

@@ -5,34 +5,34 @@
  * Do not edit manually.
  */
 
-import { AllergyIntolerance } from './AllergyIntolerance';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { Device } from './Device';
-import { DocumentReference } from './DocumentReference';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { FamilyMemberHistory } from './FamilyMemberHistory';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Immunization } from './Immunization';
-import { Location } from './Location';
-import { Media } from './Media';
-import { Medication } from './Medication';
-import { MedicationAdministration } from './MedicationAdministration';
-import { MedicationStatement } from './MedicationStatement';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { ResearchStudy } from './ResearchStudy';
-import { Resource } from './Resource';
-import { Substance } from './Substance';
+import type { AllergyIntolerance } from './AllergyIntolerance.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { FamilyMemberHistory } from './FamilyMemberHistory.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Immunization } from './Immunization.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Media } from './Media.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { MedicationAdministration } from './MedicationAdministration.d.ts';
+import type { MedicationStatement } from './MedicationStatement.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { ResearchStudy } from './ResearchStudy.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Substance } from './Substance.d.ts';
 
 /**
  * Actual or  potential/avoided event causing unintended physical injury

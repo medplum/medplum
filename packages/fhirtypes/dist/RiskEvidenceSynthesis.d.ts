@@ -5,19 +5,19 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { EvidenceVariable } from './EvidenceVariable';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Period } from './Period';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { Resource } from './Resource';
-import { UsageContext } from './UsageContext';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { EvidenceVariable } from './EvidenceVariable.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * The RiskEvidenceSynthesis resource describes the likelihood of an
