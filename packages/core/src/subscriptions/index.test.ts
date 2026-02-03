@@ -734,17 +734,17 @@ describe('SubscriptionManager', () => {
   });
 
   describe('reconnectIfNeeded()', () => {
-    let _wsServer: WS;
+    let wsServer: WS;
     let defaultManager: SubscriptionManager;
 
     beforeEach(() => {
-      _wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
       defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
     });
 
     afterEach(async () => {
       defaultManager.closeWebSocket();
-      await sleep(0);
+      await wsServer.closed;
       WS.clean();
     });
 
