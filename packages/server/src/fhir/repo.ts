@@ -463,17 +463,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(notFound);
     }
 
-    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
+    const builder = new SelectQuery(resourceType).column('content').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
 
     const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
-      throw new OperationOutcomeError(notFound);
-    }
+      // Check Deleted table for 410 Gone
+      const deletedBuilder = new SelectQuery('Deleted_' + resourceType).column('id').where('id', '=', id);
+      this.addDeletedTableSecurityFilters(deletedBuilder, resourceType);
+      const deletedRows = await deletedBuilder.execute(this.getDatabaseClient(DatabaseMode.READER));
 
-    if (rows[0].deleted) {
-      throw new OperationOutcomeError(gone);
+      if (deletedRows.length > 0) {
+        throw new OperationOutcomeError(gone);
+      }
+      throw new OperationOutcomeError(notFound);
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
@@ -1117,6 +1121,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (client) => {
+      // Remove from Deleted table if exists (un-delete scenario)
+      await new DeleteQuery('Deleted_' + resource.resourceType).where('id', '=', resource.id).execute(client);
+
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
@@ -1292,25 +1299,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         await this.ensureInTransaction(async (conn) => {
           const lastUpdated = new Date();
           const content = '';
-          const columns: Record<string, any> = {
+          const projectId = resource.meta?.project ?? systemResourceProjectId;
+
+          // Insert into Deleted table
+          const deletedRow: Record<string, any> = {
             id,
+            projectId,
             lastUpdated,
-            deleted: true,
-            projectId: resource.meta?.project ?? systemResourceProjectId,
-            content,
-            __version: -1,
           };
-
           if (resourceType !== 'Binary') {
-            columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+            deletedRow['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
           }
+          await new InsertQuery('Deleted_' + resourceType, [deletedRow]).mergeOnConflict().execute(conn);
 
-          for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
-
-          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
-
+          // Write history entry (empty content for deletion)
           await new InsertQuery(resourceType + '_History', [
             {
               id,
@@ -1319,6 +1321,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
               content,
             },
           ]).execute(conn);
+
+          // Delete from main table
+          await new DeleteQuery(resourceType).where('id', '=', id).execute(conn);
 
           await this.deleteFromLookupTables(conn, resource);
           const durationMs = Date.now() - startTime;
@@ -1414,6 +1419,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const db = this.getDatabaseClient(DatabaseMode.WRITER);
       await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(db);
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
+      await new DeleteQuery('Deleted_' + resourceType).where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
     incrementCounter(
@@ -1445,6 +1451,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
+    await new DeleteQuery('Deleted_' + resourceType).where('lastUpdated', '<=', before).execute(client);
   }
 
   async search<T extends Resource>(
@@ -1546,6 +1553,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
+   * Adds security filters for queries against the Deleted_<ResourceType> table.
+   * These tables have a simplified schema (only id, projectId, lastUpdated, compartments).
+   * @param builder - The select query builder.
+   * @param resourceType - The resource type for compartments.
+   */
+  addDeletedTableSecurityFilters(builder: SelectQuery, resourceType: string): void {
+    // No compartment restrictions for admins.
+    if (!this.isSuperAdmin()) {
+      this.addProjectFilters(builder, resourceType);
+    }
+    this.addDeletedTableAccessPolicyFilters(builder, resourceType);
+  }
+
+  /**
    * Adds the "project" filter to the select query.
    * @param builder - The select query builder.
    * @param resourceType - The resource type being searched.
@@ -1623,6 +1644,50 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           }
         } else {
           // Allow access to all resources in the compartment.
+          return;
+        }
+      }
+    }
+
+    if (expressions.length > 0) {
+      builder.predicate.expressions.push(new Disjunction(expressions));
+    }
+  }
+
+  /**
+   * Adds access policy filters for queries against the Deleted_<ResourceType> table.
+   * Since Deleted tables have a simplified schema, we can only filter by compartments.
+   * @param builder - The select query builder.
+   * @param resourceType - The resource type being searched.
+   */
+  private addDeletedTableAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
+    const accessPolicy = this.context.accessPolicy;
+    if (!accessPolicy?.resource) {
+      return;
+    }
+
+    // Binary has no compartments, so it cannot be restricted by an access policy
+    if (resourceType === 'Binary') {
+      return;
+    }
+
+    const expressions: Expression[] = [];
+
+    for (const policy of accessPolicy.resource) {
+      if (policy.resourceType === resourceType || policy.resourceType === '*') {
+        const policyCompartmentId = resolveId(policy.compartment);
+        if (policyCompartmentId) {
+          // Add compartment restriction for the access policy.
+          expressions.push(
+            new Condition('compartments', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+          );
+        } else if (policy.criteria) {
+          // Criteria-based access policies cannot be applied to Deleted tables
+          // because they don't have the full search columns.
+          // We fall back to compartment-only filtering.
+          continue;
+        } else {
+          // Allow access to all deleted resources in the project (no additional filter).
           return;
         }
       }

@@ -225,6 +225,7 @@ function buildTargetDefinition(): SchemaDefinition {
 
   for (const resourceType of getResourceTypes()) {
     buildCreateTables(result, resourceType);
+    buildDeletedTable(result, resourceType);
   }
 
   buildAddressTable(result);
@@ -314,6 +315,35 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
       indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
     }
   );
+}
+
+/**
+ * Builds the Deleted_<ResourceType> table definition for tracking soft-deleted resources.
+ * These tables store minimal metadata about deleted resources to support 410 Gone responses
+ * and _deleted=true searches without cluttering main resource tables.
+ * @param result - The schema definition to add the table to.
+ * @param resourceType - The FHIR resource type.
+ */
+function buildDeletedTable(result: SchemaDefinition, resourceType: ResourceType): void {
+  const tableDefinition: TableDefinition = {
+    name: 'Deleted_' + resourceType,
+    columns: [
+      { name: 'id', type: 'UUID', primaryKey: true, notNull: true },
+      { name: 'projectId', type: 'UUID', notNull: true },
+      { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
+    ],
+    indexes: [
+      { columns: ['projectId'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree' },
+    ],
+  };
+
+  if (resourceType !== 'Binary') {
+    tableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
+    tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
+  }
+
+  result.tables.push(tableDefinition);
 }
 
 const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source']);

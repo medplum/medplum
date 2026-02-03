@@ -1217,6 +1217,133 @@ describe('FHIR Repo', () => {
       await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
 
+  describe('Deleted resource tables', () => {
+    test('Delete writes to Deleted table and removes from main table', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Delete'], family: 'Test' }],
+        });
+
+        // Verify patient exists in main table
+        const result = await systemRepo.readResource('Patient', patient.id);
+        expect(result.id).toEqual(patient.id);
+
+        // Delete the patient
+        await systemRepo.deleteResource('Patient', patient.id);
+
+        // Verify patient is gone (410)
+        await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow('Gone');
+
+        // Verify the deleted row is in the Deleted table
+        const db = getDatabasePool(DatabaseMode.READER);
+        const deletedRows = await db.query('SELECT * FROM "Deleted_Patient" WHERE id = $1', [patient.id]);
+        expect(deletedRows.rows.length).toBe(1);
+        expect(deletedRows.rows[0].id).toEqual(patient.id);
+
+        // Verify it's removed from the main Patient table
+        const mainRows = await db.query('SELECT * FROM "Patient" WHERE id = $1', [patient.id]);
+        expect(mainRows.rows.length).toBe(0);
+      }));
+
+    test('Read returns 404 for truly non-existent resource', () =>
+      withTestContext(async () => {
+        const nonExistentId = randomUUID();
+        await expect(systemRepo.readResource('Patient', nonExistentId)).rejects.toThrow('Not found');
+      }));
+
+    test('Read returns 410 Gone for deleted resource', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Gone'], family: 'Test' }],
+        });
+
+        await systemRepo.deleteResource('Patient', patient.id);
+
+        await expect(systemRepo.readResource('Patient', patient.id)).rejects.toThrow('Gone');
+      }));
+
+    test('Expunge removes from Deleted table', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Expunge'], family: 'Test' }],
+        });
+
+        // Delete the patient (moves to Deleted table)
+        await systemRepo.deleteResource('Patient', patient.id);
+
+        // Verify it's in the Deleted table
+        const db = getDatabasePool(DatabaseMode.READER);
+        const deletedRows = await db.query('SELECT * FROM "Deleted_Patient" WHERE id = $1', [patient.id]);
+        expect(deletedRows.rows.length).toBe(1);
+
+        // Expunge the patient
+        await systemRepo.expungeResource('Patient', patient.id);
+
+        // Verify it's removed from the Deleted table
+        const deletedRowsAfter = await db.query('SELECT * FROM "Deleted_Patient" WHERE id = $1', [patient.id]);
+        expect(deletedRowsAfter.rows.length).toBe(0);
+      }));
+
+    test('Creating with deleted ID removes from Deleted table (un-delete)', () =>
+      withTestContext(async () => {
+        const patient = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['UnDelete'], family: 'Test' }],
+        });
+        const patientId = patient.id;
+
+        // Delete the patient
+        await systemRepo.deleteResource('Patient', patientId);
+
+        // Verify it's in the Deleted table
+        const db = getDatabasePool(DatabaseMode.READER);
+        const deletedRows = await db.query('SELECT * FROM "Deleted_Patient" WHERE id = $1', [patientId]);
+        expect(deletedRows.rows.length).toBe(1);
+
+        // Recreate the patient with the same ID (un-delete)
+        const recreated = await systemRepo.updateResource<Patient>({
+          resourceType: 'Patient',
+          id: patientId,
+          name: [{ given: ['UnDeleted'], family: 'Restored' }],
+        });
+        expect(recreated.id).toEqual(patientId);
+
+        // Verify it's removed from the Deleted table
+        const deletedRowsAfter = await db.query('SELECT * FROM "Deleted_Patient" WHERE id = $1', [patientId]);
+        expect(deletedRowsAfter.rows.length).toBe(0);
+
+        // Verify it's back in the main table and readable
+        const restored = await systemRepo.readResource('Patient', patientId);
+        expect(restored.id).toEqual(patientId);
+        expect(restored.name?.[0]?.given?.[0]).toEqual('UnDeleted');
+      }));
+
+    test('Delete Binary (no compartments column)', () =>
+      withTestContext(async () => {
+        const binary = await systemRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: 'text/plain',
+        });
+
+        // Delete the binary
+        await systemRepo.deleteResource('Binary', binary.id);
+
+        // Verify binary is gone (410)
+        await expect(systemRepo.readResource('Binary', binary.id)).rejects.toThrow('Gone');
+
+        // Verify the deleted row is in the Deleted_Binary table
+        const db = getDatabasePool(DatabaseMode.READER);
+        const deletedRows = await db.query('SELECT * FROM "Deleted_Binary" WHERE id = $1', [binary.id]);
+        expect(deletedRows.rows.length).toBe(1);
+        expect(deletedRows.rows[0].id).toEqual(binary.id);
+        // Binary should NOT have compartments column
+        expect(deletedRows.rows[0].compartments).toBeUndefined();
+      }));
+  });
+
   describe('Array column padding', () => {
     let prevConfig: string | undefined;
     beforeEach(() => {

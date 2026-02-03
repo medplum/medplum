@@ -420,6 +420,19 @@ function getBaseSelectQueryForResourceType(
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
+  // Check if searching for deleted resources
+  // Only consider _deleted=true with valid operators (not :in or :not-in)
+  const deletedFilter = searchRequest.filters?.find((f) => f.code === '_deleted');
+  const searchingDeleted =
+    deletedFilter?.value === 'true' &&
+    deletedFilter.operator !== Operator.IN &&
+    deletedFilter.operator !== Operator.NOT_IN;
+
+  if (searchingDeleted) {
+    // Query Deleted table for _deleted=true searches
+    return buildDeletedTableQuery(repo, resourceType, searchRequest, opts);
+  }
+
   const builder = new SelectQuery(resourceType);
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
@@ -445,6 +458,125 @@ function getBaseSelectQueryForResourceType(
     builder.distinctOn(idColumn);
   }
   return builder;
+}
+
+/**
+ * Builds a query for the Deleted_<ResourceType> table when searching for _deleted=true.
+ * The Deleted table has a simplified schema with only id, projectId, lastUpdated, and compartments.
+ * @param repo - The repository.
+ * @param resourceType - The resource type.
+ * @param searchRequest - The search request.
+ * @param opts - Query options.
+ * @returns The select query for the Deleted table.
+ */
+function buildDeletedTableQuery(
+  repo: Repository,
+  resourceType: ResourceType,
+  searchRequest: SearchRequest,
+  opts?: GetBaseSelectQueryOptions
+): SelectQuery {
+  const tableName = 'Deleted_' + resourceType;
+  const builder = new SelectQuery(tableName);
+  const addColumns = opts?.addColumns !== false;
+  const idColumn = new Column(tableName, 'id');
+
+  if (addColumns) {
+    builder
+      .column(idColumn)
+      .column(new Column(tableName, 'lastUpdated'))
+      .raw(`''::text AS "content"`);
+  }
+
+  repo.addDeletedTableSecurityFilters(builder, resourceType);
+
+  // Apply only the filters that are supported on Deleted tables
+  // (basically _id and _lastUpdated, since there's no clinical data)
+  for (const filter of searchRequest.filters ?? EMPTY) {
+    if (filter.code === '_deleted') {
+      // Skip _deleted filter itself since we're already querying the Deleted table
+      continue;
+    }
+    if (filter.code === '_id') {
+      const expr = buildDeletedTableIdFilter(tableName, filter);
+      if (expr) {
+        builder.whereExpr(expr);
+      }
+    } else if (filter.code === '_lastUpdated') {
+      const expr = buildDeletedTableLastUpdatedFilter(tableName, filter);
+      if (expr) {
+        builder.whereExpr(expr);
+      }
+    } else if (filter.code === '_project') {
+      const expr = buildDeletedTableProjectFilter(tableName, filter);
+      if (expr) {
+        builder.whereExpr(expr);
+      }
+    }
+    // Other filters are not supported on Deleted tables (no search columns)
+  }
+
+  if (opts?.resourceTypeQueryCallback) {
+    opts.resourceTypeQueryCallback(resourceType, builder);
+  }
+
+  return builder;
+}
+
+/**
+ * Builds an _id filter for the Deleted table.
+ * @param tableName - The Deleted table name.
+ * @param filter - The filter to apply.
+ * @returns The filter expression.
+ */
+function buildDeletedTableIdFilter(tableName: string, filter: Filter): Expression | undefined {
+  const values = splitSearchOnComma(filter.value);
+  for (let i = 0; i < values.length; i++) {
+    if (values[i].includes('/')) {
+      values[i] = values[i].split('/').pop() as string;
+    }
+    if (!isUUID(values[i])) {
+      values[i] = '00000000-0000-0000-0000-000000000000';
+    }
+  }
+
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
+    return new Negation(new Condition(new Column(tableName, 'id'), 'IN', values, 'UUID[]'));
+  }
+  return new Condition(new Column(tableName, 'id'), 'IN', values, 'UUID[]');
+}
+
+/**
+ * Builds a _lastUpdated filter for the Deleted table.
+ * @param tableName - The Deleted table name.
+ * @param filter - The filter to apply.
+ * @returns The filter expression.
+ */
+function buildDeletedTableLastUpdatedFilter(tableName: string, filter: Filter): Expression | undefined {
+  const column = new Column(tableName, 'lastUpdated');
+  return new Condition(column, fhirOperatorToSqlOperator(filter.operator), filter.value);
+}
+
+/**
+ * Builds a _project filter for the Deleted table.
+ * @param tableName - The Deleted table name.
+ * @param filter - The filter to apply.
+ * @returns The filter expression.
+ */
+function buildDeletedTableProjectFilter(tableName: string, filter: Filter): Expression | undefined {
+  const values = splitSearchOnComma(filter.value);
+  for (let i = 0; i < values.length; i++) {
+    if (values[i].includes('/')) {
+      values[i] = values[i].split('/').pop() as string;
+    }
+    if (!isUUID(values[i])) {
+      values[i] = '00000000-0000-0000-0000-000000000000';
+    }
+  }
+
+  if (filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT) {
+    return new Negation(new Condition(new Column(tableName, 'projectId'), 'IN', values, 'UUID[]'));
+  }
+  return new Condition(new Column(tableName, 'projectId'), 'IN', values, 'UUID[]');
 }
 
 function removeResourceFields(resource: Resource, repo: Repository, searchRequest: SearchRequest): void {
