@@ -131,7 +131,10 @@ Examples:
 
 // Generate a sample HL7 ADT^A01 message
 function generateHl7Message(msgId: number, clientId: number): Hl7Message {
-  const timestamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[-:T.Z]/g, '')
+    .slice(0, 14);
   const controlId = `LOADTEST${clientId.toString().padStart(3, '0')}${msgId.toString().padStart(8, '0')}`;
 
   const messageText = [
