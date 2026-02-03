@@ -3,12 +3,12 @@
 import type { TypedValueWithPath } from '@medplum/core';
 import { allOk, badRequest, getDisplayString, isResourceType, pathToJSONPointer } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { OperationDefinition, ResourceType } from '@medplum/fhirtypes';
 import type { Operation } from 'rfc6902';
 import { getAuthenticatedContext } from '../../context';
 import { collectReferences } from '../references';
 
-const _operation: OperationDefinition = {
+/*
+const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'RefreshReferenceDisplayStrings',
   status: 'active',
@@ -30,6 +30,7 @@ const _operation: OperationDefinition = {
     },
   ],
 };
+*/
 
 export async function refreshReferenceDisplayHandler(req: FhirRequest): Promise<FhirResponse> {
   const { id, resourceType } = req.params;
