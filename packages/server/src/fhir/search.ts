@@ -135,7 +135,8 @@ export async function searchImpl<T extends Resource>(
 
   let total = undefined;
   if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
-    total = await getCount(repo, searchRequest, rowCount);
+    const countResult = await getCount(repo, searchRequest, { rowCount });
+    total = countResult.accurate ?? countResult.estimate;
   }
 
   return {
@@ -819,6 +820,18 @@ function getSearchUrl(searchRequest: SearchRequest): string {
   return `${getConfig().baseUrl}fhir/R4/${searchRequest.resourceType}${formatSearchQuery(searchRequest)}`;
 }
 
+export interface CountResult {
+  estimate: number;
+  accurate?: number;
+}
+
+export interface GetCountOptions {
+  /** The number of matching results if found. Used to clamp the estimate count. */
+  rowCount?: number;
+  /** If true, always compute the accurate count regardless of the estimate threshold. */
+  forceAccurate?: boolean;
+}
+
 /**
  * Returns the count for a search request.
  * This ignores page number and page size.
@@ -826,16 +839,25 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * If the estimate is less than the "accurateCountThreshold" config setting (default 1,000,000), then we run an accurate count.
  * @param repo - The repository.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
- * @returns The total number of matching results.
+ * @param options - Options for controlling count behavior.
+ * @returns The count result with estimate and optionally accurate count.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount?: number): Promise<number> {
-  let estimateCount = await getEstimateCount(repo, searchRequest);
-  estimateCount = clampEstimateCount(searchRequest, estimateCount, rowCount);
-  if (estimateCount < getConfig().accurateCountThreshold) {
-    return getAccurateCount(repo, searchRequest);
+export async function getCount(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  options?: GetCountOptions
+): Promise<CountResult> {
+  let estimate = await getEstimateCount(repo, searchRequest);
+  estimate = clampEstimateCount(searchRequest, estimate, options?.rowCount);
+
+  const shouldGetAccurate = options?.forceAccurate || estimate < getConfig().accurateCountThreshold;
+
+  if (shouldGetAccurate) {
+    const accurate = await getAccurateCount(repo, searchRequest);
+    return { estimate, accurate };
   }
-  return estimateCount;
+
+  return { estimate };
 }
 
 /**
