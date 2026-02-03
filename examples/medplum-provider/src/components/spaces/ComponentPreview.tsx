@@ -1,11 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useState } from 'react';
-import type { JSX } from 'react';
-import { Tabs, Code, ScrollArea, Box } from '@mantine/core';
+import { Component, useState } from 'react';
+import type { JSX, ReactNode } from 'react';
+import { Tabs, Code, ScrollArea, Box, Alert } from '@mantine/core';
 import { LiveProvider, LivePreview, LiveError } from 'react-live';
 import * as Recharts from 'recharts';
 import * as Mantine from '@mantine/core';
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ComponentErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  render(): ReactNode {
+    if (this.state.hasError) {
+      return <Alert color="red">Component failed to render</Alert>;
+    }
+    return this.props.children;
+  }
+}
 
 interface ComponentPreviewProps {
   code: string;
@@ -59,7 +78,9 @@ export function ComponentPreview({ code }: ComponentPreviewProps): JSX.Element {
         <LiveProvider code={transformedCode} scope={scope} noInline>
           <Box p="md">
             <LiveError />
-            <LivePreview />
+            <ComponentErrorBoundary>
+              <LivePreview />
+            </ComponentErrorBoundary>
           </Box>
         </LiveProvider>
       </Tabs.Panel>

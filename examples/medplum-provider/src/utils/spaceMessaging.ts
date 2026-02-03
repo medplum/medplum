@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { useMedplum } from '@medplum/react';
-import type { Identifier, Communication, Resource, Bundle } from '@medplum/fhirtypes';
-import { getReferenceString } from '@medplum/core';
+import type { Identifier, Communication, Resource, Bundle, ResourceType } from '@medplum/fhirtypes';
+import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
 
@@ -81,27 +82,63 @@ function extractResourceRefs(result: Resource | Bundle): string[] {
   return refs;
 }
 
-export function extractCodeFromResponse(response: string): string | undefined {
-  // Look for JSX/TSX code blocks
-  const jsxMatch = response.match(/```(?:jsx|tsx|javascript|js)?\s*\n([\s\S]*?)```/);
-  if (jsxMatch) {
-    return jsxMatch[1].trim();
-  }
-  return undefined;
-}
+export class StreamingCodeExtractor {
+  private buffer = '';
+  private code = '';
+  private inCodeBlock = false;
 
-export async function collectFhirData(medplum: ReturnType<typeof useMedplum>, refs: string[]): Promise<any[]> {
-  const resources: any[] = [];
-  for (const ref of refs) {
-    try {
-      const [resourceType, id] = ref.split('/');
-      const resource = await medplum.readResource(resourceType as any, id);
-      resources.push(resource);
-    } catch {
-      // Skip resources that can't be fetched
+  process(chunk: string): void {
+    this.buffer += chunk;
+
+    while (true) {
+      if (!this.inCodeBlock) {
+        const startMatch = this.buffer.match(/```(?:jsx|tsx|javascript|js)?\s*\n/);
+        if (startMatch?.index !== undefined) {
+          this.inCodeBlock = true;
+          this.buffer = this.buffer.slice(startMatch.index + startMatch[0].length);
+        } else {
+          break;
+        }
+      }
+
+      if (this.inCodeBlock) {
+        const endIndex = this.buffer.indexOf('```');
+        if (endIndex !== -1) {
+          this.code += this.buffer.slice(0, endIndex);
+          this.buffer = this.buffer.slice(endIndex + 3);
+          this.inCodeBlock = false;
+        } else {
+          // Keep last 3 chars in buffer in case ``` spans chunks
+          const safeLength = Math.max(0, this.buffer.length - 3);
+          this.code += this.buffer.slice(0, safeLength);
+          this.buffer = this.buffer.slice(safeLength);
+          break;
+        }
+      }
     }
   }
-  return resources;
+
+  getCode(): string | undefined {
+    const trimmed = this.code.trim();
+    return trimmed || undefined;
+  }
+}
+
+export async function collectFhirData(medplum: MedplumClient, refs: string[]): Promise<Resource[]> {
+  const results = await Promise.all(
+    refs.map(async (ref) => {
+      try {
+        const [resourceType, id] = ref.split('/');
+        return await medplum.readResource(resourceType as ResourceType, id);
+      } catch (error) {
+        if (!(error instanceof OperationOutcomeError && isNotFound(error.outcome))) {
+          console.error(`Failed to fetch ${ref}:`, error);
+        }
+        return undefined;
+      }
+    })
+  );
+  return results.filter((resource) => resource !== undefined);
 }
 
 export async function executeToolCalls(
@@ -191,6 +228,11 @@ export async function sendToBot(
   return { content, toolCalls, visualize };
 }
 
+export interface StreamingResult {
+  content: string;
+  code?: string;
+}
+
 export async function sendToBotStreaming(
   medplum: ReturnType<typeof useMedplum>,
   botId: Identifier,
@@ -198,10 +240,11 @@ export async function sendToBotStreaming(
   model: string,
   onChunk: (chunk: string) => void,
   additionalParams?: { name: string; valueString: string }[]
-): Promise<string> {
+): Promise<StreamingResult> {
   const baseUrl = medplum.fhirUrl('Bot', '$execute').toString();
   const url = `${baseUrl}?identifier=${encodeURIComponent(`${botId.system}|${botId.value}`)}`;
-
+  const codeExtractor = new StreamingCodeExtractor();
+  console.log('url', url);
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -233,8 +276,9 @@ export async function sendToBotStreaming(
     const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
     if (content) {
       onChunk(content);
+      codeExtractor.process(content);
     }
-    return content;
+    return { content, code: codeExtractor.getCode() };
   }
 
   // Handle streaming SSE response
@@ -272,6 +316,7 @@ export async function sendToBotStreaming(
           const chunk = parsed.content || parsed.choices?.[0]?.delta?.content;
           if (chunk) {
             fullContent += chunk;
+            codeExtractor.process(chunk);
             onChunk(chunk);
           }
         } catch {
@@ -281,7 +326,7 @@ export async function sendToBotStreaming(
     }
   }
 
-  return fullContent;
+  return { content: fullContent, code: codeExtractor.getCode() };
 }
 
 export interface ProcessMessageParams {
@@ -369,15 +414,12 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       }
     }
 
-    // Check if the bot indicated visualization is appropriate
     if (initialResponse.visualize && allResourceRefs.length > 0) {
-      // Collect FHIR data to pass to the component generator
       const fhirData = await collectFhirData(medplum, allResourceRefs);
 
-      // Use component generator bot for visualization requests
-      // Pass FHIR data so the bot can bake it into the generated component
+      let componentCode: string | undefined;
       if (onStreamChunk) {
-        content = await sendToBotStreaming(
+        const result = await sendToBotStreaming(
           medplum,
           componentGeneratorBotSseId,
           currentMessages,
@@ -385,13 +427,12 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
           onStreamChunk,
           [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
         );
+        content = result.content;
+        componentCode = result.code;
       } else {
         const componentResponse = await sendToBot(medplum, componentGeneratorBotSseId, currentMessages, selectedModel);
         content = componentResponse.content;
       }
-
-      // Extract component code from response
-      const componentCode = extractCodeFromResponse(content || '');
 
       const uniqueRefs = [...new Set(allResourceRefs)];
       const assistantMessage: Message = {
@@ -414,13 +455,14 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
 
     // Get summary response after tool execution (streaming if callback provided)
     if (onStreamChunk) {
-      content = await sendToBotStreaming(
+      const result = await sendToBotStreaming(
         medplum,
         resourceSummaryBotSseId,
         currentMessages,
         selectedModel,
         onStreamChunk
       );
+      content = result.content;
     } else {
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;
