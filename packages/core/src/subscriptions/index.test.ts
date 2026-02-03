@@ -1070,6 +1070,125 @@ describe('SubscriptionManager', () => {
       expect(receivedClose).toStrictEqual(false);
     });
 
+    test('should reconnect WebSocket and receive messages after closeWebSocket and addCriteria', async () => {
+      // This test reproduces the bug where calling closeWebSocket (e.g., when a component
+      // using useSubscription unmounts and criteria count goes to 0) prevents future
+      // subscriptions from working when addCriteria is called again (e.g., component remounts)
+
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      await wsServer.connected;
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toStrictEqual('open');
+
+      // Step 1: Add criteria and verify subscription works
+      const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      const emitter1 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      const receivedEvent2 = await receivedEvent2Promise;
+      expect(receivedEvent2.type).toStrictEqual('connect');
+
+      // Verify we can receive messages
+      const receivedEvent3Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter1.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
+
+      const receivedEvent3 = await receivedEvent3Promise;
+      expect(receivedEvent3.type).toStrictEqual('message');
+
+      // Step 2: Remove criteria and close WebSocket (simulating component unmount)
+      // Note: We listen on masterSubEmitter because removeCriteria removes the criteria entry
+      // from the map, so the close event won't be dispatched to emitter1
+      const receivedClosePromise = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('close', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Remove criteria and close WebSocket (this is what happens when useSubscription unmounts
+      // and the debounce timeout fires - criteria count goes to 0 and closeWebSocket is called)
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Close the WebSocket (simulating what the client does when criteria count hits 0)
+      defaultManager.closeWebSocket();
+
+      const receivedClose = await receivedClosePromise;
+      expect(receivedClose?.type).toStrictEqual('close');
+
+      await wsServer.closed;
+      WS.clean();
+
+      // Step 3: Set up a new WebSocket server and add criteria again (simulating component remount)
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+
+      const receivedEvent4Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Add criteria again - this should trigger a reconnect
+      const emitter2 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      // BUG: Without the fix, the WebSocket won't reconnect because:
+      // 1. closeWebSocket() sets shouldReconnect = false on the ReconnectingWebSocket
+      // 2. subscribeToCriteria() returns early because ws.readyState is CLOSED
+      // The fix should call reconnectWebSocket() when adding criteria to a closed WebSocket
+
+      const receivedEvent4 = await receivedEvent4Promise;
+      expect(receivedEvent4?.type).toStrictEqual('open');
+
+      await wsServer.connected;
+
+      const receivedEvent5Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        emitter2.addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Verify we receive the bind message for the new subscription
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      await sleep(100);
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      const receivedEvent5 = await receivedEvent5Promise;
+      expect(receivedEvent5.type).toStrictEqual('connect');
+
+      // Step 4: Verify we can receive messages on the new subscription
+      const receivedEvent6Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter2.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, SECOND_SUBSCRIPTION_ID, 'Hello again after reconnect!');
+
+      const receivedEvent6 = await receivedEvent6Promise;
+      expect(receivedEvent6.type).toStrictEqual('message');
+    }, 30000);
+
     test('should reconnect WebSocket and refresh subscriptions when profile changes', async () => {
       const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
         defaultManager.getMasterEmitter().addEventListener('open', (event) => {
