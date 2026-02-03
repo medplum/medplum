@@ -65,12 +65,8 @@ describe('$explain', () => {
 
     expect(res.status).toBe(200);
     const output = res.body.parameter as ParametersParameter[];
-    expect(output).toContainEqual(
-      expect.objectContaining({ name: 'countEstimate', valueInteger: expect.any(Number) })
-    );
-    expect(output).toContainEqual(
-      expect.objectContaining({ name: 'countAccurate', valueInteger: expect.any(Number) })
-    );
+    expect(output).toContainEqual(expect.objectContaining({ name: 'countEstimate', valueInteger: expect.any(Number) }));
+    expect(output).toContainEqual(expect.objectContaining({ name: 'countAccurate', valueInteger: expect.any(Number) }));
   });
 
   test('Does not return count when count parameter is omitted', async () => {
