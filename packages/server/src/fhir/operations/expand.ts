@@ -258,6 +258,13 @@ interface ExpansionRow {
   language: string | null;
 }
 
+/**
+ * Adds rows from the database to the computed expansion, deduplicating/collecting synonyms of the same code
+ * together into one entry.
+ * @param rows - The database rows containing codes and display strings.
+ * @param expansion - The expansion currently being generated.
+ * @param codeSystem - The CodeSystem from which the codes are drawn.
+ */
 export function addExpansionItems(
   rows: ExpansionRow[],
   expansion: ValueSetExpansionContains[],
@@ -268,17 +275,17 @@ export function addExpansionItems(
     const ex = expansion.find((o) => o.code === code);
     if (ex) {
       if (isEmpty(synonymOf)) {
+        // Incoming display string is the primary, replacing the one currently in the expansion
         if (ex.display) {
-          ex.designation = append(ex.designation, {
-            language: codeSystem.language,
-            value: ex.display,
-          });
+          ex.designation = append(ex.designation, { language: codeSystem.language, value: ex.display });
         }
         ex.display = display ?? undefined;
       } else if (display) {
+        // Incoming display string is a synonym for the code already in the expansion
         ex.designation = append(ex.designation, { language: language ?? undefined, value: display });
       }
     } else {
+      // New code being added to the expansion
       expansion.push({ system, code, display: display ?? undefined });
     }
   }
