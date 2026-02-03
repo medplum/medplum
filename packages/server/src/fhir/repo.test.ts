@@ -1877,6 +1877,28 @@ describe('FHIR Repo', () => {
 
       buildResourceRowSpy.mockRestore();
     }));
+
+  test('clone() uses provided connection', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      // Clone without connection argument - should use original connection
+      const clonedRepo1 = repo.clone();
+      expect(clonedRepo1).toBeInstanceOf(Repository);
+      expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
+
+      // Clone with explicit connection argument
+      const pool = getDatabasePool(DatabaseMode.READER);
+      const client = await pool.connect();
+      try {
+        const clonedRepo2 = repo.clone(client);
+        expect(clonedRepo2).toBeInstanceOf(Repository);
+        expect(clonedRepo2.getDatabaseClient(DatabaseMode.READER)).toBe(client);
+        expect(clonedRepo2.getDatabaseClient(DatabaseMode.WRITER)).toBe(client);
+      } finally {
+        client.release();
+      }
+    }));
 });
 
 function shuffleString(s: string): string {
