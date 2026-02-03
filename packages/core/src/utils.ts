@@ -431,6 +431,11 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+export interface SetIdentifierOptions {
+  /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
+  use?: Identifier['use'];
+}
+
 /**
  * Sets a resource identifier for the given system.
  *
@@ -446,13 +451,12 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param system - The identifier system.
  * @param value - The identifier value.
  * @param options - Optional attributes to set
- * @param options.use - IdentifierUse code (https://build.fhir.org/valueset-identifier-use.html)
  */
 export function setIdentifier(
   resource: Resource & { identifier?: Identifier[] },
   system: string,
   value: string,
-  options?: { use?: Identifier['use'] }
+  options?: SetIdentifierOptions
 ): void {
   const identifier: Identifier = { system, value };
   if (options?.use) {
@@ -1524,9 +1528,11 @@ export function escapeHtml(unsafe: string): string {
  * @param value - The value to refine
  * @returns boolean
  *
- * Example usage:
- *   const arr: Array<number | undefined> = [1,undefined];
- *   const refined: Array<number> = arr.filter(isDefined);
+ * @example
+ * ```typescript
+ * const arr: Array<number | undefined> = [1,undefined];
+ * const refined: Array<number> = arr.filter(isDefined);
+ * ```
  */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;

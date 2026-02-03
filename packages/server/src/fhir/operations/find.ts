@@ -11,13 +11,13 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import type { HardCoding, SchedulingParameters } from './utils/scheduling-parameters';
+import type { SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
 const findOperation = {
@@ -53,11 +53,13 @@ type FindParameters = {
 function filterByServiceTypes(
   schedulingParameters: SchedulingParameters[],
   serviceTypes: string[]
-): [SchedulingParameters, HardCoding | undefined][] {
+): [SchedulingParameters, CodeableConcept | undefined][] {
   if (serviceTypes.length) {
-    const results: [SchedulingParameters, HardCoding][] = [];
+    const results: [SchedulingParameters, CodeableConcept][] = [];
     for (const params of schedulingParameters) {
-      const serviceType = params.serviceType.find((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`));
+      const serviceType = params.serviceType.find((codeableConcept) =>
+        codeableConcept.coding?.some((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`))
+      );
       if (serviceType) {
         results.push([params, serviceType]);
       }
@@ -173,7 +175,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         end: end.toISOString(),
         schedule: createReference(schedule),
         status: 'free',
-        ...(serviceType ? { serviceType: [{ coding: [serviceType] }] } : {}),
+        ...(serviceType ? { serviceType: [serviceType] } : {}),
       }));
     },
     pageSize

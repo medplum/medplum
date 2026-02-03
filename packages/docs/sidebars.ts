@@ -406,6 +406,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'self-hosting/super-admin-guide' },
         { type: 'doc', id: 'self-hosting/sendgrid' },
         { type: 'doc', id: 'self-hosting/mailtrapio' },
+        { type: 'doc', id: 'self-hosting/branding' },
         { type: 'html', value: '<strong class="menu__link">Monitoring</strong>' },
         { type: 'doc', id: 'self-hosting/monitoring' },
         { type: 'doc', id: 'self-hosting/datadog' },

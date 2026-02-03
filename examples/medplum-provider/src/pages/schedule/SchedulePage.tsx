@@ -11,12 +11,13 @@ import {
   getReferenceString,
 } from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { CodingDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
+import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { CodeableConceptDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
+import { v4 as uuidv4 } from 'uuid';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
 import { showErrorNotification } from '../../utils/notifications';
@@ -38,9 +39,9 @@ type ScheduleFindPaneProps = {
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
-function parseSchedulingParameters(schedule: Schedule): (Coding | undefined)[] {
+function parseSchedulingParameters(schedule: Schedule): (CodeableConcept | undefined)[] {
   const extensions = schedule?.extension?.filter((ext) => ext.url === SchedulingParametersURI) ?? [];
-  const serviceTypes = extensions.map((ext) => getExtensionValue(ext, 'serviceType') as Coding | undefined);
+  const serviceTypes = extensions.map((ext) => getExtensionValue(ext, 'serviceType') as CodeableConcept | undefined);
   return serviceTypes;
 }
 
@@ -51,17 +52,24 @@ function parseSchedulingParameters(schedule: Schedule): (Coding | undefined)[] {
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
   const { schedule, onChange, range } = props;
-  const serviceTypes = useMemo(() => parseSchedulingParameters(schedule), [schedule]);
+  const serviceTypes = useMemo(
+    () =>
+      parseSchedulingParameters(schedule).map((codeableConcept) => ({
+        codeableConcept,
+        id: uuidv4(),
+      })),
+    [schedule]
+  );
 
   const medplum = useMedplum();
 
   // null: no selection made
   // undefined: "wildcard" availability selected
   // Coding: a specific service type was selected
-  const [serviceType, setServiceType] = useState<Coding | undefined | null>(
+  const [serviceType, setServiceType] = useState<CodeableConcept | undefined | null>(
     // If there is exactly one option, select it immediately instead of forcing user
     // to select it
-    serviceTypes.length === 1 ? serviceTypes[0] : null
+    serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : null
   );
 
   // Ensure that we are searching for slots in the future by at least 30 minutes.
@@ -80,7 +88,9 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
     const signal = controller.signal;
     const params = new URLSearchParams({ start, end });
     if (serviceType) {
-      params.append('service-type', `${serviceType.system}|${serviceType.code}`);
+      serviceType.coding?.forEach((coding) => {
+        params.append('service-type', `${coding.system}|${coding.code}`);
+      });
     }
     medplum
       .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
@@ -114,7 +124,7 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
       <Stack gap="sm" justify="flex-start">
         <Title order={4}>
           <Group justify="space-between">
-            <span>{serviceType ? <CodingDisplay value={serviceType} /> : 'Event'}</span>
+            <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
             {serviceTypes.length > 1 && (
               <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
                 <IconX size={20} />
@@ -140,16 +150,16 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
   return (
     <Stack gap="sm" justify="flex-start">
       <Title order={4}>Schedule&hellip;</Title>
-      {serviceTypes.map((st, index) => (
+      {serviceTypes.map((st) => (
         <Button
-          key={st ? `${st.system}|${st.code}` : `wildcard-${index}`}
+          key={st.id}
           fullWidth
           variant="outline"
           rightSection={<IconChevronRight size={12} />}
           justify="space-between"
-          onClick={() => setServiceType(st)}
+          onClick={() => setServiceType(st.codeableConcept)}
         >
-          {st ? <CodingDisplay value={st} /> : 'Other'}
+          {st.codeableConcept ? <CodeableConceptDisplay value={st.codeableConcept} /> : 'Other'}
         </Button>
       ))}
     </Stack>
