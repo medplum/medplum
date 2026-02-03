@@ -30,6 +30,11 @@
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts"
+    }
+  },
   "main": "",
   "types": "dist/index.d.ts",
   "files": [
