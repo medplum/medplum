@@ -54,7 +54,7 @@ const WRAPPER_CODE = `
     createPdf,
   });
   medplum.setAccessToken(accessToken);
-
+  console.log('streaming', streaming);
   let botResponseStream = undefined;
   if (streaming) {
     botResponseStream = new BotResponseStream(responseStream);
@@ -81,7 +81,7 @@ const WRAPPER_CODE = `
       console.log("Unhandled error: " + err);
     }
     if (!streaming || !botResponseStream.streamStarted) {
-      writeResponse(responseStream, 500);
+      writeResponse(responseStream, 500, { error: err.message });
     }
   }
 });
