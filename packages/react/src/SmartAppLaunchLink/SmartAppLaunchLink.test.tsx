@@ -146,7 +146,10 @@ describe('SmartAppLaunchLink', () => {
     await medplum.createResource(patientWithIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithoutLaunchIdentifierSystems} patient={createReference(patientWithIdentifier)}>
+      <SmartAppLaunchLink
+        client={clientWithoutLaunchIdentifierSystems}
+        patient={createReference(patientWithIdentifier)}
+      >
         App Without Launch Identifier Systems
       </SmartAppLaunchLink>,
       medplum
@@ -200,7 +203,10 @@ describe('SmartAppLaunchLink', () => {
     await medplum.createResource(patientWithDifferentIdentifier);
 
     setup(
-      <SmartAppLaunchLink client={clientWithLaunchIdentifierSystems} patient={createReference(patientWithDifferentIdentifier)}>
+      <SmartAppLaunchLink
+        client={clientWithLaunchIdentifierSystems}
+        patient={createReference(patientWithDifferentIdentifier)}
+      >
         App With Missing Identifier
       </SmartAppLaunchLink>,
       medplum
@@ -261,7 +267,10 @@ describe('SmartAppLaunchLink', () => {
     await medplum.readResource('Encounter', encounterWithIdentifier.id as string);
 
     setup(
-      <SmartAppLaunchLink client={clientWithEncounterIdentifierSystem} encounter={createReference(encounterWithIdentifier)}>
+      <SmartAppLaunchLink
+        client={clientWithEncounterIdentifierSystem}
+        encounter={createReference(encounterWithIdentifier)}
+      >
         App With Encounter Identifier
       </SmartAppLaunchLink>,
       medplum
