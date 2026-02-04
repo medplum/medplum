@@ -56,9 +56,8 @@ describe('sendToBotStreaming', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMedplum = {
-      searchOne: vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-123' }),
       getAccessToken: vi.fn().mockReturnValue('mock-token'),
-      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-123/$execute')),
+      fhirUrl: vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/$execute')),
     };
   });
 
@@ -78,7 +77,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world!');
+    expect(result.content).toBe('Hello world!');
     expect(receivedChunks).toEqual(['Hello', ' world', '!']);
   });
 
@@ -90,15 +89,15 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('This is a buffered response');
+    expect(result.content).toBe('This is a buffered response');
     expect(receivedChunks).toEqual(['This is a buffered response']);
   });
 
-  test('throws error when bot is not found', async () => {
-    mockMedplum.searchOne = vi.fn().mockResolvedValue(null);
+  test('throws error when bot execution returns 404', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockErrorResponse(404, 'Bot not found'));
 
     await expect(sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn())).rejects.toThrow(
-      'Bot not found: test-bot'
+      'Bot execution failed: 404 - Bot not found'
     );
   });
 
@@ -129,7 +128,7 @@ describe('sendToBotStreaming', () => {
     await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn());
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Bot/bot-123/$execute',
+      'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https%3A%2F%2Fwww.medplum.com%2Fbots%7Ctest-bot',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -146,16 +145,6 @@ describe('sendToBotStreaming', () => {
         }),
       })
     );
-  });
-
-  test('searches for bot with correct identifier', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockBufferedResponse('OK'));
-
-    await sendToBotStreaming(mockMedplum as MedplumClient, botId, messages, 'gpt-4o', vi.fn());
-
-    expect(mockMedplum.searchOne).toHaveBeenCalledWith('Bot', {
-      identifier: 'https://www.medplum.com/bots|test-bot',
-    });
   });
 
   test('handles empty content in buffered response', async () => {
@@ -176,7 +165,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('');
+    expect(result.content).toBe('');
     expect(receivedChunks).toEqual([]);
   });
 
@@ -202,7 +191,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello there');
+    expect(result.content).toBe('Hello there');
     expect(receivedChunks).toEqual(['Hello', ' there']);
   });
 
@@ -229,7 +218,7 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world');
+    expect(result.content).toBe('Hello world');
     expect(receivedChunks).toEqual(['Hello', ' world']);
   });
 
@@ -257,6 +246,6 @@ describe('sendToBotStreaming', () => {
       receivedChunks.push(chunk)
     );
 
-    expect(result).toBe('Hello world');
+    expect(result.content).toBe('Hello world');
   });
 });
