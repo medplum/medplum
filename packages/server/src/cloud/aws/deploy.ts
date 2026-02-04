@@ -81,7 +81,12 @@ const WRAPPER_CODE = `
       console.log("Unhandled error: " + err);
     }
     if (!streaming || !botResponseStream.streamStarted) {
-      writeResponse(responseStream, 500, { error: err.message });
+      const errorResponse = {
+        errorType: err.constructor?.name || "Error",
+        errorMessage: err.message,
+        trace: err.stack ? err.stack.split("\\n") : []
+      };
+      writeResponse(responseStream, 500, errorResponse);
     }
   }
 });
