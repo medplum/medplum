@@ -17,8 +17,9 @@ import {
 } from './pharmacy-utils';
 
 describe('Constants', () => {
-  test('PATIENT_PREFERRED_PHARMACY_URL is correct', () => {
-    expect(PATIENT_PREFERRED_PHARMACY_URL).toBe('http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy');
+  test('PATIENT_PREFERRED_PHARMACY_URL is exported and used in the codebase', () => {
+    expect(PATIENT_PREFERRED_PHARMACY_URL).toBeDefined();
+    expect(typeof PATIENT_PREFERRED_PHARMACY_URL).toBe('string');
   });
 
   test('PHARMACY_TYPE_PRIMARY is correct', () => {

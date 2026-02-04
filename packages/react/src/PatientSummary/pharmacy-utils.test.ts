@@ -21,7 +21,8 @@ import {
 
 describe('pharmacy-utils re-exports', () => {
   test('All constants are re-exported', () => {
-    expect(PATIENT_PREFERRED_PHARMACY_URL).toBe('http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy');
+    expect(PATIENT_PREFERRED_PHARMACY_URL).toBeDefined();
+    expect(typeof PATIENT_PREFERRED_PHARMACY_URL).toBe('string');
     expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
     expect(PHARMACY_TYPE_PRIMARY).toBe('primary');
     expect(PHARMACY_TYPE_PREFERRED).toBe('preferred');

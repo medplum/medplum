@@ -8,6 +8,7 @@ import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from './pharmacy-utils';
+import styles from './PharmacyDialog.module.css';
 
 export interface PharmacyDialogProps {
   readonly patient: Patient;
@@ -59,6 +60,168 @@ function isAddPharmacyResponse(value: unknown): value is AddPharmacyResponse {
  */
 function getPharmacyKey(pharmacy: Organization, index: number): string {
   return pharmacy.identifier?.[0]?.value || `pharmacy-${index}`;
+}
+
+/**
+ * Search form component for finding pharmacies
+ */
+interface SearchFormProps {
+  readonly onSearch: (formData: FormData) => void;
+  readonly searching: boolean;
+}
+
+function SearchForm({ onSearch, searching }: SearchFormProps): JSX.Element {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        onSearch(formData);
+      }}
+    >
+      <Stack gap="md">
+        <TextInput name="name" label="Pharmacy Name" placeholder="Enter pharmacy name (min 3 chars)" />
+        <Group grow>
+          <TextInput name="city" label="City" placeholder="City (min 3 chars)" />
+          <TextInput name="state" label="State" placeholder="State (min 3 chars)" />
+        </Group>
+        <Group grow>
+          <TextInput name="zip" label="Zip Code" placeholder="Zip code (min 3 chars)" />
+          <TextInput name="phoneOrFax" label="Phone or Fax" placeholder="Phone or fax number" />
+        </Group>
+        <TextInput name="address" label="Address" placeholder="Street address (min 3 chars)" />
+        <TextInput name="ncpdpID" label="NCPDP ID" placeholder="National Council for Prescription Drug Programs ID" />
+
+        <Button type="submit" loading={searching}>
+          Search
+        </Button>
+      </Stack>
+    </form>
+  );
+}
+
+/**
+ * Individual pharmacy item in search results
+ */
+interface PharmacyItemProps {
+  readonly pharmacy: Organization;
+  readonly pharmacyKey: string;
+  readonly isSelected: boolean;
+  readonly onSelect: () => void;
+}
+
+function PharmacyItem({ pharmacy, pharmacyKey, isSelected, onSelect }: PharmacyItemProps): JSX.Element {
+  return (
+    <Box
+      key={pharmacyKey}
+      p="sm"
+      className={isSelected ? styles.pharmacyItemSelected : styles.pharmacyItem}
+      onClick={onSelect}
+    >
+      <Radio
+        value={pharmacyKey}
+        label={
+          <Box>
+            <Text fw={500} size="sm">
+              {pharmacy.name}
+            </Text>
+            {pharmacy.address?.[0] && (
+              <Text size="xs" c="dimmed">
+                {formatAddress(pharmacy.address[0])}
+              </Text>
+            )}
+            {pharmacy.telecom?.find((t) => t.system === 'phone') && (
+              <Text size="xs" c="dimmed">
+                Phone: {pharmacy.telecom.find((t) => t.system === 'phone')?.value}
+              </Text>
+            )}
+            {pharmacy.telecom?.find((t) => t.system === 'fax') && (
+              <Text size="xs" c="dimmed">
+                Fax: {pharmacy.telecom.find((t) => t.system === 'fax')?.value}
+              </Text>
+            )}
+          </Box>
+        }
+      />
+    </Box>
+  );
+}
+
+/**
+ * Search results section with pharmacy list and action buttons
+ */
+interface SearchResultsProps {
+  readonly searchResults: Organization[];
+  readonly selectedPharmacy: Organization | undefined;
+  readonly onSelectPharmacy: (pharmacy: Organization) => void;
+  readonly setAsPrimary: boolean;
+  readonly onSetAsPrimary: (value: boolean) => void;
+  readonly onAddFavorite: () => void;
+  readonly onClose: () => void;
+  readonly adding: boolean;
+}
+
+function SearchResults({
+  searchResults,
+  selectedPharmacy,
+  onSelectPharmacy,
+  setAsPrimary,
+  onSetAsPrimary,
+  onAddFavorite,
+  onClose,
+  adding,
+}: SearchResultsProps): JSX.Element {
+  return (
+    <Box mt="xl">
+      <Text fw={600} mb="md">
+        Search Results ({searchResults.length})
+      </Text>
+      <Radio.Group
+        value={selectedPharmacy ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) : ''}
+        onChange={(value) => {
+          const selected = searchResults.find((p, i) => getPharmacyKey(p, i) === value);
+          if (selected) {
+            onSelectPharmacy(selected);
+          }
+        }}
+      >
+        <Stack gap="sm">
+          {searchResults.map((pharmacy, index) => {
+            const pharmacyKey = getPharmacyKey(pharmacy, index);
+            const isSelected = selectedPharmacy
+              ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) === pharmacyKey
+              : false;
+
+            return (
+              <PharmacyItem
+                key={pharmacyKey}
+                pharmacy={pharmacy}
+                pharmacyKey={pharmacyKey}
+                isSelected={isSelected}
+                onSelect={() => onSelectPharmacy(pharmacy)}
+              />
+            );
+          })}
+        </Stack>
+      </Radio.Group>
+
+      <Flex mt="lg" gap="md" align="center" justify="space-between">
+        <Checkbox
+          label="Set as primary pharmacy"
+          checked={setAsPrimary}
+          onChange={(e) => onSetAsPrimary(e.currentTarget.checked)}
+        />
+        <Group>
+          <Button variant="subtle" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button onClick={onAddFavorite} disabled={!selectedPharmacy} loading={adding}>
+            Add to Favorites
+          </Button>
+        </Group>
+      </Flex>
+    </Box>
+  );
 }
 
 /**
@@ -180,31 +343,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
 
   return (
     <Box>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          handleSearch(formData).catch(console.error);
-        }}
-      >
-        <Stack gap="md">
-          <TextInput name="name" label="Pharmacy Name" placeholder="Enter pharmacy name (min 3 chars)" />
-          <Group grow>
-            <TextInput name="city" label="City" placeholder="City (min 3 chars)" />
-            <TextInput name="state" label="State" placeholder="State (min 3 chars)" />
-          </Group>
-          <Group grow>
-            <TextInput name="zip" label="Zip Code" placeholder="Zip code (min 3 chars)" />
-            <TextInput name="phoneOrFax" label="Phone or Fax" placeholder="Phone or fax number" />
-          </Group>
-          <TextInput name="address" label="Address" placeholder="Street address (min 3 chars)" />
-          <TextInput name="ncpdpID" label="NCPDP ID" placeholder="National Council for Prescription Drug Programs ID" />
-
-          <Button type="submit" loading={searching}>
-            Search
-          </Button>
-        </Stack>
-      </form>
+      <SearchForm onSearch={(formData) => handleSearch(formData).catch(console.error)} searching={searching} />
 
       {searching && (
         <Flex justify="center" mt="xl">
@@ -213,84 +352,16 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
       )}
 
       {searchResults.length > 0 && !searching && (
-        <Box mt="xl">
-          <Text fw={600} mb="md">
-            Search Results ({searchResults.length})
-          </Text>
-          <Radio.Group
-            value={selectedPharmacy ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) : ''}
-            onChange={(value) => {
-              const selected = searchResults.find((p, i) => getPharmacyKey(p, i) === value);
-              setSelectedPharmacy(selected);
-            }}
-          >
-            <Stack gap="sm">
-              {searchResults.map((pharmacy, index) => {
-                const pharmacyKey = getPharmacyKey(pharmacy, index);
-                const isSelected = selectedPharmacy
-                  ? getPharmacyKey(selectedPharmacy, searchResults.indexOf(selectedPharmacy)) === pharmacyKey
-                  : false;
-
-                return (
-                  <Box
-                    key={pharmacyKey}
-                    p="sm"
-                    style={{
-                      border: isSelected
-                        ? '2px solid var(--mantine-color-blue-6)'
-                        : '1px solid var(--mantine-color-gray-3)',
-                      borderRadius: 'var(--mantine-radius-sm)',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => setSelectedPharmacy(pharmacy)}
-                  >
-                    <Radio
-                      value={pharmacyKey}
-                      label={
-                        <Box>
-                          <Text fw={500} size="sm">
-                            {pharmacy.name}
-                          </Text>
-                          {pharmacy.address?.[0] && (
-                            <Text size="xs" c="dimmed">
-                              {formatAddress(pharmacy.address[0])}
-                            </Text>
-                          )}
-                          {pharmacy.telecom?.find((t) => t.system === 'phone') && (
-                            <Text size="xs" c="dimmed">
-                              Phone: {pharmacy.telecom.find((t) => t.system === 'phone')?.value}
-                            </Text>
-                          )}
-                          {pharmacy.telecom?.find((t) => t.system === 'fax') && (
-                            <Text size="xs" c="dimmed">
-                              Fax: {pharmacy.telecom.find((t) => t.system === 'fax')?.value}
-                            </Text>
-                          )}
-                        </Box>
-                      }
-                    />
-                  </Box>
-                );
-              })}
-            </Stack>
-          </Radio.Group>
-
-          <Flex mt="lg" gap="md" align="center" justify="space-between">
-            <Checkbox
-              label="Set as primary pharmacy"
-              checked={setAsPrimary}
-              onChange={(e) => setSetAsPrimary(e.currentTarget.checked)}
-            />
-            <Group>
-              <Button variant="subtle" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddFavorite} disabled={!selectedPharmacy} loading={adding}>
-                Add to Favorites
-              </Button>
-            </Group>
-          </Flex>
-        </Box>
+        <SearchResults
+          searchResults={searchResults}
+          selectedPharmacy={selectedPharmacy}
+          onSelectPharmacy={setSelectedPharmacy}
+          setAsPrimary={setAsPrimary}
+          onSetAsPrimary={setSetAsPrimary}
+          onAddFavorite={handleAddFavorite}
+          onClose={onClose}
+          adding={adding}
+        />
       )}
     </Box>
   );

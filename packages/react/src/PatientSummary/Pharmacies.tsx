@@ -8,6 +8,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { LoadState } from '../utils/loadState';
 import { CollapsibleSection } from './CollapsibleSection';
 import { getPreferredPharmaciesFromPatient } from './pharmacy-utils';
 import { PharmacyDialog } from './PharmacyDialog';
@@ -23,8 +24,6 @@ export interface PharmaciesProps {
 interface PharmacyWithPrimary extends Organization {
   isPrimary?: boolean;
 }
-
-type LoadState = 'loading' | 'loaded' | 'error';
 
 export function Pharmacies(props: PharmaciesProps): JSX.Element {
   const { patient: patientProp, onClickResource } = props;
