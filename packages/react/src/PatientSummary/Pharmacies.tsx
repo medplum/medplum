@@ -8,7 +8,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { LoadState } from '../utils/loadState';
+import type { LoadState } from '../utils/loadState';
 import { CollapsibleSection } from './CollapsibleSection';
 import { getPreferredPharmaciesFromPatient } from './pharmacy-utils';
 import { PharmacyDialog } from './PharmacyDialog';
