@@ -1218,7 +1218,7 @@ describe('FHIR Repo', () => {
     }));
 
   describe('Deleted resource tables', () => {
-    test('Delete writes to Deleted table and removes from main table', () =>
+    test('Delete writes to Deleted table and marks deleted in main table', () =>
       withTestContext(async () => {
         const patient = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
@@ -1241,9 +1241,11 @@ describe('FHIR Repo', () => {
         expect(deletedRows.rows.length).toBe(1);
         expect(deletedRows.rows[0].id).toEqual(patient.id);
 
-        // Verify it's removed from the main Patient table
+        // Verify it's marked as deleted in the main Patient table (backwards compatibility)
         const mainRows = await db.query('SELECT * FROM "Patient" WHERE id = $1', [patient.id]);
-        expect(mainRows.rows.length).toBe(0);
+        expect(mainRows.rows.length).toBe(1);
+        expect(mainRows.rows[0].deleted).toBe(true);
+        expect(mainRows.rows[0].content).toBe('');
       }));
 
     test('Read returns 404 for truly non-existent resource', () =>
@@ -1316,7 +1318,7 @@ describe('FHIR Repo', () => {
         expect(deletedRowsAfter.rows.length).toBe(0);
 
         // Verify it's back in the main table and readable
-        const restored = await systemRepo.readResource('Patient', patientId);
+        const restored = await systemRepo.readResource<Patient>('Patient', patientId);
         expect(restored.id).toEqual(patientId);
         expect(restored.name?.[0]?.given?.[0]).toEqual('UnDeleted');
       }));

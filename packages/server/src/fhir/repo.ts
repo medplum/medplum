@@ -463,13 +463,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(notFound);
     }
 
-    const builder = new SelectQuery(resourceType).column('content').where('id', '=', id);
+    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
 
     const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
-      // Check Deleted table for 410 Gone
+      // Check Deleted table for 410 Gone (for resources fully removed from main table)
       const deletedBuilder = new SelectQuery('Deleted_' + resourceType).column('id').where('id', '=', id);
       this.addDeletedTableSecurityFilters(deletedBuilder, resourceType);
       const deletedRows = await deletedBuilder.execute(this.getDatabaseClient(DatabaseMode.READER));
@@ -478,6 +478,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(gone);
       }
       throw new OperationOutcomeError(notFound);
+    }
+
+    if (rows[0].deleted) {
+      throw new OperationOutcomeError(gone);
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
@@ -1297,22 +1301,39 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (conn) => {
+          const projectId = resource.meta?.project ?? systemResourceProjectId;
           const lastUpdated = new Date();
           const content = '';
-          const projectId = resource.meta?.project ?? systemResourceProjectId;
+          const compartments =
+            resourceType !== 'Binary' ? this.getCompartments(resource).map((ref) => resolveId(ref)) : undefined;
+          const columns: Record<string, any> = {
+            id,
+            lastUpdated,
+            deleted: true,
+            projectId,
+            content,
+            compartments,
+            __version: -1,
+          };
+
+          for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+            this.buildColumn({ resourceType } as Resource, columns, searchParam);
+          }
+
+          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+
+          // VERSION{5.1.0} - delete from main table instead of inserting the tombstone, e.g.:
+          // await new DeleteQuery(resourceType).where('id', '=', id).execute(conn);
 
           // Insert into Deleted table
           const deletedRow: Record<string, any> = {
             id,
             projectId,
             lastUpdated,
+            compartments,
           };
-          if (resourceType !== 'Binary') {
-            deletedRow['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
-          }
           await new InsertQuery('Deleted_' + resourceType, [deletedRow]).mergeOnConflict().execute(conn);
 
-          // Write history entry (empty content for deletion)
           await new InsertQuery(resourceType + '_History', [
             {
               id,
@@ -1321,9 +1342,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
               content,
             },
           ]).execute(conn);
-
-          // Delete from main table
-          await new DeleteQuery(resourceType).where('id', '=', id).execute(conn);
 
           await this.deleteFromLookupTables(conn, resource);
           const durationMs = Date.now() - startTime;
