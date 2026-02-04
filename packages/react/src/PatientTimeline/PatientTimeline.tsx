@@ -27,6 +27,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
       medplum.search('Media', { subject: ref, _count }),
       medplum.search('ServiceRequest', { subject: ref, _count }),
       medplum.search('Task', { subject: ref, _count }),
+      medplum.search('Observation', { subject: ref, _count }),
     ]);
   }, []);
 

@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "migrate": "tsx src/migrations/migrate-main.ts",
+    "seed:sample": "tsx src/scripts/seed-sample-data.ts",
     "start": "node --import ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
     "test:seed": "jest seed.test.ts --testTimeout=400000"

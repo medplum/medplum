@@ -98,6 +98,9 @@ export interface MedplumServerConfig {
   /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
   preCommitSubscriptionsEnabled?: boolean;
 
+  /** Flag to enable/disable seeding sample data (default 'true' for enabled) */
+  seedSampleData?: boolean;
+
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
 

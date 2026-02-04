@@ -9,6 +9,7 @@ import type { Repository } from './fhir/repo';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
+import { seedSampleData } from './seeds/sampledata';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
@@ -37,6 +38,13 @@ export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
     startTime = Date.now();
     await rebuildR4SearchParameters(systemRepo);
     globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+
+    if (config.seedSampleData !== false) {
+      globalLogger.info('Seeding sample data...');
+      startTime = Date.now();
+      await seedSampleData(systemRepo);
+      globalLogger.info('Finished seeding sample data', { durationMs: Date.now() - startTime });
+    }
   });
 }
 
