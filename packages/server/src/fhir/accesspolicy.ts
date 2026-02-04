@@ -6,6 +6,7 @@ import {
   createReference,
   EMPTY,
   getReferenceString,
+  isNotFound,
   isResource,
   isString,
   OperationOutcomeError,
@@ -44,15 +45,21 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const resolved = await systemRepo.readReferences<Resource>([membership.project, realMembership.profile]);
-  const err = resolved.find((r) => r instanceof Error);
-  if (err) {
-    throw err;
+  const refs: Reference[] = [membership.project, realMembership.profile];
+  const resolved = await systemRepo.readReferences<Resource>(refs);
+
+  if (resolved[0] instanceof Error) {
+    throw resolved[0];
   }
   const project = resolved[0] as WithId<Project>;
-  const profile = resolved[1] as WithId<ProfileResource>;
-  const allowedProjects: WithId<Project>[] = [project];
+  let profile: WithId<ProfileResource> | undefined;
+  if (isResource(resolved[1])) {
+    profile = resolved[1] as WithId<ProfileResource>;
+  } else if (!(resolved[1] instanceof OperationOutcomeError && isNotFound(resolved[1].outcome))) {
+    throw resolved[1];
+  }
 
+  const allowedProjects: WithId<Project>[] = [project];
   if (project.link) {
     const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
@@ -77,7 +84,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: createReference(profile),
+    author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
     projectAdmin: membership.admin,
