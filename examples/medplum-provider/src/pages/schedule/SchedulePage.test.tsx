@@ -8,7 +8,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Appointment, Bundle, Coding, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
 import { SchedulePage, ScheduleFindPane } from './SchedulePage';
 
@@ -305,26 +305,34 @@ describe('SchedulePage', () => {
   });
 
   describe('ScheduleFindPane Integration', () => {
-    const serviceType1: Coding = {
-      system: 'http://example.com/service-types',
-      code: 'checkup',
-      display: 'Annual Checkup',
+    const serviceType1: CodeableConcept = {
+      coding: [
+        {
+          system: 'http://example.com/service-types',
+          code: 'checkup',
+        },
+      ],
+      text: 'Annual Checkup',
     };
 
-    const serviceType2: Coding = {
-      system: 'http://example.com/service-types',
-      code: 'followup',
-      display: 'Follow-up Visit',
+    const serviceType2: CodeableConcept = {
+      coding: [
+        {
+          system: 'http://example.com/service-types',
+          code: 'followup',
+        },
+      ],
+      text: 'Follow-up Visit',
     };
 
-    const createScheduleWithServiceTypes = (serviceTypes: (Coding | undefined)[]): Schedule => ({
+    const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): Schedule => ({
       resourceType: 'Schedule',
       id: 'schedule-1',
       actor: [{ reference: 'Practitioner/practitioner-1' }],
       active: true,
       extension: serviceTypes.map((st) => ({
         url: SchedulingParametersURI,
-        extension: st ? [{ url: 'serviceType', valueCoding: st }] : [],
+        extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
       })),
     });
 
@@ -363,7 +371,7 @@ describe('SchedulePage', () => {
       expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
     });
 
-    test('opens drawer when slot from ScheduleFindPane is selected', async () => {
+    test('uses $book to create an appointment when a slot from ScheduleFindPane is chosen', async () => {
       const user = userEvent.setup();
       const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
       medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
@@ -385,6 +393,24 @@ describe('SchedulePage', () => {
         entry: mockFindSlots.map((slot) => ({ resource: slot })),
       } as Bundle<Slot>);
 
+      const mockBookResponse: Bundle<Appointment | Slot> = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Appointment',
+              id: 'appointment-123',
+              status: 'booked',
+              start: '2024-01-16T10:00:00Z',
+              end: '2024-01-16T10:30:00Z',
+              participant: [{ actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' }],
+            },
+          },
+        ],
+      };
+      medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
+
       await act(async () => {
         setup();
       });
@@ -397,9 +423,15 @@ describe('SchedulePage', () => {
       expect(slotButtons.length).toEqual(1);
       await user.click(slotButtons[0]);
 
-      // Drawer should open
+      // Test that the right operation was invoked
+      expect(medplum.post).toHaveBeenCalledWith(new URL('https://example.com/fhir/R4/Appointment/$book'), {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'slot', resource: mockFindSlots[0] }],
+      });
+
+      // Appointment Details Drawer should open
       await waitFor(() => {
-        expect(screen.getByText('New Calendar Event')).toBeInTheDocument();
+        expect(screen.getByText('Appointment Details')).toBeInTheDocument();
       });
     });
 
@@ -487,26 +519,34 @@ describe('SchedulePage', () => {
 describe('ScheduleFindPane', () => {
   let medplum: MockClient;
 
-  const serviceType1: Coding = {
-    system: 'http://example.com/service-types',
-    code: 'checkup',
-    display: 'Annual Checkup',
+  const serviceType1: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'checkup',
+      },
+    ],
+    text: 'Annual Checkup',
   };
 
-  const serviceType2: Coding = {
-    system: 'http://example.com/service-types',
-    code: 'followup',
-    display: 'Follow-up Visit',
+  const serviceType2: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'followup',
+      },
+    ],
+    text: 'Follow-up Visit',
   };
 
-  const createScheduleWithServiceTypes = (serviceTypes: (Coding | undefined)[]): WithId<Schedule> => ({
+  const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): WithId<Schedule> => ({
     resourceType: 'Schedule',
     id: 'schedule-1',
     actor: [{ reference: 'Practitioner/practitioner-1' }],
     active: true,
     extension: serviceTypes.map((st) => ({
       url: SchedulingParametersURI,
-      extension: st ? [{ url: 'serviceType', valueCoding: st }] : [],
+      extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
     })),
   });
 

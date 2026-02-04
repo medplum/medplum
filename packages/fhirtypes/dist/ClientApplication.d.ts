@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { Extension } from './Extension';
-import { IdentityProvider } from './IdentityProvider';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
+import type { Attachment } from './Attachment.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { IdentityProvider } from './IdentityProvider.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Medplum client application for automated access.

@@ -5,12 +5,12 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { OperationOutcome } from './OperationOutcome';
-import { Resource } from './Resource';
-import { Signature } from './Signature';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { OperationOutcome } from './OperationOutcome.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Signature } from './Signature.d.ts';
 
 /**
  * A container for a collection of resources.

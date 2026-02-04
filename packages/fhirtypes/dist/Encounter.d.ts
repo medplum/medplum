@@ -5,31 +5,31 @@
  * Do not edit manually.
  */
 
-import { Account } from './Account';
-import { Appointment } from './Appointment';
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { Condition } from './Condition';
-import { Duration } from './Duration';
-import { EpisodeOfCare } from './EpisodeOfCare';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { ImmunizationRecommendation } from './ImmunizationRecommendation';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
+import type { Account } from './Account.d.ts';
+import type { Appointment } from './Appointment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { ImmunizationRecommendation } from './ImmunizationRecommendation.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
 
 /**
  * An interaction between a patient and healthcare provider(s) for the

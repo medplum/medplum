@@ -5,7 +5,7 @@ import { Operator } from '@medplum/core';
 import type { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import setCookieParser from 'set-cookie-parser';
+import { parse as parseSetCookie } from 'set-cookie-parser';
 import request from 'supertest';
 import { URL, URLSearchParams } from 'url';
 import { inviteUser } from '../admin/invite';
@@ -297,7 +297,7 @@ describe('OAuth Authorize', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.id_token).toBeDefined();
 
-    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    const cookies = parseSetCookie(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
 
     const cookie = cookies[0];
@@ -344,7 +344,7 @@ describe('OAuth Authorize', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.id_token).toBeDefined();
 
-    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    const cookies = parseSetCookie(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
 
     const cookie = cookies[0];
@@ -392,7 +392,7 @@ describe('OAuth Authorize', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.id_token).toBeDefined();
 
-    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    const cookies = parseSetCookie(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
 
     const cookie = cookies[0];
@@ -453,7 +453,7 @@ describe('OAuth Authorize', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.id_token).toBeDefined();
 
-    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    const cookies = parseSetCookie(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
 
     const cookie = cookies[0];

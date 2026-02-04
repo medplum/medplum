@@ -5,25 +5,25 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactDetail } from './ContactDetail';
-import { Device } from './Device';
-import { DeviceMetric } from './DeviceMetric';
-import { Evidence } from './Evidence';
-import { Expression } from './Expression';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Period } from './Period';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { Resource } from './Resource';
-import { UsageContext } from './UsageContext';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DeviceMetric } from './DeviceMetric.d.ts';
+import type { Evidence } from './Evidence.d.ts';
+import type { Expression } from './Expression.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * The EvidenceVariable resource describes a &quot;PICO&quot; element that

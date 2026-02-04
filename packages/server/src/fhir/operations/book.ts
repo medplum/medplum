@@ -15,7 +15,6 @@ import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { invariant } from '../../util/invariant';
-import { isAlignedTime } from './utils/book';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
@@ -65,8 +64,8 @@ function makeMatcher(slot: Slot): Matcher {
   );
   const codeSet = new Set(codes);
   return (schedulingParams: SchedulingParameters) => {
-    return schedulingParams.serviceType.some((coding) => {
-      return codeSet.has(`${coding.system}|${coding.code}`);
+    return schedulingParams.serviceType.some((codeableConcept) => {
+      return codeableConcept.coding?.some((coding) => codeSet.has(`${coding.system}|${coding.code}`));
     });
   };
 }
@@ -86,9 +85,6 @@ function findMatchingSchedulingParameters(extensions: SchedulingParameters[], sl
   const durationMinutes = durationMs / 1000 / 60;
 
   parameters = parameters.filter((ext) => ext.duration === durationMinutes);
-  parameters = parameters.filter((ext) =>
-    isAlignedTime(startDate, { alignment: ext.alignmentInterval, offsetMinutes: ext.alignmentOffset })
-  );
   return parameters;
 }
 
