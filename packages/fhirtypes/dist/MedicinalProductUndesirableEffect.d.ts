@@ -5,15 +5,15 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Medication } from './Medication';
-import { MedicinalProduct } from './MedicinalProduct';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Population } from './Population';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { MedicinalProduct } from './MedicinalProduct.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Population } from './Population.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Describe the undesirable effects of the medicinal product.

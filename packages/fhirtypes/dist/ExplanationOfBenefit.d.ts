@@ -5,35 +5,35 @@
  * Do not edit manually.
  */
 
-import { Address } from './Address';
-import { Attachment } from './Attachment';
-import { Claim } from './Claim';
-import { ClaimResponse } from './ClaimResponse';
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { Condition } from './Condition';
-import { Coverage } from './Coverage';
-import { Device } from './Device';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { MedicationRequest } from './MedicationRequest';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
-import { VisionPrescription } from './VisionPrescription';
+import type { Address } from './Address.d.ts';
+import type { Attachment } from './Attachment.d.ts';
+import type { Claim } from './Claim.d.ts';
+import type { ClaimResponse } from './ClaimResponse.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Coverage } from './Coverage.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { MedicationRequest } from './MedicationRequest.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
+import type { VisionPrescription } from './VisionPrescription.d.ts';
 
 /**
  * This resource provides: the claim details; adjudication details from
