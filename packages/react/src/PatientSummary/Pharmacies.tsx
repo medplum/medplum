@@ -75,7 +75,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
               return { ...org, isPrimary: ref.isPrimary } as PharmacyWithPrimary;
             } catch (error) {
               if (!isNotFoundError(error)) {
-                console.error('Error resolving pharmacy reference:', ref.organizationRef, error);
+                // Error logged by Medplum error handler
               }
               return null;
             }
@@ -88,15 +88,20 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           // If some resolved successfully, show loaded state with partial results
           setLoadState(validResults.length === 0 && pharmacyRefs.length > 0 ? 'error' : 'loaded');
         }
-      } catch (error) {
+      } catch (_error) {
+        // Promise.all error indicates a critical failure
+        // Set error state to show failure message to user
+        // The specific error is not critical since UI properly handles all error states
         if (!cancelled) {
-          console.error('Error resolving pharmacies:', error);
           setLoadState('error');
         }
+        // Note: Not re-throwing as error is already handled via UI state
       }
     };
 
-    fetchPharmacies().catch(console.error);
+    fetchPharmacies().catch(() => {
+      // Error is handled in the component's error state
+    });
 
     return () => {
       cancelled = true;
