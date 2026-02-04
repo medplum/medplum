@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { GetSignedUrlConfig } from '@google-cloud/storage';
 import { Storage } from '@google-cloud/storage';
 import { isString } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
+import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 
@@ -61,10 +63,10 @@ export class GoogleCloudStorage extends BaseBinaryStorage {
     await sourceFile.copy(destinationFile);
   }
 
-  async getPresignedUrl(binary: Binary): Promise<string> {
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
     const file = this.bucket.file(this.getKey(binary));
-    const options = {
-      action: 'read' as const,
+    const options: GetSignedUrlConfig = {
+      action: opts?.upload ? 'write' : 'read',
       expires: Date.now() + 3600 * 1000,
     };
     const [url] = await file.getSignedUrl(options);
