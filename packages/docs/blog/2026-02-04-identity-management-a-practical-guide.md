@@ -62,7 +62,7 @@ The right choice depends on your organization's size and existing infrastructure
 
 - **Use external IDs for your organization's internal staff** (the team building and operating the platform). These users have employer-managed identities through your corporate IDP, and stability matters more than flexibility. When an employee's email changes from `jsmith@yourcompany.com` to `jane.smith@yourcompany.com`, their account should continue working seamlessly with your existing SSO.
 
-- **Use email for your customers and their users** (clinicians at clinics using your EMR, patients, etc.). This provides flexibility because different customer organizations may use different identity providers—or none at all. Email-based identification allows Medplum to dynamically route users to the appropriate IDP based on their email domain. For example, `user@clinic-a.com` routes to Clinic A's Okta instance, while `user@clinic-b.com` routes to Clinic B's Azure AD.
+- **Use email for your customers and their users** (clinicians at clinics using your EMR, patients, etc.). This provides flexibility because different customer organizations may use different identity providers - or none at all. Email-based identification allows Medplum to dynamically route users to the appropriate IDP based on their email domain. For example, `user@clinic-a.com` routes to Clinic A's Okta instance, while `user@clinic-b.com` routes to Clinic B's Azure AD.
 
 This hybrid approach lets you maintain tight SSO integration for your own team while giving customers the flexibility to use whatever identity infrastructure they have.
 
@@ -80,7 +80,7 @@ Medplum manages credentials directly. Users create accounts with Medplum, which 
 
 A third-party service (Okta, Azure AD, Auth0) manages credentials. Your platform trusts the [external IDP](https://www.medplum.com/docs/auth/external-identity-providers) to authenticate users.
 
-**Best for:** Enterprise deployments with existing identity infrastructure. Enables centralized user management—when an employee leaves, disabling their Okta account immediately revokes access to all connected systems.
+**Best for:** Enterprise deployments with existing identity infrastructure. Enables centralized user management - when an employee leaves, disabling their Okta account immediately revokes access to all connected systems.
 
 ### Option C: Domain-Level Routing
 
@@ -94,7 +94,7 @@ This is where many teams make costly mistakes. Understanding token flows is esse
 
 ### What's a Token?
 
-A token is a data packet that proves a user's identity for API requests. Think of it like a wristband at a concert—it proves you're allowed to be there without requiring you to show your ID at every interaction.
+A token is a data packet that proves a user's identity for API requests. Think of it like a wristband at a concert - it proves you're allowed to be there without requiring you to show your ID at every interaction.
 
 When integrating with external identity providers, you'll encounter multiple tokens:
 - **IDP Token** (from Okta, Azure AD, etc.): Proves the user authenticated with the external IDP
