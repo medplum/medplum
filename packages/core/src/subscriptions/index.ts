@@ -15,6 +15,7 @@ import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../webs
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 
 const DEFAULT_PING_INTERVAL_MS = 5_000;
+const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -393,6 +394,10 @@ export class SubscriptionManager {
   }
 
   private async subscribeToCriteria(criteriaEntry: CriteriaEntry): Promise<void> {
+    // If the WebSocket was closed explicitly by us, then we will need to re-open it before continuing
+    if (this.wsClosed) {
+      await this.reconnectIfNeeded();
+    }
     // We check to see if the WebSocket is open first, since if it's not, we will automatically refresh this later when it opens
     if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
       return;
@@ -488,6 +493,21 @@ export class SubscriptionManager {
       this.masterSubEmitter = new SubscriptionEmitter(...Array.from(this.criteriaEntries.keys()));
     }
     return this.masterSubEmitter;
+  }
+
+  async reconnectIfNeeded(): Promise<void> {
+    if (!WS_STATES_THAT_NEED_RECONNECT.includes(this.getWebSocket().readyState)) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      const tmpCb = (): void => {
+        this.getWebSocket().removeEventListener('open', tmpCb);
+        resolve();
+      };
+      this.getWebSocket().addEventListener('open', tmpCb);
+      this.reconnectWebSocket();
+    });
   }
 }
 

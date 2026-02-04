@@ -5,15 +5,15 @@
  * Do not edit manually.
  */
 
-import { Bot } from './Bot';
-import { Device } from './Device';
-import { Endpoint } from './Endpoint';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Bot } from './Bot.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Endpoint } from './Endpoint.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Configuration details for an instance of the Medplum agent

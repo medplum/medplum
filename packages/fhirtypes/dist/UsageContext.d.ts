@@ -5,19 +5,19 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { HealthcareService } from './HealthcareService';
-import { InsurancePlan } from './InsurancePlan';
-import { Location } from './Location';
-import { Organization } from './Organization';
-import { PlanDefinition } from './PlanDefinition';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Reference } from './Reference';
-import { ResearchStudy } from './ResearchStudy';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { HealthcareService } from './HealthcareService.d.ts';
+import type { InsurancePlan } from './InsurancePlan.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { PlanDefinition } from './PlanDefinition.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { ResearchStudy } from './ResearchStudy.d.ts';
 
 /**
  * Specifies clinical/business/etc. metadata that can be used to

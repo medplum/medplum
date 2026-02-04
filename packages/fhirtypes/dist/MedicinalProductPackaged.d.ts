@@ -5,22 +5,22 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { DeviceDefinition } from './DeviceDefinition';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { MarketingStatus } from './MarketingStatus';
-import { MedicinalProduct } from './MedicinalProduct';
-import { MedicinalProductAuthorization } from './MedicinalProductAuthorization';
-import { MedicinalProductManufactured } from './MedicinalProductManufactured';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { ProdCharacteristic } from './ProdCharacteristic';
-import { ProductShelfLife } from './ProductShelfLife';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { DeviceDefinition } from './DeviceDefinition.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { MarketingStatus } from './MarketingStatus.d.ts';
+import type { MedicinalProduct } from './MedicinalProduct.d.ts';
+import type { MedicinalProductAuthorization } from './MedicinalProductAuthorization.d.ts';
+import type { MedicinalProductManufactured } from './MedicinalProductManufactured.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { ProdCharacteristic } from './ProdCharacteristic.d.ts';
+import type { ProductShelfLife } from './ProductShelfLife.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A medicinal product in a container or package.

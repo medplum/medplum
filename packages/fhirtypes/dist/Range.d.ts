@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
 
 /**
  * A set of ordered Quantities defined by a low and high limit.

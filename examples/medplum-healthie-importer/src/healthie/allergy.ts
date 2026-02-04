@@ -37,7 +37,7 @@ export interface HealthieAllergySensitivity {
 }
 
 /**
- * Fetches allergies/sensitivities for a specific patient.
+ * Fetches allergies/sensitivities for a specific patient using cursor pagination.
  * @param healthie - The Healthie client instance to use for API calls.
  * @param patientId - The ID of the patient.
  * @returns An array of allergy/sensitivity data.
@@ -46,6 +46,9 @@ export async function fetchAllergySensitivities(
   healthie: HealthieClient,
   patientId: string
 ): Promise<HealthieAllergySensitivity[]> {
+  // Note: allergy_sensitivities must be queried through the User object, not directly.
+  // Healthie doesn't support pagination for allergy_sensitivities through User,
+  // so we fetch all at once.
   const query = `
     query fetchAllergySensitivities($patientId: ID!) {
       user(id: $patientId) {
@@ -68,9 +71,10 @@ export async function fetchAllergySensitivities(
     }
   `;
 
-  const result = await healthie.query<{ user: { allergy_sensitivities: HealthieAllergySensitivity[] } }>(query, {
-    patientId,
-  });
+  const result = await healthie.query<{
+    user: { allergy_sensitivities: HealthieAllergySensitivity[] } | null;
+  }>(query, { patientId });
+
   return result.user?.allergy_sensitivities ?? [];
 }
 

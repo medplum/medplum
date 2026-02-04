@@ -5,25 +5,25 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { Device } from './Device';
-import { Duration } from './Duration';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
-import { Substance } from './Substance';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
+import type { Substance } from './Substance.d.ts';
 
 /**
  * A sample to be used for analysis.

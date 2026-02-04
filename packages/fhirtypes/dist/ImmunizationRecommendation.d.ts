@@ -5,17 +5,17 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Immunization } from './Immunization';
-import { ImmunizationEvaluation } from './ImmunizationEvaluation';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Immunization } from './Immunization.d.ts';
+import type { ImmunizationEvaluation } from './ImmunizationEvaluation.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A patient's point-in-time set of recommendations (i.e. forecasting)

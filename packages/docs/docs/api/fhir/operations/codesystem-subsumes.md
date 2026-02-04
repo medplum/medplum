@@ -1,7 +1,18 @@
-# CodeSystem Subsumes
+# CodeSystem $subsumes
 
-Tests for a linear relationship between two codes in a given `CodeSystem`, where one code is a direct parent or indirect
-ancestor of the other.
+The `$subsumes` operation tests whether one code is a parent (more general) or child (more specific) of another code within a hierarchical code system. This is crucial for clinical decision support, where you need to determine if a specific diagnosis or procedure falls under a broader category.
+
+For example, you can use `$subsumes` to check if a patient's specific heart condition code is a subtype of "cardiac disease," enabling rule-based alerts and automated clinical workflows that respond to categories of conditions, rather than exhaustive lists of individual codes.
+
+## Use Cases
+
+- **Clinical Decision Support**: Trigger alerts when any code within a disease category is recorded (e.g., any cardiovascular condition)
+- **Quality Measure Calculation**: Determine if a patient's diagnoses qualify for specific quality measures by checking category membership
+- **Access Control**: Grant access to records based on condition categories rather than specific codes
+- **Report Aggregation**: Group detailed codes into broader categories for population health reporting
+- **Formulary Management**: Check if a prescribed medication falls within a therapeutic class
+
+## Invoke the `$subsumes` operation
 
 ```
 [baseUrl]/CodeSystem/$subsumes
@@ -63,3 +74,11 @@ curl 'https://api.medplum.com/fhir/R4/CodeSystem/$subsumes' \
   ]
 }
 ```
+
+## Related
+
+- [CodeSystem $lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up detailed information about codes
+- [CodeSystem $validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate a code exists in a code system
+- [CodeSystem $import](/docs/api/fhir/operations/codesystem-import) - Import hierarchical code systems
+- [Medplum Terminology Guide](/docs/terminology) - Overview of terminology services
+- [FHIR CodeSystem $subsumes](https://hl7.org/fhir/R4/codesystem-operation-subsumes.html) - FHIR specification for $subsumes
