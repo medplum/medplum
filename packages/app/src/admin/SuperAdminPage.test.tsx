@@ -391,6 +391,8 @@ describe('SuperAdminPage', () => {
               { name: 'query', valueString: 'SELECT * FROM observation' },
               { name: 'parameters', valueString: '[]' },
               { name: 'explain', valueString: 'Seq Scan on observation' },
+              { name: 'countEstimate', valueInteger: 12345 },
+              { name: 'countAccurate', valueInteger: 12300 },
             ],
           },
         ];
@@ -420,6 +422,10 @@ describe('SuperAdminPage', () => {
         undefined,
         expect.any(Object)
       );
+
+      expect(await screen.findByText('Counts')).toBeInTheDocument();
+      expect(await screen.findByText('Estimate: 12,345')).toBeInTheDocument();
+      expect(await screen.findByText('Accurate: 12,300')).toBeInTheDocument();
     });
 
     test('Explain search validation - missing query', async () => {
