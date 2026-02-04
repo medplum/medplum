@@ -4,6 +4,7 @@
 // This file verifies that pharmacy-utils re-exports from @medplum/core work correctly.
 // The main tests are in @medplum/core/src/pharmacy-utils.test.ts
 
+import type { PreferredPharmacy } from './pharmacy-utils';
 import {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
@@ -17,7 +18,6 @@ import {
   PHARMACY_TYPE_PRIMARY,
   removePreferredPharmacyFromPatient,
 } from './pharmacy-utils';
-import type { PreferredPharmacy } from './pharmacy-utils';
 
 describe('pharmacy-utils re-exports', () => {
   test('All constants are re-exported', () => {
