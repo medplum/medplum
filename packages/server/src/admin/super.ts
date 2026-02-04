@@ -452,6 +452,7 @@ superAdminRouter.post(
       return;
     }
 
+    // DDL queries cannot be parameterized. See https://www.postgresql.org/docs/18/plpgsql-statements.html
     const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
       .map(([settingName, val]) => `${settingName} = ${val}`)
       .join(', ')});`;
