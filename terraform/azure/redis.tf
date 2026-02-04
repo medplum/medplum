@@ -16,7 +16,7 @@ resource "azurerm_private_dns_zone_virtual_network_link" "redis_medplum_vnet" {
 }
 
 resource "azurerm_redis_cache" "medplum_cache" {
-  name                 = "medplum-${var.environment}-${var.deployment_id}-redis-cache"
+  name                 = "dmp-${var.environment}-${var.deployment_id}-redis"
   location             = var.location
   resource_group_name  = var.resource_group_name
   capacity             = 2
@@ -27,6 +27,8 @@ resource "azurerm_redis_cache" "medplum_cache" {
 
   redis_configuration {
   }
+
+  depends_on = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_private_endpoint" "redis" {
@@ -55,4 +57,10 @@ resource "azurerm_private_dns_a_record" "redis_record" {
 output "redis_hostname" {
   description = "The hostname of the Redis Cache"
   value       = azurerm_redis_cache.medplum_cache.hostname
+}
+
+output "redis_primary_key" {
+  description = "The primary access key for the Redis Cache"
+  value       = azurerm_redis_cache.medplum_cache.primary_access_key
+  sensitive   = true
 }

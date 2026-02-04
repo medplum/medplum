@@ -1,34 +1,84 @@
 # Default values for medplum.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+#
+# For deployment examples, see:
+#   - values-example-azure.yaml (Azure AKS deployment)
+#   - values-example-gcp.yaml (GCP GKE deployment - coming soon)
+#
+# Documentation:
+#   - https://www.medplum.com/docs/self-hosting/install-on-azure-comprehensive
+#   - https://www.medplum.com/docs/self-hosting/install-on-gcp
 
+# ------------------------------------------------------------------------------
+# Global Configuration
+# ------------------------------------------------------------------------------
 global:
-  cloudProvider: gcp # Supported values: gcp, azure
+  # Cloud provider: gcp, azure
+  cloudProvider: azure
+
+  # Configuration source for Medplum server
+  # This tells the server where to fetch its runtime configuration
   configSource:
     # Examples:
-    # type: "env"
-    # type: "aws:region:parameterName"
-    # type: "gcp:projectId:secretId"
-    # type: "azure:keyVaultURL:secretName"
-    type: 'env' # Default to env
+    # - Environment variables: "env"
+    # - AWS Parameter Store: "aws:us-east-1:medplum-config"
+    # - GCP Secret Manager: "gcp:my-project-id:medplum-config"
+    # - Azure Key Vault: "azure:my-vault.vault.azure.net:medplum-config"
+    #
+    # IMPORTANT for Azure: Do NOT include https:// prefix
+    type: 'azure:your-keyvault-name.vault.azure.net:medplum-config'
 
+# ------------------------------------------------------------------------------
+# Service Account
+# ------------------------------------------------------------------------------
 serviceAccount:
+  # Whether to create a service account
+  create: true
+  # Service account name (defaults to release fullname)
+  name: ""
+  # Annotations for the service account
   annotations:
-    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
-    # iam.gke.io/gcp-service-account: ""
-    # Set your Azure Managed Identity Client ID for Azure workload identity
-    # azure.workload.identity/client-id: ""
+    # GCP Workload Identity:
+    # iam.gke.io/gcp-service-account: "medplum-server@YOUR_PROJECT_ID.iam.gserviceaccount.com"
+    #
+    # Azure Workload Identity:
+    azure.workload.identity/client-id: "YOUR_MANAGED_IDENTITY_CLIENT_ID"
 
+# ------------------------------------------------------------------------------
+# Namespace
+# ------------------------------------------------------------------------------
 namespace: medplum
 
+# ------------------------------------------------------------------------------
+# Deployment
+# ------------------------------------------------------------------------------
 deployment:
+  # Number of replicas (ignored if autoscaling is enabled)
   replicaCount: 1
+
+  # Container image configuration
   image:
     repository: medplum/medplum-server
-    tag: latest
-  env:
+    # Tag defaults to Chart.appVersion if not specified
+    tag: ""
+    pullPolicy: IfNotPresent
+
+  # Image pull secrets for private registries
+  imagePullSecrets: []
+
+  # Init containers (e.g., for migrations)
+  initContainers: []
+
+  # Environment variables from ConfigMaps or Secrets
+  envFrom: []
+
+  # Environment variables
+  env: []
     # - name: SQL_DEBUG
     #   value: '*'
+
+  # Resource requests and limits
   resources:
     requests:
       memory: '1Gi'
@@ -36,13 +86,22 @@ deployment:
     limits:
       memory: '2Gi'
       cpu: '1000m'
+
+  # Horizontal Pod Autoscaler configuration
   autoscaling:
     enabled: true
-  # Structure this deployment.sidecar value as if you were adding the container
-  # to the Deployment's spec.template.spec.containers key.
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: ""
+
+  # Sidecar containers
   sidecars: []
 
-# Security contexts for pods and containers
+# ------------------------------------------------------------------------------
+# Security Contexts
+# ------------------------------------------------------------------------------
+# Pod-level security context
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 65532
@@ -51,6 +110,7 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
+# Container-level security context
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
@@ -63,17 +123,68 @@ securityContext:
   seccompProfile:
     type: RuntimeDefault
 
-# Pod Disruption Budget settings
+# ------------------------------------------------------------------------------
+# Pod Disruption Budget
+# ------------------------------------------------------------------------------
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
   # Alternative: maxUnavailable: 1
 
-service: {}
+# ------------------------------------------------------------------------------
+# Service
+# ------------------------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8103
+  # nodePort: 30080  # Only used when type is NodePort
 
+# ------------------------------------------------------------------------------
+# Ingress
+# ------------------------------------------------------------------------------
 ingress:
+  # Whether to deploy the ingress resource
   deploy: true
-  # Set your domain name (e.g., medplum.example.com)
-  domain: ''
-  # Set your TLS secret name (Azure only)
-  tlsSecretName: ''
+
+  # Your API domain (e.g., api.medplum.example.com)
+  domain: 'api.yourdomain.com'
+
+  # TLS secret name for HTTPS
+  # For Azure: Create this secret manually or via cert-manager
+  # For GCP: Uses ManagedCertificate (automatic)
+  tlsSecretName: 'medplum-api-tls'
+
+  # cert-manager integration (Azure only)
+  certManager:
+    enabled: false
+    clusterIssuer: 'letsencrypt-prod'
+
+# ------------------------------------------------------------------------------
+# Additional Configuration
+# ------------------------------------------------------------------------------
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod labels
+podLabels: {}
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Additional volumes
+volumes: []
+
+# Additional volume mounts
+volumeMounts: []
+
+# Name overrides
+nameOverride: ""
+fullnameOverride: ""

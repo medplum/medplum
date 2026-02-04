@@ -2,7 +2,7 @@ data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "des_vault" {
   location                      = var.location
-  name                          = "medplum-${var.environment}-des-vault"
+  name                          = "mp-${var.environment}-${var.deployment_id}-des"
   resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -11,11 +11,7 @@ resource "azurerm_key_vault" "des_vault" {
   soft_delete_retention_days    = 7
   public_network_access_enabled = true
 
-  #   network_acls {
-  #     bypass         = "AzureServices"
-  #     default_action = "Allow"
-  #     ip_rules       = [local.public_ip]
-  #   }
+  depends_on = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_key_vault_access_policy" "current_user" {
@@ -34,7 +30,7 @@ resource "azurerm_key_vault_access_policy" "current_user" {
 
 resource "azurerm_key_vault" "medplum_vault" {
   location                      = var.location
-  name                          = "medplum-${var.environment}-${var.deployment_id}-keyvault"
+  name                          = "mp-${var.environment}-${var.deployment_id}-kv"
   resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -43,11 +39,7 @@ resource "azurerm_key_vault" "medplum_vault" {
   soft_delete_retention_days    = 7
   public_network_access_enabled = true
 
-  #   network_acls {
-  #     bypass         = "AzureServices"
-  #     default_action = "Allow"
-  #     ip_rules       = [local.public_ip]
-  #   }
+  depends_on = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_key_vault_access_policy" "current_user-medplum_vault" {
@@ -73,4 +65,9 @@ resource "azurerm_key_vault_access_policy" "medplum_server" {
     "Set",
     "List"
   ]
+}
+
+output "key_vault_name" {
+  description = "The name of the Medplum Key Vault"
+  value       = azurerm_key_vault.medplum_vault.name
 }
