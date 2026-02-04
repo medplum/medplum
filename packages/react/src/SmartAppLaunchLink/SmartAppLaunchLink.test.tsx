@@ -84,6 +84,8 @@ describe('SmartAppLaunchLink', () => {
 
     // Pre-load the patient in the mock client
     await medplum.createResource(patientWithIdentifier);
+    // Read it to ensure it's cached for useResource
+    await medplum.readResource('Patient', patientWithIdentifier.id as string);
 
     setup(
       <SmartAppLaunchLink client={clientWithLaunchIdentifierSystems} patient={createReference(patientWithIdentifier)}>
@@ -255,6 +257,8 @@ describe('SmartAppLaunchLink', () => {
     };
 
     await medplum.createResource(encounterWithIdentifier);
+    // Read it to ensure it's cached for useResource
+    await medplum.readResource('Encounter', encounterWithIdentifier.id as string);
 
     setup(
       <SmartAppLaunchLink client={clientWithEncounterIdentifierSystem} encounter={createReference(encounterWithIdentifier)}>
@@ -329,6 +333,9 @@ describe('SmartAppLaunchLink', () => {
 
     await medplum.createResource(patientWithIdentifier);
     await medplum.createResource(encounterWithIdentifier);
+    // Read them to ensure they're cached for useResource
+    await medplum.readResource('Patient', patientWithIdentifier.id as string);
+    await medplum.readResource('Encounter', encounterWithIdentifier.id as string);
 
     setup(
       <SmartAppLaunchLink
