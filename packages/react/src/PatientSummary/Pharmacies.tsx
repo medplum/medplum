@@ -176,5 +176,5 @@ function isNotFoundError(error: unknown): boolean {
     return false;
   }
 
-  return error.outcome.issue?.some((issue) => issue.code === 'not-found') ?? false;
+  return error.outcome.issue?.some((issue: unknown) => (issue as Record<string, unknown>).code === 'not-found') ?? false;
 }
