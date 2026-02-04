@@ -1,4 +1,10 @@
-# Identity Management for Healthcare Platforms: A Practical Guide
+---
+slug: ID-management
+title: Identity Management: A Practical Guide
+authors: everett
+---
+
+# Identity Management: A Practical Guide
 
 Healthcare applications require careful decisions about user authentication and access control. Whether you're building an EHR, a clinical workflow tool, or a patient portal, getting identity management right from the start will save you from costly architectural mistakes down the road.
 
@@ -8,7 +14,7 @@ This guide breaks down the key decisions you'll face when integrating with a FHI
 
 Before diving into architectural decisions, let's clarify two terms that often get confused:
 
-**Authentication (AuthN)** answers the question: "Who are you?" It's the process of verifying a user's identity—typically through a username/password combination, single sign-on, or biometric verification.
+**Authentication (AuthN)** answers the question: "Who are you?" It's the process of verifying a user's identity — typically through a username/password combination, single sign-on, or biometric verification.
 
 **Authorization (AuthZ)** answers the question: "What can you do?" Once we know who you are, authorization determines which resources you can access and what actions you can perform.
 
@@ -34,7 +40,7 @@ Using email as the unique identifier is simple and intuitive. Users log in with 
 
 ### Option B: External ID (e.g., Okta User ID)
 
-Instead of email, you can use a stable identifier from your identity provider—like an Okta User ID or Azure AD Object ID.
+Instead of email, you can use a stable identifier from your identity provider — like an Okta User ID or Azure AD Object ID.
 
 **Advantages:**
 - The ID never changes, regardless of email updates
@@ -64,9 +70,9 @@ This hybrid approach lets you maintain tight SSO integration for your own team w
 
 The next decision is where user credentials are managed. You have three options:
 
-### Option A: Platform as IDP
+### Option A: Medplum as IDP
 
-Your FHIR platform (like Medplum) manages credentials directly. Users create accounts with the platform, which handles password storage, reset flows, and authentication.
+Medplum manages credentials directly. Users create accounts with Medplum, which handles password storage, reset flows, and authentication.
 
 **Best for:** Smaller deployments, patient-facing applications where you don't have existing identity infrastructure.
 
