@@ -379,6 +379,49 @@ describe('SuperAdminPage', () => {
       );
     });
 
+    test('Explain search with total count checkbox', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM observation' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: 'Seq Scan on observation' },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Observation?code=85354-9' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Total count'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          count: true,
+          query: 'Observation?code=85354-9',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+    });
+
     test('Explain search validation - missing query', async () => {
       setup();
 

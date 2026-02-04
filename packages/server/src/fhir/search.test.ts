@@ -193,7 +193,7 @@ describe('project-scoped Repository', () => {
       expect(typeof result.accurate).toBe('number');
     }));
 
-  test('getCount returns estimate without forceAccurate when above threshold', () =>
+  test('getCount returns estimate without forceAccurate when below threshold', () =>
     withTestContext(async () => {
       // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
       // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
@@ -202,6 +202,19 @@ describe('project-scoped Repository', () => {
       expect(typeof result.estimate).toBe('number');
       // With low data counts, accurate should still be returned since estimate < threshold
       expect(result).toHaveProperty('accurate');
+    }));
+
+  test('getCount returns only estimate when above threshold', () =>
+    withTestContext(async () => {
+      const prevThreshold = config.accurateCountThreshold;
+      config.accurateCountThreshold = 0;
+
+      const result = await getCount(repo, { resourceType: 'Patient' });
+      expect(result).toHaveProperty('estimate');
+      expect(typeof result.estimate).toBe('number');
+      expect(result).not.toHaveProperty('accurate');
+
+      config.accurateCountThreshold = prevThreshold;
     }));
 
   test('getCount uses rowCount option for clamping', () =>
