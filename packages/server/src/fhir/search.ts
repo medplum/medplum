@@ -60,6 +60,7 @@ import {
   ColumnType,
   Condition,
   Conjunction,
+  Constant,
   Disjunction,
   escapeLikeString,
   getSearchParamColumnType,
@@ -420,6 +421,16 @@ function getBaseSelectQueryForResourceType(
   searchRequest: SearchRequest,
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
+  const deletedFilters = searchRequest.filters?.filter((f) => f.code === '_deleted');
+  const deletedTrueFilters = deletedFilters?.map((f) => {
+    const res = validateBooleanFilter(f);
+    return (res.value === 'true') !== res.negated;
+  });
+
+  if (deletedTrueFilters?.every((v) => v)) {
+    return buildDeletedTableQuery(repo, resourceType, searchRequest, opts);
+  }
+
   const builder = new SelectQuery(resourceType);
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
@@ -429,13 +440,21 @@ function getBaseSelectQueryForResourceType(
       .column(new Column(resourceType, 'lastUpdated'))
       .column(new Column(resourceType, 'content'));
   }
+
+  // if some but not every _deleted filter is looking for deleted resources, then we're searching for both deleted
+  // and non-deleted resources which ensures no results
+  if (deletedTrueFilters?.some((v) => v)) {
+    builder.whereExpr(new Constant('FALSE'));
+    return builder;
+  }
+
   if (opts?.maxResourceVersion !== undefined) {
     builder.whereExpr(new Condition(new Column(resourceType, '__version'), '<=', opts.maxResourceVersion));
   }
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType);
+  repo.addSecurityFilters(builder, resourceType, false);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
@@ -444,6 +463,54 @@ function getBaseSelectQueryForResourceType(
   if (addColumns && builder.joins.length > 0) {
     builder.distinctOn(idColumn);
   }
+  return builder;
+}
+
+/**
+ * Builds a query for the Deleted_<ResourceType> table when searching for _deleted=true.
+ * The Deleted table has a simplified schema with only id, projectId, lastUpdated, and compartments.
+ * @param repo - The repository.
+ * @param resourceType - The resource type.
+ * @param searchRequest - The search request.
+ * @param opts - Query options.
+ * @returns The select query for the Deleted table.
+ */
+function buildDeletedTableQuery(
+  repo: Repository,
+  resourceType: ResourceType,
+  searchRequest: SearchRequest,
+  opts?: GetBaseSelectQueryOptions
+): SelectQuery {
+  const tableName = 'Deleted_' + resourceType;
+  const builder = new SelectQuery(tableName);
+
+  if (opts?.addColumns !== false) {
+    builder
+      .column(new Column(tableName, 'id'))
+      .column(new Column(tableName, 'lastUpdated'))
+      .raw(`''::text AS "content"`);
+  }
+
+  repo.addSecurityFilters(builder, resourceType, true);
+
+  for (const filter of searchRequest.filters ?? EMPTY) {
+    if (filter.code !== '_deleted') {
+      continue;
+    }
+    const expr = tryCommonSearchParameter(repo, builder, resourceType, tableName, filter);
+    if (expr) {
+      builder.whereExpr(expr);
+    } else {
+      // Other filters are not supported on Deleted tables (no search columns), so no
+      // results can match
+      builder.whereExpr(new Constant('FALSE'));
+    }
+  }
+
+  if (opts?.resourceTypeQueryCallback) {
+    opts.resourceTypeQueryCallback(resourceType, builder);
+  }
+
   return builder;
 }
 
@@ -984,9 +1051,13 @@ function buildSearchFilterExpression(
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
-  const specialParamExpression = trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
-  if (specialParamExpression) {
-    return specialParamExpression;
+  const commonParamExpression = tryCommonSearchParameter(repo, selectQuery, resourceType, table, filter);
+  if (commonParamExpression) {
+    return commonParamExpression;
+  }
+
+  if (filter.code === '_filter') {
+    return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
   }
 
   let param = getSearchParameter(resourceType, filter.code);
@@ -1065,7 +1136,7 @@ function buildNormalSearchFilterExpression(
 }
 
 /**
- * Returns true if the search parameter code is a special search parameter.
+ * Returns an Expression if the search parameter is applicable to either deleted or non-deleted resources.
  *
  * See: https://www.hl7.org/fhir/search.html#all
  * @param repo - The repository.
@@ -1073,9 +1144,9 @@ function buildNormalSearchFilterExpression(
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
  * @param filter - The search filter.
- * @returns True if the search parameter is a special code.
+ * @returns An Expression if the search parameter is applicable to either deleted or non-deleted resources
  */
-function trySpecialSearchParameter(
+function tryCommonSearchParameter(
   repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
@@ -1102,17 +1173,6 @@ function trySpecialSearchParameter(
           columnName: 'lastUpdated',
           searchStrategy: 'column',
           parsedExpression: parseFhirPath('lastUpdated'),
-        },
-        filter
-      );
-    case '_deleted':
-      return buildBooleanSearchFilter(
-        table,
-        {
-          type: SearchParameterType.BOOLEAN,
-          columnName: 'deleted',
-          searchStrategy: 'column',
-          parsedExpression: parseFhirPath('deleted'),
         },
         filter
       );
@@ -1155,8 +1215,6 @@ function trySpecialSearchParameter(
         filter
       );
     }
-    case '_filter':
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
     default:
       return undefined;
   }
@@ -1289,22 +1347,26 @@ function buildTokenSearchFilter(
   return buildCondition(impl, filter, values, new Column(table, impl.columnName));
 }
 
-const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
   impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
+  const { negated, value } = validateBooleanFilter(filter);
+  return new Condition(new Column(table, impl.columnName), negated ? 'IS_DISTINCT_FROM' : '=', value);
+}
+
+function validateBooleanFilter(filter: Filter): { negated: boolean; value: 'true' | 'false' } {
   if (filter.operator === Operator.IN || filter.operator === Operator.NOT_IN) {
     throw new OperationOutcomeError(invalidSearchOperator(filter.operator, filter.code));
   }
-  if (!allowedBooleanValues.includes(filter.value)) {
+  if (!(filter.value === 'true' || filter.value === 'false')) {
     throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
   }
 
   const negated = filter.operator === Operator.NOT_EQUALS || filter.operator === Operator.NOT;
 
-  return new Condition(new Column(table, impl.columnName), negated ? 'IS_DISTINCT_FROM' : '=', filter.value);
+  return { negated, value: filter.value };
 }
 
 /**

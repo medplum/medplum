@@ -123,5 +123,8 @@
   },
   "v32": {
     "serverVersion": "5.0.11"
+  },
+  "v33": {
+    "serverVersion": "5.0.14"
   }
 }

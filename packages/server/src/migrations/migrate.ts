@@ -272,9 +272,25 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
     ],
   };
 
+  const deletedTableDefinition: TableDefinition = {
+    name: 'Deleted_' + resourceType,
+    columns: [
+      { name: 'id', type: 'UUID', primaryKey: true, notNull: true },
+      { name: 'projectId', type: 'UUID', notNull: true },
+      { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
+    ],
+    indexes: [
+      { columns: ['projectId'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree' },
+    ],
+  };
+
   if (resourceType !== 'Binary') {
     tableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
     tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
+
+    deletedTableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
+    deletedTableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
   }
 
   if (resourceType === 'Project') {
@@ -312,7 +328,8 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: Resour
       ],
       compositePrimaryKey: ['resourceId', 'targetId', 'code'],
       indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
-    }
+    },
+    deletedTableDefinition
   );
 }
 

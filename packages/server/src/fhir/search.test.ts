@@ -5248,7 +5248,7 @@ describe('systemRepo', () => {
       expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
     }));
 
-  test('Search for deleted resources', () =>
+  test.only('Search for deleted resources', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
 
@@ -5275,6 +5275,7 @@ describe('systemRepo', () => {
         ],
       });
       expect(searchResult2.entry?.length).toBe(1);
+      console.log(JSON.stringify(searchResult2.entry?.[0], null, 2));
     }));
 
   test('Reverse chained search with _filter', () =>
