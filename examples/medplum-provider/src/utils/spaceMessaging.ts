@@ -244,7 +244,7 @@ export async function sendToBotStreaming(
   const baseUrl = medplum.fhirUrl('Bot', '$execute').toString();
   const url = `${baseUrl}?identifier=${encodeURIComponent(`${botId.system}|${botId.value}`)}`;
   const codeExtractor = new StreamingCodeExtractor();
-  console.log('url', url);
+  
   const response = await fetch(url, {
     method: 'POST',
     headers: {
