@@ -81,7 +81,7 @@ const WRAPPER_CODE = `
       console.log("Unhandled error: " + err);
     }
     if (!streaming || !botResponseStream.streamStarted) {
-      writeResponse(responseStream, 500, result);
+      writeResponse(responseStream, 500);
     }
   }
 });
@@ -162,10 +162,9 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 }
 
 function writeResponse(responseStream, statusCode, body) {
-  responseStream = awslambda.HttpResponseStream.from(responseStream, {
+  responseStream.write(JSON.stringify({
     statusCode,
-    headers: { 'Content-Type': 'application/json' },
-  });
+    headers: { 'Content-Type': 'application/json' } }) + "\\n");
   if (body !== undefined) {
     responseStream.write(JSON.stringify(body));
   }

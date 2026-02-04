@@ -7,6 +7,7 @@ import type { Bot, Reference } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
+import { getLogger } from '../../logger';
 
 interface LambdaPayload extends Pick<
   BotExecutionContext,
@@ -68,13 +69,36 @@ async function runInLambdaNonStreaming(
     const response = await client.send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
 
+    // Need to support two different response types:
+    // 1. Legacy lambdas that return one response
+    // 2. Streaming-compatible lambdas that return { statusCode, headers, body } for HTTP compatibility
+    const lines = responseStr ? responseStr.split('\n') : [];
+    let success: boolean = true;
+    let returnValueLine: string | undefined;
+
+    if (lines.length >= 2) {
+      try {
+        const firstLine = JSON.parse(lines[0]);
+        if (firstLine.statusCode && firstLine.headers) {
+          success = firstLine.statusCode >= 200 && firstLine.statusCode < 300;
+          returnValueLine = lines[2];
+        }
+      } catch (err) {
+        getLogger().warn('runInLambdaNonStreaming parse error', { responseStr, err });
+      }
+    } else {
+      // Legacy response
+      success = !response.FunctionError;
+      returnValueLine = responseStr;
+    }
+
     // The response from AWS Lambda is always JSON, even if the function returns a string
     // Therefore we always use JSON.parse to get the return value
     // See: https://stackoverflow.com/a/49951946/2051724
-    const returnValue = responseStr ? JSON.parse(responseStr) : undefined;
+    const returnValue = returnValueLine ? JSON.parse(returnValueLine) : undefined;
 
     return {
-      success: !response.FunctionError,
+      success,
       logResult: parseLambdaLog(response.LogResult as string),
       returnValue,
     };
