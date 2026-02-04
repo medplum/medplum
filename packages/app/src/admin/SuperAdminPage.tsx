@@ -6,6 +6,7 @@ import {
   Code,
   Divider,
   Grid,
+  Group,
   InputWrapper,
   Modal,
   NativeSelect,
@@ -479,6 +480,7 @@ export function ExplainSearchForm({
     const toSubmit = {
       query: formData.query,
       analyze: formData.analyze === 'on',
+      count: formData.count === 'on',
       format: 'text',
     };
 
@@ -494,11 +496,25 @@ export function ExplainSearchForm({
         const explainLine = params.parameter?.find((p) => p.name === 'explain')?.valueString;
         const queryLine = params.parameter?.find((p) => p.name === 'query')?.valueString;
         const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
+        const countEstimate = params.parameter?.find((p) => p.name === 'countEstimate')?.valueInteger?.toLocaleString();
+        const countAccurate = params.parameter?.find((p) => p.name === 'countAccurate')?.valueInteger?.toLocaleString();
         const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
         setModalContent(
-          <Code block maw={'100%'}>
-            {lines}
-          </Code>
+          <Stack>
+            <div>
+              <Text fw={700}>Query</Text>
+              <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
+                {lines}
+              </Code>
+            </div>
+            {(countEstimate || countAccurate) && (
+              <div>
+                <Text fw={700}>Counts</Text>
+                {countEstimate && <Text>Estimate: {countEstimate}</Text>}
+                {countAccurate && <Text>Accurate: {countAccurate}</Text>}
+              </div>
+            )}
+          </Stack>
         );
         openModal();
       })
@@ -514,7 +530,10 @@ export function ExplainSearchForm({
     <Form onSubmit={explainSearch}>
       <Stack>
         <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
-        <Checkbox name="analyze" label="Analyze" />
+        <Group>
+          <Checkbox name="analyze" label="Analyze" />
+          <Checkbox name="count" label="Total count" />
+        </Group>
         <InputWrapper label="On Behalf Of">
           <Stack gap="sm">
             <ReferenceInput<Project>
