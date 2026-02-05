@@ -184,13 +184,13 @@ For most healthcare organizations building on a FHIR platform, here's the recomm
 
 1. **Choose your unique identifiers** - external IDs for your internal staff, email for customers and their users
 2. **Use an external IDP** (Okta, Azure AD) for enterprise users, with domain-level routing for multi-tenant scenarios
-3. **Implement Token Exchange** for your client applications
+3. **Implement Three-Legged OAuth** unless your application needs access to other services outside of Medplum
 4. **Lean on native platform capabilities** unless you have a specific, documented requirement for custom infrastructure
 
 This architecture gives you:
 - Centralized user management through your existing IDP
 - Stable user accounts that survive email changes
-- Flexibility to access multiple services with the same authentication
+- Simplicity of token flow
 - Direct API access without unnecessary intermediaries
 
 ## Key Questions to Ask
