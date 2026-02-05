@@ -9,7 +9,7 @@ This is a key component of the [Structured Data Capture][data-capture] workflow,
 - **Patient Intake**: Convert registration forms into Patient, Coverage, and RelatedPerson resources
 - **Clinical Assessments**: Transform PHQ-9, GAD-7, or other assessment questionnaires into Observation resources with proper coding
 - **History Collection**: Extract past medical history responses into Condition resources
-- **Prior Authorization**: Generate ServiceRequest and supporting documentation from PA request forms
+- **Prior Authorization**: Generate CoverageEligbilityRequest and supporting documentation from PA request forms
 - **Research Data Collection**: Convert study questionnaires into Observation resources for analysis
 
 [template-extract]: https://build.fhir.org/ig/HL7/sdc/extraction.html#template-extract
