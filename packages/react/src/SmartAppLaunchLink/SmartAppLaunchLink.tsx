@@ -26,7 +26,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
     let patientRef: Reference<Patient> | undefined = patient;
     let encounterRef: Reference<Encounter> | undefined = encounter;
 
-    if (client.launchIdentifierSystems && client.launchIdentifierSystems.length > 0) {
+    if (client.launchIdentifierSystems?.length) {
       // Find patient identifier system configuration
       const patientIdentifierConfig = client.launchIdentifierSystems.find(
         (config) => config.resourceType === 'Patient'
