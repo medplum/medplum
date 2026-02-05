@@ -7,7 +7,8 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { convertScimToJsonPatch, createScimUser } from './utils';
 
 describe('convertScimToJsonPatch', () => {
@@ -129,9 +130,9 @@ describe('convertScimToJsonPatch', () => {
 });
 
 describe('createScimUser', () => {
-  const systemRepo = getSystemRepo();
   let user: WithId<User>;
   let project: WithId<Project>;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -145,6 +146,7 @@ describe('createScimUser', () => {
     });
     user = registration.user;
     project = registration.project;
+    systemRepo = getProjectSystemRepo(project);
   });
   afterAll(shutdownApp);
 

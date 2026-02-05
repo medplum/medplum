@@ -15,7 +15,6 @@ import {
 import type { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import type { Repository } from './repo';
-import { getSystemRepo } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation
@@ -99,7 +98,7 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 
   const issues: OperationOutcomeIssue[] = [];
   await validateReferences(repo, references, issues);
-  await validateReferences(getSystemRepo(), systemReferences, issues);
+  await validateReferences(repo.getSystemRepo(), systemReferences, issues);
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({

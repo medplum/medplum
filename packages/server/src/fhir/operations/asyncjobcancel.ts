@@ -4,7 +4,6 @@ import { allOk, assert, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { AsyncJob, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo } from '../repo';
 
 export const operation: OperationDefinition = {
   id: 'AsyncJob-cancel',
@@ -31,9 +30,9 @@ export const operation: OperationDefinition = {
 export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirResponse> {
   assert(req.params.id, 'This operation can only be executed on an instance');
   // Update status of async job
-  const { repo } = getAuthenticatedContext();
+  const ctx = getAuthenticatedContext();
   // We read with the users repo to make sure they have permissions for this
-  const job = await repo.readResource<AsyncJob>('AsyncJob', req.params.id);
+  const job = await ctx.repo.readResource<AsyncJob>('AsyncJob', req.params.id);
   switch (job.status) {
     case 'accepted':
       // We patch with system repo so that AsyncJob is not added to a project
@@ -43,7 +42,7 @@ export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirRespo
       // With the header NOT set, the resource will not be added to any project and remain without a project
       // Using system repo always maintains that the resource is not added to a project
       // Due to it lacking any projects listed in `context.projects`
-      await getSystemRepo().patchResource('AsyncJob', req.params.id, [
+      await ctx.systemRepo.patchResource('AsyncJob', req.params.id, [
         { op: 'test', path: '/status', value: 'accepted' },
         { op: 'add', path: '/status', value: 'cancelled' },
       ]);

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { Operator } from '@medplum/core';
+import { assert, Operator } from '@medplum/core';
 import type { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -12,13 +12,14 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
 
 describe('OAuth Authorize', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  let systemRepo: SystemRepository;
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
   let project: WithId<Project>;
@@ -29,7 +30,9 @@ describe('OAuth Authorize', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({ withClient: true }));
+    let repo: Repository;
+    ({ project, client, repo } = await createTestProject({ withClient: true, withRepo: true }));
+    systemRepo = repo.getSystemRepo();
 
     // Create a test user
     const { user } = await inviteUser({
@@ -397,16 +400,15 @@ describe('OAuth Authorize', () => {
 
     const cookie = cookies[0];
 
-    await withTestContext(async () =>
-      revokeLogin(
-        (
-          await systemRepo.search({
-            resourceType: 'Login',
-            filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
-          })
-        ).entry?.[0]?.resource as Login
-      )
-    );
+    const globalSystemRepo = getGlobalSystemRepo();
+    const login = (
+      await globalSystemRepo.search<Login>({
+        resourceType: 'Login',
+        filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
+      })
+    ).entry?.[0]?.resource;
+    assert(login);
+    await withTestContext(async () => revokeLogin(globalSystemRepo, login));
 
     const params = new URLSearchParams({
       response_type: 'code',

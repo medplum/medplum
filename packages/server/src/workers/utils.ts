@@ -8,22 +8,22 @@ import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumServerConfig } from '../config/types';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(
-  project: string,
+  projectId: string,
   profile: Reference
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {
         code: 'project',
         operator: Operator.EQUALS,
-        value: `Project/${project}`,
+        value: `Project/${projectId}`,
       },
       {
         code: 'profile',

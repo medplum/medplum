@@ -10,13 +10,14 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
 import { Expunger } from './expunge';
 
+const systemRepo = getGlobalSystemRepo();
+
 describe('Expunge', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let superAdminAccessToken: string;
 
   beforeAll(async () => {

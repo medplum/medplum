@@ -24,8 +24,9 @@ import { getAuthenticatedContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
@@ -61,7 +62,7 @@ superAdminRouter.post('/valuesets', async (req: Request, res: Response) => {
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
   await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
 });
 
@@ -72,7 +73,7 @@ superAdminRouter.post('/structuredefinitions', async (req: Request, res: Respons
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
   await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
 });
 
@@ -83,7 +84,7 @@ superAdminRouter.post('/searchparameters', async (req: Request, res: Response) =
   requireSuperAdmin();
   requireAsync(req);
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
   await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
 });
 
@@ -160,7 +161,7 @@ superAdminRouter.post(
       searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
     }
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
 
     const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
     let maxResourceVersion: number | undefined;
@@ -451,12 +452,14 @@ superAdminRouter.post(
       return;
     }
 
+    // DDL queries cannot be parameterized. See https://www.postgresql.org/docs/18/plpgsql-statements.html
     const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
       .map(([settingName, val]) => `${settingName} = ${val}`)
       .join(', ')});`;
 
     const startTime = Date.now();
-    await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
+    await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
@@ -506,7 +509,8 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
-      await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+      const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this route
+      await systemRepo.getDatabaseClient(DatabaseMode.WRITER).query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
         vacuum,

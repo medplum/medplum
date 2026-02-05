@@ -11,7 +11,7 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -54,7 +54,7 @@ describe('Token Exchange', () => {
         clientSecret: '456',
       };
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = getProjectSystemRepo(project);
 
       // Create a new client application with external auth
       externalAuthClient = await createClient(systemRepo, {

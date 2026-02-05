@@ -14,13 +14,13 @@ import type Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
 
 describe('Email', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {

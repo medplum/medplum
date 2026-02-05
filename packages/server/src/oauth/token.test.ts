@@ -31,7 +31,8 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -71,7 +72,6 @@ jest.mock('node-fetch');
 
 describe('OAuth2 Token', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   const domain = randomUUID() + '.example.com';
   const email = `text@${domain}`;
   const password = randomUUID();
@@ -82,6 +82,7 @@ describe('OAuth2 Token', () => {
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -89,6 +90,7 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
+    systemRepo = getProjectSystemRepo(project);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -1962,13 +1964,13 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;
     const password = 'test-password';
     await inviteUser({
-      project,
+      project: superAdminProject,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',

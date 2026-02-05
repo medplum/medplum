@@ -1,16 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bundle, Extension, Location, Practitioner, Schedule, Slot, Timing } from '@medplum/fhirtypes';
+import type { Bundle, Extension, Location, Practitioner, Project, Schedule, Slot, Timing } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getSystemRepo } from '../../fhir/repo';
-import type { TestProjectResult } from '../../test.setup';
+import type { SystemRepository } from '../../fhir/repo';
 import { createTestProject } from '../../test.setup';
 
-const systemRepo = getSystemRepo();
 const app = express();
 const request = supertest(app);
 
@@ -51,20 +50,26 @@ const fridayOnly: Timing['repeat'] = {
 describe('Schedule/:id/$find', () => {
   let location: Location;
   let practitioner: Practitioner;
-  let project: TestProjectResult<{ withAccessToken: true }>;
+  let project: WithId<Project>;
+  let accessToken: string;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    project = await createTestProject({ withAccessToken: true });
+    const projectResult = await createTestProject({ withAccessToken: true, withRepo: true });
+    project = projectResult.project;
+    accessToken = projectResult.accessToken;
+    systemRepo = projectResult.repo.getSystemRepo();
+
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      meta: { project: project.project.id },
+      meta: { project: project.id },
       extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
     });
     location = await systemRepo.createResource<Location>({
       resourceType: 'Location',
-      meta: { project: project.project.id },
+      meta: { project: project.id },
       extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
     });
   });
@@ -115,7 +120,7 @@ describe('Schedule/:id/$find', () => {
 
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
-      meta: { project: project.project.id },
+      meta: { project: project.id },
       actor: opts?.actor ?? [createReference(practitioner)],
       extension,
     });
@@ -129,7 +134,7 @@ describe('Schedule/:id/$find', () => {
   }): Promise<Slot> {
     return systemRepo.createResource<Slot>({
       resourceType: 'Slot',
-      meta: { project: project.project.id },
+      meta: { project: project.id },
       start: params.start.toISOString(),
       end: params.end.toISOString(),
       status: params.status,
@@ -143,7 +148,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00'),
         end: new Date('2025-12-01T09:00:00.000-05:00'),
@@ -163,7 +168,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00'),
         end: new Date('2025-12-01T14:00:00.000-05:00'),
@@ -218,7 +223,7 @@ describe('Schedule/:id/$find', () => {
 
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -266,7 +271,7 @@ describe('Schedule/:id/$find', () => {
 
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -354,7 +359,7 @@ describe('Schedule/:id/$find', () => {
 
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -387,7 +392,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T11:00:00.000-05:00').toISOString(),
@@ -427,7 +432,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -448,7 +453,7 @@ describe('Schedule/:id/$find', () => {
     );
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-07:00').toISOString(),
@@ -493,7 +498,7 @@ describe('Schedule/:id/$find', () => {
     );
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-10:00').toISOString(),
@@ -534,7 +539,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-04T10:00:00.000-05:00'),
@@ -579,7 +584,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-04T10:00:00.000-05:00'),
@@ -633,7 +638,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-05T10:00:00.000-05:00').toISOString(),

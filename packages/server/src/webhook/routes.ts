@@ -7,7 +7,7 @@ import { Router } from 'express';
 import { executeBot } from '../bots/execute';
 import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { sendBinaryResponse } from '../fhir/response';
 
 /**
@@ -16,9 +16,9 @@ import { sendBinaryResponse } from '../fhir/response';
  * @param res - The response object
  */
 export const webhookHandler = async (req: Request, res: Response): Promise<void> => {
-  const systemRepo = getSystemRepo();
-  const id = singularize(req.params.id) ?? '';
-  const runAs = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
+  const globalSystemRepo = getGlobalSystemRepo();
+  const membershipId = singularize(req.params.id) ?? '';
+  const runAs = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
 
   // The ProjectMembership must be for a Bot resource
   if (!runAs.profile.reference?.startsWith('Bot/')) {
@@ -32,6 +32,7 @@ export const webhookHandler = async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const systemRepo = getProjectSystemRepo(runAs.project);
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
 
   // The Bot must have a publicWebhook flag set to true

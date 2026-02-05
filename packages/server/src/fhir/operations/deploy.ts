@@ -19,7 +19,6 @@ import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -29,8 +28,7 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   await ctx.repo.readResource<Bot>('Bot', id);
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
 
   // Validate that the request body has a code property
   // Or that the Bot already has executable code attached

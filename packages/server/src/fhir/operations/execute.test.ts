@@ -30,7 +30,7 @@ import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
   [
@@ -679,6 +679,7 @@ describe('Execute', () => {
       // Create a new project that links to the first project
       const testSetup2 = await createTestProject({
         withAccessToken: true,
+        withRepo: true,
         project: {
           name: 'Project 2',
           systemSecret: [
@@ -698,7 +699,7 @@ describe('Execute', () => {
       project2 = testSetup2.project;
       accessToken2 = testSetup2.accessToken;
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = testSetup2.repo.getSystemRepo();
       for (const bot of [bots.echoBot, bots.systemEchoBot]) {
         await systemRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
@@ -778,11 +779,11 @@ describe('Execute', () => {
       ],
     ])('%s bot in %s project secrets', async (botName, whichProject, expectedSecrets) => {
       const bot = bots[botName];
-      const systemRepo = getSystemRepo();
 
       // execute the bot in the appropriate project context
       const project = whichProject === 'own' ? project1 : project2;
       const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+      const systemRepo = getProjectSystemRepo(project);
 
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$execute`)

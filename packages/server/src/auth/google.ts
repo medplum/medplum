@@ -9,7 +9,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -109,7 +109,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
@@ -160,6 +160,6 @@ function getProjectsByGoogleClientId(googleClientId: string, projectId: string |
     });
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
 }
