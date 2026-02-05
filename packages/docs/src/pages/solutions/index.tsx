@@ -50,12 +50,18 @@ export default function SolutionsPage(): JSX.Element {
             </h2>
             <p className={styles.heroText}>
               Healthcare data is fragmented and complex. Medplum acts as your central interoperability hub, allowing you
-              to connect disparate systems and data sources with ease. Our platform provides <b>modern
-              alternatives to legacy integration and automation engines</b>, so you can build scalable data pipelines, manage patient
-              records, and ensure seamless communication across your entire health tech ecosystem.
+              to connect disparate systems and data sources with ease. Our platform provides{' '}
+              <b>modern alternatives to legacy integration and automation engines</b>, so you can build scalable data
+              pipelines, manage patient records, and ensure seamless communication across your entire health tech
+              ecosystem.
             </p>
             <ul className={styles.heroText}>
-              <li><Link style={{ fontWeight: 'bold' }} to="/solutions/agent">Medplum Agent</Link>: A programmable alternative to legacy integration engines</li>
+              <li>
+                <Link style={{ fontWeight: 'bold' }} to="/solutions/agent">
+                  Medplum Agent
+                </Link>
+                : A programmable alternative to legacy integration engines
+              </li>
               <li>Medplum Bots: serverless functions driving automation workflows and external API integrations</li>
               <li>Terminology Services</li>
             </ul>
