@@ -90,7 +90,6 @@ export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
 
-  // TODO{mattlong} - AsyncJobExecutor previously was given systemRepo; is this an okay change?
   const exec = new AsyncJobExecutor(repo, job.data.asyncJob);
   await exec.startAsync(async () => {
     return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
