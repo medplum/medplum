@@ -137,6 +137,15 @@ export interface MedplumServerConfig {
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
   mfaAuthenticatorWindow?: number;
+
+  /**
+   * Optional mTLS certificate header for incoming requests.
+   * If set, the server will attempt to extract the client certificate from the specified header.
+   * Header name should be all lowercase.
+   * For AWS ALB in "pass through" mode, this should be set to "x-amzn-mtls-clientcert".
+   * For AWS ALB in "verify" mode, this should be set to "x-amzn-mtls-clientcert-leaf".
+   */
+  mtlsCertHeader?: string;
 }
 
 export interface ArrayColumnPaddingConfig {

@@ -53,6 +53,7 @@ export class BackEnd extends Construct {
   fargateService: ecs.FargateService;
   targetGroup: elbv2.ApplicationTargetGroup;
   loadBalancer: elbv2.ApplicationLoadBalancer;
+  mtlsLoadBalancer?: elbv2.ApplicationLoadBalancer;
   waf: wafv2.CfnWebACL;
   wafAssociation: wafv2.CfnWebACLAssociation;
   dnsRecord?: route53.ARecord;
@@ -635,6 +636,45 @@ export class BackEnd extends Construct {
       resourceArn: this.loadBalancer.loadBalancerArn,
       webAclArn: this.waf.attrArn,
     });
+
+    if (config.mtlsDomainName && config.mtlsSslCertArn) {
+      // Load Balancer
+      this.mtlsLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'MtlsLoadBalancer', {
+        vpc: this.vpc,
+        internetFacing: config.apiInternetFacing !== false, // default true
+        http2Enabled: true,
+        securityGroup: loadBalancerSecurityGroup,
+      });
+
+      if (config.loadBalancerLoggingBucket) {
+        // Load Balancer logging
+        this.mtlsLoadBalancer.logAccessLogs(
+          s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
+          config.loadBalancerLoggingPrefix
+        );
+      }
+
+      // HTTPS Listener
+      // Forward to the target group
+      this.mtlsLoadBalancer.addListener('MtlsHttpsListener', {
+        port: 443,
+        certificates: [
+          {
+            certificateArn: config.mtlsSslCertArn,
+          },
+        ],
+        sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
+        defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
+        mutualAuthentication: {
+          mutualAuthenticationMode: elbv2.MutualAuthenticationMode.PASS_THROUGH,
+        },
+      });
+      // Create an association between the load balancer and the WAF
+      this.wafAssociation = new wafv2.CfnWebACLAssociation(this, 'MtlsLoadBalancerAssociation', {
+        resourceArn: this.mtlsLoadBalancer.loadBalancerArn,
+        webAclArn: this.waf.attrArn,
+      });
+    }
 
     if (this.rdsCluster) {
       // Grant RDS access to the fargate group
