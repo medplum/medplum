@@ -29,6 +29,8 @@ describe('Health check', () => {
 
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
+    expect(res.body.redis).toBe(true);
+    expect(res.body.redisInstances).toEqual({ default: true });
   });
 
   test('Get /healthcheck when OTel is enabled', async () => {

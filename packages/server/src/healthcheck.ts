@@ -7,7 +7,7 @@ import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
-import { getRedis } from './redis';
+import { getDistinctPurposeRedisInstances, getRedis } from './redis';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
@@ -37,10 +37,24 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     });
   }
 
-  startTime = Date.now();
-  const redisOk = await testRedis();
-  const redisRoundtripMs = Date.now() - startTime;
-  setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, METRIC_IN_SECS_OPTIONS);
+  const redisChecks = [{ label: 'default', instance: getRedis() }, ...getDistinctPurposeRedisInstances()];
+  const redisResults = await Promise.all(
+    redisChecks.map(async ({ label, instance }) => {
+      const t0 = Date.now();
+      const ok = await testRedis(instance);
+      const roundtripMs = Date.now() - t0;
+      setGauge('medplum.redis.healthcheckRTT', roundtripMs / 1000, {
+        ...METRIC_IN_SECS_OPTIONS,
+        attributes: { ...METRIC_IN_SECS_OPTIONS.attributes, redisInstanceType: label },
+      });
+      return { label, ok };
+    })
+  );
+
+  const redisResult: Record<string, boolean> = {};
+  for (const { label, ok } of redisResults) {
+    redisResult[label] = ok;
+  }
 
   res.json({
     ok: true,
@@ -48,7 +62,8 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     platform: process.platform,
     runtime: process.version,
     postgres: postgresWriterOk,
-    redis: redisOk,
+    redis: redisResult.default,
+    redisInstances: redisResult,
   });
 }
 
@@ -71,6 +86,6 @@ async function testPostgres(pool: PoolClient): Promise<boolean> {
   return (await pool.query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 
-async function testRedis(): Promise<boolean> {
-  return (await getRedis().ping()) === 'PONG';
+async function testRedis(instance: ReturnType<typeof getRedis>): Promise<boolean> {
+  return (await instance.ping()) === 'PONG';
 }

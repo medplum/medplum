@@ -9,6 +9,7 @@ let defaultRedis: Redis | undefined = undefined;
 let cacheRedisInstance: Redis | undefined = undefined;
 let rateLimitRedisInstance: Redis | undefined = undefined;
 let pubsubRedisInstance: Redis | undefined = undefined;
+let bullmqRedisInstance: Redis | undefined = undefined;
 let pubsubSubscribers: Set<Redis> | undefined = undefined;
 
 const transientErrorTypes = /READONLY|LOADING/;
@@ -48,6 +49,12 @@ export function initRedis(config: MedplumServerConfig): void {
       reconnectOnError,
     });
   }
+  if (config.bullmqRedis) {
+    bullmqRedisInstance = new Redis({
+      ...config.bullmqRedis,
+      reconnectOnError,
+    });
+  }
 }
 
 let closing = false;
@@ -62,7 +69,7 @@ export async function closeRedis(): Promise<void> {
     }
 
     // Close purpose-specific instances first
-    const purposeInstances = [cacheRedisInstance, rateLimitRedisInstance, pubsubRedisInstance];
+    const purposeInstances = [cacheRedisInstance, rateLimitRedisInstance, pubsubRedisInstance, bullmqRedisInstance];
     cacheRedisInstance = undefined;
     rateLimitRedisInstance = undefined;
     pubsubRedisInstance = undefined;
@@ -83,6 +90,7 @@ export async function closeRedis(): Promise<void> {
   }
 }
 
+export type RedisWithoutDuplicate = Redis & { duplicate: never };
 /**
  * Gets the default `Redis` instance.
  *
@@ -93,7 +101,7 @@ export async function closeRedis(): Promise<void> {
  *
  * @returns The default `Redis` instance.
  */
-export function getRedis(): Redis & { duplicate: never } {
+export function getRedis(): RedisWithoutDuplicate {
   if (!defaultRedis) {
     throw new Error('Redis not initialized');
   }
@@ -108,7 +116,7 @@ export function getRedis(): Redis & { duplicate: never } {
  *
  * @returns The cache `Redis` instance.
  */
-export function getCacheRedis(): Redis & { duplicate: never } {
+export function getCacheRedis(): RedisWithoutDuplicate {
   const instance = cacheRedisInstance ?? defaultRedis;
   if (!instance) {
     throw new Error('Redis not initialized');
@@ -123,7 +131,7 @@ export function getCacheRedis(): Redis & { duplicate: never } {
  *
  * @returns The rate limit `Redis` instance.
  */
-export function getRateLimitRedis(): Redis & { duplicate: never } {
+export function getRateLimitRedis(): RedisWithoutDuplicate {
   const instance = rateLimitRedisInstance ?? defaultRedis;
   if (!instance) {
     throw new Error('Redis not initialized');
@@ -138,7 +146,7 @@ export function getRateLimitRedis(): Redis & { duplicate: never } {
  *
  * @returns The pub/sub `Redis` instance.
  */
-export function getPubSubRedis(): Redis & { duplicate: never } {
+export function getPubSubRedis(): RedisWithoutDuplicate {
   const instance = pubsubRedisInstance ?? defaultRedis;
   if (!instance) {
     throw new Error('Redis not initialized');
@@ -180,4 +188,28 @@ export function getPubSubRedisSubscriber(): Redis & { quit: never } {
  */
 export function getPubSubRedisSubscriberCount(): number {
   return pubsubSubscribers?.size ?? 0;
+}
+
+/**
+ * Returns all purpose-specific Redis instances that are configured separately from the default.
+ * Each entry includes a label for the purpose and the Redis instance.
+ * Does not include the default instance itself.
+ *
+ * @returns An array of `{ label, instance }` for each distinct purpose-specific Redis instance.
+ */
+export function getDistinctPurposeRedisInstances(): { label: string; instance: RedisWithoutDuplicate }[] {
+  const results: { label: string; instance: RedisWithoutDuplicate }[] = [];
+  if (cacheRedisInstance) {
+    results.push({ label: 'cache', instance: cacheRedisInstance as RedisWithoutDuplicate });
+  }
+  if (rateLimitRedisInstance) {
+    results.push({ label: 'rateLimit', instance: rateLimitRedisInstance as RedisWithoutDuplicate });
+  }
+  if (pubsubRedisInstance) {
+    results.push({ label: 'pubsub', instance: pubsubRedisInstance as RedisWithoutDuplicate });
+  }
+  if (bullmqRedisInstance) {
+    results.push({ label: 'bullmq', instance: bullmqRedisInstance as RedisWithoutDuplicate });
+  }
+  return results;
 }

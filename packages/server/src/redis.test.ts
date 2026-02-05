@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
-import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
+import { closeRedis, getPubSubRedisSubscriber, getPubSubRedisSubscriberCount, getRedis, initRedis } from './redis';
 import { deleteRedisKeys } from './test.setup';
 
 describe('Redis', () => {
@@ -28,19 +28,19 @@ describe('Redis', () => {
   describe('getRedisSubscriber', () => {
     test('Not initialized', async () => {
       await closeRedis();
-      expect(() => getRedisSubscriber()).toThrow();
+      expect(() => getPubSubRedisSubscriber()).toThrow();
     });
 
     test('Getting a subscriber', async () => {
       initRedis(config);
-      const subscriber = getRedisSubscriber();
+      const subscriber = getPubSubRedisSubscriber();
       expect(subscriber).toBeInstanceOf(Redis);
       await closeRedis();
     });
 
     test('Hanging subscriber still disconnects on closeRedis', async () => {
       initRedis(config);
-      const subscriber = getRedisSubscriber();
+      const subscriber = getPubSubRedisSubscriber();
 
       let reject: (err: Error) => void;
       const closePromise = new Promise<void>((resolve, _reject) => {
@@ -63,9 +63,9 @@ describe('Redis', () => {
 
     test('Disconnecting a subscriber removes it from the list', async () => {
       initRedis(config);
-      expect(getRedisSubscriberCount()).toStrictEqual(0);
-      const subscriber = getRedisSubscriber();
-      expect(getRedisSubscriberCount()).toStrictEqual(1);
+      expect(getPubSubRedisSubscriberCount()).toStrictEqual(0);
+      const subscriber = getPubSubRedisSubscriber();
+      expect(getPubSubRedisSubscriberCount()).toStrictEqual(1);
       subscriber.disconnect();
 
       let reject: (err: Error) => void;
@@ -84,7 +84,7 @@ describe('Redis', () => {
       }, 3500);
 
       await expect(closePromise).resolves.toBeUndefined();
-      expect(getRedisSubscriberCount()).toStrictEqual(0);
+      expect(getPubSubRedisSubscriberCount()).toStrictEqual(0);
       clearTimeout(timer);
 
       await closeRedis();
