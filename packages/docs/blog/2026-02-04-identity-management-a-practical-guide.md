@@ -1,6 +1,6 @@
 ---
 slug: ID-management
-title: Identity Management: A Practical Guide
+title: Identity Management - A Practical Guide
 authors: everett
 ---
 
