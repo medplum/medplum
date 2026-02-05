@@ -411,6 +411,20 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('Purpose-specific Redis clusters', async () => {
+    const filename = await writeConfig('./medplum.purposeRedis.config.json', {
+      ...baseConfig,
+      stackName: 'MedplumPurposeRedisStack',
+      cacheRedis: { nodeType: 'cache.r6g.large' },
+      rateLimitRedis: { nodeType: 'cache.t3.small' },
+      pubsubRedis: {},
+      bullmqRedis: { securityGroupId: 'sg-1234' },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
   test('Use containerRegistryCredentialsSecretArn', async () => {
     const filename = await writeConfig('./medplum.containerRegistryCredentialsSecretArn.config.json', {
       ...baseConfig,

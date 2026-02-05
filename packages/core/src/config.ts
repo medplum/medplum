@@ -55,6 +55,22 @@ export interface MedplumSourceInfraConfig {
   rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
+  cacheRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+  };
+  rateLimitRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+  };
+  pubsubRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+  };
+  bullmqRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+  };
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
   serverMemory: ValueOrExternalSecret<number>;
@@ -158,6 +174,22 @@ export interface MedplumInfraConfig {
   rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
+  cacheRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+  };
+  rateLimitRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+  };
+  pubsubRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+  };
+  bullmqRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+  };
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
