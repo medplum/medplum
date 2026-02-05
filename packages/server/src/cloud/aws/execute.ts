@@ -43,7 +43,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     traceId,
     headers,
     streaming: !!request.responseStream,
-  }; 
+  };
 
   if (request.responseStream) {
     return runInLambdaStreaming(client, name, payload, request.responseStream);
