@@ -3,7 +3,7 @@
 import type { AnchorProps } from '@mantine/core';
 import { Anchor } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ensureTrailingSlash, getIdentifier, locationUtils, normalizeErrorString } from '@medplum/core';
+import { ensureTrailingSlash, locationUtils, normalizeErrorString } from '@medplum/core';
 import type { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import type { JSX, ReactNode } from 'react';
@@ -31,29 +31,29 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
       const patientIdentifierConfig = client.launchIdentifierSystems.find(
         (config) => config.resourceType === 'Patient'
       );
-      if (patient && patientResource && patientIdentifierConfig?.system) {
-        const patientIdentifierValue = getIdentifier(patientResource, patientIdentifierConfig.system);
-        if (patientIdentifierValue) {
+      if (patientRef && patientResource && patientIdentifierConfig?.system) {
+        const identifier = patientResource.identifier?.find((i) => i.system === patientIdentifierConfig.system);
+        if (identifier) {
           // Include both the reference and the identifier in the patient reference
           patientRef = {
             ...patient,
-            identifier: {
-              system: patientIdentifierConfig.system,
-              value: patientIdentifierValue,
-            },
+            identifier: identifier,
           };
-        }
+        } 
       }
 
       // Find encounter identifier system configuration
       const encounterIdentifierConfig = client.launchIdentifierSystems.find(
         (config) => config.resourceType === 'Encounter'
       );
-      if (encounter && encounterResource && encounterIdentifierConfig?.system) {
+      if (encounterRef && encounterResource && encounterIdentifierConfig?.system) {
         const identifier = encounterResource.identifier?.find((i) => i.system === encounterIdentifierConfig.system);
         if (identifier) {
-          encounterRef.identifier = identifier;
-        }
+          encounterRef = {
+            ...encounter,
+            identifier: identifier,
+          };
+        } 
       }
     }
 
