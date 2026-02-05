@@ -31,27 +31,17 @@ const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("
 const PdfPrinter = require("pdfmake");
 const userCode = require("./user.cjs");
 
-exports.handler = awslambda.streamifyResponse(async (event, responseStream, _context) => {
+exports.handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
 const ESM_PREFIX = `import { ContentType, Hl7Message, MedplumClient } from '@medplum/core';
 import PdfPrinter from 'pdfmake';
 import * as userCode from './user.mjs';
 
-export const handler = awslambda.streamifyResponse(async (event, responseStream, _context) => {
+export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
 const WRAPPER_CODE = `
-  function logError(err) {
-    if (err instanceof Error) {
-      console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-    } else if (typeof err === "object") {
-      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-    } else {
-      console.log("Unhandled error: " + err);
-    }
-  }
-
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
@@ -64,102 +54,98 @@ const WRAPPER_CODE = `
     createPdf,
   });
   medplum.setAccessToken(accessToken);
-
+  
+  let botResponseStream = undefined;
   if (streaming) {
-    // Streaming mode - create a BotResponseStream for the bot
-    let streamStarted = false;
-    let wrappedStream = responseStream;
+    botResponseStream = new BotResponseStream(responseStream);
+  }
 
-    const botResponseStream = {
-      startStreaming: (statusCode, headers) => {
-        if (streamStarted) {
-          return;
-        }
-        streamStarted = true;
-        // Write metadata as JSON + newline for Medplum server to parse
-        responseStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
-      },
-      write: (chunk) => {
-        if (!streamStarted) {
-          throw new Error("Must call startStreaming() before write()");
-        }
-        return wrappedStream.write(chunk);
-      },
-      flush: () => {
-        if (typeof wrappedStream.flush === 'function') {
-          wrappedStream.flush();
-        }
-      },
-      end: (chunk) => {
-        if (chunk !== undefined) {
-          wrappedStream.write(chunk);
-        }
-        wrappedStream.end();
-      },
-      on: (event, listener) => wrappedStream.on(event, listener),
-      once: (event, listener) => wrappedStream.once(event, listener),
-      emit: (event, ...args) => wrappedStream.emit(event, ...args),
-      writable: true,
-    };
-
-    try {
-      let input = event.input;
-      if (contentType === ContentType.HL7_V2 && input) {
-        input = Hl7Message.parse(input);
-      }
-      const result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream: botResponseStream });
-      if (!streamStarted) {
-        // Bot returned without streaming - send the result as JSON
-        // This handles cases like returning OperationOutcome errors early
-        responseStream.write(JSON.stringify({
-          statusCode: 200,
-          headers: { "Content-Type": "application/json" },
-        }) + "\\n");
-        if (result !== undefined) {
-          responseStream.write(JSON.stringify(result));
-        }
-        responseStream.end();
-      }
-    } catch (err) {
-      logError(err);
-      if (!streamStarted) {
-        // Write error response headers and body before ending
-        const errorResponse = {
-          resourceType: "OperationOutcome",
-          issue: [{ severity: "error", code: "exception", details: { text: err instanceof Error ? err.message : String(err) } }]
-        };
-        responseStream.write(JSON.stringify({
-          statusCode: 500,
-          headers: { "Content-Type": "application/fhir+json" },
-        }) + "\\n");
-        responseStream.write(JSON.stringify(errorResponse));
-        responseStream.end();
-      } else {
-        // Stream already started, just end it
-        responseStream.end();
-        throw err;
-      }
+  try {
+    let input = event.input;
+    if (contentType === ContentType.HL7_V2 && input) {
+      input = Hl7Message.parse(input);
     }
-  } else {
-    // Non-streaming mode - execute normally and write result to stream
-    try {
-      let input = event.input;
-      if (contentType === ContentType.HL7_V2 && input) {
-        input = Hl7Message.parse(input);
-      }
-      let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers });
-      if (contentType === ContentType.HL7_V2 && result) {
-        result = result.toString();
-      }
-      responseStream.write(JSON.stringify(result));
-      responseStream.end();
-    } catch (err) {
-      logError(err);
-      responseStream.end();
-      throw err;
+    let result = await userCode.handler(medplum, { bot, requester, input, contentType, secrets, traceId, headers, responseStream: botResponseStream });
+    if (contentType === ContentType.HL7_V2 && result) {
+      result = result.toString();
+    }
+    if (!streaming || !botResponseStream.streamStarted) {
+      writeResponse(responseStream, 200, result);
+    }
+  } catch (err) {
+    let errorResponse;
+    if (err instanceof Error) {
+      console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+      errorResponse = {
+        errorType: err.constructor?.name || "Error",
+        errorMessage: err.message,
+        stack: err.stack ? err.stack.split("\\n") : []
+      };
+    } else if (typeof err === "object") {
+      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      errorResponse = {
+        errorType: "Error",
+        errorMessage: JSON.stringify(err),
+        stack: []
+      };
+    } else {
+      console.log("Unhandled error: " + err);
+      errorResponse = {
+        errorType: "Error",
+        errorMessage: String(err),
+        stack: []
+      };
+    }
+    console.error("Invoke Error", JSON.stringify(errorResponse));
+    if (!streaming || !botResponseStream.streamStarted) {
+      writeResponse(responseStream, 500, errorResponse);
     }
   }
-})
+});
+
+class BotResponseStream {
+  constructor(responseStream) {
+    this.wrappedStream = responseStream;
+    this.streamStarted = false;
+  }
+  startStreaming(statusCode, headers) {
+    if (this.streamStarted) {
+      return;
+    }
+    this.streamStarted = true;
+    // Write metadata as JSON + newline for Medplum server to parse
+    this.wrappedStream.write(JSON.stringify({ statusCode, headers }) + "\\n");
+  }
+  write(chunk) {
+    if (!this.streamStarted) {
+      throw new Error("Must call startStreaming() before write()");
+    }
+    return this.wrappedStream.write(chunk);
+  }
+  flush() {
+    if (typeof this.wrappedStream.flush === 'function') {
+      this.wrappedStream.flush();
+    }
+  }
+  end(chunk) {
+    if (chunk !== undefined) {
+      this.wrappedStream.write(chunk);
+    }
+    this.wrappedStream.end();
+  }
+  on(event, listener) {
+    return this.wrappedStream.on(event, listener);
+  }
+  once(event, listener) {
+    return this.wrappedStream.once(event, listener);
+  }
+  emit(event, ...args) {
+    return this.wrappedStream.emit(event, ...args);
+  }
+  get writable() {
+    return this.wrappedStream.writable;
+  }
+}
 
 function createPdf(docDefinition, tableLayouts, fonts) {
   if (!fonts) {
@@ -190,6 +176,16 @@ function createPdf(docDefinition, tableLayouts, fonts) {
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
+}
+
+function writeResponse(responseStream, statusCode, body) {
+  responseStream.write(JSON.stringify({
+    statusCode,
+    headers: { 'Content-Type': 'application/json' } }) + "\\n");
+  if (body !== undefined) {
+    responseStream.write(JSON.stringify(body));
+  }
+  responseStream.end();
 }
 `;
 
