@@ -33,6 +33,7 @@ export class FhirRateLimiter {
       keyPrefix: 'medplum:rl:fhir:membership:',
       storeClient: redis,
       points: userLimit,
+      inMemoryBlockOnConsumed: 2 * userLimit, // Store users who ignore rate limit in memory to avoid slamming Redis
       duration: 60, // Per minute
     });
     this.userKey = authState.membership.id;
@@ -41,6 +42,7 @@ export class FhirRateLimiter {
       keyPrefix: 'medplum:rl:fhir:project:',
       storeClient: redis,
       points: projectLimit,
+      inMemoryBlockOnConsumed: projectLimit, // Once a Project is blocked, ensure we can keep blocking it efficiently
       duration: 60, // Per minute
     });
     this.projectKey = authState.project.id;
