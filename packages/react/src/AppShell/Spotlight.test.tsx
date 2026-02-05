@@ -54,7 +54,6 @@ jest.mock('@mantine/spotlight', () => {
 });
 
 const mockNavigate = jest.fn();
-const debounceWaitMs = 250;
 
 jest.mock('@medplum/react-hooks', () => {
   const actual = jest.requireActual('@medplum/react-hooks');
@@ -67,25 +66,6 @@ jest.mock('@medplum/react-hooks', () => {
 describe('Spotlight', () => {
   let medplum: MockClient;
 
-  const flushDebounceTimers = async (): Promise<void> => {
-    let hasFakeTimers = false;
-    try {
-      jest.getTimerCount();
-      hasFakeTimers = true;
-    } catch {
-      hasFakeTimers = false;
-    }
-    if (!hasFakeTimers) {
-      return;
-    }
-    await act(async () => {
-      jest.advanceTimersByTime(debounceWaitMs);
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-  };
-
   async function setup(patientsOnly?: boolean): Promise<ReturnType<typeof render>> {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -97,7 +77,6 @@ describe('Spotlight', () => {
   }
 
   beforeEach(() => {
-    jest.useRealTimers();
     jest.clearAllMocks();
     mockNavigate.mockReset();
     medplum = new MockClient();
@@ -138,7 +117,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Jane' } });
       });
-      await flushDebounceTimers();
 
       expect(screen.getByText('Searching...')).toBeInTheDocument();
     });
@@ -189,7 +167,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: patient.id } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByTestId('nothing-found')).toBeInTheDocument();
@@ -204,7 +181,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'test' } });
       });
-      await flushDebounceTimers();
 
       expect(screen.getByText('Searching...')).toBeInTheDocument();
 
@@ -224,7 +200,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'nonexistentzzzxxx' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('No results found')).toBeInTheDocument();
@@ -245,8 +220,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Test' } });
       });
-      await flushDebounceTimers();
-      await flushDebounceTimers();
 
       await waitFor(
         () => {
@@ -280,7 +253,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Test' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByTestId('action-group-Patients')).toBeInTheDocument();
@@ -354,7 +326,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Obs' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByTestId('action-group-Resource Types')).toBeInTheDocument();
@@ -394,7 +365,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Alice' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('Alice Wonderland')).toBeInTheDocument();
@@ -424,7 +394,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'patient' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('patient-no-name')).toBeInTheDocument();
@@ -455,7 +424,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'DOB' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('1985-12-25')).toBeInTheDocument();
@@ -488,7 +456,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Enc' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('Resource Type')).toBeInTheDocument();
@@ -519,7 +486,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'sr' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -557,7 +523,6 @@ describe('Spotlight', () => {
       await act(async () => {
         fireEvent.change(searchInput, { target: { value: 'Duplicate' } });
       });
-      await flushDebounceTimers();
 
       await waitFor(() => {
         expect(screen.getByTestId('action-group-Patients')).toBeInTheDocument();

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Re-export pharmacy utilities from @medplum/core for backward compatibility
+// Re-export pharmacy utilities from @medplum/dosespot-core for backward compatibility
 export {
   DOSESPOT_ADD_PATIENT_PHARMACY_BOT,
   DOSESPOT_SEARCH_PHARMACY_BOT,
@@ -14,5 +14,5 @@ export {
   createPreferredPharmacyExtension,
   getPreferredPharmaciesFromPatient,
   removePreferredPharmacyFromPatient,
-} from '@medplum/core';
-export type { PreferredPharmacy } from '@medplum/core';
+} from '@medplum/dosespot-core';
+export type { PreferredPharmacy } from '@medplum/dosespot-core';

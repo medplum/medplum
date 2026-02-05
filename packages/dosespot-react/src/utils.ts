@@ -26,5 +26,5 @@ export {
   PHARMACY_TYPE_PREFERRED,
   PHARMACY_TYPE_PRIMARY,
   removePreferredPharmacyFromPatient,
-} from '@medplum/core';
-export type { PreferredPharmacy } from '@medplum/core';
+} from '@medplum/dosespot-core';
+export type { PreferredPharmacy } from '@medplum/dosespot-core';
