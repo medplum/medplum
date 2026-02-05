@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
-import { deepClone, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import type { AuthState } from '../oauth/middleware';
+
+type InMemoryBlock = {
+  result: RateLimiterRes;
+  resetTimestamp: number;
+};
+const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
 export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;
@@ -33,7 +39,6 @@ export class FhirRateLimiter {
       keyPrefix: 'medplum:rl:fhir:membership:',
       storeClient: redis,
       points: userLimit,
-      inMemoryBlockOnConsumed: 2 * userLimit, // Store users who ignore rate limit in memory to avoid slamming Redis
       duration: 60, // Per minute
     });
     this.userKey = authState.membership.id;
@@ -42,7 +47,6 @@ export class FhirRateLimiter {
       keyPrefix: 'medplum:rl:fhir:project:',
       storeClient: redis,
       points: projectLimit,
-      inMemoryBlockOnConsumed: projectLimit, // Once a Project is blocked, ensure we can keep blocking it efficiently
       duration: 60, // Per minute
     });
     this.projectKey = authState.project.id;
@@ -88,6 +92,11 @@ export class FhirRateLimiter {
 
   private async consumeImpl(points: number): Promise<void> {
     this.delta += points;
+    const cachedResult = await this.checkInMemoryBlock(points);
+    if (cachedResult) {
+      await this.block(points, cachedResult);
+    }
+
     try {
       const result = await this.limiter.consume(this.userKey, points);
       if (this.delta > this.logThreshold) {
@@ -124,8 +133,27 @@ export class FhirRateLimiter {
     }
   }
 
+  async checkInMemoryBlock(points: number): Promise<RateLimiterRes | undefined> {
+    const userBlock = blockedUsers.get(this.userKey);
+    if (userBlock && Date.now() <= userBlock.resetTimestamp) {
+      await this.block(points, userBlock.result);
+      return userBlock.result;
+    }
+    return undefined;
+  }
+
+  /**
+   * Block the request, either by throwing an error to induce a 429 error response,
+   * or by waiting until more quota is available and retrying.
+   *
+   * @param points - The number of points being consumed.
+   * @param result - The over-limit rate limiter result.
+   * @throws {OperationOutcomeError} 429 error
+   */
   async block(points: number, result: RateLimiterRes): Promise<void> {
     if (this.enabled) {
+      blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
+
       if (this.async) {
         // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
         const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));
