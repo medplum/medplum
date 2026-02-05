@@ -268,7 +268,13 @@ export class BackEnd extends Construct {
       { key: 'bullmqRedis' as const, id: 'BullmqRedis' },
     ];
 
-    const purposeRedisClusters: { id: string; securityGroup: ec2.ISecurityGroup; cluster: elasticache.CfnReplicationGroup; secrets: secretsmanager.ISecret; secretsParameter?: ssm.StringParameter }[] = [];
+    const purposeRedisClusters: {
+      id: string;
+      securityGroup: ec2.ISecurityGroup;
+      cluster: elasticache.CfnReplicationGroup;
+      secrets: secretsmanager.ISecret;
+      secretsParameter?: ssm.StringParameter;
+    }[] = [];
     for (const { key, id } of purposeRedisConfigs) {
       const redisConfig = config[key];
       if (redisConfig) {
@@ -758,6 +764,7 @@ export class BackEnd extends Construct {
         description: `${id} Security Group`,
         allowAllOutbound: false,
       });
+      securityGroup.applyRemovalPolicy(RemovalPolicy.RETAIN);
     }
 
     const password = new secretsmanager.Secret(this, `${id}Password`, {
@@ -767,6 +774,7 @@ export class BackEnd extends Construct {
         excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
       },
     });
+    password.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
       engine: 'Redis',
@@ -783,6 +791,7 @@ export class BackEnd extends Construct {
       securityGroupIds: [securityGroup.securityGroupId],
     });
     cluster.node.addDependency(password);
+    cluster.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     const secrets = new secretsmanager.Secret(this, `${id}Secrets`, {
       generateSecretString: {
@@ -797,6 +806,7 @@ export class BackEnd extends Construct {
     });
     secrets.node.addDependency(password);
     secrets.node.addDependency(cluster);
+    secrets.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     return { securityGroup, password, cluster, secrets };
   }
