@@ -50,16 +50,9 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         (config) => config.resourceType === 'Encounter'
       );
       if (encounter && encounterResource && encounterIdentifierConfig?.system) {
-        const encounterIdentifierValue = getIdentifier(encounterResource, encounterIdentifierConfig.system);
-        if (encounterIdentifierValue) {
-          // Include both the reference and the identifier in the encounter reference
-          encounterRef = {
-            ...encounter,
-            identifier: {
-              system: encounterIdentifierConfig.system,
-              value: encounterIdentifierValue,
-            },
-          };
+        const identifier = encounterResource.identifier?.find((i) => i.system === encounterIdentifierConfig.system);
+        if (identifier) {
+          encounterRef.identifier = identifier;
         }
       }
     }
