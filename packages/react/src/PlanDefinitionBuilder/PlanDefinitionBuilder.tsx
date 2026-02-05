@@ -299,7 +299,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
               </Group>
               <Text size="sm" c="dimmed" mb="sm">
                 Questionnaire to be shown in the task in Encounter view. You can create new one from{' '}
-                <Anchor href="/Questionnaire" target="_blank" c="blue">
+                <Anchor href="/Questionnaire" target="_blank" c="primary">
                   questionnaires list
                 </Anchor>
               </Text>
@@ -321,7 +321,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
               </Group>
               <Text size="sm" c="dimmed" mb="sm">
                 ActivityDefinition.kind resource to be shown in the task in Encounter view. You can create new one from{' '}
-                <Anchor href="/ActivityDefinition" target="_blank" c="blue">
+                <Anchor href="/ActivityDefinition" target="_blank" c="primary">
                   activity definitions list
                 </Anchor>
               </Text>
