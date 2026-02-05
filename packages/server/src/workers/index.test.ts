@@ -21,7 +21,7 @@ describe('Workers', () => {
 
   test('Init and close', async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');

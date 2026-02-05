@@ -130,6 +130,14 @@ const integerKeys = new Set([
 
   'redis.db',
   'redis.port',
+  'cacheRedis.db',
+  'cacheRedis.port',
+  'rateLimitRedis.db',
+  'rateLimitRedis.port',
+  'pubsubRedis.db',
+  'pubsubRedis.port',
+  'bullmqRedis.db',
+  'bullmqRedis.port',
 
   'smtp.port',
 

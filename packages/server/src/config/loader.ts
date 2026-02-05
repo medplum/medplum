@@ -113,6 +113,18 @@ function loadEnvConfig(): MedplumServerConfig {
     if (key.startsWith('DATABASE_')) {
       key = key.substring('DATABASE_'.length);
       currConfig = config.database = config.database ?? {};
+    } else if (key.startsWith('CACHE_REDIS_')) {
+      key = key.substring('CACHE_REDIS_'.length);
+      currConfig = config.cacheRedis = config.cacheRedis ?? {};
+    } else if (key.startsWith('RATE_LIMIT_REDIS_')) {
+      key = key.substring('RATE_LIMIT_REDIS_'.length);
+      currConfig = config.rateLimitRedis = config.rateLimitRedis ?? {};
+    } else if (key.startsWith('PUBSUB_REDIS_')) {
+      key = key.substring('PUBSUB_REDIS_'.length);
+      currConfig = config.pubsubRedis = config.pubsubRedis ?? {};
+    } else if (key.startsWith('BULLMQ_REDIS_')) {
+      key = key.substring('BULLMQ_REDIS_'.length);
+      currConfig = config.bullmqRedis = config.bullmqRedis ?? {};
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
       currConfig = config.redis = config.redis ?? {};

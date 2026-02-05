@@ -29,6 +29,14 @@ export interface MedplumServerConfig {
   /** @deprecated specify `readonlyDatabase.host` and `readonlyDatabase.ssl.require` as needed */
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  /** Optional separate Redis config for caching (resource cache, keyvalue store, server registry, etc.). Falls back to `redis` if not specified. */
+  cacheRedis?: MedplumRedisConfig;
+  /** Optional separate Redis config for rate limiting (HTTP rate limiter, FHIR quota, resource cap). Falls back to `redis` if not specified. */
+  rateLimitRedis?: MedplumRedisConfig;
+  /** Optional separate Redis config for pub/sub (websockets, FHIRcast, agent, MCP). Falls back to `redis` if not specified. */
+  pubsubRedis?: MedplumRedisConfig;
+  /** Optional separate Redis config for BullMQ job queues (all background workers). Falls back to `redis` if not specified. */
+  bullmqRedis?: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
