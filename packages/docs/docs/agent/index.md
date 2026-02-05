@@ -228,7 +228,7 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 
 ## See also
 
-- [Medplum Agent FAQ](/solutions/interoperability/agent-faqs)
+- [Medplum Agent](/solutions/agent)
 - [Medplum Agent design discussion](https://github.com/medplum/medplum/discussions/2012)
 - [Medplum WebSockets design discussion](https://github.com/medplum/medplum/discussions/1490)
 - [FHIR WebSocket Subscriptions](https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/channels.html#websockets)
