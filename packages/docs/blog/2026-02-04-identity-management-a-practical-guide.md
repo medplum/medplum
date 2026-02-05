@@ -113,11 +113,27 @@ Before adding intermediate infrastructure, consider:
 - **What's the maintenance burden?** Custom auth layers require ongoing security updates and auditing.
 - **Does it duplicate existing functionality?** Often, the platform already handles what you're trying to build.
 
-In most cases, the native token flows described below will meet your needs without additional complexity.
+In most cases, the three-legged OAuth (redirect flow) described below will meet your needs without additional complexity.
 
-### Token Exchange (Recommended)
+### Three-Legged OAuth (Recommended)
 
-[Token exchange](https://www.medplum.com/docs/auth/token-exchange) is the recommended approach for most healthcare applications:
+[Three legged OAuth](https://www.medplum.com/docs/auth/external-identity-providers) is the recommended approach unless your application needs access to other services beyond Medplum:
+
+1. User clicks "Login" in your app
+2. Browser redirects to Okta
+3. User authenticates with Okta
+4. Okta redirects back to your app with a code
+5. Your app exchanges the code with Medplum
+6. Medplum validates with Okta and issues its own token
+7. User's browser stores only the Medplum token
+
+**Result:** User ends up with just a Medplum token. Clean, simple, secure.
+
+**Best for:** Applications that only need to access Medplum APIs.
+
+### Token Exchange (Multi-Service Access)
+
+[Token exchange](https://www.medplum.com/docs/auth/token-exchange) is useful for multi-service workflows:
 
 1. User authenticates with Okta
 2. Okta issues a token stored in the user's browser
@@ -142,22 +158,6 @@ await medplum.exchangeExternalAccessToken(OKTA_ACCESS_TOKEN);
 // Now you can make FHIR API calls
 const patient = await medplum.readResource('Patient', patientId);
 ```
-
-### Three-Legged OAuth (Redirect Flow)
-
-In this flow, the user's browser is redirected between services:
-
-1. User clicks "Login" in your app
-2. Browser redirects to Okta
-3. User authenticates with Okta
-4. Okta redirects back to your app with a code
-5. Your app exchanges the code with Medplum
-6. Medplum validates with Okta and issues its own token
-7. User's browser stores only the Medplum token
-
-**Result:** User ends up with just a Medplum token. Clean, simple, secure.
-
-**Best for:** Applications that only need to access Medplum APIs.
 
 ### On-Behalf-Of (Server-Side Pattern)
 
