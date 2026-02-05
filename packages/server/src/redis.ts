@@ -101,7 +101,7 @@ export type RedisWithoutDuplicate = Redis & { duplicate: never };
  *
  * @returns The default `Redis` instance.
  */
-export function getRedis(): RedisWithoutDuplicate {
+function getRedis(): RedisWithoutDuplicate {
   if (!defaultRedis) {
     throw new Error('Redis not initialized');
   }
@@ -191,14 +191,17 @@ export function getPubSubRedisSubscriberCount(): number {
 }
 
 /**
- * Returns all purpose-specific Redis instances that are configured separately from the default.
- * Each entry includes a label for the purpose and the Redis instance.
- * Does not include the default instance itself.
+ * Returns all active Redis instances with their purpose labels.
+ * Always includes the default instance first, followed by any purpose-specific instances
+ * that are configured separately from the default.
  *
- * @returns An array of `{ label, instance }` for each distinct purpose-specific Redis instance.
+ * @returns An array of `{ label, instance }` for each active Redis instance.
  */
-export function getDistinctPurposeRedisInstances(): { label: string; instance: RedisWithoutDuplicate }[] {
+export function getAllRedisInstances(): { label: string; instance: RedisWithoutDuplicate }[] {
   const results: { label: string; instance: RedisWithoutDuplicate }[] = [];
+  if (defaultRedis) {
+    results.push({ label: 'default', instance: getRedis() });
+  }
   if (cacheRedisInstance) {
     results.push({ label: 'cache', instance: cacheRedisInstance as RedisWithoutDuplicate });
   }

@@ -7,7 +7,8 @@ import type { PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import type { RecordMetricOptions } from './otel/otel';
 import { setGauge } from './otel/otel';
-import { getDistinctPurposeRedisInstances, getRedis } from './redis';
+import type { RedisWithoutDuplicate } from './redis';
+import { getAllRedisInstances } from './redis';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
@@ -37,7 +38,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     });
   }
 
-  const redisChecks = [{ label: 'default', instance: getRedis() }, ...getDistinctPurposeRedisInstances()];
+  const redisChecks = getAllRedisInstances();
   const redisResults = await Promise.all(
     redisChecks.map(async ({ label, instance }) => {
       const t0 = Date.now();
@@ -86,6 +87,6 @@ async function testPostgres(pool: PoolClient): Promise<boolean> {
   return (await pool.query(`SELECT 1 AS "status"`)).rows[0].status === 1;
 }
 
-async function testRedis(instance: ReturnType<typeof getRedis>): Promise<boolean> {
+async function testRedis(instance: RedisWithoutDuplicate): Promise<boolean> {
   return (await instance.ping()) === 'PONG';
 }

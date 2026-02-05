@@ -11,7 +11,7 @@ import * as executeBotModule from '../bots/execute';
 import type { BotExecutionResult } from '../bots/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
 import type { AgentInfo } from './utils';
 import { AgentConnectionState } from './utils';
@@ -442,7 +442,7 @@ describe('Agent WebSockets', () => {
     let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
     for (let i = 0; i < 5; i++) {
       await sleep(50);
-      const infoStr = (await getRedis().get(`medplum:agent:${agent.id}:info`)) as string;
+      const infoStr = (await getCacheRedis().get(`medplum:agent:${agent.id}:info`)) as string;
       info = JSON.parse(infoStr) as AgentInfo;
       if (info.status === AgentConnectionState.DISCONNECTED) {
         break;

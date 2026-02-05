@@ -18,7 +18,7 @@ import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getRedis } from '../../redis';
+import { getCacheRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 import { expectBundleToContainOutcome } from './utils/agenttestutils';
 import { MAX_AGENTS_PER_PAGE } from './utils/agentutils';
@@ -85,7 +85,7 @@ describe('Agent/$bulk-status', () => {
     disabledAgent = agent2Res.body;
 
     // Emulate a connection
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${connectedAgent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.CONNECTED,
@@ -97,7 +97,7 @@ describe('Agent/$bulk-status', () => {
     );
 
     // Emulate a disconnected agent
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${disabledAgent.id}:info`,
       JSON.stringify({
         status: AgentConnectionState.DISCONNECTED,
@@ -223,7 +223,7 @@ describe('Agent/$bulk-status', () => {
   });
 
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         version: '3.1.4',
@@ -253,7 +253,7 @@ describe('Agent/$bulk-status', () => {
       ],
     });
 
-    await getRedis().set(
+    await getCacheRedis().set(
       `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,

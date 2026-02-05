@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { getRedis } from '../../redis';
+import { getCacheRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { SelectQuery } from '../sql';
@@ -185,7 +185,7 @@ describe('Expunge', () => {
 });
 
 async function existsInCache(resourceType: string, id: string | undefined): Promise<boolean> {
-  const redis = await getRedis().get(`${resourceType}/${id}`);
+  const redis = await getCacheRedis().get(`${resourceType}/${id}`);
   return !!redis;
 }
 

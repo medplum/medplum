@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
-import { closeRedis, getPubSubRedisSubscriber, getPubSubRedisSubscriberCount, getRedis, initRedis } from './redis';
+import { closeRedis, getCacheRedis, getPubSubRedisSubscriber, getPubSubRedisSubscriberCount, initRedis } from './redis';
 import { deleteRedisKeys } from './test.setup';
 
 describe('Redis', () => {
@@ -16,12 +16,12 @@ describe('Redis', () => {
 
   test('Get redis', async () => {
     initRedis(config);
-    expect(getRedis()).toBeDefined();
+    expect(getCacheRedis()).toBeDefined();
     await closeRedis();
   });
 
   test('Not initialized', async () => {
-    expect(() => getRedis()).toThrow();
+    expect(() => getCacheRedis()).toThrow();
     await expect(closeRedis()).resolves.toBeUndefined();
   });
 

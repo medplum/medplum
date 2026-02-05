@@ -18,7 +18,7 @@ import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getRedis } from '../../redis';
+import { getPubSubRedis } from '../../redis';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
@@ -279,7 +279,7 @@ describe('Agent Push', () => {
   });
 
   test('Ping -- Successful ping to IP', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -320,7 +320,7 @@ describe('Agent Push', () => {
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await getPubSubRedis().publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -345,7 +345,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
   });
 
   test('Ping -- Successful ping to hostname', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -386,7 +386,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await getPubSubRedis().publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -411,7 +411,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Ping -- Error', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -452,7 +452,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await getPubSubRedis().publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -475,7 +475,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Prefer: respond-async', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
@@ -517,7 +517,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await getPubSubRedis().publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -616,7 +616,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck parameter', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     const res = await request(app)
@@ -643,7 +643,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck=first parameter', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     const res = await request(app)
@@ -670,7 +670,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit without returnAck parameter does not include it in request', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const publishSpy = jest.spyOn(redis, 'publish');
 
     const res = await request(app)

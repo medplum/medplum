@@ -9,7 +9,7 @@ import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
 import { createTestProject, deleteRedisKeys, initTestAuth } from './test.setup';
 
@@ -289,7 +289,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), testRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 
