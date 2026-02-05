@@ -1772,6 +1772,63 @@ describe('OAuth2 Token', () => {
     expect(res2.body.encounter).toBeDefined();
   });
 
+  test.each([
+    {
+      fieldName: 'patient',
+      resourceType: 'Patient',
+      externalId: '0e4af968e733693405e943e1',
+      identifierSystem: 'https://healthgorilla.com/patient-id',
+      responseField: 'patient',
+    },
+    {
+      fieldName: 'encounter',
+      resourceType: 'Encounter',
+      externalId: 'VISIT-12345',
+      identifierSystem: 'https://example.com/visit-id',
+      responseField: 'encounter',
+    },
+  ])(
+    'Smart App Launch with $fieldName identifier returns identifier value',
+    async ({ fieldName, resourceType, externalId, identifierSystem, responseField }) => {
+      const fhirId = randomUUID();
+
+      // Create a SmartAppLaunch with both reference and identifier
+      const launch = await withTestContext(() =>
+        systemRepo.createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          [fieldName]: {
+            reference: `${resourceType}/${fhirId}`,
+            identifier: {
+              system: identifierSystem,
+              value: externalId,
+            },
+          },
+        })
+      );
+
+      const res = await request(app).post('/auth/login').type('json').send({
+        clientId: client.id,
+        launch: launch.id,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res.status).toBe(200);
+
+      const res2 = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: 'authorization_code',
+        code: res.body.code,
+        client_id: client.id,
+        client_secret: client.secret,
+        code_verifier: 'xyz',
+      });
+      expect(res2.status).toBe(200);
+      // When identifier is present, it should be returned instead of the FHIR resource ID
+      expect(res2.body[responseField]).toBe(externalId);
+    }
+  );
+
   test('IP address allow', async () => {
     const res = await request(app).post('/auth/login').set('X-Forwarded-For', '5.5.5.5').type('json').send({
       clientId: client.id,

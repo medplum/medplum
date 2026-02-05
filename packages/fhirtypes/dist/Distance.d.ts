@@ -5,7 +5,7 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * A length - a value with a unit that is a physical distance.

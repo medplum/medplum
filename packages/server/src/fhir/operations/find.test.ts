@@ -100,7 +100,9 @@ describe('Schedule/:id/$find', () => {
       if (serviceType !== wildcard) {
         extension.extension.push({
           url: 'serviceType',
-          valueCoding: { code: serviceType, system: 'http://example.com' },
+          valueCodeableConcept: {
+            coding: [{ code: serviceType, system: 'http://example.com' }],
+          },
         });
       }
 

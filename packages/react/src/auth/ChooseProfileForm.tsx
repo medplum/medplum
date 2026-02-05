@@ -34,7 +34,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
 
   function handleValueSelect(membershipId: string): void {
     medplum
-      .post('auth/profile', {
+      .post<LoginAuthenticationResponse>('auth/profile', {
         login: props.login,
         profile: membershipId,
       })

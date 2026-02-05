@@ -78,7 +78,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
         {vaccine.occurrenceDateTime && (
           <Text c="gray.6">
             <IconCalendar size={16} style={{ marginRight: 4 }} />
-            <time dateTime={vaccine.occurrenceDateTime}>{formatDate(vaccine.occurrenceDateTime as string)}</time>
+            <time dateTime={vaccine.occurrenceDateTime}>{formatDate(vaccine.occurrenceDateTime)}</time>
           </Text>
         )}
       </div>

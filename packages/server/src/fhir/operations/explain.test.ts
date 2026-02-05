@@ -48,6 +48,45 @@ describe('$explain', () => {
     );
   });
 
+  test('Returns count when count parameter is true', async () => {
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'query', valueString: 'Patient?active=true' },
+          { name: 'count', valueBoolean: true },
+        ],
+      } satisfies Parameters);
+
+    expect(res.status).toBe(200);
+    const output = res.body.parameter as ParametersParameter[];
+    expect(output).toContainEqual(expect.objectContaining({ name: 'countEstimate', valueInteger: expect.any(Number) }));
+    expect(output).toContainEqual(expect.objectContaining({ name: 'countAccurate', valueInteger: expect.any(Number) }));
+  });
+
+  test('Does not return count when count parameter is omitted', async () => {
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+    const res = await request(app)
+      .post('/fhir/R4/$explain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'query', valueString: 'Patient?active=true' }],
+      } satisfies Parameters);
+
+    expect(res.status).toBe(200);
+    const output = res.body.parameter as ParametersParameter[];
+    expect(output.find((p) => p.name === 'countEstimate')).toBeUndefined();
+    expect(output.find((p) => p.name === 'countAccurate')).toBeUndefined();
+  });
+
   test('Respects On-Behalf-Of', async () => {
     const { project: linkedProject } = await createTestProject({ withClient: true });
     const { membership, project } = await createTestProject({

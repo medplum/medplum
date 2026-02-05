@@ -76,13 +76,13 @@ export function ColumnStatistics(): JSX.Element {
     });
 
     medplum
-      .post('fhir/R4/$db-configure-column-statistics', {
+      .post<Parameters>('fhir/R4/$db-configure-column-statistics', {
         tableName: table,
         columnNames: selectedRowNames,
         resetToDefault,
         newStatisticsTarget: resetToDefault ? undefined : newStatisticsTarget,
       })
-      .then((_res: Parameters) => {
+      .then((_res) => {
         showNotification({ color: 'green', message: 'Done' });
         setRefreshTable((prev) => prev + 1);
       })

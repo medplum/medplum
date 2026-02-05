@@ -2,12 +2,27 @@
 
 The Medplum Healthie Importer is a tool that synchronizes patient data from the Healthie EMR into Medplum.
 
-Currently we support importing the following data:
+## Features
 
-- Patient Demographics (`Patient`)
-- Medication History (`MedicationRequest`)
-- Allergy Information (`AllergyIntolerance`)
-- Questionnaire Responses (`QuestionnaireResponse`)
+- **Patient Demographics** (`Patient`)
+- **Medication History** (`MedicationRequest`)
+- **Allergy Information** (`AllergyIntolerance`)
+- **Questionnaire Responses** (`QuestionnaireResponse`)
+
+### Robustness Features
+
+- **Cursor Pagination**: All data fetching (patients, medications, allergies, form responses) uses cursor-based pagination to handle large datasets reliably
+- **Retry Logic**: Automatic retry with exponential backoff for transient errors (429 rate limits, 5xx server errors, network failures)
+- **Clinical Activity Tracking**: Optional tracking of most recent clinical updates across all resource types
+
+## Bots
+
+This package includes two bots:
+
+| Bot | Identifier | Purpose |
+|-----|------------|---------|
+| **Import Patients** | `medplum-healthie-importer/import-healthie-patients` | Imports patient data and clinical resources from Healthie |
+| **List Patients** | `medplum-healthie-importer/list-healthie-patients` | Lists Healthie patient IDs with filtering and pagination |
 
 ## Prerequisites
 
@@ -137,6 +152,136 @@ The importer includes comprehensive error handling and logging:
 - **Detailed batch results**: Logs any failed resource updates with specific error details
 - **Progress tracking**: Console logs show import progress for each patient and resource type
 - **Graceful failures**: Missing or invalid data is handled without stopping the entire import
+
+## List Patients Bot
+
+The list patients bot allows you to query Healthie for patient IDs with filtering and pagination support.
+
+### Basic Usage
+
+```
+POST <MedplumBaseUrl>/Bot/$execute?identifier=medplum-healthie-importer/list-healthie-patients
+```
+
+### Advanced Usage with Parameters
+
+```json
+POST <MedplumBaseUrl>/Bot/$execute?identifier=medplum-healthie-importer/list-healthie-patients
+Content-Type: application/json
+
+{
+  "filters": {
+    "sinceLastUpdated": "2024-01-01T00:00:00Z",
+    "name": "john",
+    "dateOfBirth": "1990-01-15"
+  },
+  "pagination": {
+    "page": 0,
+    "pageSize": 100
+  },
+  "maxResults": 500,
+  "includeDemographics": true,
+  "includeClinicalUpdateDates": true
+}
+```
+
+### Input Parameters
+
+| Parameter | Type | Description | Optional |
+|-----------|------|-------------|----------|
+| `filters.sinceLastUpdated` | string | ISO 8601 date - filter patients updated since this date | Yes |
+| `filters.name` | string | Partial match on first or last name | Yes |
+| `filters.dateOfBirth` | string | Filter by date of birth (YYYY-MM-DD) | Yes |
+| `pagination.page` | number | 0-indexed page number (default: 0) | Yes |
+| `pagination.pageSize` | number | Results per page (default: 100) | Yes |
+| `maxResults` | number | Cap on total results returned | Yes |
+| `includeDemographics` | boolean | Include name, DOB in response | Yes |
+| `includeClinicalUpdateDates` | boolean | Include latest clinical activity date (see below) | Yes |
+
+### Clinical Activity Tracking
+
+When `includeClinicalUpdateDates` is `true`, the bot fetches the most recent update date from each patient's clinical resources (medications, allergies, form responses) and returns the maximum as `latestClinicalUpdate`.
+
+**Important**: When this flag is enabled and `sinceLastUpdated` is specified, filtering is based on clinical activity dates rather than patient record dates. This allows you to find patients with recent clinical activity.
+
+**Note**: This is an expensive operation as it requires 3 additional API calls per patient (one for each clinical resource type).
+
+### Output Format
+
+```json
+{
+  "patients": [
+    {
+      "id": "123",
+      "updatedAt": "2024-01-15T10:30:00Z",
+      "demographics": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "dateOfBirth": "1990-01-15"
+      },
+      "latestClinicalUpdate": "2024-01-20T14:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 0,
+    "pageSize": 100,
+    "totalPages": 5,
+    "totalCount": 450,
+    "hasNextPage": true
+  }
+}
+```
+
+### Example Workflows
+
+#### Get all patients updated in the last 24 hours
+
+```json
+{
+  "filters": {
+    "sinceLastUpdated": "2024-01-14T00:00:00Z"
+  }
+}
+```
+
+#### Find patients with recent clinical activity
+
+```json
+{
+  "filters": {
+    "sinceLastUpdated": "2024-01-01T00:00:00Z"
+  },
+  "includeClinicalUpdateDates": true
+}
+```
+
+#### Paginate through all patients
+
+```json
+{
+  "pagination": {
+    "page": 0,
+    "pageSize": 100
+  },
+  "includeDemographics": true
+}
+```
+
+## API Resilience
+
+The Healthie client includes automatic retry logic for transient failures:
+
+- **Rate Limits**: Healthie returns rate limits as GraphQL errors with code `TOO_MANY_REQUESTS` (not HTTP 429). These are automatically retried with exponential backoff.
+- **HTTP Rate Limits (429)**: Also handled, respects `Retry-After` header if present
+- **Server Errors (500, 502, 503, 504)**: Retries with exponential backoff
+- **Network Errors**: Retries connection failures
+- **Other GraphQL Errors**: Not retried (considered application-level errors)
+
+Default retry configuration:
+- Max retries: 3
+- Base delay: 1000ms
+- Max delay: 30000ms
+- Jitter: ±25% randomization
 
 ## Support
 

@@ -431,6 +431,11 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+export interface SetIdentifierOptions {
+  /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
+  use?: Identifier['use'];
+}
+
 /**
  * Sets a resource identifier for the given system.
  *
@@ -445,20 +450,31 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param resource - The resource to add the identifier to.
  * @param system - The identifier system.
  * @param value - The identifier value.
+ * @param options - Optional attributes to set
  */
-export function setIdentifier(resource: Resource & { identifier?: Identifier[] }, system: string, value: string): void {
+export function setIdentifier(
+  resource: Resource & { identifier?: Identifier[] },
+  system: string,
+  value: string,
+  options?: SetIdentifierOptions
+): void {
+  const identifier: Identifier = { system, value };
+  if (options?.use) {
+    identifier.use = options.use;
+  }
+
   const identifiers = resource.identifier;
   if (!identifiers) {
-    resource.identifier = [{ system, value }];
+    resource.identifier = [identifier];
     return;
   }
-  for (const identifier of identifiers) {
-    if (identifier.system === system) {
-      identifier.value = value;
+  for (const existingIdentifier of identifiers) {
+    if (existingIdentifier.system === system) {
+      Object.assign(existingIdentifier, identifier);
       return;
     }
   }
-  identifiers.push({ system, value });
+  identifiers.push(identifier);
 }
 
 /**
@@ -1512,9 +1528,11 @@ export function escapeHtml(unsafe: string): string {
  * @param value - The value to refine
  * @returns boolean
  *
- * Example usage:
- *   const arr: Array<number | undefined> = [1,undefined];
- *   const refined: Array<number> = arr.filter(isDefined);
+ * @example
+ * ```typescript
+ * const arr: Array<number | undefined> = [1,undefined];
+ * const refined: Array<number> = arr.filter(isDefined);
+ * ```
  */
 export function isDefined<T>(value: T | undefined | null): value is T {
   return value !== undefined && value !== null;

@@ -1,56 +1,204 @@
 ---
-sidebar_position: 2
+sidebar_position: 23
 ---
 
-# AI Operation ($ai)
+# Parameters $ai
 
-The `$ai` operation is a specialized FHIR operation that allows you to interface with Large Language Models (LLMs) while maintaining clinical context. It supports conversational interactions and can suggest FHIR-based actions through function calling.
+The `$ai` operation provides an interface for calling AI language models (like OpenAI's GPT) through Medplum. This operation supports both standard request/response and streaming modes.
 
-## Purpose
+## Use Cases
 
-Use the `$ai` operation to build natural language interfaces into your application, such as:
+- **Clinical Decision Support**: Get AI assistance for clinical questions
+- **Documentation Assistance**: Help generate clinical notes and summaries
+- **Patient Education**: Create patient-friendly explanations of medical concepts
+- **Data Analysis**: Analyze and summarize patient data with AI assistance
 
-- Searching for patients using natural language.
-- Drafting clinical notes or `Communication` resources.
-- Suggesting structured resource updates based on chat.
+## Prerequisites
 
-## Request Signature
+The AI feature must be enabled for your project. Contact your Medplum administrator or ensure `ai` is included in your project's features list.
 
-**Endpoint:** `POST [baseUrl]/fhir/R4/$ai`
+## Invoke the `$ai` operation
 
-**Resource Type:** `Parameters`
+```
+[base]/Parameters/$ai
+```
 
-### Core Input Parameters
+For example:
 
-| Parameter  | Type     | Required | Description                                     |
-| ---------- | -------- | -------- | ----------------------------------------------- |
-| `messages` | `string` | Yes      | Stringified JSON array of conversation history. |
-| `model`    | `string` | Yes      | The specific model ID (e.g., `gpt-4`).          |
-| `apiKey`   | `string` | Yes      | Your OpenAI API key.                            |
-| `tools`    | `string` | No       | Definitions for FHIR function calling.          |
+```bash
+curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "messages",
+        "valueString": "[{\"role\": \"user\", \"content\": \"What is FHIR?\"}]"
+      },
+      {
+        "name": "apiKey",
+        "valueString": "sk-your-openai-api-key"
+      },
+      {
+        "name": "model",
+        "valueString": "gpt-4"
+      }
+    ]
+  }'
+```
 
-## Quick Example
+## Parameters
+
+| Name       | Type     | Description                                                    | Required |
+| ---------- | -------- | -------------------------------------------------------------- | -------- |
+| `messages` | `string` | JSON string containing the conversation messages array         | Yes      |
+| `apiKey`   | `string` | OpenAI API key                                                 | Yes      |
+| `model`    | `string` | OpenAI model to use (e.g., `gpt-4`, `gpt-3.5-turbo`)           | Yes      |
+| `tools`    | `string` | JSON string containing the tools array for function calling    | No       |
+
+### Messages Format
+
+The `messages` parameter should be a JSON-encoded array of message objects following the OpenAI chat format:
+
+```json
+[
+  {"role": "system", "content": "You are a helpful healthcare assistant."},
+  {"role": "user", "content": "What is the normal range for blood pressure?"}
+]
+```
+
+### Tools Format (Function Calling)
+
+The `tools` parameter enables function calling capabilities:
+
+```json
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_patient_vitals",
+      "description": "Retrieve patient vital signs",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "patient_id": {
+            "type": "string",
+            "description": "The patient's ID"
+          }
+        },
+        "required": ["patient_id"]
+      }
+    }
+  }
+]
+```
+
+## Output
+
+| Name         | Type     | Description                               |
+| ------------ | -------- | ----------------------------------------- |
+| `content`    | `string` | The AI response content                   |
+| `tool_calls` | `string` | JSON string containing tool calls array   |
+
+### Example Response
 
 ```json
 {
   "resourceType": "Parameters",
   "parameter": [
     {
-      "name": "messages",
-      "valueString": "[{\"role\":\"user\",\"content\":\"Find patient Alice\"}]"
-    },
-    { "name": "model", "valueString": "gpt-4" },
-    { "name": "apiKey", "valueString": "sk-..." }
+      "name": "content",
+      "valueString": "FHIR (Fast Healthcare Interoperability Resources) is a standard for exchanging healthcare information electronically..."
+    }
   ]
 }
 ```
 
-## Response
+### Response with Tool Calls
 
-The operation returns a `Parameters` resource containing a `content` string (the AI's text response) and an optional `tool_calls` string containing suggested FHIR operations.
+```json
+{
+  "resourceType": "Parameters",
+  "parameter": [
+    {
+      "name": "tool_calls",
+      "valueString": "[{\"id\": \"call_abc123\", \"type\": \"function\", \"function\": {\"name\": \"get_patient_vitals\", \"arguments\": {\"patient_id\": \"patient-123\"}}}]"
+    }
+  ]
+}
+```
 
-> **Note:** The server suggests actions but does not execute them. The client application is responsible for validating and performing any suggested FHIR writes.
+## Streaming Mode
 
-## Links
+The operation supports Server-Sent Events (SSE) streaming for real-time responses. To enable streaming, set the `Accept` header to `text/event-stream`:
 
-[Read the full implementation guide](/docs/ai/ai-operation)
+```bash
+curl -X POST 'https://api.medplum.com/fhir/R4/Parameters/$ai' \
+  -H "Content-Type: application/fhir+json" \
+  -H "Accept: text/event-stream" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '...'
+```
+
+Streaming responses arrive as SSE events:
+
+```
+data: {"content": "FHIR "}
+data: {"content": "(Fast "}
+data: {"content": "Healthcare "}
+data: {"content": "Interoperability "}
+data: {"content": "Resources) "}
+data: [DONE]
+```
+
+:::note
+Tool calls are not supported in streaming mode.
+:::
+
+## Error Responses
+
+### Feature Not Enabled
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "forbidden",
+      "details": {
+        "text": "Forbidden"
+      }
+    }
+  ]
+}
+```
+
+### Invalid Messages Format
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "invalid",
+      "details": {
+        "text": "Messages must be an array"
+      }
+    }
+  ]
+}
+```
+
+## Security Considerations
+
+- The API key is sent with each request - ensure you're using HTTPS
+- Consider using server-side bots to proxy AI calls and protect your API key
+- Review AI responses before using them in clinical settings
+
+## Related Documentation
+
+- [Medplum AI Documentation](/docs/ai) - Overview of AI capabilities in Medplum
+- [Bots](/docs/bots) - Create server-side automation with AI capabilities

@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
 
 /**
  * A relationship of two Quantity values - expressed as a numerator and a
