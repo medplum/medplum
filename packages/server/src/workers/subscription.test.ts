@@ -40,7 +40,7 @@ import { Repository, getSystemRepo } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -2055,7 +2055,7 @@ describe('Subscription Worker', () => {
     let rejectNotExpected: ((err: Error) => void) | undefined;
 
     beforeAll(async () => {
-      subscriber = getRedisSubscriber();
+      subscriber = getPubSubRedisSubscriber();
       subscriber.on('message', (_channel, argsArr) => {
         const parsedArgsArr = JSON.parse(argsArr) as [Resource, string, SubEventsOptions][];
         if (resolveExpected) {
@@ -2517,7 +2517,7 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getRedis();
+        const redis = getCacheRedis();
         const criteria = await redis.hget(
           `medplum:subscriptions:r4:project:${wsProject.id}:active:v2`,
           `Subscription/${subscription.id}`

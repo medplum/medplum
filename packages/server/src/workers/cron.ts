@@ -9,9 +9,8 @@ import { isValidCron } from 'cron-validator';
 import { executeBot } from '../bots/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
-import { findProjectMembership, queueRegistry } from './utils';
+import { findProjectMembership, getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -31,7 +30,7 @@ const queueName = 'CronQueue';
 
 export const initCronWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<CronJobData>(queueName, {

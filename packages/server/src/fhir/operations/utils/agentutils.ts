@@ -20,7 +20,7 @@ import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
-import { getRedis, getRedisSubscriber } from '../../../redis';
+import { getPubSubRedis, getPubSubRedisSubscriber } from '../../../redis';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
 
@@ -176,7 +176,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
     // If a callback doesn't already exist on the message, tie callback to the associated agent and assign a random ID
     message.callback = getReferenceString(agent) + '-' + randomUUID();
 
-    const redisSubscriber = getRedisSubscriber();
+    const redisSubscriber = getPubSubRedisSubscriber();
     await redisSubscriber.subscribe(message.callback);
 
     const resultPromise = new Promise<[OperationOutcome, T | AgentError]>((resolve, reject) => {
@@ -245,5 +245,5 @@ function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessa
   agent: WithId<Agent>,
   message: T
 ): Promise<number> {
-  return getRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  return getPubSubRedis().publish(getReferenceString(agent), JSON.stringify(message));
 }
