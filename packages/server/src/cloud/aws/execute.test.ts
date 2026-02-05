@@ -300,6 +300,72 @@ describe('Execute', () => {
     expect(res.text).toStrictEqual('input');
   });
 
+  describe('Non-streaming multi-line response parsing', () => {
+    test('Streaming-compatible response with 2xx status', async () => {
+      const encoder = new TextEncoder();
+      const headersLine = JSON.stringify({ statusCode: 200, headers: { 'Content-Type': 'text/plain' } });
+      const bodyLine = JSON.stringify('hello from lambda');
+      const payload = headersLine + '\n' + bodyLine;
+
+      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+        LogResult:
+          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        Payload: encoder.encode(payload),
+      }));
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.text).toBe('hello from lambda');
+    });
+
+    test('Streaming-compatible response with non-2xx status', async () => {
+      const encoder = new TextEncoder();
+      const headersLine = JSON.stringify({ statusCode: 400, headers: { 'Content-Type': 'application/json' } });
+      const bodyLine = JSON.stringify({ error: 'bad request' });
+      const payload = headersLine + '\n' + bodyLine;
+
+      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+        LogResult:
+          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        Payload: encoder.encode(payload),
+      }));
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(400);
+    });
+
+    test('Multi-line response where first line is valid JSON but not streaming headers', async () => {
+      const encoder = new TextEncoder();
+      // First line is valid JSON but missing statusCode/headers
+      const firstLine = JSON.stringify({ someOtherField: true });
+      const secondLine = JSON.stringify('second line');
+      const payload = firstLine + '\n' + secondLine;
+
+      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
+        LogResult:
+          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        Payload: encoder.encode(payload),
+      }));
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      // First line doesn't have statusCode/headers, so returnValueLine is never set
+      // returnValue will be undefined, success remains true
+      expect(res.status).toBe(200);
+    });
+  });
+
   describe('Accept: text/event-stream (SSE streaming)', () => {
     test('Streaming execution with chunks', async () => {
       const res = await request(app)
