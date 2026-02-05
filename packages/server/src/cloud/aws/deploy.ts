@@ -54,7 +54,7 @@ const WRAPPER_CODE = `
     createPdf,
   });
   medplum.setAccessToken(accessToken);
-  console.log('streaming', streaming);
+  
   let botResponseStream = undefined;
   if (streaming) {
     botResponseStream = new BotResponseStream(responseStream);
@@ -73,19 +73,31 @@ const WRAPPER_CODE = `
       writeResponse(responseStream, 200, result);
     }
   } catch (err) {
+    let errorResponse;
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
-    } else if (typeof err === "object") {
-      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
-    } else {
-      console.log("Unhandled error: " + err);
-    }
-    if (!streaming || !botResponseStream.streamStarted) {
-      const errorResponse = {
+      errorResponse = {
         errorType: err.constructor?.name || "Error",
         errorMessage: err.message,
-        trace: err.stack ? err.stack.split("\\n") : []
+        stack: err.stack ? err.stack.split("\\n") : []
       };
+    } else if (typeof err === "object") {
+      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
+      errorResponse = {
+        errorType: "Error",
+        errorMessage: JSON.stringify(err),
+        stack: []
+      };
+    } else {
+      console.log("Unhandled error: " + err);
+      errorResponse = {
+        errorType: "Error",
+        errorMessage: String(err),
+        stack: []
+      };
+    }
+    console.error("Invoke Error", JSON.stringify(errorResponse));
+    if (!streaming || !botResponseStream.streamStarted) {
       writeResponse(responseStream, 500, errorResponse);
     }
   }
