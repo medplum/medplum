@@ -66,14 +66,7 @@ mkdir medplum-k8s-deployment
 cd medplum-k8s-deployment
 ```
 
-### 2. Clone Medplum Repository
-
-```bash
-git clone https://github.com/medplum/medplum.git
-cd medplum/charts
-```
-
-### 3. Deploy Medplum with Fission
+### 2. Deploy Medplum with Fission
 
 ```bash
 # Deploy everything (including Fission)
@@ -92,7 +85,7 @@ The script will:
 8. Create a default Node.js environment in Fission
 9. Provide configuration details for Medplum
 
-### 4. Verify Deployment
+### 3. Verify Deployment
 
 ```bash
 # Check deployment status
@@ -127,19 +120,20 @@ Fission is a Kubernetes-native serverless framework that enables you to run Medp
 
 ### Working with Fission
 
-````bash
+```bash
 # List available environments
 fission env list
 
 # List deployed functions
 fission fn list
+```
 
 ## 🔧 Management Commands
 
-| Command | Purpose |
-|---------|---------|
-| `./deploy-local.sh` | Deploy Medplum with Fission |
-| `./status-local.sh` | Check deployment status |
+| Command              | Purpose                                         |
+| -------------------- | ----------------------------------------------- |
+| `./deploy-local.sh`  | Deploy Medplum with Fission                     |
+| `./status-local.sh`  | Check deployment status                         |
 | `./cleanup-local.sh` | Remove everything (with option to keep Fission) |
 
 ### Kubernetes Commands
@@ -162,7 +156,7 @@ kubectl rollout restart deployment/medplum -n medplum
 
 # Scale deployments
 kubectl scale deployment medplum --replicas=2 -n medplum
-````
+```
 
 ## 🧪 Testing Your Deployment
 
@@ -304,8 +298,7 @@ This deployment uses:
 
 ```bash
 # Pull latest chart
-cd medplum/charts
-git pull
+helm repo update
 
 # Upgrade deployment
 helm upgrade medplum . -n medplum -f values-local.yaml

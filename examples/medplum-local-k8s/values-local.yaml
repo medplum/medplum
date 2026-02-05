@@ -3,68 +3,47 @@ global:
   storageClass: 'hostpath'
   cloudProvider: 'local'
 
+config:
+  server:
+    port: 8103
+    baseUrl: 'http://localhost:8103/'
+    appBaseUrl: 'http://localhost:3000/'
+    binaryStorage: 'file:./binary/'
+    storageBaseUrl: 'http://localhost:8103/storage/'
+    signingKeyId: ''
+    signingKey: ''
+    signingKeyPassphrase: ''
+    supportEmail: '"Medplum" <support@medplum.com>'
+    googleClientId: '397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com'
+    googleClientSecret: ''
+    recaptchaSiteKey: '6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq'
+    recaptchaSecretKey: '6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL'
+    vmContextBotsEnabled: true
+    defaultBotRuntimeVersion: 'vmcontext'
+    allowedOrigins: '*'
+    introspectionEnabled: true
+  database:
+    host: 'postgres' # Use "postgres" to refer to the kubernetes service
+    port: 5432
+    dbname: 'medplum'
+    username: 'medplum'
+    password: 'medplum'
+  redis:
+    host: 'redis' # Use "redis" to refer to the kubernetes service
+    port: 6379
+    password: 'medplum'
+  fission:
+    namespace: 'default'
+    routerHost: 'router.fission.svc.cluster.local'
+    routerPort: 80
+    environmentName: 'nodejs'
+    fieldManager: 'medplum-fission-example'
+
 serviceAccount:
   annotations: {}
 
 deployment:
-  env:
-    # Server configuration
-    - name: MEDPLUM_PORT
-      value: '8103'
-    - name: MEDPLUM_BASE_URL
-      value: 'http://localhost:8103/'
-    - name: MEDPLUM_APP_BASE_URL
-      value: 'http://localhost:3000/'
-    - name: MEDPLUM_STORAGE_BASE_URL
-      value: 'http://localhost:8103/storage/'
-
-    # Database configuration
-    - name: MEDPLUM_DATABASE_HOST
-      value: 'postgres'
-    - name: MEDPLUM_DATABASE_PORT
-      value: '5432'
-    - name: MEDPLUM_DATABASE_DBNAME
-      value: 'medplum'
-    - name: MEDPLUM_DATABASE_USERNAME
-      value: 'medplum'
-    - name: MEDPLUM_DATABASE_PASSWORD
-      value: 'medplum'
-
-    # Redis configuration
-    - name: MEDPLUM_REDIS_HOST
-      value: 'redis'
-    - name: MEDPLUM_REDIS_PORT
-      value: '6379'
-    - name: MEDPLUM_REDIS_PASSWORD
-      value: 'medplum'
-
-    # Storage (demo values for local dev)
-    - name: MEDPLUM_BINARY_STORAGE
-      value: 'file:/tmp/medplum-files/'
-
-    # Basic settings
-    - name: MEDPLUM_SUPPORT_EMAIL
-      value: '"Demo" <demo@example.com>'
-    - name: MEDPLUM_ALLOWED_ORIGINS
-      value: '*'
-    - name: MEDPLUM_INTROSPECTION_ENABLED
-      value: 'true'
-    - name: MEDPLUM_RECAPTCHA_SITE_KEY
-      value: '6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq'
-    - name: MEDPLUM_RECAPTCHA_SECRET_KEY
-      value: '6LfHdsYdAAAAAH9dN154jbJ3zpQife3xaiTvPChL'
-    - name: MEDPLUM_PRE_COMMIT_SUBSCRIPTIONS_ENABLED
-      value: 'true'
-    - name: MEDPLUM_FISSION_NAMESPACE
-      value: 'default'
-    - name: MEDPLUM_FISSION_ROUTER_HOST
-      value: 'router.fission.svc.cluster.local'
-    - name: MEDPLUM_FISSION_ROUTER_PORT
-      value: '80'
-    - name: MEDPLUM_FISSION_ENVIRONMENT_NAME
-      value: 'nodejs'
-    - name: MEDPLUM_FISSION_FIELD_MANAGER
-      value: 'medplum-fission-example'
+  env: {}
 
 # Expose service automatically via LoadBalancer
 service:

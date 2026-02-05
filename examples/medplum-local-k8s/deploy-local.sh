@@ -12,14 +12,12 @@ fi
 
 # Step 1: Create namespace
 echo "📦 Creating namespace..."
-kubectl create namespace medplum --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace medplum -n default
 
 # Step 2: Install Fission (following Medplum's recommended approach)
 echo "⚡ Installing Fission..."
 # Check if Fission is already installed
 if ! kubectl get namespace fission >/dev/null 2>&1; then
-    echo "   Installing Fission following Medplum's recommended approach..."
-
     # Define the namespace for Fission
     export FISSION_NAMESPACE="fission"
 
@@ -102,7 +100,9 @@ fi
 
 # Step 8: Deploy Medplum server
 echo "🏥 Deploying Medplum server..."
-helm install medplum ../../charts -n medplum -f ./values-local.yaml
+helm repo add medplum https://charts.medplum.com
+helm repo update
+helm install medplum medplum/medplum -n medplum -f ./values-local.yaml
 
 # Step 9: Wait for Medplum server to be ready
 echo "⏳ Waiting for Medplum server to be ready..."

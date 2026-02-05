@@ -1,7 +1,7 @@
 apiVersion: v2
 name: medplum
 description: |
-  Helm chart for deploying Medplum Server - an open source healthcare development platform.
+  Medplum is an open source healthcare development platform.
   Provides FHIR server, auth, workflows, and APIs for building healthcare applications.
 type: application
 version: 5.0.14
