@@ -39,7 +39,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
             ...patient,
             identifier: identifier,
           };
-        } 
+        }
       }
 
       // Find encounter identifier system configuration
@@ -53,7 +53,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
             ...encounter,
             identifier: identifier,
           };
-        } 
+        }
       }
     }
 
