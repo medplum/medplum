@@ -43,8 +43,8 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     traceId,
     headers,
     streaming: !!request.responseStream,
-  };
-  console.log('request.responseStream', !!request.responseStream);
+  }; 
+
   if (request.responseStream) {
     return runInLambdaStreaming(client, name, payload, request.responseStream);
   }
@@ -70,7 +70,7 @@ async function runInLambdaNonStreaming(
   try {
     const response = await client.send(command);
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
-    console.log('responseStr', responseStr);
+
     // Need to support two different response types:
     // 1. Legacy lambdas that return one response
     // 2. Streaming-compatible lambdas that return { statusCode, headers, body } for HTTP compatibility
@@ -126,7 +126,6 @@ async function runInLambdaStreaming(
 
   try {
     const response = await client.send(command);
-    console.log('response', response);
     if (!response.EventStream) {
       return { success: false, logResult: 'No event stream in response' };
     }
@@ -152,7 +151,6 @@ async function processEventStream(
   for await (const event of eventStream) {
     if (event.PayloadChunk?.Payload) {
       const chunk = decoder.decode(event.PayloadChunk.Payload);
-      console.log('chunk', chunk);
       if (!headersParsed) {
         const result = processStreamingHeaders(buffer + chunk, responseStream);
         if (result.error) {
