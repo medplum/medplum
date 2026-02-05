@@ -207,7 +207,7 @@ Before finalizing your identity architecture, ensure you can answer these questi
 
 Identity management doesn't have to be complicated. The key is understanding your requirements before jumping into implementation.
 
-Start with the simplest approach that meets your needs. Token Exchange with an external IDP covers the vast majority of healthcare use cases while maintaining flexibility for future requirements.
+Start with the simplest approach that meets your needs. Three-legged OAuth with an external IDP is the recommended starting point for most healthcare applications. If you later need to access services beyond Medplum, you can adopt token exchange at that point.
 
 ---
 
