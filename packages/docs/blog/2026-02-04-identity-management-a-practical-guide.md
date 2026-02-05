@@ -10,6 +10,8 @@ Healthcare applications require careful decisions about user authentication and 
 
 This guide breaks down the key decisions you'll face when integrating with a FHIR-based platform like Medplum, explains the tradeoffs, and recommends approaches that work well for most healthcare organizations.
 
+<!-- truncate -->
+
 ## The Basics: Authentication vs. Authorization
 
 Before diving into architectural decisions, let's clarify two terms that often get confused:
