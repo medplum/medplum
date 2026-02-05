@@ -200,6 +200,14 @@ describe('Auth middleware', () => {
     expect(res.status).toBe(401);
   });
 
+  test('Basic auth with inactive project membership', async () => {
+    const client = await createTestClient({ membership: { active: false } });
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
   test('Basic auth with super admin client', async () => {
     const { client } = await createTestProject({ superAdmin: true, withClient: true });
     const res = await request(app)

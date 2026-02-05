@@ -972,7 +972,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
   }
 
   const membership = await getClientApplicationMembership(client);
-  if (!membership) {
+  if (!membership || membership.active === false) {
     return undefined;
   }
 
