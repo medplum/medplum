@@ -22,7 +22,7 @@ Before diving into architectural decisions, let's clarify two terms that often g
 
 In healthcare, both are critical. You need to know that Dr. Smith is actually Dr. Smith (authentication), and you need to ensure Dr. Smith can only access records for patients in her practice (authorization).
 
-## Decision 1: Choosing a Unique User Identifier
+## Decision 1: Using Email Address Logins vs. External Identity Provider (IDP)
 
 The first fundamental decision is how to uniquely identify users in your system. You have two primary options:
 
@@ -33,7 +33,7 @@ Using email as the unique identifier is simple and intuitive. Users log in with 
 **Advantages:**
 - Familiar to users
 - Works with multiple login methods (Google, Microsoft, Okta)
-- No additional configuration needed
+- No additional services needed
 
 **Disadvantages:**
 - Email addresses change (marriage, company rebranding, job changes)
@@ -42,29 +42,28 @@ Using email as the unique identifier is simple and intuitive. Users log in with 
 
 ### Option B: External ID (e.g., Okta User ID)
 
-Instead of email, you can use a stable identifier from your identity provider — like an Okta User ID or Azure AD Object ID.
+Instead of email, you can use a stable identifier from your identity provider — like an [Okta User ID](https://developer.okta.com/docs/api/openapi/okta-management/management/tag/User/) or [Azure AD Object ID](https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0).
 
 **Advantages:**
 - The ID never changes, regardless of email updates
-- More robust for long-term account management
-- Eliminates the "email changed" problem entirely
+- More robust for long-term identity management
+- More flexible for multi-provider scenarios
 
 **Disadvantages:**
-- Users are locked to a single login method
-- Requires more upfront configuration
-- Less flexible for multi-provider scenarios
+- Users are locked to a single identity provider
+- Requires more upfront configuration by admins
 
 ### Recommendation
 
 The right choice depends on your organization's size and existing infrastructure.
 
-**For smaller organizations** without an existing identity provider, email-based identification is perfectly sufficient. It's simpler to set up, requires no additional infrastructure, and the occasional email change can be handled manually without significant overhead.
+**For smaller organizations** without an existing identity provider, email-based identification is perfectly sufficient. It's simpler to set up, requires no additional infrastructure, and the occasional email change can be handled manually without significant overhead. Medplum supports [multi-factor authentication (MFA)](https://www.medplum.com/docs/auth/mfa), which is required for many regulated scenarios.
 
 **For enterprise customers** with existing IDP infrastructure (Okta, Azure AD, etc.), a hybrid approach works best:
 
 - **Use external IDs for your organization's internal staff** (the team building and operating the platform). These users have employer-managed identities through your corporate IDP, and stability matters more than flexibility. When an employee's email changes from `jsmith@yourcompany.com` to `jane.smith@yourcompany.com`, their account should continue working seamlessly with your existing SSO.
 
-- **Use email for your customers and their users** (clinicians at clinics using your EMR, patients, etc.). This provides flexibility because different customer organizations may use different identity providers - or none at all. Email-based identification allows Medplum to dynamically route users to the appropriate IDP based on their email domain. For example, `user@clinic-a.com` routes to Clinic A's Okta instance, while `user@clinic-b.com` routes to Clinic B's Azure AD.
+- **Use email for patients and domain-level routing to IDPs for partners** (clinicians or administrators at clinics using your EMR, etc.). This provides flexibility because different customer organizations may use different identity providers - or none at all. Email-based identification allows Medplum to dynamically route users to the appropriate IDP based on their email domain. For example, `user@clinic-a.com` routes to Clinic A's Okta instance, while `user@clinic-b.com` routes to Clinic B's Azure AD.
 
 This hybrid approach lets you maintain tight SSO integration for your own team while giving customers the flexibility to use whatever identity infrastructure they have.
 
