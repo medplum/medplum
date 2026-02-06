@@ -50,7 +50,7 @@ describe('Redis', () => {
 
   describe('reconnectOnError', () => {
     test('Returns 2 for READONLY error', () => {
-      expect(reconnectOnError(new Error('READONLY You can\'t write against a read only replica'))).toBe(2);
+      expect(reconnectOnError(new Error("READONLY You can't write against a read only replica"))).toBe(2);
     });
 
     test('Returns 2 for LOADING error', () => {
