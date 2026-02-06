@@ -135,13 +135,14 @@ describe('Config', () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_CACHE_REDIS_HOST', 'cache-redis.example.com');
     setEnv('MEDPLUM_CACHE_REDIS_PORT', '6380');
+    setEnv('MEDPLUM_CACHE_REDIS_DB', '2');
     setEnv('MEDPLUM_CACHE_REDIS_PASSWORD', 'cache-secret');
 
     const config = await loadConfig('env');
     expect(config.cacheRedis).toBeDefined();
     expect(config.cacheRedis?.host).toStrictEqual('cache-redis.example.com');
-    // port is recognized as integer because 'port' is in integerKeys
     expect(config.cacheRedis?.port).toStrictEqual(6380);
+    expect(config.cacheRedis?.db).toStrictEqual(2);
     expect(config.cacheRedis?.password).toStrictEqual('cache-secret');
   });
 
@@ -171,12 +172,13 @@ describe('Config', () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_BACKGROUND_JOBS_REDIS_HOST', 'jobs-redis.example.com');
     setEnv('MEDPLUM_BACKGROUND_JOBS_REDIS_PORT', '6383');
+    setEnv('MEDPLUM_BACKGROUND_JOBS_REDIS_DB', '3');
 
     const config = await loadConfig('env');
     expect(config.backgroundJobsRedis).toBeDefined();
     expect(config.backgroundJobsRedis?.host).toStrictEqual('jobs-redis.example.com');
-    // port is recognized as integer because 'port' is in integerKeys
     expect(config.backgroundJobsRedis?.port).toStrictEqual(6383);
+    expect(config.backgroundJobsRedis?.db).toStrictEqual(3);
   });
 
   test('Env config bullmq prefix', async () => {
@@ -185,8 +187,7 @@ describe('Config', () => {
 
     const config = await loadConfig('env');
     expect(config.bullmq).toBeDefined();
-    // 'concurrency' is not in top-level integerKeys (only 'bullmq.concurrency'), so it stays as string
-    expect(config.bullmq?.concurrency).toStrictEqual('10');
+    expect(config.bullmq?.concurrency).toStrictEqual(10);
   });
 
   test('Env config fission prefix', async () => {
@@ -199,8 +200,7 @@ describe('Config', () => {
     expect(config.fission).toBeDefined();
     expect(config.fission?.namespace).toStrictEqual('medplum');
     expect(config.fission?.routerHost).toStrictEqual('fission-router.example.com');
-    // 'routerPort' is not in top-level integerKeys (only 'fission.routerPort'), so it stays as string
-    expect(config.fission?.routerPort).toStrictEqual('8888');
+    expect(config.fission?.routerPort).toStrictEqual(8888);
   });
 
   test('Env config redis prefix does not capture cacheRedis', async () => {
@@ -220,10 +220,8 @@ describe('Config', () => {
     setEnv('MEDPLUM_DATABASE_MAX_CONNECTIONS', '50');
 
     const config = await loadConfig('env');
-    // 'port' is in top-level integerKeys so it's parsed as int
     expect(config.database.port).toStrictEqual(5433);
-    // 'maxConnections' is not in top-level integerKeys (only 'database.maxConnections'), so it stays as string
-    expect(config.database.maxConnections).toStrictEqual('50');
+    expect(config.database.maxConnections).toStrictEqual(50);
   });
 
   test('Env config database boolean keys', async () => {
@@ -232,9 +230,8 @@ describe('Config', () => {
     setEnv('MEDPLUM_DATABASE_DISABLE_CONNECTION_CONFIGURATION', 'false');
 
     const config = await loadConfig('env');
-    // 'runMigrations' is not in top-level booleanKeys (only 'database.runMigrations'), so it stays as string
-    expect(config.database.runMigrations).toStrictEqual('true');
-    expect(config.database.disableConnectionConfiguration).toStrictEqual('false');
+    expect(config.database.runMigrations).toBe(true);
+    expect(config.database.disableConnectionConfiguration).toBe(false);
   });
 
   test('Env config object values', async () => {
@@ -254,11 +251,9 @@ describe('Config', () => {
 
     const config = await loadConfig('env');
     expect(config.redis.host).toStrictEqual('redis.example.com');
-    // 'port' is in top-level integerKeys so it's parsed as int
     expect(config.redis.port).toStrictEqual(6379);
     expect(config.redis.password).toStrictEqual('secret');
-    // 'db' is not in top-level integerKeys (only 'redis.db'), so it stays as string
-    expect(config.redis.db).toStrictEqual('5');
+    expect(config.redis.db).toStrictEqual(5);
   });
 
   test('Env config smtp with all fields', async () => {
