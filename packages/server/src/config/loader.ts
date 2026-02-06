@@ -112,31 +112,31 @@ function loadEnvConfig(): MedplumServerConfig {
 
     if (key.startsWith('DATABASE_')) {
       key = key.substring('DATABASE_'.length);
-      currConfig = config.database = config.database ?? {};
+      currConfig = config.database ??= {};
     } else if (key.startsWith('CACHE_REDIS_')) {
       key = key.substring('CACHE_REDIS_'.length);
-      currConfig = config.cacheRedis = config.cacheRedis ?? {};
+      currConfig = config.cacheRedis ??= {};
     } else if (key.startsWith('RATE_LIMIT_REDIS_')) {
       key = key.substring('RATE_LIMIT_REDIS_'.length);
-      currConfig = config.rateLimitRedis = config.rateLimitRedis ?? {};
+      currConfig = config.rateLimitRedis ??= {};
     } else if (key.startsWith('PUBSUB_REDIS_')) {
       key = key.substring('PUBSUB_REDIS_'.length);
-      currConfig = config.pubsubRedis = config.pubsubRedis ?? {};
+      currConfig = config.pubsubRedis ??= {};
     } else if (key.startsWith('BACKGROUND_JOBS_REDIS_')) {
       key = key.substring('BACKGROUND_JOBS_REDIS_'.length);
-      currConfig = config.backgroundJobsRedis = config.backgroundJobsRedis ?? {};
+      currConfig = config.backgroundJobsRedis ??= {};
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
-      currConfig = config.redis = config.redis ?? {};
+      currConfig = config.redis ??= {};
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
-      currConfig = config.smtp = config.smtp ?? {};
+      currConfig = config.smtp ??= {};
     } else if (key.startsWith('BULLMQ_')) {
       key = key.substring('BULLMQ_'.length);
-      currConfig = config.bullmq = config.bullmq ?? {};
+      currConfig = config.bullmq ??= {};
     } else if (key.startsWith('FISSION_')) {
       key = key.substring('FISSION_'.length);
-      currConfig = config.fission = config.fission ?? {};
+      currConfig = config.fission ??= {};
     }
 
     // Convert key from CAPITAL_CASE to camelCase
