@@ -17,13 +17,13 @@ const redisInstances: {
   cache: RedisInstance;
   rateLimit: RedisInstance;
   pubsub: RedisInstance & { subscribers: Set<Redis> };
-  bullmq: RedisInstance;
+  backgroundJobs: RedisInstance;
   default: RedisInstance;
 } = {
   cache: { redis: undefined },
   rateLimit: { redis: undefined },
   pubsub: { redis: undefined, subscribers: new Set() },
-  bullmq: { redis: undefined },
+  backgroundJobs: { redis: undefined },
   default: { redis: undefined },
 };
 
@@ -64,9 +64,9 @@ export function initRedis(config: MedplumServerConfig): void {
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }
-  if (config.bullmqRedis) {
-    redisInstances.bullmq.redis = new Redis({
-      ...config.bullmqRedis,
+  if (config.backgroundJobsRedis) {
+    redisInstances.backgroundJobs.redis = new Redis({
+      ...config.backgroundJobsRedis,
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }

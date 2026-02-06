@@ -418,7 +418,7 @@ describe('Infra', () => {
       cacheRedis: { nodeType: 'cache.r6g.large' },
       rateLimitRedis: { nodeType: 'cache.t3.small' },
       pubsubRedis: {},
-      bullmqRedis: { securityGroupId: 'sg-1234' },
+      backgroundJobsRedis: { securityGroupId: 'sg-1234' },
     });
 
     await expect(main({ config: filename })).resolves.not.toThrow();

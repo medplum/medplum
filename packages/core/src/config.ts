@@ -75,7 +75,7 @@ export interface MedplumSourceInfraConfig {
     engine?: ValueOrExternalSecret<string>;
     engineVersion?: ValueOrExternalSecret<string>;
   };
-  bullmqRedis?: {
+  backgroundJobsRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
     engine?: ValueOrExternalSecret<string>;
@@ -204,7 +204,7 @@ export interface MedplumInfraConfig {
     engine?: string;
     engineVersion?: string;
   };
-  bullmqRedis?: {
+  backgroundJobsRedis?: {
     nodeType?: string;
     securityGroupId?: string;
     engine?: string;

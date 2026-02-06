@@ -136,8 +136,8 @@ const integerKeys = new Set([
   'rateLimitRedis.port',
   'pubsubRedis.db',
   'pubsubRedis.port',
-  'bullmqRedis.db',
-  'bullmqRedis.port',
+  'backgroundJobsRedis.db',
+  'backgroundJobsRedis.port',
 
   'smtp.port',
 

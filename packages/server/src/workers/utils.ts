@@ -266,5 +266,5 @@ export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<n
 }
 
 export function getBullmqRedisConnectionOptions(config: MedplumServerConfig): ConnectionOptions {
-  return { ...(config.bullmqRedis ?? config.redis), reconnectOnError };
+  return { ...(config.backgroundJobsRedis ?? config.redis), reconnectOnError };
 }

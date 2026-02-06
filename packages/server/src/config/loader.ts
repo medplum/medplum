@@ -122,9 +122,9 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('PUBSUB_REDIS_')) {
       key = key.substring('PUBSUB_REDIS_'.length);
       currConfig = config.pubsubRedis = config.pubsubRedis ?? {};
-    } else if (key.startsWith('BULLMQ_REDIS_')) {
-      key = key.substring('BULLMQ_REDIS_'.length);
-      currConfig = config.bullmqRedis = config.bullmqRedis ?? {};
+    } else if (key.startsWith('BACKGROUND_JOBS_REDIS_')) {
+      key = key.substring('BACKGROUND_JOBS_REDIS_'.length);
+      currConfig = config.backgroundJobsRedis = config.backgroundJobsRedis ?? {};
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
       currConfig = config.redis = config.redis ?? {};

@@ -267,7 +267,7 @@ export class BackEnd extends Construct {
       { key: 'cacheRedis' as const, id: 'CacheRedis' },
       { key: 'rateLimitRedis' as const, id: 'RateLimitRedis' },
       { key: 'pubsubRedis' as const, id: 'PubSubRedis' },
-      { key: 'bullmqRedis' as const, id: 'BullmqRedis' },
+      { key: 'backgroundJobsRedis' as const, id: 'BackgroundJobsRedis' },
     ];
 
     const purposeRedisClusters: {
