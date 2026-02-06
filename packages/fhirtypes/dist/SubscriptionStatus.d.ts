@@ -5,13 +5,13 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
-import { Subscription } from './Subscription';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Subscription } from './Subscription.d.ts';
 
 /**
  * The SubscriptionStatus resource describes the state of a Subscription

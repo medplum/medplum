@@ -5,19 +5,19 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { ContactPoint } from './ContactPoint';
-import { Device } from './Device';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { OperationOutcome } from './OperationOutcome';
-import { Organization } from './Organization';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { OperationOutcome } from './OperationOutcome.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * The header for a message exchange that is either requesting or

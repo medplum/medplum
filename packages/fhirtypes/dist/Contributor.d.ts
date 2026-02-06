@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { ContactDetail } from './ContactDetail';
-import { Extension } from './Extension';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * A contributor to the content of a knowledge asset, including authors,

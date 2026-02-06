@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { useMedplum } from '@medplum/react';
-import type { Identifier, Communication, Resource, Bundle } from '@medplum/fhirtypes';
-import { getReferenceString } from '@medplum/core';
+import type { Identifier, Communication, Resource, Bundle, ResourceType } from '@medplum/fhirtypes';
+import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
+import type { MedplumClient } from '@medplum/core';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
 
@@ -18,6 +19,11 @@ const resourceSummaryBotId: Identifier = {
 
 const resourceSummaryBotSseId: Identifier = {
   value: 'ai-resource-summary-sse',
+  system: 'https://www.medplum.com/bots',
+};
+
+const componentGeneratorBotSseId: Identifier = {
+  value: 'ai-component-generator-sse',
   system: 'https://www.medplum.com/bots',
 };
 
@@ -76,6 +82,65 @@ function extractResourceRefs(result: Resource | Bundle): string[] {
   return refs;
 }
 
+export class StreamingCodeExtractor {
+  private buffer = '';
+  private code = '';
+  private inCodeBlock = false;
+
+  process(chunk: string): void {
+    this.buffer += chunk;
+
+    while (true) {
+      if (!this.inCodeBlock) {
+        const startMatch = this.buffer.match(/```(?:jsx|tsx|javascript|js)?\s*\n/);
+        if (startMatch?.index !== undefined) {
+          this.inCodeBlock = true;
+          this.buffer = this.buffer.slice(startMatch.index + startMatch[0].length);
+        } else {
+          break;
+        }
+      }
+
+      if (this.inCodeBlock) {
+        const endIndex = this.buffer.indexOf('```');
+        if (endIndex !== -1) {
+          this.code += this.buffer.slice(0, endIndex);
+          this.buffer = this.buffer.slice(endIndex + 3);
+          this.inCodeBlock = false;
+        } else {
+          // Keep last 3 chars in buffer in case ``` spans chunks
+          const safeLength = Math.max(0, this.buffer.length - 3);
+          this.code += this.buffer.slice(0, safeLength);
+          this.buffer = this.buffer.slice(safeLength);
+          break;
+        }
+      }
+    }
+  }
+
+  getCode(): string | undefined {
+    const trimmed = this.code.trim();
+    return trimmed || undefined;
+  }
+}
+
+export async function collectFhirData(medplum: MedplumClient, refs: string[]): Promise<Resource[]> {
+  const results = await Promise.all(
+    refs.map(async (ref) => {
+      try {
+        const [resourceType, id] = ref.split('/');
+        return await medplum.readResource(resourceType as ResourceType, id);
+      } catch (error) {
+        if (!(error instanceof OperationOutcomeError && isNotFound(error.outcome))) {
+          console.error(`Failed to fetch ${ref}:`, error);
+        }
+        return undefined;
+      }
+    })
+  );
+  return results.filter((resource) => resource !== undefined);
+}
+
 export async function executeToolCalls(
   medplum: ReturnType<typeof useMedplum>,
   toolCalls: ToolCall[],
@@ -116,6 +181,14 @@ export async function executeToolCalls(
         };
         messages.push(toolErrorMessage);
       }
+    } else if (toolCall.function.name === 'set_visualization') {
+      // Acknowledge visualization tool call (handled separately via visualize flag)
+      const toolMessage: Message = {
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: JSON.stringify({ acknowledged: true }),
+      };
+      messages.push(toolMessage);
     } else {
       // Handle unrecognized tool calls - OpenAI requires a response for every tool_call_id
       const toolErrorMessage: Message = {
@@ -138,7 +211,7 @@ export async function sendToBot(
   botId: Identifier,
   messages: Message[],
   model: string
-): Promise<{ content?: string; toolCalls?: ToolCall[] }> {
+): Promise<{ content?: string; toolCalls?: ToolCall[]; visualize?: boolean }> {
   const response = await medplum.executeBot(botId, {
     resourceType: 'Parameters',
     parameter: [
@@ -150,8 +223,14 @@ export async function sendToBot(
   const content = response.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString;
   const toolCallsStr = response.parameter?.find((p: { name: string }) => p.name === 'tool_calls')?.valueString;
   const toolCalls = toolCallsStr ? JSON.parse(toolCallsStr) : undefined;
+  const visualize = response.parameter?.find((p: { name: string }) => p.name === 'visualize')?.valueBoolean;
 
-  return { content, toolCalls };
+  return { content, toolCalls, visualize };
+}
+
+export interface StreamingResult {
+  content: string;
+  code?: string;
 }
 
 export async function sendToBotStreaming(
@@ -159,15 +238,14 @@ export async function sendToBotStreaming(
   botId: Identifier,
   messages: Message[],
   model: string,
-  onChunk: (chunk: string) => void
-): Promise<string> {
-  // Find the bot by identifier
-  const bot = await medplum.searchOne('Bot', { identifier: `${botId.system}|${botId.value}` });
-  if (!bot?.id) {
-    throw new Error(`Bot not found: ${botId.value}`);
-  }
+  onChunk: (chunk: string) => void,
+  additionalParams?: { name: string; valueString: string }[]
+): Promise<StreamingResult> {
+  const baseUrl = medplum.fhirUrl('Bot', '$execute').toString();
+  const url = `${baseUrl}?identifier=${encodeURIComponent(`${botId.system}|${botId.value}`)}`;
+  const codeExtractor = new StreamingCodeExtractor();
 
-  const response = await fetch(medplum.fhirUrl('Bot', bot.id, '$execute').toString(), {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${medplum.getAccessToken()}`,
@@ -179,6 +257,7 @@ export async function sendToBotStreaming(
       parameter: [
         { name: 'messages', valueString: JSON.stringify(messages) },
         { name: 'model', valueString: model },
+        ...(additionalParams || []),
       ],
     }),
   });
@@ -194,12 +273,12 @@ export async function sendToBotStreaming(
   // Handle non-streaming (buffered) JSON response
   if (!isStreaming) {
     const data = await response.json();
-    // Handle FHIR Parameters response format
     const content = data.parameter?.find((p: { name: string }) => p.name === 'content')?.valueString || '';
     if (content) {
       onChunk(content);
+      codeExtractor.process(content);
     }
-    return content;
+    return { content, code: codeExtractor.getCode() };
   }
 
   // Handle streaming SSE response
@@ -237,6 +316,7 @@ export async function sendToBotStreaming(
           const chunk = parsed.content || parsed.choices?.[0]?.delta?.content;
           if (chunk) {
             fullContent += chunk;
+            codeExtractor.process(chunk);
             onChunk(chunk);
           }
         } catch {
@@ -246,7 +326,7 @@ export async function sendToBotStreaming(
     }
   }
 
-  return fullContent;
+  return { content: fullContent, code: codeExtractor.getCode() };
 }
 
 export interface ProcessMessageParams {
@@ -334,15 +414,55 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       }
     }
 
+    if (initialResponse.visualize && allResourceRefs.length > 0) {
+      const fhirData = await collectFhirData(medplum, allResourceRefs);
+
+      let componentCode: string | undefined;
+      if (onStreamChunk) {
+        const result = await sendToBotStreaming(
+          medplum,
+          componentGeneratorBotSseId,
+          currentMessages,
+          selectedModel,
+          onStreamChunk,
+          [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
+        );
+        content = result.content;
+        componentCode = result.code;
+      } else {
+        const componentResponse = await sendToBot(medplum, componentGeneratorBotSseId, currentMessages, selectedModel);
+        content = componentResponse.content;
+      }
+
+      const uniqueRefs = [...new Set(allResourceRefs)];
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: content || 'I received your message but was unable to generate a response. Please try again.',
+        resources: uniqueRefs,
+        componentCode,
+      };
+
+      if (activeTopicId) {
+        await saveMessage(medplum, activeTopicId, assistantMessage, currentMessages.length);
+      }
+
+      return {
+        activeTopicId,
+        assistantMessage,
+        updatedMessages: [...currentMessages, assistantMessage],
+      };
+    }
+
     // Get summary response after tool execution (streaming if callback provided)
     if (onStreamChunk) {
-      content = await sendToBotStreaming(
+      const result = await sendToBotStreaming(
         medplum,
         resourceSummaryBotSseId,
         currentMessages,
         selectedModel,
         onStreamChunk
       );
+      content = result.content;
     } else {
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;

@@ -5,8 +5,8 @@
  * Do not edit manually.
  */
 
-import { ContactPoint } from './ContactPoint';
-import { Extension } from './Extension';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Extension } from './Extension.d.ts';
 
 /**
  * Specifies contact information for a person or organization.
