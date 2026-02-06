@@ -1,16 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, sleep } from '@medplum/core';
+import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
 import type { MedplumServerConfig } from './config/types';
 import { getLogger } from './logger';
 
-let defaultRedis: Redis | undefined = undefined;
-let cacheRedisInstance: Redis | undefined = undefined;
-let rateLimitRedisInstance: Redis | undefined = undefined;
-let pubsubRedisInstance: Redis | undefined = undefined;
-let bullmqRedisInstance: Redis | undefined = undefined;
-let pubsubSubscribers: Set<Redis> | undefined = undefined;
+/*
+ * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
+ * which can cause the global instance to fail to shutdown gracefully later on.
+ */
+export type RedisWithoutDuplicate = Redis & { duplicate: never };
+
+type RedisInstance = { redis: RedisWithoutDuplicate | undefined };
+
+const redisInstances: {
+  cache: RedisInstance;
+  rateLimit: RedisInstance;
+  pubsub: RedisInstance & { subscribers: Set<Redis> };
+  bullmq: RedisInstance;
+  default: RedisInstance;
+} = {
+  cache: { redis: undefined },
+  rateLimit: { redis: undefined },
+  pubsub: { redis: undefined, subscribers: new Set() },
+  bullmq: { redis: undefined },
+  default: { redis: undefined },
+};
 
 const transientErrorTypes = /READONLY|LOADING/;
 export function reconnectOnError(err: Error): boolean | 1 | 2 {
@@ -26,34 +41,34 @@ export function reconnectOnError(err: Error): boolean | 1 | 2 {
 }
 
 export function initRedis(config: MedplumServerConfig): void {
-  defaultRedis = new Redis({
+  redisInstances.default.redis = new Redis({
     ...config.redis,
     reconnectOnError,
-  });
+  }) as RedisWithoutDuplicate;
 
   if (config.cacheRedis) {
-    cacheRedisInstance = new Redis({
+    redisInstances.cache.redis = new Redis({
       ...config.cacheRedis,
       reconnectOnError,
-    });
+    }) as RedisWithoutDuplicate;
   }
   if (config.rateLimitRedis) {
-    rateLimitRedisInstance = new Redis({
+    redisInstances.rateLimit.redis = new Redis({
       ...config.rateLimitRedis,
       reconnectOnError,
-    });
+    }) as RedisWithoutDuplicate;
   }
   if (config.pubsubRedis) {
-    pubsubRedisInstance = new Redis({
+    redisInstances.pubsub.redis = new Redis({
       ...config.pubsubRedis,
       reconnectOnError,
-    });
+    }) as RedisWithoutDuplicate;
   }
   if (config.bullmqRedis) {
-    bullmqRedisInstance = new Redis({
+    redisInstances.bullmq.redis = new Redis({
       ...config.bullmqRedis,
       reconnectOnError,
-    });
+    }) as RedisWithoutDuplicate;
   }
 }
 
@@ -61,28 +76,26 @@ let closing = false;
 export async function closeRedis(): Promise<void> {
   try {
     closing = true;
-    // Disconnect pub/sub subscribers
-    const tmpPubsubSubscribers = pubsubSubscribers;
-    pubsubSubscribers = undefined;
-    for (const subscriber of tmpPubsubSubscribers ?? EMPTY) {
-      subscriber.disconnect();
-    }
 
-    // Close purpose-specific instances first
-    const purposeInstances = [cacheRedisInstance, rateLimitRedisInstance, pubsubRedisInstance, bullmqRedisInstance];
-    cacheRedisInstance = undefined;
-    rateLimitRedisInstance = undefined;
-    pubsubRedisInstance = undefined;
-    for (const instance of purposeInstances) {
-      if (instance) {
-        await instance.quit();
+    // Disconnect pub/sub subscribers
+    for (const subscriber of redisInstances.pubsub.subscribers) {
+      subscriber.disconnect();
+      redisInstances.pubsub.subscribers.delete(subscriber);
+    }
+    redisInstances.pubsub.subscribers.clear();
+
+    let quitAny = false;
+    let key: keyof typeof redisInstances;
+    // eslint-disable-next-line guard-for-in
+    for (key in redisInstances) {
+      const redis = redisInstances[key].redis;
+      if (redis) {
+        redisInstances[key].redis = undefined;
+        await redis.quit();
+        quitAny = true;
       }
     }
-
-    if (defaultRedis) {
-      const tmpRedis = defaultRedis;
-      defaultRedis = undefined;
-      await tmpRedis.quit();
+    if (quitAny) {
       await sleep(100);
     }
   } finally {
@@ -90,24 +103,15 @@ export async function closeRedis(): Promise<void> {
   }
 }
 
-export type RedisWithoutDuplicate = Redis & { duplicate: never };
-/**
- * Gets the default `Redis` instance.
- *
- * The `duplicate` method is intentionally omitted to prevent accidental calling of `Redis.quit`
- * which can cause the global instance to fail to shutdown gracefully later on.
- *
- * Instead {@link getPubSubRedisSubscriber} should be called to obtain a `Redis` instance for use as a subscriber-mode client.
- *
- * @returns The default `Redis` instance.
- */
-function getRedis(): RedisWithoutDuplicate {
-  if (!defaultRedis) {
-    throw new Error('Redis not initialized');
+function getRedisInstance(label: keyof typeof redisInstances): RedisWithoutDuplicate {
+  if (closing) {
+    throw new Error('Redis is closing, cannot get cache Redis');
   }
-  // @ts-expect-error We don't want anyone to call `duplicate on the redis global instance
-  // This is because we want to gracefully `quit` and duplicated Redis instances will
-  return defaultRedis;
+  const instance = redisInstances[label].redis ?? redisInstances.default.redis;
+  if (!instance) {
+    throw new Error(`Redis instance for ${label} not initialized`);
+  }
+  return instance;
 }
 
 /**
@@ -117,12 +121,7 @@ function getRedis(): RedisWithoutDuplicate {
  * @returns The cache `Redis` instance.
  */
 export function getCacheRedis(): RedisWithoutDuplicate {
-  const instance = cacheRedisInstance ?? defaultRedis;
-  if (!instance) {
-    throw new Error('Redis not initialized');
-  }
-  // @ts-expect-error See getRedis
-  return instance;
+  return getRedisInstance('cache');
 }
 
 /**
@@ -132,12 +131,7 @@ export function getCacheRedis(): RedisWithoutDuplicate {
  * @returns The rate limit `Redis` instance.
  */
 export function getRateLimitRedis(): RedisWithoutDuplicate {
-  const instance = rateLimitRedisInstance ?? defaultRedis;
-  if (!instance) {
-    throw new Error('Redis not initialized');
-  }
-  // @ts-expect-error See getRedis
-  return instance;
+  return getRedisInstance('rateLimit');
 }
 
 /**
@@ -147,12 +141,7 @@ export function getRateLimitRedis(): RedisWithoutDuplicate {
  * @returns The pub/sub `Redis` instance.
  */
 export function getPubSubRedis(): RedisWithoutDuplicate {
-  const instance = pubsubRedisInstance ?? defaultRedis;
-  if (!instance) {
-    throw new Error('Redis not initialized');
-  }
-  // @ts-expect-error See getRedis
-  return instance;
+  return getRedisInstance('pubsub');
 }
 
 /**
@@ -163,31 +152,31 @@ export function getPubSubRedis(): RedisWithoutDuplicate {
  *
  * @returns A `Redis` instance to use as a subscriber client.
  */
-export function getPubSubRedisSubscriber(): Redis & { quit: never } {
+export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: never } {
   if (closing) {
     throw new Error('Redis is closing, cannot create subscriber');
   }
 
-  const sourceInstance = pubsubRedisInstance ?? defaultRedis;
+  const sourceInstance = redisInstances.pubsub.redis ?? redisInstances.default.redis;
   if (!sourceInstance) {
     throw new Error('Redis not initialized');
   }
-  const subscriber = sourceInstance.duplicate();
-  pubsubSubscribers ??= new Set();
-  pubsubSubscribers.add(subscriber);
+  const subscriber = (sourceInstance as Redis).duplicate();
+  redisInstances.pubsub.subscribers ??= new Set();
+  redisInstances.pubsub.subscribers.add(subscriber);
 
   subscriber.on('end', () => {
-    pubsubSubscribers?.delete(subscriber);
+    redisInstances.pubsub.subscribers?.delete(subscriber);
   });
 
-  return subscriber as Redis & { quit: never };
+  return subscriber as RedisWithoutDuplicate & { quit: never };
 }
 
 /**
  * @returns The amount of active `Redis` subscriber instances.
  */
 export function getPubSubRedisSubscriberCount(): number {
-  return pubsubSubscribers?.size ?? 0;
+  return redisInstances.pubsub.subscribers?.size ?? 0;
 }
 
 /**
@@ -197,22 +186,15 @@ export function getPubSubRedisSubscriberCount(): number {
  *
  * @returns An array of `{ label, instance }` for each active Redis instance.
  */
-export function getAllRedisInstances(): { label: string; instance: RedisWithoutDuplicate }[] {
-  const results: { label: string; instance: RedisWithoutDuplicate }[] = [];
-  if (defaultRedis) {
-    results.push({ label: 'default', instance: getRedis() });
-  }
-  if (cacheRedisInstance) {
-    results.push({ label: 'cache', instance: cacheRedisInstance as RedisWithoutDuplicate });
-  }
-  if (rateLimitRedisInstance) {
-    results.push({ label: 'rateLimit', instance: rateLimitRedisInstance as RedisWithoutDuplicate });
-  }
-  if (pubsubRedisInstance) {
-    results.push({ label: 'pubsub', instance: pubsubRedisInstance as RedisWithoutDuplicate });
-  }
-  if (bullmqRedisInstance) {
-    results.push({ label: 'bullmq', instance: bullmqRedisInstance as RedisWithoutDuplicate });
+export function getAllRedisInstances(): { label: keyof typeof redisInstances; instance: RedisWithoutDuplicate }[] {
+  const results: { label: keyof typeof redisInstances; instance: RedisWithoutDuplicate }[] = [];
+  let label: keyof typeof redisInstances;
+  // eslint-disable-next-line guard-for-in
+  for (label in redisInstances) {
+    const instance = redisInstances[label].redis;
+    if (instance) {
+      results.push({ label, instance });
+    }
   }
   return results;
 }
