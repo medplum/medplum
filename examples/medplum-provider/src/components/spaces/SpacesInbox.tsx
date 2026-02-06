@@ -1,13 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Box, ScrollArea, Group, ActionIcon, CloseButton, Avatar, ThemeIcon } from '@mantine/core';
+import { Stack, Text, Box, ScrollArea, Group, ActionIcon, CloseButton, Avatar, ThemeIcon, Button } from '@mantine/core';
 import type { JSX } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum, useResource } from '@medplum/react';
-import { IconRobot, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand, IconPlus } from '@tabler/icons-react';
+import {
+  IconRobot,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
+  IconPlus,
+  IconCode,
+} from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
+import { ComponentPreview } from './ComponentPreview';
 import type { Message } from '../../types/spaces';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { processMessage } from '../../utils/spaceMessaging';
@@ -39,8 +46,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedResource, setSelectedResource] = useState<string | undefined>();
   const [streamingContent, setStreamingContent] = useState<string | undefined>();
+  const [componentPreview, setComponentPreview] = useState<{ code: string } | undefined>();
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
+  const loadVersionRef = useRef(0);
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -49,18 +58,27 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       if (isSendingRef.current) {
         return;
       }
+      loadVersionRef.current++;
+      const myVersion = loadVersionRef.current;
       const loadTopic = async (): Promise<void> => {
         try {
           setLoading(true);
           const loadedMessages = await loadConversationMessages(medplum, topicId);
+          // Check if this load is stale (a newer load or send has started)
+          if (myVersion !== loadVersionRef.current) {
+            return;
+          }
           setMessages([...loadedMessages]);
           setCurrentTopicId(topicId);
           setHasStarted(true);
           setSelectedResource(undefined);
+          setComponentPreview(undefined);
         } catch (error) {
           showErrorNotification(error);
         } finally {
-          setLoading(false);
+          if (myVersion === loadVersionRef.current) {
+            setLoading(false);
+          }
         }
       };
       loadTopic().catch(showErrorNotification);
@@ -69,6 +87,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       setHasStarted(false);
       setCurrentTopicId(undefined);
       setSelectedResource(undefined);
+      setComponentPreview(undefined);
     }
   }, [topic, medplum]);
 
@@ -98,17 +117,25 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   }, [loading, hasStarted]);
 
   const handleSelectTopic = async (selectedTopicId: string): Promise<void> => {
+    loadVersionRef.current++;
+    const myVersion = loadVersionRef.current;
     try {
       setLoading(true);
       const loadedMessages = await loadConversationMessages(medplum, selectedTopicId);
+      if (myVersion !== loadVersionRef.current) {
+        return;
+      }
       setMessages([...loadedMessages]);
       setCurrentTopicId(selectedTopicId);
       setHasStarted(true);
       setSelectedResource(undefined);
+      setComponentPreview(undefined);
     } catch (error) {
       showErrorNotification(error);
     } finally {
-      setLoading(false);
+      if (myVersion === loadVersionRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -130,6 +157,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setStreamingContent(undefined);
     setLoading(true);
     isSendingRef.current = true;
+    loadVersionRef.current++;
 
     try {
       const result = await processMessage({
@@ -166,6 +194,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       e.preventDefault();
       handleSend().catch((error) => showErrorNotification(error));
     }
+  };
+
+  const handleViewComponent = (code: string): void => {
+    setSelectedResource(undefined);
+    setComponentPreview({ code });
   };
 
   const visibleMessages = messages.filter(
@@ -249,9 +282,31 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     {message.resources && message.resources.length > 0 && (
                       <Stack gap="xs" mt="sm" w={300} ml={message.role === 'assistant' ? 0 : 'auto'}>
                         {message.resources.map((resourceRef, idx) => (
-                          <ResourceBox key={idx} resourceReference={resourceRef} onClick={setSelectedResource} />
+                          <ResourceBox
+                            key={idx}
+                            resourceReference={resourceRef}
+                            onClick={(ref) => {
+                              setComponentPreview(undefined);
+                              setSelectedResource(ref);
+                            }}
+                          />
                         ))}
                       </Stack>
+                    )}
+                    {message.componentCode && (
+                      <Button
+                        variant="light"
+                        size="xs"
+                        leftSection={<IconCode size={14} />}
+                        mt="sm"
+                        onClick={() => {
+                          if (message.componentCode) {
+                            handleViewComponent(message.componentCode);
+                          }
+                        }}
+                      >
+                        View Component
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -308,6 +363,21 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           </div>
           <ScrollArea style={{ flex: 1 }} p="md">
             <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
+          </ScrollArea>
+        </div>
+      )}
+
+      {/* Component Preview Panel */}
+      {componentPreview && (
+        <div className={classes.resourcePanel}>
+          <div className={classes.resourceHeader}>
+            <Text fw={600} size="sm">
+              Component Preview
+            </Text>
+            <CloseButton onClick={() => setComponentPreview(undefined)} />
+          </div>
+          <ScrollArea style={{ flex: 1 }} p="md">
+            <ComponentPreview code={componentPreview.code} />
           </ScrollArea>
         </div>
       )}

@@ -623,8 +623,10 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
 
   if (login.launch) {
     const launch = await systemRepo.readReference(login.launch);
-    patient = resolveId(launch.patient);
-    encounter = resolveId(launch.encounter);
+    // Prefer identifier.value if present (for SMART apps that need a specific external identifier),
+    // otherwise fall back to the FHIR resource ID
+    patient = launch.patient?.identifier?.value ?? resolveId(launch.patient);
+    encounter = launch.encounter?.identifier?.value ?? resolveId(launch.encounter);
   }
 
   if (membership.profile?.reference?.startsWith('Patient/')) {
