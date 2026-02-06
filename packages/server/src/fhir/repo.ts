@@ -913,13 +913,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (!project) {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
-      // Check that the criteria is valid by attempting to parse it
-      // So we only cache subscriptions with a parsable criteria
-      try {
-        parseSearchRequest(resource.criteria);
-      } catch (_err) {
-        throw new OperationOutcomeError(badRequest(`Invalid Subscription criteria: ${resource.criteria}`));
-      }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       // We added v2 to the key because historically this was a Redis Set and then we had to migrate the key to a Redis Hash which would conflict
       await redis.hset(

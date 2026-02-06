@@ -2499,26 +2499,6 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
-    test('Invalid criteria rejected on WebSocket subscription creation', () =>
-      withTestContext(async () => {
-        const { repo: wsSubRepo } = await createTestProject({
-          project: { name: 'WebSocket Subs Invalid Criteria Project', features: ['websocket-subscriptions'] },
-          withRepo: true,
-        });
-
-        await expect(
-          wsSubRepo.createResource<Subscription>({
-            resourceType: 'Subscription',
-            reason: 'test',
-            status: 'active',
-            criteria: '???invalid!!!',
-            channel: {
-              type: 'websocket',
-            },
-          })
-        ).rejects.toThrow('Invalid Subscription criteria');
-      }));
-
     test('Criteria stored in Redis hash alongside subscription reference', () =>
       withTestContext(async () => {
         const { repo: wsSubRepo, project: wsProject } = await createTestProject({
