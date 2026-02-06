@@ -308,8 +308,7 @@ describe('Execute', () => {
       const payload = headersLine + '\n' + bodyLine;
 
       mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult:
-          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
         Payload: encoder.encode(payload),
       }));
 
@@ -329,8 +328,7 @@ describe('Execute', () => {
       const payload = headersLine + '\n' + bodyLine;
 
       mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult:
-          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
         Payload: encoder.encode(payload),
       }));
 
@@ -350,8 +348,7 @@ describe('Execute', () => {
       const payload = firstLine + '\n' + secondLine;
 
       mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult:
-          'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
+        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
         Payload: encoder.encode(payload),
       }));
 
