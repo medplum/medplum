@@ -108,7 +108,7 @@ A significant documentation effort this month improved coverage across the Provi
 
 <img src="https://github.com/finnbergquist.png" alt="Finn Bergquist" width="50" height="50" style={{borderRadius: '50%'}} /> **[Finn Bergquist](https://github.com/finnbergquist)**
 
-- **Revamped multi-tenancy documentation** ([multi-tenancy identity providers](/docs/auth/methods/domain-level-identity-provider))
+- **Revamped multi-tenancy documentation** ([multi-tenancy identity providers](/docs/auth/domain-level-identity-providers))
 - **Scheduling docs**: availability time zones, `$find` beta status, `SchedulingParameters` duration param ([scheduling docs](/docs/scheduling))
 - **DoseSpot enrollment documentation**: how to enroll users with the Enroll Prescriber Bot ([medications docs](/docs/medications))
 - **AccessPolicy requirements for Bulk Export API** ([API docs](/docs/api))
