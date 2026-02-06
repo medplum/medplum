@@ -254,6 +254,8 @@ export class BackEnd extends Construct {
     const defaultRedis = this.createRedisCluster('Redis', {
       nodeType: config.cacheNodeType,
       securityGroupId: config.cacheSecurityGroupId,
+      engine: config.cacheEngine,
+      engineVersion: config.cacheEngineVersion,
     });
     this.redisSecurityGroup = defaultRedis.securityGroup;
     this.redisPassword = defaultRedis.password;
@@ -281,6 +283,8 @@ export class BackEnd extends Construct {
         const redis = this.createRedisCluster(id, {
           nodeType: redisConfig.nodeType,
           securityGroupId: redisConfig.securityGroupId,
+          engine: redisConfig.engine,
+          engineVersion: redisConfig.engineVersion,
         });
         purposeRedisClusters.push({ id, ...redis });
       }
@@ -748,7 +752,7 @@ export class BackEnd extends Construct {
 
   private createRedisCluster(
     id: string,
-    options: { nodeType?: string; securityGroupId?: string }
+    options: { nodeType?: string; securityGroupId?: string; engine?: string; engineVersion?: string }
   ): {
     securityGroup: ec2.ISecurityGroup;
     password: secretsmanager.ISecret;
@@ -777,8 +781,8 @@ export class BackEnd extends Construct {
     password.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
     const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
-      engine: 'Redis',
-      engineVersion: '6.x',
+      engine: options.engine ?? 'Redis',
+      engineVersion: options.engineVersion ?? '6.x',
       cacheNodeType: options.nodeType ?? 'cache.t2.medium',
       replicationGroupDescription: `${id}ReplicationGroup`,
       authToken: password.secretValueFromJson('password').toString(),

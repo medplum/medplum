@@ -55,21 +55,31 @@ export interface MedplumSourceInfraConfig {
   rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
+  cacheEngine?: ValueOrExternalSecret<string>;
+  cacheEngineVersion?: ValueOrExternalSecret<string>;
   cacheRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
   };
   rateLimitRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
   };
   pubsubRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
   };
   bullmqRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
   };
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
@@ -174,21 +184,31 @@ export interface MedplumInfraConfig {
   rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
+  cacheEngine?: string;
+  cacheEngineVersion?: string;
   cacheRedis?: {
     nodeType?: string;
     securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
   };
   rateLimitRedis?: {
     nodeType?: string;
     securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
   };
   pubsubRedis?: {
     nodeType?: string;
     securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
   };
   bullmqRedis?: {
     nodeType?: string;
     securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
   };
   desiredServerCount: number;
   serverImage: string;
