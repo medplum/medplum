@@ -57,6 +57,7 @@ import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
@@ -317,6 +318,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Resource $set-accounts operation
   router.add('POST', '/:resourceType/:id/$set-accounts', setAccountsHandler);
+
+  // Resource $refresh-reference-display operation
+  router.add('POST', '/:resourceType/:id/$refresh-reference-display', refreshReferenceDisplayHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
