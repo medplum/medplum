@@ -409,7 +409,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     const criteriaResourceType = criteria.split('?')[0];
-    if (!criteriaResourceType || criteriaResourceType === resource.resourceType) {
+    if (criteriaResourceType === resource.resourceType) {
       redisOnlySubRefStrs.push(ref);
     }
   }
