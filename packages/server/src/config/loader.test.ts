@@ -4,24 +4,16 @@ import fs from 'fs';
 import { getConfig, loadConfig, loadTestConfig } from './loader';
 
 describe('Config', () => {
-  const savedEnv: Record<string, string | undefined> = {};
   const envKeysToClean: string[] = [];
 
   function setEnv(key: string, value: string): void {
-    if (!(key in savedEnv)) {
-      savedEnv[key] = process.env[key];
-    }
     envKeysToClean.push(key);
     process.env[key] = value;
   }
 
   afterEach(() => {
     for (const key of envKeysToClean) {
-      if (savedEnv[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = savedEnv[key];
-      }
+      delete process.env[key];
     }
     envKeysToClean.length = 0;
   });
