@@ -917,7 +917,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // So we only cache subscriptions with a parsable criteria
       try {
         parseSearchRequest(resource.criteria);
-      } catch (err) {
+      } catch (_err) {
         throw new OperationOutcomeError(badRequest(`Invalid Subscription criteria: ${resource.criteria}`));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
