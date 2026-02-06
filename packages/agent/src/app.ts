@@ -145,6 +145,7 @@ export class App {
 
     const isUpgrade = existsSync(UPGRADE_MANIFEST_PATH);
     let previousVersionSupportsHandoff = false;
+    let isLegacyZeroDowntimeUpgrade = false;
     let upgradeDetails: { previousVersion: string; targetVersion: string; callback: string | null } | undefined;
 
     if (isUpgrade) {
@@ -161,6 +162,7 @@ export class App {
       );
 
       const strippedPrevVersion = upgradeDetails.previousVersion.split('-')[0];
+      const strippedTargetVersion = upgradeDetails.targetVersion.split('-')[0];
 
       // Check if the previous version supports the handoff protocol
       // If previousVersion is "UNKNOWN" (set by installer) or older than MIN_HANDOFF_PROTOCOL_VERSION,
@@ -170,7 +172,24 @@ export class App {
         semver.valid(strippedPrevVersion) !== null &&
         semver.gte(strippedPrevVersion, MIN_HANDOFF_PROTOCOL_VERSION);
 
-      if (previousVersionSupportsHandoff) {
+      // Check if the target version supports the handoff protocol
+      // When downgrading to a pre-handoff version, the target binary won't participate in handoff
+      const targetVersionSupportsHandoff =
+        semver.valid(strippedTargetVersion) !== null &&
+        semver.gte(strippedTargetVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+
+      // Legacy zero-downtime upgrade: downgrading to a version that supports zero-downtime
+      // upgrades (>= 4.2.4) but not the handoff protocol (< MIN_HANDOFF_PROTOCOL_VERSION).
+      // In this case, we follow the old protocol: channels run concurrently on both agents,
+      // and the installer stops the old service after upgrade.json is deleted.
+      // This is safe because pre-handoff versions don't use the durable queue.
+      isLegacyZeroDowntimeUpgrade =
+        previousVersionSupportsHandoff &&
+        !targetVersionSupportsHandoff &&
+        semver.valid(strippedTargetVersion) !== null &&
+        semver.gte(strippedTargetVersion, '4.2.4');
+
+      if (previousVersionSupportsHandoff && targetVersionSupportsHandoff) {
         this.log.info('Previous version supports handoff protocol, coordinating with old agent...');
 
         // Signal to old agent: "I'm ready to take over"
@@ -199,6 +218,11 @@ export class App {
           this.cleanupHandoffFiles();
           throw new Error('Upgrade aborted: handoff signal not received from old agent');
         }
+      } else if (isLegacyZeroDowntimeUpgrade) {
+        this.log.info(
+          `Target version (${upgradeDetails.targetVersion}) is pre-handoff but supports zero-downtime upgrades, ` +
+            'using legacy installer-based coordination'
+        );
       } else {
         this.log.info(
           `Previous version (${upgradeDetails.previousVersion}) does not support handoff protocol, ` +
@@ -209,28 +233,45 @@ export class App {
 
     // Wrap the rest of start() in a try-catch to support rollback on failure
     try {
-      // Initialize the queue - during upgrades from versions that support handoff, wait for release
-      if (isUpgrade && previousVersionSupportsHandoff) {
+      if (isLegacyZeroDowntimeUpgrade) {
+        // Legacy zero-downtime upgrade path (downgrading to pre-handoff, post-zero-downtime version):
+        // 1. Start websocket first (independent of local ports)
+        // 2. Delete upgrade.json early to unblock the installer
+        // 3. Installer will call --remove-old-services, which stops the old agent
+        // 4. Old agent's stop() releases the queue and ports
+        // 5. Init queue and start channels once old agent is gone
+        await this.startWebSocket();
+        await this.maybeFinalizeUpgrade();
+
+        // Wait for old agent to release the queue (triggered by installer stopping the old service)
         await waitForQueueRelease(this.log);
-      }
-      this.hl7DurableQueue.init();
-
-      await this.startWebSocket();
-
-      await this.reloadConfig();
-
-      // Run healthcheck during upgrades to verify the new agent is working
-      if (isUpgrade && upgradeDetails) {
-        try {
-          await this.runUpgradeHealthcheck();
-        } catch (healthcheckErr) {
-          throw new Error(`Upgrade healthcheck failed: ${normalizeErrorString(healthcheckErr)}`);
+        this.hl7DurableQueue.init();
+        await this.reloadConfig();
+      } else {
+        // Normal path: handoff protocol or non-upgrade startup
+        // Initialize the queue - during upgrades from versions that support handoff, wait for release
+        if (isUpgrade && previousVersionSupportsHandoff) {
+          await waitForQueueRelease(this.log);
         }
-      }
+        this.hl7DurableQueue.init();
 
-      // We do this after starting WebSockets so that we can send a message if we finished upgrading
-      // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
-      await this.maybeFinalizeUpgrade();
+        await this.startWebSocket();
+
+        await this.reloadConfig();
+
+        // Run healthcheck during upgrades to verify the new agent is working
+        if (isUpgrade && upgradeDetails) {
+          try {
+            await this.runUpgradeHealthcheck();
+          } catch (healthcheckErr) {
+            throw new Error(`Upgrade healthcheck failed: ${normalizeErrorString(healthcheckErr)}`);
+          }
+        }
+
+        // We do this after starting WebSockets so that we can send a message if we finished upgrading
+        // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
+        await this.maybeFinalizeUpgrade();
+      }
 
       // Clean up handoff files if they exist
       this.cleanupHandoffFiles();
@@ -251,10 +292,12 @@ export class App {
       if (isUpgrade && upgradeDetails) {
         this.log.error(`Startup failed during upgrade: ${normalizeErrorString(startupError)}`);
 
+        // For legacy zero-downtime upgrades, don't attempt handoff rollback
+        // since the old agent was never in handoff mode
         const rollbackSuccess = await this.attemptRollback(
           startupError as Error,
           upgradeDetails.previousVersion,
-          previousVersionSupportsHandoff
+          isLegacyZeroDowntimeUpgrade ? false : previousVersionSupportsHandoff
         );
 
         if (rollbackSuccess) {

@@ -556,18 +556,24 @@ Normal handoff protocol is used.
 
 ### Downgrading FROM 5.1.0+ TO 4.2.4-5.0.x
 
-When downgrading to a version that supports zero-downtime upgrades but not the handoff protocol:
+When downgrading to a version that supports zero-downtime upgrades but not the handoff protocol, the new agent detects this via `upgrade.json` (the `targetVersion` is pre-handoff) and follows the **legacy zero-downtime protocol**:
 
-1. The post-5.1.0 agent writes `upgrade.json` with `previousVersion: "5.1.x"`
-2. The pre-5.1.0 installer runs and starts the older agent
-3. The pre-5.1.0 agent **does not** create `.handoff-ready` (doesn't know about it)
-4. The pre-5.1.0 agent uses port-binding coordination (historical method)
-5. When the post-5.1.0 agent receives SIGTERM:
-   - `isUpgradeHandoff = existsSync('.handoff-ready')` → **FALSE**
-   - Stops channels normally (no handoff signals)
-   - Closes durable queue (pre-5.1.0 agent doesn't use it anyway)
+1. The post-5.1.0 agent writes `upgrade.json` with `previousVersion: "5.1.x"` and `targetVersion: "5.0.x"`
+2. The upgrader runs the pre-5.1.0 installer
+3. The installer creates and starts the new (older) service
+4. The new agent (post-5.1.0 binary or pre-5.1.0 binary) reads `upgrade.json`:
+   - Sees `targetVersion < MIN_HANDOFF_PROTOCOL_VERSION` but `>= 4.2.4`
+   - Enters the **legacy zero-downtime upgrade path** (skips handoff protocol)
+5. Legacy path:
+   a. Starts WebSocket connection (independent of local ports)
+   b. Calls `maybeFinalizeUpgrade()` to delete `upgrade.json` — this unblocks the installer
+   c. Installer proceeds to call `--remove-old-services`, which stops the old (post-5.1.0) agent
+   d. Old agent's `stop()` runs normally (no `.handoff-ready` exists, so no handoff signals)
+   e. Old agent releases the durable queue and ports
+   f. New agent calls `waitForQueueRelease()`, then initializes the queue
+   g. New agent calls `reloadConfig()` to bind channels (ports are now free)
 
-This works because the handoff protocol is **opt-in**: the old agent only sends `.handoff-go` if it sees `.handoff-ready`. The pre-5.1.0 agent doesn't need the durable queue, so it's unaffected by queue ownership.
+This is safe because pre-handoff versions don't use the durable queue, so there is no competition for `.queue-owner` files. The old agent keeps its channels running until the installer stops its service, matching the behavior of the historical zero-downtime protocol.
 
 ### Downgrading FROM 5.1.0+ TO Pre-4.2.4
 
