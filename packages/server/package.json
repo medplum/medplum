@@ -64,7 +64,7 @@
     "@opentelemetry/sdk-node": "0.211.0",
     "@smithy/util-retry": "4.2.8",
     "@smithy/util-stream": "4.5.10",
-    "bcryptjs": "3.0.3",
+    "bcrypt": "6.0.0",
     "body-parser": "2.2.2",
     "bowser": "2.13.1",
     "bullmq": "5.67.2",
@@ -101,6 +101,7 @@
   "devDependencies": {
     "@jest/test-sequencer": "30.2.0",
     "@medplum/fhirtypes": "5.0.14",
+    "@types/bcrypt": "6.0.0",
     "@types/body-parser": "1.19.6",
     "@types/bytes": "3.1.5",
     "@types/compression": "1.8.1",
