@@ -914,7 +914,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
+      // We added v2 to the key because historically this was a Redis Set and then we had to migrate the key to a Redis Hash which would conflict
+      await redis.hset(
+        `medplum:subscriptions:r4:project:${project}:active:v2`,
+        `Subscription/${resource.id}`,
+        resource.criteria
+      );
     }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
