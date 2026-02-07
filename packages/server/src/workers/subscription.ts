@@ -14,7 +14,9 @@ import {
   isGone,
   isNotFound,
   isString,
+  matchesSearchRequest,
   normalizeOperationOutcome,
+  parseSearchRequest,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   stringify,
@@ -409,8 +411,15 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     const criteriaResourceType = criteria.split('?')[0];
-    if (criteriaResourceType === resource.resourceType) {
-      redisOnlySubRefStrs.push(ref);
+    if (criteriaResourceType !== resource.resourceType) {
+      continue;
+    }
+    try {
+      if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
+        redisOnlySubRefStrs.push(ref);
+      }
+    } catch (err) {
+      getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
     }
   }
   if (redisOnlySubRefStrs.length) {
