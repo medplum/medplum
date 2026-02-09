@@ -72,8 +72,8 @@ The `sub` (subject) claim is a standard JWT claim (RFC 7519) present in virtuall
 2. Invite users with an `externalId` matching their IDP `sub` value:
 
 ```bash
-curl 'https://${baseUrl}/admin/projects/${projectId}/invite' \
-  -H 'Authorization: Bearer ${accessToken}' \
+curl 'https://BASE_URL/admin/projects/PROJECT_ID/invite' \
+  -H 'Authorization: Bearer ACCESS_TOKEN' \
   -H 'Content-Type: application/json' \
   --data-raw '{
     "resourceType": "Practitioner",
@@ -82,6 +82,8 @@ curl 'https://${baseUrl}/admin/projects/${projectId}/invite' \
     "externalId": "IDP_SUBJECT_ID"
   }'
 ```
+
+Replace `BASE_URL`, `PROJECT_ID`, and `ACCESS_TOKEN` with your actual values.
 
 The `externalId` value should match the `sub` claim that the IDP assigns to this user.
 

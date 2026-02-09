@@ -209,6 +209,23 @@ describe('External auth', () => {
     expect(res.status).toBe(200);
   });
 
+  test('Success by ext.fhirUser', async () => {
+    (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
+      status: 200,
+      headers: { get: () => ContentType.JSON },
+      json: () => ({ ok: true }),
+    }));
+
+    const jwt = createFakeJwt({
+      iss: 'https://external-auth.example.com',
+      ext: { fhirUser: getReferenceString(practitioner) },
+    });
+    const res = await request(app)
+      .get(`/oauth2/userinfo`)
+      .set('Authorization', 'Bearer ' + jwt);
+    expect(res.status).toBe(200);
+  });
+
   test('Success by sub claim', async () => {
     (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
       status: 200,

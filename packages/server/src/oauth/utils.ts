@@ -1147,6 +1147,7 @@ async function tryExternalAuthLogin(
     });
   } else {
     // Path B: sub claim fallback - look up ProjectMembership by externalId
+    // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
     const bundle = await systemRepo.search<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
