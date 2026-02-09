@@ -18,9 +18,10 @@
     "dist"
   ],
   "scripts": {
-    "agent": "tsx src/main.ts",
+    "agent": "NODE_NO_WARNINGS=1 tsx src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
+    "hl7-load-test": "NODE_NO_WARNINGS=1 tsx src/hl7-load-test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "jest --runInBand"
@@ -39,6 +40,7 @@
     "@medplum/fhirtypes": "5.0.14",
     "@medplum/mock": "5.0.14",
     "@types/async-eventemitter": "0.2.4",
+    "@types/node": "24.9.1",
     "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",
     "postject": "1.0.0-alpha.6"

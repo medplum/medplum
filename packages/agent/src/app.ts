@@ -28,13 +28,15 @@ import {
   sleep,
 } from '@medplum/core';
 import type { Agent, AgentChannel, Endpoint, OperationOutcomeIssue } from '@medplum/fhirtypes';
-import { DEFAULT_ENCODING, ReturnAckCategory } from '@medplum/hl7';
+import type { Hl7Connection } from '@medplum/hl7';
+import { DEFAULT_ENCODING, Hl7Client, Hl7Server, ReturnAckCategory } from '@medplum/hl7';
 import assert from 'node:assert';
 import type { ChildProcess, ExecException, ExecOptionsWithStringEncoding } from 'node:child_process';
-import { exec, spawn } from 'node:child_process';
+import { exec, execSync, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import { join } from 'node:path';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
@@ -55,9 +57,32 @@ import { AgentHl7Channel } from './hl7';
 import { Hl7ClientPool } from './hl7-client-pool';
 import { isWinstonWrapperLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { AgentHl7DurableQueue, waitForQueueRelease } from './queue';
 import { getCurrentStats, updateStat } from './stats';
 import type { HeartbeatEmitter } from './types';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
+
+// Handoff coordination files for zero-downtime upgrades
+const HANDOFF_READY_PATH = join(__dirname, '.handoff-ready');
+const HANDOFF_GO_PATH = join(__dirname, '.handoff-go');
+
+// Rollback coordination files
+const HANDOFF_ROLLBACK_PATH = join(__dirname, '.handoff-rollback');
+const ROLLBACK_COMPLETE_PATH = join(__dirname, '.rollback-complete');
+export const SKIP_SERVICE_CLEANUP_PATH = join(__dirname, '.skip-service-cleanup');
+
+// Default healthcheck channel name (magic name for upgrade verification)
+const HEALTHCHECK_CHANNEL_NAME = '_medplum_healthcheck';
+
+// Rollback timeout in milliseconds
+const ROLLBACK_TIMEOUT_MS = 10000;
+
+// Minimum version that supports the new handoff protocol for queue coordination.
+// Versions before this use the installer-based coordination (Windows) which doesn't
+// require the handoff signal. When upgrading FROM a version >= this, we require
+// the handoff signal and abort if we don't receive it.
+// TODO: Fix this when finalizing branch
+const MIN_HANDOFF_PROTOCOL_VERSION = '5.0.14';
 
 async function execAsync(
   command: string,
@@ -86,9 +111,8 @@ export class App {
   readonly agentId: string;
   readonly log: ILogger;
   readonly channelLog: ILogger;
-  readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
-  readonly hl7Queue: AgentMessage[] = [];
+  readonly hl7DurableQueue: AgentHl7DurableQueue;
   readonly hl7Clients = new Map<string, Hl7ClientPool>();
   heartbeatPeriod = HEARTBEAT_PERIOD_MS; // 10 seconds
   private heartbeatTimer?: NodeJS.Timeout;
@@ -111,30 +135,510 @@ export class App {
     this.agentId = agentId;
     this.log = options?.mainLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
     this.channelLog = options?.channelLogger ?? new Logger((msg) => console.log(msg), undefined, logLevel);
+
+    // Initialize durable queue
+    this.hl7DurableQueue = new AgentHl7DurableQueue(this.log);
   }
 
   async start(): Promise<void> {
     this.log.info('Medplum service starting...');
 
-    await this.startWebSocket();
+    const isUpgrade = existsSync(UPGRADE_MANIFEST_PATH);
+    let previousVersionSupportsHandoff = false;
+    let isLegacyZeroDowntimeUpgrade = false;
+    let upgradeDetails: { previousVersion: string; targetVersion: string; callback: string | null } | undefined;
 
-    await this.reloadConfig();
+    if (isUpgrade) {
+      // Read upgrade manifest to check previous version
+      const upgradeFile = readFileSync(UPGRADE_MANIFEST_PATH, { encoding: 'utf-8' });
+      upgradeDetails = JSON.parse(upgradeFile) as {
+        previousVersion: string;
+        targetVersion: string;
+        callback: string | null;
+      };
 
-    // We do this after starting WebSockets so that we can send a message if we finished upgrading
-    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
-    await this.maybeFinalizeUpgrade();
+      this.log.info(
+        `Upgrade detected from version ${upgradeDetails.previousVersion} to ${upgradeDetails.targetVersion}`
+      );
 
-    this.medplum.addEventListener('change', () => {
-      if (!this.webSocket) {
-        this.connectWebSocket().catch((err) => {
-          this.log.error(normalizeErrorString(err));
-        });
+      const strippedPrevVersion = upgradeDetails.previousVersion.split('-')[0];
+      const strippedTargetVersion = upgradeDetails.targetVersion.split('-')[0];
+
+      // Check if the previous version supports the handoff protocol
+      // If previousVersion is "UNKNOWN" (set by installer) or older than MIN_HANDOFF_PROTOCOL_VERSION,
+      // we skip the handoff coordination and rely on installer-based coordination
+      previousVersionSupportsHandoff =
+        upgradeDetails.previousVersion !== 'UNKNOWN' &&
+        semver.valid(strippedPrevVersion) !== null &&
+        semver.gte(strippedPrevVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+
+      // Check if the target version supports the handoff protocol
+      // When downgrading to a pre-handoff version, the target binary won't participate in handoff
+      const targetVersionSupportsHandoff =
+        semver.valid(strippedTargetVersion) !== null &&
+        semver.gte(strippedTargetVersion, MIN_HANDOFF_PROTOCOL_VERSION);
+
+      // Legacy zero-downtime upgrade: downgrading to a version that supports zero-downtime
+      // upgrades (>= 4.2.4) but not the handoff protocol (< MIN_HANDOFF_PROTOCOL_VERSION).
+      // In this case, we follow the old protocol: channels run concurrently on both agents,
+      // and the installer stops the old service after upgrade.json is deleted.
+      // This is safe because pre-handoff versions don't use the durable queue.
+      isLegacyZeroDowntimeUpgrade =
+        previousVersionSupportsHandoff &&
+        !targetVersionSupportsHandoff &&
+        semver.valid(strippedTargetVersion) !== null &&
+        semver.gte(strippedTargetVersion, '4.2.4');
+
+      if (previousVersionSupportsHandoff && targetVersionSupportsHandoff) {
+        this.log.info('Previous version supports handoff protocol, coordinating with old agent...');
+
+        // Signal to old agent: "I'm ready to take over"
+        writeFileSync(HANDOFF_READY_PATH, process.pid.toString());
+        this.log.info('Handoff ready signal sent');
+
+        // Explicitly stop the old service to trigger its stop() method
+        // This will cause the old agent to see .handoff-ready and write .handoff-go
+        if (platform() === 'win32') {
+          const oldServiceName = `MedplumAgent_${upgradeDetails.previousVersion}`;
+          this.log.info(`Stopping old service: ${oldServiceName}`);
+          try {
+            execSync(`net stop "${oldServiceName}"`, { encoding: 'utf-8', timeout: 30000 });
+            this.log.info('Old service stop command sent');
+          } catch (err) {
+            // Service might already be stopping or stopped
+            this.log.warn(`Error stopping old service (may already be stopping): ${normalizeErrorString(err)}`);
+          }
+        }
+
+        // Wait for old agent to signal "go" (means it has stopped channels)
+        // If we don't receive it, abort - the old agent should have sent it
+        const receivedSignal = await this.waitForHandoffGo();
+        if (!receivedSignal) {
+          this.log.error('Failed to receive handoff signal from old agent, aborting upgrade');
+          this.cleanupHandoffFiles();
+          throw new Error('Upgrade aborted: handoff signal not received from old agent');
+        }
+      } else if (isLegacyZeroDowntimeUpgrade) {
+        this.log.info(
+          `Target version (${upgradeDetails.targetVersion}) is pre-handoff but supports zero-downtime upgrades, ` +
+            'using legacy installer-based coordination'
+        );
       } else {
-        this.startWebSocketWorker();
+        this.log.info(
+          `Previous version (${upgradeDetails.previousVersion}) does not support handoff protocol, ` +
+            'relying on installer-based coordination'
+        );
       }
-    });
+    }
 
-    this.log.info('Medplum service started successfully');
+    // Wrap the rest of start() in a try-catch to support rollback on failure
+    try {
+      if (isLegacyZeroDowntimeUpgrade) {
+        // Legacy zero-downtime upgrade path (downgrading to pre-handoff, post-zero-downtime version):
+        // 1. Start websocket first (independent of local ports)
+        // 2. Delete upgrade.json early to unblock the installer
+        // 3. Installer will call --remove-old-services, which stops the old agent
+        // 4. Old agent's stop() releases the queue and ports
+        // 5. Init queue and start channels once old agent is gone
+        await this.startWebSocket();
+        await this.maybeFinalizeUpgrade();
+
+        // Wait for old agent to release the queue (triggered by installer stopping the old service)
+        await waitForQueueRelease(this.log);
+        this.hl7DurableQueue.init();
+        await this.reloadConfig();
+      } else {
+        // Normal path: handoff protocol or non-upgrade startup
+        // Initialize the queue - during upgrades from versions that support handoff, wait for release
+        if (isUpgrade && previousVersionSupportsHandoff) {
+          await waitForQueueRelease(this.log);
+        }
+        this.hl7DurableQueue.init();
+
+        await this.startWebSocket();
+
+        await this.reloadConfig();
+
+        // Run healthcheck during upgrades to verify the new agent is working
+        if (isUpgrade && upgradeDetails) {
+          try {
+            await this.runUpgradeHealthcheck();
+          } catch (healthcheckErr) {
+            throw new Error(`Upgrade healthcheck failed: ${normalizeErrorString(healthcheckErr)}`);
+          }
+        }
+
+        // We do this after starting WebSockets so that we can send a message if we finished upgrading
+        // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
+        await this.maybeFinalizeUpgrade();
+      }
+
+      // Clean up handoff files if they exist
+      this.cleanupHandoffFiles();
+
+      this.medplum.addEventListener('change', () => {
+        if (!this.webSocket) {
+          this.connectWebSocket().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
+        } else {
+          this.startWebSocketWorker();
+        }
+      });
+
+      this.log.info('Medplum service started successfully');
+    } catch (startupError) {
+      // If this is an upgrade and startup failed, attempt rollback
+      if (isUpgrade && upgradeDetails) {
+        this.log.error(`Startup failed during upgrade: ${normalizeErrorString(startupError)}`);
+
+        // For legacy zero-downtime upgrades, don't attempt handoff rollback
+        // since the old agent was never in handoff mode
+        const rollbackSuccess = await this.attemptRollback(
+          startupError as Error,
+          upgradeDetails.previousVersion,
+          isLegacyZeroDowntimeUpgrade ? false : previousVersionSupportsHandoff
+        );
+
+        if (rollbackSuccess) {
+          this.log.info('Rollback succeeded, old agent should be running');
+          // Delete upgrade.json so installer can proceed (and not delete old service)
+          if (existsSync(UPGRADE_MANIFEST_PATH)) {
+            unlinkSync(UPGRADE_MANIFEST_PATH);
+          }
+          this.cleanupHandoffFiles();
+          // Exit this process - the old agent is handling things now
+          process.exit(1);
+        } else {
+          this.log.error('Rollback failed, attempting to continue with this agent');
+          // Re-throw the original error
+          throw startupError;
+        }
+      } else {
+        // Not an upgrade, just re-throw
+        throw startupError;
+      }
+    }
+  }
+
+  /**
+   * Wait for the old agent to signal that it has stopped its channels and is ready for handoff.
+   *
+   * @param timeoutMs - Maximum time to wait in milliseconds (default 30 seconds).
+   * @returns True if the handoff signal was received, false if timeout occurred.
+   */
+  private async waitForHandoffGo(timeoutMs = 30000): Promise<boolean> {
+    const startTime = Date.now();
+    this.log.info('Waiting for handoff signal from old agent...');
+
+    while (!existsSync(HANDOFF_GO_PATH)) {
+      if (Date.now() - startTime > timeoutMs) {
+        this.log.warn(`Timeout waiting for handoff signal after ${timeoutMs}ms`);
+        return false;
+      }
+      await sleep(10); // Check every 10ms for fast handoff
+    }
+
+    // Small delay to ensure old agent has fully stopped channels
+    await sleep(50);
+    this.log.info('Handoff signal received from old agent');
+    return true;
+  }
+
+  /**
+   * Clean up handoff coordination files.
+   */
+  private cleanupHandoffFiles(): void {
+    try {
+      if (existsSync(HANDOFF_READY_PATH)) {
+        unlinkSync(HANDOFF_READY_PATH);
+      }
+      if (existsSync(HANDOFF_GO_PATH)) {
+        unlinkSync(HANDOFF_GO_PATH);
+      }
+      if (existsSync(HANDOFF_ROLLBACK_PATH)) {
+        unlinkSync(HANDOFF_ROLLBACK_PATH);
+      }
+      if (existsSync(ROLLBACK_COMPLETE_PATH)) {
+        unlinkSync(ROLLBACK_COMPLETE_PATH);
+      }
+    } catch (err) {
+      this.log.warn(`Error cleaning up handoff files: ${normalizeErrorString(err)}`);
+    }
+  }
+
+  /**
+   * Run upgrade healthcheck to verify the agent is working correctly.
+   * Uses either a configured healthcheck endpoint or a temporary auto-ACK server.
+   * @returns Promise that resolves if healthcheck passes, rejects with error if it fails.
+   */
+  private async runUpgradeHealthcheck(): Promise<void> {
+    // Check for configured healthcheck endpoint
+    const configuredEndpoint = this.config?.setting?.find((s) => s.name === 'upgradeHealthcheckEndpoint')?.valueString;
+
+    // Also check if there's a healthcheck channel configured
+    const healthcheckChannel = this.config?.channel?.find((c) => c.name === HEALTHCHECK_CHANNEL_NAME);
+
+    if (configuredEndpoint) {
+      // Use configured endpoint - send through normal channel flow
+      await this.runConfiguredHealthcheck(configuredEndpoint);
+    } else if (healthcheckChannel) {
+      // Use the magic healthcheck channel
+      await this.runConfiguredHealthcheck(HEALTHCHECK_CHANNEL_NAME);
+    } else {
+      // Use temporary auto-ACK server
+      await this.runDefaultHealthcheck();
+    }
+  }
+
+  /**
+   * Run healthcheck using a configured endpoint/channel.
+   * This sends a message through the normal HL7 flow.
+   * @param channelNameOrEndpoint - The channel name or endpoint to run the healthcheck against.
+   * @returns a Promise that resolves when the healthcheck completes.
+   */
+  private async runConfiguredHealthcheck(channelNameOrEndpoint: string): Promise<void> {
+    this.log.info(`Running configured healthcheck: ${channelNameOrEndpoint}`);
+
+    // Find the channel by name
+    const channel = this.channels.get(channelNameOrEndpoint);
+    if (!channel) {
+      // If it's not a channel name, it might be an endpoint address - find channel by endpoint
+      const channelByEndpoint = Array.from(this.channels.values()).find(
+        (c) => c.getEndpoint().address === channelNameOrEndpoint
+      );
+      if (!channelByEndpoint) {
+        throw new Error(`Healthcheck channel or endpoint not found: ${channelNameOrEndpoint}`);
+      }
+    }
+
+    // Parse endpoint address to get host/port
+    const endpoint = channel?.getEndpoint().address ?? channelNameOrEndpoint;
+    const url = new URL(endpoint);
+    const host = url.hostname || 'localhost';
+    const port = parseInt(url.port, 10);
+
+    await this.sendHealthcheckMessage(host, port);
+  }
+
+  /**
+   * Run default healthcheck using a temporary auto-ACK server.
+   * This tests that the agent can receive and respond to HL7 messages locally.
+   */
+  private async runDefaultHealthcheck(): Promise<void> {
+    this.log.info('Running default healthcheck with temporary auto-ACK server');
+
+    let server: Hl7Server | undefined;
+    let serverPort: number | undefined;
+
+    try {
+      // Create a temporary server that auto-ACKs all messages
+      server = new Hl7Server((connection: Hl7Connection) => {
+        connection.addEventListener('message', (event) => {
+          // Auto-ACK the message
+          const ack = event.message.buildAck();
+          connection.send(ack);
+        });
+      });
+
+      // Start on port 0 to let OS assign an available port
+      await server.start(0);
+
+      // Get the actual port assigned
+      const address = server.server?.address();
+      if (!address || typeof address === 'string') {
+        throw new Error('Failed to get server port');
+      }
+      serverPort = address.port;
+
+      this.log.info(`Healthcheck server started on port ${serverPort}`);
+
+      // Send test message
+      await this.sendHealthcheckMessage('127.0.0.1', serverPort);
+
+      this.log.info('Default healthcheck passed');
+    } finally {
+      // Always stop the temporary server
+      if (server) {
+        try {
+          await server.stop({ forceDrainTimeoutMs: 1000 });
+        } catch (err) {
+          this.log.warn(`Error stopping healthcheck server: ${normalizeErrorString(err)}`);
+        }
+      }
+    }
+  }
+
+  /**
+   * Send a test HL7 message and verify we receive an ACK.
+   * @param host - The host of the endpoint to send the healthcheck message to.
+   * @param port - The port of the endpoint to send the healthcheck message to.
+   */
+  private async sendHealthcheckMessage(host: string, port: number): Promise<void> {
+    const client = new Hl7Client({ host, port, connectTimeout: 5000 });
+
+    try {
+      // Build a simple ADT^A01 test message
+      const testMessage = Hl7Message.parse(
+        [
+          'MSH|^~\\&|HEALTHCHECK|AGENT|TEST|TEST|' +
+            new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) +
+            '||ADT^A01|HEALTHCHECK001|P|2.5',
+          'EVN|A01|' + new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14),
+          'PID|1||HEALTHCHECK^^^AGENT||TEST^HEALTHCHECK||19700101|U',
+        ].join('\r')
+      );
+
+      this.log.info(`Sending healthcheck message to ${host}:${port}`);
+
+      // Send and wait for ACK with timeout
+      const response = await client.sendAndWait(testMessage, { timeoutMs: 10000 });
+
+      // Verify ACK
+      const ackCode = response.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+      if (ackCode !== 'AA' && ackCode !== 'CA') {
+        throw new Error(`Healthcheck received unexpected ACK code: ${ackCode}`);
+      }
+
+      this.log.info(`Healthcheck passed with ACK code: ${ackCode}`);
+    } finally {
+      await client.close();
+    }
+  }
+
+  /**
+   * Attempt to rollback to the previous agent version after a failed upgrade.
+   * @param error - The error that triggered the rollback.
+   * @param previousVersion - The version to roll back to.
+   * @param previousVersionSupportsHandoff - Whether the previous version supports the handoff protocol.
+   * @returns True if rollback succeeded, false otherwise.
+   */
+  private async attemptRollback(
+    error: Error,
+    previousVersion: string,
+    previousVersionSupportsHandoff: boolean
+  ): Promise<boolean> {
+    this.log.error(`Upgrade failed, attempting rollback: ${normalizeErrorString(error)}`);
+
+    // First, stop our channels and close the queue to release resources
+    await this.stopChannelsAndQueue();
+
+    // Try handoff-based rollback if the old agent supports it and is still running
+    if (previousVersionSupportsHandoff) {
+      const handoffRollbackSuccess = await this.rollbackViaHandoff();
+      if (handoffRollbackSuccess) {
+        return true;
+      }
+      this.log.warn('Handoff rollback failed, trying service restart');
+    }
+
+    // Fall back to service restart
+    return this.rollbackViaServiceRestart(previousVersion);
+  }
+
+  /**
+   * Stop channels and close the queue without triggering handoff signals.
+   */
+  private async stopChannelsAndQueue(): Promise<void> {
+    this.log.info('Stopping channels and queue for rollback...');
+
+    // Stop heartbeat and stats timers
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = undefined;
+    }
+    if (this.logStatsTimer) {
+      clearInterval(this.logStatsTimer);
+      this.logStatsTimer = undefined;
+    }
+
+    // Close WebSocket
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = undefined;
+    }
+
+    // Close HL7 client pools
+    if (this.hl7Clients.size !== 0) {
+      await Promise.all(Array.from(this.hl7Clients.values()).map((pool) => pool.closeAll()));
+      this.hl7Clients.clear();
+    }
+
+    // Stop channels
+    await Promise.all(Array.from(this.channels.values()).map((channel) => channel.stop()));
+    this.channels.clear();
+
+    // Close the queue
+    this.hl7DurableQueue.close();
+  }
+
+  /**
+   * Attempt rollback via the handoff protocol.
+   * Signals the old agent to restart its channels and take back control.
+   * @returns True if rollback succeeded, false otherwise.
+   */
+  private async rollbackViaHandoff(): Promise<boolean> {
+    this.log.info('Attempting rollback via handoff protocol...');
+
+    try {
+      // Signal old agent to rollback
+      writeFileSync(HANDOFF_ROLLBACK_PATH, JSON.stringify({ pid: process.pid, time: Date.now() }));
+      this.log.info('Rollback signal sent to old agent');
+
+      // Wait for old agent to confirm rollback
+      const startTime = Date.now();
+      while (!existsSync(ROLLBACK_COMPLETE_PATH)) {
+        if (Date.now() - startTime > ROLLBACK_TIMEOUT_MS) {
+          this.log.warn(`Rollback timeout after ${ROLLBACK_TIMEOUT_MS}ms`);
+          return false;
+        }
+        await sleep(50);
+      }
+
+      this.log.info('Old agent confirmed rollback complete');
+
+      // Write skip flag so --remove-old-services doesn't delete old service
+      writeFileSync(SKIP_SERVICE_CLEANUP_PATH, Date.now().toString());
+
+      return true;
+    } catch (err) {
+      this.log.error(`Error during handoff rollback: ${normalizeErrorString(err)}`);
+      return false;
+    }
+  }
+
+  /**
+   * Attempt rollback by restarting the old Windows service.
+   * @param previousVersion - The version to restart.
+   * @returns True if rollback succeeded, false otherwise.
+   */
+  private rollbackViaServiceRestart(previousVersion: string): boolean {
+    if (platform() !== 'win32') {
+      this.log.error('Service restart rollback only supported on Windows');
+      return false;
+    }
+
+    this.log.info(`Attempting to restart old service for version ${previousVersion}...`);
+
+    try {
+      // Try to start the old service
+      // Service name format: MedplumAgent_<version>
+      const oldServiceName = `MedplumAgent_${previousVersion}`;
+      execSync(`net start "${oldServiceName}"`, { encoding: 'utf-8' });
+      this.log.info(`Successfully restarted old service: ${oldServiceName}`);
+
+      // Write skip flag so --remove-old-services doesn't delete old service
+      writeFileSync(SKIP_SERVICE_CLEANUP_PATH, Date.now().toString());
+
+      return true;
+    } catch (err) {
+      this.log.error(`Failed to restart old service: ${normalizeErrorString(err)}`);
+
+      // If service restart failed, the service may have been deleted already
+      // In this case, we can't rollback - the new agent should try to recover itself
+      this.log.error('Rollback failed - old service could not be restarted');
+      return false;
+    }
   }
 
   private async maybeFinalizeUpgrade(): Promise<void> {
@@ -295,10 +799,29 @@ export class App {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
             } else if (!(command.statusCode && command.statusCode >= 400)) {
-              this.addToHl7Queue(command);
+              // Check if this is a response to a durable queue message
+              const dbMsg = command.callback
+                ? this.hl7DurableQueue.getMessageByCallback(command.callback)
+                : this.hl7DurableQueue.getMessageByRemote(command.remote);
+              if (dbMsg?.status === 'sent') {
+                // Update durable queue with response
+                this.hl7DurableQueue.markAsResponseQueued(dbMsg.id, command.body);
+                this.trySendToHl7Connection();
+                // Trigger worker to process any new messages that arrived while waiting
+                this.startWebSocketWorker();
+              } else if (command.callback) {
+                this.log.warn(`Received response for unknown message: ${command.remote}`);
+              }
             } else {
               // Log error
               this.log.error(`Error during handling transmit request: ${command.body}`);
+              // Mark as error in durable queue if applicable
+              const dbMsg = command.callback
+                ? this.hl7DurableQueue.getMessageByCallback(command.callback)
+                : this.hl7DurableQueue.getMessageByRemote(command.remote);
+              if (dbMsg) {
+                this.hl7DurableQueue.markAsError(dbMsg.id);
+              }
             }
             break;
           }
@@ -445,8 +968,9 @@ export class App {
     this.log.info('Agent stats', {
       stats: {
         ...stats,
-        webSocketQueueDepth: this.webSocketQueue.length,
-        hl7QueueDepth: this.hl7Queue.length,
+        durableQueueReceived: this.hl7DurableQueue.countByStatus('received'),
+        durableQueueSent: this.hl7DurableQueue.countByStatus('sent'),
+        durableQueueResponseQueued: this.hl7DurableQueue.countByStatus('response_queued'),
         hl7ClientCount: totalHl7Clients,
         live: this.live,
         outstandingHeartbeats: this.outstandingHeartbeats,
@@ -631,6 +1155,12 @@ export class App {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
 
+    // Check if a new agent is waiting for handoff
+    const isUpgradeHandoff = existsSync(HANDOFF_READY_PATH);
+    if (isUpgradeHandoff) {
+      this.log.info('New agent is waiting for handoff');
+    }
+
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
@@ -661,24 +1191,120 @@ export class App {
     }
     await Promise.all(channelStopPromises);
 
+    // Signal new agent: "channels stopped, GO!"
+    // This allows the new agent to start its channels immediately
+    if (isUpgradeHandoff) {
+      writeFileSync(HANDOFF_GO_PATH, Date.now().toString());
+      this.log.info('Handoff signal sent to new agent');
+    }
+
+    // Close the durable queue AFTER signaling handoff
+    // New agent can start channels while we close the queue
+    this.hl7DurableQueue.close();
+
+    // If this is a handoff, wait briefly for potential rollback request
+    // The new agent might fail to start and request rollback
+    if (isUpgradeHandoff) {
+      const rollbackRequested = await this.waitForRollbackRequest();
+      if (rollbackRequested) {
+        this.log.info('Rollback requested by new agent, recovering...');
+        await this.recoverFromRollback();
+        // Don't exit - continue running as normal
+        return;
+      }
+    }
+
     this.log.info('Medplum service stopped successfully');
   }
 
-  addToWebSocketQueue(message: AgentMessage): void {
-    this.webSocketQueue.push(message);
-    this.startWebSocketWorker();
+  /**
+   * Wait briefly for a rollback request from the new agent.
+   * @returns True if rollback was requested, false otherwise.
+   */
+  private async waitForRollbackRequest(): Promise<boolean> {
+    // Wait for up to ROLLBACK_TIMEOUT_MS for a rollback request
+    // This gives the new agent time to detect failures and request rollback
+    const startTime = Date.now();
+    this.log.info(`Waiting up to ${ROLLBACK_TIMEOUT_MS}ms for potential rollback request...`);
+
+    while (Date.now() - startTime < ROLLBACK_TIMEOUT_MS) {
+      if (existsSync(HANDOFF_ROLLBACK_PATH)) {
+        return true;
+      }
+      await sleep(100);
+    }
+
+    this.log.info('No rollback requested, proceeding with shutdown');
+    return false;
   }
 
-  addToHl7Queue(message: AgentMessage): void {
-    this.hl7Queue.push(message);
-    this.trySendToHl7Connection();
+  /**
+   * Recover from a rollback request - restart channels and resume normal operation.
+   */
+  private async recoverFromRollback(): Promise<void> {
+    this.log.info('Starting recovery from rollback...');
+    this.shutdown = false;
+
+    try {
+      // Re-initialize the queue
+      this.hl7DurableQueue.init();
+
+      // Restart WebSocket
+      await this.startWebSocket();
+
+      // Reload config and start channels
+      await this.reloadConfig();
+
+      // Restart heartbeat
+      this.heartbeatTimer = setInterval(() => this.heartbeat(), this.heartbeatPeriod);
+
+      // Signal that rollback is complete
+      writeFileSync(ROLLBACK_COMPLETE_PATH, Date.now().toString());
+      this.log.info('Rollback recovery complete, resuming normal operation');
+
+      // Re-register the change listener
+      this.medplum.addEventListener('change', () => {
+        if (!this.webSocket) {
+          this.connectWebSocket().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
+        } else {
+          this.startWebSocketWorker();
+        }
+      });
+    } catch (err) {
+      this.log.error(`Failed to recover from rollback: ${normalizeErrorString(err)}`);
+      // Still try to signal that we attempted recovery
+      try {
+        writeFileSync(ROLLBACK_COMPLETE_PATH, JSON.stringify({ error: normalizeErrorString(err), time: Date.now() }));
+      } catch (_writeErr) {
+        // Ignore write errors
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Check if the durable queue is ready for use.
+   * @returns True if the queue is initialized and not closed.
+   */
+  isQueueReady(): boolean {
+    return this.hl7DurableQueue.isReady();
+  }
+
+  addToWebSocketQueue(message: AgentMessage): void {
+    // Legacy method - for non-HL7 messages (like ping responses, errors)
+    // Store in a temporary variable and send immediately
+    this.sendToWebSocket(message).catch((err) =>
+      this.log.error(`Error sending to WebSocket: ${normalizeErrorString(err)}`)
+    );
   }
 
   getAgentConfig(): Agent | undefined {
     return this.config;
   }
 
-  private startWebSocketWorker(): void {
+  startWebSocketWorker(): void {
     if (this.webSocketWorker) {
       // Websocket worker is already running
       return;
@@ -686,39 +1312,94 @@ export class App {
 
     // Start the worker
     this.webSocketWorker = this.trySendToWebSocket()
-      .then(() => {
+      .then((processedCount) => {
         this.webSocketWorker = undefined;
+        // Only restart if we processed messages (new ones might have arrived)
+        if (processedCount && processedCount > 0) {
+          this.startWebSocketWorker();
+        }
       })
-      .catch((err) => console.log('WebSocket worker error', err));
+      .catch((err) => {
+        this.log.error(`WebSocket worker error: ${normalizeErrorString(err)}`);
+        this.webSocketWorker = undefined;
+        // Try to restart worker to process any remaining messages
+        this.startWebSocketWorker();
+      });
   }
 
-  private async trySendToWebSocket(): Promise<void> {
+  private async trySendToWebSocket(): Promise<number> {
     if (this.live) {
-      while (this.webSocketQueue.length > 0) {
-        const msg = this.webSocketQueue.shift();
-        if (msg) {
-          try {
-            await this.sendToWebSocket(msg);
-          } catch (err) {
-            this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
-            this.webSocketQueue.unshift(msg);
-            throw err;
+      // Refresh token once upfront to avoid repeated refreshes
+      await this.medplum.refreshIfExpired();
+      const accessToken = this.medplum.getAccessToken() as string;
+
+      // Get all messages with status='received' in one query
+      const dbMessages = this.hl7DurableQueue.getAllReceivedMessages();
+
+      if (dbMessages.length === 0) {
+        return 0;
+      }
+
+      // Send all messages and track results
+      let successCount = 0;
+
+      for (const dbMsg of dbMessages) {
+        const agentMsg: AgentMessage = {
+          type: 'agent:transmit:request',
+          accessToken,
+          channel: dbMsg.channel,
+          remote: dbMsg.remote,
+          contentType: ContentType.HL7_V2,
+          body: dbMsg.raw_message,
+          callback: dbMsg.callback,
+        };
+
+        try {
+          if (!this.webSocket) {
+            throw new Error('WebSocket not connected');
           }
+          // Send via WebSocket
+          this.webSocket.send(JSON.stringify(agentMsg));
+          // Mark as sent IMMEDIATELY after sending to avoid race condition
+          // where response arrives before status is updated
+          this.hl7DurableQueue.markAsSent(dbMsg.id);
+          successCount++;
+        } catch (err) {
+          this.log.error(`WebSocket error while attempting to send message: ${normalizeErrorString(err)}`);
+          this.hl7DurableQueue.markAsError(dbMsg.id);
         }
       }
+
+      return successCount;
     }
-    this.webSocketWorker = undefined;
+    return 0;
   }
 
   private trySendToHl7Connection(): void {
-    while (this.hl7Queue.length > 0) {
-      const msg = this.hl7Queue.shift();
-      if (msg?.type === 'agent:transmit:response' && msg.channel) {
-        const channel = this.channels.get(msg.channel);
-        if (channel) {
-          channel.sendToRemote(msg);
+    // Process response messages from durable queue
+    let dbMsg = this.hl7DurableQueue.getNextResponseQueuedMessage();
+    while (dbMsg) {
+      const channel = this.channels.get(dbMsg.channel);
+      if (channel) {
+        try {
+          channel.sendToRemote({
+            type: 'agent:transmit:response',
+            channel: dbMsg.channel,
+            remote: dbMsg.remote,
+            contentType: ContentType.HL7_V2,
+            body: dbMsg.response_message,
+          });
+          this.hl7DurableQueue.markAsResponseSent(dbMsg.id);
+        } catch (err) {
+          this.log.error(`Error sending HL7 response: ${normalizeErrorString(err)}`);
+          this.hl7DurableQueue.markAsResponseError(dbMsg.id);
         }
+      } else {
+        this.log.warn(`Channel not found for response: ${dbMsg.channel}`);
+        this.hl7DurableQueue.markAsResponseError(dbMsg.id);
       }
+
+      dbMsg = this.hl7DurableQueue.getNextResponseQueuedMessage();
     }
   }
 

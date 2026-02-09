@@ -8,16 +8,71 @@ import process from 'node:process';
 
 const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 
+// Graceful shutdown timeout in milliseconds
+const SHUTDOWN_TIMEOUT_MS = 30000;
+
 export type AppPidState = 'running' | 'stale' | 'clean';
+
+// Shutdown callback that can be set by the app for graceful shutdown
+type ShutdownCallback = () => Promise<void>;
+let shutdownCallback: ShutdownCallback | undefined;
+let isShuttingDown = false;
+
+/**
+ * Set a callback to be called during graceful shutdown.
+ * The callback is called before PID files are removed.
+ * This allows the application to perform cleanup (e.g., closing connections,
+ * writing handoff signals) before the process exits.
+ * @param callback - Async function to call during shutdown.
+ */
+export function setShutdownCallback(callback: ShutdownCallback): void {
+  shutdownCallback = callback;
+}
+
+/**
+ * Clear the shutdown callback.
+ */
+export function clearShutdownCallback(): void {
+  shutdownCallback = undefined;
+}
 
 export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
 const pidFileApps = new Set<string>();
 const processExitListener = (): void => {
   removeAllPidFiles();
 };
-const signalListener = (): void => {
-  removeAllPidFiles();
-  process.exit(0);
+const signalListener = (signal: NodeJS.Signals): void => {
+  // Prevent multiple shutdown attempts from racing
+  if (isShuttingDown) {
+    pidLogger.info(`Already shutting down, ignoring ${signal}`);
+    return;
+  }
+  isShuttingDown = true;
+
+  pidLogger.info(`Received ${signal}, initiating graceful shutdown...`);
+
+  if (shutdownCallback) {
+    // Set a timeout to force exit if shutdown takes too long
+    const forceExitTimeout = setTimeout(() => {
+      pidLogger.error('Shutdown timeout exceeded, forcing exit');
+      removeAllPidFiles();
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS);
+
+    shutdownCallback()
+      .catch((err) => {
+        pidLogger.error('Error during shutdown callback:', err);
+      })
+      .finally(() => {
+        clearTimeout(forceExitTimeout);
+        removeAllPidFiles();
+        process.exit(0);
+      });
+  } else {
+    // No callback set, just clean up and exit immediately
+    removeAllPidFiles();
+    process.exit(0);
+  }
 };
 const uncaughtExceptionListener = (err: Error): void => {
   pidLogger.error('Uncaught exception:', err);
