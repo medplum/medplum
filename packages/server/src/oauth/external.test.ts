@@ -275,9 +275,11 @@ describe('External auth', () => {
       json: () => ({ ok: false }),
     }));
 
+    // Use a unique nonce to avoid cache hits from prior tests
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
       sub: externalSub,
+      nonce: randomUUID(),
     });
     const res = await request(app)
       .get(`/oauth2/userinfo`)
@@ -293,10 +295,12 @@ describe('External auth', () => {
     }));
 
     // JWT has both fhirUser and sub; fhirUser should be used
+    // Use a unique nonce to avoid cache hits from prior tests
     const jwt = createFakeJwt({
       iss: 'https://external-auth.example.com',
       fhirUser: getReferenceString(practitioner),
       sub: externalSub,
+      nonce: randomUUID(),
     });
     const res = await request(app)
       .get(`/oauth2/userinfo`)
