@@ -41,7 +41,7 @@ type RotateSecretParameters = {
  * @returns The FHIR response.
  */
 export async function rotateSecretHandler(req: FhirRequest): Promise<FhirResponse> {
-  const repo = getAuthenticatedContext().repo;
+  const { repo, fhirRateLimiter } = getAuthenticatedContext();
   if (!repo.isSuperAdmin() && !repo.isProjectAdmin()) {
     return [forbidden];
   }
@@ -55,6 +55,7 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   // Patch using system repo since the secret fields should not generally be user-writeable
+  await fhirRateLimiter?.recordWrite();
   const systemRepo = getSystemRepo();
   const clientApp = await systemRepo.withTransaction(async () => {
     let clientApp = await systemRepo.readResource<ClientApplication>('ClientApplication', req.params.id);

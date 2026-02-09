@@ -51,7 +51,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   const { projectId } = req.params;
   if (ctx.project.superAdmin) {
     const systemRepo = getSystemRepo();
-    inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
+    inviteRequest.project = await systemRepo.readResource('Project', projectId);
   } else {
     inviteRequest.project = ctx.project;
   }
@@ -71,6 +71,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
+  await getAuthenticatedContext().fhirRateLimiter?.recordWrite();
   const systemRepo = getSystemRepo();
   const logger = getLogger();
 
