@@ -35,10 +35,10 @@
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
     "fast-xml-parser": "5.3.4",
-    "fhirpath": "4.8.3",
+    "fhirpath": "4.8.4",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "pg": "8.17.2",
+    "pg": "8.18.0",
     "unzipper": "0.12.3"
   },
   "engines": {

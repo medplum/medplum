@@ -146,12 +146,10 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -182,12 +180,10 @@ describe('WebSocket Subscription', () => {
       while (subActive) {
         await sleep(0);
         subActive =
-          (
-            await getRedis().smismember(
-              `medplum:subscriptions:r4:project:${project.id}:active`,
-              `Subscription/${patientSubscription?.id}`
-            )
-          )[0] === 1;
+          (await getRedis().hexists(
+            `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+            `Subscription/${patientSubscription?.id}`
+          )) === 1;
       }
       expect(subActive).toStrictEqual(false);
 
@@ -273,12 +269,10 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -305,12 +299,10 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -472,12 +464,10 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${subscription.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -678,12 +668,10 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${subscription.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -807,12 +795,10 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (
-                await getRedis().smismember(
-                  `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${subscription.id}`
-                )
-              )[0] === 1;
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
