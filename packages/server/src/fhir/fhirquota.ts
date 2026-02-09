@@ -92,10 +92,7 @@ export class FhirRateLimiter {
 
   private async consumeImpl(points: number): Promise<void> {
     this.delta += points;
-    const cachedResult = await this.checkInMemoryBlock(points);
-    if (cachedResult) {
-      await this.block(points, cachedResult);
-    }
+    await this.checkInMemoryBlock(points);
 
     try {
       const result = await this.limiter.consume(this.userKey, points);
@@ -133,7 +130,7 @@ export class FhirRateLimiter {
     }
   }
 
-  async checkInMemoryBlock(points: number): Promise<RateLimiterRes | undefined> {
+  async checkInMemoryBlock(points: number): Promise<void> {
     const userBlock = blockedUsers.get(this.userKey);
     if (userBlock) {
       if (Date.now() <= userBlock.resetTimestamp) {
