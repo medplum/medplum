@@ -135,9 +135,13 @@ export class FhirRateLimiter {
 
   async checkInMemoryBlock(points: number): Promise<RateLimiterRes | undefined> {
     const userBlock = blockedUsers.get(this.userKey);
-    if (userBlock && Date.now() <= userBlock.resetTimestamp) {
-      await this.block(points, userBlock.result);
-      return userBlock.result;
+    if (userBlock) {
+      if (Date.now() <= userBlock.resetTimestamp) {
+        this.setState(userBlock.result);
+        await this.block(points, userBlock.result);
+      } else {
+        blockedUsers.delete(this.userKey);
+      }
     }
     return undefined;
   }
