@@ -1165,7 +1165,7 @@ async function tryExternalAuthLogin(
       return undefined;
     }
 
-    membership = entries?.[0]?.resource as WithId<ProjectMembership> | undefined;
+    membership = entries?.[0]?.resource;
   }
 
   if (!membership || membership.active === false) {
