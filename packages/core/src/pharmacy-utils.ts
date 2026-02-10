@@ -122,10 +122,10 @@ export function getPreferredPharmaciesFromPatient(
 
     if (pharmacyExt?.valueReference) {
       const isPrimary = preferenceTypeSystem
-        ? typeExt?.valueCodeableConcept?.coding?.some(
+        ? (typeExt?.valueCodeableConcept?.coding?.some(
             (c) => c.system === preferenceTypeSystem && c.code === PHARMACY_TYPE_PRIMARY
-          ) ?? false
-        : typeExt?.valueCodeableConcept?.coding?.some((c) => c.code === PHARMACY_TYPE_PRIMARY) ?? false;
+          ) ?? false)
+        : (typeExt?.valueCodeableConcept?.coding?.some((c) => c.code === PHARMACY_TYPE_PRIMARY) ?? false);
 
       pharmacies.push({
         organizationRef: pharmacyExt.valueReference as Reference<Organization>,
