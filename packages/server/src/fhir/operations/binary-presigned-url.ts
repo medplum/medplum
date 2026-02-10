@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { Binary, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -34,12 +34,8 @@ export async function binaryPresignedUrlHandler(req: FhirRequest): Promise<FhirR
   const id = req.params.id;
   const params = parseInputParameters<PresignedUrlParams>(operation, req);
 
-  if (params.upload) {
-    throw new OperationOutcomeError(badRequest('Presigned upload URL is not yet supported'));
-  }
-
   const resource = await repo.readResource<Binary>('Binary', id);
 
-  const url = await getPresignedUrl(resource);
+  const url = await getPresignedUrl(resource, params);
   return [allOk, buildOutputParameters(operation, { url })];
 }
