@@ -967,7 +967,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     return undefined;
   }
 
-  if (!timingSafeEqualStr(client.secret as string, password)) {
+  if (!timingSafeEqualStr(client.secret ?? '', password)) {
     return undefined;
   }
 
