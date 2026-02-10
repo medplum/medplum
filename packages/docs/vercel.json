@@ -136,6 +136,10 @@
     {
       "source": "/docs/self-hosting/config-settings",
       "destination": "/docs/self-hosting/server-config"
+    },
+    {
+      "source": "/solutions/interoperability/agent-faqs",
+      "destination": "/solutions/agent"
     }
   ]
 }
