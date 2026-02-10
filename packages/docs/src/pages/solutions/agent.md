@@ -66,7 +66,7 @@ Benchmarked HL7 throughput using Original and [Enhanced Acknowledgement](/docs/a
 Following NextGen's announcement regarding Mirth Connect, healthcare organizations are evaluating alternatives. Medplum offers:
 
 - **Cloud-native architecture** with local protocol support
-- **Modern TypeScript/JavaScript** (not aging Java/Rhino)
+- **Modern TypeScript/JavaScript**
 - **Continuous updates** with proactive security maintenance  
 - **Apache 2 licensed** open source
 - **FHIR-native** with legacy format support
