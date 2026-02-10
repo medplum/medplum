@@ -776,7 +776,12 @@ export async function getUserByEmailWithoutProject(email: string): Promise<WithI
  * @param b - Second string.
  * @returns True if the strings are equal.
  */
-export function timingSafeEqualStr(a: string, b: string): boolean {
+export function timingSafeEqualStr(a: string | undefined, b: string | undefined): boolean {
+  if (a === undefined && b === undefined) {
+    return true;
+  } else if (a === undefined || b === undefined) {
+    return false;
+  }
   const buf1 = Buffer.from(a);
   const buf2 = Buffer.from(b);
   return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
@@ -967,7 +972,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     return undefined;
   }
 
-  if (!timingSafeEqualStr(client.secret as string, password)) {
+  if (!timingSafeEqualStr(client.secret, password)) {
     return undefined;
   }
 
@@ -1098,10 +1103,13 @@ async function tryExternalAuthLogin(
   // that automatically place custom claims in an `ext` block.
   const extensions = claims.ext as Record<string, unknown> | undefined;
   const profileString = claims.fhirUser ?? extensions?.fhirUser;
-  if (!isString(profileString)) {
+
+  // If neither fhirUser nor sub is present, we cannot identify the user
+  if (!isString(profileString) && !isString(claims.sub)) {
     return undefined;
   }
 
+  // Validate the token against the external IDP's userinfo endpoint
   try {
     await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
   } catch (err: any) {
@@ -1109,38 +1117,68 @@ async function tryExternalAuthLogin(
     return undefined;
   }
 
-  // Profile string can be either a reference or a search string
-  let searchRequest: SearchRequest<ProfileResource>;
-  const queryIndex = profileString.indexOf('?');
-  if (queryIndex > -1) {
-    // Search string can be either relative (e.g. `Patient?identifier=foo`),
-    // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
-    // Isolate the resource type and query string from any preceding URL parts
-    const startIndex = profileString.lastIndexOf('/', queryIndex);
-    searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
-  } else {
-    const [resourceType, id] = profileString.split('/');
-    searchRequest = {
-      resourceType: resourceType as ProfileResource['resourceType'],
-      filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
-    };
-  }
-
-  // Search for the profile
   const systemRepo = getSystemRepo();
-  const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
-  if (!profile) {
-    return undefined;
+  let membership: WithId<ProjectMembership> | undefined;
+
+  if (isString(profileString)) {
+    // Path A: fhirUser claim present - look up profile, then find membership
+    // Profile string can be either a reference or a search string
+    let searchRequest: SearchRequest<ProfileResource>;
+    const queryIndex = profileString.indexOf('?');
+    if (queryIndex > -1) {
+      // Search string can be either relative (e.g. `Patient?identifier=foo`),
+      // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
+      // Isolate the resource type and query string from any preceding URL parts
+      const startIndex = profileString.lastIndexOf('/', queryIndex);
+      searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
+    } else {
+      const [resourceType, id] = profileString.split('/');
+      searchRequest = {
+        resourceType: resourceType as ProfileResource['resourceType'],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+      };
+    }
+
+    // Search for the profile
+    const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+    if (!profile) {
+      return undefined;
+    }
+
+    // Search for a ProjectMembership for the profile
+    membership = await systemRepo.searchOne<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
+    });
+  } else {
+    // Path B: sub claim fallback - look up ProjectMembership by externalId
+    // Fetch at most 2 to detect duplicates efficiently; if 2+ exist, the externalId is ambiguous
+    const bundle = await systemRepo.search<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      filters: [
+        {
+          code: 'external-id',
+          operator: Operator.EXACT,
+          value: claims.sub as string,
+        },
+      ],
+      count: 2,
+    });
+
+    const entries = bundle.entry;
+    if (entries && entries.length > 1) {
+      getLogger().warn('Multiple ProjectMemberships found for external ID', { sub: claims.sub });
+      return undefined;
+    }
+
+    membership = entries?.[0]?.resource;
   }
 
-  // Search for a ProjectMembership for the profile
-  const membership = await systemRepo.searchOne<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
-  });
   if (!membership || membership.active === false) {
     return undefined;
   }
+
+  const [profileType] = parseReference(membership.profile);
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -1148,7 +1186,7 @@ async function tryExternalAuthLogin(
     project: membership.project,
     membership: createReference(membership),
     user: membership.user,
-    profileType: profile.resourceType,
+    profileType,
     authTime: new Date().toISOString(),
     scope: isString(claims.scope) ? claims.scope : undefined,
     nonce: isString(claims.nonce) ? claims.nonce : undefined,
