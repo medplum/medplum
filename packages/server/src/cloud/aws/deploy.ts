@@ -192,7 +192,7 @@ async function createZipFile(bot: Bot, code: string): Promise<Uint8Array> {
  * @param name - The bot name.
  * @returns True if the bot exists.
  */
-async function lambdaExists(client: LambdaClient, name: string): Promise<boolean> {
+export async function lambdaExists(client: LambdaClient, name: string): Promise<boolean> {
   try {
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
@@ -212,7 +212,7 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
  * @param name - The bot name.
  * @param zipFile - The zip file with the bot code.
  */
-async function createLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+export async function createLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   const layerVersion = await getLayerVersion(client);
 
   await client.send(
@@ -241,7 +241,7 @@ async function createLambda(bot: Bot, client: LambdaClient, name: string, zipFil
  * @param name - The bot name.
  * @param zipFile - The zip file with the bot code.
  */
-async function updateLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+export async function updateLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   // First, make sure the lambda configuration is up to date
   await updateLambdaConfig(bot, client, name);
 
