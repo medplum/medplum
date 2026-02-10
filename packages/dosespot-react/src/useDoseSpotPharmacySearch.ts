@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { isAddPharmacyResponse, isOrganizationArray } from '@medplum/core';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
+import { isAddPharmacyResponse, isOrganizationArray } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback } from 'react';

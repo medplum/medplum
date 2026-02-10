@@ -304,7 +304,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
             <Divider />
-            <Pharmacies patient={patient} onClickResource={onClickResource} PharmacyDialogComponent={PharmacyDialogComponent} />
+            <Pharmacies
+              patient={patient}
+              onClickResource={onClickResource}
+              PharmacyDialogComponent={PharmacyDialogComponent}
+            />
             <Divider />
           </>
         )}

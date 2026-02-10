@@ -10,13 +10,8 @@ export {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
   getPreferredPharmaciesFromPatient,
-  removePreferredPharmacyFromPatient,
-  isOrganizationArray,
   isAddPharmacyResponse,
+  isOrganizationArray,
+  removePreferredPharmacyFromPatient,
 } from '@medplum/core';
-export type {
-  PreferredPharmacy,
-  PharmacySearchParams,
-  AddFavoriteParams,
-  AddPharmacyResponse,
-} from '@medplum/core';
+export type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams, PreferredPharmacy } from '@medplum/core';

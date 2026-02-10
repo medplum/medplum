@@ -5,23 +5,18 @@ import type { Identifier } from '@medplum/fhirtypes';
 
 // Re-export generic pharmacy utilities from @medplum/core
 export {
-  PATIENT_PREFERRED_PHARMACY_URL,
-  PHARMACY_PREFERENCE_TYPE_SYSTEM,
-  PHARMACY_TYPE_PRIMARY,
-  PHARMACY_TYPE_PREFERRED,
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
   getPreferredPharmaciesFromPatient,
-  removePreferredPharmacyFromPatient,
-  isOrganizationArray,
   isAddPharmacyResponse,
+  isOrganizationArray,
+  PATIENT_PREFERRED_PHARMACY_URL,
+  PHARMACY_PREFERENCE_TYPE_SYSTEM,
+  PHARMACY_TYPE_PREFERRED,
+  PHARMACY_TYPE_PRIMARY,
+  removePreferredPharmacyFromPatient,
 } from '@medplum/core';
-export type {
-  PreferredPharmacy,
-  PharmacySearchParams,
-  AddFavoriteParams,
-  AddPharmacyResponse,
-} from '@medplum/core';
+export type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams, PreferredPharmacy } from '@medplum/core';
 
 // Bot system
 export const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';

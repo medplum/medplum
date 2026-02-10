@@ -301,7 +301,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               {selectedThread.subject && showPatientSummary && (
                 <Flex direction="column" w={300} h="100%">
                   <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                    <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} PharmacyDialogComponent={DoseSpotPharmacyDialog} />
+                    <PatientSummary
+                      key={selectedThread.id}
+                      patient={selectedThread.subject as Reference<Patient>}
+                      PharmacyDialogComponent={DoseSpotPharmacyDialog}
+                    />
                   </ScrollArea>
                 </Flex>
               )}

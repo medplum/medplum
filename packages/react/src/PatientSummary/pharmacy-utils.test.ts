@@ -5,7 +5,7 @@
 // The main tests are in @medplum/core/src/pharmacy-utils.test.ts
 
 import { HTTP_HL7_ORG } from '@medplum/core';
-import type { PreferredPharmacy, PharmacySearchParams, AddFavoriteParams, AddPharmacyResponse } from './pharmacy-utils';
+import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams, PreferredPharmacy } from './pharmacy-utils';
 import {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,

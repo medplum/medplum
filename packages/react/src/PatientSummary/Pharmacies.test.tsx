@@ -116,18 +116,14 @@ describe('PatientSummary - Pharmacies', () => {
   });
 
   test('Shows Add button when PharmacyDialogComponent is provided', async () => {
-    await setup(
-      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
-    );
+    await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />);
 
     expect(screen.getByText('Pharmacies')).toBeInTheDocument();
     expect(screen.getByLabelText('Add item')).toBeInTheDocument();
   });
 
   test('Opens add pharmacy modal with PharmacyDialogComponent', async () => {
-    await setup(
-      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
-    );
+    await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />);
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Add item'));
@@ -138,9 +134,7 @@ describe('PatientSummary - Pharmacies', () => {
   });
 
   test('Closes modal on cancel', async () => {
-    await setup(
-      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
-    );
+    await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />);
 
     // Open modal
     await act(async () => {

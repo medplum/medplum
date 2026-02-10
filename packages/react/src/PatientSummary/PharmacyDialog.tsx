@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Button, Checkbox, Flex, Group, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
+import { formatAddress, normalizeErrorString } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';

@@ -22,9 +22,7 @@ describe('useDoseSpotPharmacySearch', () => {
   }
 
   test('searchPharmacies calls executeBot with correct parameters', async () => {
-    const mockResults: Organization[] = [
-      { resourceType: 'Organization', id: '1', name: 'Test Pharmacy' },
-    ];
+    const mockResults: Organization[] = [{ resourceType: 'Organization', id: '1', name: 'Test Pharmacy' }];
 
     const executeBotSpy = vi.spyOn(medplum, 'executeBot').mockResolvedValueOnce(mockResults);
 
