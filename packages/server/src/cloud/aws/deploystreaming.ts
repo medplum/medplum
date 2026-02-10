@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { GetFunctionCommand, LambdaClient, ResourceNotFoundException } from '@aws-sdk/client-lambda';
+import { LambdaClient } from '@aws-sdk/client-lambda';
 import type { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
@@ -176,36 +176,6 @@ function writeResponse(responseStream, statusCode, body) {
   responseStream.end();
 }
 `;
-
-export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
-  // Create a new AWS Lambda client
-  // Use a custom retry strategy to avoid throttling errors
-  // This is especially important when updating lambdas which also
-  // involve upgrading the layer version.
-
-  const client = new LambdaClient({
-    region: getConfig().awsRegion,
-    retryStrategy: new ConfiguredRetryStrategy(
-      5, // max attempts
-      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
-    ),
-  });
-
-  const name = getLambdaNameForBot(bot);
-  let timeout: number;
-  try {
-    const command = new GetFunctionCommand({ FunctionName: name });
-    const response = await client.send(command);
-    timeout = response?.Configuration?.Timeout ?? DEFAULT_LAMBDA_TIMEOUT;
-  } catch (err) {
-    if (err instanceof ResourceNotFoundException) {
-      timeout = DEFAULT_LAMBDA_TIMEOUT;
-    } else {
-      throw err;
-    }
-  }
-  return timeout;
-}
 
 export async function deployLambdaStreaming(bot: Bot, code: string): Promise<void> {
   const log = getLogger();
