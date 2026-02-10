@@ -30,7 +30,7 @@ import type {
   SmartAppLaunch,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Request } from 'express';
 import type { JWTPayload, VerifyOptions } from 'jose';
 import { jwtVerify } from 'jose';
@@ -972,7 +972,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
   }
 
   const membership = await getClientApplicationMembership(client);
-  if (!membership) {
+  if (!membership || membership.active === false) {
     return undefined;
   }
 

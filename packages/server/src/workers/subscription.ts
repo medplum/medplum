@@ -14,7 +14,9 @@ import {
   isGone,
   isNotFound,
   isString,
+  matchesSearchRequest,
   normalizeOperationOutcome,
+  parseSearchRequest,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   stringify,
@@ -404,8 +406,22 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     ],
   });
   const redis = getRedis();
-  const setKey = `medplum:subscriptions:r4:project:${projectId}:active`;
-  const redisOnlySubRefStrs = await redis.smembers(setKey);
+  const hashKey = `medplum:subscriptions:r4:project:${projectId}:active:v2`;
+  const entries = await redis.hgetall(hashKey);
+  const redisOnlySubRefStrs: string[] = [];
+  for (const [ref, criteria] of Object.entries(entries)) {
+    const criteriaResourceType = criteria.split('?')[0];
+    if (criteriaResourceType !== resource.resourceType) {
+      continue;
+    }
+    try {
+      if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
+        redisOnlySubRefStrs.push(ref);
+      }
+    } catch (err) {
+      getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
+    }
+  }
   if (redisOnlySubRefStrs.length) {
     const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
@@ -422,7 +438,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.srem(setKey, inactiveSubs);
+        await redis.hdel(hashKey, ...inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
