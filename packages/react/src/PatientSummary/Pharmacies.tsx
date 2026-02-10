@@ -5,20 +5,29 @@ import { useDisclosure } from '@mantine/hooks';
 import { formatAddress, getReferenceString, OperationOutcomeError } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import type { JSX } from 'react';
+import type { ComponentType, JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import type { LoadState } from '../utils/loadState';
 import { CollapsibleSection } from './CollapsibleSection';
 import { getPreferredPharmaciesFromPatient } from './pharmacy-utils';
-import { PharmacyDialog } from './PharmacyDialog';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
+
+/**
+ * Base props that any pharmacy dialog component must accept.
+ */
+export interface PharmacyDialogBaseProps {
+  readonly patient: Patient;
+  readonly onSubmit: (pharmacy: Organization) => void;
+  readonly onClose: () => void;
+}
 
 export interface PharmaciesProps {
   readonly patient: Patient;
   readonly pharmacies?: Organization[];
   readonly onClickResource?: (resource: Organization) => void;
+  readonly PharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
 }
 
 interface PharmacyWithPrimary extends Organization {
@@ -26,7 +35,7 @@ interface PharmacyWithPrimary extends Organization {
 }
 
 export function Pharmacies(props: PharmaciesProps): JSX.Element {
-  const { patient: patientProp, onClickResource } = props;
+  const { patient: patientProp, onClickResource, PharmacyDialogComponent } = props;
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [resolvedPharmacies, setResolvedPharmacies] = useState<PharmacyWithPrimary[]>([]);
@@ -69,10 +78,10 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
 
       try {
         const results = await Promise.all(
-          pharmacyRefs.map(async (ref) => {
+          pharmacyRefs.map(async (pharmacyRef) => {
             try {
-              const org = await medplum.readReference(ref.organizationRef);
-              return { ...org, isPrimary: ref.isPrimary } as PharmacyWithPrimary;
+              const org = await medplum.readReference(pharmacyRef.organizationRef);
+              return { ...org, isPrimary: pharmacyRef.isPrimary } as PharmacyWithPrimary;
             } catch (error) {
               if (!isNotFoundError(error)) {
                 // Error logged by Medplum error handler
@@ -82,7 +91,7 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
           })
         );
         if (!cancelled) {
-          const validResults = results.filter((r): r is PharmacyWithPrimary => r !== null);
+          const validResults = results.filter((result): result is PharmacyWithPrimary => result !== null);
           setResolvedPharmacies(validResults);
           // If all references failed to resolve, show error state
           // If some resolved successfully, show loaded state with partial results
@@ -165,12 +174,14 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
 
   return (
     <>
-      <CollapsibleSection title="Pharmacies" onAdd={open}>
+      <CollapsibleSection title="Pharmacies" onAdd={PharmacyDialogComponent ? open : undefined}>
         {renderPharmacyList()}
       </CollapsibleSection>
-      <Modal opened={opened} onClose={close} title="Add Pharmacy" size="lg">
-        <PharmacyDialog patient={patient} onSubmit={handleSubmit} onClose={close} />
-      </Modal>
+      {PharmacyDialogComponent && (
+        <Modal opened={opened} onClose={close} title="Add Pharmacy" size="lg">
+          <PharmacyDialogComponent patient={patient} onSubmit={handleSubmit} onClose={close} />
+        </Modal>
+      )}
     </>
   );
 }

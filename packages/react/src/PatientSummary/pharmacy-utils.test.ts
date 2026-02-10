@@ -4,14 +4,14 @@
 // This file verifies that pharmacy-utils re-exports from @medplum/core work correctly.
 // The main tests are in @medplum/core/src/pharmacy-utils.test.ts
 
-import type { PreferredPharmacy } from './pharmacy-utils';
+import { HTTP_HL7_ORG } from '@medplum/core';
+import type { PreferredPharmacy, PharmacySearchParams, AddFavoriteParams, AddPharmacyResponse } from './pharmacy-utils';
 import {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
-  DOSESPOT_ADD_PATIENT_PHARMACY_BOT,
-  DOSESPOT_SEARCH_PHARMACY_BOT,
   getPreferredPharmaciesFromPatient,
-  MEDPLUM_BOT_SYSTEM,
+  isAddPharmacyResponse,
+  isOrganizationArray,
   PATIENT_PREFERRED_PHARMACY_URL,
   PHARMACY_PREFERENCE_TYPE_SYSTEM,
   PHARMACY_TYPE_PREFERRED,
@@ -19,16 +19,12 @@ import {
   removePreferredPharmacyFromPatient,
 } from './pharmacy-utils';
 
-describe('pharmacy-utils re-exports', () => {
+describe('pharmacy-utils re-exports from @medplum/core', () => {
   test('All constants are re-exported', () => {
-    expect(PATIENT_PREFERRED_PHARMACY_URL).toBeDefined();
-    expect(typeof PATIENT_PREFERRED_PHARMACY_URL).toBe('string');
+    expect(PATIENT_PREFERRED_PHARMACY_URL).toBe(`${HTTP_HL7_ORG}/fhir/StructureDefinition/patient-preferredPharmacy`);
     expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
     expect(PHARMACY_TYPE_PRIMARY).toBe('primary');
     expect(PHARMACY_TYPE_PREFERRED).toBe('preferred');
-    expect(MEDPLUM_BOT_SYSTEM).toBe('https://www.medplum.com/bots');
-    expect(DOSESPOT_SEARCH_PHARMACY_BOT).toBeDefined();
-    expect(DOSESPOT_ADD_PATIENT_PHARMACY_BOT).toBeDefined();
   });
 
   test('All functions are re-exported', () => {
@@ -36,14 +32,34 @@ describe('pharmacy-utils re-exports', () => {
     expect(typeof createPreferredPharmacyExtension).toBe('function');
     expect(typeof addPreferredPharmacyToPatient).toBe('function');
     expect(typeof removePreferredPharmacyFromPatient).toBe('function');
+    expect(typeof isOrganizationArray).toBe('function');
+    expect(typeof isAddPharmacyResponse).toBe('function');
   });
 
   test('PreferredPharmacy type is re-exported', () => {
-    // Type check - this will fail at compile time if the type is not exported
     const pharmacy: PreferredPharmacy = {
       organizationRef: { reference: 'Organization/123' },
       isPrimary: true,
     };
     expect(pharmacy.isPrimary).toBe(true);
+  });
+
+  test('PharmacySearchParams type is re-exported', () => {
+    const params: PharmacySearchParams = { name: 'Test', city: 'Boston' };
+    expect(params.name).toBe('Test');
+  });
+
+  test('AddFavoriteParams type is re-exported', () => {
+    const params: AddFavoriteParams = {
+      patientId: '123',
+      pharmacy: { resourceType: 'Organization', name: 'Test' },
+      setAsPrimary: true,
+    };
+    expect(params.patientId).toBe('123');
+  });
+
+  test('AddPharmacyResponse type is re-exported', () => {
+    const response: AddPharmacyResponse = { success: true, message: 'ok' };
+    expect(response.success).toBe(true);
   });
 });

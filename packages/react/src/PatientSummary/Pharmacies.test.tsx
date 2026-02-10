@@ -4,24 +4,43 @@
 import type { Organization, Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import type { ReactNode } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
+import type { PharmacyDialogBaseProps } from './Pharmacies';
 import { Pharmacies } from './Pharmacies';
+import { PATIENT_PREFERRED_PHARMACY_URL } from './pharmacy-utils';
 
 const medplum = new MockClient();
 
-describe('PatientSummary - Pharmacies', () => {
-  async function setup(children: ReactNode): Promise<void> {
-    await act(async () => {
-      render(
-        <MemoryRouter>
-          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
-        </MemoryRouter>
-      );
-    });
-  }
+/**
+ * A simple mock pharmacy dialog component for testing.
+ * @param props - The pharmacy dialog base props.
+ * @returns A mock dialog element.
+ */
+function MockPharmacyDialog(props: PharmacyDialogBaseProps): JSX.Element {
+  return (
+    <div>
+      <span>Mock Pharmacy Dialog</span>
+      <button onClick={() => props.onSubmit({ resourceType: 'Organization', name: 'Mock Pharmacy' })}>
+        Submit Mock
+      </button>
+      <button onClick={props.onClose}>Close Mock</button>
+    </div>
+  );
+}
 
+async function setup(children: ReactNode): Promise<void> {
+  await act(async () => {
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+      </MemoryRouter>
+    );
+  });
+}
+
+describe('PatientSummary - Pharmacies', () => {
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -89,18 +108,39 @@ describe('PatientSummary - Pharmacies', () => {
     expect(screen.queryByText('primary')).not.toBeInTheDocument();
   });
 
-  test('Opens add pharmacy modal', async () => {
+  test('Hides Add button when PharmacyDialogComponent is not provided', async () => {
     await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} />);
+
+    expect(screen.getByText('Pharmacies')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Add item')).not.toBeInTheDocument();
+  });
+
+  test('Shows Add button when PharmacyDialogComponent is provided', async () => {
+    await setup(
+      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
+    );
+
+    expect(screen.getByText('Pharmacies')).toBeInTheDocument();
+    expect(screen.getByLabelText('Add item')).toBeInTheDocument();
+  });
+
+  test('Opens add pharmacy modal with PharmacyDialogComponent', async () => {
+    await setup(
+      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
+    );
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     expect(await screen.findByText('Add Pharmacy')).toBeInTheDocument();
+    expect(screen.getByText('Mock Pharmacy Dialog')).toBeInTheDocument();
   });
 
   test('Closes modal on cancel', async () => {
-    await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} />);
+    await setup(
+      <Pharmacies patient={HomerSimpson} pharmacies={[]} PharmacyDialogComponent={MockPharmacyDialog} />
+    );
 
     // Open modal
     await act(async () => {
@@ -111,7 +151,6 @@ describe('PatientSummary - Pharmacies', () => {
 
     // Close modal by clicking the close button (X) in the header
     await act(async () => {
-      // The close button is in the Modal.CloseButton component
       const closeButtons = document.querySelectorAll('[data-variant="subtle"]');
       const closeButton = Array.from(closeButtons).find((btn) =>
         btn.closest('.mantine-Modal-header')
@@ -150,7 +189,7 @@ describe('PatientSummary - Pharmacies', () => {
       id: 'patient-1',
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
             {
               url: 'pharmacy',
@@ -186,7 +225,7 @@ describe('PatientSummary - Pharmacies', () => {
       id: 'patient-1',
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
             {
               url: 'pharmacy',
@@ -274,28 +313,13 @@ describe('PatientSummary - Pharmacies', () => {
     expect(screen.getByText('Test Pharmacy')).toBeInTheDocument();
   });
 
-  test('Opens add pharmacy modal and validates flow', async () => {
-    await setup(<Pharmacies patient={HomerSimpson} pharmacies={[]} />);
-
-    // Open modal
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText('Add item'));
-    });
-
-    // The component should exist and have the modal
-    expect(await screen.findByText('Add Pharmacy')).toBeInTheDocument();
-
-    // Verify the form is present
-    expect(screen.getByLabelText('Pharmacy Name')).toBeInTheDocument();
-  });
-
   test('Shows error state when all pharmacy references fail to resolve', async () => {
     const patient: Patient = {
       resourceType: 'Patient',
       id: 'patient-1',
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/patient-preferredPharmacy',
+          url: PATIENT_PREFERRED_PHARMACY_URL,
           extension: [
             {
               url: 'pharmacy',

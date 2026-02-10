@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
+import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import type { Organization } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -77,15 +78,28 @@ describe('PharmacyDialog', () => {
     },
   ];
 
+  let mockOnSearch: jest.Mock<Promise<Organization[]>, [PharmacySearchParams]>;
+  let mockOnAddToFavorites: jest.Mock<Promise<AddPharmacyResponse>, [AddFavoriteParams]>;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockOnSearch = jest.fn<Promise<Organization[]>, [PharmacySearchParams]>();
+    mockOnAddToFavorites = jest.fn<Promise<AddPharmacyResponse>, [AddFavoriteParams]>();
   });
 
   test('Renders search form', async () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     expect(screen.getByLabelText('Pharmacy Name')).toBeInTheDocument();
     expect(screen.getByLabelText('City')).toBeInTheDocument();
@@ -101,25 +115,39 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn();
-
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     await act(async () => {
       fireEvent.click(screen.getByText('Search'));
     });
 
-    // Notification should be shown (mocked in test-utils)
-    expect(medplum.executeBot).not.toHaveBeenCalled();
+    // onSearch should not be called when no criteria is provided
+    expect(mockOnSearch).not.toHaveBeenCalled();
   });
 
   test('Performs search with valid criteria', async () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue(mockPharmacies);
+    mockOnSearch.mockResolvedValue(mockPharmacies);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Fill in search form
     await act(async () => {
@@ -134,17 +162,11 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalledWith(
-        {
-          system: 'https://www.medplum.com/bots',
-          value: 'dosespot-search-pharmacy-bot',
-        },
-        {
-          name: 'CVS',
-          city: 'Boston',
-          zip: '02101',
-        }
-      );
+      expect(mockOnSearch).toHaveBeenCalledWith({
+        name: 'CVS',
+        city: 'Boston',
+        zip: '02101',
+      });
     });
   });
 
@@ -152,9 +174,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue(mockPharmacies);
+    mockOnSearch.mockResolvedValue(mockPharmacies);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -174,9 +204,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue([]);
+    mockOnSearch.mockResolvedValue([]);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -185,7 +223,7 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalled();
+      expect(mockOnSearch).toHaveBeenCalled();
     });
   });
 
@@ -193,9 +231,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue(mockPharmacies);
+    mockOnSearch.mockResolvedValue(mockPharmacies);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -221,17 +267,22 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest
-      .fn()
-      .mockResolvedValueOnce(mockPharmacies) // Search results
-      .mockResolvedValueOnce({
-        // Add pharmacy response
-        success: true,
-        message: 'Successfully added pharmacy',
-        organization: mockPharmacies[0],
-      });
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+    mockOnAddToFavorites.mockResolvedValue({
+      success: true,
+      message: 'Successfully added pharmacy',
+      organization: mockPharmacies[0],
+    });
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -254,17 +305,11 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalledWith(
-        {
-          system: 'https://www.medplum.com/bots',
-          value: 'dosespot-add-patient-pharmacy-bot',
-        },
-        {
-          patientId: HomerSimpson.id,
-          pharmacy: mockPharmacies[0],
-          setAsPrimary: false,
-        }
-      );
+      expect(mockOnAddToFavorites).toHaveBeenCalledWith({
+        patientId: HomerSimpson.id,
+        pharmacy: mockPharmacies[0],
+        setAsPrimary: false,
+      });
       expect(onSubmit).toHaveBeenCalledWith(mockPharmacies[0]);
     });
   });
@@ -273,13 +318,22 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValueOnce(mockPharmacies).mockResolvedValueOnce({
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+    mockOnAddToFavorites.mockResolvedValue({
       success: true,
       message: 'Successfully added primary pharmacy',
       organization: mockPharmacies[0],
     });
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -307,17 +361,11 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalledWith(
-        {
-          system: 'https://www.medplum.com/bots',
-          value: 'dosespot-add-patient-pharmacy-bot',
-        },
-        {
-          patientId: HomerSimpson.id,
-          pharmacy: mockPharmacies[0],
-          setAsPrimary: true,
-        }
-      );
+      expect(mockOnAddToFavorites).toHaveBeenCalledWith({
+        patientId: HomerSimpson.id,
+        pharmacy: mockPharmacies[0],
+        setAsPrimary: true,
+      });
     });
   });
 
@@ -325,9 +373,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockRejectedValue(new Error('Search failed'));
+    mockOnSearch.mockRejectedValue(new Error('Search failed'));
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -336,7 +392,7 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalled();
+      expect(mockOnSearch).toHaveBeenCalled();
     });
   });
 
@@ -344,12 +400,18 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest
-      .fn()
-      .mockResolvedValueOnce(mockPharmacies)
-      .mockRejectedValueOnce(new Error('Failed to add pharmacy'));
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+    mockOnAddToFavorites.mockRejectedValue(new Error('Failed to add pharmacy'));
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -368,7 +430,7 @@ describe('PharmacyDialog', () => {
     });
 
     await waitFor(() => {
-      expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+      expect(mockOnAddToFavorites).toHaveBeenCalled();
       expect(onSubmit).not.toHaveBeenCalled();
     });
   });
@@ -377,9 +439,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue(mockPharmacies);
+    mockOnSearch.mockResolvedValue(mockPharmacies);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -403,9 +473,17 @@ describe('PharmacyDialog', () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValue(mockPharmacies);
+    mockOnSearch.mockResolvedValue(mockPharmacies);
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search
     await act(async () => {
@@ -424,16 +502,25 @@ describe('PharmacyDialog', () => {
     });
   });
 
-  test('Handles bot returning non-success response', async () => {
+  test('Handles non-success response', async () => {
     const onSubmit = jest.fn();
     const onClose = jest.fn();
 
-    medplum.executeBot = jest.fn().mockResolvedValueOnce(mockPharmacies).mockResolvedValueOnce({
+    mockOnSearch.mockResolvedValue(mockPharmacies);
+    mockOnAddToFavorites.mockResolvedValue({
       success: false,
       message: 'Pharmacy already exists',
     });
 
-    await setup(<PharmacyDialog patient={HomerSimpson} onSubmit={onSubmit} onClose={onClose} />);
+    await setup(
+      <PharmacyDialog
+        patient={HomerSimpson}
+        onSubmit={onSubmit}
+        onClose={onClose}
+        onSearch={mockOnSearch}
+        onAddToFavorites={mockOnAddToFavorites}
+      />
+    );
 
     // Search and add
     await act(async () => {

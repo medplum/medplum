@@ -70,6 +70,8 @@ export * from './Panel/Panel';
 export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
 export * from './PatientSummary/PatientSummary';
+export * from './PatientSummary/Pharmacies';
+export * from './PatientSummary/PharmacyDialog';
 export * from './PatientSummary/pharmacy-utils';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';

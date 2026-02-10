@@ -30,7 +30,7 @@ import {
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { ComponentType, JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
@@ -47,6 +47,7 @@ import {
   getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
+import type { PharmacyDialogBaseProps } from './Pharmacies';
 import { Pharmacies } from './Pharmacies';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
@@ -58,6 +59,7 @@ export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
   readonly onClickResource?: (resource: Resource) => void;
   readonly onRequestLabs?: () => void;
+  readonly PharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
 }
 
 interface PatientMedicalData {
@@ -80,7 +82,7 @@ interface PatientMedicalData {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource, onRequestLabs } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, PharmacyDialogComponent } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
@@ -302,7 +304,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
             <Divider />
-            <Pharmacies patient={patient} onClickResource={onClickResource} />
+            <Pharmacies patient={patient} onClickResource={onClickResource} PharmacyDialogComponent={PharmacyDialogComponent} />
             <Divider />
           </>
         )}

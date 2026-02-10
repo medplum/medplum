@@ -3,53 +3,18 @@
 import { Box, Button, Checkbox, Flex, Group, Loader, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatAddress, normalizeErrorString } from '@medplum/core';
+import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import type { Organization, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { DOSESPOT_ADD_PATIENT_PHARMACY_BOT, DOSESPOT_SEARCH_PHARMACY_BOT } from './pharmacy-utils';
 import styles from './PharmacyDialog.module.css';
 
 export interface PharmacyDialogProps {
   readonly patient: Patient;
   readonly onSubmit: (pharmacy: Organization) => void;
   readonly onClose: () => void;
-}
-
-interface AddPharmacyResponse {
-  success: boolean;
-  message: string;
-  organization?: Organization;
-}
-
-/**
- * Type guard to validate that the bot response is an array of Organization resources.
- * @param value - The value to check.
- * @returns True if the value is an array of Organization resources.
- */
-function isOrganizationArray(value: unknown): value is Organization[] {
-  if (!Array.isArray(value)) {
-    return false;
-  }
-  // Check first item if array is non-empty
-  if (value.length > 0) {
-    const first = value[0];
-    return typeof first === 'object' && first !== null && first.resourceType === 'Organization';
-  }
-  return true; // Empty array is valid
-}
-
-/**
- * Type guard to validate the add pharmacy bot response.
- * @param value - The value to check.
- * @returns True if the value is a valid AddPharmacyResponse.
- */
-function isAddPharmacyResponse(value: unknown): value is AddPharmacyResponse {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-  const obj = value as Record<string, unknown>;
-  return typeof obj.success === 'boolean' && typeof obj.message === 'string';
+  readonly onSearch: (params: PharmacySearchParams) => Promise<Organization[]>;
+  readonly onAddToFavorites: (params: AddFavoriteParams) => Promise<AddPharmacyResponse>;
 }
 
 /**
@@ -226,12 +191,12 @@ function SearchResults({
 
 /**
  * Renders a dialog for searching and adding pharmacies to a patient's favorites.
+ * This is a generic component that accepts search and add callbacks.
  * @param props - The dialog props.
  * @returns The pharmacy dialog component.
  */
 export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
-  const { patient, onSubmit, onClose } = props;
-  const medplum = useMedplum();
+  const { patient, onSubmit, onClose, onSearch, onAddToFavorites } = props;
 
   const [searchResults, setSearchResults] = useState<Organization[]>([]);
   const [searching, setSearching] = useState(false);
@@ -241,18 +206,20 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
 
   const handleSearch = useCallback(
     async (formData: FormData) => {
-      const searchParams = {
-        name: formData.get('name') as string | undefined,
-        city: formData.get('city') as string | undefined,
-        state: formData.get('state') as string | undefined,
-        zip: formData.get('zip') as string | undefined,
-        address: formData.get('address') as string | undefined,
-        phoneOrFax: formData.get('phoneOrFax') as string | undefined,
-        ncpdpID: formData.get('ncpdpID') as string | undefined,
+      const searchParams: PharmacySearchParams = {
+        name: (formData.get('name') as string) || undefined,
+        city: (formData.get('city') as string) || undefined,
+        state: (formData.get('state') as string) || undefined,
+        zip: (formData.get('zip') as string) || undefined,
+        address: (formData.get('address') as string) || undefined,
+        phoneOrFax: (formData.get('phoneOrFax') as string) || undefined,
+        ncpdpID: (formData.get('ncpdpID') as string) || undefined,
       };
 
       // Remove empty values
-      const cleanParams = Object.fromEntries(Object.entries(searchParams).filter(([_, v]) => v && v.trim() !== ''));
+      const cleanParams = Object.fromEntries(
+        Object.entries(searchParams).filter(([_, v]) => typeof v === 'string' && v.trim() !== '')
+      ) as PharmacySearchParams;
 
       if (Object.keys(cleanParams).length === 0) {
         showNotification({
@@ -266,15 +233,9 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
       setSearching(true);
       setSelectedPharmacy(undefined);
       try {
-        const response = await medplum.executeBot(DOSESPOT_SEARCH_PHARMACY_BOT, cleanParams);
-
-        // Validate the response is an array of Organizations
-        if (!isOrganizationArray(response)) {
-          throw new Error('Invalid response from pharmacy search');
-        }
-
-        setSearchResults(response);
-        if (response.length === 0) {
+        const results = await onSearch(cleanParams);
+        setSearchResults(results);
+        if (results.length === 0) {
           showNotification({
             color: 'blue',
             title: 'No Results',
@@ -292,7 +253,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
         setSearching(false);
       }
     },
-    [medplum]
+    [onSearch]
   );
 
   const handleAddFavorite = useCallback(async () => {
@@ -302,17 +263,11 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
 
     setAdding(true);
     try {
-      // Pass the full Organization to the bot instead of just the pharmacy ID
-      const response = await medplum.executeBot(DOSESPOT_ADD_PATIENT_PHARMACY_BOT, {
+      const response = await onAddToFavorites({
         patientId: patient.id,
         pharmacy: selectedPharmacy,
         setAsPrimary,
       });
-
-      // Validate the response structure
-      if (!isAddPharmacyResponse(response)) {
-        throw new Error('Invalid response from add pharmacy bot');
-      }
 
       if (response.success) {
         showNotification({
@@ -339,7 +294,7 @@ export function PharmacyDialog(props: PharmacyDialogProps): JSX.Element {
     } finally {
       setAdding(false);
     }
-  }, [selectedPharmacy, patient.id, setAsPrimary, medplum, onSubmit]);
+  }, [selectedPharmacy, patient.id, setAsPrimary, onAddToFavorites, onSubmit]);
 
   return (
     <Box>

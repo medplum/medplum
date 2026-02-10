@@ -21,10 +21,12 @@ export {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
   getPreferredPharmaciesFromPatient,
+  isAddPharmacyResponse,
+  isOrganizationArray,
   PATIENT_PREFERRED_PHARMACY_URL,
   PHARMACY_PREFERENCE_TYPE_SYSTEM,
   PHARMACY_TYPE_PREFERRED,
   PHARMACY_TYPE_PRIMARY,
   removePreferredPharmacyFromPatient,
-} from '@medplum/dosespot-core';
-export type { PreferredPharmacy } from '@medplum/dosespot-core';
+} from '@medplum/core';
+export type { PreferredPharmacy } from '@medplum/core';
