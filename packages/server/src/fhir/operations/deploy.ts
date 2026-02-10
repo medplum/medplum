@@ -20,6 +20,7 @@ import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
 import { getSystemRepo } from '../repo';
+import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
@@ -101,7 +102,12 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
         timeout: await getLambdaTimeoutForBot(latestBot),
       });
     }
-    await deployLambda(latestBot, codeToDeploy as string);
+
+    if (latestBot.streamingEnabled) {
+      await deployLambdaStreaming(latestBot, codeToDeploy as string);
+    } else {
+      await deployLambda(latestBot, codeToDeploy as string);
+    }
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }
