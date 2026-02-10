@@ -1,0 +1,10 @@
+{
+  "bots": [
+    {
+      "name": "ai-fhir-request-tools",
+      "id": "5c1c0896-19da-419e-a598-c1632474001f",
+      "source": "src/bots/ai-fhir-request-tools.ts",
+      "dist": "dist/bots/ai-fhir-request-tools.js"
+    }
+  ]
+}
