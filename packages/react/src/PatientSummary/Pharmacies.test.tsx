@@ -9,7 +9,7 @@ import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import type { PharmacyDialogBaseProps } from './Pharmacies';
 import { Pharmacies } from './Pharmacies';
-import { PATIENT_PREFERRED_PHARMACY_URL } from './pharmacy-utils';
+import { PATIENT_PREFERRED_PHARMACY_URL, PHARMACY_PREFERENCE_TYPE_SYSTEM } from './pharmacy-utils';
 
 const medplum = new MockClient();
 
@@ -196,7 +196,7 @@ describe('PatientSummary - Pharmacies', () => {
               valueCodeableConcept: {
                 coding: [
                   {
-                    system: 'https://dosespot.com/pharmacy-preference-type',
+                    system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                     code: 'primary',
                   },
                 ],
@@ -232,7 +232,7 @@ describe('PatientSummary - Pharmacies', () => {
               valueCodeableConcept: {
                 coding: [
                   {
-                    system: 'https://dosespot.com/pharmacy-preference-type',
+                    system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                     code: 'primary',
                   },
                 ],
@@ -326,7 +326,7 @@ describe('PatientSummary - Pharmacies', () => {
               valueCodeableConcept: {
                 coding: [
                   {
-                    system: 'https://dosespot.com/pharmacy-preference-type',
+                    system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                     code: 'primary',
                   },
                 ],

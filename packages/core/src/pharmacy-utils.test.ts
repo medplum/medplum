@@ -30,7 +30,7 @@ describe('Constants', () => {
   });
 
   test('PHARMACY_PREFERENCE_TYPE_SYSTEM is correct', () => {
-    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
+    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://medplum.com/fhir/CodeSystem/pharmacy-preference-type');
   });
 });
 
@@ -165,7 +165,28 @@ describe('getPreferredPharmaciesFromPatient', () => {
     expect(result[0].isPrimary).toBe(false);
   });
 
-  test('Ignores type with wrong system', () => {
+  test('Matches primary regardless of system by default', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: PATIENT_PREFERRED_PHARMACY_URL,
+          extension: [
+            { url: 'pharmacy', valueReference: { reference: 'Organization/123' } },
+            {
+              url: 'type',
+              valueCodeableConcept: { coding: [{ system: 'https://any-vendor.com', code: PHARMACY_TYPE_PRIMARY }] },
+            },
+          ],
+        },
+      ],
+    };
+    const result = getPreferredPharmaciesFromPatient(patient);
+    expect(result).toHaveLength(1);
+    expect(result[0].isPrimary).toBe(true);
+  });
+
+  test('Ignores type with wrong system when explicit system is provided', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       extension: [
@@ -181,7 +202,7 @@ describe('getPreferredPharmaciesFromPatient', () => {
         },
       ],
     };
-    const result = getPreferredPharmaciesFromPatient(patient);
+    const result = getPreferredPharmaciesFromPatient(patient, PHARMACY_PREFERENCE_TYPE_SYSTEM);
     expect(result).toHaveLength(1);
     expect(result[0].isPrimary).toBe(false);
   });

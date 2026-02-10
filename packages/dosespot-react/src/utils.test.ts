@@ -125,7 +125,7 @@ describe('utils', () => {
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'https://dosespot.com/pharmacy-preference-type',
+                      system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                       code: PHARMACY_TYPE_PRIMARY,
                     },
                   ],
@@ -160,7 +160,7 @@ describe('utils', () => {
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'https://dosespot.com/pharmacy-preference-type',
+                      system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                       code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
@@ -194,7 +194,7 @@ describe('utils', () => {
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'https://dosespot.com/pharmacy-preference-type',
+                      system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                       code: PHARMACY_TYPE_PRIMARY,
                     },
                   ],
@@ -216,7 +216,7 @@ describe('utils', () => {
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'https://dosespot.com/pharmacy-preference-type',
+                      system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                       code: PHARMACY_TYPE_PREFERRED,
                     },
                   ],
@@ -245,7 +245,7 @@ describe('utils', () => {
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'https://dosespot.com/pharmacy-preference-type',
+                      system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
                       code: PHARMACY_TYPE_PRIMARY,
                     },
                   ],

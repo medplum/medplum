@@ -22,7 +22,7 @@ import {
 describe('pharmacy-utils re-exports from @medplum/core', () => {
   test('All constants are re-exported', () => {
     expect(PATIENT_PREFERRED_PHARMACY_URL).toBe(`${HTTP_HL7_ORG}/fhir/StructureDefinition/patient-preferredPharmacy`);
-    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
+    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://medplum.com/fhir/CodeSystem/pharmacy-preference-type');
     expect(PHARMACY_TYPE_PRIMARY).toBe('primary');
     expect(PHARMACY_TYPE_PREFERRED).toBe('preferred');
   });

@@ -3,6 +3,9 @@
 
 import type { Identifier } from '@medplum/fhirtypes';
 
+// DoseSpot-specific pharmacy preference type system
+export const DOSESPOT_PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
+
 // Re-export generic pharmacy utilities from @medplum/core
 export {
   addPreferredPharmacyToPatient,

@@ -7,7 +7,12 @@ import { getReferenceString } from './utils';
 
 // Pharmacy extension URLs and systems
 export const PATIENT_PREFERRED_PHARMACY_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/patient-preferredPharmacy`;
-export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://dosespot.com/pharmacy-preference-type';
+
+/**
+ * Default pharmacy preference type system URL.
+ * Vendors may define their own system URL and pass it to the pharmacy functions.
+ */
+export const PHARMACY_PREFERENCE_TYPE_SYSTEM = 'https://medplum.com/fhir/CodeSystem/pharmacy-preference-type';
 
 export const PHARMACY_TYPE_PRIMARY = 'primary';
 export const PHARMACY_TYPE_PREFERRED = 'preferred';
@@ -70,14 +75,15 @@ function isPreferredPharmacyExtension(ext: Extension): boolean {
 /**
  * Demotes a pharmacy extension to 'preferred' status.
  * @param ext - The extension to demote.
+ * @param preferenceTypeSystem - The coding system URL for pharmacy preference type.
  */
-function demoteToPreferred(ext: Extension): void {
+function demoteToPreferred(ext: Extension, preferenceTypeSystem: string): void {
   const typeExt = ext.extension?.find((e) => e.url === 'type');
   if (typeExt) {
     typeExt.valueCodeableConcept = {
       coding: [
         {
-          system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
+          system: preferenceTypeSystem,
           code: PHARMACY_TYPE_PREFERRED,
           display: 'Preferred Pharmacy',
         },
@@ -90,9 +96,16 @@ function demoteToPreferred(ext: Extension): void {
  * Extracts preferred pharmacies from a Patient resource's extensions.
  *
  * @param patient - The Patient resource.
+ * @param preferenceTypeSystem - Optional coding system URL to filter by. When provided, only
+ *   codings with this system are considered when determining primary status. When omitted, any
+ *   coding with a `primary` code is matched regardless of system — this allows reading pharmacy
+ *   preferences written by any vendor.
  * @returns An array of PreferredPharmacy objects.
  */
-export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPharmacy[] {
+export function getPreferredPharmaciesFromPatient(
+  patient: Patient,
+  preferenceTypeSystem?: string
+): PreferredPharmacy[] {
   if (!patient.extension) {
     return [];
   }
@@ -108,13 +121,15 @@ export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPh
     const typeExt = ext.extension.find((e) => e.url === 'type');
 
     if (pharmacyExt?.valueReference) {
-      const typeCode = typeExt?.valueCodeableConcept?.coding?.find(
-        (c) => c.system === PHARMACY_PREFERENCE_TYPE_SYSTEM
-      )?.code;
+      const isPrimary = preferenceTypeSystem
+        ? typeExt?.valueCodeableConcept?.coding?.some(
+            (c) => c.system === preferenceTypeSystem && c.code === PHARMACY_TYPE_PRIMARY
+          ) ?? false
+        : typeExt?.valueCodeableConcept?.coding?.some((c) => c.code === PHARMACY_TYPE_PRIMARY) ?? false;
 
       pharmacies.push({
         organizationRef: pharmacyExt.valueReference as Reference<Organization>,
-        isPrimary: typeCode === PHARMACY_TYPE_PRIMARY,
+        isPrimary,
       });
     }
   }
@@ -127,9 +142,15 @@ export function getPreferredPharmaciesFromPatient(patient: Patient): PreferredPh
  *
  * @param orgRef - Reference to the Organization resource.
  * @param isPrimary - Whether this is the primary pharmacy.
+ * @param preferenceTypeSystem - Optional coding system URL for pharmacy preference type.
+ *   Defaults to {@link PHARMACY_PREFERENCE_TYPE_SYSTEM}.
  * @returns The extension object to add to a Patient.
  */
-export function createPreferredPharmacyExtension(orgRef: Reference<Organization>, isPrimary: boolean): Extension {
+export function createPreferredPharmacyExtension(
+  orgRef: Reference<Organization>,
+  isPrimary: boolean,
+  preferenceTypeSystem: string = PHARMACY_PREFERENCE_TYPE_SYSTEM
+): Extension {
   const typeCode = isPrimary ? PHARMACY_TYPE_PRIMARY : PHARMACY_TYPE_PREFERRED;
   const typeDisplay = isPrimary ? 'Primary Pharmacy' : 'Preferred Pharmacy';
 
@@ -145,7 +166,7 @@ export function createPreferredPharmacyExtension(orgRef: Reference<Organization>
         valueCodeableConcept: {
           coding: [
             {
-              system: PHARMACY_PREFERENCE_TYPE_SYSTEM,
+              system: preferenceTypeSystem,
               code: typeCode,
               display: typeDisplay,
             },
@@ -164,12 +185,15 @@ export function createPreferredPharmacyExtension(orgRef: Reference<Organization>
  * @param patient - The Patient resource to modify (will be mutated).
  * @param orgRef - Reference to the Organization resource.
  * @param isPrimary - Whether to set this as the primary pharmacy.
+ * @param preferenceTypeSystem - Optional coding system URL for pharmacy preference type.
+ *   Defaults to {@link PHARMACY_PREFERENCE_TYPE_SYSTEM}.
  * @returns The modified Patient resource.
  */
 export function addPreferredPharmacyToPatient(
   patient: Patient,
   orgRef: Reference<Organization>,
-  isPrimary: boolean
+  isPrimary: boolean,
+  preferenceTypeSystem: string = PHARMACY_PREFERENCE_TYPE_SYSTEM
 ): Patient {
   patient.extension ??= [];
 
@@ -178,7 +202,7 @@ export function addPreferredPharmacyToPatient(
   if (isPrimary) {
     for (const ext of patient.extension) {
       if (isPreferredPharmacyExtension(ext) && getPharmacyRefString(ext) !== orgRefString) {
-        demoteToPreferred(ext);
+        demoteToPreferred(ext, preferenceTypeSystem);
       }
     }
   }
@@ -187,7 +211,7 @@ export function addPreferredPharmacyToPatient(
     (ext) => isPreferredPharmacyExtension(ext) && getPharmacyRefString(ext) === orgRefString
   );
 
-  const newExtension = createPreferredPharmacyExtension(orgRef, isPrimary);
+  const newExtension = createPreferredPharmacyExtension(orgRef, isPrimary, preferenceTypeSystem);
 
   if (existingIndex >= 0) {
     patient.extension[existingIndex] = newExtension;

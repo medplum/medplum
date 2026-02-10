@@ -6,6 +6,7 @@ import {
   addPreferredPharmacyToPatient,
   createPreferredPharmacyExtension,
   DOSESPOT_ADD_PATIENT_PHARMACY_BOT,
+  DOSESPOT_PHARMACY_PREFERENCE_TYPE_SYSTEM,
   DOSESPOT_SEARCH_PHARMACY_BOT,
   getPreferredPharmaciesFromPatient,
   MEDPLUM_BOT_SYSTEM,
@@ -30,8 +31,12 @@ describe('Constants', () => {
     expect(PHARMACY_TYPE_PREFERRED).toBe('preferred');
   });
 
-  test('PHARMACY_PREFERENCE_TYPE_SYSTEM is correct', () => {
-    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
+  test('PHARMACY_PREFERENCE_TYPE_SYSTEM is the generic default', () => {
+    expect(PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://medplum.com/fhir/CodeSystem/pharmacy-preference-type');
+  });
+
+  test('DOSESPOT_PHARMACY_PREFERENCE_TYPE_SYSTEM is the DoseSpot-specific system', () => {
+    expect(DOSESPOT_PHARMACY_PREFERENCE_TYPE_SYSTEM).toBe('https://dosespot.com/pharmacy-preference-type');
   });
 
   test('MEDPLUM_BOT_SYSTEM is correct', () => {
@@ -264,7 +269,42 @@ describe('getPreferredPharmaciesFromPatient', () => {
     expect(result[0].isPrimary).toBe(false);
   });
 
-  test('Ignores type with wrong system', () => {
+  test('Matches primary regardless of system by default', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: PATIENT_PREFERRED_PHARMACY_URL,
+          extension: [
+            {
+              url: 'pharmacy',
+              valueReference: {
+                reference: 'Organization/123',
+              },
+            },
+            {
+              url: 'type',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'https://any-vendor.com',
+                    code: PHARMACY_TYPE_PRIMARY,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = getPreferredPharmaciesFromPatient(patient);
+    expect(result).toHaveLength(1);
+    // Default (no system filter) matches any system
+    expect(result[0].isPrimary).toBe(true);
+  });
+
+  test('Ignores type with wrong system when explicit system is provided', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       extension: [
@@ -293,9 +333,9 @@ describe('getPreferredPharmaciesFromPatient', () => {
       ],
     };
 
-    const result = getPreferredPharmaciesFromPatient(patient);
+    const result = getPreferredPharmaciesFromPatient(patient, DOSESPOT_PHARMACY_PREFERENCE_TYPE_SYSTEM);
     expect(result).toHaveLength(1);
-    // Should be false because the system doesn't match
+    // Should be false because the system doesn't match the DoseSpot system
     expect(result[0].isPrimary).toBe(false);
   });
 
