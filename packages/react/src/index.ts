@@ -70,9 +70,27 @@ export * from './Panel/Panel';
 export * from './PatientExportForm/PatientExportForm';
 export * from './PatientHeader/PatientHeader';
 export * from './PatientSummary/PatientSummary';
+export type * from './PatientSummary/PatientSummary.types';
 export * from './PatientSummary/Pharmacies';
 export * from './PatientSummary/pharmacy-utils';
 export * from './PatientSummary/PharmacyDialog';
+export {
+  AllergiesSection,
+  createLabsSection,
+  createPharmaciesSection,
+  DemographicsSection,
+  getDefaultSections,
+  InsuranceSection,
+  LabsSection,
+  MedicationsSection,
+  PharmaciesSection,
+  ProblemListSection,
+  SexualOrientationSection,
+  SmokingStatusSection,
+  VitalsSection,
+} from './PatientSummary/sectionConfigs';
+export { summaryResourceListSection } from './PatientSummary/SummaryResourceListSection';
+export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
 export * from './QuantityDisplay/QuantityDisplay';
