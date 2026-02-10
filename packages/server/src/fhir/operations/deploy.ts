@@ -14,13 +14,13 @@ import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import type { Repository } from '../repo';
 import { getSystemRepo } from '../repo';
-import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
