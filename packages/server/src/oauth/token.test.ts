@@ -283,6 +283,27 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid authorization header');
   });
 
+  test('Client credentials auth header empty secret', async () => {
+    // Create a client without an secret
+    const badClient = await withTestContext(() =>
+      systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Bad Client',
+        description: 'Bad Client',
+        secret: '',
+        redirectUris: ['https://example.com'],
+      })
+    );
+
+    const header = Buffer.from(badClient.id + ':' + badClient.secret).toString('base64');
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .type('form')
+      .set('Authorization', 'Basic ' + header)
+      .send();
+    expect(res.status).toBe(401);
+  });
+
   test('Token for client empty secret', async () => {
     // Create a client without an secret
     const badClient = await withTestContext(() =>

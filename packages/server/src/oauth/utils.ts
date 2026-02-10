@@ -776,7 +776,12 @@ export async function getUserByEmailWithoutProject(email: string): Promise<WithI
  * @param b - Second string.
  * @returns True if the strings are equal.
  */
-export function timingSafeEqualStr(a: string, b: string): boolean {
+export function timingSafeEqualStr(a: string | undefined, b: string | undefined): boolean {
+  if (a === undefined && b === undefined) {
+    return true;
+  } else if (a === undefined || b === undefined) {
+    return false;
+  }
   const buf1 = Buffer.from(a);
   const buf2 = Buffer.from(b);
   return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
@@ -967,7 +972,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     return undefined;
   }
 
-  if (!timingSafeEqualStr(client.secret as string, password)) {
+  if (!timingSafeEqualStr(client.secret, password)) {
     return undefined;
   }
 
