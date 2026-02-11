@@ -90,10 +90,7 @@ function ResourceListDisplay(props: ResourceListDisplayProps): JSX.Element {
             const secondaryText = options.getSecondaryText?.(resource);
 
             return (
-              <SummaryItem
-                key={resource.id}
-                onClick={() => context.onClickResource?.(resource)}
-              >
+              <SummaryItem key={resource.id} onClick={() => context.onClickResource?.(resource)}>
                 <Box>
                   <Text fw={500} className={styles.itemText}>
                     {displayString}

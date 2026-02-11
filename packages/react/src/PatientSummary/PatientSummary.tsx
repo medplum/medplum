@@ -4,12 +4,11 @@ import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { formatHumanName, resolveId } from '@medplum/core';
 import type { HumanName, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import type { ComponentType, JSX } from 'react';
+import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import styles from './PatientSummary.module.css';
 import type { PatientSummarySectionConfig } from './PatientSummary.types';
-import type { PharmacyDialogBaseProps } from './Pharmacies';
 import { getDefaultSections } from './sectionConfigs';
 import SummaryItem from './SummaryItem';
 import { usePatientSummaryData } from './usePatientSummaryData';
@@ -18,21 +17,17 @@ export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
   readonly onClickResource?: (resource: Resource) => void;
   readonly onRequestLabs?: () => void;
-  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
   readonly sections?: PatientSummarySectionConfig[];
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource, onRequestLabs, pharmacyDialogComponent } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs } = props;
   const patient = useResource(propsPatient);
   const [createdDate, setCreatedDate] = useState<string | undefined>();
 
   // Determine sections: custom or default
-  const defaultSections = useMemo(
-    () => getDefaultSections(onRequestLabs, pharmacyDialogComponent),
-    [onRequestLabs, pharmacyDialogComponent]
-  );
+  const defaultSections = useMemo(() => getDefaultSections(onRequestLabs), [onRequestLabs]);
   const sections = props.sections ?? defaultSections;
 
   // Fetch all data for all sections (with search deduplication)
