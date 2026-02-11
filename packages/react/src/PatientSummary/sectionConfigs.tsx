@@ -9,7 +9,6 @@ import type {
   DiagnosticReport,
   MedicationRequest,
   Observation,
-  Patient,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
@@ -53,7 +52,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Birthdate"
           label="Birthdate & Age"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
         <PatientInfoItem
           patient={patient}
@@ -61,7 +60,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Gender & Identity"
           label="Gender & Identity"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
         <PatientInfoItem
           patient={patient}
@@ -69,7 +68,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Race & Ethnicity"
           label="Race & Ethnicity"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
         <PatientInfoItem
           patient={patient}
@@ -77,7 +76,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Location"
           label="Location"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
         <PatientInfoItem
           patient={patient}
@@ -85,7 +84,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconLanguage size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add Language"
           label="Language"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
         <PatientInfoItem
           patient={patient}
@@ -93,7 +92,7 @@ export const DemographicsSection: PatientSummarySectionConfig = {
           icon={<IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
           placeholder="Add General Practitioner"
           label="General Practitioner"
-          onClickResource={onClickResource as ((patient: Patient) => void) | undefined}
+          onClickResource={onClickResource}
         />
       </Stack>
     );
@@ -106,7 +105,7 @@ export const InsuranceSection: PatientSummarySectionConfig = {
   title: 'Insurance',
   searches: [{ resourceType: 'Coverage', patientParam: 'beneficiary' }],
   render: ({ results, onClickResource }: SectionRenderContext) => (
-    <Insurance coverages={(results[0] as Coverage[]) || []} onClickResource={onClickResource as ((resource: Coverage) => void) | undefined} />
+    <Insurance coverages={(results[0] as Coverage[]) || []} onClickResource={onClickResource} />
   ),
 };
 
@@ -119,7 +118,7 @@ export const AllergiesSection: PatientSummarySectionConfig = {
     <Allergies
       patient={patient}
       allergies={(results[0] as AllergyIntolerance[]) || []}
-      onClickResource={onClickResource as ((resource: AllergyIntolerance) => void) | undefined}
+      onClickResource={onClickResource}
     />
   ),
 };
@@ -133,7 +132,7 @@ export const ProblemListSection: PatientSummarySectionConfig = {
     <ProblemList
       patient={patient}
       problems={(results[0] as Condition[]) || []}
-      onClickResource={onClickResource as ((resource: Condition) => void) | undefined}
+      onClickResource={onClickResource}
     />
   ),
 };
@@ -147,7 +146,7 @@ export const MedicationsSection: PatientSummarySectionConfig = {
     <Medications
       patient={patient}
       medicationRequests={(results[0] as MedicationRequest[]) || []}
-      onClickResource={onClickResource as ((resource: MedicationRequest) => void) | undefined}
+      onClickResource={onClickResource}
     />
   ),
 };
@@ -190,7 +189,7 @@ export const SexualOrientationSection: PatientSummarySectionConfig = {
       <SexualOrientation
         patient={patient}
         sexualOrientation={observations[0]}
-        onClickResource={onClickResource as ((resource: Observation) => void) | undefined}
+        onClickResource={onClickResource}
       />
     );
   },
@@ -207,7 +206,7 @@ export const SmokingStatusSection: PatientSummarySectionConfig = {
       <SmokingStatus
         patient={patient}
         smokingStatus={observations[0]}
-        onClickResource={onClickResource as ((resource: Observation) => void) | undefined}
+        onClickResource={onClickResource}
       />
     );
   },
@@ -224,7 +223,7 @@ export const VitalsSection: PatientSummarySectionConfig = {
       <Vitals
         patient={patient}
         vitals={observations}
-        onClickResource={onClickResource as ((resource: Observation) => void) | undefined}
+        onClickResource={onClickResource}
       />
     );
   },

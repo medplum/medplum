@@ -10,6 +10,7 @@ export interface PatientSummaryData {
   /** sectionData[i][j] = Resource[] for section i's search j */
   readonly sectionData: Resource[][][];
   readonly loading: boolean;
+  readonly error: Error | undefined;
 }
 
 /**
@@ -67,6 +68,7 @@ export function usePatientSummaryData(
   const medplum = useMedplum();
   const [sectionData, setSectionData] = useState<Resource[][][]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | undefined>();
 
   // Stabilize sections reference: only change when the search configuration actually changes.
   const sectionsFingerprint = buildSectionsFingerprint(sections);
@@ -133,7 +135,7 @@ export function usePatientSummaryData(
       // Merge additional query params
       if (search.query) {
         if (typeof search.query === 'string') {
-          // String query — append to the patient param
+          // String query — _count and _sort are appended automatically; do not include them in the query string.
           return medplum.searchResources(search.resourceType, `${patientParam}=${ref}&${search.query}&_count=100&_sort=-_lastUpdated`);
         } else if (search.query instanceof URLSearchParams) {
           search.query.forEach((value, key) => {
@@ -157,6 +159,7 @@ export function usePatientSummaryData(
     });
 
     setLoading(true);
+    setError(undefined);
     Promise.all(promises)
       .then((results) => {
         if (stale) {
@@ -174,6 +177,7 @@ export function usePatientSummaryData(
           return;
         }
         console.error(err);
+        setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       });
 
@@ -182,5 +186,5 @@ export function usePatientSummaryData(
     };
   }, [medplum, patientId, stableSections]);
 
-  return { sectionData, loading };
+  return { sectionData, loading, error };
 }
