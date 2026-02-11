@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, WithId } from '@medplum/core';
-import { Logger, OperationOutcomeError, badRequest, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, isUUID, parseLogLevel } from '@medplum/core';
 import type {
   Bot,
   ClientApplication,
@@ -18,7 +18,7 @@ import { getRepoForLogin } from './fhir/accesspolicy';
 import { FhirRateLimiter } from './fhir/fhirquota';
 import type { Repository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
-import { getLogger, globalLogger } from './logger';
+import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
 import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';
@@ -133,27 +133,20 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 }
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const { requestId, traceId } = requestIds(req);
-  let ctx = new RequestContext(requestId, traceId);
   try {
+    let ctx: RequestContext;
+    const { requestId, traceId } = requestIds(req);
     const authState = await authenticateTokenImpl(req);
     if (authState) {
       const repo = await getRepoForLogin(authState, isExtendedMode(req));
       ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+    } else {
+      ctx = new RequestContext(requestId, traceId);
     }
-  } catch (err: any) {
-    // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
-    requestContextStore.run(ctx, () => {
-      getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
-      const outcome = badRequest('Authentication error');
-      outcome.issue[0].diagnostics = err.toString();
-      const wrappedErr = new OperationOutcomeError(outcome, { cause: err });
-      next(wrappedErr);
-    });
-    return;
+    requestContextStore.run(ctx, () => next());
+  } catch (err) {
+    next(err);
   }
-
-  requestContextStore.run(ctx, () => next());
 }
 
 export function closeRequestContext(): void {
