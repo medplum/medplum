@@ -22,7 +22,12 @@ import { authRouter } from './auth/routes';
 import { cdsRouter } from './cds/routes';
 import { getConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
-import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
+import {
+  attachRequestContext,
+  AuthenticatedRequestContext,
+  closeRequestContext,
+  tryGetRequestContext,
+} from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -268,9 +273,9 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   const start = new Date();
 
   res.on('close', () => {
-    const ctx = getRequestContext();
+    const ctx = tryGetRequestContext();
     const duration = Date.now() - start.valueOf();
-    ctx.logger.info('Request served', {
+    getLogger().info('Request served', {
       durationMs: duration,
       ip: req.ip,
       method: req.method,
