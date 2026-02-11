@@ -1017,10 +1017,9 @@ describe('WebSocket Subscription', () => {
           await sleep(100);
 
           // Should NOT see another "Unable to get login" log since the subscription was purged from lookups
-          expect(globalLoggerInfoSpy).not.toHaveBeenCalledWith(
-            '[WS] Unable to get login for the given access token',
-            { subscriptionId: subscription.id }
-          );
+          expect(globalLoggerInfoSpy).not.toHaveBeenCalledWith('[WS] Unable to get login for the given access token', {
+            subscriptionId: subscription.id,
+          });
         })
         .close()
         .expectClosed()
