@@ -818,6 +818,219 @@ describe('WebSocket Subscription', () => {
       getLoginForAccessTokenSpy.mockRestore();
       globalLoggerInfoSpy.mockRestore();
     }));
+
+  test('Dead subscription removed from active set when token fails to validate', () =>
+    withTestContext(async () => {
+      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      let mockGetLoginForAccessToken = false;
+      const getLoginForAccessTokenSpy = jest
+        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
+        .mockImplementation(async (...args) => {
+          if (mockGetLoginForAccessToken) {
+            return undefined;
+          }
+          return originalGetLoginForAccessToken(...args);
+        });
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const body = res.body as Parameters;
+      const token = body.parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .exec(async () => {
+          mockGetLoginForAccessToken = true;
+
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // Wait for subscription to become active (set by subscription evaluation)
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
+          }
+
+          // Now wait for it to become inactive (dead subscription cleanup via markInMemorySubscriptionsInactive)
+          while (subActive) {
+            await sleep(0);
+            subActive =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
+          }
+          expect(subActive).toStrictEqual(false);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      getLoginForAccessTokenSpy.mockRestore();
+    }));
+
+  test('Dead subscription not notified on subsequent events after purge', () =>
+    withTestContext(async () => {
+      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      let mockGetLoginForAccessToken = false;
+      const getLoginForAccessTokenSpy = jest
+        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
+        .mockImplementation(async (...args) => {
+          if (mockGetLoginForAccessToken) {
+            return undefined;
+          }
+          return originalGetLoginForAccessToken(...args);
+        });
+      const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const body = res.body as Parameters;
+      const token = body.parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .exec(async () => {
+          mockGetLoginForAccessToken = true;
+
+          // First event: triggers the dead subscription path
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // Wait for subscription to become active then get cleaned up
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
+          }
+          while (subActive) {
+            await sleep(0);
+            subActive =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `Subscription/${subscription.id}`
+              )) === 1;
+          }
+
+          // Reset the spy call count
+          globalLoggerInfoSpy.mockClear();
+
+          // Second event: subscription should be purged from lookups, so no login attempt
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // Give time for any potential event processing
+          await sleep(100);
+
+          // Should NOT see another "Unable to get login" log since the subscription was purged from lookups
+          expect(globalLoggerInfoSpy).not.toHaveBeenCalledWith(
+            '[WS] Unable to get login for the given access token',
+            { subscriptionId: subscription.id }
+          );
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      getLoginForAccessTokenSpy.mockRestore();
+      globalLoggerInfoSpy.mockRestore();
+    }));
 });
 
 describe('Subscription Heartbeat', () => {
