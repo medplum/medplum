@@ -94,10 +94,16 @@ async function processEventStream(
   return { success: true, logResult };
 }
 
+const MAX_HEADER_SIZE = 65536; // 64KB
+
 function processStreamingHeaders(
   buffer: string,
   responseStream: NonNullable<BotExecutionContext['responseStream']>
 ): { headersParsed: boolean; buffer: string; error?: string } {
+  if (buffer.length > MAX_HEADER_SIZE) {
+    return { headersParsed: false, buffer: '', error: `Streaming headers exceeded maximum size of ${MAX_HEADER_SIZE} bytes` };
+  }
+
   const newlineIndex = buffer.indexOf('\n');
   if (newlineIndex === -1) {
     return { headersParsed: false, buffer };
