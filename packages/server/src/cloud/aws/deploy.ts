@@ -41,6 +41,39 @@ import * as userCode from './user.mjs';
 export const handler = async (event, context) => {
 `;
 
+export const CREATE_PDF_CODE = `
+function createPdf(docDefinition, tableLayouts, fonts) {
+  if (!fonts) {
+    fonts = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique',
+      },
+      Roboto: {
+        normal: '/opt/fonts/Roboto/Roboto-Regular.ttf',
+        bold: '/opt/fonts/Roboto/Roboto-Medium.ttf',
+        italics: '/opt/fonts/Roboto/Roboto-Italic.ttf',
+        bolditalics: '/opt/fonts/Roboto/Roboto-MediumItalic.ttf'
+      },
+      Avenir: {
+        normal: '/opt/fonts/Avenir/Avenir.ttf'
+      }
+    };
+  }
+  return new Promise((resolve, reject) => {
+    const printer = new PdfPrinter(fonts);
+    const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
+    const chunks = [];
+    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    pdfDoc.end();
+  });
+}
+`;
+
 const WRAPPER_CODE = `
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
@@ -75,57 +108,28 @@ const WRAPPER_CODE = `
     throw err;
   }
 }
-
-function createPdf(docDefinition, tableLayouts, fonts) {
-  if (!fonts) {
-    fonts = {
-      Helvetica: {
-        normal: 'Helvetica',
-        bold: 'Helvetica-Bold',
-        italics: 'Helvetica-Oblique',
-        bolditalics: 'Helvetica-BoldOblique',
-      },
-      Roboto: {
-        normal: '/opt/fonts/Roboto/Roboto-Regular.ttf',
-        bold: '/opt/fonts/Roboto/Roboto-Medium.ttf',
-        italics: '/opt/fonts/Roboto/Roboto-Italic.ttf',
-        bolditalics: '/opt/fonts/Roboto/Roboto-MediumItalic.ttf'
-      },
-      Avenir: {
-        normal: '/opt/fonts/Avenir/Avenir.ttf'
-      }
-    };
-  }
-  return new Promise((resolve, reject) => {
-    const printer = new PdfPrinter(fonts);
-    const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
-    const chunks = [];
-    pdfDoc.on('data', (chunk) => chunks.push(chunk));
-    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-    pdfDoc.on('error', reject);
-    pdfDoc.end();
-  });
-}
-`;
+` + CREATE_PDF_CODE;
 
 export function getLambdaNameForBot(bot: Bot): string {
   return `medplum-bot-lambda-${bot.id}`;
 }
 
-export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
-  // Create a new AWS Lambda client
-  // Use a custom retry strategy to avoid throttling errors
-  // This is especially important when updating lambdas which also
-  // involve upgrading the layer version.
-
-  const client = new LambdaClient({
+/**
+ * Creates a new AWS Lambda client with a custom retry strategy.
+ * @returns A configured LambdaClient.
+ */
+export function createLambdaClient(): LambdaClient {
+  return new LambdaClient({
     region: getConfig().awsRegion,
     retryStrategy: new ConfiguredRetryStrategy(
       5, // max attempts
       (attempt: number) => 500 * 2 ** attempt // Exponential backoff
     ),
   });
+}
 
+export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
+  const client = createLambdaClient();
   const name = getLambdaNameForBot(bot);
   let timeout: number;
   try {
@@ -143,28 +147,27 @@ export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
 }
 
 export async function deployLambda(bot: Bot, code: string): Promise<void> {
+  return deployLambdaInternal(bot, code, createZipFile, '');
+}
+
+export async function deployLambdaInternal(
+  bot: Bot,
+  code: string,
+  createZipFileFn: (bot: Bot, code: string) => Promise<Uint8Array>,
+  logLabel: string
+): Promise<void> {
   const log = getLogger();
+  const label = logLabel ? ` ${logLabel}` : '';
 
   if (bot.timeout !== undefined && bot.timeout > MAX_LAMBDA_TIMEOUT) {
     throw new Error('Bot timeout exceeds allowed maximum of 900 seconds');
   }
 
-  // Create a new AWS Lambda client
-  // Use a custom retry strategy to avoid throttling errors
-  // This is especially important when updating lambdas which also
-  // involve upgrading the layer version.
-  const client = new LambdaClient({
-    region: getConfig().awsRegion,
-    retryStrategy: new ConfiguredRetryStrategy(
-      5, // max attempts
-      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
-    ),
-  });
-
+  const client = createLambdaClient();
   const name = getLambdaNameForBot(bot);
-  log.info('Deploying lambda function for bot', { name });
-  const zipFile = await createZipFile(bot, code);
-  log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
+  log.info(`Deploying lambda${label} function for bot`, { name });
+  const zipFile = await createZipFileFn(bot, code);
+  log.debug(`Lambda${label} function zip size`, { bytes: zipFile.byteLength });
 
   if (await lambdaExists(client, name)) {
     await updateLambda(bot, client, name, zipFile);
