@@ -33,8 +33,10 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     };
 
     if (bot.runtimeVersion === 'awslambda') {
-      if (request.responseStream) {
+      if (bot.streamingEnabled && request.responseStream) {
         result = await runInLambdaStreaming(context);
+      } else if (bot.streamingEnabled) {
+        result = { success: false, logResult: 'Streaming bot requires Accept: text/event-stream header' };
       } else {
         result = await runInLambda(context);
       }

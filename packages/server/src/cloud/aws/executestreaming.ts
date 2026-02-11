@@ -21,7 +21,7 @@ import {
 export async function runInLambdaStreaming(request: BotExecutionContext): Promise<BotExecutionResult> {
   const { bot, responseStream } = request;
   const name = getLambdaFunctionName(bot);
-  const payload = buildLambdaPayload(request);
+  const payload = { ...buildLambdaPayload(request), streaming: true };
 
   const command = new InvokeWithResponseStreamCommand({
     FunctionName: name,

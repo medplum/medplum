@@ -99,8 +99,8 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
-  // Check if client accepts streaming
-  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+  // Check if client accepts streaming and bot supports it
+  const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');
   let responseStream: BotResponseStream | undefined = undefined;
   if (acceptsStreaming) {
     // Create a BotResponseStream that wraps the Express response.
