@@ -1,9 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bot } from '@medplum/fhirtypes';
-import JSZip from 'jszip';
-import { getJsFileExtension } from '../../bots/utils';
-import { CREATE_PDF_CODE, deployLambdaInternal } from './deploy';
+import { CREATE_PDF_CODE, createBotZipFile, deployLambdaInternal } from './deploy';
 
 const CJS_PREFIX = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const PdfPrinter = require("pdfmake");
@@ -144,14 +142,5 @@ export async function deployLambdaStreaming(bot: Bot, code: string): Promise<voi
 }
 
 async function createZipFile(bot: Bot, code: string): Promise<Uint8Array> {
-  const ext = getJsFileExtension(bot, code);
-  const zip = new JSZip();
-  if (ext === '.mjs') {
-    zip.file(`user.mjs`, code);
-    zip.file('index.mjs', ESM_PREFIX + WRAPPER_CODE);
-  } else {
-    zip.file(`user.cjs`, code);
-    zip.file('index.cjs', CJS_PREFIX + WRAPPER_CODE);
-  }
-  return zip.generateAsync({ type: 'uint8array' });
+  return createBotZipFile(bot, code, CJS_PREFIX + WRAPPER_CODE, ESM_PREFIX + WRAPPER_CODE);
 }

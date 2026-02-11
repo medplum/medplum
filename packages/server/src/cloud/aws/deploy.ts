@@ -178,14 +178,23 @@ export async function deployLambdaInternal(
 }
 
 async function createZipFile(bot: Bot, code: string): Promise<Uint8Array> {
+  return createBotZipFile(bot, code, CJS_PREFIX + WRAPPER_CODE, ESM_PREFIX + WRAPPER_CODE);
+}
+
+export async function createBotZipFile(
+  bot: Bot,
+  code: string,
+  cjsContent: string,
+  esmContent: string
+): Promise<Uint8Array> {
   const ext = getJsFileExtension(bot, code);
   const zip = new JSZip();
   if (ext === '.mjs') {
-    zip.file(`user.mjs`, code);
-    zip.file('index.mjs', ESM_PREFIX + WRAPPER_CODE);
+    zip.file('user.mjs', code);
+    zip.file('index.mjs', esmContent);
   } else {
-    zip.file(`user.cjs`, code);
-    zip.file('index.cjs', CJS_PREFIX + WRAPPER_CODE);
+    zip.file('user.cjs', code);
+    zip.file('index.cjs', cjsContent);
   }
   return zip.generateAsync({ type: 'uint8array' });
 }

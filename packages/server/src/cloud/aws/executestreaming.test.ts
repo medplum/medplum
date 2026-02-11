@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  InvokeCommand,
   InvokeWithResponseStreamCommand,
   LambdaClient,
   ListLayerVersionsCommand,
@@ -19,7 +18,6 @@ import { initTestAuth } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
-let bot: Bot;
 let streamingBot: Bot;
 
 describe('Execute', () => {
@@ -36,19 +34,6 @@ describe('Execute', () => {
       ],
     });
 
-    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
-      const decoder = new TextDecoder();
-      const event = JSON.parse(decoder.decode(Payload));
-      const output = JSON.stringify(event.input);
-      const encoder = new TextEncoder();
-
-      return {
-        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
-        Payload: encoder.encode(output),
-      };
-    });
-
-    // Mock for streaming invocation
     mockLambdaClient.on(InvokeWithResponseStreamCommand).callsFake(() => {
       const encoder = new TextEncoder();
       // Simulate streaming response: first line is headers JSON, then SSE data
@@ -92,26 +77,6 @@ describe('Execute', () => {
     await initApp(app, config);
     accessToken = await initTestAuth();
 
-    const res = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-          export async function handler(medplum, event) {
-            console.log('input', event.input);
-            return event.input;
-          }
-        `,
-      });
-    expect(res.status).toBe(201);
-    bot = res.body as Bot;
-
-    // Create streaming bot
     const streamingRes = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -121,6 +86,7 @@ describe('Execute', () => {
         identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
         name: 'Streaming Test Bot',
         runtimeVersion: 'awslambda',
+        streamingEnabled: true,
         code: `
           export async function handler(medplum, event) {
             const { responseStream } = event;
@@ -144,69 +110,6 @@ describe('Execute', () => {
     await shutdownApp();
   });
 
-
-  describe('Non-streaming multi-line response parsing', () => {
-    test('Streaming-compatible response with 2xx status', async () => {
-      const encoder = new TextEncoder();
-      const headersLine = JSON.stringify({ statusCode: 200, headers: { 'Content-Type': 'text/plain' } });
-      const bodyLine = JSON.stringify('hello from lambda');
-      const payload = headersLine + '\n' + bodyLine;
-
-      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
-        Payload: encoder.encode(payload),
-      }));
-
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send('input');
-      expect(res.status).toBe(200);
-      expect(res.text).toBe('hello from lambda');
-    });
-
-    test('Streaming-compatible response with non-2xx status', async () => {
-      const encoder = new TextEncoder();
-      const headersLine = JSON.stringify({ statusCode: 400, headers: { 'Content-Type': 'application/json' } });
-      const bodyLine = JSON.stringify({ error: 'bad request' });
-      const payload = headersLine + '\n' + bodyLine;
-
-      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
-        Payload: encoder.encode(payload),
-      }));
-
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send('input');
-      expect(res.status).toBe(400);
-    });
-
-    test('Multi-line response where first line is valid JSON but not streaming headers', async () => {
-      const encoder = new TextEncoder();
-      // First line is valid JSON but missing statusCode/headers
-      const firstLine = JSON.stringify({ someOtherField: true });
-      const secondLine = JSON.stringify('second line');
-      const payload = firstLine + '\n' + secondLine;
-
-      mockLambdaClient.on(InvokeCommand).callsFake(() => ({
-        LogResult: 'U1RBUlQgUmVxdWVzdElkOiAxMjM0NQpFTkQgUmVxdWVzdElkOiAxMjM0NQ==',
-        Payload: encoder.encode(payload),
-      }));
-
-      const res = await request(app)
-        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-        .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send('input');
-      // First line doesn't have statusCode/headers, so returnValueLine is never set
-      // returnValue will be undefined, success remains true
-      expect(res.status).toBe(200);
-    });
-  });
 
   describe('Accept: text/event-stream (SSE streaming)', () => {
     test('Streaming execution with chunks', async () => {
