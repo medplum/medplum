@@ -25,9 +25,7 @@ export function getExecuteLambdaClient(): LambdaClient {
  * @param request - The bot execution context.
  * @returns The payload object to send to the Lambda function.
  */
-export function buildLambdaPayload(
-  request: BotExecutionContext
-): Record<string, unknown> {
+export function buildLambdaPayload(request: BotExecutionContext): Record<string, unknown> {
   const { bot, accessToken, requester, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
   return {
