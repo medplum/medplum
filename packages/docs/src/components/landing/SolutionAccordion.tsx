@@ -41,7 +41,7 @@ const solutions: SolutionItem[] = [
       'Drive better health outcomes through seamless and engaging interactions.',
     ],
     icon: <IconUserHeart size={24} />,
-    link: '/solutions/patient-engagement',
+    link: '/solutions/patient-portal',
   },
   {
     title: 'Scribe & Agents',
@@ -50,7 +50,7 @@ const solutions: SolutionItem[] = [
       'Elevate your AI capabilities to streamline operations and enhance decision-making.',
     ],
     icon: <IconFileTextSpark size={24} />,
-    link: '/solutions/scribe-agents',
+    link: '/solutions',
   },
   {
     title: 'Population Health',
@@ -59,7 +59,7 @@ const solutions: SolutionItem[] = [
       'Our platform empowers population health teams to improve outcomes and maximize shared savings.',
     ],
     icon: <IconChartHistogram size={24} />,
-    link: '/solutions/population-health',
+    link: '/solutions',
   },
   {
     title: 'Care Management',
@@ -68,7 +68,7 @@ const solutions: SolutionItem[] = [
       'Streamline administrative tasks so they can dedicate more time to what matters most: patient well-being.',
     ],
     icon: <IconFirstAidKit size={24} />,
-    link: '/solutions/care-management',
+    link: '/solutions',
   },
   {
     title: 'Revenue Cycle Management',
@@ -77,7 +77,7 @@ const solutions: SolutionItem[] = [
       'Optimize your revenue cycle for efficiency and maximum returns.',
     ],
     icon: <IconReceiptDollar size={24} />,
-    link: '/solutions/revenue-cycle-management',
+    link: '/solutions',
   },
 ];
 
