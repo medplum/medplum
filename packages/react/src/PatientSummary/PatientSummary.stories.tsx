@@ -7,12 +7,7 @@ import type { Meta } from '@storybook/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { PatientSummary } from './PatientSummary';
-import {
-  AllergiesSection,
-  MedicationsSection,
-  ProblemListSection,
-  VitalsSection,
-} from './sectionConfigs';
+import { AllergiesSection, MedicationsSection, ProblemListSection, VitalsSection } from './sectionConfigs';
 import { summaryResourceListSection } from './SummaryResourceListSection';
 
 export default {
@@ -28,10 +23,7 @@ export const Patient = (): JSX.Element => (
 
 export const SubsetOfSections = (): JSX.Element => (
   <Box w={350}>
-    <PatientSummary
-      patient={HomerSimpson}
-      sections={[AllergiesSection, MedicationsSection, VitalsSection]}
-    />
+    <PatientSummary patient={HomerSimpson} sections={[AllergiesSection, MedicationsSection, VitalsSection]} />
   </Box>
 );
 
@@ -128,7 +120,9 @@ export const CustomRenderSection = (): JSX.Element => {
         status: 'active',
         intent: 'order',
         medicationCodeableConcept: {
-          coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197361', display: 'Lisinopril 10 MG' }],
+          coding: [
+            { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197361', display: 'Lisinopril 10 MG' },
+          ],
           text: 'Lisinopril 10 MG',
         },
       });
@@ -138,7 +132,9 @@ export const CustomRenderSection = (): JSX.Element => {
         status: 'active',
         intent: 'order',
         medicationCodeableConcept: {
-          coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '860975', display: 'Metformin 500 MG' }],
+          coding: [
+            { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '860975', display: 'Metformin 500 MG' },
+          ],
           text: 'Metformin 500 MG',
         },
       });

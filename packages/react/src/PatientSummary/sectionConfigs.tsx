@@ -129,11 +129,7 @@ export const ProblemListSection: PatientSummarySectionConfig = {
   title: 'Problems',
   searches: [{ resourceType: 'Condition', patientParam: 'patient' }],
   render: ({ results, patient, onClickResource }: SectionRenderContext) => (
-    <ProblemList
-      patient={patient}
-      problems={(results[0] as Condition[]) || []}
-      onClickResource={onClickResource}
-    />
+    <ProblemList patient={patient} problems={(results[0] as Condition[]) || []} onClickResource={onClickResource} />
   ),
 };
 
@@ -188,11 +184,7 @@ export const SexualOrientationSection: PatientSummarySectionConfig = {
   render: ({ results, patient, onClickResource }: SectionRenderContext) => {
     const observations = (results[0] as Observation[]) || [];
     return (
-      <SexualOrientation
-        patient={patient}
-        sexualOrientation={observations[0]}
-        onClickResource={onClickResource}
-      />
+      <SexualOrientation patient={patient} sexualOrientation={observations[0]} onClickResource={onClickResource} />
     );
   },
 };
@@ -204,13 +196,7 @@ export const SmokingStatusSection: PatientSummarySectionConfig = {
   searches: [{ resourceType: 'Observation', patientParam: 'subject', query: { code: '72166-2' } }],
   render: ({ results, patient, onClickResource }: SectionRenderContext) => {
     const observations = (results[0] as Observation[]) || [];
-    return (
-      <SmokingStatus
-        patient={patient}
-        smokingStatus={observations[0]}
-        onClickResource={onClickResource}
-      />
-    );
+    return <SmokingStatus patient={patient} smokingStatus={observations[0]} onClickResource={onClickResource} />;
   },
 };
 
@@ -221,13 +207,7 @@ export const VitalsSection: PatientSummarySectionConfig = {
   searches: [{ resourceType: 'Observation', patientParam: 'subject', query: { category: 'vital-signs' } }],
   render: ({ results, patient, onClickResource }: SectionRenderContext) => {
     const observations = (results[0] as Observation[]) || [];
-    return (
-      <Vitals
-        patient={patient}
-        vitals={observations}
-        onClickResource={onClickResource}
-      />
-    );
+    return <Vitals patient={patient} vitals={observations} onClickResource={onClickResource} />;
   },
 };
 
@@ -250,4 +230,3 @@ export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySe
     VitalsSection,
   ];
 }
-

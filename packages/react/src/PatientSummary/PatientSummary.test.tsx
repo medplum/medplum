@@ -6,8 +6,8 @@ import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import type { PatientSummaryProps } from './PatientSummary';
 import { PatientSummary } from './PatientSummary';
-import { AllergiesSection, MedicationsSection, VitalsSection } from './sectionConfigs';
 import type { PatientSummarySectionConfig } from './PatientSummary.types';
+import { AllergiesSection, MedicationsSection, VitalsSection } from './sectionConfigs';
 import { summaryResourceListSection } from './SummaryResourceListSection';
 
 const medplum = new MockClient();
