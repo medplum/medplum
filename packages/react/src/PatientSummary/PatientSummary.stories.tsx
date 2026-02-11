@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box } from '@mantine/core';
+import { createReference } from '@medplum/core';
 import { HomerSimpson } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
 import type { Meta } from '@storybook/react';
@@ -15,27 +16,33 @@ export default {
   component: PatientSummary,
 } as Meta;
 
+// Default story — renders all built-in sections with Homer Simpson's pre-seeded mock data.
 export const Patient = (): JSX.Element => (
   <Box w={350}>
     <PatientSummary patient={HomerSimpson} />
   </Box>
 );
 
+// Demonstrates passing a subset of built-in section configs to limit which sections render.
 export const SubsetOfSections = (): JSX.Element => (
   <Box w={350}>
     <PatientSummary patient={HomerSimpson} sections={[AllergiesSection, MedicationsSection, VitalsSection]} />
   </Box>
 );
 
+// Demonstrates the `summaryResourceListSection` helper for creating custom resource list sections.
+// Seeds Condition resources into MockClient so the custom "Active Conditions" section has data
+// to render, including status badges derived from clinicalStatus.
 export const CustomResourceListSection = (): JSX.Element => {
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState(false);
+  const patientRef = createReference(HomerSimpson);
 
   useEffect(() => {
     (async (): Promise<void> => {
       await medplum.createResource({
         resourceType: 'Condition',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         code: {
           coding: [{ system: 'http://snomed.info/sct', code: '38341003', display: 'Hypertension' }],
           text: 'Hypertension',
@@ -46,7 +53,7 @@ export const CustomResourceListSection = (): JSX.Element => {
       });
       await medplum.createResource({
         resourceType: 'Condition',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         code: {
           coding: [{ system: 'http://snomed.info/sct', code: '44054006', display: 'Type 2 diabetes mellitus' }],
           text: 'Type 2 diabetes mellitus',
@@ -57,7 +64,7 @@ export const CustomResourceListSection = (): JSX.Element => {
       });
       await medplum.createResource({
         resourceType: 'Condition',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         code: {
           coding: [{ system: 'http://snomed.info/sct', code: '84757009', display: 'Epilepsy' }],
           text: 'Epilepsy',
@@ -68,7 +75,7 @@ export const CustomResourceListSection = (): JSX.Element => {
       });
       setLoaded(true);
     })().catch(console.error);
-  }, [medplum]);
+  }, [medplum, patientRef]);
 
   if (!loaded) {
     return <></>;
@@ -83,7 +90,7 @@ export const CustomResourceListSection = (): JSX.Element => {
           summaryResourceListSection({
             key: 'conditions',
             title: 'Active Conditions',
-            search: { resourceType: 'Condition', patientParam: 'patient' },
+            search: { resourceType: 'Condition', patientParam: 'subject' },
             getStatus: (resource) => {
               const status = (resource as { clinicalStatus?: { coding?: { code?: string }[] } }).clinicalStatus
                 ?.coding?.[0]?.code;
@@ -97,15 +104,19 @@ export const CustomResourceListSection = (): JSX.Element => {
   );
 };
 
+// Demonstrates mixing built-in sections with a fully custom render function.
+// Seeds Condition and MedicationRequest resources so the ProblemList and Medications
+// sections have data. The middle section uses a plain render function with no FHIR search.
 export const CustomRenderSection = (): JSX.Element => {
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState(false);
+  const patientRef = createReference(HomerSimpson);
 
   useEffect(() => {
     (async (): Promise<void> => {
       await medplum.createResource({
         resourceType: 'Condition',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         code: {
           coding: [{ system: 'http://snomed.info/sct', code: '195967001', display: 'Asthma' }],
           text: 'Asthma',
@@ -116,7 +127,7 @@ export const CustomRenderSection = (): JSX.Element => {
       });
       await medplum.createResource({
         resourceType: 'MedicationRequest',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         status: 'active',
         intent: 'order',
         medicationCodeableConcept: {
@@ -128,7 +139,7 @@ export const CustomRenderSection = (): JSX.Element => {
       });
       await medplum.createResource({
         resourceType: 'MedicationRequest',
-        subject: { reference: 'Patient/123' },
+        subject: patientRef,
         status: 'active',
         intent: 'order',
         medicationCodeableConcept: {
@@ -140,7 +151,7 @@ export const CustomRenderSection = (): JSX.Element => {
       });
       setLoaded(true);
     })().catch(console.error);
-  }, [medplum]);
+  }, [medplum, patientRef]);
 
   if (!loaded) {
     return <></>;
