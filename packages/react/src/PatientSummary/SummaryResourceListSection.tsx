@@ -40,6 +40,8 @@ export interface SummaryResourceListOptions {
 /**
  * Creates a `PatientSummarySectionConfig` that renders a list of resources
  * using the same visual pattern as built-in sections (CollapsibleSection + SummaryItem + StatusBadge).
+ * @param options - Configuration for the resource list section.
+ * @returns A section config that renders a generic resource list.
  */
 export function summaryResourceListSection(options: SummaryResourceListOptions): PatientSummarySectionConfig {
   return {

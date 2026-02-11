@@ -154,6 +154,8 @@ export const MedicationsSection: PatientSummarySectionConfig = {
 /**
  * Labs section — searches for both ServiceRequest and DiagnosticReport resources.
  * Accepts an optional `onRequestLabs` callback via closure.
+ * @param onRequestLabs - Optional callback invoked when the user requests labs.
+ * @returns A section config for labs.
  */
 export function createLabsSection(onRequestLabs?: () => void): PatientSummarySectionConfig {
   return {
@@ -232,6 +234,8 @@ export const VitalsSection: PatientSummarySectionConfig = {
 /**
  * Returns the default set of sections, matching the original hardcoded PatientSummary layout.
  * The `onRequestLabs` callback is threaded through to the Labs section.
+ * @param onRequestLabs - Optional callback invoked when the user requests labs.
+ * @returns The default array of section configs.
  */
 export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySectionConfig[] {
   return [
