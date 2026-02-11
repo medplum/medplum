@@ -144,7 +144,6 @@ describe('Execute', () => {
     await shutdownApp();
   });
 
-
   describe('Non-streaming multi-line response parsing', () => {
     test('Streaming-compatible response with 2xx status', async () => {
       const encoder = new TextEncoder();
