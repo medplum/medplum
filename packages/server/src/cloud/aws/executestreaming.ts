@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
-import type { BotResponseStream } from '@medplum/core';
 import { normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
@@ -35,7 +34,11 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
       return { success: false, logResult: 'No event stream in response' };
     }
 
-    return await processEventStream(response.EventStream, responseStream as BotResponseStream);
+    if (!responseStream) {
+      return { success: false, logResult: 'No response stream provided for streaming invocation' };
+    }
+
+    return await processEventStream(response.EventStream, responseStream);
   } catch (err) {
     return { success: false, logResult: normalizeErrorString(err) };
   }
@@ -112,7 +115,7 @@ function processStreamingHeaders(
     }
 
     return { headersParsed: true, buffer: '' };
-  } catch {
-    return { headersParsed: false, buffer: '', error: 'Failed to parse streaming headers: ' + headersLine };
+  } catch (err) {
+    return { headersParsed: false, buffer: '', error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}` };
   }
 }

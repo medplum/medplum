@@ -48,7 +48,7 @@ const WRAPPER_CODE =
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }
-    if (!streaming || !botResponseStream.streamStarted) {
+    if (!streaming || !botResponseStream?.streamStarted) {
       writeResponse(responseStream, 200, result);
     }
   } catch (err) {
@@ -76,7 +76,7 @@ const WRAPPER_CODE =
       };
     }
     console.error("Invoke Error", JSON.stringify(errorResponse));
-    if (!streaming || !botResponseStream.streamStarted) {
+    if (!streaming || !botResponseStream?.streamStarted) {
       writeResponse(responseStream, 500, errorResponse);
     }
   }
