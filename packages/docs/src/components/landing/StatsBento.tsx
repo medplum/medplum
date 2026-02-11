@@ -40,7 +40,8 @@ function StatValue({ value, suffix }: StatValueProps): JSX.Element {
 
   return (
     <div className={styles.value} ref={ref}>
-      {displayValue}{suffix ?? ''}
+      {displayValue}
+      {suffix ?? ''}
     </div>
   );
 }

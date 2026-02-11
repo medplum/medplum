@@ -50,7 +50,10 @@ export function LandingPage(): JSX.Element {
           <div className={styles.heroSection}>
             <div className={styles.heroContent}>
               <h1 className={styles.heroTitle}>Build and run modern healthcare apps</h1>
-              <p className={styles.heroText}>Medplum is the open source developer platform for shipping clinical software.<br></br>Start with our production-ready apps, then customize them to fit your needs.</p>
+              <p className={styles.heroText}>
+                Medplum is the open source developer platform for shipping clinical software.<br></br>Start with our
+                production-ready apps, then customize them to fit your needs.
+              </p>
               <div className={styles.heroButtons}>
                 <button
                   type="button"
@@ -62,7 +65,11 @@ export function LandingPage(): JSX.Element {
                 <BuildDropdown />
               </div>
             </div>
-            <img className={styles.heroImage} src="/img/provider/medplum-provider-app-cover-image.webp" alt="Medplum Provider App screenshot" />
+            <img
+              className={styles.heroImage}
+              src="/img/provider/medplum-provider-app-cover-image.webp"
+              alt="Medplum Provider App screenshot"
+            />
           </div>
           <SectionHeader style={{ marginBottom: '0', marginTop: '0' }}>
             <h3>Trusted by Healthcare Leaders & Innovators</h3>
@@ -71,7 +78,8 @@ export function LandingPage(): JSX.Element {
           <SectionHeader>
             <h2>A platform built for healthcare complexity</h2>
             <p>
-              Build what you need—without rebuilding the foundation. Medplum provides the core primitives required to ship and operate healthcare software in production.
+              Build what you need—without rebuilding the foundation. Medplum provides the core primitives required to
+              ship and operate healthcare software in production.
             </p>
           </SectionHeader>
           <Section>
@@ -96,8 +104,8 @@ export function LandingPage(): JSX.Element {
                 verified by multiple penetration tests.
               </Feature>
               <Feature title="Scalable" icon={<IconChartBarPopular />}>
-                From MVP to IPO—and every major milestone in between—Medplum’s technology backs you up and grows
-                with you.
+                From MVP to IPO—and every major milestone in between—Medplum’s technology backs you up and grows with
+                you.
               </Feature>
             </FeatureGrid>
           </Section>
@@ -111,30 +119,31 @@ export function LandingPage(): JSX.Element {
           </SectionHeader>
           <Section>
             <FeatureGrid columns={3} variant="complexity">
-                <Feature title="Labs" icon={<IconTestPipe/>}>
-                  Orders, results, and workflows that fit real operations.
-                </Feature>
-                <Feature title="Medications" icon={<IconPills />}>
-                  Medication workflows and integrations designed for clinical safety.
-                </Feature>
-                <Feature title="Billing & RCM" icon={<IconBuildingBank />}>
-                  Integrate financial workflows without duct-taping your system.
-                </Feature>
-                <Feature title="Health Exchange" icon={<IconReplace />}>
-                  Support data exchange patterns used in real-world interoperability.
-                </Feature>
-                <Feature title="Plugins & Modules" icon={<IconPlugConnected />}>
-                  Extend Medplum with reusable integration components.
-                </Feature>
-                <Feature title="Third-party Tools" icon={<IconApps />}>
-                  Connect CRMs, scheduling, imaging, and specialty systems.
-                </Feature>
+              <Feature title="Labs" icon={<IconTestPipe />}>
+                Orders, results, and workflows that fit real operations.
+              </Feature>
+              <Feature title="Medications" icon={<IconPills />}>
+                Medication workflows and integrations designed for clinical safety.
+              </Feature>
+              <Feature title="Billing & RCM" icon={<IconBuildingBank />}>
+                Integrate financial workflows without duct-taping your system.
+              </Feature>
+              <Feature title="Health Exchange" icon={<IconReplace />}>
+                Support data exchange patterns used in real-world interoperability.
+              </Feature>
+              <Feature title="Plugins & Modules" icon={<IconPlugConnected />}>
+                Extend Medplum with reusable integration components.
+              </Feature>
+              <Feature title="Third-party Tools" icon={<IconApps />}>
+                Connect CRMs, scheduling, imaging, and specialty systems.
+              </Feature>
             </FeatureGrid>
           </Section>
           <SectionHeader>
             <h2>Trusted infrastructure, to meet any future you build</h2>
             <p>
-              Mepdplum lets your team skip the plumbing and ship what matters, geting you to market faster with a secure, compliant, and scalable foundation.
+              Mepdplum lets your team skip the plumbing and ship what matters, geting you to market faster with a
+              secure, compliant, and scalable foundation.
             </p>
           </SectionHeader>
           <Section>
@@ -157,9 +166,8 @@ export function LandingPage(): JSX.Element {
                 ramp-up was an example of first rate partnership.
               </p>
               <p style={{ paddingTop: '1rem' }}>
-                With their robust product, we've gained the agility to 
-                rapidly introduce new features, enabling Thirty Madison to maintain its commitment to putting patients
-                first.
+                With their robust product, we've gained the agility to rapidly introduce new features, enabling Thirty
+                Madison to maintain its commitment to putting patients first.
               </p>
             </Card>
             <Card>
@@ -171,11 +179,7 @@ export function LandingPage(): JSX.Element {
               <p>The Medplum GUI is very nice. There's a lot of depth there.</p>
             </Card>
             <Card>
-              <TestimonialHeader
-                name="Joshua Kelly"
-                title="CTO, Flexpa"
-                imgSrc="/img/avatars/joshuakelly.png"
-              />
+              <TestimonialHeader name="Joshua Kelly" title="CTO, Flexpa" imgSrc="/img/avatars/joshuakelly.png" />
               <p>
                 Medplum is the best FHIR server implementation. Flexpa uses it to power our API and we wouldn't have
                 nearly as good a product without it.
@@ -209,7 +213,9 @@ export function LandingPage(): JSX.Element {
                 title="Health API Guy Newsletter"
                 imgSrc="/img/avatars/jose-rodrigues.webp"
               />
-              <p>I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.</p>
+              <p>
+                I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.
+              </p>
             </Card>
             <Card>
               <TestimonialHeader
@@ -249,14 +255,12 @@ export function LandingPage(): JSX.Element {
         <div className={styles.ctaBanner}>
           <div className={`${styles.landingContent} ${styles.ctaBannerInner}`}>
             <h2>Start building with Medplum today</h2>
-            <p className={styles.ctaBannerDescription}>Join 150+ open source contributors and thousands of developers who choose Medplum to build secure and compliant
-            healthcare apps.</p>
+            <p className={styles.ctaBannerDescription}>
+              Join 150+ open source contributors and thousands of developers who choose Medplum to build secure and
+              compliant healthcare apps.
+            </p>
             <div className={styles.heroButtons}>
-              <button
-                type="button"
-                className={styles.ctaWhiteButton}
-                onClick={() => (window.location.href = '/docs')}
-              >
+              <button type="button" className={styles.ctaWhiteButton} onClick={() => (window.location.href = '/docs')}>
                 See Documentation
               </button>
               <button

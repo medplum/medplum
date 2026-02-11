@@ -1,56 +1,41 @@
-import React, {
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import {createPortal} from 'react-dom';
-import {useDocSearchKeyboardEvents} from '@docsearch/react/useDocSearchKeyboardEvents';
-import {IconSearch} from '@tabler/icons-react';
+import type {
+  DocSearchHit,
+  DocSearchModalProps,
+  DocSearchModal as DocSearchModalType,
+  DocSearchTransformClient,
+  DocSearchTranslations,
+  InternalDocSearchHit,
+  StoredDocSearchHit,
+  UseDocSearchKeyboardEventsProps,
+} from '@docsearch/react';
+import { useDocSearchKeyboardEvents } from '@docsearch/react/useDocSearchKeyboardEvents';
 import Head from '@docusaurus/Head';
-import './styles.css';
 import Link from '@docusaurus/Link';
-import {useHistory} from '@docusaurus/router';
+import { useHistory } from '@docusaurus/router';
+import { isRegexpStringMatch, useSearchLinkCreator } from '@docusaurus/theme-common';
 import {
-  isRegexpStringMatch,
-  useSearchLinkCreator,
-} from '@docusaurus/theme-common';
-import {
+  mergeFacetFilters,
+  useAlgoliaAskAi,
   useAlgoliaContextualFacetFilters,
   useSearchResultUrlProcessor,
-  useAlgoliaAskAi,
-  mergeFacetFilters,
 } from '@docusaurus/theme-search-algolia/client';
 import Translate from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import { IconSearch } from '@tabler/icons-react';
 import translations from '@theme/SearchTranslations';
-import type {
-  InternalDocSearchHit,
-  DocSearchModal as DocSearchModalType,
-  DocSearchModalProps,
-  StoredDocSearchHit,
-  DocSearchTransformClient,
-  DocSearchHit,
-  DocSearchTranslations,
-  UseDocSearchKeyboardEventsProps,
-} from '@docsearch/react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import './styles.css';
 
-import type {AutocompleteState} from '@algolia/autocomplete-core';
-import type {FacetFilters} from 'algoliasearch/lite';
-import type {ThemeConfigAlgolia} from '@docusaurus/theme-search-algolia';
+import type { AutocompleteState } from '@algolia/autocomplete-core';
+import type { ThemeConfigAlgolia } from '@docusaurus/theme-search-algolia';
+import type { FacetFilters } from 'algoliasearch/lite';
 
-type DocSearchProps = Omit<
-  DocSearchModalProps,
-  'onClose' | 'initialScrollY'
-> & {
+type DocSearchProps = Omit<DocSearchModalProps, 'onClose' | 'initialScrollY'> & {
   contextualSearch?: string;
   externalUrlRegex?: string;
   searchPagePath: boolean | string;
-  askAi?: Exclude<
-    (DocSearchModalProps & {askAi: unknown})['askAi'],
-    string | undefined
-  >;
+  askAi?: Exclude<(DocSearchModalProps & { askAi: unknown })['askAi'], string | undefined>;
 };
 
 // extend DocSearchProps for v4 features
@@ -67,18 +52,14 @@ function importDocSearchModalIfNeeded() {
   if (DocSearchModal) {
     return Promise.resolve();
   }
-  return Promise.all([
-    import('@docsearch/react/modal'),
-    import('@docsearch/react/style'),
-    import('./styles.css'),
-  ]).then(([{DocSearchModal: Modal}]) => {
-    DocSearchModal = Modal;
-  });
+  return Promise.all([import('@docsearch/react/modal'), import('@docsearch/react/style'), import('./styles.css')]).then(
+    ([{ DocSearchModal: Modal }]) => {
+      DocSearchModal = Modal;
+    }
+  );
 }
 
-function useNavigator({
-  externalUrlRegex,
-}: Pick<DocSearchProps, 'externalUrlRegex'>) {
+function useNavigator({ externalUrlRegex }: Pick<DocSearchProps, 'externalUrlRegex'>) {
   const history = useHistory();
   const [navigator] = useState<DocSearchModalProps['navigator']>(() => {
     return {
@@ -98,32 +79,30 @@ function useNavigator({
 
 function useTransformSearchClient(): DocSearchModalProps['transformSearchClient'] {
   const {
-    siteMetadata: {docusaurusVersion},
+    siteMetadata: { docusaurusVersion },
   } = useDocusaurusContext();
   return useCallback(
     (searchClient: DocSearchTransformClient) => {
       searchClient.addAlgoliaAgent('docusaurus', docusaurusVersion);
       return searchClient;
     },
-    [docusaurusVersion],
+    [docusaurusVersion]
   );
 }
 
 function useTransformItems(props: Pick<DocSearchProps, 'transformItems'>) {
   const processSearchResultUrl = useSearchResultUrlProcessor();
-  const [transformItems] = useState<DocSearchModalProps['transformItems']>(
-    () => {
-      return (items: DocSearchHit[]) =>
-        props.transformItems
-          ? // Custom transformItems
-            props.transformItems(items)
-          : // Default transformItems
-            items.map((item) => ({
-              ...item,
-              url: processSearchResultUrl(item.url),
-            }));
-    },
-  );
+  const [transformItems] = useState<DocSearchModalProps['transformItems']>(() => {
+    return (items: DocSearchHit[]) =>
+      props.transformItems
+        ? // Custom transformItems
+          props.transformItems(items)
+        : // Default transformItems
+          items.map((item) => ({
+            ...item,
+            url: processSearchResultUrl(item.url),
+          }));
+  });
   return transformItems;
 }
 
@@ -134,19 +113,12 @@ function useResultsFooterComponent({
 }): DocSearchProps['resultsFooterComponent'] {
   return useMemo(
     () =>
-      ({state}) =>
-        <ResultsFooter state={state} onClose={closeModal} />,
-    [closeModal],
+      ({ state }) => <ResultsFooter state={state} onClose={closeModal} />,
+    [closeModal]
   );
 }
 
-function Hit({
-  hit,
-  children,
-}: {
-  hit: InternalDocSearchHit | StoredDocSearchHit;
-  children: ReactNode;
-}) {
+function Hit({ hit, children }: { hit: InternalDocSearchHit | StoredDocSearchHit; children: ReactNode }) {
   return <Link to={hit.url}>{children}</Link>;
 }
 
@@ -155,28 +127,22 @@ type ResultsFooterProps = {
   onClose: () => void;
 };
 
-function ResultsFooter({state, onClose}: ResultsFooterProps) {
+function ResultsFooter({ state, onClose }: ResultsFooterProps) {
   const createSearchLink = useSearchLinkCreator();
 
   return (
     <Link to={createSearchLink(state.query)} onClick={onClose}>
-      <Translate
-        id="theme.SearchBar.seeAll"
-        values={{count: state.context.nbHits}}>
+      <Translate id="theme.SearchBar.seeAll" values={{ count: state.context.nbHits }}>
         {'See all {count} results'}
       </Translate>
     </Link>
   );
 }
 
-function useSearchParameters({
-  contextualSearch,
-  ...props
-}: DocSearchProps): DocSearchProps['searchParameters'] {
+function useSearchParameters({ contextualSearch, ...props }: DocSearchProps): DocSearchProps['searchParameters'] {
   const contextualSearchFacetFilters = useAlgoliaContextualFacetFilters();
 
-  const configFacetFilters: FacetFilters =
-    props.searchParameters?.facetFilters ?? [];
+  const configFacetFilters: FacetFilters = props.searchParameters?.facetFilters ?? [];
 
   const facetFilters: FacetFilters = contextualSearch
     ? // Merge contextual search filters with config filters
@@ -191,21 +157,18 @@ function useSearchParameters({
   };
 }
 
-function DocSearch({externalUrlRegex, ...props}: DocSearchV4Props) {
-  const navigator = useNavigator({externalUrlRegex});
-  const searchParameters = useSearchParameters({...props});
+function DocSearch({ externalUrlRegex, ...props }: DocSearchV4Props) {
+  const navigator = useNavigator({ externalUrlRegex });
+  const searchParameters = useSearchParameters({ ...props });
   const transformItems = useTransformItems(props);
   const transformSearchClient = useTransformSearchClient();
 
   const searchContainer = useRef<HTMLDivElement | null>(null);
   const searchButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [initialQuery, setInitialQuery] = useState<string | undefined>(
-    undefined,
-  );
+  const [initialQuery, setInitialQuery] = useState<string | undefined>(undefined);
 
-  const {isAskAiActive, currentPlaceholder, onAskAiToggle, extraAskAiProps} =
-    useAlgoliaAskAi(props);
+  const { isAskAiActive, currentPlaceholder, onAskAiToggle, extraAskAiProps } = useAlgoliaAskAi(props);
 
   const prepareSearchContainer = useCallback(() => {
     if (!searchContainer.current) {
@@ -238,10 +201,10 @@ function DocSearch({externalUrlRegex, ...props}: DocSearchV4Props) {
       setInitialQuery(event.key);
       openModal();
     },
-    [openModal],
+    [openModal]
   );
 
-  const resultsFooterComponent = useResultsFooterComponent({closeModal});
+  const resultsFooterComponent = useResultsFooterComponent({ closeModal });
 
   useDocSearchKeyboardEvents({
     isOpen,
@@ -263,11 +226,7 @@ function DocSearch({externalUrlRegex, ...props}: DocSearchV4Props) {
         {/* This hints the browser that the website will load data from Algolia,
         and allows it to preconnect to the DocSearch cluster. It makes the first
         query faster, especially on mobile. */}
-        <link
-          rel="preconnect"
-          href={`https://${props.appId}-dsn.algolia.net`}
-          crossOrigin="anonymous"
-        />
+        <link rel="preconnect" href={`https://${props.appId}-dsn.algolia.net`} crossOrigin="anonymous" />
       </Head>
 
       <button
@@ -304,15 +263,13 @@ function DocSearch({externalUrlRegex, ...props}: DocSearchV4Props) {
             searchParameters={searchParameters}
             {...extraAskAiProps}
           />,
-          searchContainer.current,
+          searchContainer.current
         )}
     </>
   );
 }
 
 export default function SearchBar(): ReactNode {
-  const {siteConfig} = useDocusaurusContext();
-  return (
-    <DocSearch {...(siteConfig.themeConfig.algolia as DocSearchV4Props)} />
-  );
+  const { siteConfig } = useDocusaurusContext();
+  return <DocSearch {...(siteConfig.themeConfig.algolia as DocSearchV4Props)} />;
 }

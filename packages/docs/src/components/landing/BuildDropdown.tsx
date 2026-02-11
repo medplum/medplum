@@ -59,7 +59,13 @@ function CopyRow({ value }: CopyRowProps): JSX.Element {
   }, [value]);
 
   return (
-    <div className={styles.copyContainer} onClick={handleCopy} role="button" tabIndex={0} aria-label={`Copy "${value}" to clipboard`}>
+    <div
+      className={styles.copyContainer}
+      onClick={handleCopy}
+      role="button"
+      tabIndex={0}
+      aria-label={`Copy "${value}" to clipboard`}
+    >
       <code className={styles.copyInput}>{value}</code>
       <span className={styles.copyIcon}>
         <IconCopy size={14} />
@@ -100,11 +106,7 @@ export function BuildDropdown(): JSX.Element {
   }, []);
 
   return (
-    <div
-      className={styles.dropdownWrapper}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className={styles.dropdownWrapper} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <button
         type="button"
         className={`${styles.dropdownTrigger}${isOpen ? ` ${styles.dropdownTriggerActive}` : ''}`}
@@ -137,11 +139,7 @@ export function BuildDropdown(): JSX.Element {
 
         <div className={styles.divider} />
 
-        <button
-          type="button"
-          className={styles.dropdownItem}
-          onClick={() => (window.location.href = '/docs')}
-        >
+        <button type="button" className={styles.dropdownItem} onClick={() => (window.location.href = '/docs')}>
           <div className={styles.itemHeader}>
             <IconBook size={16} />
             <span>View Our Docs</span>

@@ -104,7 +104,10 @@ export function SolutionAccordion(): JSX.Element {
     <div className={styles.wrapper}>
       <SectionHeader>
         <h2>Solutions for all scopes and scales</h2>
-        <p>Medplum powers a wide range of applications on a single, standards-based platform—giving your team the flexibility to ship and evolve your end-to-end care model.</p>
+        <p>
+          Medplum powers a wide range of applications on a single, standards-based platform—giving your team the
+          flexibility to ship and evolve your end-to-end care model.
+        </p>
       </SectionHeader>
       <div className={styles.accordion}>
         {solutions.map((solution, index) => {

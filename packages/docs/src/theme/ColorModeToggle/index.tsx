@@ -1,18 +1,15 @@
-import React, {type ReactNode} from 'react';
-import clsx from 'clsx';
+import type { ColorMode } from '@docusaurus/theme-common';
+import { translate } from '@docusaurus/Translate';
 import useIsBrowser from '@docusaurus/useIsBrowser';
-import {translate} from '@docusaurus/Translate';
-import {IconSun, IconMoon, IconDeviceDesktop} from '@tabler/icons-react';
-import type {Props} from '@theme/ColorModeToggle';
-import type {ColorMode} from '@docusaurus/theme-common';
+import { IconDeviceDesktop, IconMoon, IconSun } from '@tabler/icons-react';
+import type { Props } from '@theme/ColorModeToggle';
+import clsx from 'clsx';
+import React, { type ReactNode } from 'react';
 
 import styles from './styles.module.css';
 
 // The order of color modes is defined here, and can be customized with swizzle
-function getNextColorMode(
-  colorMode: ColorMode | null,
-  respectPrefersColorScheme: boolean,
-) {
+function getNextColorMode(colorMode: ColorMode | null, respectPrefersColorScheme: boolean) {
   // 2-value transition
   if (!respectPrefersColorScheme) {
     return colorMode === 'dark' ? 'light' : 'dark';
@@ -65,7 +62,7 @@ function getColorModeAriaLabel(colorMode: ColorMode | null) {
     },
     {
       mode: getColorModeLabel(colorMode),
-    },
+    }
   );
 }
 
@@ -75,18 +72,8 @@ function CurrentColorModeIcon(): ReactNode {
   // This must work even before React hydrates
   return (
     <>
-      <IconSun
-        size={20}
-        stroke={2}
-        aria-hidden
-        className={clsx(styles.toggleIcon, styles.lightToggleIcon)}
-      />
-      <IconMoon
-        size={20}
-        stroke={2}
-        aria-hidden
-        className={clsx(styles.toggleIcon, styles.darkToggleIcon)}
-      />
+      <IconSun size={20} stroke={2} aria-hidden className={clsx(styles.toggleIcon, styles.lightToggleIcon)} />
+      <IconMoon size={20} stroke={2} aria-hidden className={clsx(styles.toggleIcon, styles.darkToggleIcon)} />
       <IconDeviceDesktop
         size={20}
         stroke={2}
@@ -97,27 +84,14 @@ function CurrentColorModeIcon(): ReactNode {
   );
 }
 
-function ColorModeToggle({
-  className,
-  buttonClassName,
-  respectPrefersColorScheme,
-  value,
-  onChange,
-}: Props): ReactNode {
+function ColorModeToggle({ className, buttonClassName, respectPrefersColorScheme, value, onChange }: Props): ReactNode {
   const isBrowser = useIsBrowser();
   return (
     <div className={clsx(styles.toggle, className)}>
       <button
-        className={clsx(
-          'clean-btn',
-          styles.toggleButton,
-          !isBrowser && styles.toggleButtonDisabled,
-          buttonClassName,
-        )}
+        className={clsx('clean-btn', styles.toggleButton, !isBrowser && styles.toggleButtonDisabled, buttonClassName)}
         type="button"
-        onClick={() =>
-          onChange(getNextColorMode(value, respectPrefersColorScheme))
-        }
+        onClick={() => onChange(getNextColorMode(value, respectPrefersColorScheme))}
         disabled={!isBrowser}
         title={getColorModeLabel(value)}
         aria-label={getColorModeAriaLabel(value)}
