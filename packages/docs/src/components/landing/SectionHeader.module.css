@@ -1,21 +1,40 @@
 .sectionHeader {
   display: block;
-  margin: 150px auto 50px auto;
-  text-align: center;
+  margin: 12rem auto 3rem auto;
+  text-align: left;
+  max-width: 100%;
 }
 
 .sectionHeader h2 {
   font-size: 2.5rem;
+  font-weight: 700;
   line-height: 1.2;
-  font-weight: 400;
+  letter-spacing: -0.025em;
+  color: var(--oc-gray-8);
+}
+
+[data-theme='dark'] .sectionHeader h2 {
+  color: var(--oc-gray-0);
+}
+
+.sectionHeader h3 {
+  color: var(--oc-gray-5);
+  text-align: center;
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+  margin-bottom: 0;
 }
 
 .sectionHeader p {
   margin-bottom: 0;
   color: #4d4d4d;
-  font-size: 1rem;
+  font-size: 1.125rem;
+  line-height: 1.75rem;
   font-weight: 400;
   margin-top: 0;
+  width: 64%;
+  text-align: left;
 }
 
 [data-theme='dark'] .sectionHeader p {

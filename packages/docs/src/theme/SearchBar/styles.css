@@ -1,0 +1,37 @@
+:root {
+  --docsearch-primary-color: var(--ifm-color-primary);
+  --docsearch-text-color: var(--ifm-font-color-base);
+}
+
+.DocSearch-Container {
+  z-index: calc(var(--ifm-z-index-fixed) + 1);
+}
+
+/* Custom search button styled like dark mode toggle */
+.searchButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  border: 1px solid var(--oc-gray-3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.searchButton:hover {
+  border-color: var(--oc-grape-8);
+  color: var(--oc-grape-8);
+}
+
+[data-theme='dark'] .searchButton {
+  border-color: var(--oc-gray-7);
+}
+
+[data-theme='dark'] .searchButton:hover {
+  border-color: var(--oc-grape-5);
+  color: var(--oc-grape-5);
+}

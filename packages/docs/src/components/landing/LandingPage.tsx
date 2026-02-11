@@ -1,38 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import Link from '@docusaurus/Link';
 import {
+  IconApps,
+  IconBrandOpenSource,
+  IconBuildingBank,
   IconChartBarPopular,
   IconCode,
-  IconDeviceIpadHorizontalCode,
-  IconExchange,
-  IconFlask,
-  IconHeart,
-  IconHeartRateMonitor,
-  IconMicrophone,
-  IconPillFilled,
+  IconFlame,
+  IconPills,
   IconPlugConnected,
-  IconReceipt2,
+  IconReplace,
   IconSettings,
-  IconShieldCheckFilled,
-  IconTools,
-  IconUsers,
+  IconShieldCheck,
+  IconTestPipe,
 } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
-import { clsx } from 'clsx';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
 import { Card } from '../Card';
-import { CardButton } from '../CardButton';
-import { CardContainer } from '../CardContainer';
-import { Container } from '../Container';
-import { AnimatedCircle } from './AnimatedCircle';
+import { BuildDropdown } from './BuildDropdown';
 import { Feature, FeatureGrid } from './FeatureGrid';
-import { Jumbotron } from './Jumbotron';
 import styles from './LandingPage.module.css';
 import { LogoScroller } from './LogoScroller';
 import { Section } from './Section';
 import { SectionHeader } from './SectionHeader';
+import { SolutionAccordion } from './SolutionAccordion';
+import { StatsBento } from './StatsBento';
 import { TestimonialHeader } from './TestimonialHeader';
 
 export function LandingPage(): JSX.Element {
@@ -53,371 +46,229 @@ export function LandingPage(): JSX.Element {
   return (
     <div className="page">
       <Layout>
-        <div className={styles.heroSection}>
-          <Container>
+        <div className={styles.landingContent}>
+          <div className={styles.heroSection}>
             <div className={styles.heroContent}>
               <h1 className={styles.heroTitle}>Build and run modern healthcare apps</h1>
-              <p className={styles.heroText}>Medplum is the open source healthcare developer platform.</p>
-              <p className={styles.heroText}>
-                Start with production-ready apps. Customize, extend, and integrate without rebuilding an EHR from
-                scratch.
-              </p>
-              <p className={styles.heroButtons}>
-                <Link href="/docs/provider" className={clsx(styles.getStartedButton, styles.purpleButton)}>
+              <p className={styles.heroText}>Medplum is the open source developer platform for shipping clinical software.<br></br>Start with our production-ready apps, then customize them to fit your needs.</p>
+              <div className={styles.heroButtons}>
+                <button
+                  type="button"
+                  className={styles.purpleButton}
+                  onClick={() => (window.location.href = '/docs/provider')}
+                >
                   Explore the Provider App
-                </Link>
-                <Link href="/docs" className={clsx(styles.getStartedButton, styles.defaultButton)}>
-                  Build on the Platform
-                </Link>
-              </p>
-              <p className={styles.heroSubText}>
-                Built for teams shipping clinical software in production. Hosted or self-managed.
-              </p>
+                </button>
+                <BuildDropdown />
+              </div>
             </div>
-          </Container>
-          <Container>
-            <img src="/img/provider/medplum-provider-app-cover-image.webp" alt="Medplum Provider App screenshot" />
-          </Container>
-        </div>
-        <Container>
-          <Section>
-            <CardContainer>
-              <Card>
-                <div className={styles.cardImage}>
-                  <AnimatedCircle value={20} suffix="m" />
-                </div>
-                <h3>Active patients</h3>
-                <p>
-                  From startups to enterprises, Medplum facilitates care for over 20 million patients with hundreds of
-                  practices.
-                </p>
-              </Card>
-              <Card>
-                <div className={styles.cardImage}>
-                  <AnimatedCircle value={120} suffix="m" />
-                </div>
-                <h3>Custom workflows</h3>
-                <p>Powering over 120 million custom workflow actions designed uniquely for your requirements.</p>
-              </Card>
-              <Card>
-                <div className={styles.cardImage}>
-                  <AnimatedCircle value={158} />
-                </div>
-                <h3>Contributors</h3>
-                <p>
-                  Our robust ecosystem of community and documentation keeps you in the company of today's best
-                  developers.
-                </p>
-              </Card>
-            </CardContainer>
-          </Section>
-          <SectionHeader>
-            <h2>Trusted by</h2>
+            <img className={styles.heroImage} src="/img/provider/medplum-provider-app-cover-image.webp" alt="Medplum Provider App screenshot" />
+          </div>
+          <SectionHeader style={{ marginBottom: '0', marginTop: '0' }}>
+            <h3>Trusted by Healthcare Leaders & Innovators</h3>
           </SectionHeader>
-          <Section>
-            <LogoScroller />
-          </Section>
-          <SectionHeader>
-            <h2>Connect to the healthcare ecosystem</h2>
-            <p>
-              Healthcare teams rely on a complex network of external systems.
-              <br />
-              Medplum supports integrations across common surfaces, and can be extended through plugins and custom
-              modules.
-            </p>
-          </SectionHeader>
-          <Section>
-            <FeatureGrid columns={3}>
-              <Feature title="Labs" icon={<IconFlask />}>
-                Orders, results, and workflows that fit real operations.
-              </Feature>
-              <Feature title="Medications" icon={<IconPillFilled />}>
-                Medication workflows and integrations designed for clinical safety.
-              </Feature>
-              <Feature title="Billing & RCM" icon={<IconReceipt2 />}>
-                Integrate financial workflows without duct-taping your system.
-              </Feature>
-              <Feature title="Health exchange" icon={<IconExchange />}>
-                Support data exchange patterns used in real-world interoperability.
-              </Feature>
-              <Feature title="Third-party tools" icon={<IconTools />}>
-                Connect CRMs, scheduling, imaging, and specialty systems.
-              </Feature>
-              <Feature title="Plugins & modules" icon={<IconPlugConnected />}>
-                Extend Medplum with reusable integration components.
-              </Feature>
-            </FeatureGrid>
-          </Section>
+          <LogoScroller />
           <SectionHeader>
             <h2>A platform built for healthcare complexity</h2>
             <p>
-              Build what you need—without rebuilding the foundation.
-              <br />
-              Medplum provides the core primitives required to ship and operate healthcare software in production.
+              Build what you need—without rebuilding the foundation. Medplum provides the core primitives required to ship and operate healthcare software in production.
             </p>
           </SectionHeader>
           <Section>
-            <FeatureGrid columns={3}>
+            <FeatureGrid columns={3} variant="ecosystem">
               <Feature title="API-first" icon={<IconCode />}>
                 Integrate with any partner, anywhere, in any way with data share options in a variety of formats.
               </Feature>
-              <Feature title="FHIR-native" icon={<IconHeartRateMonitor />}>
+              <Feature title="FHIR-native" icon={<IconFlame />}>
                 Anticipate nuances and avoid costly re-writes down the line with default FHIR-standard formatted data
                 storage.
               </Feature>
-              <Feature title="Automation" icon={<IconSettings />}>
+              <Feature title="Automation-ready" icon={<IconSettings />}>
                 Streamline your operations and automate any workflow to activate, track, manage, and measure tasks of
                 any level of complexity.
               </Feature>
-              <Feature title="Open source" icon={<IconDeviceIpadHorizontalCode />}>
+              <Feature title="Open Source" icon={<IconBrandOpenSource />}>
                 Medplum's core technology is open source (Apache 2.0 license) and freely available in GitHub, so there’s
                 never a risk of vendor lock-in.
               </Feature>
-              <Feature title="Secure &amp; Compliant" icon={<IconShieldCheckFilled />}>
+              <Feature title="Secure &amp; Compliant" icon={<IconShieldCheck />}>
                 Comes with HIPAA and SOC2 compliance out of the box, follows all OWASP security guidelines, and is
                 verified by multiple penetration tests.
               </Feature>
               <Feature title="Scalable" icon={<IconChartBarPopular />}>
-                From MVP to IPO - and every major milestone in between - Medplum’s technology backs you up and grows
+                From MVP to IPO—and every major milestone in between—Medplum’s technology backs you up and grows
                 with you.
               </Feature>
             </FeatureGrid>
           </Section>
+          <SolutionAccordion />
           <SectionHeader>
-            <h2>What will you build?</h2>
+            <h2>Connect to the healthcare ecosystem</h2>
+            <p>
+              Medplum connects to common external systems while letting you build custom integrations when you need
+              them.
+            </p>
           </SectionHeader>
           <Section>
-            <FeatureGrid columns={3}>
-              <Feature title="Custom EHR" icon={<IconHeartRateMonitor />}>
-                Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and
-                specifications. Gain complete control over your clinical data and operations.
-              </Feature>
-              <Feature title="Patient Engagement" icon={<IconUsers />}>
-                Deepen your connection with patients by creating custom, modern experiences that truly resonate. Drive
-                better health outcomes through seamless and engaging interactions.
-              </Feature>
-              <Feature title="Scribe &amp; Agents" icon={<IconMicrophone />}>
-                Go beyond simple transcription with agentic scribes that take action, not just notes. Elevate your AI
-                capabilities to streamline operations and enhance decision-making.
-              </Feature>
-              <Feature title="Population Health" icon={<IconChartBarPopular />}>
-                Transform fragmented patient data into powerful insights for coordinated care delivery. Our platform
-                empowers population health teams to improve outcomes and maximize shared savings.
-              </Feature>
-              <Feature title="Care Management" icon={<IconHeart />}>
-                Free your care managers to focus on providing truly compassionate and personalized support. Streamline
-                administrative tasks so they can dedicate more time to what matters most: patient well-being.
-              </Feature>
-              <Feature title="Revenue Cycle Management" icon={<IconReceipt2 />}>
-                Design and automate custom routing and business rules that perfectly fit your financial operations.
-                Optimize your revenue cycle for efficiency and maximum returns.
-              </Feature>
+            <FeatureGrid columns={3} variant="complexity">
+                <Feature title="Labs" icon={<IconTestPipe/>}>
+                  Orders, results, and workflows that fit real operations.
+                </Feature>
+                <Feature title="Medications" icon={<IconPills />}>
+                  Medication workflows and integrations designed for clinical safety.
+                </Feature>
+                <Feature title="Billing & RCM" icon={<IconBuildingBank />}>
+                  Integrate financial workflows without duct-taping your system.
+                </Feature>
+                <Feature title="Health Exchange" icon={<IconReplace />}>
+                  Support data exchange patterns used in real-world interoperability.
+                </Feature>
+                <Feature title="Plugins & Modules" icon={<IconPlugConnected />}>
+                  Extend Medplum with reusable integration components.
+                </Feature>
+                <Feature title="Third-party Tools" icon={<IconApps />}>
+                  Connect CRMs, scheduling, imaging, and specialty systems.
+                </Feature>
             </FeatureGrid>
           </Section>
           <SectionHeader>
-            <h2>Get started, fast</h2>
+            <h2>Trusted infrastructure, to meet any future you build</h2>
+            <p>
+              Mepdplum lets your team skip the plumbing and ship what matters, geting you to market faster with a secure, compliant, and scalable foundation.
+            </p>
           </SectionHeader>
           <Section>
-            <pre>
-              <code className={styles.initCode}>$ npm init medplum</code>
-            </pre>
+            <StatsBento />
           </Section>
           <SectionHeader>
-            <h2>Solutions</h2>
+            <h2>What healthcare builders are saying</h2>
+            <p>Founders, directors, and developers on why they build with Medplum.</p>
           </SectionHeader>
-          <Section>
-            <CardContainer>
-              <Card>
-                <h3>Custom EHR</h3>
-                <p>Save hundreds of hours of dev time with our headless EHR.</p>
-                <CardButton href="/solutions/custom-ehr" alt="Learn more about Medplum Custom EHR">
-                  Learn more
-                </CardButton>
-              </Card>
-              <Card>
-                <h3>Patient Portal</h3>
-                <p>Accelerate customizable, scalable patient-facing experiences.</p>
-                <CardButton href="/solutions/patient-portal" alt="Learn more about Medplum Patient Portal">
-                  Learn more
-                </CardButton>
-              </Card>
-              <Card>
-                <h3>Provider Portal</h3>
-                <p>Accelerate customizable, scalable provider-facing experiences.</p>
-                <CardButton href="/solutions/provider-portal" alt="Learn more about Medplum Provider Portal">
-                  Learn more
-                </CardButton>
-              </Card>
-            </CardContainer>
-          </Section>
-          <Jumbotron>
-            <div className={styles.heroContent}>
-              <h3>Infrastructure you can trust to meet any future you make.</h3>
-              <p>
-                Infrastructure you can trust to meet whatever future you make. Medplum fast-paths your team to the
-                innovation stage, increasing your developer velocity to let you get to market faster with a secure,
-                compliant, and scalable foundation. It’s clean, customizable technology that simply works - from MVP to
-                IPO.
-              </p>
-              <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
-                <div>Book a demo</div>
-                <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-              </Link>
-            </div>
-            <div className={styles.heroImage}>
-              <img
-                src="/img/infrastructure-jumbotron.svg"
-                alt="Robot working in a medical office"
-                width="400"
-                height="400"
+          <div className={styles.masonryGrid}>
+            <Card>
+              <TestimonialHeader
+                name="Michael Caves"
+                title="Director of Product, Thirty Madison"
+                imgSrc="/img/avatars/michael-caves.webp"
               />
+              <p>
+                Thanks to the expertise of the Medplum team, we were able to swiftly implement their product and get it
+                up and running seamlessly. Their proactive approach in anticipating and mitigating any issues during our
+                ramp-up was an example of first rate partnership.
+              </p>
+              <p style={{ paddingTop: '1rem' }}>
+                With their robust product, we've gained the agility to 
+                rapidly introduce new features, enabling Thirty Madison to maintain its commitment to putting patients
+                first.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Craig Collier"
+                title="Senior Software Engineer, Ro"
+                imgSrc="/img/avatars/craig-collier.webp"
+              />
+              <p>The Medplum GUI is very nice. There's a lot of depth there.</p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Joshua Kelly"
+                title="CTO, Flexpa"
+                imgSrc="/img/avatars/joshuakelly.png"
+              />
+              <p>
+                Medplum is the best FHIR server implementation. Flexpa uses it to power our API and we wouldn't have
+                nearly as good a product without it.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Florencia Herra Vega"
+                title="CEO, AlleyCorp Nord"
+                imgSrc="/img/avatars/florencia.webp"
+              />
+              <p>
+                We have been dreaming of a product that simplifies building custom EHRs and clinical tools for years.
+                Medplum achieves this with an expert team, a fantastic developer experience, and standards compliance.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader name="Hassy Veldstra" title="Artillery" imgSrc="/img/avatars/hassy.webp" />
+              <p>
+                Love seeing scalability &amp; performance treated as a first-class feature. Always a sign of a project
+                that takes quality seriously.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader name="Dima Goncharov" title="CEO, Metriport" imgSrc="/img/avatars/dima.webp" />
+              <p>Open source will transform healthcare, and Medplum is a prime example.</p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Brendan Keeler"
+                title="Health API Guy Newsletter"
+                imgSrc="/img/avatars/jose-rodrigues.webp"
+              />
+              <p>I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.</p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Stuart Parmenter"
+                title="Former CTO, One Medical"
+                imgSrc="/img/avatars/stuart.png"
+              />
+              <p>
+                I've built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum's
+                infrastructure so you can ship care, not plumbing.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Phil Fung"
+                title="Co-founder, Kit.com ∙ Engineer #15, Facebook "
+                imgSrc="/img/avatars/phil-fung.webp"
+              />
+              <p>
+                Quality code base, open source and sets your data on the right path with FHIR. No-brainer for those who
+                need to build for healthcare.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader
+                name="Jose Rodriguez"
+                title="Head of Engineering, Summer Health"
+                imgSrc="/img/avatars/jose-rodrigues.webp"
+              />
+              <p>
+                If you don't want to reinvent everything, and want standards compliant data and well documented
+                interfaces, Medplum is what you would choose.
+              </p>
+            </Card>
+          </div>
+        </div>
+        <div className={styles.ctaBanner}>
+          <div className={`${styles.landingContent} ${styles.ctaBannerInner}`}>
+            <h2>Start building with Medplum today</h2>
+            <p className={styles.ctaBannerDescription}>Join 150+ open source contributors and thousands of developers who choose Medplum to build secure and compliant
+            healthcare apps.</p>
+            <div className={styles.heroButtons}>
+              <button
+                type="button"
+                className={styles.ctaWhiteButton}
+                onClick={() => (window.location.href = '/docs')}
+              >
+                See Documentation
+              </button>
+              <button
+                type="button"
+                className={styles.purpleButton}
+                onClick={() => (window.location.href = 'mailto:hello@medplum.com')}
+              >
+                Book a Demo
+              </button>
             </div>
-          </Jumbotron>
-          <Section>
-            <CardContainer>
-              <Card>
-                <h2>
-                  You can't build for tomorrow
-                  <br />
-                  on yesterday's tech.
-                </h2>
-                <p>
-                  Medplum is built by and for exceptional engineers at the forefront of digital healthcare. Our vision
-                  is to accelerate the development of new healthcare products and services by clearing a path for every
-                  developer who wants to build in the healthcare ecosystem.
-                </p>
-              </Card>
-            </CardContainer>
-          </Section>
-          <Section>
-            <CardContainer>
-              <Card>
-                <h3>Ready to get started?</h3>
-                <p>Explore our Docs or create an account to start building now. </p>
-                <CardButton href="/docs" alt="Learn more about Medplum">
-                  Get started
-                </CardButton>
-              </Card>
-              <Card>
-                <h3>Plans and pricing</h3>
-                <p>A plan for every project with no hidden fees and an always-free tier.</p>
-                <CardButton href="/pricing" alt="Go to Medplum Pricing page">
-                  Pricing
-                </CardButton>
-              </Card>
-              <Card>
-                <h3>Not a developer?</h3>
-                <p>Let’s talk about how Medplum can help your dev team ship faster.</p>
-                <CardButton href="mailto:hello@medplum.com" alt="Learn more about FHIR Basics">
-                  Email us
-                </CardButton>
-              </Card>
-            </CardContainer>
-          </Section>
-          <SectionHeader>
-            <h2>User Testimonials</h2>
-            <p>Join thousands of developers across the world who use Medplum.</p>
-          </SectionHeader>
-          <Section>
-            <CardContainer>
-              <Card>
-                <TestimonialHeader
-                  name="Michael Caves"
-                  title="Dir of Product, Thirty Madison"
-                  imgSrc="/img/avatars/michael-caves.webp"
-                />
-                <p>
-                  Thanks to the expertise of the Medplum team, we were able to swiftly implement their product and get
-                  it up and running seamlessly. Their proactive approach in anticipating and mitigating any issues
-                  during our ramp-up was an example of first rate partnership. With their robust product, we've gained
-                  the agility to rapidly introduce new features, enabling Thirty Madison to maintain its commitment to
-                  putting patients first.
-                </p>
-              </Card>
-              <Card>
-                <TestimonialHeader
-                  name="Florencia Herra Vega"
-                  title="CEO at AlleyCorp Nord"
-                  imgSrc="/img/avatars/florencia.webp"
-                />
-                <p>
-                  We have been dreaming of a product that simplifies building custom EHRs and clinical tools for years.
-                  Medplum achieves this with an expert team, a fantastic developer experience, and standards compliance.
-                </p>
-              </Card>
-              <Card>
-                <TestimonialHeader
-                  name="Stuart Parmenter"
-                  title="Former CTO, One Medical"
-                  imgSrc="/img/avatars/stuart.png"
-                  twitter="https://twitter.com/stuartparmenter"
-                />
-                <p>
-                  I’ve built healthcare at scale—the hard way. Skip the hidden complexity and start on Medplum’s
-                  infrastructure so you can ship care, not plumbing.
-                </p>
-              </Card>
-            </CardContainer>
-            <CardContainer>
-              <Card>
-                <TestimonialHeader
-                  name="Craig Collier"
-                  title="Senior Software Engineer, Ro"
-                  imgSrc="/img/avatars/craig-collier.webp"
-                />
-                <p>The Medplum GUI is very nice. There’s a lot of depth there.</p>
-              </Card>
-              <Card>
-                <TestimonialHeader name="Hassy Veldstra" title="Artillery" imgSrc="/img/avatars/hassy.webp" />
-                <p>
-                  Love seeing scalability &amp; performance treated as a first-class feature. Always a sign of a project
-                  that takes quality seriously.
-                </p>
-              </Card>
-              <Card>
-                <TestimonialHeader
-                  name="Phil Fung"
-                  title="Co-founder Kit.com, Facebook Engineer #15"
-                  imgSrc="/img/avatars/phil-fung.webp"
-                  twitter="https://twitter.com/philfung"
-                />
-                <p>
-                  Quality code base, open source and sets your data on the right path with FHIR. No-brainer for those
-                  who need to build for healthcare.
-                </p>
-              </Card>
-            </CardContainer>
-            <CardContainer>
-              <Card>
-                <TestimonialHeader
-                  name="Joshua Kelly"
-                  title="CTO at Flexpa"
-                  imgSrc="/img/avatars/joshuakelly.png"
-                  twitter="https://twitter.com/jdjkelly"
-                />
-                <p>
-                  Medplum is the best FHIR server implementation. Flexpa uses it to power our API and we wouldn't have
-                  nearly as good a product without it.
-                </p>
-              </Card>
-              <Card>
-                <TestimonialHeader name="Dima Goncharov" title="CEO Metriport" imgSrc="/img/avatars/dima.webp" />
-                <p>Open source will transform healthcare, and Medplum is a prime example.</p>
-              </Card>
-              <Card>
-                <TestimonialHeader
-                  name="Jose Rodriguez"
-                  title="Head of Engineering Summer Health"
-                  imgSrc="/img/avatars/jose-rodrigues.webp"
-                />
-                <p>
-                  If you don’t want to reinvent everything, and want standards compliant data and well documented
-                  interfaces, Medplum is what you would choose.
-                </p>
-              </Card>
-            </CardContainer>
-          </Section>
-        </Container>
+          </div>
+        </div>
       </Layout>
     </div>
   );

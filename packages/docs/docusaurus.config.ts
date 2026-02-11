@@ -111,14 +111,16 @@ const config: Config = {
           position: 'left',
         },
         {
-          to: 'https://app.medplum.com/',
+          to: 'https://app.medplum.com/signin',
           label: 'Sign In',
           position: 'right',
+          className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://github.com/medplum/medplum',
-          label: 'GitHub',
+          to: 'https://cal.com/medplum/demo',
+          label: 'Book a Demo',
           position: 'right',
+          className: 'button button--primary navbar-btn navbar-btn-filled',
         },
       ],
     },
@@ -200,7 +202,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Orangebot, Inc.`,
+      copyright: `© ${new Date().getFullYear()} Orangebot, Inc.`,
     },
     prism: {
       theme: prismThemes.github,

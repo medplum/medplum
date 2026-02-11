@@ -12,6 +12,10 @@
   width: 3rem;
 }
 
+.testimonialHeader p {
+  margin: 0;
+}
+
 .testimonialInfo {
   grid-column-gap: 0.125rem;
   grid-template-rows: auto;
@@ -22,14 +26,34 @@
   align-items: start;
   justify-items: start;
   display: grid;
+  gap: 0.25rem;
 }
 
 .testimonialName {
+  font-size: 1.25rem;
   font-weight: 700;
+  line-height: 1.25rem;
+  letter-spacing: -0.015em;
+  color: var(--oc-grape-8);
+  text-wrap-style:balance;
+}
+
+[data-theme='dark'] .testimonialName {
+  color: var(--oc-gray-2);
 }
 
 .testimonialTitle {
   font-size: 0.75rem;
+  line-height: 1rem;
+  font-family: system-ui;
+  font-feature-settings: normal;
+  font-weight: 500;
+  color: var(--oc-gray-6);
+  text-wrap-style:balance;
+}
+
+[data-theme='dark'] .testimonialTitle {
+  color: var(--oc-gray-4);
 }
 
 .testimonialLink {
