@@ -1,14 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { InvokeWithResponseStreamCommand, LambdaClient } from '@aws-sdk/client-lambda';
+import { InvokeWithResponseStreamCommand } from '@aws-sdk/client-lambda';
 import type { BotResponseStream } from '@medplum/core';
-import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
 import { TextDecoder, TextEncoder } from 'node:util';
 import type { BotExecutionContext, BotExecutionResult } from '../../bots/types';
-import { getConfig } from '../../config/loader';
-
-let client: LambdaClient;
+import {
+  buildLambdaPayload,
+  getExecuteLambdaClient,
+  getLambdaFunctionName,
+  parseLambdaLog,
+  sanitizeLogResult,
+} from './execute';
 
 /**
  * Executes a Bot in an AWS Lambda.
@@ -16,23 +19,9 @@ let client: LambdaClient;
  * @returns The bot execution result.
  */
 export async function runInLambdaStreaming(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, requester, secrets, input, contentType, traceId, headers, responseStream } = request;
-  const config = getConfig();
-  if (!client) {
-    client = new LambdaClient({ region: config.awsRegion });
-  }
+  const { bot, responseStream } = request;
   const name = getLambdaFunctionName(bot);
-  const payload = {
-    bot: createReference(bot),
-    baseUrl: config.baseUrl,
-    requester,
-    accessToken,
-    input: input instanceof Hl7Message ? input.toString() : input,
-    contentType,
-    secrets,
-    traceId,
-    headers,
-  };
+  const payload = buildLambdaPayload(request);
 
   const command = new InvokeWithResponseStreamCommand({
     FunctionName: name,
@@ -41,7 +30,7 @@ export async function runInLambdaStreaming(request: BotExecutionContext): Promis
   });
 
   try {
-    const response = await client.send(command);
+    const response = await getExecuteLambdaClient().send(command);
     if (!response.EventStream) {
       return { success: false, logResult: 'No event stream in response' };
     }
@@ -126,68 +115,4 @@ function processStreamingHeaders(
   } catch {
     return { headersParsed: false, buffer: '', error: 'Failed to parse streaming headers: ' + headersLine };
   }
-}
-
-/**
- * Returns the AWS Lambda function name for the given bot.
- * By default, the function name is based on the bot ID.
- * If the bot has a custom function, and the server allows it, then that is used instead.
- * @param bot - The Bot resource.
- * @returns The AWS Lambda function name.
- */
-export function getLambdaFunctionName(bot: Bot): string {
-  if (getConfig().botCustomFunctionsEnabled) {
-    const customFunction = getIdentifier(bot, 'https://medplum.com/bot-external-function-id');
-    if (customFunction) {
-      return customFunction;
-    }
-  }
-
-  // By default, use the bot ID as the Lambda function name
-  return `medplum-bot-lambda-${bot.id}`;
-}
-
-/**
- * Parses the AWS Lambda log result.
- *
- * The raw logs include markup metadata such as timestamps and billing information.
- *
- * We only want to include the actual log contents in the AuditEvent,
- * so we attempt to scrub away all of that extra metadata.
- *
- * See: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html
- * @param logResult - The raw log result from the AWS lambda event.
- * @returns The parsed log result.
- */
-function parseLambdaLog(logResult: string): string {
-  const logBuffer = Buffer.from(logResult, 'base64');
-  const log = logBuffer.toString('utf-8');
-  const lines = log.split('\n');
-  const result = [];
-  for (const line of lines) {
-    if (line.startsWith('START RequestId: ')) {
-      // Ignore start line
-      continue;
-    }
-    if (line.startsWith('END RequestId: ') || line.startsWith('REPORT RequestId: ')) {
-      // Stop at end lines
-      break;
-    }
-    result.push(line);
-  }
-  return sanitizeLogResult(result.join('\n').trim());
-}
-
-/**
- * Sanitizes a log result string to ensure it's valid for FHIR string fields.
- * FHIR strings only allow: \r, \n, \t, and characters from \u0020 to \uFFFF.
- * This removes or replaces control characters that would cause validation errors.
- * @param str - The string to sanitize.
- * @returns The sanitized string.
- */
-function sanitizeLogResult(str: string): string {
-  // Replace invalid control characters (0x00-0x08, 0x0B, 0x0C, 0x0E-0x1F) with empty string
-  // Keep valid characters: \t (0x09), \n (0x0A), \r (0x0D), and \u0020-\uFFFF
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '');
 }
