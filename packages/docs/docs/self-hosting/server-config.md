@@ -577,7 +577,32 @@ When a user presents a JWT with a matching `iss` claim, the server validates the
 
 ### defaultOAuthClients
 
-Optional list of default OAuth2 clients.
+Optional list of default OAuth2 clients. These clients are used for [OAuth 2.0 Dynamic Client Registration](https://datatracker.ietf.org/doc/html/rfc7591) via the `/oauth2/register` endpoint. When a client attempts to register with a redirect URI that matches one of these default clients, the server will return the pre-configured client credentials.
+
+This is particularly useful for MCP (Model Context Protocol) clients like Claude Code, which use dynamic client registration to obtain OAuth credentials.
+
+**Format:** Array of `ClientApplication` objects with the following properties:
+- `resourceType`: Must be `"ClientApplication"`
+- `id`: Unique client identifier
+- `name`: Human-readable client name
+- `secret`: Client secret (optional but recommended)
+- `redirectUris`: Array of allowed redirect URIs (must match exactly what the client sends during registration)
+
+**Example:**
+
+```json
+{
+  "defaultOAuthClients": [
+    {
+      "resourceType": "ClientApplication",
+      "id": "claude-code",
+      "name": "Claude Code",
+      "secret": "your-secure-secret-here",
+      "redirectUris": ["https://claude.ai/oauth/callback"]
+    }
+  ]
+}
+```
 
 **Default:** None
 
