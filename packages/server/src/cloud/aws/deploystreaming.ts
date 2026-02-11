@@ -19,7 +19,8 @@ import * as userCode from './user.mjs';
 export const handler = awslambda.streamifyResponse(async (event, responseStream) => {
 `;
 
-const WRAPPER_CODE = `
+const WRAPPER_CODE =
+  `
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers, streaming } = event;
   const medplum = new MedplumClient({
     baseUrl,
@@ -124,7 +125,9 @@ class BotResponseStream {
     return this.wrappedStream.writable;
   }
 }
-` + CREATE_PDF_CODE + `
+` +
+  CREATE_PDF_CODE +
+  `
 function writeResponse(responseStream, statusCode, body) {
   responseStream.write(JSON.stringify({
     statusCode,

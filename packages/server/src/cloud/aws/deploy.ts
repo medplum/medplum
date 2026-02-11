@@ -74,7 +74,8 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 }
 `;
 
-const WRAPPER_CODE = `
+const WRAPPER_CODE =
+  `
   const { bot, baseUrl, accessToken, requester, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
