@@ -50,6 +50,10 @@ function getTabs(resourceType: string): string[] {
     result.push('Tools');
   }
 
+  if (resourceType === 'ConceptMap') {
+    result.push('Builder');
+  }
+
   result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
 
   if (resourceType === 'Patient') {
