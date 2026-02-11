@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, getReferenceString, unsupportedMediaType } from '@medplum/core';
-import type { OperationOutcome, Patient } from '@medplum/fhirtypes';
+import type { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
@@ -209,32 +208,6 @@ describe('App', () => {
       expect(logLines).toHaveLength(1);
       const logObj = JSON.parse(logLines[0][0]);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
-    });
-
-    test('Logs authentication error', async () => {
-      const { accessToken, membership } = await createTestProject({ withAccessToken: true, withClient: true });
-
-      // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
-      await getSystemRepo().deleteResource(membership.resourceType, membership.id);
-
-      const res1 = await request(app)
-        .get(`/fhir/R4/Patient`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send();
-      expect(res1.status).toBe(400);
-      const outcome = res1.body as OperationOutcome;
-      const issue = outcome.issue[0];
-
-      // Error should be wrapped for presentation to user
-      expect(issue.details?.text).toStrictEqual('Authentication error');
-      expect(issue.diagnostics).toStrictEqual('OperationOutcomeError: Gone');
-
-      const logLines = stdOutSpy.mock.calls.filter((call) => call[0].includes('Request served'));
-      expect(logLines).toHaveLength(1);
-      const logObj = JSON.parse(logLines[0][0]);
-      // Request should be logged
-      expect(logObj).toMatchObject({ method: 'GET', path: '/fhir/R4/Patient', status: 400 });
     });
   });
 

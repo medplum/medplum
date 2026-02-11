@@ -174,11 +174,13 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(standardHeaders);
   app.use(cors(corsOptions));
   app.use(compression());
+  app.use(attachRequestContext);
 
+  // Add logging middleware immediately after setting up request context, to ensure that
+  // any errors in later middleware don't skip the request logging
   if (config.logRequests) {
     app.use(loggingMiddleware);
   }
-  app.use(attachRequestContext);
 
   app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
@@ -265,11 +267,12 @@ export async function shutdownApp(): Promise<void> {
 }
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  const ctx = getRequestContext();
   const start = new Date();
 
   res.on('close', () => {
-    const ctx = getRequestContext();
     const duration = Date.now() - start.valueOf();
+
     ctx.logger.info('Request served', {
       durationMs: duration,
       ip: req.ip,
