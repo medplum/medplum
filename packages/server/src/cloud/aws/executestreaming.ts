@@ -101,7 +101,11 @@ function processStreamingHeaders(
   responseStream: NonNullable<BotExecutionContext['responseStream']>
 ): { headersParsed: boolean; buffer: string; error?: string } {
   if (buffer.length > MAX_HEADER_SIZE) {
-    return { headersParsed: false, buffer: '', error: `Streaming headers exceeded maximum size of ${MAX_HEADER_SIZE} bytes` };
+    return {
+      headersParsed: false,
+      buffer: '',
+      error: `Streaming headers exceeded maximum size of ${MAX_HEADER_SIZE} bytes`,
+    };
   }
 
   const newlineIndex = buffer.indexOf('\n');
@@ -122,6 +126,10 @@ function processStreamingHeaders(
 
     return { headersParsed: true, buffer: '' };
   } catch (err) {
-    return { headersParsed: false, buffer: '', error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}` };
+    return {
+      headersParsed: false,
+      buffer: '',
+      error: `Failed to parse streaming headers: ${headersLine} - ${String(err)}`,
+    };
   }
 }
