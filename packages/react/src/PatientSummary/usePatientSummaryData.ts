@@ -143,7 +143,10 @@ export function usePatientSummaryData(
       if (search.query) {
         if (typeof search.query === 'string') {
           // String query — _count and _sort are appended automatically; do not include them in the query string.
-          return medplum.searchResources(search.resourceType, `${patientParam}=${ref}&${search.query}&_count=100&_sort=-_lastUpdated`);
+          return medplum.searchResources(
+            search.resourceType,
+            `${patientParam}=${ref}&${search.query}&_count=100&_sort=-_lastUpdated`
+          );
         } else if (search.query instanceof URLSearchParams) {
           search.query.forEach((value, key) => {
             baseQuery[key] = value;
