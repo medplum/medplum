@@ -16,6 +16,8 @@ export interface PatientSummaryData {
 /**
  * Build a deduplication key for a search descriptor.
  * Searches with the same key are executed only once and their results shared.
+ * @param search - The search descriptor to build a key for.
+ * @returns A stable string key for deduplication.
  */
 function buildSearchKey(search: FhirSearchDescriptor): string {
   const param = search.patientParam ?? 'subject';
@@ -47,6 +49,8 @@ function buildSearchKey(search: FhirSearchDescriptor): string {
 /**
  * Build a stable fingerprint from sections' search configurations.
  * Used to avoid re-fetching when sections change by reference but not by content.
+ * @param sections - The section configs to fingerprint.
+ * @returns A stable string fingerprint.
  */
 function buildSectionsFingerprint(sections: PatientSummarySectionConfig[]): string {
   return sections
@@ -60,6 +64,9 @@ function buildSectionsFingerprint(sections: PatientSummarySectionConfig[]): stri
 /**
  * Hook that collects all FHIR searches from section configs, deduplicates them,
  * executes them in parallel, and routes results back to each section.
+ * @param patient - The patient or patient reference to fetch data for.
+ * @param sections - The section configs defining which searches to execute.
+ * @returns Section data, loading state, and any error.
  */
 export function usePatientSummaryData(
   patient: Patient | Reference<Patient>,
@@ -87,7 +94,7 @@ export function usePatientSummaryData(
 
   useEffect(() => {
     if (!patientId) {
-      return;
+      return undefined;
     }
 
     let stale = false;
@@ -122,7 +129,7 @@ export function usePatientSummaryData(
       // No searches needed — fill empty results
       setSectionData(stableSections.map(() => []));
       setLoading(false);
-      return;
+      return undefined;
     }
 
     // Execute all unique searches in parallel
