@@ -102,6 +102,7 @@ export * from './ResourcePropertyInput/ResourcePropertyInput.utils';
 export * from './ResourceTable/ResourceTable';
 export * from './ResourceTimeline/ResourceTimeline';
 export * from './Scheduler/Scheduler';
+export * from './ScrollToTop/ScrollToTop';
 export * from './SearchControl/SearchControl';
 export * from './SearchControl/SearchControlField';
 export * from './SearchControl/SearchUtils';
