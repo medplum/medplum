@@ -59,7 +59,7 @@ export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
   readonly onClickResource?: (resource: Resource) => void;
   readonly onRequestLabs?: () => void;
-  readonly PharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
 }
 
 interface PatientMedicalData {
@@ -82,7 +82,7 @@ interface PatientMedicalData {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource, onRequestLabs, PharmacyDialogComponent } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, pharmacyDialogComponent } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
@@ -307,7 +307,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Pharmacies
               patient={patient}
               onClickResource={onClickResource}
-              PharmacyDialogComponent={PharmacyDialogComponent}
+              pharmacyDialogComponent={pharmacyDialogComponent}
             />
             <Divider />
           </>

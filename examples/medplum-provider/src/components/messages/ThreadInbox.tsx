@@ -304,7 +304,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     <PatientSummary
                       key={selectedThread.id}
                       patient={selectedThread.subject as Reference<Patient>}
-                      PharmacyDialogComponent={DoseSpotPharmacyDialog}
+                      pharmacyDialogComponent={DoseSpotPharmacyDialog}
                     />
                   </ScrollArea>
                 </Flex>

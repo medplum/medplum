@@ -25,7 +25,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} PharmacyDialogComponent={DoseSpotPharmacyDialog} />;
+        return <PatientSummary patient={displayResource} pharmacyDialogComponent={DoseSpotPharmacyDialog} />;
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':

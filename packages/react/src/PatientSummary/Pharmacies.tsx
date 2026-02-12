@@ -27,7 +27,7 @@ export interface PharmaciesProps {
   readonly patient: Patient;
   readonly pharmacies?: Organization[];
   readonly onClickResource?: (resource: Organization) => void;
-  readonly PharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
 }
 
 interface PharmacyWithPrimary extends Organization {
@@ -35,7 +35,8 @@ interface PharmacyWithPrimary extends Organization {
 }
 
 export function Pharmacies(props: PharmaciesProps): JSX.Element {
-  const { patient: patientProp, onClickResource, PharmacyDialogComponent } = props;
+  const { patient: patientProp, onClickResource, pharmacyDialogComponent } = props;
+  const PharmacyDialogComponent = pharmacyDialogComponent;
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [resolvedPharmacies, setResolvedPharmacies] = useState<PharmacyWithPrimary[]>([]);
@@ -174,14 +175,14 @@ export function Pharmacies(props: PharmaciesProps): JSX.Element {
 
   return (
     <>
-      <CollapsibleSection title="Pharmacies" onAdd={PharmacyDialogComponent ? open : undefined}>
+      <CollapsibleSection title="Pharmacies" onAdd={pharmacyDialogComponent ? open : undefined}>
         {renderPharmacyList()}
       </CollapsibleSection>
-      {PharmacyDialogComponent && (
+      {PharmacyDialogComponent ? (
         <Modal opened={opened} onClose={close} title="Add Pharmacy" size="lg">
           <PharmacyDialogComponent patient={patient} onSubmit={handleSubmit} onClose={close} />
         </Modal>
-      )}
+      ) : null}
     </>
   );
 }

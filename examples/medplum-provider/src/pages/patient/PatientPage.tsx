@@ -99,7 +99,7 @@ export function PatientPage(): JSX.Element {
               onRequestLabs={() => {
                 setIsLabsModalOpen(true);
               }}
-              PharmacyDialogComponent={DoseSpotPharmacyDialog}
+              pharmacyDialogComponent={DoseSpotPharmacyDialog}
             />
           </ScrollArea>
         </div>

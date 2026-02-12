@@ -123,7 +123,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
               <ScrollArea h="calc(100vh - 120px)">
-                <PatientSummary patient={selectedPatient} PharmacyDialogComponent={DoseSpotPharmacyDialog} />
+                <PatientSummary patient={selectedPatient} pharmacyDialogComponent={DoseSpotPharmacyDialog} />
               </ScrollArea>
             )}
           </Box>
