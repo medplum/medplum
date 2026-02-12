@@ -17,11 +17,14 @@ import { useEffect, useRef, useState } from 'react';
 import { SectionHeader } from './SectionHeader';
 import styles from './SolutionAccordion.module.css';
 
+const CUSTOM_EHR_IMAGE = '/img/custom-ehr.webp';
+
 interface SolutionItem {
   title: string;
   description: string[];
   icon: JSX.Element;
   link: string;
+  imageSrc: string;
 }
 
 const solutions: SolutionItem[] = [
@@ -33,6 +36,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconHeartRateMonitor size={24} />,
     link: '/solutions/custom-ehr',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
   {
     title: 'Patient Engagement',
@@ -42,6 +46,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconUserHeart size={24} />,
     link: '/solutions/patient-portal',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
   {
     title: 'Scribe & Agents',
@@ -51,6 +56,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconFileTextSpark size={24} />,
     link: '/solutions',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
   {
     title: 'Population Health',
@@ -60,6 +66,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconChartHistogram size={24} />,
     link: '/solutions',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
   {
     title: 'Care Management',
@@ -69,6 +76,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconFirstAidKit size={24} />,
     link: '/solutions',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
   {
     title: 'Revenue Cycle Management',
@@ -78,6 +86,7 @@ const solutions: SolutionItem[] = [
     ],
     icon: <IconReceiptDollar size={24} />,
     link: '/solutions',
+    imageSrc: CUSTOM_EHR_IMAGE,
   },
 ];
 
@@ -160,7 +169,13 @@ export function SolutionAccordion(): JSX.Element {
                       </Link>
                     </div>
                     <div className={styles.image}>
-                      <div className={styles.imagePlaceholder} />
+                      <div className={styles.imagePlaceholder}>
+                        <img
+                          src={solution.imageSrc}
+                          alt=""
+                          className={styles.imagePlaceholderImg}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

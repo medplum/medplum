@@ -65,11 +65,13 @@ export function LandingPage(): JSX.Element {
                 <BuildDropdown />
               </div>
             </div>
-            <img
-              className={styles.heroImage}
-              src="/img/provider/medplum-provider-app-cover-image.webp"
-              alt="Medplum Provider App screenshot"
-            />
+            <div className={styles.heroImageContainer}>
+              <img
+                className={styles.heroImage}
+                src="/img/provider/medplum-provider-app-cover-image.webp"
+                alt="Medplum Provider App screenshot"
+              />
+            </div>
           </div>
           <SectionHeader style={{ marginBottom: '0', marginTop: '0' }}>
             <h3>Trusted by Healthcare Leaders & Innovators</h3>
@@ -211,7 +213,7 @@ export function LandingPage(): JSX.Element {
               <TestimonialHeader
                 name="Brendan Keeler"
                 title="Health API Guy Newsletter"
-                imgSrc="/img/avatars/jose-rodrigues.webp"
+                imgSrc="/img/avatars/brendan-keeler.webp"
               />
               <p>
                 I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.

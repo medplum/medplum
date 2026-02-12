@@ -48,7 +48,7 @@
   flex-direction: column;
   justify-content: center;
   transition: all 200ms ease;
-  padding: 10rem 0rem 12rem 0rem;
+  padding: 10rem 0rem 8rem 0rem;
 }
 
 .heroSection h3 {
@@ -96,16 +96,29 @@
   color: var(--oc-gray-4);
 }
 
+.heroImageContainer {
+  padding: 4rem;
+  background-color: var(--oc-orange-1);
+  border-radius: 4px;
+}
+
+[data-theme='dark'] .heroImageContainer {
+  background-color: var(--oc-gray-9);
+  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.25);
+}
+
 .heroImage {
   width: 100%;
-  border: 1px solid var(--oc-gray-1);
-  border-radius: 16px;
-  box-shadow: 0px 3px 9px rgba(0, 0, 0, 0.08), 0px 0.7px 1.4625px rgba(0, 0, 0, 0.015);
+  border: 0px 8px 24px rgba(var(--oc-orange-3-rgb), 0.5);
+  border-radius: 1rem;
+  box-shadow: 0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.75);
 }
 
 [data-theme='dark'] .heroImage {
-  border-color: #333333;
+  box-shadow: none;
+  border: 1px solid rgba(var(--oc-gray-7-rgb), 0.75);
 }
+
 
 .heroButtons {
   display: flex;
