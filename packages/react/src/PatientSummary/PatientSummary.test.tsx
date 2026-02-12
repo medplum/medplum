@@ -509,4 +509,136 @@ describe('PatientSummary', () => {
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
+
+  test('Renders section with string query type', async () => {
+    const section: PatientSummarySectionConfig = {
+      key: 'string-query',
+      title: 'String Query Section',
+      searches: [
+        {
+          resourceType: 'Observation',
+          patientParam: 'subject',
+          query: 'category=vital-signs',
+        },
+      ],
+      render: ({ results }) => <div data-testid="string-query">Results: {results.length}</div>,
+    };
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [section],
+    });
+
+    expect(screen.getByTestId('string-query')).toBeInTheDocument();
+  });
+
+  test('Renders section with URLSearchParams query type', async () => {
+    const params = new URLSearchParams();
+    params.set('category', 'vital-signs');
+
+    const section: PatientSummarySectionConfig = {
+      key: 'urlsearchparams-query',
+      title: 'URLSearchParams Query Section',
+      searches: [
+        {
+          resourceType: 'Observation',
+          patientParam: 'subject',
+          query: params,
+        },
+      ],
+      render: ({ results }) => <div data-testid="urlsearchparams-query">Results: {results.length}</div>,
+    };
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [section],
+    });
+
+    expect(screen.getByTestId('urlsearchparams-query')).toBeInTheDocument();
+  });
+
+  test('Renders section with array query type', async () => {
+    const section: PatientSummarySectionConfig = {
+      key: 'array-query',
+      title: 'Array Query Section',
+      searches: [
+        {
+          resourceType: 'Observation',
+          patientParam: 'subject',
+          query: [['category', 'vital-signs']],
+        },
+      ],
+      render: ({ results }) => <div data-testid="array-query">Results: {results.length}</div>,
+    };
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [section],
+    });
+
+    expect(screen.getByTestId('array-query')).toBeInTheDocument();
+  });
+
+  test('Renders null when patient cannot be resolved', async () => {
+    const { container } = await act(async () => {
+      return render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <PatientSummary patient={{ reference: 'Patient/does-not-exist-xyz' }} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
+
+    // When patient can't be resolved, the component returns null
+    expect(container.querySelector('.panel')).not.toBeInTheDocument();
+  });
+
+  test('Renders with onClickResource callback', async () => {
+    const onClick = jest.fn();
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [],
+      onClickResource: onClick,
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Renders with onRequestLabs callback (default sections)', async () => {
+    const onRequestLabs = jest.fn();
+
+    await setup({
+      patient: HomerSimpson,
+      onRequestLabs,
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Labs')).toBeInTheDocument();
+  });
+
+  test('Renders section with multiple searches', async () => {
+    // Tests the multi-search path (like Labs which has ServiceRequest + DiagnosticReport)
+    const section: PatientSummarySectionConfig = {
+      key: 'multi-search',
+      title: 'Multi Search',
+      searches: [
+        { resourceType: 'Condition', patientParam: 'subject' },
+        { resourceType: 'Observation', patientParam: 'subject' },
+      ],
+      render: ({ results }) => (
+        <div data-testid="multi-search">
+          Search 1: {results[0]?.length ?? 0}, Search 2: {results[1]?.length ?? 0}
+        </div>
+      ),
+    };
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [section],
+    });
+
+    expect(screen.getByTestId('multi-search')).toBeInTheDocument();
+  });
 });
