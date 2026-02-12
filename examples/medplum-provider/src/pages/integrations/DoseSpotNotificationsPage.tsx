@@ -14,6 +14,7 @@ export function DoseSpotNotificationsPage(): JSX.Element {
   const isFavoritesTab = location.pathname.includes('/favorites');
 
   const iframeUrl = useDoseSpotIFrame({
+    favorites: isFavoritesTab,
     onIframeSuccess: () =>
       showNotification({
         color: 'green',
