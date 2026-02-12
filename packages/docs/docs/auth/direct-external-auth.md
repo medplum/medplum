@@ -9,7 +9,7 @@ Medplum supports authenticating users directly with an external Identity Provide
 
 :::caution Self-Hosted Deployments Only
 
-This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](https://www.medplum.com/contact).
+This feature requires super admin privileges to configure `externalAuthProviders` in the [server config](/docs/self-hosting/server-config), which is only available on self-hosted Medplum deployments. If you are using Medplum's cloud-hosted service and need this capability, please contact [Medplum support](/contact).
 
 :::
 

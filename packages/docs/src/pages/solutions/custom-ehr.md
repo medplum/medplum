@@ -28,7 +28,7 @@ All applications built on Medplum will inherit FHIR API access, which can be giv
 
 ## Certification and Scope
 
-There is a wide range of functionality that could be included in an EHR. Organizations building a custom EHR often want to go deep in one area, while maintaining a base of functionality that's common in EHRs. It can be useful to read the [ONC certification](https://www.medplum.com/docs/compliance/onc) guide to learn what features are commonly found in an EHR.
+There is a wide range of functionality that could be included in an EHR. Organizations building a custom EHR often want to go deep in one area, while maintaining a base of functionality that's common in EHRs. It can be useful to read the [ONC certification](/docs/compliance/onc) guide to learn what features are commonly found in an EHR.
 
 In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommended, and ONC Certification is not required, except in some scenarios.
 
@@ -40,5 +40,5 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Demos and Resources
 
-- [Compliance](https://www.medplum.com/docs/compliance) portal with guides and resources.
+- [Compliance](/docs/compliance) portal with guides and resources.
 - [CMS Definition of Electronic Health Record](https://www.cms.gov/Medicare/E-Health/EHealthRecords)

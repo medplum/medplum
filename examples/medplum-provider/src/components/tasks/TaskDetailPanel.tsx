@@ -4,6 +4,7 @@ import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
+import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { TaskInputNote } from './TaskInputNote';
@@ -122,7 +123,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
               <ScrollArea h="calc(100vh - 120px)">
-                <PatientSummary patient={selectedPatient} />
+                <PatientSummary patient={selectedPatient} pharmacyDialogComponent={DoseSpotPharmacyDialog} />
               </ScrollArea>
             )}
           </Box>

@@ -49,7 +49,7 @@ flowchart BT
 
 | **Code System**                                                | **Description**                                                                           |
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to tag questions and answers. Also has predefined standard assessments.              |
+| [LOINC](/docs/careplans/loinc)          | Used to tag questions and answers. Also has predefined standard assessments.              |
 | [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Condition`](/docs/api/fhir/resources/condition) resources for billing. |
 
 ## Other Resources

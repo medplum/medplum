@@ -10,7 +10,7 @@ Medplum has achieved SOC2 Type II certification. Customers can request materials
 
 | Resource Name     | Description                        | Access                                                                                                  |
 | ----------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Security Overview | Description of processes and tools | [medplum.com](https://www.medplum.com/security)                                                         |
+| Security Overview | Description of processes and tools | [medplum.com](/security)                                                         |
 | Report            | SOC2 Type2 Audit Report            | [Request Access](https://drive.google.com/file/d/1V_pTMq9a8WlZP1sKiMruFmuGUK1X3c3d/view?usp=sharing) |
 | Penetration test  | Service penetration test           | [Request Access](https://drive.google.com/file/d/19hZw2q-pJEhkK6n3hyIr6oOdUwabw6g3/view?usp=sharing)    |
 
