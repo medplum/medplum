@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import type { Bundle } from '@medplum/fhirtypes';
 
-function LiveChatComponent(): JSX.Element {
+function LiveChatComponent() {
   const medplum = useMedplum();
   const [isConnected, setIsConnected] = useState(true);
 
