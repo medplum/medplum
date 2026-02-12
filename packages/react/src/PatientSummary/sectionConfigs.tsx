@@ -19,12 +19,15 @@ import {
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
+import type { ComponentType } from 'react';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
 import { PatientInfoItem } from './PatientInfoItem';
 import type { PatientSummarySectionConfig, SectionRenderContext } from './PatientSummary.types';
+import type { PharmacyDialogBaseProps } from './Pharmacies';
+import { Pharmacies } from './Pharmacies';
 import {
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
@@ -212,6 +215,32 @@ export const VitalsSection: PatientSummarySectionConfig = {
 };
 
 /**
+ * Pharmacies section — no FHIR searches; the Pharmacies component resolves its own data
+ * from patient extensions.
+ * Accepts an optional `pharmacyDialogComponent` via closure.
+ * @param pharmacyDialogComponent - Optional component for the pharmacy search dialog.
+ * @returns A section config for pharmacies.
+ */
+export function createPharmaciesSection(
+  pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>
+): PatientSummarySectionConfig {
+  return {
+    key: 'pharmacies',
+    title: 'Pharmacies',
+    render: ({ patient, onClickResource }: SectionRenderContext) => (
+      <Pharmacies
+        patient={patient}
+        onClickResource={onClickResource}
+        pharmacyDialogComponent={pharmacyDialogComponent}
+      />
+    ),
+  };
+}
+
+/** Default Pharmacies section constant (no pharmacy dialog component). */
+export const PharmaciesSection: PatientSummarySectionConfig = createPharmaciesSection();
+
+/**
  * Returns the default set of sections, matching the original hardcoded PatientSummary layout.
  * The `onRequestLabs` callback is threaded through to the Labs section.
  * @param onRequestLabs - Optional callback invoked when the user requests labs.
@@ -228,5 +257,6 @@ export function getDefaultSections(onRequestLabs?: () => void): PatientSummarySe
     SexualOrientationSection,
     SmokingStatusSection,
     VitalsSection,
+    PharmaciesSection,
   ];
 }
