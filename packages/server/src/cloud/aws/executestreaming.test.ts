@@ -1,10 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import {
-  InvokeWithResponseStreamCommand,
-  LambdaClient,
-  ListLayerVersionsCommand,
-} from '@aws-sdk/client-lambda';
+import { InvokeWithResponseStreamCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import type { Bot } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
@@ -109,7 +105,6 @@ describe('Execute', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
 
   describe('Accept: text/event-stream (SSE streaming)', () => {
     test('Streaming execution with chunks', async () => {
