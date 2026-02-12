@@ -35,6 +35,7 @@ export * from './jwt';
 export * from './keyvalue';
 export * from './logger';
 export * from './outcomes';
+export * from './pharmacy-utils';
 export * from './readablepromise';
 export * from './schema';
 export * from './search/derived';
