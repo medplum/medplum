@@ -96,7 +96,8 @@ export function App(): JSX.Element | null {
                     href: `/Communication?status=in-progress`,
                     notificationCount: {
                       resourceType: 'Communication',
-                      countCriteria: 'status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic&_summary=count',
+                      countCriteria:
+                        'status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic&_summary=count',
                       subscriptionCriteria: `Communication?status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic`,
                     },
                   },
@@ -127,7 +128,15 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
-                    ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot', alert: true, count: doseSpotCount ?? 0 }]
+                    ? [
+                        {
+                          icon: <IconPill />,
+                          label: 'DoseSpot',
+                          href: '/integrations/dosespot',
+                          alert: true,
+                          count: doseSpotCount ?? 0,
+                        },
+                      ]
                     : []),
                 ],
               },
