@@ -260,11 +260,9 @@ export class SubscriptionManager {
         }, this.pingIntervalMs);
       }
 
-      if (!this.tokenRefreshTimer) {
-        this.tokenRefreshTimer = setInterval(() => {
-          this.checkTokenExpirations();
-        }, TOKEN_REFRESH_INTERVAL_MS);
-      }
+      this.tokenRefreshTimer ??= setInterval(() => {
+        this.checkTokenExpirations();
+      }, TOKEN_REFRESH_INTERVAL_MS);
     });
 
     this.medplum.addEventListener('change', () => {
