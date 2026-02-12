@@ -75,7 +75,7 @@
     "jsdom": "28.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-router": "7.13.0",
+    "react-router": "7.12.0",
     "vitest": "4.0.18"
   },
   "peerDependencies": {
