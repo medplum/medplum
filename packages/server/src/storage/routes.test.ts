@@ -108,4 +108,23 @@ describe('Storage Routes', () => {
     const res = await req;
     expect(res.status).toBe(404);
   });
+
+  test('Write success', async () => {
+    // For signature verification, we need to use the same URL as the client would use
+    // So we need to start the request without executing it yet
+    const req = request(app).put('/').set('Content-Type', 'text/plain');
+
+    // Get the base URL from the request (i.e., "http://127.0.0.1:57516/")
+    const baseUrl = req.url;
+
+    // Now we need to update our server config to use that as the storage base URL
+    config.storageBaseUrl = baseUrl + 'storage/';
+
+    // Now we can generate the presigned upload URL with a proper signature
+    req.url = await getBinaryStorage().getPresignedUrl(binary, { upload: true });
+
+    // And finally, we can execute the request
+    const res = await req.send('foo bar baz quux');
+    expect(res.status).toBe(200);
+  });
 });

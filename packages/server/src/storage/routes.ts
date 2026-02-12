@@ -33,10 +33,56 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   originalUrl.searchParams.delete('Signature');
-
   const urlToVerify = originalUrl.toString();
 
   const verifier = createVerify('sha256');
+  verifier.update('GET ');
+  verifier.update(urlToVerify);
+  const publicKey = getPublicKey();
+  const isVerified = verifier.verify(publicKey, signature, 'base64');
+  if (!isVerified) {
+    // Try legacy format without HTTP method
+    const verifier = createVerify('sha256');
+    verifier.update(urlToVerify);
+    const legacyVerified = verifier.verify(publicKey, signature, 'base64');
+    if (!legacyVerified) {
+      res.status(401).send('Invalid signature');
+      return;
+    }
+  }
+
+  const id = singularize(req.params.id) ?? '';
+  const systemRepo = getSystemRepo();
+  const binary = await systemRepo.readResource<Binary>('Binary', id);
+
+  try {
+    const stream = await getBinaryStorage().readBinary(binary);
+    res.status(200).contentType(binary.contentType);
+    await pump(stream, res);
+  } catch {
+    res.sendStatus(404);
+  }
+});
+
+storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
+  const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
+  const signature = originalUrl.searchParams.get('Signature');
+  if (!signature) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const expires = req.query['Expires'];
+  if (!expires || Math.floor(Date.now() / 1000) > Number.parseInt(expires as string, 10)) {
+    res.status(410).send('URL has expired');
+    return;
+  }
+
+  originalUrl.searchParams.delete('Signature');
+  const urlToVerify = originalUrl.toString();
+
+  const verifier = createVerify('sha256');
+  verifier.update('PUT ');
   verifier.update(urlToVerify);
   const publicKey = getPublicKey();
   const isVerified = verifier.verify(publicKey, signature, 'base64');
@@ -50,11 +96,10 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
-    const stream = await getBinaryStorage().readBinary(binary);
-    res.status(200).contentType(binary.contentType);
-    await pump(stream, res);
+    await getBinaryStorage().writeBinary(binary, undefined, req.headers['content-type'], req);
+    res.sendStatus(200);
   } catch {
-    res.sendStatus(404);
+    res.sendStatus(400);
   }
 });
 
