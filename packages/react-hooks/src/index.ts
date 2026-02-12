@@ -8,4 +8,5 @@ export * from './useQuestionnaireForm/useQuestionnaireForm';
 export * from './useQuestionnaireForm/utils';
 export * from './useResource/useResource';
 export * from './useSearch/useSearch';
+export * from './useNotificationCount/useNotificationCount';
 export * from './useSubscription/useSubscription';

@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
   IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
+  IconPill,
   IconSettingsAutomation,
   IconUserPlus,
   IconUsers,
@@ -16,7 +17,7 @@ import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DismissableNavIcon } from './components/DismissableNavIcon';
-import { DoseSpotIcon } from './components/DoseSpotIcon';
+import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -53,6 +54,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const doseSpotCount = 2//useDoseSpotNotifications();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
@@ -67,7 +69,7 @@ export function App(): JSX.Element | null {
   }
 
   const membership = medplum.getProjectMembership();
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const hasDoseSpot = true; //hasDoseSpotIdentifier(membership);
 
   return (
     <AppShell
@@ -89,28 +91,24 @@ export function App(): JSX.Element | null {
                   },
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
-                    icon: (
-                      <NotificationIcon
-                        resourceType="Communication"
-                        countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
-                        iconComponent={<IconMail />}
-                      />
-                    ),
+                    icon: <IconMail />,
                     label: 'Messages',
                     href: `/Communication?status=in-progress`,
+                    notificationCount: {
+                      resourceType: 'Communication',
+                      countCriteria: `recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`,
+                      subscriptionCriteria: `Communication?recipient=${getReferenceString(profile)}`,
+                    },
                   },
                   {
-                    icon: (
-                      <NotificationIcon
-                        resourceType="Task"
-                        countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
-                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
-                        iconComponent={<IconClipboardCheck />}
-                      />
-                    ),
+                    icon: <IconClipboardCheck />,
                     label: 'Tasks',
                     href: `/Task?owner=${getReferenceString(profile)}&_sort=-_lastUpdated&status=requested,ready,received,accepted,in-progress,draft`,
+                    notificationCount: {
+                      resourceType: 'Task',
+                      countCriteria: `owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`,
+                      subscriptionCriteria: `Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`,
+                    },
                   },
                 ],
               },
@@ -129,7 +127,7 @@ export function App(): JSX.Element | null {
                   { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
                   { icon: <IconApps />, label: 'Integrations', href: '/integrations' },
                   ...(hasDoseSpot
-                    ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
+                    ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot', alert: true, count: doseSpotCount ?? 0 }]
                     : []),
                 ],
               },
