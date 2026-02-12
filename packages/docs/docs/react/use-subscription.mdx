@@ -4,6 +4,7 @@ tags:
   - subscription
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/react/use-subscription.tsx';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # `useSubscription` Hook
@@ -306,43 +307,8 @@ The lifecycle hooks enable you to show connection status to users (e.g., "Discon
 
 Here's an example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
 
-<MedplumCodeBlock language="tsx">
-{`import { useCallback, useState } from 'react';
-import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import type { Bundle } from '@medplum/fhirtypes';
-
-function LiveChatComponent(): JSX.Element {
-  const medplum = useMedplum();
-  const [isConnected, setIsConnected] = useState(true);
-
-  useSubscription(
-    'Communication',
-    (_bundle: Bundle) => {
-      // Handle incoming messages in real-time
-    },
-    {
-      // Show connection status
-      onWebSocketOpen: useCallback(() => {
-        setIsConnected(true);
-      }, []),
-
-      onWebSocketClose: useCallback(() => {
-        setIsConnected(false);
-      }, []),
-
-      // Refresh chat state when subscription reconnects
-      onSubscriptionConnect: useCallback(() => {
-        medplum.searchResources('Communication', { _sort: '-_lastUpdated' });
-      }, [medplum]),
-    }
-  );
-
-  return (
-    <div>
-      <div>{isConnected ? '🟢 Connected' : '🔴 Disconnected'}</div>
-    </div>
-  );
-}`}
+<MedplumCodeBlock language="tsx" selectBlocks="lifecycleHooks">
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ### Hook Invocation Order
