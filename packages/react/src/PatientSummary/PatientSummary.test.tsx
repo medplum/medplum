@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
@@ -136,5 +137,48 @@ describe('PatientSummary', () => {
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.getByText('Vitals')).toBeInTheDocument();
+  });
+
+  test('Renders summaryResourceListSection with seeded Condition resources', async () => {
+    const patientRef = createReference(HomerSimpson);
+    await medplum.createResource({
+      resourceType: 'Condition',
+      subject: patientRef,
+      code: {
+        coding: [{ system: 'http://snomed.info/sct', code: '38341003', display: 'Hypertension' }],
+        text: 'Hypertension',
+      },
+      clinicalStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
+      },
+    });
+    await medplum.createResource({
+      resourceType: 'Condition',
+      subject: patientRef,
+      code: {
+        coding: [{ system: 'http://snomed.info/sct', code: '44054006', display: 'Type 2 diabetes mellitus' }],
+        text: 'Type 2 diabetes mellitus',
+      },
+      clinicalStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
+      },
+    });
+
+    const section = summaryResourceListSection({
+      key: 'conditions',
+      title: 'Active Conditions',
+      search: { resourceType: 'Condition', patientParam: 'subject' },
+    });
+
+    await setup({
+      patient: HomerSimpson,
+      sections: [section],
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Active Conditions')).toBeInTheDocument();
+    // Check that the condition names render
+    expect(screen.getByText('Hypertension')).toBeInTheDocument();
+    expect(screen.getByText('Type 2 diabetes mellitus')).toBeInTheDocument();
   });
 });
