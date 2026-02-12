@@ -4,6 +4,8 @@ tags:
   - subscription
 ---
 
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # `useSubscription` Hook
 
 `useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the
@@ -268,6 +270,17 @@ function MyComponent(): JSX.Element {
 
 The `useSubscription` hook provides lifecycle callbacks that allow you to respond to connection state changes. These are particularly useful for managing reconnection scenarios, especially in mobile applications where the WebSocket connection may be interrupted due to app backgrounding or network changes.
 
+### Two Concepts: WebSocket Connection vs. Subscription
+
+It's important to understand that there are two distinct layers at play:
+
+1. **WebSocket Connection** - There is only one WebSocket connection per `MedplumClient` instance, shared across all active subscriptions. This is the underlying network transport.
+2. **Subscriptions** - Multiple subscriptions can run simultaneously on the same WebSocket connection. Each subscription represents a specific query/filter for resource changes.
+
+The lifecycle hooks allow you to respond to changes at both layers:
+- **`onWebSocketOpen` / `onWebSocketClose`** - Fired once when the shared WebSocket connection opens or closes (affects all subscriptions)
+- **`onSubscriptionConnect` / `onSubscriptionDisconnect`** - Fired individually for each subscription when that specific subscription is established or disconnected
+
 ### Available Lifecycle Hooks
 
 The lifecycle hooks are passed as part of the third parameter (`options`) to the `useSubscription` hook:
@@ -291,78 +304,46 @@ The lifecycle hooks enable you to show connection status to users (e.g., "Discon
 
 ### Example: Catching Up on Missed Events
 
-Here's a comprehensive example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
+Here's an example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
 
-```tsx
-import { useCallback, useRef, useState } from 'react';
+<MedplumCodeBlock language="tsx">
+{`import { useCallback, useState } from 'react';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import type { Bundle, Communication } from '@medplum/fhirtypes';
+import type { Bundle } from '@medplum/fhirtypes';
 
 function LiveChatComponent(): JSX.Element {
   const medplum = useMedplum();
-  const [messageCount, setMessageCount] = useState(0);
-  const [isReconnecting, setIsReconnecting] = useState(false);
-  const lastMessageTime = useRef<string>(new Date().toISOString());
+  const [isConnected, setIsConnected] = useState(true);
 
   useSubscription(
     'Communication',
-    (bundle: Bundle) => {
-      setMessageCount((count) => count + 1);
-      // Track the timestamp of the most recent message
-      lastMessageTime.current = new Date().toISOString();
+    (_bundle: Bundle) => {
+      // Handle incoming messages in real-time
     },
     {
-      // Show a notification when the WebSocket disconnects
-      onWebSocketClose: useCallback(() => {
-        if (!isReconnecting) {
-          setIsReconnecting(true);
-        }
-        console.log('Connection lost. Attempting to reconnect...');
-      }, [isReconnecting]),
-
-      // Notify user when reconnected
+      // Show connection status
       onWebSocketOpen: useCallback(() => {
-        if (isReconnecting) {
-          console.log('Connection restored.');
-        }
-      }, [isReconnecting]),
+        setIsConnected(true);
+      }, []),
 
-      // Fetch missed messages after subscription is re-established
+      onWebSocketClose: useCallback(() => {
+        setIsConnected(false);
+      }, []),
+
+      // Refresh chat state when subscription reconnects
       onSubscriptionConnect: useCallback(() => {
-        if (isReconnecting) {
-          // Search for any messages created since we disconnected
-          const searchParams = new URLSearchParams({
-            _sort: '-_lastUpdated',
-            // Get messages created after our last received timestamp
-            _lastUpdated: `gt${lastMessageTime.current}`,
-          });
-
-          medplum
-            .searchResources('Communication', searchParams, { cache: 'no-cache' })
-            .then((missedMessages: Communication[]) => {
-              // Update count with any missed messages
-              if (missedMessages.length > 0) {
-                setMessageCount((count) => count + missedMessages.length);
-                console.log(`Caught up on ${missedMessages.length} missed messages`);
-              }
-              lastMessageTime.current = new Date().toISOString();
-            })
-            .catch((err) => console.error('Failed to fetch missed messages:', err));
-
-          setIsReconnecting(false);
-        }
-      }, [isReconnecting, medplum]),
+        medplum.searchResources('Communication', { _sort: '-_lastUpdated' });
+      }, [medplum]),
     }
   );
 
   return (
     <div>
-      <div>Messages received: {messageCount}</div>
-      {isReconnecting && <div>Reconnecting...</div>}
+      <div>{isConnected ? '🟢 Connected' : '🔴 Disconnected'}</div>
     </div>
   );
-}
-```
+}`}
+</MedplumCodeBlock>
 
 ### Hook Invocation Order
 
