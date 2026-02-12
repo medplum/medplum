@@ -54,7 +54,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
-  const doseSpotCount = 2//useDoseSpotNotifications();
+  const doseSpotCount = useDoseSpotNotifications();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [setupDismissed, setSetupDismissed] = useState(() => localStorage.getItem(SETUP_DISMISSED_KEY) === 'true');
@@ -69,7 +69,7 @@ export function App(): JSX.Element | null {
   }
 
   const membership = medplum.getProjectMembership();
-  const hasDoseSpot = true; //hasDoseSpotIdentifier(membership);
+  const hasDoseSpot = hasDoseSpotIdentifier(membership);
 
   return (
     <AppShell
