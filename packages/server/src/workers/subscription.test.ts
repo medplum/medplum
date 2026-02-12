@@ -40,7 +40,7 @@ import { Repository, getSystemRepo } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getRedisSubscriber } from '../redis';
+import { getRedis, getRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -2497,6 +2497,110 @@ describe('Subscription Worker', () => {
         );
         console.log = originalConsoleLog;
         globalLogger.level = LogLevel.NONE;
+      }));
+
+    test('Criteria stored in Redis hash alongside subscription reference', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+          project: { name: 'WebSocket Subs Redis Hash Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const redis = getRedis();
+        const criteria = await redis.hget(
+          `medplum:subscriptions:r4:project:${wsProject.id}:active:v2`,
+          `Subscription/${subscription.id}`
+        );
+        expect(criteria).toStrictEqual('Patient?name=Alice');
+      }));
+
+    test('Resource type filtering - only matching subscriptions fetched from Redis', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WebSocket Subs Filtering Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        // Create a subscription watching Observation
+        const observationSub = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Observation?code=test',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(observationSub).toBeDefined();
+
+        // Create a subscription watching Patient
+        const patientSub = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(patientSub).toBeDefined();
+
+        // Creating a Patient should only trigger the Patient subscription, not the Observation one
+        const nextArgsPromise = waitForNextSubNotification<Patient>();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        const notificationArgs = await nextArgsPromise;
+        // The notification should be for the patient subscription
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
+          expect.objectContaining(patient),
+          patientSub.id,
+          { includeResource: true },
+        ]);
+      }));
+
+    test('Resource type filtering - Observation subscription does not fire for Patient create', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WebSocket Subs No Fire Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        // Create only an Observation subscription
+        const observationSub = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Observation',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(observationSub).toBeDefined();
+
+        // Creating a Patient should NOT trigger the Observation subscription
+        const assertPromise = assertNoWsNotifications();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Jones' }],
+        });
+        expect(patient).toBeDefined();
+
+        await assertPromise;
       }));
 
     test('Supported Interaction Extension', () =>

@@ -167,6 +167,17 @@ Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/d
 
 :::
 
+### Deactivating Memberships
+
+To deactivate a user's access to a project without deleting their membership, you can update the `ProjectMembership` resource and set the `active` property to `false`.
+
+This is the preferred method for removing user access for several reasons:
+
+- **Immediate Effect**: The user's access is immediately revoked.
+- **Audit Trail**: The membership record is preserved, maintaining the history of the user's access.
+- **Clean Data**: It avoids the need to delete and recreate memberships if access needs to be restored later.
+- **Cache Consistency**: Deleting memberships can sometimes cause caching issues or "bursts" of deleted resource events. Deactivation is a cleaner state change.
+
 ### Removing Memberships
 
 To remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
@@ -269,7 +280,7 @@ Check the box under the `Admin` label, and then save the user. This user will no
 
 ![Promote To Admin](promote-to-admin.png)
 
-To _invite_ a user as an admin in the app, please see the [Invite a User docs](https://www.medplum.com/docs/app/invite).
+To _invite_ a user as an admin in the app, please see the [Invite a User docs](/docs/app/invite).
 
 Promoting a user to admin can also be done programmatically. To do so, you will need to update the user's `ProjectMembership`.
 

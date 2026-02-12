@@ -4,6 +4,15 @@ sidebar_position: 20
 
 # Measure $evaluate-measure
 
+The `$evaluate-measure` operation executes a defined clinical quality measure against your patient population and returns aggregated results. This enables healthcare organizations to programmatically calculate quality metrics, track clinical outcomes, and generate reports for regulatory compliance without manual data extraction.
+
+**Use Cases:**
+
+- **Quality reporting**: Calculate eCQM (electronic Clinical Quality Measures) for CMS reporting, MIPS, or other regulatory requirements
+- **Population health analytics**: Track clinical outcomes across patient populations to identify care gaps and improvement opportunities
+- **Performance dashboards**: Generate real-time metrics for provider performance tracking and quality improvement initiatives
+- **Research cohort analysis**: Count and analyze patient populations meeting specific clinical criteria for research studies
+
 Medplum supports the Measure [$evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) operation.
 
 :::caution
@@ -89,3 +98,11 @@ The result will be a FHIR `MeasureReport` resource:
   ]
 }
 ```
+
+## Related
+
+- [FHIR Measure Resource](https://hl7.org/fhir/R4/measure.html) - FHIR specification for Measure
+- [FHIR MeasureReport Resource](https://hl7.org/fhir/R4/measurereport.html) - FHIR specification for MeasureReport
+- [FHIR $evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) - FHIR specification for the operation
+- [CMS eCQM Information](https://ecqi.healthit.gov/ecqms) - Electronic clinical quality measures resources
+- [Medplum Analytics Guide](/docs/analytics) - Building analytics and dashboards with Medplum

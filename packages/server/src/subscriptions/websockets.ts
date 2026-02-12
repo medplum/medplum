@@ -421,5 +421,9 @@ export async function markInMemorySubscriptionsInactive(
     redis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  await redis?.multi().srem(`medplum:subscriptions:r4:project:${projectId}:active`, refStrs).del(refStrs).exec();
+  await redis
+    ?.multi()
+    .hdel(`medplum:subscriptions:r4:project:${projectId}:active:v2`, ...refStrs)
+    .del(refStrs)
+    .exec();
 }

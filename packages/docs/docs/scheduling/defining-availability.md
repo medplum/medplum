@@ -85,6 +85,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 | `serviceType` | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only | Optional | Applies configuration only to the specified service type, overriding defaults for that service | Values apply as the default for all services |
 | `availability` | [Timing](/docs/api/fhir/datatypes/timing) | Schedule only | Optional | Bookings must fully fit within the recurring windows | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone` | Code | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
+| `duration` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Required | Determines how long the time increments for a Slot are | N/A - must be specified |
 | `bufferBefore` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires prep time before start to also be free | No prep time required |
 | `bufferAfter` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires cleanup time after end to also be free | No cleanup time required |
 | `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Start times must align to the interval (e.g., every 15 minutes) | Start times are not constrained by an interval grid |
@@ -111,6 +112,15 @@ All scheduling constraints are managed through a single consolidated extension: 
     {
       "url": "timezone",
       "valueCode": "America/Los_Angeles"
+    },
+    
+    // Required: duration determines how long the time increments for a Slot are
+    {
+      "url": "duration",
+      "valueDuration": {
+        "value": 1,
+        "unit": "h"
+      }
     },
     
     // Recurring availability (Schedule only)
@@ -210,17 +220,26 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
   "actor": [{"reference": "Practitioner/dr-smith"}],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
-          "duration": 8,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+            "timeOfDay": ["09:00:00"],
+            "duration": 8,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
   //...
 }
@@ -247,17 +266,26 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [ActivityDef
   //...
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
-          "duration": 8,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+            "timeOfDay": ["09:00:00"],
+            "duration": 8,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
 }
 ```
@@ -291,17 +319,26 @@ Here is an example Schedule that defines generic availability for all services a
     // Practitioner level availability
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [{
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
-            "duration": 8,
-            "durationUnit": "h"
+      "extension": [
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
+          }
+        },
+        {
+          "url": "availability",
+          "valueTiming": {
+            "repeat": {
+              "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+              "timeOfDay": ["09:00:00"],
+              "duration": 8,
+              "durationUnit": "h"
+            }
           }
         }
-      }]
+      ]
     },
     // Service type level availability for this Practitioner - overrides any availability parameters specified elsewhere
     {
@@ -311,6 +348,13 @@ Here is an example Schedule that defines generic availability for all services a
           "url": "serviceType",
           "valueCodeableConcept": {
             "coding": [{"code": "new-patient-visit"}]
+          }
+        },
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
           }
         },
         {
@@ -407,6 +451,13 @@ Here is an example of a Schedule with multiple service types, each with its own 
           "valueCode": "America/Los_Angeles"
         },
         {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
+          }
+        },
+        {
           "url": "availability",
           "valueTiming": {
             "repeat": {
@@ -430,6 +481,13 @@ Here is an example of a Schedule with multiple service types, each with its own 
           "url": "serviceType",
           "valueCodeableConcept": {
             "coding": [{"code": "call-center-availability"}]
+          }
+        },
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
           }
         },
         {
@@ -489,6 +547,13 @@ This ActivityDefinition defines default scheduling parameters for a 30-minute of
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
         "url": "bufferBefore",
         "valueDuration": {"value": 5, "unit": "min"}
       },
@@ -531,17 +596,26 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
   },
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["09:00:00"],
-          "duration": 8,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+            "timeOfDay": ["09:00:00"],
+            "duration": 8,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
 }
 ```
@@ -597,6 +671,13 @@ This ActivityDefinition defines a 60-minute new patient visit with 15-minute buf
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 15, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
@@ -634,6 +715,13 @@ This ActivityDefinition defines a 20-minute follow-up visit with 5-minute buffer
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 5, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 10, "unit": "min"}}
@@ -662,17 +750,26 @@ This Schedule shows how to configure default availability for all services (Mon-
     // Default availability for all services
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [{
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
-            "duration": 8,
-            "durationUnit": "h"
+      "extension": [
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
+          }
+        },
+        {
+          "url": "availability",
+          "valueTiming": {
+            "repeat": {
+              "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+              "timeOfDay": ["09:00:00"],
+              "duration": 8,
+              "durationUnit": "h"
+            }
           }
         }
-      }]
+      ]
     },
     // New patient visits only on Tuesday and Thursday mornings
     {
@@ -682,6 +779,13 @@ This Schedule shows how to configure default availability for all services (Mon-
           "url": "serviceType",
           "valueCodeableConcept": {
             "coding": [{"code": "new-patient-visit"}]
+          }
+        },
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
           }
         },
         {
@@ -785,6 +889,13 @@ This ActivityDefinition defines a 120-minute surgical procedure requiring coordi
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
       {"url": "bufferBefore", "valueDuration": {"value": 45, "unit": "min"}},
       {"url": "bufferAfter", "valueDuration": {"value": 30, "unit": "min"}},
       {"url": "alignmentInterval", "valueDuration": {"value": 30, "unit": "min"}},
@@ -825,17 +936,26 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
   }],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["tue", "thu"],
-          "timeOfDay": ["08:00:00"],
-          "duration": 8,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["tue", "thu"],
+            "timeOfDay": ["08:00:00"],
+            "duration": 8,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
 }
 ```
@@ -857,17 +977,26 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
   }],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00"],
-          "duration": 12,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+            "timeOfDay": ["07:00:00"],
+            "duration": 12,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
 }
 ```
@@ -892,17 +1021,26 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
   }],
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [{
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-          "timeOfDay": ["07:00:00"],
-          "duration": 10,
-          "durationUnit": "h"
+    "extension": [
+      {
+        "url": "duration",
+        "valueDuration": {
+          "value": 1,
+          "unit": "h"
+        }
+      },
+      {
+        "url": "availability",
+        "valueTiming": {
+          "repeat": {
+            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+            "timeOfDay": ["07:00:00"],
+            "duration": 10,
+            "durationUnit": "h"
+          }
         }
       }
-    }]
+    ]
   }]
 }
 ```

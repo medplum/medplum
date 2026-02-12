@@ -4,7 +4,7 @@ import { Alert, Button, MultiSelect, PasswordInput, Stack, Text, TextInput, Titl
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { normalizeErrorString } from '@medplum/core';
-import type { AccessPolicy, Organization } from '@medplum/fhirtypes';
+import type { AccessPolicy, Organization, ProjectMembership } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -96,7 +96,7 @@ export function NewClinicianPage(): JSX.Element {
       };
 
       // Create the practitioner with project invitation
-      const result = await medplum.post('admin/projects/:projectId/invite', {
+      const result = await medplum.post<ProjectMembership>('admin/projects/:projectId/invite', {
         resourceType: 'Practitioner',
         firstName: formData.firstName,
         lastName: formData.lastName,

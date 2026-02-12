@@ -118,6 +118,6 @@ export function mergeConfigs(infraConfig: MedplumInfraConfig, serverConfig: Reco
     serverConfig.appBaseUrl = `https://${infraConfig.appDomainName}/`;
   }
   if (infraConfig.storageDomainName) {
-    serverConfig.storageBaseUrl = `https://${infraConfig.storageDomainName}/`;
+    serverConfig.storageBaseUrl = `https://${infraConfig.storageDomainName}/binary/`;
   }
 }

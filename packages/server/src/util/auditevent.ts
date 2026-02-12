@@ -194,7 +194,11 @@ export function createAuditEvent(
     network = { address: remoteAddress, type: '2' };
   }
 
-  let extension = buildTracingExtension();
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
   if (options?.durationMs) {
     extension = append(extension, buildDurationExtension(options.durationMs));
   }
@@ -276,6 +280,11 @@ export async function createBotAuditEvent(
     return;
   }
 
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -303,7 +312,7 @@ export async function createBotAuditEvent(
     entity: createAuditEventEntities(bot, input, subscription, agent, device),
     outcome,
     outcomeDesc,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   const config = getConfig();
@@ -352,6 +361,11 @@ export async function createSubscriptionAuditEvent(
   const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
+  let extension: Extension[] | undefined;
+  const tracingExt = buildTracingExtension();
+  if (tracingExt) {
+    extension = append(extension, tracingExt);
+  }
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
@@ -379,7 +393,7 @@ export async function createSubscriptionAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   // Read destination extensions from subscription

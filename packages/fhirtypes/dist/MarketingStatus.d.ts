@@ -5,9 +5,9 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Period } from './Period';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Period } from './Period.d.ts';
 
 /**
  * The marketing status describes the date when a medicinal product is

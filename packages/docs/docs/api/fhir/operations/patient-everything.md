@@ -2,17 +2,34 @@
 sidebar_position: 5
 ---
 
-# Patient $everything Operation
+# Patient $everything
 
-Medplum implements the FHIR [`$everything` operation](https://hl7.org/fhir/R4/operation-patient-everything.html)
+The `$everything` operation retrieves a complete bundle of all resources associated with a patient in a single API call. This provides a comprehensive view of a patient's clinical record-including encounters, observations, medications, conditions, and related resources-without requiring multiple queries.
 
-FHIR has the option to query everything associated to an individual patient. This is useful when transmitting batch data or getting the full patient history.
+This operation is essential for scenarios requiring complete patient data, such as care transitions, patient record requests, and regulatory compliance with data portability requirements.
+
+## Use Cases
+
+- **Patient Record Requests**: Fulfill patient requests for their complete medical record (21st Century Cures Act compliance)
+- **Care Transitions**: Grabbing a patient's full history when transferring care to another provider
+- **Analytics and Research**: Extract comprehensive patient data for population health analysis or research studies
 
 ## Invoke the `$everything` operation
 
 ```
 [base]/R4/Patient/<id>/$everything
 ```
+
+### Parameters
+
+| Name      | Type         | Description                                                              | Required |
+| --------- | ------------ | ------------------------------------------------------------------------ | -------- |
+| `start`   | `date`       | Start date for filtering resources by care date                          | No       |
+| `end`     | `date`       | End date for filtering resources by care date                            | No       |
+| `_since`  | `instant`    | Only include resources updated since this time                           | No       |
+| `_count`  | `integer`    | Maximum number of results to return (default: 1000)                      | No       |
+| `_offset` | `integer`    | Offset for pagination                                                    | No       |
+| `_type`   | `string[]`   | Restrict output to specific resource types (comma-separated)             | No       |
 
 ### Output
 
@@ -32,7 +49,10 @@ Medplum's patient `$everything` operation includes:
    - Medications
    - Devices
 
-## Related Documentation
+## Related
 
-- Refer to [readPatientEverything](/docs/sdk/core.medplumclient.readpatienteverything) in the TypeScript SDK
-- FHIR Bundles created are required as part of [ONC Certification](/docs/compliance/onc)
+- [MedplumClient.readPatientEverything](/docs/sdk/core.medplumclient.readpatienteverything) - TypeScript SDK method
+- [Patient $ccda-export](/docs/api/fhir/operations/ccda-export) - Export patient data as C-CDA document
+- [ONC Certification](/docs/compliance/onc) - Compliance requirements for patient data export
+- [FHIR Patient Compartment](https://hl7.org/fhir/R4/compartmentdefinition-patient.html) - FHIR specification for patient-related resources
+- [FHIR $everything Operation](https://hl7.org/fhir/R4/patient-operation-everything.html) - FHIR specification for $everything

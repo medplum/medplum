@@ -20,6 +20,7 @@ import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { reconnectOnError } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer } from './utils';
@@ -49,7 +50,7 @@ const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: { ...config.redis, reconnectOnError },
   };
 
   const queue = new Queue<DownloadJobData>(queueName, {
@@ -328,20 +329,16 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
 export function getAttachments(resource: Resource): TypedValueWithPath[] {
   const attachments: TypedValueWithPath[] = [];
-  crawlTypedValue(
-    toTypedValue(resource),
-    {
-      visitProperty: (_parent, _key, _path, propertyValues) => {
-        for (const propertyValue of propertyValues) {
-          for (const value of arrayify(propertyValue)) {
-            if (value.type === 'Attachment') {
-              attachments.push(value);
-            }
+  crawlTypedValue(toTypedValue(resource), {
+    visitProperty: (_parent, _key, _path, propertyValues) => {
+      for (const propertyValue of propertyValues) {
+        for (const value of arrayify(propertyValue)) {
+          if (value.type === 'Attachment') {
+            attachments.push(value);
           }
         }
-      },
+      }
     },
-    { initialPath: '' }
-  );
+  });
   return attachments;
 }

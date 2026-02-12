@@ -73,8 +73,8 @@ export function ChatInput({
           size="xs"
           data={MODELS}
           value={selectedModel}
-          onChange={(value) => onModelChange(value ?? 'gpt-5')}
-          w="120px"
+          onChange={(value) => onModelChange(value ?? 'gpt-4o-mini')}
+          w="170px"
           withCheckIcon={false}
           fw={500}
           pr="md"

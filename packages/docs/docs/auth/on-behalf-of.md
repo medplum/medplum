@@ -37,7 +37,7 @@ Then, when making API requests, the Customer Server Side App must include an `X-
 1. A `ProjectMembership` ID - This is the most direct and explicit way to specify the Medplum user. The Customer Server Side App would presumably store this id in its own database.
 2. A profile ID such as `Patient` or `Practitioner` - This is a more natural value for the Customer Server Side App to use, but requires a lookup to find the corresponding `ProjectMembership`.
 
-For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](https://www.medplum.com/docs/user-management).
+For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](/docs/user-management).
 
 The `X-Medplum-On-Behalf-Of` header is only valid for the current request. It is not stored or persisted in any way.
 

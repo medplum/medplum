@@ -70,7 +70,7 @@ cd medplum-k8s-deployment
 
 ```bash
 git clone https://github.com/medplum/medplum.git
-cd medplum/charts
+cd medplum/examples/medplum-local-k8s
 ```
 
 ### 3. Deploy Medplum with Fission
