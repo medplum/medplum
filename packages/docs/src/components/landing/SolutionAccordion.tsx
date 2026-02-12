@@ -170,11 +170,7 @@ export function SolutionAccordion(): JSX.Element {
                     </div>
                     <div className={styles.image}>
                       <div className={styles.imagePlaceholder}>
-                        <img
-                          src={solution.imageSrc}
-                          alt=""
-                          className={styles.imagePlaceholderImg}
-                        />
+                        <img src={solution.imageSrc} alt="" className={styles.imagePlaceholderImg} />
                       </div>
                     </div>
                   </div>
