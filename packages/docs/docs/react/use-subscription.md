@@ -264,6 +264,121 @@ function MyComponent(): JSX.Element {
 }
 ```
 
+## Lifecycle Hooks
+
+The `useSubscription` hook provides lifecycle callbacks that allow you to respond to connection state changes. These are particularly useful for managing reconnection scenarios, especially in mobile applications where the WebSocket connection may be interrupted due to app backgrounding or network changes.
+
+### Available Lifecycle Hooks
+
+The lifecycle hooks are passed as part of the third parameter (`options`) to the `useSubscription` hook:
+
+- **`onWebSocketOpen`** - Called when the underlying WebSocket connection is successfully established
+- **`onWebSocketClose`** - Called when the WebSocket connection is closed (e.g., due to network issues or app backgrounding)
+- **`onSubscriptionConnect`** - Called when this specific subscription has been established on the server and is actively receiving notifications
+- **`onSubscriptionDisconnect`** - Called when this specific subscription is disconnected and is no longer receiving notifications
+
+### Why Use Lifecycle Hooks?
+
+**Handling Missed Events During Reconnection**
+
+When a WebSocket connection is interrupted (especially common in mobile apps when backgrounding), your application will miss any resource changes that occur while disconnected. The lifecycle hooks allow you to implement a "catch-up" mechanism to fetch missed events after reconnecting.
+
+For example, in a React Native/Expo app, the WebSocket automatically closes when the app is backgrounded for stability reasons, and automatically reconnects when the app becomes active again. Without lifecycle hooks, you would miss notifications that occurred during this disconnection period.
+
+**Providing User Feedback**
+
+The lifecycle hooks enable you to show connection status to users (e.g., "Disconnected", "Reconnecting..."), which is important for applications where real-time updates are critical, such as live chat or task notifications.
+
+### Example: Catching Up on Missed Events
+
+Here's a comprehensive example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
+
+```tsx
+import { useCallback, useRef, useState } from 'react';
+import { useMedplum, useSubscription } from '@medplum/react-hooks';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
+
+function LiveChatComponent(): JSX.Element {
+  const medplum = useMedplum();
+  const [messageCount, setMessageCount] = useState(0);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const lastMessageTime = useRef<string>(new Date().toISOString());
+
+  useSubscription(
+    'Communication',
+    (bundle: Bundle) => {
+      setMessageCount((count) => count + 1);
+      // Track the timestamp of the most recent message
+      lastMessageTime.current = new Date().toISOString();
+    },
+    {
+      // Show a notification when the WebSocket disconnects
+      onWebSocketClose: useCallback(() => {
+        if (!isReconnecting) {
+          setIsReconnecting(true);
+        }
+        console.log('Connection lost. Attempting to reconnect...');
+      }, [isReconnecting]),
+
+      // Notify user when reconnected
+      onWebSocketOpen: useCallback(() => {
+        if (isReconnecting) {
+          console.log('Connection restored.');
+        }
+      }, [isReconnecting]),
+
+      // Fetch missed messages after subscription is re-established
+      onSubscriptionConnect: useCallback(() => {
+        if (isReconnecting) {
+          // Search for any messages created since we disconnected
+          const searchParams = new URLSearchParams({
+            _sort: '-_lastUpdated',
+            // Get messages created after our last received timestamp
+            _lastUpdated: `gt${lastMessageTime.current}`,
+          });
+
+          medplum
+            .searchResources('Communication', searchParams, { cache: 'no-cache' })
+            .then((missedMessages: Communication[]) => {
+              // Update count with any missed messages
+              if (missedMessages.length > 0) {
+                setMessageCount((count) => count + missedMessages.length);
+                console.log(`Caught up on ${missedMessages.length} missed messages`);
+              }
+              lastMessageTime.current = new Date().toISOString();
+            })
+            .catch((err) => console.error('Failed to fetch missed messages:', err));
+
+          setIsReconnecting(false);
+        }
+      }, [isReconnecting, medplum]),
+    }
+  );
+
+  return (
+    <div>
+      <div>Messages received: {messageCount}</div>
+      {isReconnecting && <div>Reconnecting...</div>}
+    </div>
+  );
+}
+```
+
+### Hook Invocation Order
+
+Understanding when each hook is called helps you implement the correct logic:
+
+1. **On Initial Connection:**
+   - `onWebSocketOpen` → `onSubscriptionConnect`
+
+2. **On Disconnection:**
+   - `onSubscriptionDisconnect` → `onWebSocketClose`
+
+3. **On Reconnection:**
+   - `onWebSocketOpen` → `onSubscriptionConnect`
+
+Note that `onWebSocketOpen`/`onWebSocketClose` are called once for the shared WebSocket connection (used by all subscriptions), while `onSubscriptionConnect`/`onSubscriptionDisconnect` are called individually for each specific subscription criteria.
+
 ## Troubleshooting
 
 ### `Error: WebSocket subscriptions not enabled for current project`
