@@ -101,6 +101,7 @@ describe('FHIR Repo', () => {
         membership: {
           resourceType: 'ProjectMembership',
           project: createReference(testProject),
+          profile: { display: 'Fake profile' },
         } as WithId<ProjectMembership>,
         project: testProject,
         userConfig: {} as UserConfiguration,

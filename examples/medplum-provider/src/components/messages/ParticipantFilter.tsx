@@ -3,9 +3,9 @@
 
 import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
+import { ResourceAvatar, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { IconUsers } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
@@ -206,8 +206,13 @@ interface ParticipantItemProps {
   onRemove?: () => void;
 }
 
-function ParticipantItem(props: ParticipantItemProps): JSX.Element {
+function ParticipantItem(props: ParticipantItemProps): JSX.Element | null {
   const { participant, isSelected, isCurrentUser, onToggle, onRemove } = props;
+  const patientResource = useResource(participant);
+
+  if (!patientResource) {
+    return null;
+  }
 
   return (
     <Group justify="space-between" wrap="nowrap" className={classes.participantItem}>
@@ -215,7 +220,7 @@ function ParticipantItem(props: ParticipantItemProps): JSX.Element {
         <Checkbox checked={isSelected} onChange={onToggle} />
         <ResourceAvatar value={participant} radius="xl" size={32} />
         <Text size="sm" truncate style={{ flex: 1 }}>
-          {participant.display ?? participant.reference}
+          {formatHumanName(patientResource?.name?.[0] ?? {})}
           {isCurrentUser && (
             <Text component="span" c="dimmed" size="sm">
               {' '}

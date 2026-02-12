@@ -1,0 +1,59 @@
+{
+  "name": "@medplum/dosespot-core",
+  "version": "5.0.14",
+  "description": "Medplum DoseSpot SDK",
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/dosespot-core"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
+  "scripts": {
+    "api-extractor": "api-extractor run --local && shx cp dist/types.d.ts dist/cjs/index.d.ts && shx cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
+    "clean": "rimraf dist/{cjs,esm,types,types.d.ts}",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "devDependencies": {
+    "@medplum/core": "5.0.14",
+    "@medplum/definitions": "5.0.14",
+    "@medplum/fhirtypes": "5.0.14",
+    "@medplum/mock": "5.0.14",
+    "@types/node": "22.19.7",
+    "vitest": "4.0.18"
+  },
+  "peerDependencies": {
+    "@medplum/core": "5.0.14",
+    "@medplum/fhirtypes": "5.0.14"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  }
+}

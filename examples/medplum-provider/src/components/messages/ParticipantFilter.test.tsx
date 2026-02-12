@@ -38,6 +38,10 @@ describe('ParticipantFilter', () => {
       medplum.setProfile(mockPractitioner);
     }
 
+    // Ensure mock resources are available for useResource hook
+    await medplum.updateResource(mockPractitioner as WithId<Practitioner>);
+    await medplum.updateResource(mockPatient as WithId<Patient>);
+
     const user = userEvent.setup();
     await act(async () => {
       render(
@@ -446,14 +450,16 @@ describe('ParticipantFilter', () => {
     expect(screen.queryByText('(you)')).not.toBeInTheDocument();
   });
 
-  test('shows participant reference when display is not available', async () => {
+  test('does not render participant when resource cannot be resolved', async () => {
     const user = await setup(undefined, [{ reference: 'Patient/unknown-patient' }]);
 
     const button = screen.getByRole('button');
     await user.click(button);
 
     await waitFor(() => {
-      expect(screen.getByText('Patient/unknown-patient')).toBeInTheDocument();
+      // Only the current user checkbox should render; unresolved participant returns null
+      const checkboxes = screen.getAllByRole('checkbox');
+      expect(checkboxes).toHaveLength(1);
     });
   });
 

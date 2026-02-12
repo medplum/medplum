@@ -549,7 +549,29 @@ Flag to enable pre-commit subscriptions for the interceptor pattern.
 
 ### externalAuthProviders
 
-Optional list of external authentication providers.
+Optional list of external authentication providers for [Direct External Authentication](/docs/auth/direct-external-auth). Each entry allows users with JWTs from the specified issuer to authenticate directly against the Medplum API without a token exchange.
+
+Each provider object has the following properties:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `issuer` | `string` | The expected `iss` claim in JWTs from this IDP. Must match exactly. |
+| `userInfoUrl` | `string` | The IDP's userinfo endpoint URL, used to validate tokens. |
+
+Example configuration:
+
+```json
+{
+  "externalAuthProviders": [
+    {
+      "issuer": "https://auth.example.com",
+      "userInfoUrl": "https://auth.example.com/oauth2/userinfo"
+    }
+  ]
+}
+```
+
+When a user presents a JWT with a matching `iss` claim, the server validates the token against the IDP's userinfo endpoint, then identifies the user via the `fhirUser` claim or falls back to matching the `sub` claim against `ProjectMembership.externalId`. See [Direct External Authentication](/docs/auth/direct-external-auth) for full details.
 
 **Default:** None
 
