@@ -48,7 +48,7 @@
     "@medplum/core": "4.3.4",
     "@medplum/definitions": "4.3.4",
     "@medplum/fhir-router": "4.3.4",
-    "@modelcontextprotocol/sdk": "1.15.1",
+    "@modelcontextprotocol/sdk": "1.26.0",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.57.2",
     "@opentelemetry/exporter-trace-otlp-proto": "0.57.2",
     "@opentelemetry/instrumentation-dataloader": "0.16.1",
