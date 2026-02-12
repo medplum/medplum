@@ -343,6 +343,22 @@
       "inherited": false
     },
     {
+      "name": "streamingEnabled",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.streamingEnabled",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional flag to indicate that the bot should be deployed in a streaming-enabled context, allowing it to execute with streaming responses.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "auditEventTrigger",
       "depth": 1,
       "types": [
@@ -409,6 +425,134 @@
       "inherited": false
     },
     {
+      "name": "cdsService",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Bot.cdsService",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "CDS service definition if the bot is used as a CDS Hooks service. See https://cds-hooks.hl7.org/ for more details.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "hook",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Bot.cdsService.hook",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The hook this service should be invoked on. See https://cds-hooks.hl7.org/#hooks for possible values.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Bot.cdsService.title",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The human-friendly name of this CDS service.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Bot.cdsService.description",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The description of this CDS service.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "usageRequirements",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Bot.cdsService.usageRequirements",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional human-friendly description of any preconditions for the use of this CDS Service.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "prefetch",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Bot.cdsService.prefetch",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "An object containing key/value pairs of FHIR queries that this service is requesting the CDS Client to perform and provide on each service call.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "key",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Bot.cdsService.prefetch.key",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The type of data being requested. See https://cds-hooks.hl7.org/#prefetch-template",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "query",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Bot.cdsService.prefetch.query",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The FHIR query used to retrieve the requested data. See https://cds-hooks.hl7.org/#prefetch-template",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "code",
       "depth": 1,
       "types": [
@@ -443,6 +587,12 @@
       "type": "token",
       "description": "The category of the bot for the classification for service",
       "expression": "Bot.category"
+    },
+    {
+      "name": "cds-hook",
+      "type": "token",
+      "description": "The CDS hook this Bot should be invoked on.",
+      "expression": "Bot.cdsService.hook"
     }
   ]
 }

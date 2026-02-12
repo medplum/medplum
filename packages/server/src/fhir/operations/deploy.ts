@@ -14,6 +14,7 @@ import type { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployLambdaStreaming } from '../../cloud/aws/deploystreaming';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
@@ -101,7 +102,12 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
         timeout: await getLambdaTimeoutForBot(latestBot),
       });
     }
-    await deployLambda(latestBot, codeToDeploy as string);
+
+    if (latestBot.streamingEnabled) {
+      await deployLambdaStreaming(latestBot, codeToDeploy as string);
+    } else {
+      await deployLambda(latestBot, codeToDeploy as string);
+    }
   } else if (latestBot.runtimeVersion === 'fission') {
     await deployFissionBot(latestBot, codeToDeploy as string);
   }

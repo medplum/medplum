@@ -2172,6 +2172,21 @@
             }
           },
           {
+            "id" : "Bot.streamingEnabled",
+            "path" : "Bot.streamingEnabled",
+            "definition" : "Optional flag to indicate that the bot should be deployed in a streaming-enabled context, allowing it to execute with streaming responses.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.streamingEnabled",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.auditEventTrigger",
             "path" : "Bot.auditEventTrigger",
             "definition" : "Criteria for creating an AuditEvent as a result of the bot invocation. Possible values are 'always', 'never', 'on-error', or 'on-output'. Default value is 'always'.",

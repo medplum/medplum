@@ -162,6 +162,13 @@ export interface Bot {
   publicWebhook?: boolean;
 
   /**
+   * Optional flag to indicate that the bot should be deployed in a
+   * streaming-enabled context, allowing it to execute with streaming
+   * responses.
+   */
+  streamingEnabled?: boolean;
+
+  /**
    * Criteria for creating an AuditEvent as a result of the bot invocation.
    * Possible values are 'always', 'never', 'on-error', or 'on-output'.
    * Default value is 'always'.
