@@ -1,4 +1,8 @@
-# Defining Availability
+---
+sidebar_label: Defining Availability (Alpha)
+---
+
+# Defining Availability (Alpha)
 
 This guide explains how to define and find availability information at both the service level and actor level in Medplum using FHIR resources and Medplum's custom [extensions](/docs/api/fhir/datatypes/extension). You'll learn how to configure when services can be performed in time, how different scheduling constraints interact, and how to model complex multi-resource scheduling scenarios.
 
@@ -8,20 +12,21 @@ This guide explains how to define and find availability information at both the 
 
 The following FHIR resources work together to define availability:
 
-| Resource | Purpose |
-|----------|---------|
-| [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) | Defines appointment types and their default constraints |
-| [`Schedule`](/docs/api/fhir/resources/schedule) | Represents a provider/room/device's availability |
-| [`Slot`](/docs/api/fhir/resources/slot) | Represents specific time blocks (created on-demand at booking or for unavailability) |
-| [`Appointment`](/docs/api/fhir/resources/appointment) | Represents a booked appointment |
+| Resource                                                            | Purpose                                                                              |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) | Defines appointment types and their default constraints                              |
+| [`Schedule`](/docs/api/fhir/resources/schedule)                     | Represents a provider/room/device's availability                                     |
+| [`Slot`](/docs/api/fhir/resources/slot)                             | Represents specific time blocks (created on-demand at booking or for unavailability) |
+| [`Appointment`](/docs/api/fhir/resources/appointment)               | Represents a booked appointment                                                      |
 
 The other key entity is the **Service Type**, which is a [codeable concept](/docs/api/fhir/datatypes/codeableconcept) that defines a specific service type (appointment type). Service types are used to group appointments into categories, such as `office visit`, `telephone visit`, and `emergency room visit`. FHIR's recommendation is to use codes from https://build.fhir.org/valueset-procedure-code.html.
 
 ### Appointment Booking FHIR Operations
+
 - `$find` - Find available appointment slots **[Alpha - January 2026]**
-:::info
-The `$find` operation is currently in alpha. It currently supports only a single Schedule, and does not use `ActivityDefinition` default service type parameters yet.
-:::
+  :::info
+  The `$find` operation is currently in alpha. It currently supports only a single Schedule, and does not use `ActivityDefinition` default service type parameters yet.
+  :::
 - `$hold` - Temporarily hold a slot **[In Development - Coming Soon]**
 - `$book` - Book an appointment **[In Development - Coming Soon]**
 - `$cancel` - Cancel an appointment **[In Development - Coming Soon]**
@@ -37,11 +42,12 @@ The diagram below illustrates how these resources work together. The key takeawa
 
 :::note One-to-One Actor-Schedule Relationship
 
-This model expects a **one-to-one relationship** between actors and Schedules. While FHIR's `Schedule.actor` field allows multiple actor references (min: 1, max: *), Medplum's scheduling system is designed around the pattern where each Schedule has a single actor reference. This simplifies availability management and aligns with common scheduling workflows where each Practitioner, Location, or Device maintains its own independent schedule.
+This model expects a **one-to-one relationship** between actors and Schedules. While FHIR's `Schedule.actor` field allows multiple actor references (min: 1, max: \*), Medplum's scheduling system is designed around the pattern where each Schedule has a single actor reference. This simplifies availability management and aligns with common scheduling workflows where each Practitioner, Location, or Device maintains its own independent schedule.
 
 :::
 
 The system supports two levels of configuration:
+
 - **[Actor-level defined availability](#actor-level-availability)**: Defined directly on a Practitioner's or Location's [`Schedule`](/docs/api/fhir/resources/schedule) using the `SchedulingParameters` extension
 - **[Service type-level defined availability](#service-level-availability)**: Defined on [`ActivityDefinition`](/docs/api/fhir/resources/activitydefinition) and referenced by matching `Schedule.serviceType` codes
 
@@ -57,10 +63,10 @@ graph TD
     B1 --> D2[Slot<br/>*status: busy-unavailable*]
     B2 --> D3[Slot<br/>*status: busy*]
     B2 --> D4[Slot<br/>*status: busy-unavailable*]
-    
+
     D1 --> E1[Appointment 1<br/>*status: booked*]
     D3 --> E2[Appointment 2<br/>*status: booked*]
-    
+
     style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     style B1 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     style B2 fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
@@ -80,17 +86,17 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 #### Extension Fields Reference
 
-| Url | Type | Applies To | Required | Behavior when defined | Behavior when not defined |
-|-------|------|------------|----------|----------------------|---------------------------|
-| `serviceType` | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only | Optional | Applies configuration only to the specified service type, overriding defaults for that service | Values apply as the default for all services |
-| `availability` | [Timing](/docs/api/fhir/datatypes/timing) | Schedule only | Optional | Bookings must fully fit within the recurring windows | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `timezone` | Code | Schedule only | Optional | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference |
-| `duration` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Required | Determines how long the time increments for a Slot are | N/A - must be specified |
-| `bufferBefore` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires prep time before start to also be free | No prep time required |
-| `bufferAfter` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Requires cleanup time after end to also be free | No cleanup time required |
-| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional | Start times must align to the interval (e.g., every 15 minutes) | Start times are not constrained by an interval grid |
-| `alignmentOffset` | [Duration](/docs/api/fhir/datatypes/duration) | Both Schedule and ActivityDefinition | Optional, and alignmentInterval must be defined | Shifts allowed start times by the offset relative to the interval (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50) | Grid anchored to :00 (no shift) |
-| `bookingLimit` | [Timing](/docs/api/fhir/datatypes/timing) | Both Schedule and ActivityDefinition | Optional | Caps number of appointments per period (multiple entries can stack) | No capacity cap for that period |
+| Url                 | Type                                                        | Applies To                           | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
+| ------------------- | ----------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                        | Optional                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | Values apply as the default for all services                                           |
+| `availability`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Schedule only                        | Optional                                        | Bookings must fully fit within the recurring windows                                                                                                                                 | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `timezone`          | Code                                                        | Schedule only                        | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference                            |
+| `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
+| `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
+| `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Optional                                        | Requires cleanup time after end to also be free                                                                                                                                      | No cleanup time required                                                               |
+| `alignmentInterval` | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Optional                                        | Start times must align to the interval (e.g., every 15 minutes)                                                                                                                      | Start times are not constrained by an interval grid                                    |
+| `alignmentOffset`   | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Optional, and alignmentInterval must be defined | Shifts allowed start times by the offset relative to the interval (e.g., with a 15-minute alignmentInterval and a 5-minute alignmentOffset, valid starts are :05, :20, :35, :50)     | Grid anchored to :00 (no shift)                                                        |
+| `bookingLimit`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Both Schedule and ActivityDefinition | Optional                                        | Caps number of appointments per period (multiple entries can stack)                                                                                                                  | No capacity cap for that period                                                        |
 
 <details>
 <summary>Example of the `SchedulingParameters` extension</summary>
@@ -106,14 +112,14 @@ All scheduling constraints are managed through a single consolidated extension: 
         "coding": [{"code": "bariatric-surgery"}]
       }
     },
-    
+
     // Optional: specify timezone for availability interpretation (Schedule only)
     // Falls back to Schedule's actor timezone if not specified
     {
       "url": "timezone",
       "valueCode": "America/Los_Angeles"
     },
-    
+
     // Required: duration determines how long the time increments for a Slot are
     {
       "url": "duration",
@@ -122,7 +128,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         "unit": "h"
       }
     },
-    
+
     // Recurring availability (Schedule only)
     {
       "url": "availability",
@@ -135,7 +141,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         }
       }
     },
-    
+
     // Buffer time before appointment
     {
       "url": "bufferBefore",
@@ -146,7 +152,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         "code": "min"
       }
     },
-    
+
     // Buffer time after appointment
     {
       "url": "bufferAfter",
@@ -157,7 +163,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         "code": "min"
       }
     },
-    
+
     // Time alignment interval (appointment start time boundaries)
     {
       "url": "alignmentInterval",
@@ -168,7 +174,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         "code": "min"
       }
     },
-    
+
     // Time alignment offset (shift from interval boundaries)
     {
       "url": "alignmentOffset",
@@ -179,7 +185,7 @@ All scheduling constraints are managed through a single consolidated extension: 
         "code": "min"
       }
     },
-    
+
     // Booking limits (can have multiple)
     {
       "url": "bookingLimit",
@@ -197,7 +203,6 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 </details>
 
-
 ## Actor Level Availability
 
 ### The Concept of Implicit Availability
@@ -208,8 +213,7 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 ### The Schedule Resource
 
-The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device. 
-
+The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
 Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines general availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
@@ -374,10 +378,10 @@ Here is an example Schedule that defines generic availability for all services a
 }
 ```
 
-
 **All-or-nothing rule**: When a `SchedulingParameters` extension includes a `serviceType`, it **completely replaces** the default configuration for that service type. No attribute-level merging occurs.
 
 **Priority order** (highest to lowest):
+
 1. Schedule where `https://medplum.com/fhir/StructureDefinition/SchedulingParameters.serviceType` extension matches `service-type` param on `$find` request.
 2. ActivityDefinition where `ActivityDefinition.code` matches `service-type` param on `$find` request. ActivityDefinition parameters are used.
 3. Use generic availability defined on the Schedule.
@@ -421,10 +425,12 @@ The `timezone` parameter allows you to specify different timezones for different
 ```
 
 **Timezone Resolution Order:**
+
 1. If `timezone` is specified in the `scheduling-parameters` extension, use that timezone
 2. Otherwise, fall back to the timezone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
+
 - `timezone` is only available on Schedule resources, not ActivityDefinition
 - The timezone value should be an IANA timezone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
 - When `timezone` is specified, all `timeOfDay` values in the `availability` timing are interpreted in that timezone
@@ -508,10 +514,10 @@ Here is an example of a Schedule with multiple service types, each with its own 
 ```
 
 In this example:
+
 - Cardiac surgery availability is defined in `America/Los_Angeles` timezone (Mon-Wed 11am-3pm America/Los Angeles)
 - Call Center availability is defined in `America/New_York` timezone (Mon-Wed 9am-5pm Eastern)
 - Each service type's availability times are interpreted independently based on their respective timezones
-
 
 ## Examples
 
@@ -623,6 +629,7 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
 </details>
 
 **Result**: Dr. Johnson's schedule inherits all the default parameters from the ActivityDefinition for an office visit:
+
 - $find called with `service-type!=office-visit`: Dr. Johnson is available Mon-Fri 9am-5pm for non-office visits **[from Schedule]**
 - $find called with `service-type=office-visit`: For office visits, available to start every 15 minutes (:00, :15, :30, :45) with 5-minute buffers **[from ActivityDefinition]**
 
@@ -691,6 +698,7 @@ This ActivityDefinition defines a 60-minute new patient visit with 15-minute buf
   }]
 }
 ```
+
 </details>
 
 <details>
@@ -729,6 +737,7 @@ This ActivityDefinition defines a 20-minute follow-up visit with 5-minute buffer
   }]
 }
 ```
+
 </details>
 
 <details>
@@ -804,9 +813,11 @@ This Schedule shows how to configure default availability for all services (Mon-
   ]
 }
 ```
+
 </details>
 
 **Result**:
+
 - **New patient visits (ie. `$find` called with `service-type=new-patient-visit`)**: Tue/Thu 9am-1pm only, 60 minutes, can start every 30 minutes, max 3 per day, 15-min buffers
 - **Follow-ups (ie. `$find` called with `service-type=follow-up`)**: Mon-Fri 9am-5pm, 20 minutes, can start every 10 minutes, 5-min buffers
 
@@ -915,6 +926,7 @@ This ActivityDefinition defines a 120-minute surgical procedure requiring coordi
   }]
 }
 ```
+
 </details>
 
 <details>
@@ -959,6 +971,7 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
   }]
 }
 ```
+
 </details>
 
 <details>
@@ -1000,6 +1013,7 @@ This Schedule shows Operating Room 3's availability for surgical procedures, ava
   }]
 }
 ```
+
 </details>
 
 <details>
@@ -1044,6 +1058,7 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
   }]
 }
 ```
+
 </details>
 
 **Result**: When booking a bariatric surgery, the system queries all three schedules, calculates the intersection of availability, and creates atomic transaction bundles to book all required resources simultaneously.
@@ -1054,7 +1069,7 @@ graph TD
     A[ActivityDefinition<br/>*Defaults for<br/>Bariatric Surgery*] -.-> B1[Schedule<br/>*Operating Room 3's<br/>Schedule*]
     A -.-> B2[Schedule<br/>*Surgeon Martinez's<br/>Schedule*]
     A -.-> B3[Schedule<br/>*Anesthesiologist Kim's<br/>Schedule*]
-    
+
     C1[Location<br/>*Operating Room 3*] --> B1
     C2[Practitioner<br/>*Surgeon Martinez*] --> B2
     C3[Practitioner<br/>*Anesthesiologist Kim*] --> B3
@@ -1062,13 +1077,13 @@ graph TD
     B1 --> D1[Slot<br/>*status: busy*]
     B2 --> D2[Slot<br/>*status: busy*]
     B3 --> D3[Slot<br/>*status: busy*]
-    
+
     subgraph "Transaction Bundle"
         D1 --> E1[Appointment 1<br/>*status: booked*]
         D2 --> E1
         D3 --> E1
     end
-    
+
     style A fill:#e1f5fe
     style B1 fill:#f3e5f5
     style B2 fill:#f3e5f5
@@ -1101,9 +1116,11 @@ Organization (Surgery Center)
 ### Specific vs. "Any Available" Room
 
 **Specific room required:**
+
 - Query `Schedule?actor=Location/or-3`
 
 **Any OR room acceptable:**
+
 - Query: `Schedule?actor:Location.partof:Location.type=OR`
 
 ```mermaid
@@ -1112,7 +1129,7 @@ graph TD
     A[Location<br/>*Operating Rooms*<br/>mode=kind, type=OR] --> B1[Location<br/>*OR-1*<br/>mode=instance]
     A --> B2[Location<br/>*OR-2*<br/>mode=instance]
     A --> B3[Location<br/>*OR-3*<br/>mode=instance]
-    
+
     B1 --> C1[Schedule<br/>*OR-1 Schedule*]
     B2 --> C2[Schedule<br/>*OR-2 Schedule*]
     B3 --> C3[Schedule<br/>*OR-3 Schedule*]
@@ -1121,14 +1138,18 @@ graph TD
 ### Best Practices
 
 #### 1. Use All-or-Nothing Overrides
+
 If adding a `serviceType` configuration on Schedule, **specify ALL attributes** to avoid confusion about inheritance.
 
 #### 2. Minimize Pre-Generated Slots
+
 Only create Slot resources for:
+
 - Booked appointments (status: busy)
 - Blocked time (status: busy-unavailable)
 
 Let `$find` calculate available windows dynamically.
 
 #### 3. Transaction Bundles for Multi-Resource Booking
+
 Always use [FHIR transaction bundles](/docs/fhir-datastore/fhir-batch-requests#batches-vs-transactions) when booking appointments that require multiple resources to ensure atomicity.
