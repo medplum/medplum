@@ -36,16 +36,9 @@ export function DoseSpotContent(props: DoseSpotContentProps): JSX.Element {
   });
 
   return (
-    <Box
-      className={classes.container}
-      style={fillHeight ? { height: '100%' } : { height: 'auto' }}
-    >
+    <Box className={classes.container} style={fillHeight ? { height: '100%' } : { height: 'auto' }}>
       <Paper className={classes.tabBar} radius={0} p="md">
-        <Tabs
-          value={tab}
-          onChange={(value) => setTab(value as DoseSpotTabValue)}
-          variant="unstyled"
-        >
+        <Tabs value={tab} onChange={(value) => setTab(value as DoseSpotTabValue)} variant="unstyled">
           <Tabs.List className={classes.tabList}>
             <Tabs.Tab value="notifications" className={classes.tab}>
               Notifications

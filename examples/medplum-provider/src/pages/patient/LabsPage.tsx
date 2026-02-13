@@ -153,7 +153,13 @@ export function LabsPage(): JSX.Element {
                 </Group>
 
                 <Tooltip label="Order Labs" position="bottom" openDelay={300}>
-                  <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={() => setNewOrderModalOpened(true)}>
+                  <ActionIcon
+                    radius="50%"
+                    variant="filled"
+                    color="blue"
+                    size={32}
+                    onClick={() => setNewOrderModalOpened(true)}
+                  >
                     <IconPlus size={16} />
                   </ActionIcon>
                 </Tooltip>

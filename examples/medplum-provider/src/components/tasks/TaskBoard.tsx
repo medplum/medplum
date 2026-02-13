@@ -322,7 +322,13 @@ export function TaskBoard({
                     onFilterChange={handleFilterChange}
                   />
                   <Tooltip label="New Task" position="bottom" openDelay={300}>
-                    <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={() => setNewTaskModalOpened(true)}>
+                    <ActionIcon
+                      radius="50%"
+                      variant="filled"
+                      color="blue"
+                      size={32}
+                      onClick={() => setNewTaskModalOpened(true)}
+                    >
                       <IconPlus size={16} />
                     </ActionIcon>
                   </Tooltip>

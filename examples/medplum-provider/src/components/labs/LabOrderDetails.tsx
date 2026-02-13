@@ -389,10 +389,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                   variant="unstyled"
                 >
                   <Tabs.List className={classes.tabList}>
-                    <Tabs.Tab
-                      value={order.status !== 'completed' ? 'progress' : 'report'}
-                      className={classes.tab}
-                    >
+                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'} className={classes.tab}>
                       {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
                     </Tabs.Tab>
                     <Tabs.Tab value="order" className={classes.tab}>
