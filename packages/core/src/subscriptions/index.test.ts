@@ -17,7 +17,13 @@ import { Logger, LogLevel } from '../logger';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, sleep } from '../utils';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
+import { WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS } from './constants';
 import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
+
+jest.mock('./constants', () => ({
+  ...jest.requireActual('./constants'),
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+}));
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -1321,6 +1327,66 @@ describe('SubscriptionManager', () => {
 
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toStrictEqual('message');
+    });
+
+    test('should rebind subscription when token is about to expire', async () => {
+      console.warn = jest.fn();
+
+      const EXPIRING_TOKEN = 'expiring-token-123';
+      const REFRESHED_TOKEN = 'refreshed-token-456';
+
+      let tokenCallCount = 0;
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        tokenCallCount++;
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: tokenCallCount === 1 ? EXPIRING_TOKEN : REFRESHED_TOKEN },
+            {
+              name: 'expiration',
+              // First call: token expires within WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS, triggering rebind
+              // Second call: token expires far in the future
+              valueDateTime:
+                tokenCallCount === 1
+                  ? new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString()
+                  : new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      // Wait for this manager's WebSocket to open
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      const emitter = manager.addCriteria('Communication');
+
+      // Set up connect listener before sending handshake (events fire synchronously)
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+
+      // Should receive initial bind with the expiring token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: EXPIRING_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      await connectPromise;
+
+      // Wait for the token refresh interval to fire and trigger rebind
+      await sleep(300);
+
+      // Should have rebound with the refreshed token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: REFRESHED_TOKEN } });
+
+      expect(tokenCallCount).toBe(2);
+
+      manager.closeWebSocket();
     });
   });
 });
