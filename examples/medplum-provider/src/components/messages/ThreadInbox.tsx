@@ -19,7 +19,7 @@ import {
   Group,
 } from '@mantine/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { PatientSummary, ThreadChat } from '@medplum/react';
+import { PatientSummary, ThreadChat, createPharmaciesSection, getDefaultSections } from '@medplum/react';
 import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { JSX } from 'react';
@@ -48,6 +48,10 @@ import { Link } from 'react-router';
  * @param inProgressUri - The URI for in-progress threads.
  * @param completedUri - The URI for completed threads.
  */
+
+const sectionsWithDoseSpot = getDefaultSections().map((s) =>
+  s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+);
 
 interface ThreadInboxProps {
   query: string;
@@ -304,7 +308,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     <PatientSummary
                       key={selectedThread.id}
                       patient={selectedThread.subject as Reference<Patient>}
-                      pharmacyDialogComponent={DoseSpotPharmacyDialog}
+                      sections={sectionsWithDoseSpot}
                     />
                   </ScrollArea>
                 </Flex>

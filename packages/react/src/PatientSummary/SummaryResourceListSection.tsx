@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+/* eslint-disable react-refresh/only-export-components */
 import { Box, Flex, Group, Text } from '@mantine/core';
 import { getDisplayString as coreGetDisplayString } from '@medplum/core';
 import type { Resource, ResourceType } from '@medplum/fhirtypes';
