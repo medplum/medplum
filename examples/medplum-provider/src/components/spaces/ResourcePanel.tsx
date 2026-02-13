@@ -2,13 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
-import { PatientSummary, ResourceTable, useResource } from '@medplum/react';
+import {
+  PatientSummary,
+  ResourceTable,
+  useResource,
+  createPharmaciesSection,
+  getDefaultSections,
+} from '@medplum/react';
 import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { LabResultDetails } from '../labs/LabResultDetails';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
+
+const sectionsWithDoseSpot = getDefaultSections().map((s) =>
+  s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+);
 
 interface ResourcePanelProps<T extends Resource = Resource> {
   resource: Reference<T> | T;
@@ -25,7 +35,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} pharmacyDialogComponent={DoseSpotPharmacyDialog} />;
+        return <PatientSummary patient={displayResource} sections={sectionsWithDoseSpot} />;
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':
