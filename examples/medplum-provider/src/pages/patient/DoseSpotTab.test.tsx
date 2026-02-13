@@ -41,11 +41,12 @@ describe('DoseSpotTab', () => {
     );
   };
 
-  test('Renders DoseSpotAdvancedOptions when patientId is present', async () => {
+  test('Renders iframe when patientId is present', async () => {
     setup(`/Patient/${HomerSimpson.id}/dosespot`);
 
     await waitFor(() => {
-      expect(screen.getByText('Advanced Options')).toBeInTheDocument();
+      const iframe = document.querySelector('iframe#dosespot-iframe');
+      expect(iframe).toBeInTheDocument();
     });
   });
 
@@ -70,7 +71,7 @@ describe('DoseSpotTab', () => {
     });
   });
 
-  test('Calls onPatientSyncSuccess callback and shows notification', async () => {
+  test('Calls onPatientSyncSuccess and onIframeSuccess callbacks and shows notification', async () => {
     let capturedOptions: any = {};
 
     vi.mocked(useDoseSpotIFrame).mockImplementation((options) => {
@@ -80,33 +81,14 @@ describe('DoseSpotTab', () => {
 
     setup(`/Patient/${HomerSimpson.id}/dosespot`);
 
-    // Simulate the onPatientSyncSuccess callback being called
+    // Simulate both callbacks being called (both needed for notification)
     await act(async () => {
       capturedOptions.onPatientSyncSuccess?.();
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Patient sync success')).toBeInTheDocument();
-    });
-  });
-
-  test('Calls onIframeSuccess callback and shows notification', async () => {
-    let capturedOptions: any = {};
-
-    vi.mocked(useDoseSpotIFrame).mockImplementation((options) => {
-      capturedOptions = options;
-      return 'https://dosespot.example.com/iframe';
-    });
-
-    setup(`/Patient/${HomerSimpson.id}/dosespot`);
-
-    // Simulate the onIframeSuccess callback being called
-    await act(async () => {
       capturedOptions.onIframeSuccess?.();
     });
 
     await waitFor(() => {
-      expect(screen.getByText('DoseSpot iframe success')).toBeInTheDocument();
+      expect(screen.getByText('Successfully connected to DoseSpot')).toBeInTheDocument();
     });
   });
 
@@ -153,7 +135,8 @@ describe('DoseSpotTab', () => {
       expect(iframe.name).toBe('dosespot-iframe');
       expect(iframe.id).toBe('dosespot-iframe');
       // Check basic styling is applied
-      expect(iframe.style.minHeight).toBe('calc(100vh)');
+      expect(iframe.style.width).toBe('100%');
+      expect(iframe.style.height).toBe('100%');
     });
   });
 });

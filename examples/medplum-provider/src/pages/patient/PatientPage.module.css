@@ -17,6 +17,8 @@
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
   width: calc(100% - 350px);
   height: 100%;
   overflow: auto;
