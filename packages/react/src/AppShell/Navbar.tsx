@@ -273,11 +273,7 @@ function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
           {label}
         </span>
         {showCount && (
-          <span
-            className={classes.linkCount}
-            data-opened={opened || undefined}
-            data-alert={alert || undefined}
-          >
+          <span className={classes.linkCount} data-opened={opened || undefined} data-alert={alert || undefined}>
             {count.toLocaleString()}
           </span>
         )}
