@@ -13,8 +13,12 @@ import type { ProfileResource, WithId } from '../utils';
 import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
+import {
+  DEFAULT_PING_INTERVAL_MS,
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
+} from './constants';
 
-const DEFAULT_PING_INTERVAL_MS = 5_000;
 const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
 
 export type SubscriptionEventMap = {
@@ -74,6 +78,7 @@ class CriteriaEntry {
   readonly subscriptionProps?: Partial<Subscription>;
   subscriptionId?: string;
   token?: string;
+  tokenExpiry?: number;
   connecting = false;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
@@ -90,6 +95,7 @@ class CriteriaEntry {
   clearAttachedSubscription(): void {
     this.subscriptionId = undefined;
     this.token = undefined;
+    this.tokenExpiry = undefined;
   }
 }
 
@@ -110,6 +116,7 @@ export class SubscriptionManager {
   private readonly criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
+  private tokenRefreshTimer: ReturnType<typeof setInterval> | undefined = undefined;
   private readonly pingIntervalMs: number;
   private waitingForPong = false;
   private currentProfile: ProfileResource | undefined;
@@ -220,6 +227,11 @@ export class SubscriptionManager {
         this.waitingForPong = false;
       }
 
+      if (this.tokenRefreshTimer) {
+        clearInterval(this.tokenRefreshTimer);
+        this.tokenRefreshTimer = undefined;
+      }
+
       if (this.wsClosed) {
         this.criteriaEntries.clear();
         this.criteriaEntriesBySubscriptionId.clear();
@@ -249,6 +261,10 @@ export class SubscriptionManager {
           this.waitingForPong = true;
         }, this.pingIntervalMs);
       }
+
+      this.tokenRefreshTimer ??= setInterval(() => {
+        this.checkTokenExpirations();
+      }, WS_SUB_TOKEN_REFRESH_INTERVAL_MS);
     });
 
     this.medplum.addEventListener('change', () => {
@@ -284,7 +300,7 @@ export class SubscriptionManager {
     }
   }
 
-  private async getTokenForCriteria(criteriaEntry: CriteriaEntry): Promise<[string, string]> {
+  private async getTokenForCriteria(criteriaEntry: CriteriaEntry): Promise<[string, string, string]> {
     let subscriptionId = criteriaEntry?.subscriptionId;
     if (!subscriptionId) {
       // Make a new subscription
@@ -305,6 +321,7 @@ export class SubscriptionManager {
     );
     const token = parameter?.find((param) => param.name === 'token')?.valueString;
     const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
+    const expiration = parameter?.find((param) => param.name === 'expiration')?.valueDateTime;
 
     if (!token) {
       throw new OperationOutcomeError(validationError('Failed to get token'));
@@ -312,8 +329,11 @@ export class SubscriptionManager {
     if (!url) {
       throw new OperationOutcomeError(validationError('Failed to get URL from $get-ws-binding-token'));
     }
+    if (!expiration) {
+      throw new OperationOutcomeError(validationError('Failed to get expiration from $get-ws-binding-token'));
+    }
 
-    return [subscriptionId, token];
+    return [subscriptionId, token, expiration];
   }
 
   private maybeGetCriteriaEntry(
@@ -398,24 +418,13 @@ export class SubscriptionManager {
     if (this.wsClosed) {
       await this.reconnectIfNeeded();
     }
-    // We check to see if the WebSocket is open first, since if it's not, we will automatically refresh this later when it opens
-    if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
+    // We check to see if the WebSocket is reconnecting first, since if it is, we will automatically refresh this later when it reconnects
+    if (this.isReconnecting(criteriaEntry)) {
       return;
     }
     // Set connecting flag to true so other incoming subscription requests to this criteria don't try to subscribe also
     criteriaEntry.connecting = true;
-    try {
-      const [subscriptionId, token] = await this.getTokenForCriteria(criteriaEntry);
-      criteriaEntry.subscriptionId = subscriptionId;
-      criteriaEntry.token = token;
-      this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
-      // Send binding message
-      this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
-    } catch (err: unknown) {
-      console.error(normalizeErrorString(err));
-      this.emitError(criteriaEntry, err as Error);
-      this.removeCriteriaEntry(criteriaEntry);
-    }
+    await this.rebindCriteriaEntry(criteriaEntry);
   }
 
   private async refreshAllSubscriptions(): Promise<void> {
@@ -427,6 +436,48 @@ export class SubscriptionManager {
       ]) {
         criteriaEntry.clearAttachedSubscription();
         await this.subscribeToCriteria(criteriaEntry);
+      }
+    }
+  }
+
+  private isReconnecting(criteriaEntry: CriteriaEntry): boolean {
+    if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
+      return true;
+    }
+    return false;
+  }
+
+  private async rebindCriteriaEntry(criteriaEntry: CriteriaEntry): Promise<void> {
+    try {
+      const [subscriptionId, token, expiration] = await this.getTokenForCriteria(criteriaEntry);
+      criteriaEntry.token = token;
+      criteriaEntry.tokenExpiry = new Date(expiration).getTime();
+      criteriaEntry.subscriptionId = subscriptionId;
+      this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
+      // Bind with the new token
+      this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
+    } catch (err: unknown) {
+      console.error(normalizeErrorString(err));
+      this.emitError(criteriaEntry, err as Error);
+    }
+  }
+
+  private checkTokenExpirations(): void {
+    const now = Date.now();
+    for (const mapEntry of this.criteriaEntries.values()) {
+      for (const criteriaEntry of [
+        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
+        ...mapEntry.criteriaWithProps,
+      ]) {
+        if (!criteriaEntry.tokenExpiry) {
+          continue;
+        }
+        if (
+          criteriaEntry.tokenExpiry - now <= WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS &&
+          !this.isReconnecting(criteriaEntry)
+        ) {
+          this.rebindCriteriaEntry(criteriaEntry).catch(console.error);
+        }
       }
     }
   }
