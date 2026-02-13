@@ -1,6 +1,30 @@
 .footer {
   background-color: var(--oc-black);
-  margin-top: 48px;
+}
+
+/* Match landing content width and breakpoints: 76rem max, 2rem padding */
+.footerInner {
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  box-sizing: border-box;
+}
+
+@media screen and (max-width: 996px) {
+  .footerInner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .footerInner {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .row {

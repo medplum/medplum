@@ -32,6 +32,12 @@
   --ifm-footer-padding-vertical: 80px;
 }
 
+*,
+*::before,
+*::after {
+  font-feature-settings: 'ss02' on, 'ss04' on;
+}
+
 [data-theme='dark'] {
   --ifm-color-primary: var(--oc-grape-5);
   --ifm-color-primary-dark: #6646af;
@@ -332,17 +338,6 @@ li.theme-doc-sidebar-item-link:not(:first-child) strong {
   word-break: normal;
 }
 
-/* Use Docusaurus font in Algolia search box */
-span.DocSearch-Button-Placeholder {
-  font-family: var(--ifm-font-family-base);
-  font-size: 11pt;
-}
-
-/* Hide Algolia keyboard shortcut icon */
-span.DocSearch-Button-Keys {
-  display: none;
-}
-
 .responsive-iframe-wrapper {
   position: relative;
   width: 100%;
@@ -357,3 +352,63 @@ span.DocSearch-Button-Keys {
   width: 100%;
   height: 100%;
 }
+
+/* Navbar button styles */
+.navbar__items--right {
+  gap: 8px;
+}
+
+.navbar__items--right > .colorModeToggle_node_modules-\@docusaurus-theme-classic-lib-theme-Navbar-Content-styles-module,
+.navbar__items--right > [class*='colorModeToggle'] {
+  order: 1;
+}
+
+.navbar__items--right > [class*='searchBox'],
+.navbar__items--right > .DocSearch {
+  order: 2;
+}
+
+.navbar-btn {
+  border-radius: 50px !important;
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  line-height: 100%;
+  white-space: nowrap;
+  color: var(--oc-white);
+}
+
+.navbar-btn.navbar-btn-outlined {
+  order: 3;
+  color: var(--oc-gray-8);
+  border-color: var(--oc-gray-3);
+  background-color: transparent;
+}
+
+.navbar-btn.navbar-btn-outlined:hover {
+  color: var(--oc-grape-8);
+  border-color: var(--oc-grape-8);
+  background-color: transparent;
+}
+
+[data-theme='dark'] .navbar-btn.navbar-btn-outlined {
+  border-color: var(--oc-gray-7);
+  color: var(--oc-gray-3);
+}
+
+[data-theme='dark'] .navbar-btn.navbar-btn-outlined:hover {
+  color: var(--oc-grape-5);
+  border-color: var(--oc-grape-5);
+  background-color: transparent;
+}
+
+.navbar-btn.navbar-btn-filled {
+  order: 4;
+  background-color: var(--oc-grape-8);
+  border-color: var(--oc-grape-8);
+}
+
+.navbar-btn.navbar-btn-filled:hover {
+  background-color: var(--oc-grape-9);
+  border-color: var(--oc-grape-9);
+}
+

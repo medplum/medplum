@@ -6,6 +6,11 @@
   margin: 2rem auto;
 }
 
+
+.cardContainer p {
+  margin: 0;
+}
+
 @media screen and (max-width: 996px) {
   .cardContainer {
     flex-direction: column;
