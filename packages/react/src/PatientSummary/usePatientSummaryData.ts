@@ -3,7 +3,7 @@
 import { resolveId } from '@medplum/core';
 import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { FhirSearchDescriptor, PatientSummarySectionConfig } from './PatientSummary.types';
 
 export interface PatientSummaryData {
@@ -79,15 +79,8 @@ export function usePatientSummaryData(
 
   // Stabilize sections reference: only change when the search configuration actually changes.
   const sectionsFingerprint = buildSectionsFingerprint(sections);
-  const sectionsRef = useRef(sections);
-  const stableFingerprint = useRef(sectionsFingerprint);
-
-  if (stableFingerprint.current !== sectionsFingerprint) {
-    stableFingerprint.current = sectionsFingerprint;
-    sectionsRef.current = sections;
-  }
-
-  const stableSections = sectionsRef.current;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on fingerprint for content-based stability
+  const stableSections = useMemo(() => sections, [sectionsFingerprint]);
 
   // Memoize the patient ID to avoid re-fetching on reference changes
   const patientId = useMemo(() => resolveId(patient), [patient]);
