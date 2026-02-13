@@ -16,7 +16,8 @@ import { formatHumanName } from '@medplum/core';
 import type { HumanName, ResourceType } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
 import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch } from '@tabler/icons-react';
-import type { JSX, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
+import { IconX } from '@tabler/icons-react';
+import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -40,6 +41,8 @@ export interface NavbarLink {
     readonly countCriteria: string;
     readonly subscriptionCriteria: string;
   };
+  /** Callback fired when the dismiss button is clicked. When provided, a dismiss (X) button appears on hover. */
+  readonly onDismiss?: () => void;
 }
 
 export interface NavbarMenu {
@@ -150,6 +153,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                         opened={opened}
                         alert={link.alert}
                         notificationCount={link.notificationCount}
+                        onDismiss={link.onDismiss}
                       />
                     ) : (
                       <NavbarLinkContent
@@ -162,6 +166,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                         opened={opened}
                         alert={link.alert}
                         count={link.count}
+                        onDismiss={link.onDismiss}
                       />
                     )
                   )}
@@ -253,14 +258,21 @@ interface NavbarLinkContentProps {
   readonly opened?: boolean;
   readonly count?: number;
   readonly alert?: boolean;
+  readonly onDismiss?: () => void;
 }
 
 function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
-  const { to, icon, label, onClick, active, count, alert, opened } = props;
+  const { to, icon, label, onClick, active, count, alert, opened, onDismiss } = props;
   const showCount = count !== undefined && count > 0;
 
   const iconElement = icon ?? <IconBookmark />;
   const showDot = showCount && alert && !opened;
+
+  function handleDismiss(e: MouseEvent): void {
+    e.preventDefault();
+    e.stopPropagation();
+    onDismiss?.();
+  }
 
   return (
     <Tooltip label={label} position="right" transitionProps={{ duration: 0 }} disabled={opened}>
@@ -276,6 +288,13 @@ function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
           <span className={classes.linkCount} data-opened={opened || undefined} data-alert={alert || undefined}>
             {count.toLocaleString()}
           </span>
+        )}
+        {onDismiss && opened && (
+          <Tooltip label="Dismiss" openDelay={500}>
+            <span role="button" aria-label="Dismiss" className={classes.dismissButton} onClick={handleDismiss}>
+              <IconX size={14} />
+            </span>
+          </Tooltip>
         )}
       </MedplumLink>
     </Tooltip>
@@ -295,6 +314,7 @@ interface NavbarLinkWithSubscriptionProps {
     readonly countCriteria: string;
     readonly subscriptionCriteria: string;
   };
+  readonly onDismiss?: () => void;
 }
 
 function NavbarLinkWithSubscription(props: NavbarLinkWithSubscriptionProps): JSX.Element {
@@ -309,6 +329,7 @@ function NavbarLinkWithSubscription(props: NavbarLinkWithSubscriptionProps): JSX
       opened={props.opened}
       alert={props.alert}
       count={count}
+      onDismiss={props.onDismiss}
     />
   );
 }

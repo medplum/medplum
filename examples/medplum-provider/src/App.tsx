@@ -16,13 +16,12 @@ import {
 import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
-import { DismissableNavIcon } from './components/DismissableNavIcon';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 
-const SETUP_DISMISSED_KEY = 'medplum-provider-setup-dismissed';
+const SETUP_DISMISSED_KEY = 'medplum-provider-setup';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
@@ -119,9 +118,10 @@ export function App(): JSX.Element | null {
                   ...(!setupDismissed
                     ? [
                         {
-                          icon: <DismissableNavIcon icon={<IconSettingsAutomation />} onDismiss={handleDismissSetup} />,
+                          icon: <IconSettingsAutomation />,
                           label: 'Get Started',
                           href: '/getstarted',
+                          onDismiss: handleDismissSetup,
                         },
                       ]
                     : []),

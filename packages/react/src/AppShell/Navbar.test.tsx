@@ -412,3 +412,83 @@ describe('NavbarLinkWithSubscription', () => {
     expect(countElement.dataset?.['alert']).toEqual('true');
   });
 });
+
+describe('Navbar onDismiss', () => {
+  const dismissNavigateMock = jest.fn();
+  const dismissToggleMock = jest.fn();
+  const dismissCloseMock = jest.fn();
+  const dismissMock = jest.fn();
+
+  async function setupDismiss(opened = true): Promise<void> {
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={dismissNavigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={dismissToggleMock}
+              closeNavbar={dismissCloseMock}
+              menus={[
+                {
+                  title: 'Test',
+                  links: [
+                    { label: 'Dismissable', href: '/dismissable', icon: <IconStar />, onDismiss: dismissMock },
+                    { label: 'Normal', href: '/normal', icon: <IconStar /> },
+                  ],
+                },
+              ]}
+              opened={opened}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    dismissNavigateMock.mockClear();
+    dismissCloseMock.mockClear();
+    dismissMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
+  test('Renders dismiss button when onDismiss is provided and navbar is opened', async () => {
+    await setupDismiss(true);
+    const dismissButton = screen.getByRole('button', { name: 'Dismiss' });
+    expect(dismissButton).toBeInTheDocument();
+  });
+
+  test('Does not render dismiss button when navbar is collapsed', async () => {
+    await setupDismiss(false);
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+  });
+
+  test('Does not render dismiss button for links without onDismiss', async () => {
+    await setupDismiss(true);
+    const dismissButtons = screen.getAllByRole('button', { name: 'Dismiss' });
+    expect(dismissButtons).toHaveLength(1);
+  });
+
+  test('Clicking dismiss calls onDismiss and does not navigate', async () => {
+    window.innerWidth = 1024;
+    await setupDismiss(true);
+
+    const dismissButton = screen.getByRole('button', { name: 'Dismiss' });
+    await act(async () => {
+      fireEvent.click(dismissButton);
+    });
+
+    expect(dismissMock).toHaveBeenCalledTimes(1);
+    expect(dismissNavigateMock).not.toHaveBeenCalled();
+  });
+});

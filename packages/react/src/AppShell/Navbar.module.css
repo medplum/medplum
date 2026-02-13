@@ -150,6 +150,25 @@
   }
 }
 
+.dismissButton {
+  display: none;
+  margin-left: auto;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+
+  &:hover {
+    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-0));
+  }
+}
+
+.link:hover .dismissButton {
+  display: flex;
+}
+
 .addBookmarkLink {
   margin-top: 40px;
   color: light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-0));
