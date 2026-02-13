@@ -50,7 +50,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('In progress')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
 
     expect(useParamsSpy).toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication`);
 
     await waitFor(() => {
-      expect(screen.getByText('In progress')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
   });
 
@@ -78,7 +78,7 @@ describe('CommunicationTab', () => {
     setup(`/Patient/${HomerSimpson.id}/Communication/message-123`);
 
     await waitFor(() => {
-      expect(screen.getByText('In progress')).toBeInTheDocument();
+      expect(screen.getByText('In Progress')).toBeInTheDocument();
     });
   });
 });

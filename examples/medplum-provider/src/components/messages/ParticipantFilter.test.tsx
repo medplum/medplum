@@ -61,10 +61,10 @@ describe('ParticipantFilter', () => {
     expect(button).toBeInTheDocument();
   });
 
-  test('button shows light variant when no filter is active', async () => {
+  test('button shows transparent variant when no filter is active', async () => {
     await setup(undefined, []);
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('data-variant', 'light');
+    expect(button).toHaveAttribute('data-variant', 'transparent');
   });
 
   test('button shows filled variant when filter is active', async () => {

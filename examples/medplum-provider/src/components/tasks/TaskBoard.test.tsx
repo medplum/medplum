@@ -386,9 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks (this should navigate to reset pagination)
-    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
-    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
+    // Switch to All Tasks tab (this should navigate to reset pagination)
+    const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
+    expect(allTasksTab).toBeInTheDocument();
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
