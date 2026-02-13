@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Accordion, ActionIcon, Chip, Group } from '@mantine/core';
-import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import { parseReference } from '@medplum/core';
+import type { Bundle, Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowNarrowRight, IconCheck } from '@tabler/icons-react';
 import type { JSX, SyntheticEvent } from 'react';
@@ -38,8 +39,8 @@ export function BundleDisplay(props: BundleDisplayProps): JSX.Element | undefine
     return undefined;
   }
 
-  const [senderType, senderId] = ((communication.sender as Reference).reference as string).split('/');
-  const [recipientType, recipientId] = ((communication.recipient?.[0] as Reference).reference as string).split('/');
+  const [senderType, senderId] = parseReference(communication.sender);
+  const [recipientType, recipientId] = parseReference(communication.recipient?.[0]);
 
   return (
     <Accordion.Item value={`${bundle?.timestamp ?? 'Unknown time'}: Chat Notification`}>

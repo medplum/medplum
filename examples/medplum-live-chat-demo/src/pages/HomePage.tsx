@@ -15,8 +15,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconArrowRight } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * Home page that greets the user and displays a list of patients.
@@ -36,7 +36,7 @@ export function HomePage(): JSX.Element {
 
   useEffect(() => {
     medplum
-      .createResourceIfNoneExist(HomerSimpson, 'name=Homer Simpson')
+      .createResourceIfNoneExist({ ...HomerSimpson, id: undefined }, 'name=Homer Simpson')
       .then((homer) => {
         setHomerSimpson(homer);
       })
