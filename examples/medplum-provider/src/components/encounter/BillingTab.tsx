@@ -20,7 +20,7 @@ import type {
 import { useMedplum } from '@medplum/react';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { calculateTotalPrice } from '../../utils/chargeitems';
@@ -58,6 +58,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [submitting, setSubmitting] = useState(false);
+  const conditionsRef = useRef<Condition[]>(conditions);
+  conditionsRef.current = conditions;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   useEffect(() => {
@@ -242,8 +245,60 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
               </Menu.Dropdown>
             </Menu>
 
-            <Button variant="outline" leftSection={<IconSend size={16} />}>
-              Request to connect a billing service
+            <Button
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              loading={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  const bot = await medplum.searchOne('Bot', {
+                    identifier: 'https://medplum.com/integrations/candid-health|send-to-candid',
+                  });
+                  if (!bot) {
+                    throw new Error('Candid Health bot not found');
+                  }
+
+                  let coverageForClaim = coverage;
+                  if (!coverageForClaim) {
+                    const coverageResults = await medplum.searchResources(
+                      'Coverage',
+                      `patient=${getReferenceString(patient)}&status=active`
+                    );
+                    if (coverageResults.length > 0) {
+                      coverageForClaim = coverageResults[0];
+                    } else {
+                      coverageForClaim = await createSelfPayCoverage(medplum, patient);
+                    }
+                  }
+
+                  const diagnosisArray = createDiagnosisArray(conditionsRef.current || []);
+                  const claimToSubmit: Claim = {
+                    ...claim,
+                    insurance: [
+                      {
+                        sequence: 1,
+                        focal: true,
+                        coverage: { reference: getReferenceString(coverageForClaim) },
+                      },
+                    ],
+                    diagnosis: diagnosisArray,
+                  };
+
+                  const result = await medplum.executeBot(bot.id, claimToSubmit, 'application/fhir+json');
+                  showNotification({
+                    title: 'Claim Submitted',
+                    message: result?.message || 'Claim successfully submitted to Candid Health',
+                    color: 'green',
+                  });
+                } catch (err) {
+                  showErrorNotification(err);
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              Submit Claim
             </Button>
           </Flex>
         </Card>
