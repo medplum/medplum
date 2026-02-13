@@ -68,13 +68,10 @@ describe('useNotificationCount', () => {
 
     // Emit subscription event to trigger re-fetch with cache: 'reload'
     await act(async () => {
-      medplum.getSubscriptionManager().emitEventForCriteria<'message'>(
-        'Communication?recipient=Practitioner/456',
-        {
-          type: 'message',
-          payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
-        }
-      );
+      medplum.getSubscriptionManager().emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
+        type: 'message',
+        payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
+      });
     });
 
     expect(result.current).toBe(1);
