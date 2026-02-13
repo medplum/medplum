@@ -1,0 +1,15 @@
+/*
+ * Use display: contents so wrapper children become direct flex children of the parent link.
+ * Then use CSS order to position count after the label (which has no explicit order, so defaults to 0).
+ */
+.wrapper {
+  display: contents;
+}
+
+/* Count text shown on the right */
+.count {
+  order: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+}

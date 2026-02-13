@@ -55,6 +55,7 @@ export * from './HumanNameDisplay/HumanNameDisplay';
 export * from './HumanNameInput/HumanNameInput';
 export * from './IdentifierDisplay/IdentifierDisplay';
 export * from './IdentifierInput/IdentifierInput';
+export * from './InboxIcon/InboxIcon';
 export * from './InfoBar/InfoBar';
 export * from './LinkTabs/LinkTabs';
 export * from './Loading/Loading';
