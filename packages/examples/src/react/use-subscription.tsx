@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block lifecycleHooks
+import type { ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
 import type { Bundle } from '@medplum/fhirtypes';
 
-function LiveChatComponent() {
+function LiveChatComponent(): ReactNode {
   const medplum = useMedplum();
   const [isConnected, setIsConnected] = useState(true);
 
