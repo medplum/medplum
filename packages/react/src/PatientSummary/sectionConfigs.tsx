@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
- 
+
 import { Stack } from '@mantine/core';
 import { calculateAgeString, formatAddress } from '@medplum/core';
 import type {
