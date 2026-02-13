@@ -8,11 +8,26 @@ import TabItem from '@theme/TabItem';
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bot-execute.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Bot Execute
+# Bot $execute
 
-Invoke a Medplum Bot using the custom `$execute` operation.
+The `$execute` operation runs a Medplum Bot on-demand, allowing you to trigger server-side automation logic via API calls. Bots can process 
+incoming data, integrate with external systems, and return custom responses-making this operation the primary way to leverage Medplum's 
+automation capabilities.
 
+Whether you're processing HL7v2 messages from legacy systems, responding to webhooks, or building custom API endpoints, `$execute` provides 
+the flexibility to handle virtually any healthcare integration scenario.
+
+## Use Cases
+
+- **Webhook Handling**: Receive and process incoming webhooks from external services (labs, pharmacies, payers)
+- **HL7v2 Integration**: Parse and transform HL7v2 messages from legacy healthcare systems
+- **Custom API Endpoints**: Build application-specific endpoints that return custom JSON responses
+- **On-Demand Processing**: Trigger data transformations, validations, or calculations programmatically
+- **External System Integration**: Connect to third-party APIs and synchronize data with your FHIR resources
+
+:::tip
 If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
+:::
 
 ## Invoke a bot by ID
 
@@ -296,3 +311,11 @@ When the bot execution fails:
 <MedplumCodeBlock language="ts" selectBlocks="example-error-response">
   {ExampleCode}
 </MedplumCodeBlock>
+
+## Related
+
+- [Bot $deploy](/docs/api/fhir/operations/bot-deploy) - Deploy bot code before execution
+- [Bot Basics](/docs/bots/bot-basics) - Introduction to Medplum Bots
+- [Bots In Production](/docs/bots/bots-in-production) - Best practices for production bot deployments
+- [HL7 Interfacing](/docs/integration/hl7-interfacing) - Processing HL7v2 messages with bots
+- [Consuming Webhooks](/docs/bots/consuming-webhooks) - Handle incoming webhooks with bots
