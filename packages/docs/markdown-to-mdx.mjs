@@ -103,8 +103,8 @@ function escapeMdx(fileName, text) {
     }
   });
 
-  // Escape { and } characters outside of code blocks
-  const specialChars = ['{', '}'];
+  // Escape {, }, <, and > characters outside of code blocks
+  const specialChars = ['{', '}', '<', '>'];
   let inSingleBacktick = false;
   let inTripleBacktick = false;
   let backtickCount = 0;

@@ -4,9 +4,6 @@ import TabItem from '@theme/TabItem';
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/operation-framework.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-import DocCardList from '@theme/DocCardList';
-import { useCurrentSidebarCategory } from '@docusaurus/theme-common';
-
 # FHIR Operation Framework
 
 In addition to the standard API endpoints for creating, reading, and updating resources, FHIR offers a variety of
@@ -194,7 +191,7 @@ This is possible when the request is idempotent and contains only simple input p
 
 - The `OperationDefinition` must not contain `"affectsState": true`
 - The request may only contain `in` parameters with a simple `type`
-  (one starting with a lower-case letter, like `string` or `positiveInt` — but not `Coding`)
+  (one starting with a lower-case letter, like `string` or `positiveInt` - but not `Coding`)
 
 ## Reading the Response
 
@@ -233,7 +230,70 @@ For example, if the specified `ValueSet` could not be found by URL:
 
 ## Operation Documentation
 
-Details about the FHIR Operations supported by Medplum server are linked below. For information about other available
+Details about the FHIR Operations supported by Medplum server are organized below by category. For information about other available
 operations, see the [complete list](https://www.hl7.org/fhir/R4/operationslist.html) from the FHIR specification.
 
-<DocCardList items={useCurrentSidebarCategory().items} />
+### Terminology Operations
+Operations for managing CodeSystem, ConceptMap, and ValueSet resources.
+
+**CodeSystem:**
+- [CodeSystem/$import](/docs/api/fhir/operations/codesystem-import) - Import codes into a CodeSystem
+- [CodeSystem/$lookup](/docs/api/fhir/operations/codesystem-lookup) - Look up code details
+- [CodeSystem/$subsumes](/docs/api/fhir/operations/codesystem-subsumes) - Test subsumption relationship
+- [CodeSystem/$validate-code](/docs/api/fhir/operations/codesystem-validate-code) - Validate a code in a CodeSystem
+
+**ConceptMap:**
+- [ConceptMap/$import](/docs/api/fhir/operations/conceptmap-import) - Import mappings into a ConceptMap
+- [ConceptMap/$translate](/docs/api/fhir/operations/conceptmap-translate) - Translate a code using a ConceptMap
+
+**ValueSet:**
+- [ValueSet/$expand](/docs/api/fhir/operations/valueset-expand) - Expand a ValueSet
+- [ValueSet/$validate-code](/docs/api/fhir/operations/valueset-validate-code) - Validate a code against a ValueSet
+
+### Patient Operations
+Operations specific to Patient resources.
+- [Patient/$everything](/docs/api/fhir/operations/patient-everything) - Retrieve all patient data
+- [Patient/$summary](/docs/api/fhir/operations/patient-summary) - Generate International Patient Summary (IPS)
+
+### Bot Operations
+Deploy, execute, and extend Medplum Bots.
+- [Bot/$deploy](/docs/api/fhir/operations/bot-deploy) - Deploy bot code
+- [Bot/$execute](/docs/api/fhir/operations/bot-execute) - Execute a bot
+- [Custom Bot Operations](/docs/api/fhir/operations/custom-operations) - Create custom FHIR operations with Bots
+
+### Resource Validation & Transformation
+Validate resources and transform data structures.
+- [$graph](/docs/api/fhir/operations/resource-graph) - Fetch related resources via GraphDefinition
+- [GraphQL](/docs/api/fhir/operations/graphql) - Query resources using GraphQL
+- [Questionnaire/$extract](/docs/api/fhir/operations/extract) - Extract data from QuestionnaireResponse
+- [Resource/$validate](/docs/api/fhir/operations/validate-a-resource) - Validate a resource against profiles
+- [StructureDefinition/$expand-profile](/docs/api/fhir/operations/structuredefinition-expand-profile) - Expand a StructureDefinition with nested profiles
+
+### Data Export & Import
+Bulk data operations and format conversions.
+- [$csv](/docs/api/fhir/operations/csv) - Export resources as CSV
+- [Bulk Data Export](/docs/api/fhir/operations/bulk-fhir) - FHIR Bulk Data Access
+- [CCDA Export](/docs/api/fhir/operations/ccda-export) - Export data as C-CDA documents
+- [Claim/$export](/docs/api/fhir/operations/claim-export) - Export claims as CMS-1500 PDFs
+
+### Clinical Decision Support
+Operations for measures, clinical plans, charges, and AI assistance.
+- [AI Assistant](/docs/api/fhir/operations/ai) - AI-powered clinical assistance
+- [ChargeItemDefinition/$apply](/docs/api/fhir/operations/chargeitemdefinition-apply) - Apply pricing rules to ChargeItem
+- [Measure/$evaluate-measure](/docs/api/fhir/operations/evaluate-measure) - Evaluate a clinical quality measure
+- [PlanDefinition/$apply](/docs/api/fhir/operations/plandefinition-apply) - Apply a PlanDefinition to generate resources
+
+### Project & System Administration
+Project management and system operations.
+- [AsyncJob/$cancel](/docs/api/fhir/operations/asyncjob-cancel) - Cancel an asynchronous job
+- [Project/$clone](/docs/api/fhir/operations/project-clone) - Clone a Medplum project
+- [Project/$init](/docs/api/fhir/operations/project-init) - Initialize a new project
+- [$expunge](/docs/api/fhir/operations/expunge) - Permanently delete resources
+- [$resend](/docs/api/fhir/operations/resend) - Resend a subscription notification
+- [$set-accounts](/docs/api/fhir/operations/set-accounts) - Set resource account references
+
+### Authentication & Security
+Client application, credential, and user management operations.
+- [ClientApplication/$rotate-secret](/docs/api/fhir/operations/rotate-client-secret) - Rotate client secrets
+- [ClientApplication/$smart-launch](/docs/api/fhir/operations/clientapplication-smart-launch) - SMART on FHIR app launch
+- [User/$update-email](/docs/api/fhir/operations/user-update-email) - Update user email address
