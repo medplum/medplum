@@ -11,8 +11,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconClipboardCheck, IconHome, IconMail } from '@tabler/icons-react';
-import { Suspense } from 'react';
 import type { JSX } from 'react';
+import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
