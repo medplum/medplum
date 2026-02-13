@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { useMedplum } from '@medplum/react';
 import type { Identifier, Communication, Resource, Bundle, ResourceType } from '@medplum/fhirtypes';
 import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
@@ -46,7 +45,7 @@ export interface ExecuteToolCallsResult {
   resourceRefs: string[];
 }
 
-async function executeFhirRequest(medplum: ReturnType<typeof useMedplum>, args: FhirRequestArgs): Promise<Resource> {
+async function executeFhirRequest(medplum: MedplumClient, args: FhirRequestArgs): Promise<Resource> {
   const { method, path, body } = args;
   switch (method) {
     case 'GET':
@@ -142,7 +141,7 @@ export async function collectFhirData(medplum: MedplumClient, refs: string[]): P
 }
 
 export async function executeToolCalls(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   toolCalls: ToolCall[],
   onFhirRequest: (request: string) => void
 ): Promise<ExecuteToolCallsResult> {
@@ -207,7 +206,7 @@ export async function executeToolCalls(
 }
 
 export async function sendToBot(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   botId: Identifier,
   messages: Message[],
   model: string
@@ -234,7 +233,7 @@ export interface StreamingResult {
 }
 
 export async function sendToBotStreaming(
-  medplum: ReturnType<typeof useMedplum>,
+  medplum: MedplumClient,
   botId: Identifier,
   messages: Message[],
   model: string,
@@ -330,7 +329,7 @@ export async function sendToBotStreaming(
 }
 
 export interface ProcessMessageParams {
-  medplum: ReturnType<typeof useMedplum>;
+  medplum: MedplumClient;
   input: string;
   userMessage: Message;
   currentMessages: Message[];
