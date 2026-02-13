@@ -21,7 +21,7 @@ import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 
-const SETUP_DISMISSED_KEY = 'medplum-provider-setup';
+const SETUP_DISMISSED_KEY = 'medplum-provider-setup-dismissed';
 
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';

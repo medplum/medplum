@@ -291,9 +291,9 @@ function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
         )}
         {onDismiss && opened && (
           <Tooltip label="Dismiss" openDelay={500}>
-            <span role="button" aria-label="Dismiss" className={classes.dismissButton} onClick={handleDismiss}>
+            <UnstyledButton aria-label="Dismiss" className={classes.dismissButton} onClick={handleDismiss}>
               <IconX size={14} />
-            </span>
+            </UnstyledButton>
           </Tooltip>
         )}
       </MedplumLink>
