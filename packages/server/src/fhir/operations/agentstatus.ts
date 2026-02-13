@@ -7,7 +7,7 @@ import type { Agent, OperationDefinition, OperationOutcome, Parameters } from '@
 import type { AgentInfo } from '../../agent/utils';
 import { AgentConnectionState } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
+import { getCacheRedis } from '../../redis';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -66,7 +66,7 @@ export async function getStatusForAgents(agents: WithId<Agent>[]): Promise<(Para
   // This is set by the agent websocket connection
   // See: packages/server/src/agent/websockets.ts
   // Here we use MGET to get all the keys at once, which reduces this from O(n) Redis commands to O(1)
-  const statusStrs = await getRedis().mget(agents.map((agent) => `medplum:agent:${agent.id}:info`));
+  const statusStrs = await getCacheRedis().mget(agents.map((agent) => `medplum:agent:${agent.id}:info`));
 
   const statuses: (Parameters | OperationOutcome)[] = [];
 

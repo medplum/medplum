@@ -14,7 +14,7 @@ import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
 import type { AgentInfo } from './utils';
 import { AgentConnectionState } from './utils';
 
@@ -94,14 +94,14 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
           case 'agent:upgrade:response':
           case 'agent:logs:response':
             if (command.callback) {
-              const redis = getRedis();
+              const redis = getPubSubRedis();
               await redis.publish(command.callback, JSON.stringify(command));
             }
             break;
 
           case 'agent:error':
             if (command.callback) {
-              const redis = getRedis();
+              const redis = getPubSubRedis();
               await redis.publish(command.callback, JSON.stringify(command));
             }
             globalLogger.error('[Agent]: Error received from agent', { error: command.body });
@@ -157,7 +157,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
-    redisSubscriber = getRedisSubscriber();
+    redisSubscriber = getPubSubRedisSubscriber();
     await redisSubscriber.subscribe(getReferenceString(agent));
     redisSubscriber.on('message', (_channel: string, message: string) => {
       // When a message is received, send it to the agent
@@ -277,7 +277,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
 
     let redis: Redis;
     try {
-      redis = getRedis();
+      redis = getCacheRedis();
     } catch (err) {
       globalLogger.warn(`[Agent]: Attempted to update agent info after server closed. ${normalizeErrorString(err)}`);
       return;
@@ -301,7 +301,7 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
 
     let redis: Redis;
     try {
-      redis = getRedis();
+      redis = getCacheRedis();
     } catch (err) {
       globalLogger.warn(`[Agent]: Attempted to update agent status after server closed. ${normalizeErrorString(err)}`);
       return;

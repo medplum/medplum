@@ -21,7 +21,7 @@ import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
 import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
@@ -256,13 +256,13 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger, async?: boole
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
-    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
+    ? new FhirRateLimiter(getRateLimitRedis(), authState, userLimit, projectLimit, logger ?? globalLogger, async)
     : undefined;
 }
 
 function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
   const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
   return authState.membership && projectLimit
-    ? new ResourceCap(getRedis(), authState, projectLimit, logger ?? globalLogger)
+    ? new ResourceCap(getRateLimitRedis(), authState, projectLimit, logger ?? globalLogger)
     : undefined;
 }

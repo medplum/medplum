@@ -20,11 +20,10 @@ import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { reconnectOnError } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -50,7 +49,7 @@ const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<DownloadJobData>(queueName, {

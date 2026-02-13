@@ -31,7 +31,7 @@ import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { getRedis } from '../redis';
+import { getCacheRedis, getPubSubRedis } from '../redis';
 import {
   cleanupContextForResource,
   extractAnchorResourceType,
@@ -177,7 +177,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   let subscriptionEndpoint: string;
   try {
     const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id}:topic:${topic}:endpoint`;
-    const results = await getRedis()
+    const results = await getCacheRedis()
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
       // Sets the endpoint key for this topic if it doesn't exist
@@ -199,7 +199,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     }
     subscriptionEndpoint = result as string;
     const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
-    await getRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
+    await getCacheRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
@@ -220,7 +220,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       res.status(202).json({
         'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
       });
-      getRedis()
+      getPubSubRedis()
         .publish(
           `${ctx.project.id}:${topic}`,
           JSON.stringify({
@@ -467,7 +467,7 @@ async function fetchStoredContext(
   resourceId: string
 ): Promise<CurrentContext<FhircastAnchorResourceType> | undefined> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  const storedContextStr = await getRedis().hget(topicContextsStorageKey, resourceId);
+  const storedContextStr = await getCacheRedis().hget(topicContextsStorageKey, resourceId);
   if (!storedContextStr) {
     return undefined;
   }
@@ -481,7 +481,7 @@ async function storeContext(
   currentContext: CurrentContext<FhircastAnchorResourceType>
 ): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  await getRedis().hset(topicContextsStorageKey, anchorResource.id as string, JSON.stringify(currentContext));
+  await getCacheRedis().hset(topicContextsStorageKey, anchorResource.id as string, JSON.stringify(currentContext));
 }
 
 async function finalizeContextChangeRequest(
@@ -489,7 +489,7 @@ async function finalizeContextChangeRequest(
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
-  await getRedis().publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+  await getPubSubRedis().publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });
@@ -497,7 +497,7 @@ async function finalizeContextChangeRequest(
 
 async function closeCurrentContext(projectId: string, topic: string): Promise<void> {
   const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
-  await getRedis().del(topicCurrentContextKey);
+  await getCacheRedis().del(topicCurrentContextKey);
 }
 
 // Get the current subscription status

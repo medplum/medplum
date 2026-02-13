@@ -24,10 +24,10 @@ import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
 import {
   addVerboseQueueLogging,
+  getBullmqRedisConnectionOptions,
   isJobActive,
   isJobCompatible,
   moveToDelayedAndThrow,
@@ -95,7 +95,7 @@ export const REINDEX_WORKER_VERSION = 2;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<ReindexJobData>(ReindexQueueName, {

@@ -19,7 +19,7 @@ import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -58,7 +58,7 @@ let subscriptionMessagesSent = 0;
 let subscriptionMessagesReceived = 0;
 
 async function setupSubscriptionHandler(): Promise<void> {
-  redisSubscriber = getRedisSubscriber();
+  redisSubscriber = getPubSubRedisSubscriber();
   redisSubscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
     const subEventArgsArr = JSON.parse(events) as [
@@ -197,7 +197,7 @@ function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
 export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
-  const redis = getRedis();
+  const redis = getCacheRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
@@ -416,7 +416,7 @@ export async function markInMemorySubscriptionsInactive(
   }
   let redis: Redis | undefined;
   try {
-    redis = getRedis();
+    redis = getCacheRedis();
   } catch {
     redis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');

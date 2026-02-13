@@ -29,6 +29,23 @@ describe('Health check', () => {
 
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
+    expect(res.body.redis).toBe(true);
+    expect(res.body.redisInstances).toEqual({ default: true });
+  });
+
+  test('Get /healthcheck with separate Redis instances', async () => {
+    const config = await loadTestConfig();
+    config.cacheRedis = { ...config.redis, db: 8 };
+    config.rateLimitRedis = { ...config.redis, db: 9 };
+    await initApp(app, config);
+
+    const res = await request(app).get('/healthcheck');
+    expect(res.status).toBe(200);
+    expect(res.body.redisInstances).toMatchObject({
+      default: true,
+      cache: true,
+      rateLimit: true,
+    });
   });
 
   test('Get /healthcheck when OTel is enabled', async () => {

@@ -11,9 +11,8 @@ import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -35,7 +34,7 @@ const jobName = 'SetAccountsJobData';
 
 export const initSetAccountsWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SetAccountsJobData>(queueName, {

@@ -22,9 +22,8 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -44,7 +43,7 @@ const jobName = 'BatchJobData';
 
 export const initBatchWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<BatchJobData>(queueName, {
