@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-/* eslint-disable react-refresh/only-export-components */
+ 
 import { Stack } from '@mantine/core';
 import { calculateAgeString, formatAddress } from '@medplum/core';
 import type {
@@ -27,8 +27,6 @@ import { Labs } from './Labs';
 import { Medications } from './Medications';
 import { PatientInfoItem } from './PatientInfoItem';
 import type { PatientSummarySectionConfig, SectionRenderContext } from './PatientSummary.types';
-import type { PharmacyDialogBaseProps } from './Pharmacies';
-import { Pharmacies } from './Pharmacies';
 import {
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
@@ -37,6 +35,8 @@ import {
   getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
+import type { PharmacyDialogBaseProps } from './Pharmacies';
+import { Pharmacies } from './Pharmacies';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
