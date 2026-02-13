@@ -66,6 +66,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       subscriptionId: string,
       options?: SubEventsOptions,
     ][];
+    const deadSubscriptionIds: string[] = [];
     for (const [resource, subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
       for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
@@ -88,6 +89,7 @@ async function setupSubscriptionHandler(): Promise<void> {
           const authState = await getLoginForAccessToken(undefined, subMetadata.rawToken);
           if (!authState) {
             globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
+            deadSubscriptionIds.push(subscriptionId);
             continue;
           }
           const repo = await getRepoForLogin(authState);
@@ -101,6 +103,36 @@ async function setupSubscriptionHandler(): Promise<void> {
         subscriptionMessagesSent++;
       }
       subscriptionEventsFired++;
+    }
+
+    if (deadSubscriptionIds.length > 0) {
+      for (const subscriptionId of deadSubscriptionIds) {
+        purgeSubscriptionFromLookups(subscriptionId);
+      }
+      try {
+        const redis = getRedis();
+        const redisKeys = deadSubscriptionIds.map((id) => `Subscription/${id}`);
+        const cacheEntries = await redis.mget(...redisKeys);
+        const projectToSubscriptionIds = new Map<string, Set<string>>();
+        for (let i = 0; i < deadSubscriptionIds.length; i++) {
+          const cacheEntryStr = cacheEntries[i];
+          if (!cacheEntryStr) {
+            continue;
+          }
+          const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+          let subIds = projectToSubscriptionIds.get(cacheEntry.projectId);
+          if (!subIds) {
+            subIds = new Set<string>();
+            projectToSubscriptionIds.set(cacheEntry.projectId, subIds);
+          }
+          subIds.add(deadSubscriptionIds[i]);
+        }
+        for (const [projectId, subscriptionIds] of projectToSubscriptionIds) {
+          await markInMemorySubscriptionsInactive(projectId, subscriptionIds);
+        }
+      } catch (err) {
+        globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
+      }
     }
   });
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
@@ -165,6 +197,22 @@ function unsubscribeWsFromSubscription(ws: WebSocket, subscriptionId: string): v
     if (subIdSet.size === 0) {
       wsToSubLookup.delete(ws);
     }
+  }
+}
+
+function purgeSubscriptionFromLookups(subscriptionId: string): void {
+  const wsSet = subToWsLookup.get(subscriptionId);
+  if (wsSet) {
+    for (const ws of wsSet) {
+      const subEntryMap = wsToSubLookup.get(ws);
+      if (subEntryMap) {
+        subEntryMap.delete(subscriptionId);
+        if (subEntryMap.size === 0) {
+          wsToSubLookup.delete(ws);
+        }
+      }
+    }
+    subToWsLookup.delete(subscriptionId);
   }
 }
 
