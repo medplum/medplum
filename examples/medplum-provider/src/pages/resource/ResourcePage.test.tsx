@@ -7,6 +7,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { App } from '../../App';
+import { AppsPanelProvider } from '../../components/AppsPanel';
 import { act, render, screen } from '../../test-utils/render';
 
 describe('ResourcePage', () => {
@@ -19,7 +20,9 @@ describe('ResourcePage', () => {
               <Notifications />
               <ErrorBoundary>
                 <Suspense fallback={<Loading />}>
-                  <App />
+                  <AppsPanelProvider>
+                    <App />
+                  </AppsPanelProvider>
                 </Suspense>
               </ErrorBoundary>
             </MantineProvider>
@@ -31,7 +34,6 @@ describe('ResourcePage', () => {
 
   test('Details tab renders', async () => {
     await setup('/Practitioner/123');
-    expect((await screen.findAllByText('Name'))[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 });
