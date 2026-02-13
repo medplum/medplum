@@ -4,7 +4,6 @@ import {
   Flex,
   Paper,
   Group,
-  Button,
   Divider,
   ActionIcon,
   ScrollArea,
@@ -14,15 +13,16 @@ import {
   Box,
   Pagination,
   Center,
+  Tabs,
+  Tooltip,
 } from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { JSX } from 'react';
-import cx from 'clsx';
 import classes from './TaskBoard.module.css';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useMedplum } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskFilterType } from './TaskFilterMenu.utils';
@@ -296,27 +296,24 @@ export function TaskBoard({
           <Flex direction="column" h="100%" className={classes.borderRight}>
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
+                <Tabs
+                  value={isMyTasks ? 'my' : 'all'}
+                  onChange={(value) => {
+                    navigate(value === 'my' ? myTasksUri : allTasksUri)?.catch(console.error);
+                  }}
+                  variant="unstyled"
+                >
+                  <Tabs.List className={classes.tabList}>
+                    <Tabs.Tab value="my" className={classes.tab}>
+                      My Tasks
+                    </Tabs.Tab>
+                    <Tabs.Tab value="all" className={classes.tab}>
+                      All Tasks
+                    </Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
+
                 <Group gap="xs">
-                  <Button
-                    component={Link}
-                    to={myTasksUri}
-                    className={cx(classes.button, { [classes.selected]: isMyTasks })}
-                    h={32}
-                    radius="xl"
-                  >
-                    My Tasks
-                  </Button>
-
-                  <Button
-                    component={Link}
-                    to={allTasksUri}
-                    className={cx(classes.button, { [classes.selected]: !isMyTasks })}
-                    h={32}
-                    radius="xl"
-                  >
-                    All Tasks
-                  </Button>
-
                   <TaskFilterMenu
                     statuses={selectedStatuses}
                     priorities={selectedPriorities}
@@ -324,11 +321,12 @@ export function TaskBoard({
                     performerTypes={performerTypes}
                     onFilterChange={handleFilterChange}
                   />
+                  <Tooltip label="New Task" position="bottom" openDelay={300}>
+                    <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={() => setNewTaskModalOpened(true)}>
+                      <IconPlus size={16} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Group>
-
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewTaskModalOpened(true)}>
-                  <IconPlus size={16} />
-                </ActionIcon>
               </Flex>
             </Paper>
 

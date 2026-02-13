@@ -17,6 +17,8 @@ import {
   Box,
   Pagination,
   Group,
+  Tabs,
+  Tooltip,
 } from '@mantine/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
@@ -33,8 +35,7 @@ import { useThreadInbox } from '../../hooks/useThreadInbox';
 import classes from './ThreadInbox.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import { showErrorNotification } from '../../utils/notifications';
-import cx from 'clsx';
-import { Link } from 'react-router';
+import { useNavigate } from 'react-router';
 
 /**
  * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
@@ -75,6 +76,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   } = props;
 
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const navigate = useNavigate();
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -163,33 +165,33 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
             <Paper h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }} scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
+                  <Tabs
+                    value={status}
+                    onChange={(value) => {
+                      navigate(value === 'in-progress' ? inProgressUri : completedUri)?.catch(console.error);
+                    }}
+                    variant="unstyled"
+                  >
+                    <Tabs.List className={classes.tabList}>
+                      <Tabs.Tab value="in-progress" className={classes.tab}>
+                        In Progress
+                      </Tabs.Tab>
+                      <Tabs.Tab value="completed" className={classes.tab}>
+                        Completed
+                      </Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs>
                   <Group gap="xs">
-                    <Button
-                      component={Link}
-                      to={inProgressUri}
-                      className={cx(classes.button, { [classes.selected]: status === 'in-progress' })}
-                      h={32}
-                      radius="xl"
-                    >
-                      In progress
-                    </Button>
-                    <Button
-                      component={Link}
-                      to={completedUri}
-                      className={cx(classes.button, { [classes.selected]: status === 'completed' })}
-                      h={32}
-                      radius="xl"
-                    >
-                      Completed
-                    </Button>
                     <ParticipantFilter
                       selectedParticipants={selectedParticipants}
                       onFilterChange={handleParticipantsChange}
                     />
+                    <Tooltip label="New Message" position="bottom" openDelay={300}>
+                      <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={openModal}>
+                        <IconPlus size={16} />
+                      </ActionIcon>
+                    </Tooltip>
                   </Group>
-                  <ActionIcon radius="50%" variant="filled" color="blue" onClick={openModal}>
-                    <IconPlus size={16} />
-                  </ActionIcon>
                 </Flex>
                 <Divider />
                 {loading ? (

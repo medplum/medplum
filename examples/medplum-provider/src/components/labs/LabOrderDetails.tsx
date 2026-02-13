@@ -8,10 +8,10 @@ import {
   Badge,
   Divider,
   Loader,
-  Button,
   Timeline,
   ThemeIcon,
   ScrollArea,
+  Tabs,
 } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type {
@@ -30,7 +30,6 @@ import { IconSend, IconCheck, IconFlask, IconClipboardCheck } from '@tabler/icon
 import { useState, useEffect, useMemo } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import classes from './LabOrderDetails.module.css';
-import cx from 'clsx';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface LabOrderDetailsProps {
@@ -384,26 +383,23 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               </Stack>
               <Divider />
               <Group justify="space-between" align="center">
-                <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, {
-                      [classes.selected]: activeDetailTab === (order.status !== 'completed' ? 'progress' : 'report'),
-                    })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab(order.status !== 'completed' ? 'progress' : 'report')}
-                  >
-                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                  </Button>
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeDetailTab === 'order' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab('order')}
-                  >
-                    Order Details
-                  </Button>
-                </Group>
+                <Tabs
+                  value={activeDetailTab}
+                  onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                  variant="unstyled"
+                >
+                  <Tabs.List className={classes.tabList}>
+                    <Tabs.Tab
+                      value={order.status !== 'completed' ? 'progress' : 'report'}
+                      className={classes.tab}
+                    >
+                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                    </Tabs.Tab>
+                    <Tabs.Tab value="order" className={classes.tab}>
+                      Order Details
+                    </Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
                 <Badge size="lg" color={getStatusColor(order.status)} variant="light">
                   {getStatusDisplayText(order.status)}
                 </Badge>

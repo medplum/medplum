@@ -4,7 +4,6 @@ import {
   Flex,
   Paper,
   Group,
-  Button,
   Divider,
   ActionIcon,
   ScrollArea,
@@ -13,6 +12,8 @@ import {
   Text,
   Box,
   Modal,
+  Tabs,
+  Tooltip,
 } from '@mantine/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
@@ -27,7 +28,6 @@ import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
 import { usePatient } from '../../hooks/usePatient';
-import cx from 'clsx';
 import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
@@ -140,28 +140,23 @@ export function LabsPage(): JSX.Element {
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeTab === 'completed' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleTabChange('completed')}
-                  >
-                    Completed
-                  </Button>
-
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeTab === 'open' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => handleTabChange('open')}
-                  >
-                    Open
-                  </Button>
+                  <Tabs value={activeTab} onChange={(value) => handleTabChange(value as string)} variant="unstyled">
+                    <Tabs.List className={classes.tabList}>
+                      <Tabs.Tab value="completed" className={classes.tab}>
+                        Completed
+                      </Tabs.Tab>
+                      <Tabs.Tab value="open" className={classes.tab}>
+                        Open
+                      </Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs>
                 </Group>
 
-                <ActionIcon radius="50%" variant="filled" color="blue" onClick={() => setNewOrderModalOpened(true)}>
-                  <IconPlus size={16} />
-                </ActionIcon>
+                <Tooltip label="Order Labs" position="bottom" openDelay={300}>
+                  <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={() => setNewOrderModalOpened(true)}>
+                    <IconPlus size={16} />
+                  </ActionIcon>
+                </Tooltip>
               </Flex>
             </Paper>
 
