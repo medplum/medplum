@@ -86,6 +86,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
 
   const navigate = useMedplumNavigate();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const navigate = useNavigate();
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
