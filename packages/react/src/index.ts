@@ -84,10 +84,7 @@ export * from './PatientSummary/pharmacy-utils';
 export * from './PatientSummary/PharmacyDialog';
 export {
   AllergiesSection,
-  createLabsSection,
-  createPharmaciesSection,
   DemographicsSection,
-  getDefaultSections,
   InsuranceSection,
   LabsSection,
   MedicationsSection,
@@ -96,6 +93,9 @@ export {
   SexualOrientationSection,
   SmokingStatusSection,
   VitalsSection,
+  createLabsSection,
+  createPharmaciesSection,
+  getDefaultSections,
 } from './PatientSummary/sectionConfigs';
 export { summaryResourceListSection } from './PatientSummary/SummaryResourceListSection';
 export type { SummaryResourceListOptions } from './PatientSummary/SummaryResourceListSection';
