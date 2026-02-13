@@ -2,7 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
-import { PatientSummary, ResourceTable, useResource, createPharmaciesSection, getDefaultSections } from '@medplum/react';
+import {
+  PatientSummary,
+  ResourceTable,
+  useResource,
+  createPharmaciesSection,
+  getDefaultSections,
+} from '@medplum/react';
 import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
