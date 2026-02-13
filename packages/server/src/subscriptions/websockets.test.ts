@@ -791,16 +791,16 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
-          let subActive = false;
-          while (!subActive) {
+          // Wait for the dead subscription handler to process the event.
+          // The subscription was already active from creation, but the handler may
+          // remove it before we can poll the active hash, so wait for the log instead.
+          while (
+            !globalLoggerInfoSpy.mock.calls.some(
+              (call) => call[0] === '[WS] Unable to get login for the given access token'
+            )
+          ) {
             await sleep(0);
-            subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
-                `Subscription/${subscription.id}`
-              )) === 1;
           }
-          expect(subActive).toStrictEqual(true);
         })
         .close()
         .expectClosed()
@@ -885,18 +885,10 @@ describe('WebSocket Subscription', () => {
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
 
-          // Wait for subscription to become active (set by subscription evaluation)
-          let subActive = false;
-          while (!subActive) {
-            await sleep(0);
-            subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
-                `Subscription/${subscription.id}`
-              )) === 1;
-          }
-
-          // Now wait for it to become inactive (dead subscription cleanup via markInMemorySubscriptionsInactive)
+          // The subscription was already active from creation. The dead subscription cleanup
+          // (triggered by the failed token validation in the pub/sub handler) may remove it
+          // before or after we start polling. Just wait for it to become inactive.
+          let subActive = true;
           while (subActive) {
             await sleep(0);
             subActive =
@@ -984,16 +976,8 @@ describe('WebSocket Subscription', () => {
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
 
-          // Wait for subscription to become active then get cleaned up
-          let subActive = false;
-          while (!subActive) {
-            await sleep(0);
-            subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
-                `Subscription/${subscription.id}`
-              )) === 1;
-          }
+          // Wait for subscription to be cleaned up (removed from active set by dead subscription handler)
+          let subActive = true;
           while (subActive) {
             await sleep(0);
             subActive =
