@@ -3,7 +3,14 @@
 import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
-import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
+import {
+  PatientSummary,
+  ResourceTimeline,
+  useMedplum,
+  useResource,
+  createPharmaciesSection,
+  getDefaultSections,
+} from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -11,6 +18,10 @@ import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import classes from './TaskBoard.module.css';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
+
+const sectionsWithDoseSpot = getDefaultSections().map((s) =>
+  s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s
+);
 
 interface TaskDetailPanelProps {
   task: Task | Reference<Task>;
@@ -123,7 +134,7 @@ export function TaskDetailPanel(props: TaskDetailPanelProps): JSX.Element | null
             )}
             {activeTab === 'patient-summary' && selectedPatient?.resourceType === 'Patient' && (
               <ScrollArea h="calc(100vh - 120px)">
-                <PatientSummary patient={selectedPatient} pharmacyDialogComponent={DoseSpotPharmacyDialog} />
+                <PatientSummary patient={selectedPatient} sections={sectionsWithDoseSpot} />
               </ScrollArea>
             )}
           </Box>
