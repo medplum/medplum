@@ -3,6 +3,7 @@
 export * from './MedplumProvider/MedplumProvider';
 export * from './MedplumProvider/MedplumProvider.context';
 export * from './useCachedBinaryUrl/useCachedBinaryUrl';
+export * from './useNotificationCount/useNotificationCount';
 export * from './usePrevious/usePrevious';
 export * from './useQuestionnaireForm/useQuestionnaireForm';
 export * from './useQuestionnaireForm/utils';

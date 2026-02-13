@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
+import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { IconStar } from '@tabler/icons-react';
+import { IconMail, IconStar } from '@tabler/icons-react';
+import 'jest-websocket-mock';
 import { act, fireEvent, render, screen } from '../test-utils/render';
+import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
@@ -254,5 +257,235 @@ describe('Navbar', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
+  });
+});
+
+describe('NavbarLinkWithSubscription', () => {
+  let subscriptionMedplum: MockClient;
+  const subscriptionNavigateMock = jest.fn();
+  const subscriptionToggleMock = jest.fn();
+  const subscriptionCloseMock = jest.fn();
+
+  const subscriptionMenus: NavbarMenu[] = [
+    {
+      title: 'Inbox',
+      links: [
+        {
+          label: 'Messages',
+          href: '/Communication',
+          icon: <IconMail />,
+          alert: true,
+          notificationCount: {
+            resourceType: 'Communication',
+            countCriteria: 'recipient=Practitioner/456&_summary=count',
+            subscriptionCriteria: 'Communication?recipient=Practitioner/456',
+          },
+        },
+        { label: 'Tasks', href: '/Task' },
+      ],
+    },
+  ];
+
+  async function setupSubscription(initial = '/', opened = true): Promise<void> {
+    const initialUrl = new URL(initial, 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={subscriptionMedplum} navigate={subscriptionNavigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={subscriptionToggleMock}
+              closeNavbar={subscriptionCloseMock}
+              menus={subscriptionMenus}
+              opened={opened}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+  }
+
+  beforeEach(() => {
+    subscriptionMedplum = new MockClient();
+    jest.useFakeTimers();
+    subscriptionNavigateMock.mockClear();
+    subscriptionCloseMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
+  test('Renders subscription link', async () => {
+    await setupSubscription();
+    expect(screen.getByText('Messages')).toBeInTheDocument();
+    expect(screen.getByText('Tasks')).toBeInTheDocument();
+  });
+
+  test('Shows count after subscription event', async () => {
+    await setupSubscription();
+
+    // Initially no count displayed
+    expect(screen.queryByText('1')).not.toBeInTheDocument();
+
+    // Create a resource that matches the criteria
+    const communication = await subscriptionMedplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'in-progress',
+      recipient: [{ reference: 'Practitioner/456' }],
+    });
+
+    // Emit subscription event to trigger re-fetch
+    await act(async () => {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
+          type: 'message',
+          payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
+        });
+    });
+
+    expect(await screen.findByText('1')).toBeInTheDocument();
+  });
+
+  test('Click subscription link navigates', async () => {
+    window.innerWidth = 1024;
+    await setupSubscription();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Messages'));
+    });
+
+    expect(subscriptionNavigateMock).toHaveBeenCalledWith('/Communication');
+    expect(subscriptionCloseMock).not.toHaveBeenCalled();
+  });
+
+  test('Shows alert dot when collapsed with count', async () => {
+    await setupSubscription('/', false);
+
+    const communication = await subscriptionMedplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'in-progress',
+      recipient: [{ reference: 'Practitioner/456' }],
+    });
+
+    await act(async () => {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
+          type: 'message',
+          payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
+        });
+    });
+
+    const alertDot = document.querySelector('[class*="alertDot"]');
+    expect(alertDot).toBeInTheDocument();
+  });
+
+  test('Shows alert-styled count when expanded with count', async () => {
+    await setupSubscription('/', true);
+
+    const communication = await subscriptionMedplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'in-progress',
+      recipient: [{ reference: 'Practitioner/456' }],
+    });
+
+    await act(async () => {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
+          type: 'message',
+          payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
+        });
+    });
+
+    const countElement = await screen.findByText('1');
+    expect(countElement.dataset?.['alert']).toEqual('true');
+  });
+});
+
+describe('Navbar onDismiss', () => {
+  const dismissNavigateMock = jest.fn();
+  const dismissToggleMock = jest.fn();
+  const dismissCloseMock = jest.fn();
+  const dismissMock = jest.fn();
+
+  async function setupDismiss(opened = true): Promise<void> {
+    const initialUrl = new URL('/', 'http://localhost');
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum} navigate={dismissNavigateMock}>
+          <MantineAppShell>
+            <Navbar
+              logo={<div>Logo</div>}
+              pathname={initialUrl.pathname}
+              searchParams={initialUrl.searchParams}
+              navbarToggle={dismissToggleMock}
+              closeNavbar={dismissCloseMock}
+              menus={[
+                {
+                  title: 'Test',
+                  links: [
+                    { label: 'Dismissable', href: '/dismissable', icon: <IconStar />, onDismiss: dismissMock },
+                    { label: 'Normal', href: '/normal', icon: <IconStar /> },
+                  ],
+                },
+              ]}
+              opened={opened}
+            />
+          </MantineAppShell>
+        </MedplumProvider>
+      );
+    });
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    dismissNavigateMock.mockClear();
+    dismissCloseMock.mockClear();
+    dismissMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
+  test('Renders dismiss button when onDismiss is provided and navbar is opened', async () => {
+    await setupDismiss(true);
+    const dismissButton = screen.getByRole('button', { name: 'Dismiss' });
+    expect(dismissButton).toBeInTheDocument();
+  });
+
+  test('Does not render dismiss button when navbar is collapsed', async () => {
+    await setupDismiss(false);
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).not.toBeInTheDocument();
+  });
+
+  test('Does not render dismiss button for links without onDismiss', async () => {
+    await setupDismiss(true);
+    const dismissButtons = screen.getAllByRole('button', { name: 'Dismiss' });
+    expect(dismissButtons).toHaveLength(1);
+  });
+
+  test('Clicking dismiss calls onDismiss and does not navigate', async () => {
+    window.innerWidth = 1024;
+    await setupDismiss(true);
+
+    const dismissButton = screen.getByRole('button', { name: 'Dismiss' });
+    await act(async () => {
+      fireEvent.click(dismissButton);
+    });
+
+    expect(dismissMock).toHaveBeenCalledTimes(1);
+    expect(dismissNavigateMock).not.toHaveBeenCalled();
   });
 });
