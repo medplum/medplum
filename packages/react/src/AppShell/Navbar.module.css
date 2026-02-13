@@ -115,7 +115,7 @@
 .alertDot {
   position: absolute;
   bottom: -2px;
-  left: -2px;
+  left: 13px;
   width: 8px;
   height: 8px;
   border-radius: 50%;

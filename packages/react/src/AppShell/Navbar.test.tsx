@@ -342,13 +342,12 @@ describe('NavbarLinkWithSubscription', () => {
 
     // Emit subscription event to trigger re-fetch
     await act(async () => {
-      subscriptionMedplum.getSubscriptionManager().emitEventForCriteria<'message'>(
-        'Communication?recipient=Practitioner/456',
-        {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
           type: 'message',
           payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
-        }
-      );
+        });
     });
 
     expect(await screen.findByText('1')).toBeInTheDocument();
@@ -376,13 +375,12 @@ describe('NavbarLinkWithSubscription', () => {
     });
 
     await act(async () => {
-      subscriptionMedplum.getSubscriptionManager().emitEventForCriteria<'message'>(
-        'Communication?recipient=Practitioner/456',
-        {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
           type: 'message',
           payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
-        }
-      );
+        });
     });
 
     const alertDot = document.querySelector('[class*="alertDot"]');
@@ -399,13 +397,12 @@ describe('NavbarLinkWithSubscription', () => {
     });
 
     await act(async () => {
-      subscriptionMedplum.getSubscriptionManager().emitEventForCriteria<'message'>(
-        'Communication?recipient=Practitioner/456',
-        {
+      subscriptionMedplum
+        .getSubscriptionManager()
+        .emitEventForCriteria<'message'>('Communication?recipient=Practitioner/456', {
           type: 'message',
           payload: { resourceType: 'Bundle', id: communication.id, type: 'history' },
-        }
-      );
+        });
     });
 
     const countElement = await screen.findByText('1');
