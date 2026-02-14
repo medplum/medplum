@@ -80,7 +80,7 @@ describe('ThreadInbox', () => {
   test('renders filter buttons and new message button', async () => {
     await setup();
     // Status filter buttons
-    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
     // Participant filter and new message buttons
     const iconButtons = screen.getAllByRole('button', { name: '' });
@@ -89,7 +89,7 @@ describe('ThreadInbox', () => {
 
   test('renders status filter buttons', async () => {
     await setup();
-    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
@@ -383,13 +383,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    // Click the status button to open dropdown
-    const statusButton = screen.getByText('In Progress');
+    // Click the status button (thread header) to open dropdown; use last match to avoid the tab
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
     await user.click(statusButton);
 
     await waitFor(() => {
@@ -416,13 +417,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    // Click the status button to open dropdown
-    const statusButton = screen.getByText('In Progress');
+    // Click the status button (thread header) to open dropdown; use last match to avoid the tab
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
     await user.click(statusButton);
 
     await waitFor(() => {
@@ -517,13 +519,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    // Click the status button to open dropdown
-    const statusButton = screen.getByText('In Progress');
+    // Click the status button (thread header) to open dropdown; use last match to avoid the tab
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
     await user.click(statusButton);
 
     await waitFor(() => {

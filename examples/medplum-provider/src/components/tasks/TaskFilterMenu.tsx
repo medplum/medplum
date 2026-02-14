@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Menu, ActionIcon, Text, Flex } from '@mantine/core';
+import { Menu, ActionIcon, Text, Flex, Tooltip } from '@mantine/core';
 import {
   IconFilter,
   IconChevronRight,
@@ -9,6 +9,7 @@ import {
   IconCheck,
   IconExclamationCircle,
 } from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
 import type { JSX } from 'react';
 import type { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
 import { TaskFilterType, TASK_STATUSES, TASK_PRIORITIES } from './TaskFilterMenu.utils';
@@ -26,6 +27,7 @@ interface TaskFilterMenuProps {
 
 export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
   const { statuses = [], priorities = [], performerType, performerTypes, onFilterChange } = props;
+  const [opened, { open, close }] = useDisclosure(false);
 
   const uniquePerformerTypes =
     performerTypes?.filter((performerType, index, self) => {
@@ -34,11 +36,19 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
     }) || [];
 
   return (
-    <Menu shadow="md" width={200} position="bottom-start">
+    <Menu shadow="md" width={200} position="bottom-start" opened={opened} onOpen={open} onClose={close}>
       <Menu.Target>
-        <ActionIcon variant="light" color="gray" size={32} radius="xl" aria-label="Filter tasks">
-          <IconFilter size={16} />
-        </ActionIcon>
+        <Tooltip label="Filter Tasks" position="bottom" openDelay={300} disabled={opened}>
+          <ActionIcon
+            variant="transparent"
+            size={32}
+            radius="xl"
+            aria-label="Filter tasks"
+            style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+          >
+            <IconFilter size={16} color="var(--mantine-color-gray-6)" />
+          </ActionIcon>
+        </Tooltip>
       </Menu.Target>
 
       <Menu.Dropdown>

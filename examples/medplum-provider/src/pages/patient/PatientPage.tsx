@@ -18,10 +18,11 @@ import { OrderLabsPage } from '../labs/OrderLabsPage';
 
 function getTabFromLocation(location: Location, tabs: PatientPageTabInfo[]): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
-  const tab = tabId
-    ? tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()))
-    : undefined;
-  return tab;
+  // If tabId is empty, find the tab with empty url (timeline)
+  if (!tabId) {
+    return tabs.find((t) => t.url === '');
+  }
+  return tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()));
 }
 
 export function PatientPage(): JSX.Element {

@@ -12,6 +12,7 @@ import {
   Stack,
   Text,
   Textarea,
+  Tooltip,
 } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { createReference, formatDate, getDisplayString } from '@medplum/core';
@@ -136,33 +137,34 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
           </Flex>
 
           {allowEdit && (
-            <Flex align="center" gap="md">
+            <Flex align="center" gap="xs">
               {onDeleteTask && (
-                <ActionIcon
-                  variant="outline"
-                  c="dimmed"
-                  color="gray"
-                  aria-label="Delete Task"
-                  radius="xl"
-                  w={36}
-                  h={36}
-                  onClick={() => handleDeleteTask()}
-                >
-                  <IconTrash size={24} />
-                </ActionIcon>
+                <Tooltip label="Delete Task" position="bottom" openDelay={300}>
+                  <ActionIcon
+                    variant="transparent"
+                    aria-label="Delete Task"
+                    radius="xl"
+                    size={32}
+                    onClick={() => handleDeleteTask()}
+                    style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+                  >
+                    <IconTrash size={16} color="var(--mantine-color-gray-6)" />
+                  </ActionIcon>
+                </Tooltip>
               )}
 
-              <ActionIcon
-                variant={task.status === 'completed' ? 'filled' : 'outline'}
-                color={task.status === 'completed' ? 'blue' : 'gray'}
-                aria-label="Mark as Completed"
-                radius="xl"
-                w={36}
-                h={36}
-                onClick={() => handleMarkAsCompleted()}
-              >
-                <IconCheck size={24} />
-              </ActionIcon>
+              <Tooltip label="Mark as Completed" position="bottom" openDelay={300}>
+                <ActionIcon
+                  variant="filled"
+                  color="blue"
+                  aria-label="Mark as Completed"
+                  radius="xl"
+                  size={32}
+                  onClick={() => handleMarkAsCompleted()}
+                >
+                  <IconCheck size={16} />
+                </ActionIcon>
+              </Tooltip>
             </Flex>
           )}
         </Flex>

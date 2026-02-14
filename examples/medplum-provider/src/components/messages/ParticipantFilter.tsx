@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
 import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
@@ -135,15 +135,18 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
       withinPortal
     >
       <Popover.Target>
-        <ActionIcon
-          variant={hasActiveFilter ? 'filled' : 'light'}
-          color={hasActiveFilter ? 'blue' : 'gray'}
-          onClick={opened ? close : open}
-          radius="xl"
-          size="lg"
-        >
-          <IconUsers size={18} />
-        </ActionIcon>
+        <Tooltip label="Filter by Participant" position="bottom" openDelay={300} disabled={opened}>
+          <ActionIcon
+            variant={hasActiveFilter ? 'filled' : 'transparent'}
+            color={hasActiveFilter ? 'blue' : undefined}
+            onClick={opened ? close : open}
+            radius="xl"
+            size={32}
+            style={hasActiveFilter ? undefined : { border: '1px solid var(--mantine-color-gray-3)' }}
+          >
+            <IconUsers size={16} color={hasActiveFilter ? undefined : 'var(--mantine-color-gray-6)'} />
+          </ActionIcon>
+        </Tooltip>
       </Popover.Target>
 
       <Popover.Dropdown p="md">
