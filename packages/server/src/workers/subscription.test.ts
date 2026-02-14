@@ -2519,10 +2519,36 @@ describe('Subscription Worker', () => {
 
         const redis = getRedis();
         const criteria = await redis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:v2`,
+          `medplum:subscriptions:r4:project:${wsProject.id}:active:Patient`,
           `Subscription/${subscription.id}`
         );
         expect(criteria).toStrictEqual('Patient?name=Alice');
+      }));
+
+    test('Invalid criteria resource type is not added to Redis hash', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+          project: { name: 'WebSocket Subs Invalid Criteria Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'FakeResourceType?name=Alice',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const redis = getRedis();
+        const criteria = await redis.hget(
+          `medplum:subscriptions:r4:project:${wsProject.id}:active:FakeResourceType`,
+          `Subscription/${subscription.id}`
+        );
+        expect(criteria).toBeNull();
       }));
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>

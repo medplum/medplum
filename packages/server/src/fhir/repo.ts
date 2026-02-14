@@ -41,6 +41,7 @@ import {
   isObject,
   isOk,
   isResource,
+  isResourceType,
   isResourceWithId,
   isUUID,
   normalizeErrorString,
@@ -99,6 +100,7 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import { getActiveSubsKey } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -914,9 +916,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      // We added v2 to the key because historically this was a Redis Set and then we had to migrate the key to a Redis Hash which would conflict
+      // The active list is sharded by resource type so that lookups only scan relevant subscriptions
+      const criteriaResourceType = resource.criteria.split('?')[0];
+      if (!isResourceType(criteriaResourceType)) {
+        getLogger().debug('[WS] Subscription has invalid criteria resource type', {
+          subscription: `Subscription/${resource.id}`,
+          criteria: resource.criteria,
+        });
+        return;
+      }
       await redis.hset(
-        `medplum:subscriptions:r4:project:${project}:active:v2`,
+        getActiveSubsKey(project, criteriaResourceType),
         `Subscription/${resource.id}`,
         resource.criteria
       );

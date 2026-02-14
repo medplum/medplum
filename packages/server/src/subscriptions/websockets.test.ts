@@ -147,7 +147,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -181,7 +181,7 @@ describe('WebSocket Subscription', () => {
         await sleep(0);
         subActive =
           (await getRedis().hexists(
-            `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+            `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
             `Subscription/${patientSubscription?.id}`
           )) === 1;
       }
@@ -270,7 +270,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -300,7 +300,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -316,6 +316,104 @@ describe('WebSocket Subscription', () => {
         })
         .close()
         .expectClosed();
+    }));
+
+  test('Subscriptions with different resource types removed from correct hashes on disconnect', () =>
+    withTestContext(async () => {
+      // Create a Patient subscription
+      const patientSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      expect(patientSub).toBeDefined();
+
+      // Create an Observation subscription
+      const observationSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+      expect(observationSub).toBeDefined();
+
+      // Get binding tokens for both subscriptions
+      const patientTokenRes = await request(server)
+        .get(`/fhir/R4/Subscription/${patientSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const patientToken = (patientTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const observationTokenRes = await request(server)
+        .get(`/fhir/R4/Subscription/${observationSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const observationToken = (observationTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+      // Bind both subscriptions on the same WebSocket, then close
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token: patientToken } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .sendJson({ type: 'bind-with-token', payload: { token: observationToken } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Verify both are in their respective resource-type hashes
+          const redis = getRedis();
+          let patientActive = false;
+          let observationActive = false;
+          while (!patientActive || !observationActive) {
+            await sleep(0);
+            patientActive =
+              (await redis.hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
+                `Subscription/${patientSub.id}`
+              )) === 1;
+            observationActive =
+              (await redis.hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
+                `Subscription/${observationSub.id}`
+              )) === 1;
+          }
+          expect(patientActive).toStrictEqual(true);
+          expect(observationActive).toStrictEqual(true);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          // After disconnect, both should be removed from their respective hashes
+          const redis = getRedis();
+          let patientActive = true;
+          let observationActive = true;
+          while (patientActive || observationActive) {
+            await sleep(0);
+            patientActive =
+              (await redis.hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
+                `Subscription/${patientSub.id}`
+              )) === 1;
+            observationActive =
+              (await redis.hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
+                `Subscription/${observationSub.id}`
+              )) === 1;
+          }
+          expect(patientActive).toStrictEqual(false);
+          expect(observationActive).toStrictEqual(false);
+        });
     }));
 
   test('Should reject if given an invalid binding token', () =>
@@ -465,7 +563,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -669,7 +767,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -796,7 +894,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
