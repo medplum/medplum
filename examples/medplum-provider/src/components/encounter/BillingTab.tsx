@@ -317,12 +317,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
             </Menu>
 
             {billingBot && (
-              <Button
-                variant="outline"
-                leftSection={<IconSend size={16} />}
-                loading={submitting}
-                onClick={submitClaim}
-              >
+              <Button variant="outline" leftSection={<IconSend size={16} />} loading={submitting} onClick={submitClaim}>
                 Submit Claim
               </Button>
             )}
