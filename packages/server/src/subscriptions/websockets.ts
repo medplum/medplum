@@ -279,7 +279,11 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
-    await markInMemorySubscriptionsInactive(cacheEntry.projectId, criteriaResourceType, new Set([verifiedToken.subscription_id]));
+    await markInMemorySubscriptionsInactive(
+      cacheEntry.projectId,
+      criteriaResourceType,
+      new Set([verifiedToken.subscription_id])
+    );
   };
 
   socket.on('message', async (data: RawData) => {
