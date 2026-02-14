@@ -7,7 +7,6 @@ import type {
   Bundle,
   BundleEntry,
   DocumentReference,
-  Observation,
   Parameters,
   Patient,
   Project,
