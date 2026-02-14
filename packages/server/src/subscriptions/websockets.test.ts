@@ -147,7 +147,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -181,7 +181,7 @@ describe('WebSocket Subscription', () => {
         await sleep(0);
         subActive =
           (await getRedis().hexists(
-            `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+            `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
             `Subscription/${patientSubscription?.id}`
           )) === 1;
       }
@@ -270,7 +270,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -300,7 +300,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -465,7 +465,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -669,7 +669,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -796,7 +796,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }

@@ -257,7 +257,8 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
         return;
       }
       const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-      await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set(subEntries.keys()));
+      const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+      await markInMemorySubscriptionsInactive(cacheEntry.projectId, criteriaResourceType, new Set(subEntries.keys()));
     };
   };
 
@@ -277,7 +278,8 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-    await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set([verifiedToken.subscription_id]));
+    const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+    await markInMemorySubscriptionsInactive(cacheEntry.projectId, criteriaResourceType, new Set([verifiedToken.subscription_id]));
   };
 
   socket.on('message', async (data: RawData) => {
@@ -406,8 +408,13 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
+export function getActiveSubsKey(projectId: string, resourceType: string): string {
+  return `medplum:subscriptions:r4:project:${projectId}:active:${resourceType}`;
+}
+
 export async function markInMemorySubscriptionsInactive(
   projectId: string,
+  criteriaResourceType: string,
   subscriptionIds: Set<string>
 ): Promise<void> {
   const refStrs = [];
@@ -423,7 +430,7 @@ export async function markInMemorySubscriptionsInactive(
   }
   await redis
     ?.multi()
-    .hdel(`medplum:subscriptions:r4:project:${projectId}:active:v2`, ...refStrs)
+    .hdel(getActiveSubsKey(projectId, criteriaResourceType), ...refStrs)
     .del(refStrs)
     .exec();
 }

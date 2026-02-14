@@ -49,7 +49,7 @@ import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { getRedis, reconnectOnError } from '../redis';
-import type { SubEventsOptions } from '../subscriptions/websockets';
+import { type SubEventsOptions, getActiveSubsKey } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
@@ -406,14 +406,10 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     ],
   });
   const redis = getRedis();
-  const hashKey = `medplum:subscriptions:r4:project:${projectId}:active:v2`;
+  const hashKey = getActiveSubsKey(projectId, resource.resourceType);
   const entries = await redis.hgetall(hashKey);
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
-    const criteriaResourceType = criteria.split('?')[0];
-    if (criteriaResourceType !== resource.resourceType) {
-      continue;
-    }
     try {
       if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
         redisOnlySubRefStrs.push(ref);
