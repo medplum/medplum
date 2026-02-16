@@ -373,7 +373,7 @@ export function SchedulePage(): JSX.Element | null {
           />
         </div>
 
-        {serviceTypes?.length && schedule && range && (
+        {Boolean(serviceTypes?.length) && schedule && range && (
           <Stack gap="md" justify="space-between" className={classes.findPane}>
             <ScheduleFindPane
               key={schedule.id}
