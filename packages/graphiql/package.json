@@ -32,7 +32,7 @@
     "@medplum/core": "5.0.14",
     "@medplum/fhirtypes": "5.0.14",
     "@medplum/react": "5.0.14",
-    "@types/react": "19.2.13",
+    "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "graphiql": "5.2.2",
     "graphql": "16.12.0",
