@@ -2058,10 +2058,11 @@ describe('Subscription Worker', () => {
 
     beforeAll(async () => {
       subscriber = getRedisSubscriber();
-      subscriber.on('message', (_channel, argsArr) => {
-        const parsedArgsArr = JSON.parse(argsArr) as [Resource, string, SubEventsOptions][];
+      subscriber.on('message', (_channel, payload) => {
+        const parsed = JSON.parse(payload) as { resource: Resource; events: [string, SubEventsOptions][] };
+        const args: EventNotificationArgs<Resource> = [parsed.resource, parsed.events[0][0], parsed.events[0][1]];
         if (resolveExpected) {
-          resolveExpected(parsedArgsArr[0]);
+          resolveExpected(args);
         } else if (rejectNotExpected) {
           rejectNotExpected(new Error('Received subscription notification when not expected'));
           rejectNotExpected = undefined;
