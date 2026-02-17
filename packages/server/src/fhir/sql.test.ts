@@ -13,12 +13,12 @@ import {
   UnionAllBuilder,
   UpdateQuery,
   ValuesQuery,
-  truncateTextColumn,
   isValidColumnName,
   isValidTableName,
   periodToRangeString,
   resetSqlDebug,
   setSqlDebug,
+  truncateTextColumn,
 } from './sql';
 
 describe('SqlBuilder', () => {
