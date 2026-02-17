@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, InboxIcon, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconApps,
   IconBook2,
@@ -90,10 +90,10 @@ export function App(): JSX.Element | null {
                   { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
                   {
                     icon: (
-                      <NotificationIcon
+                      <InboxIcon
                         resourceType="Communication"
-                        countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
-                        subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
+                        countCriteria={`status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic&_summary=count`}
+                        subscriptionCriteria={`Communication?status=in-progress&_has:Communication:part-of:_id:not=null&identifier:not=ai-message-topic`}
                         iconComponent={<IconMail />}
                       />
                     ),
@@ -102,7 +102,7 @@ export function App(): JSX.Element | null {
                   },
                   {
                     icon: (
-                      <NotificationIcon
+                      <InboxIcon
                         resourceType="Task"
                         countCriteria={`owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft&_summary=count`}
                         subscriptionCriteria={`Task?owner=${getReferenceString(profile)}&status=requested,ready,received,accepted,in-progress,draft`}
@@ -195,7 +195,6 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
