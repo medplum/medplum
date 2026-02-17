@@ -20,18 +20,21 @@ describe('truncateTextColumn', () => {
     expect(truncateTextColumn(value)).toBe(value);
   });
 
-  test('truncates string exceeding 2704 bytes', () => {
+  test('truncates ASCII string to maximum bytes, not a fixed character count', () => {
     const value = 'a'.repeat(2705);
     const result = truncateTextColumn(value) as string;
     expect(result).toBeDefined();
-    expect(result.length).toBe(675);
+    // ASCII: 1 byte per char, so we keep 2704 characters
+    expect(result.length).toBe(2704);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
   });
 
   test('truncates very long string', () => {
     const value = 'a'.repeat(5000);
     const result = truncateTextColumn(value) as string;
     expect(result).toBeDefined();
-    expect(result.length).toBe(675);
+    expect(result.length).toBe(2704);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
   });
 
   test('handles multi-byte UTF-8 characters', () => {
@@ -39,10 +42,22 @@ describe('truncateTextColumn', () => {
     const fitting = '\u{1F600}'.repeat(676);
     expect(truncateTextColumn(fitting)).toBe(fitting);
 
-    // 677 emojis = 2708 bytes (exceeds), should truncate to 675 characters
+    // 677 emojis = 2708 bytes (exceeds), should truncate to 676 complete characters
     const exceeding = '\u{1F600}'.repeat(677);
     const result = truncateTextColumn(exceeding) as string;
     expect(result).toBeDefined();
-    expect(Array.from(result).length).toBe(675);
+    expect(result).toBe(fitting);
+    expect(Array.from(result).length).toBe(676);
+    expect(new TextEncoder().encode(result).length).toBe(2704);
+  });
+
+  test('handles mixed ASCII and multi-byte characters', () => {
+    // 2700 ASCII bytes + 2 emojis (8 bytes) = 2708 bytes, exceeds limit
+    const value = 'a'.repeat(2700) + '\u{1F600}\u{1F600}';
+    const result = truncateTextColumn(value) as string;
+    expect(result).toBeDefined();
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
+    // Should keep all 2700 ASCII chars + 1 emoji (2704 bytes total)
+    expect(result).toBe('a'.repeat(2700) + '\u{1F600}');
   });
 });
