@@ -446,7 +446,7 @@ describe('Project Admin routes', () => {
     expect(res3.status).toBe(200);
 
     // Verify the User resource was also deleted
-    await expect(systemRepo.readResource<User>('User', user.id as string)).rejects.toThrow();
+    await expect(systemRepo.readResource<User>('User', user.id)).rejects.toThrow();
   });
 
   test('Delete server-scoped user membership does not delete User resource', async () => {
@@ -498,7 +498,7 @@ describe('Project Admin routes', () => {
     expect(res3.status).toBe(200);
 
     // Verify the User resource was NOT deleted (still exists)
-    const userAfterDelete = await systemRepo.readResource<User>('User', user.id as string);
+    const userAfterDelete = await systemRepo.readResource<User>('User', user.id);
     expect(userAfterDelete.id).toBe(user.id);
   });
 
