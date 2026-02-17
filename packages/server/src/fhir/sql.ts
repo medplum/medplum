@@ -1317,16 +1317,19 @@ export function getSearchParamColumnType(impl: ColumnSearchParameterImplementati
   return impl.array ? baseColumnType + '[]' : baseColumnType;
 }
 
-const MAX_BTREE_BYTES = 2704;
+// PostgreSQL btree index entries have a maximum size of 2704 bytes. The index tuple includes
+// a few bytes of overhead on top of the column data, but we use a more conservative limit
+// of 2048 bytes for the data payload to stay well within the btree maximum.
+export const MAX_INDEX_DATA_BYTES = 2048;
 const truncationEncoder = new TextEncoder();
 const truncationDecoder = new TextDecoder();
-const truncationBuffer = new Uint8Array(MAX_BTREE_BYTES);
+const truncationBuffer = new Uint8Array(MAX_INDEX_DATA_BYTES);
 
 /**
- * Apply a maximum string length to ensure the value can accommodate the maximum
- * size for a btree index entry: 2704 bytes. Uses {@link TextEncoder.encodeInto} to
- * write the longest valid UTF-8 prefix that fits within the byte limit, avoiding
- * both partial multi-byte characters and unnecessarily aggressive truncation.
+ * Apply a maximum string length to ensure the value can be stored in a btree-indexed column.
+ * Uses {@link TextEncoder.encodeInto} to write the longest valid UTF-8 prefix that fits
+ * within the byte limit, avoiding both partial multi-byte characters and unnecessarily
+ * aggressive truncation.
  * @param value - The column value to truncate.
  * @returns The possibly truncated column value.
  */
@@ -1335,7 +1338,7 @@ export function truncateTextColumn(value: string | null | undefined): string | u
     return undefined;
   }
 
-  if (truncationEncoder.encode(value).length <= MAX_BTREE_BYTES) {
+  if (truncationEncoder.encode(value).length <= MAX_INDEX_DATA_BYTES) {
     return value;
   }
 

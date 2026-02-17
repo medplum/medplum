@@ -7,18 +7,19 @@ import {
   Condition,
   Constant,
   InsertQuery,
+  isValidColumnName,
+  isValidTableName,
+  MAX_INDEX_DATA_BYTES,
   Negation,
+  periodToRangeString,
+  resetSqlDebug,
   SelectQuery,
+  setSqlDebug,
   SqlBuilder,
+  truncateTextColumn,
   UnionAllBuilder,
   UpdateQuery,
   ValuesQuery,
-  isValidColumnName,
-  isValidTableName,
-  periodToRangeString,
-  resetSqlDebug,
-  setSqlDebug,
-  truncateTextColumn,
 } from './sql';
 
 describe('SqlBuilder', () => {
@@ -439,49 +440,47 @@ describe('truncateTextColumn', () => {
     expect(truncateTextColumn('hello')).toBe('hello');
   });
 
-  test('returns string at exactly 2704 bytes unchanged', () => {
-    const value = 'a'.repeat(2704);
+  test('returns string at exactly MAX_INDEX_DATA_BYTES unchanged', () => {
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES);
     expect(truncateTextColumn(value)).toBe(value);
   });
 
   test('truncates ASCII string to maximum bytes, not a fixed character count', () => {
-    const value = 'a'.repeat(2705);
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES + 1);
     const result = truncateTextColumn(value) as string;
     expect(result).toBeDefined();
-    // ASCII: 1 byte per char, so we keep 2704 characters
-    expect(result.length).toBe(2704);
-    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
+    expect(result.length).toBe(MAX_INDEX_DATA_BYTES);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
   });
 
   test('truncates very long string', () => {
-    const value = 'a'.repeat(5000);
+    const value = 'a'.repeat(MAX_INDEX_DATA_BYTES * 2);
     const result = truncateTextColumn(value) as string;
     expect(result).toBeDefined();
-    expect(result.length).toBe(2704);
-    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
+    expect(result.length).toBe(MAX_INDEX_DATA_BYTES);
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
   });
 
   test('handles multi-byte UTF-8 characters', () => {
-    // Each emoji is 4 bytes in UTF-8, so 676 emojis = 2704 bytes (fits)
-    const fitting = '\u{1F600}'.repeat(676);
+    const maxChars = MAX_INDEX_DATA_BYTES / 4; // 4 bytes per emoji
+    const fitting = '\u{1F600}'.repeat(maxChars);
     expect(truncateTextColumn(fitting)).toBe(fitting);
 
-    // 677 emojis = 2708 bytes (exceeds), should truncate to 676 complete characters
-    const exceeding = '\u{1F600}'.repeat(677);
+    const exceeding = '\u{1F600}'.repeat(maxChars + 1);
     const result = truncateTextColumn(exceeding) as string;
     expect(result).toBeDefined();
     expect(result).toBe(fitting);
-    expect(Array.from(result).length).toBe(676);
-    expect(new TextEncoder().encode(result).length).toBe(2704);
+    expect(Array.from(result).length).toBe(maxChars);
+    expect(new TextEncoder().encode(result).length).toBe(MAX_INDEX_DATA_BYTES);
   });
 
   test('handles mixed ASCII and multi-byte characters', () => {
-    // 2700 ASCII bytes + 2 emojis (8 bytes) = 2708 bytes, exceeds limit
-    const value = 'a'.repeat(2700) + '\u{1F600}\u{1F600}';
+    const asciiLen = MAX_INDEX_DATA_BYTES - 4; // Leave room for one 4-byte emoji
+    const value = 'a'.repeat(asciiLen) + '\u{1F600}\u{1F600}';
     const result = truncateTextColumn(value) as string;
     expect(result).toBeDefined();
-    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(2704);
-    // Should keep all 2700 ASCII chars + 1 emoji (2704 bytes total)
-    expect(result).toBe('a'.repeat(2700) + '\u{1F600}');
+    expect(new TextEncoder().encode(result).length).toBeLessThanOrEqual(MAX_INDEX_DATA_BYTES);
+    // Should keep all ASCII chars + 1 emoji (exactly MAX_INDEX_DATA_BYTES bytes)
+    expect(result).toBe('a'.repeat(asciiLen) + '\u{1F600}');
   });
 });
