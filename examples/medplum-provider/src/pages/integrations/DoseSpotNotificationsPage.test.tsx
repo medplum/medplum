@@ -25,12 +25,12 @@ vi.mock('@medplum/dosespot-react', async () => {
 });
 
 describe('DoseSpotNotificationsPage', () => {
-  async function setup(initialPath = '/dosespot'): Promise<void> {
+  async function setup(): Promise<void> {
     const medplum = new MockClient();
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
-          <MemoryRouter initialEntries={[initialPath]}>
+          <MemoryRouter initialEntries={['/dosespot']}>
             <DoseSpotNotificationsPage />
           </MemoryRouter>
         </MedplumProvider>
@@ -38,27 +38,10 @@ describe('DoseSpotNotificationsPage', () => {
     });
   }
 
-  test('Renders tabs', async () => {
+  test('Renders iframe', async () => {
     await setup();
     await waitFor(() => {
-      expect(screen.getByText('Notifications')).toBeDefined();
-      expect(screen.getByText('Favorite Medications')).toBeDefined();
-    });
-  });
-
-  test('Renders iframe on notifications tab', async () => {
-    await setup('/dosespot');
-    await waitFor(() => {
       const iframe = screen.getByTitle<HTMLIFrameElement>('dosespot-notifications-iframe');
-      expect(iframe).toBeDefined();
-      expect(iframe.src).toBe('https://dosespot.example.com/iframe');
-    });
-  });
-
-  test('Renders favorites iframe when on favorites route', async () => {
-    await setup('/dosespot/favorites');
-    await waitFor(() => {
-      const iframe = screen.getByTitle<HTMLIFrameElement>('dosespot-favorites-iframe');
       expect(iframe).toBeDefined();
       expect(iframe.src).toBe('https://dosespot.example.com/iframe');
     });
