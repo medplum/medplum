@@ -8,7 +8,6 @@ import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { describe, expect, test, beforeAll, vi } from 'vitest';
 import { App } from '../App';
-import { AppsPanelProvider } from '../components/AppsPanel';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
 describe('SignInPage', () => {
@@ -17,9 +16,7 @@ describe('SignInPage', () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <MedplumProvider medplum={client}>
-          <AppsPanelProvider>
-            <App />
-          </AppsPanelProvider>
+          <App />
         </MedplumProvider>
       </MemoryRouter>
     );
