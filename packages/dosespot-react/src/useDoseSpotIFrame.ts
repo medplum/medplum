@@ -6,7 +6,6 @@ import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
 
 export interface DoseSpotIFrameOptions {
   readonly patientId?: string;
-  readonly favorites?: boolean;
   readonly onPatientSyncSuccess?: () => void;
   readonly onIframeSuccess?: (url: string) => void;
   readonly onError?: (err: unknown) => void;
@@ -14,7 +13,7 @@ export interface DoseSpotIFrameOptions {
 
 export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | undefined {
   const medplum = useMedplum();
-  const { patientId, favorites, onPatientSyncSuccess, onIframeSuccess, onError } = options;
+  const { patientId, onPatientSyncSuccess, onIframeSuccess, onError } = options;
   const initializingRef = useRef<boolean>(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
@@ -30,7 +29,7 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
   // Reset when inputs change so we re-fetch the iframe URL
   useEffect(() => {
     initializingRef.current = false;
-  }, [patientId, favorites]);
+  }, [patientId]);
 
   const initPage = useCallback(async () => {
     if (initializingRef.current) {
@@ -43,7 +42,7 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
         await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
         onPatientSyncSuccessRef.current?.();
       }
-      const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId, favorites });
+      const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
       if (result.url) {
         setIframeUrl(result.url);
         onIframeSuccessRef.current?.(result.url);
@@ -51,7 +50,7 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
     } catch (err: unknown) {
       onErrorRef.current?.(err);
     }
-  }, [medplum, patientId, favorites]);
+  }, [medplum, patientId]);
 
   useEffect(() => {
     initPage().catch(console.error);
