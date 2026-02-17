@@ -197,7 +197,6 @@ export function App(): JSX.Element | null {
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
-              {hasDoseSpot && <Route path="/dosespot/favorites" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
