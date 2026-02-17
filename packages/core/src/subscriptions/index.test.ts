@@ -1388,6 +1388,62 @@ describe('SubscriptionManager', () => {
 
       manager.closeWebSocket();
     });
+
+    test('should emit error on master emitter when rebindCriteriaEntry rejects during token refresh', async () => {
+      const EXPIRING_TOKEN = 'expiring-token-123';
+
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: EXPIRING_TOKEN },
+            {
+              name: 'expiration',
+              // Token expires within the grace period so checkTokenExpirations triggers a rebind
+              valueDateTime: new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      const emitter = manager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: EXPIRING_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Mock rebindCriteriaEntry to reject so the outer .catch in checkTokenExpirations fires
+      const rebindError = new Error('Unexpected rebind failure');
+      jest.spyOn(manager as any, 'rebindCriteriaEntry').mockRejectedValueOnce(rebindError);
+
+      const errorEventPromise = new Promise<SubscriptionEventMap['error']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('error', (event) => {
+          resolve(event);
+        });
+      });
+
+      // Wait for the token refresh interval (mocked to 150ms) to fire
+      await sleep(300);
+
+      const errorEvent = await errorEventPromise;
+      expect(errorEvent.type).toStrictEqual('error');
+      expect(errorEvent.payload).toBe(rebindError);
+
+      manager.closeWebSocket();
+    });
   });
 });
 

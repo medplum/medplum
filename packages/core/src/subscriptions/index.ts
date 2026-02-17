@@ -476,7 +476,9 @@ export class SubscriptionManager {
           criteriaEntry.tokenExpiry - now <= WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS &&
           !this.isReconnecting(criteriaEntry)
         ) {
-          this.rebindCriteriaEntry(criteriaEntry).catch(console.error);
+          this.rebindCriteriaEntry(criteriaEntry).catch((err: Error) => {
+            this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: err });
+          });
         }
       }
     }
