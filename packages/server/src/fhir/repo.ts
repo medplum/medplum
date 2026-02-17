@@ -147,9 +147,9 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
+  truncateTextColumn,
 } from './sql';
 import { buildTokenColumns } from './token-column';
-import { truncateTextColumn } from './truncate';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;

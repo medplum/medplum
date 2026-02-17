@@ -14,8 +14,7 @@ import type { ArrayColumnPaddingConfig } from '../config/types';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, Condition, Disjunction, Negation, TypedCondition } from './sql';
-import { truncateTextColumn } from './truncate';
+import { Column, Condition, Disjunction, Negation, TypedCondition, truncateTextColumn } from './sql';
 import type { Token } from './tokens';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 
