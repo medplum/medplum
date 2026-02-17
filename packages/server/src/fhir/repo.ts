@@ -149,6 +149,7 @@ import {
   SelectQuery,
 } from './sql';
 import { buildTokenColumns } from './token-column';
+import { truncateTextColumn } from './truncate';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
@@ -1809,7 +1810,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
       if (impl.sortColumnName) {
-        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+        columns[impl.sortColumnName] = truncateTextColumn(
+          getHumanNameSortValue((resource as HumanNameResource).name, searchParam)
+        );
       }
       return;
     }
@@ -2874,28 +2877,6 @@ export function setTypedPropertyValue(target: TypedValue, path: string, replacem
     patchPath = patchPath.slice(0, -1);
   }
   patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
-}
-
-const textEncoder = new TextEncoder();
-
-/**
- * Apply a maximum string length to ensure the value can accommodate the maximum
- * size for a btree index entry: 2704 bytes. If the string is too large,
- * be as conservative as possible to avoid write errors by truncating to 675 characters
- * to accommodate the entire string being 4-byte UTF-8 code points.
- * @param value - The column value to truncate.
- * @returns The possibly truncated column value.
- */
-function truncateTextColumn(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (textEncoder.encode(value).length <= 2704) {
-    return value;
-  }
-
-  return Array.from(value).slice(0, 675).join('');
 }
 
 function getArrayPaddingConfig(
