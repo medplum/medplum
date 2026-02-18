@@ -107,7 +107,7 @@ The first decision you need to make is which FHIR resource type semantically mod
 
 - **`HealthcareService`**: Best for service-based access control where tenants represent different departments or services (e.g., Cardiology Department, Oncology Department).
 
-- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to small care teams that work directly with a patient. **This pattern works at any granularity** — including one CareTeam per patient (e.g., a school nurse app where `CareTeam/alice-smith` contains all of Alice's providers and `CareTeam/bob-jones` contains all of Bob's). A clinician with a panel of 100 patients would simply have 100 access entries in their ProjectMembership, one per CareTeam.
+- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to the providers working directly with a patient. Each patient gets their own `CareTeam` resource (e.g., `CareTeam/alice-smith`, `CareTeam/bob-jones`), and a clinician's `ProjectMembership` accumulates one access entry per patient as they are assigned to their care. See [Modeling Provider Organizations](/docs/administration/provider-directory/provider-organizations) for a deeper look at how CareTeams fit into your provider data model.
 
 **You are not limited to these resource types.** You can use any FHIR resource type that accurately models your tenants. The implementation patterns shown in the following steps apply regardless of your choice.
 
