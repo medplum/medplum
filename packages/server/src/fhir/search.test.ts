@@ -288,11 +288,7 @@ describe('project-scoped Repository', () => {
 
     test('does not short-circuit when cursor is present', () =>
       withTestContext(async () => {
-        const result = await getCount(
-          repo,
-          { resourceType: 'Patient', cursor: 'abc123' },
-          { rowCount: 5 }
-        );
+        const result = await getCount(repo, { resourceType: 'Patient', cursor: 'abc123' }, { rowCount: 5 });
         expect(result).toHaveProperty('estimate');
         expect(typeof result.estimate).toBe('number');
         expect(getDbClientSpy).toHaveBeenCalled();
