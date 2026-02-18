@@ -337,7 +337,7 @@ describe('External auth', () => {
       lastName: 'User',
       externalId: inactiveSub,
     });
-    await getSystemRepo().updateResource<ProjectMembership>({
+    await systemRepo.updateResource<ProjectMembership>({
       ...inactiveMembership,
       active: false,
     });

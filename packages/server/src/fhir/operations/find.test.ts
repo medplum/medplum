@@ -455,7 +455,7 @@ describe('Schedule/:id/$find', () => {
     });
     const smallResponse = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -468,7 +468,7 @@ describe('Schedule/:id/$find', () => {
 
     const largeResponse = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -486,7 +486,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
@@ -511,7 +511,7 @@ describe('Schedule/:id/$find', () => {
     });
     const response = await request
       .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
-      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .query({
         start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
