@@ -219,7 +219,10 @@ export function accepted(location: string): OperationOutcome {
   };
 }
 
-export function badRequest(details: string, expression?: string): OperationOutcome {
+export function badRequest(details: string, expression?: string | string[]): OperationOutcome {
+  if (typeof expression === 'string') {
+    expression = [expression];
+  }
   return {
     resourceType: 'OperationOutcome',
     issue: [
@@ -229,7 +232,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
         details: {
           text: details,
         },
-        ...(expression ? { expression: [expression] } : undefined),
+        ...(expression ? { expression } : undefined),
       },
     ],
   };
