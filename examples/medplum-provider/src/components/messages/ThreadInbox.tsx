@@ -20,6 +20,7 @@ import {
 } from '@mantine/core';
 import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat } from '@medplum/react';
+import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import { useCallback, useEffect, useMemo } from 'react';
 import type { JSX } from 'react';
 import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
@@ -300,7 +301,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
               {selectedThread.subject && showPatientSummary && (
                 <Flex direction="column" w={300} h="100%">
                   <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                    <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
+                    <PatientSummary
+                      key={selectedThread.id}
+                      patient={selectedThread.subject as Reference<Patient>}
+                      pharmacyDialogComponent={DoseSpotPharmacyDialog}
+                    />
                   </ScrollArea>
                 </Flex>
               )}

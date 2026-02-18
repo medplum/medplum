@@ -41,4 +41,4 @@ flowchart RL
 | [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Speciment`](/docs/api/fhir/resources/specimen) resource. |
 | [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
 | [SNOMED](https://www.snomed.org/)                              | Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and retrieval methods.      |
-| [LOINC](https://www.medplum.com/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
+| [LOINC](/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |

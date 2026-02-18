@@ -32,9 +32,7 @@ import { SchedulingTransientIdentifier } from '../../utils/scheduling';
 type ScheduleFindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onChange: (slots: Slot[]) => void;
   onSelectSlot: (slot: Slot) => void;
-  slots: Slot[] | undefined;
 };
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
@@ -51,7 +49,8 @@ function parseSchedulingParameters(schedule: Schedule): (CodeableConcept | undef
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
-  const { schedule, onChange, range } = props;
+  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
+  const { schedule, range } = props;
   const serviceTypes = useMemo(
     () =>
       parseSchedulingParameters(schedule).map((codeableConcept) => ({
@@ -98,9 +97,9 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
         if (!signal.aborted) {
           if (bundle.entry) {
             bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-            onChange(bundle.entry.map((entry) => entry.resource).filter(isDefined));
+            setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
           } else {
-            onChange([]);
+            setSlots([]);
           }
         }
       })
@@ -112,12 +111,12 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
     return () => {
       controller.abort();
     };
-  }, [medplum, schedule, serviceType, start, end, onChange]);
+  }, [medplum, schedule, serviceType, start, end]);
 
   const handleDismiss = useCallback(() => {
     setServiceType(null);
-    onChange([]);
-  }, [onChange]);
+    setSlots([]);
+  }, []);
 
   if (serviceType !== null) {
     return (
@@ -132,7 +131,7 @@ export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
             )}
           </Group>
         </Title>
-        {(props.slots ?? EMPTY).map((slot) => (
+        {(slots ?? EMPTY).map((slot) => (
           <Button
             key={SchedulingTransientIdentifier.get(slot)}
             variant="outline"
@@ -181,7 +180,6 @@ export function SchedulePage(): JSX.Element | null {
   const [range, setRange] = useState<Range | undefined>(undefined);
   const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
   const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
-  const [findSlots, setFindSlots] = useState<Slot[] | undefined>(undefined);
 
   const [appointmentSlot, setAppointmentSlot] = useState<Range>();
   const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
@@ -276,10 +274,6 @@ export function SchedulePage(): JSX.Element | null {
       medplum.invalidateSearches('Appointment');
       medplum.invalidateSearches('Slot');
 
-      // Remove the $find result we acted on from our state
-      const id = SchedulingTransientIdentifier.get(slot);
-      setFindSlots((slots) => (slots ?? EMPTY).filter((slot) => SchedulingTransientIdentifier.get(slot) !== id));
-
       // Add the $book response to our state
       const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
       const slots = resources
@@ -373,21 +367,19 @@ export function SchedulePage(): JSX.Element | null {
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
             onSelectSlot={handleSelectSlot}
-            slots={[...(slots ?? []), ...(findSlots ?? [])]}
+            slots={slots ?? []}
             appointments={appointments ?? []}
             onRangeChange={setRange}
           />
         </div>
 
-        {serviceTypes?.length && schedule && range && (
+        {Boolean(serviceTypes?.length) && schedule && range && (
           <Stack gap="md" justify="space-between" className={classes.findPane}>
             <ScheduleFindPane
               key={schedule.id}
               schedule={schedule}
               range={range}
-              onChange={setFindSlots}
               onSelectSlot={(slot) => handleSelectSlot(slot)}
-              slots={findSlots}
             />
             {bookLoading && (
               <Center>

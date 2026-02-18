@@ -75,3 +75,39 @@ codyhall:
   title: CTO and Co-Founder, Unity AI
   url: https://github.com/codyhall
   image_url: https://github.com/codyhall.png 
+
+everett:
+  name: Everett Williams
+  title: Deployment Strategist, Medplum
+  url: https://github.com/everett-williams
+  image_url: https://github.com/everett-williams.png
+
+noahsilas:
+  name: Noah Silas
+  title: Engineer, Medplum
+  url: https://github.com/noahsilas
+  image_url: https://github.com/noahsilas.png
+
+techdavidy:
+  name: David Yanez
+  title: Medplum Core Team
+  url: https://github.com/techdavidy
+  image_url: https://github.com/techdavidy.png
+
+deam65:
+  name: Darren Eam
+  title: Medplum Core Team
+  url: https://github.com/deam65
+  image_url: https://github.com/deam65.png
+
+kevinwadeshaw:
+  name: Kevin Wadeshaw
+  title: Medplum Core Team
+  url: https://github.com/kevinwadeshaw
+  image_url: https://github.com/kevinwadeshaw.png
+
+maddyli:
+  name: Maddy Li
+  title: Medplum Core Team
+  url: https://github.com/maddyli
+  image_url: https://github.com/maddyli.png

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import type { Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { pwnedPassword } from 'hibp';

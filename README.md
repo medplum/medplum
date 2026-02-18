@@ -117,13 +117,3 @@ Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testi
 ## License
 
 [Apache 2.0](LICENSE.txt)
-
-Copyright &copy; Medplum 2025
-
-FHIR&reg; is a registered trademark of HL7.
-
-SNOMED&reg; is a registered trademark of the International Health Terminology Standards Development Organisation.
-
-LOINC&reg; is a registered trademark of Regenstrief Institute, Inc.
-
-DICOM&reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).

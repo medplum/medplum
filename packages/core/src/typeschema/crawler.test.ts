@@ -320,17 +320,17 @@ describe('ResourceCrawler', () => {
 
 describe('pathToJSONPointer', () => {
   test('simple path', () => {
-    expect(pathToJSONPointer('Patient.name')).toEqual('/Patient/name');
+    expect(pathToJSONPointer('Patient.name')).toEqual('/name');
   });
 
   test('array indexing', () => {
-    expect(pathToJSONPointer('Patient.identifier[0]')).toEqual('/Patient/identifier/0');
-    expect(pathToJSONPointer('Patient.identifier[1]')).toEqual('/Patient/identifier/1');
+    expect(pathToJSONPointer('Patient.identifier[0]')).toEqual('/identifier/0');
+    expect(pathToJSONPointer('Patient.identifier[1]')).toEqual('/identifier/1');
   });
 
   test('deep nesting', () => {
     expect(pathToJSONPointer('Patient.contact[2].additionalName[0].given')).toEqual(
-      '/Patient/contact/2/additionalName/0/given'
+      '/contact/2/additionalName/0/given'
     );
   });
 });

@@ -23,7 +23,7 @@ This guide will go over the most relevant elements of [`Coverage`](/docs/api/fhi
 
 The guide aligns with recommendations from two implementation guides
 
-- [US Core Guidelines](https://www.medplum.com/docs/fhir-datastore/understanding-uscdi-dataclasses) - these are guidelines developed by the U.S. government and serve as the basis for all FHIR implementations in the U.S.
+- [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses) - these are guidelines developed by the U.S. government and serve as the basis for all FHIR implementations in the U.S.
 - [CARIN Digital Insurance Card Guide](http://hl7.org/fhir/us/insurance-card/) - CARIN is a industry group, including members from Humana, Blue Cross, and Mitre, that expands upon the U.S. Core.
 
 ## Subscribers vs. Beneficiaries
@@ -157,7 +157,7 @@ To date, the community has not yet aligned on a standard for modeling patient re
 
 ## Storing Insurance Card Photos
 
-Digital health implementations often need to store photos of a patient's insurance card, alongside their coverage information. While FHIR does not support the direct storing of images within the Coverage resource, you can use the `DocumentReference` resource to store the image and connect it to the [`Coverage`](/docs/api/fhir/resources/coverage) using the `DocumentReference.context.related` element. See our guide on [handling external files](https://www.medplum.com/docs/charting/external-documents) for more information.
+Digital health implementations often need to store photos of a patient's insurance card, alongside their coverage information. While FHIR does not support the direct storing of images within the Coverage resource, you can use the `DocumentReference` resource to store the image and connect it to the [`Coverage`](/docs/api/fhir/resources/coverage) using the `DocumentReference.context.related` element. See our guide on [handling external files](/docs/charting/external-documents) for more information.
 
 ## A Detailed Example {#example}
 
@@ -171,6 +171,6 @@ This example has been tested as part of the the [Medplum Candid Demo Bot](https:
 
 ## See Also
 
-- [US Core Guidelines](https://www.medplum.com/docs/fhir-datastore/understanding-uscdi-dataclasses)
+- [US Core Guidelines](/docs/fhir-datastore/understanding-uscdi-dataclasses)
 - [CARIN Digital Insurance Card Guide](http://hl7.org/fhir/us/insurance-card/)
 - [Medplum Candid Demo Bot](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/candid-health)

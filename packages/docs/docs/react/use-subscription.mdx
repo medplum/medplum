@@ -4,6 +4,9 @@ tags:
   - subscription
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/react/use-subscription.tsx';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # `useSubscription` Hook
 
 `useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the
@@ -263,6 +266,65 @@ function MyComponent(): JSX.Element {
   );
 }
 ```
+
+## Lifecycle Hooks
+
+The `useSubscription` hook provides lifecycle callbacks that allow you to respond to connection state changes. These are particularly useful for managing reconnection scenarios, especially in mobile applications where the WebSocket connection may be interrupted due to app backgrounding or network changes.
+
+### Two Concepts: WebSocket Connection vs. Subscription
+
+It's important to understand that there are two distinct layers at play:
+
+1. **WebSocket Connection** - There is only one WebSocket connection per `MedplumClient` instance, shared across all active subscriptions. This is the underlying network transport.
+2. **Subscriptions** - Multiple subscriptions can run simultaneously on the same WebSocket connection. Each subscription represents a specific query/filter for resource changes.
+
+The lifecycle hooks allow you to respond to changes at both layers:
+- **`onWebSocketOpen` / `onWebSocketClose`** - Fired once when the shared WebSocket connection opens or closes (affects all subscriptions)
+- **`onSubscriptionConnect` / `onSubscriptionDisconnect`** - Fired individually for each subscription when that specific subscription is established or disconnected
+
+### Available Lifecycle Hooks
+
+The lifecycle hooks are passed as part of the third parameter (`options`) to the `useSubscription` hook:
+
+- **`onWebSocketOpen`** - Called when the underlying WebSocket connection is successfully established
+- **`onWebSocketClose`** - Called when the WebSocket connection is closed (e.g., due to network issues or app backgrounding)
+- **`onSubscriptionConnect`** - Called when this specific subscription has been established on the server and is actively receiving notifications
+- **`onSubscriptionDisconnect`** - Called when this specific subscription is disconnected and is no longer receiving notifications
+
+### Why Use Lifecycle Hooks?
+
+**Handling Missed Events During Reconnection**
+
+When a WebSocket connection is interrupted (especially common in mobile apps when backgrounding), your application will miss any resource changes that occur while disconnected. The lifecycle hooks allow you to implement a "catch-up" mechanism to fetch missed events after reconnecting.
+
+For example, in a React Native/Expo app, the WebSocket automatically closes when the app is backgrounded for stability reasons, and automatically reconnects when the app becomes active again. Without lifecycle hooks, you would miss notifications that occurred during this disconnection period.
+
+**Providing User Feedback**
+
+The lifecycle hooks enable you to show connection status to users (e.g., "Disconnected", "Reconnecting..."), which is important for applications where real-time updates are critical, such as live chat or task notifications.
+
+### Example: Catching Up on Missed Events
+
+Here's an example showing how to use lifecycle hooks to handle reconnection and fetch missed events:
+
+<MedplumCodeBlock language="tsx" selectBlocks="lifecycleHooks">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Hook Invocation Order
+
+Understanding when each hook is called helps you implement the correct logic:
+
+1. **On Initial Connection:**
+   - `onWebSocketOpen` → `onSubscriptionConnect`
+
+2. **On Disconnection:**
+   - `onSubscriptionDisconnect` → `onWebSocketClose`
+
+3. **On Reconnection:**
+   - `onWebSocketOpen` → `onSubscriptionConnect`
+
+Note that `onWebSocketOpen`/`onWebSocketClose` are called once for the shared WebSocket connection (used by all subscriptions), while `onSubscriptionConnect`/`onSubscriptionDisconnect` are called individually for each specific subscription criteria.
 
 ## Troubleshooting
 

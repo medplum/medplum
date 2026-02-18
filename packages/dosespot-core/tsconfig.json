@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "module": "esnext",
+    "outDir": "dist/types",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "types": ["vitest/globals"]
+  },
+  "include": ["src/**/*.ts"]
+}
