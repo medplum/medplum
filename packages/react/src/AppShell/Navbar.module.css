@@ -87,6 +87,18 @@
         color: light-dark(var(--mantine-primary-color-light-color), var(--mantine-primary-color-6));
       }
     }
+
+    & .dismissButton {
+      color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+
+      & svg:global(.tabler-icon) {
+        color: inherit;
+      }
+
+      &:hover {
+        color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-0));
+      }
+    }
   }
 }
 
@@ -158,15 +170,22 @@
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
-  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
-
-  &:hover {
-    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-0));
-  }
 }
 
 .link:hover .dismissButton {
   display: flex;
+}
+
+.link .dismissButton {
+  color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-dark-3));
+
+  & svg:global(.tabler-icon) {
+    color: inherit;
+  }
+
+  &:hover {
+    color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-gray-0));
+  }
 }
 
 .addBookmarkLink {

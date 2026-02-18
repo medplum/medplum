@@ -41,6 +41,7 @@ import {
   isObject,
   isOk,
   isResource,
+  isResourceType,
   isResourceWithId,
   isUUID,
   normalizeErrorString,
@@ -99,6 +100,7 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import { getActiveSubsKey } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -145,6 +147,7 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
+  truncateTextColumn,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
@@ -914,9 +917,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      // We added v2 to the key because historically this was a Redis Set and then we had to migrate the key to a Redis Hash which would conflict
+      // The active list is sharded by resource type so that lookups only scan relevant subscriptions
+      const criteriaResourceType = resource.criteria.split('?')[0];
+      if (!isResourceType(criteriaResourceType)) {
+        getLogger().debug('[WS] Subscription has invalid criteria resource type', {
+          subscription: `Subscription/${resource.id}`,
+          criteria: resource.criteria,
+        });
+        return;
+      }
       await redis.hset(
-        `medplum:subscriptions:r4:project:${project}:active:v2`,
+        getActiveSubsKey(project, criteriaResourceType),
         `Subscription/${resource.id}`,
         resource.criteria
       );
@@ -1799,7 +1810,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
       if (impl.sortColumnName) {
-        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+        columns[impl.sortColumnName] = truncateTextColumn(
+          getHumanNameSortValue((resource as HumanNameResource).name, searchParam)
+        );
       }
       return;
     }
@@ -2864,28 +2877,6 @@ export function setTypedPropertyValue(target: TypedValue, path: string, replacem
     patchPath = patchPath.slice(0, -1);
   }
   patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
-}
-
-const textEncoder = new TextEncoder();
-
-/**
- * Apply a maximum string length to ensure the value can accommodate the maximum
- * size for a btree index entry: 2704 bytes. If the string is too large,
- * be as conservative as possible to avoid write errors by truncating to 675 characters
- * to accommodate the entire string being 4-byte UTF-8 code points.
- * @param value - The column value to truncate.
- * @returns The possibly truncated column value.
- */
-function truncateTextColumn(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (textEncoder.encode(value).length <= 2704) {
-    return value;
-  }
-
-  return Array.from(value).slice(0, 675).join('');
 }
 
 function getArrayPaddingConfig(
