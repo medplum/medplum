@@ -107,7 +107,7 @@ The first decision you need to make is which FHIR resource type semantically mod
 
 - **`HealthcareService`**: Best for service-based access control where tenants represent different departments or services (e.g., Cardiology Department, Oncology Department).
 
-- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to small care teams that work directly with a patient.
+- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to small care teams that work directly with a patient. **This pattern works at any granularity** — including one CareTeam per patient (e.g., a school nurse app where `CareTeam/alice-smith` contains all of Alice's providers and `CareTeam/bob-jones` contains all of Bob's). A clinician with a panel of 100 patients would simply have 100 access entries in their ProjectMembership, one per CareTeam.
 
 **You are not limited to these resource types.** You can use any FHIR resource type that accurately models your tenants. The implementation patterns shown in the following steps apply regardless of your choice.
 
@@ -184,30 +184,28 @@ graph TB
 %%{init: {'theme': 'neutral' }}%%
 graph TB
     subgraph CTSection[" "]
-        UserCT[User/user-1]
+        UserCT[User/nurse-jane]
         PMCT[ProjectMembership/membership-1]
-        CT1[CareTeam/diabetes-care-team]
-        CT2[CareTeam/hypertension-care-team]
-        PatCT1[Patient/patient-1]
-        PatCT2[Patient/patient-2]
-        PatCTShared[Patient/patient-3<br/>Shared]
+        CT1[CareTeam/alice-smith]
+        CT2[CareTeam/bob-jones]
+        PatCT1[Patient/alice-smith]
+        PatCT2[Patient/bob-jones]
         UserCT --> PMCT
         PMCT --> CT1
         PMCT --> CT2
         CT1 --> PatCT1
-        CT1 --> PatCTShared
         CT2 --> PatCT2
-        CT2 --> PatCTShared
     end
-    
+
     style UserCT fill:#e8f5e9
     style PMCT fill:#fff4e1
     style CT1 fill:#e1f5ff
     style CT2 fill:#e1f5ff
     style PatCT1 fill:#e8f5e9
     style PatCT2 fill:#e8f5e9
-    style PatCTShared fill:#fff4e1
 ```
+
+_Each patient has their own CareTeam. Nurse Jane's ProjectMembership accumulates one access entry per patient as she is assigned to their care._
 
   </TabItem>
 </Tabs>
@@ -583,7 +581,7 @@ Here is an example method for updating a User's ProjectMembership to add a new t
 
 ### What if your User needs to access multiple tenants?
 
-To grant access to multiple tenants, include multiple entries in the `access` array, each with different tenant parameters. 
+To grant access to multiple tenants, include multiple entries in the `access` array, each with different tenant parameters. **This pattern scales to any number of tenants per user.** For example, a nurse with a panel of 100 students would have 100 entries in their `access` array — one per student's CareTeam — and this is expected and supported.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -655,7 +653,7 @@ To grant access to multiple tenants, include multiple entries in the `access` ar
       "parameter": [
         {
           "name": "care_team",
-          "valueReference": { "reference": "CareTeam/diabetes-care-team" }
+          "valueReference": { "reference": "CareTeam/alice-smith" }
         }
       ]
     },
@@ -664,10 +662,11 @@ To grant access to multiple tenants, include multiple entries in the `access` ar
       "parameter": [
         {
           "name": "care_team",
-          "valueReference": { "reference": "CareTeam/hypertension-care-team" }
+          "valueReference": { "reference": "CareTeam/bob-jones" }
         }
       ]
     }
+    // ... one entry per patient CareTeam the user is assigned to
   ]
 }
 ```
