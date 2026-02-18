@@ -34,6 +34,7 @@ const findOperation = {
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'service-type', type: 'string', min: 0, max: '*' },
+    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
 } as const satisfies OperationDefinition;
@@ -42,6 +43,7 @@ type FindParameters = {
   start: string;
   end: string;
   'service-type'?: string;
+  _count?: number;
 };
 
 // Given scheduling parameter descriptions, and an array of input service types, return
@@ -85,14 +87,18 @@ function filterByServiceTypes(
 export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const params = parseInputParameters<FindParameters>(findOperation, req);
-  const { start, end } = params;
+  const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
   const serviceTypes = params['service-type']?.split(',') ?? [];
 
-  // Future performance option: parameterize availability search with this
-  // count so we can quit early once we have identified enough slots.
-  const pageSize = DEFAULT_SEARCH_COUNT;
+  const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
+  if (pageSize < 1) {
+    throw new OperationOutcomeError(badRequest('Invalid _count, minimum required is 1'));
+  }
+  if (pageSize > DEFAULT_MAX_SEARCH_COUNT) {
+    throw new OperationOutcomeError(badRequest(`Invalid _count, maximum allowed is ${DEFAULT_MAX_SEARCH_COUNT}`));
+  }
 
   const range = { start: new Date(params.start), end: new Date(params.end) };
 

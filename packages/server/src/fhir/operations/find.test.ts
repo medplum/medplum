@@ -438,6 +438,93 @@ describe('Schedule/:id/$find', () => {
     expect(response.body.entry).toHaveLength(20);
   });
 
+  test('can override search page size with `_count`', async () => {
+    const schedule = await makeSchedule({
+      [wildcard]: {
+        // Alignment slot options to every-two-minutes means that there are
+        // lots of results so we can test the maximum page size of 1000
+        alignmentInterval: 2,
+        availability: fourDayWorkWeek,
+        duration: 60,
+      },
+    });
+    const smallResponse = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+        end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
+        _count: 10,
+      });
+    expect(smallResponse.body).not.toHaveProperty('issue');
+    expect(smallResponse.status).toBe(200);
+    expect(smallResponse.body.entry).toHaveLength(10);
+
+    const largeResponse = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+        end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
+        _count: 1000,
+      });
+    expect(largeResponse.body).not.toHaveProperty('issue');
+    expect(largeResponse.status).toBe(200);
+    expect(largeResponse.body.entry).toHaveLength(1000);
+  });
+
+  test('errors if _count is too low', async () => {
+    const schedule = await makeSchedule({
+      [wildcard]: { availability: fourDayWorkWeek, duration: 60 },
+    });
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+        end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
+        _count: 0,
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue).toEqual([
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: {
+          text: 'Invalid _count, minimum required is 1',
+        },
+      },
+    ]);
+  });
+
+  test('errors if _count is too high', async () => {
+    const schedule = await makeSchedule({
+      [wildcard]: { availability: fourDayWorkWeek, duration: 60 },
+    });
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-01T00:00:00.000-05:00').toISOString(),
+        end: new Date('2026-01-01T00:00:00.000-05:00').toISOString(),
+        _count: 1001,
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue).toEqual([
+      {
+        code: 'invalid',
+        severity: 'error',
+        details: {
+          text: 'Invalid _count, maximum allowed is 1000',
+        },
+      },
+    ]);
+  });
+
   test("gets timezone data from the schedule's actor", async () => {
     // `location` has timezone set to America/Phoenix, which is always at offset -07:00
     const schedule = await makeSchedule(
