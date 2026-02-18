@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
-  readonly resourceType: ResourceType;
+  readonly resourceType?: ResourceType;
   readonly fields: string[];
 }
 
@@ -18,12 +18,19 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
   const navigate = useNavigate();
+
+  const filters = [
+    { code: 'project', operator: Operator.EQUALS, value: 'Project/' + projectId },
+    {
+      code: 'profile-type',
+      operator: Operator.EQUALS,
+      value: props.resourceType ?? 'Patient,Practitioner,RelatedPerson',
+    },
+  ];
+
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ProjectMembership',
-    filters: [
-      { code: 'project', operator: Operator.EQUALS, value: 'Project/' + projectId },
-      { code: 'profile-type', operator: Operator.EQUALS, value: props.resourceType },
-    ],
+    filters,
     fields: props.fields,
     count: 100,
   });
@@ -31,7 +38,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   return (
     <SearchControl
       search={search}
-      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)?.catch(console.error)}
+      onClick={(e) => navigate(`/ProjectMembership/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar
