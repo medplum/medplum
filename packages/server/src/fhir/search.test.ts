@@ -229,6 +229,98 @@ describe('project-scoped Repository', () => {
       expect(result.accurate).toBeGreaterThanOrEqual(2);
     }));
 
+  test('getCount short-circuits when rowCount <= pageSize', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5 });
+      expect(result).toStrictEqual({ estimate: 5, accurate: 5 });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount short-circuits with offset when rowCount <= pageSize', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient', offset: 10 }, { rowCount: 3 });
+      expect(result).toStrictEqual({ estimate: 13, accurate: 13 });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount short-circuits with explicit count when rowCount <= count', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient', count: 50 }, { rowCount: 30 });
+      expect(result).toStrictEqual({ estimate: 30, accurate: 30 });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount short-circuits when rowCount is 0 and no offset', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 0 });
+      expect(result).toStrictEqual({ estimate: 0, accurate: 0 });
+      expect(spy).not.toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount does not short-circuit when rowCount is 0 with offset', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient', offset: 20 }, { rowCount: 0 });
+      expect(result).toHaveProperty('estimate');
+      expect(typeof result.estimate).toBe('number');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount does not short-circuit when forceAccurate is set', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5, forceAccurate: true });
+      expect(result).toHaveProperty('estimate');
+      expect(result).toHaveProperty('accurate');
+      expect(typeof result.estimate).toBe('number');
+      expect(typeof result.accurate).toBe('number');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount does not short-circuit when cursor is present', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(
+        repo,
+        { resourceType: 'Patient', cursor: 'abc123' },
+        { rowCount: 5 }
+      );
+      expect(result).toHaveProperty('estimate');
+      expect(typeof result.estimate).toBe('number');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount does not short-circuit when rowCount > pageSize', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 21 });
+      expect(result).toHaveProperty('estimate');
+      expect(typeof result.estimate).toBe('number');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
+  test('getCount does not short-circuit when rowCount is undefined', () =>
+    withTestContext(async () => {
+      const spy = jest.spyOn(repo, 'getDatabaseClient');
+      const result = await getCount(repo, { resourceType: 'Patient' });
+      expect(result).toHaveProperty('estimate');
+      expect(typeof result.estimate).toBe('number');
+      expect(spy).toHaveBeenCalled();
+      spy.mockRestore();
+    }));
+
   test('Search _summary', () =>
     withTestContext(async () => {
       const patient: Patient = {
