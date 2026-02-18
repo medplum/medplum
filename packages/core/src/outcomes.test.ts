@@ -89,6 +89,10 @@ describe('Outcomes', () => {
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
     expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
+    expect(badRequest('bad', ['Patient.extension[0]', 'Patient.extension[1]']).issue?.[0]?.expression).toEqual([
+      'Patient.extension[0]',
+      'Patient.extension[1]',
+    ]);
   });
 
   test.each([

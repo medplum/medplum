@@ -155,12 +155,6 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   }
   const actor = await ctx.repo.readReference(schedule.actor[0]);
   const actorTimeZone = getTimeZone(actor);
-  if (!actorTimeZone) {
-    throw new OperationOutcomeError(
-      badRequest('No timezone specified', `Schedule.actor[0].extension(${TimezoneExtensionURI})`)
-    );
-  }
-
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
   const resultSlots: Slot[] = flatMapMax(
@@ -168,6 +162,15 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     ([schedulingParameters, serviceType], _idx, maxCount) => {
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
+      if (!activeTimeZone) {
+        throw new OperationOutcomeError(
+          badRequest('No timezone specified', [
+            `Schedule.actor[0].extension(${TimezoneExtensionURI})`,
+            schedulingParameters.path,
+          ])
+        );
+      }
+
       let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
       availability = applyExistingSlots({
         availability,
