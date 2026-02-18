@@ -9,6 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import { TimezoneExtensionURI } from './utils/scheduling';
 
 const systemRepo = getSystemRepo();
 const app = express();
@@ -60,12 +61,12 @@ describe('Schedule/:id/$find', () => {
     practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
-      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/New_York' }],
     });
     location = await systemRepo.createResource<Location>({
       resourceType: 'Location',
       meta: { project: project.project.id },
-      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/Phoenix' }],
+      extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Phoenix' }],
     });
   });
 
@@ -612,6 +613,36 @@ describe('Schedule/:id/$find', () => {
         },
       ],
     });
+  });
+
+  test('When no timezone is available', async () => {
+    // no timezone extension no practitioner
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+    });
+    // no timezone in scheduling parameters sub extensions
+    const schedule = await makeSchedule(
+      {
+        [wildcard]: { availability: fourDayWorkWeek, duration: 20 },
+      },
+      { actor: [createReference(practitioner)] }
+    );
+
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-04T10:00:00.000-05:00'),
+        end: new Date('2025-12-04T14:00:00.000-05:00'),
+        'service-type': 'http://example.com|new-patient,http://example.com|other',
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0]).toHaveProperty('expression', [
+      `Schedule.actor[0].extension(${TimezoneExtensionURI})`,
+      'Schedule.extension[0]',
+    ]);
   });
 
   test('with a service-type parameter', async () => {

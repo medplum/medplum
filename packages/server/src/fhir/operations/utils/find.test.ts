@@ -162,6 +162,7 @@ describe('findSlotTimes', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -180,6 +181,7 @@ describe('findSlotTimes', () => {
       alignmentInterval: 30,
       alignmentOffset: 15,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -200,6 +202,7 @@ describe('findSlotTimes', () => {
       alignmentInterval: 30,
       alignmentOffset: 15,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability)).toEqual([
@@ -220,6 +223,7 @@ describe('findSlotTimes', () => {
       alignmentInterval: 30,
       alignmentOffset: 15,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
     const availability = [{ start: new Date('2025-12-01T12:00:00Z'), end: new Date('2025-12-01T15:00:00Z') }];
     expect(findSlotTimes(schedulingParameters, availability, { maxCount: 3 })).toEqual([

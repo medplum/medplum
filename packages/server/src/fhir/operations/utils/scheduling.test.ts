@@ -40,6 +40,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     const range = {
@@ -73,6 +74,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     const range = {
@@ -101,6 +103,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     const range = {
@@ -129,6 +132,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     const range = {
@@ -157,6 +161,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     // NY has a DST "spring forward" on March 8 2026
@@ -195,6 +200,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     // NY has a DST "spring forward" on March 8 2026
@@ -235,6 +241,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     // NY has a DST "fall back" on Nov 2 2025: 1:30am: happens twice
@@ -264,6 +271,7 @@ describe('resolveAvailability', () => {
       alignmentInterval: 60,
       alignmentOffset: 0,
       serviceType: [],
+      path: 'Schedule.extension[0]',
     };
 
     // NY has a DST "spring forward" on March 8 2026; 2:30am never happens

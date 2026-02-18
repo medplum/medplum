@@ -61,6 +61,7 @@ export type SchedulingParameters = {
   duration: number; // minutes
   serviceType: CodeableConcept[]; // codes that may be booked into this availability
   timezone?: string;
+  path: string;
 };
 
 function durationToMinutes(duration: Duration): number {
@@ -111,10 +112,11 @@ function exactlyOne<T>(arr: T[], attribute: string): T {
  * @returns SchedulingParameters[] - An array of objects describing scheduling configuration
  */
 export function parseSchedulingParametersExtensions(resource: Schedule | ActivityDefinition): SchedulingParameters[] {
-  const extensions = (resource.extension ?? []).filter(
-    (ext) => ext.url === SchedulingParametersURI
-  ) as SchedulingParametersExtension[];
-  return extensions.map((extension) => {
+  const extensions = (resource.extension ?? [])
+    .map((ext, index) => [ext, index] as const)
+    .filter(([ext, _index]) => ext.url === SchedulingParametersURI) as [SchedulingParametersExtension, number][];
+
+  return extensions.map(([extension, index]) => {
     const duration = exactlyOne(
       extension.extension.filter((ext) => ext.url === 'duration'),
       'duration'
@@ -173,6 +175,7 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
       duration: durationToMinutes(duration.valueDuration),
       serviceType,
       timezone: timezone?.valueCode,
+      path: `${resource.resourceType}.extension[${index}]`,
     };
   });
 }
