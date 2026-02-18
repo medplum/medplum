@@ -15,7 +15,20 @@ import { Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
-import { createScimUser, deleteScimUser, patchScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
+import {
+  createScimGroup,
+  createScimUser,
+  deleteScimGroup,
+  deleteScimUser,
+  patchScimGroup,
+  patchScimUser,
+  readScimGroup,
+  readScimUser,
+  searchScimGroups,
+  searchScimUsers,
+  updateScimGroup,
+  updateScimUser,
+} from './utils';
 
 // SCIM
 // http://www.simplecloud.info/
@@ -80,6 +93,63 @@ scimRouter.delete(
     const { project } = getAuthenticatedContext();
     const id = singularize(req.params.id) ?? '';
     await deleteScimUser(project, id);
+    res.sendStatus(204);
+  })
+);
+
+scimRouter.get(
+  '/Groups',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const result = await searchScimGroups(project, req.query as Record<string, string>);
+    res.status(200).json(result);
+  })
+);
+
+scimRouter.post(
+  '/Groups',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const result = await createScimGroup(project, req.body);
+    res.status(201).json(result);
+  })
+);
+
+scimRouter.get(
+  '/Groups/:id',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    const result = await readScimGroup(project, id);
+    res.status(200).json(result);
+  })
+);
+
+scimRouter.put(
+  '/Groups/:id',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const result = await updateScimGroup(project, req.body);
+    res.status(200).json(result);
+  })
+);
+
+scimRouter.patch(
+  '/Groups/:id',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    const result = await patchScimGroup(project, id, req.body);
+    res.status(200).json(result);
+  })
+);
+
+scimRouter.delete(
+  '/Groups/:id',
+  scimWrap(async (req: Request, res: Response) => {
+    const { project } = getAuthenticatedContext();
+    const id = singularize(req.params.id) ?? '';
+    await deleteScimGroup(project, id);
     res.sendStatus(204);
   })
 );
