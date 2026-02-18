@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, ContentType, createReference } from '@medplum/core';
-import type { Bot } from '@medplum/fhirtypes';
+import type { Bot, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -428,5 +428,88 @@ describe('Custom operation', () => {
       .send({ resourceType: 'Patient' });
     expect(res4.status).toBe(400);
     expect(res4.body).toMatchObject(badRequest('Expected Patient output, but got unexpected string'));
+  });
+
+  test('Instance-level custom operation passes resource as input', async () => {
+    // Create a Patient resource to operate on
+    const patientRes = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['John'], family: 'Doe' }],
+      });
+    expect(patientRes.status).toBe(201);
+    const patient = patientRes.body as WithId<Patient>;
+
+    // Create a Bot that returns the input it receives
+    const res1 = await request(app)
+      .post('/fhir/R4/Bot')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Instance Operation Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as WithId<Bot>;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            return event.input;
+          };
+          `,
+      });
+    expect(res2.status).toBe(200);
+
+    // Create OperationDefinition with instance: true
+    const res3 = await request(app)
+      .post('/fhir/R4/OperationDefinition')
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'OperationDefinition',
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/operationDefinition-implementation',
+            valueReference: createReference(bot),
+          },
+        ],
+        name: 'my-instance-operation',
+        status: 'active',
+        kind: 'operation',
+        code: 'my-instance-operation',
+        system: false,
+        type: false,
+        instance: true,
+        parameter: [
+          {
+            use: 'out',
+            name: 'return',
+            type: 'Patient',
+            min: 1,
+            max: '1',
+          },
+        ],
+      });
+    expect(res3.status).toBe(201);
+
+    // Invoke the operation on the specific Patient
+    const res4 = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$my-instance-operation`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({});
+    expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toBe('Patient');
+    expect(res4.body.id).toBe(patient.id);
+    expect(res4.body.name).toMatchObject([{ given: ['John'], family: 'Doe' }]);
   });
 });
