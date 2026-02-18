@@ -16,7 +16,9 @@ export function UsersPage(): JSX.Element {
           Learn more about user management.
         </Anchor>
       </Text>
-      <MemberTable fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']} />
+      <MemberTable
+        fields={['user', 'profile', 'profile-type', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
+      />
       <Group justify="flex-end">
         <MedplumLink to={`/admin/invite`}>Invite new user</MedplumLink>
       </Group>
