@@ -1,0 +1,23 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.contentContainer:hover {
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
+}
+
+.contentContainer {
+  transition: background 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  text-decoration: none;
+  color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));
+}
+
+.contentContainer.selected {
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-9));
+}
