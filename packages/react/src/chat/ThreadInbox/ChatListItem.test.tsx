@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { createReference } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { createReference } from '@medplum/core';
 import { MemoryRouter } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { render, screen, waitFor } from '../../test-utils/render';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ChatListItem } from './ChatListItem';
 
 const mockTopic: Communication = {

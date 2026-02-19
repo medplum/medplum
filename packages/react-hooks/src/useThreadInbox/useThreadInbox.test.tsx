@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { renderHook, waitFor, act } from '@testing-library/react';
-import type { JSX } from 'react';
+import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { useThreadInbox } from './useThreadInbox';
-import type { WithId } from '@medplum/core';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { JSX } from 'react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { useThreadInbox } from './useThreadInbox';
 
 const mockCommunication1: Communication = {
   resourceType: 'Communication',

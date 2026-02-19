@@ -12,8 +12,8 @@ import type {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
-import { useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { useMemo, useState } from 'react';
 import { QuestionnaireForm } from '../../QuestionnaireForm/QuestionnaireForm';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
 

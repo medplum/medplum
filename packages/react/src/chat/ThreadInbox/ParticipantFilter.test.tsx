@@ -4,10 +4,10 @@ import type { WithId } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { render, screen, waitFor } from '../../test-utils/render';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { render, screen, waitFor } from '../../test-utils/render';
 import { ParticipantFilter } from './ParticipantFilter';
 
 const mockPractitioner: Practitioner = {
