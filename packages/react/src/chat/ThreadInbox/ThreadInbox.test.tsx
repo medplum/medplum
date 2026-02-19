@@ -3,11 +3,11 @@
 import { Notifications } from '@mantine/notifications';
 import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
+import * as reactHooks from '@medplum/react-hooks';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { render, screen, waitFor, userEvent } from '../../test-utils/render';
+import { render, screen, userEvent, waitFor } from '../../test-utils/render';
 import { ThreadInbox } from './ThreadInbox';
-import * as reactHooks from '@medplum/react-hooks';
 
 jest.mock('@medplum/react-hooks', () => ({
   ...jest.requireActual('@medplum/react-hooks'),
@@ -45,11 +45,7 @@ describe('ThreadInbox', () => {
     });
   });
 
-  const setup = (props?: {
-    threadId?: string;
-    showPatientSummary?: boolean;
-    subject?: typeof HomerSimpson;
-  }): void => {
+  const setup = (props?: { threadId?: string; showPatientSummary?: boolean; subject?: typeof HomerSimpson }): void => {
     render(
       <>
         <Notifications />
@@ -180,9 +176,12 @@ describe('ThreadInbox', () => {
 
   test('shows empty messages state when no messages are found', async () => {
     setup();
-    await waitFor(() => {
-      expect(screen.getByText('No messages found')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('No messages found')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('shows thread chat when thread is selected', async () => {
@@ -223,9 +222,12 @@ describe('ThreadInbox', () => {
 
     setup({ showPatientSummary: true, threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(patientSummarySpy).toHaveBeenCalled();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(patientSummarySpy).toHaveBeenCalled();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('does not show patient summary when showPatientSummary is false', async () => {
@@ -243,9 +245,12 @@ describe('ThreadInbox', () => {
 
     setup({ showPatientSummary: false, threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(patientSummarySpy).not.toHaveBeenCalled();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(patientSummarySpy).not.toHaveBeenCalled();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('opens new topic dialog when plus button is clicked', async () => {
@@ -330,9 +335,12 @@ describe('ThreadInbox', () => {
 
     setup({ threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(screen.getByText('In Progress')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await user.click(screen.getByText('In Progress'));
 
@@ -356,9 +364,12 @@ describe('ThreadInbox', () => {
 
     setup({ threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(screen.getByText('In Progress')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await user.click(screen.getByText('In Progress'));
 
@@ -435,9 +446,12 @@ describe('ThreadInbox', () => {
 
     setup({ threadId: 'comm-123' });
 
-    await waitFor(() => {
-      expect(screen.getByText('In Progress')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('In Progress')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
 
     await user.click(screen.getByText('In Progress'));
 
