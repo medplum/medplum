@@ -11,7 +11,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, OperationDefinition, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, OperationDefinition, Patient, Reference, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { invariant } from '../../util/invariant';
@@ -32,12 +32,14 @@ const bookOperation = {
   instance: false,
   parameter: [
     { use: 'in', name: 'slot', type: 'Resource', min: 1, max: '*' },
+    { use: 'in', name: 'patient-reference', type: 'Reference', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
 } as const satisfies OperationDefinition;
 
 type BookParameters = {
   slot: Slot[];
+  'patient-reference'?: Reference<Patient>;
 };
 
 type Matcher = (params: SchedulingParameters) => boolean;
@@ -141,6 +143,15 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
   const startDate = new Date(start);
   const endDate = new Date(end);
+
+  if (params['patient-reference']) {
+    // validate that the patient reference exists and is visible to the caller
+    try {
+      await ctx.repo.readReference(params['patient-reference']);
+    } catch {
+      throw new OperationOutcomeError(badRequest('Invalid patient-reference'));
+    }
+  }
 
   const schedules = await ctx.repo.readReferences(proposedSlots.map((slot) => slot.schedule));
   assertAllOk(schedules, 'Schedule load failed', 'Parameters.parameter[%i].schedule');
@@ -256,13 +267,22 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         })
       );
 
-      const appointment = await ctx.repo.createResource({
+      const participant: Appointment['participant'] = schedules.map((schedule) => ({
+        actor: schedule.actor[0],
+        status: 'tentative',
+      }));
+
+      if (params['patient-reference']) {
+        participant.push({
+          actor: params['patient-reference'],
+          status: 'accepted',
+        });
+      }
+
+      const appointment = await ctx.repo.createResource<Appointment>({
         resourceType: 'Appointment',
         status: 'booked',
-        participant: schedules.map((schedule) => ({
-          actor: schedule.actor[0],
-          status: 'tentative',
-        })),
+        participant,
         start,
         end,
       });
