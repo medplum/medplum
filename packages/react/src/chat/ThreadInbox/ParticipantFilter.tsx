@@ -1,16 +1,16 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
 import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
-import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
+import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { ResourceAvatar, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import { useMedplum, useMedplumProfile, useResource } from '@medplum/react-hooks';
 import { IconUsers } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ParticipantFilter.module.css';
-import { showErrorNotification } from '../../utils/notifications';
+import { showNotification } from '@mantine/notifications';
 
 interface ParticipantFilterProps {
   selectedParticipants: Reference<Patient | Practitioner>[];
@@ -71,7 +71,11 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 
       setSearchResults(results);
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({
+        title: 'Error',
+        message: normalizeErrorString(error),
+        color: 'red',
+      });
       setSearchResults([]);
     } finally {
       setIsSearching(false);

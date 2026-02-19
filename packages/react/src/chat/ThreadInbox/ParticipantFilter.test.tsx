@@ -1,11 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { DrAliceSmith, MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { render, screen, waitFor } from '../../test-utils/render';
 import type { UserEvent } from '@testing-library/user-event';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -38,20 +37,14 @@ describe('ParticipantFilter', () => {
       medplum.setProfile(mockPractitioner);
     }
 
-    // Ensure mock resources are available for useResource hook
     await medplum.updateResource(mockPractitioner as WithId<Practitioner>);
     await medplum.updateResource(mockPatient as WithId<Patient>);
 
     const user = userEvent.setup();
-    await act(async () => {
-      render(
-        <MantineProvider>
-          <MedplumProvider medplum={medplum}>
-            <ParticipantFilter selectedParticipants={selectedParticipants} onFilterChange={mockOnFilterChange} />
-          </MedplumProvider>
-        </MantineProvider>
-      );
-    });
+    render(
+      <ParticipantFilter selectedParticipants={selectedParticipants} onFilterChange={mockOnFilterChange} />,
+      ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+    );
     return user;
   };
 
@@ -457,7 +450,6 @@ describe('ParticipantFilter', () => {
     await user.click(button);
 
     await waitFor(() => {
-      // Only the current user checkbox should render; unresolved participant returns null
       const checkboxes = screen.getAllByRole('checkbox');
       expect(checkboxes).toHaveLength(1);
     });
@@ -523,7 +515,6 @@ describe('ParticipantFilter', () => {
     });
 
     const searchInput = screen.getByPlaceholderText('Search for a Patient or Practitioner...');
-
     await user.type(searchInput, '   ');
 
     await new Promise<void>((resolve) => {

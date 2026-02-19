@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import type { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
-import { MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
-import type { JSX } from 'react';
 import { formatDateTime, formatHumanName } from '@medplum/core';
+import { useResource } from '@medplum/react-hooks';
+import type { JSX } from 'react';
+import { MedplumLink } from '../../MedplumLink/MedplumLink';
+import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ChatListItem.module.css';
 import cx from 'clsx';
 
