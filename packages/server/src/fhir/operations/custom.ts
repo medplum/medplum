@@ -74,7 +74,7 @@ export async function tryCustomOperation(req: FhirRequest, repo: Repository): Pr
   // For system-level or type-level operations, use the request body (POST) or query string (GET)
   const operationIndex = parts.indexOf(operationPart);
   let input: any;
-  if (operationIndex >= 3 && parts[operationIndex - 2] && parts[operationIndex - 1]) {
+  if (operation.instance && operationIndex >= 3 && parts[operationIndex - 2] && parts[operationIndex - 1]) {
     const resourceType = parts[operationIndex - 2] as ResourceType;
     const resourceId = parts[operationIndex - 1];
     input = await repo.readResource(resourceType, resourceId);
