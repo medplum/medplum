@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useState, useEffect, useCallback } from 'react';
-import type { Communication } from '@medplum/fhirtypes';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import { useCallback, useEffect, useState } from 'react';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface UseThreadInboxOptions {
   query: string;

@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, useResource } from '@medplum/react-hooks';
 import { IconUsers } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ParticipantFilter.module.css';
-import { showNotification } from '@mantine/notifications';
 
 interface ParticipantFilterProps {
   selectedParticipants: Reference<Patient | Practitioner>[];

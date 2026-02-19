@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Divider, Stack } from '@mantine/core';
 import type { Communication } from '@medplum/fhirtypes';
-import { Fragment } from 'react';
 import type { JSX } from 'react';
+import { Fragment } from 'react';
 import { ChatListItem } from './ChatListItem';
 
 interface ChatListProps {

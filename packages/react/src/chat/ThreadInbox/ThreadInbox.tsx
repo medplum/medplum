@@ -2,40 +2,39 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
-  Flex,
-  Paper,
-  ScrollArea,
-  Stack,
-  Text,
   ActionIcon,
-  Divider,
+  Box,
   Button,
   Center,
-  ThemeIcon,
-  Menu,
-  Skeleton,
-  Box,
-  Pagination,
+  Divider,
+  Flex,
   Group,
+  Menu,
+  Pagination,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Text,
+  ThemeIcon,
 } from '@mantine/core';
-import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { useCallback, useEffect, useMemo } from 'react';
-import type { ComponentType, JSX } from 'react';
-import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
-import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
-import { useMedplumNavigate } from '@medplum/react-hooks';
+import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
+import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
+import cx from 'clsx';
+import type { ComponentType, JSX } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
 import type { PharmacyDialogBaseProps } from '../../PatientSummary/Pharmacies';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
-import { useThreadInbox } from '@medplum/react-hooks';
 import classes from './ThreadInbox.module.css';
-import { useDisclosure } from '@mantine/hooks';
-import cx from 'clsx';
-import { showNotification } from '@mantine/notifications';
 
 /**
  * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
@@ -151,7 +150,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
       await handleThreadStatusChange(newStatus);
       await refreshThreadMessages();
     } catch (error) {
-      showNotification({  
+      showNotification({
         title: 'Error',
         message: normalizeErrorString(error),
         color: 'red',
