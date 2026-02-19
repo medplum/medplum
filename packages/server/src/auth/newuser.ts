@@ -108,6 +108,7 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
   const systemRepo = getGlobalSystemRepo();
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
+    meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,
     firstName,
     lastName,
     email,
