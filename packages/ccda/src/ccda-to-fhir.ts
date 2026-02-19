@@ -859,6 +859,14 @@ class CcdaToFhirConverter {
     };
   }
 
+  private mapQualification(code: CcdaCode | undefined): PractitionerQualification[] | undefined {
+    const codeableConcept = this.mapCode(code);
+    if (!codeableConcept) {
+      return undefined;
+    }
+    return [{ code: codeableConcept }];
+  }
+
   private createClinicalStatus(act: CcdaAct): CodeableConcept {
     return {
       coding: [
@@ -894,7 +902,7 @@ class CcdaToFhirConverter {
       address: this.mapAddresses(author.assignedAuthor?.addr),
       telecom: this.mapTelecom(author.assignedAuthor?.telecom),
       qualification: author.assignedAuthor?.code
-        ? [this.mapCode(author.assignedAuthor?.code) as PractitionerQualification]
+        ? [this.mapQualification(author.assignedAuthor?.code) as PractitionerQualification]
         : undefined,
     };
 
