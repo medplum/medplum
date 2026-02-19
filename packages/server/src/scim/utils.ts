@@ -316,7 +316,7 @@ export async function searchScimGroups(
   const groups = await systemRepo.searchResources<Group>({
     resourceType: 'Group',
     count: 1000,
-    filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) }],
+    filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id }],
   });
 
   // Only surface groups that were created via SCIM (have SCIM_GROUP_SYSTEM identifier)
@@ -324,7 +324,7 @@ export async function searchScimGroups(
     g.identifier?.some((i) => i.system === SCIM_GROUP_SYSTEM)
   );
 
-  const result = await Promise.all(scimGroups.map((g) => buildScimGroup(g as WithId<Group>, project)));
+  const result = await Promise.all(scimGroups.map((g) => buildScimGroup(g, project)));
   return convertToScimListResponse(result);
 }
 
@@ -342,6 +342,7 @@ export async function createScimGroup(project: WithId<Project>, scimGroup: ScimG
 
   const group = await systemRepo.createResource<Group>({
     resourceType: 'Group',
+    meta: { project: project.id },
     type: 'person',
     actual: true,
     name: scimGroup.displayName,
@@ -356,7 +357,7 @@ export async function createScimGroup(project: WithId<Project>, scimGroup: ScimG
     ? await findAccessPolicyForGroup(project, scimGroup.externalId)
     : undefined;
 
-  let updatedGroup = group as WithId<Group>;
+  let updatedGroup = group;
   if (scimGroup.members && scimGroup.members.length > 0) {
     for (const member of scimGroup.members) {
       if (member.value) {
@@ -427,7 +428,7 @@ export async function updateScimGroup(project: WithId<Project>, scimGroup: ScimG
     member: newMembers.map((ref) => ({ entity: ref })),
   });
 
-  return buildScimGroup(updatedGroup as WithId<Group>, project);
+  return buildScimGroup(updatedGroup, project);
 }
 
 /**
@@ -466,7 +467,7 @@ export async function patchScimGroup(project: WithId<Project>, id: string, reque
       }
     } else if (path === 'displayName' && verb === 'replace') {
       const systemRepo = getSystemRepo();
-      group = (await systemRepo.updateResource<Group>({ ...group, name: value as string })) as WithId<Group>;
+      group = await systemRepo.updateResource<Group>({ ...group, name: value as string });
     }
   }
 
@@ -507,19 +508,25 @@ export async function deleteScimGroup(project: WithId<Project>, id: string): Pro
 
 /**
  * Reads a Group resource and verifies it belongs to the given project.
+ * @param project - The project to validate against.
+ * @param id - The FHIR Group resource ID.
+ * @returns The validated Group resource.
  */
 async function readAndValidateGroup(project: WithId<Project>, id: string): Promise<WithId<Group>> {
   const systemRepo = getSystemRepo();
   const group = await systemRepo.readResource<Group>('Group', id);
-  // meta.project is a Medplum extension - verify this group belongs to the given project
-  if ((group.meta as Record<string, string | undefined>)?.project !== 'Project/' + project.id) {
+  // meta.project stores the project UUID (not a reference string)
+  if (group.meta?.project !== project.id) {
     throw new OperationOutcomeError(forbidden);
   }
-  return group as WithId<Group>;
+  return group;
 }
 
 /**
  * Converts a FHIR Group to a SCIM Group, resolving member profile refs to ProjectMembership IDs.
+ * @param group - The FHIR Group resource.
+ * @param project - The project the group belongs to.
+ * @returns The SCIM Group representation.
  */
 async function buildScimGroup(group: WithId<Group>, project: WithId<Project>): Promise<ScimGroup> {
   const config = getConfig();
@@ -547,6 +554,9 @@ async function buildScimGroup(group: WithId<Group>, project: WithId<Project>): P
 
 /**
  * Searches for an AccessPolicy by externalId (matched against identifier.value).
+ * @param project - The project to search within.
+ * @param externalId - The SCIM externalId to match against AccessPolicy identifiers.
+ * @returns The matching AccessPolicy, or undefined if not found.
  */
 async function findAccessPolicyForGroup(
   project: WithId<Project>,
@@ -559,15 +569,15 @@ async function findAccessPolicyForGroup(
   const policies = await systemRepo.searchResources<AccessPolicy>({
     resourceType: 'AccessPolicy',
     count: 1000,
-    filters: [{ code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) }],
+    filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id }],
   });
-  return policies.find((p) => p.identifier?.some((i) => i.value === externalId)) as
-    | WithId<AccessPolicy>
-    | undefined;
+  return policies.find((p) => p.identifier?.some((i) => i.value === externalId));
 }
 
 /**
  * Adds an AccessPolicy reference to a ProjectMembership.access[] if not already present.
+ * @param membershipId - The ProjectMembership resource ID.
+ * @param accessPolicy - The AccessPolicy to add.
  */
 async function applyGroupAccess(membershipId: string, accessPolicy: WithId<AccessPolicy>): Promise<void> {
   const systemRepo = getSystemRepo();
@@ -584,6 +594,8 @@ async function applyGroupAccess(membershipId: string, accessPolicy: WithId<Acces
 
 /**
  * Removes an AccessPolicy reference from a ProjectMembership.access[].
+ * @param membershipId - The ProjectMembership resource ID.
+ * @param accessPolicy - The AccessPolicy to remove.
  */
 async function removeGroupAccess(membershipId: string, accessPolicy: WithId<AccessPolicy>): Promise<void> {
   const systemRepo = getSystemRepo();
@@ -597,6 +609,8 @@ async function removeGroupAccess(membershipId: string, accessPolicy: WithId<Acce
 
 /**
  * Resolves a ProjectMembership ID to its profile reference (for storing in Group.member).
+ * @param membershipId - The ProjectMembership resource ID.
+ * @returns The profile reference stored in Group.member[].entity.
  */
 async function membershipIdToProfileRef(membershipId: string): Promise<GroupMember['entity']> {
   const systemRepo = getSystemRepo();
@@ -606,6 +620,9 @@ async function membershipIdToProfileRef(membershipId: string): Promise<GroupMemb
 
 /**
  * Resolves a profile reference string to a ProjectMembership ID.
+ * @param project - The project to search within.
+ * @param profileRef - The profile reference string (e.g. "Practitioner/123").
+ * @returns The ProjectMembership ID, or undefined if not found.
  */
 async function profileRefToMembershipId(
   project: WithId<Project>,
@@ -625,6 +642,10 @@ async function profileRefToMembershipId(
 /**
  * Adds a member to a FHIR Group and optionally applies an AccessPolicy to their membership.
  * Returns the updated Group.
+ * @param group - The FHIR Group resource to update.
+ * @param membershipId - The ProjectMembership ID of the member to add.
+ * @param accessPolicy - Optional AccessPolicy to assign to the member.
+ * @returns The updated Group resource.
  */
 async function addMemberToGroup(
   group: WithId<Group>,
@@ -635,10 +656,10 @@ async function addMemberToGroup(
   const profileRef = await membershipIdToProfileRef(membershipId);
   const alreadyMember = (group.member ?? []).some((m) => m.entity.reference === profileRef.reference);
   if (!alreadyMember) {
-    group = (await systemRepo.updateResource<Group>({
+    group = await systemRepo.updateResource<Group>({
       ...group,
       member: [...(group.member ?? []), { entity: profileRef }],
-    })) as WithId<Group>;
+    });
   }
   if (accessPolicy) {
     await applyGroupAccess(membershipId, accessPolicy);
@@ -649,6 +670,10 @@ async function addMemberToGroup(
 /**
  * Removes a member from a FHIR Group and optionally removes an AccessPolicy from their membership.
  * Returns the updated Group.
+ * @param group - The FHIR Group resource to update.
+ * @param membershipId - The ProjectMembership ID of the member to remove.
+ * @param accessPolicy - Optional AccessPolicy to revoke from the member.
+ * @returns The updated Group resource.
  */
 async function removeMemberFromGroup(
   group: WithId<Group>,
@@ -657,10 +682,10 @@ async function removeMemberFromGroup(
 ): Promise<WithId<Group>> {
   const systemRepo = getSystemRepo();
   const profileRef = await membershipIdToProfileRef(membershipId);
-  group = (await systemRepo.updateResource<Group>({
+  group = await systemRepo.updateResource<Group>({
     ...group,
     member: (group.member ?? []).filter((m) => m.entity.reference !== profileRef.reference),
-  })) as WithId<Group>;
+  });
   if (accessPolicy) {
     await removeGroupAccess(membershipId, accessPolicy);
   }
@@ -670,6 +695,11 @@ async function removeMemberFromGroup(
 /**
  * Replaces the full member list of a group, computing and applying diffs.
  * Returns the updated Group.
+ * @param group - The FHIR Group resource to update.
+ * @param project - The project context for resolving membership IDs.
+ * @param newMembers - The new SCIM member list to replace the existing one.
+ * @param accessPolicy - Optional AccessPolicy to add/remove based on membership changes.
+ * @returns The updated Group resource.
  */
 async function replaceGroupMembers(
   group: WithId<Group>,
@@ -696,10 +726,10 @@ async function replaceGroupMembers(
   }
 
   const newProfileRefs = await Promise.all(newMembershipIds.map((id) => membershipIdToProfileRef(id)));
-  return (await systemRepo.updateResource<Group>({
+  return systemRepo.updateResource<Group>({
     ...group,
     member: newProfileRefs.map((ref) => ({ entity: ref })),
-  })) as WithId<Group>;
+  });
 }
 
 /**
