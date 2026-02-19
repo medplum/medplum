@@ -568,17 +568,14 @@ describe('New user', () => {
 
     // Register a new user into that project via the self-registration endpoint
     const newEmail = `patient${randomUUID()}@example.com`;
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        projectId: project.id,
-        firstName: 'Patient',
-        lastName: 'One',
-        email: newEmail,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      projectId: project.id,
+      firstName: 'Patient',
+      lastName: 'One',
+      email: newEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+    });
 
     expect(res.status).toBe(200);
 
@@ -594,16 +591,13 @@ describe('New user', () => {
 
   test('Self-registered user without projectId has no meta.project', async () => {
     const newEmail = `no-project${randomUUID()}@example.com`;
-    const res = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        firstName: 'No',
-        lastName: 'Project',
-        email: newEmail,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'No',
+      lastName: 'Project',
+      email: newEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+    });
 
     expect(res.status).toBe(200);
 
