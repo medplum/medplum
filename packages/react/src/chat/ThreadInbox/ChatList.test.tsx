@@ -5,7 +5,6 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ChatList } from './ChatList';
 
 const mockPatient1: Patient = {
@@ -44,14 +43,14 @@ const mockLastCommunication1: Communication = {
   sent: '2024-01-01T12:00:00Z',
 };
 
-const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatList', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     await medplum.createResource(mockPatient1);
     await medplum.createResource(mockPatient2);
   });

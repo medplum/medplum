@@ -7,18 +7,17 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { NewTopicDialog } from './NewTopicDialog';
 
-const mockOnSubmit = vi.fn();
-const mockOnClose = vi.fn();
+const mockOnSubmit = jest.fn();
+const mockOnClose = jest.fn();
 
 describe('NewTopicDialog', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   const setup = (opened = true, subject?: Patient): void => {

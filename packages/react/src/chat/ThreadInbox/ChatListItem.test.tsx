@@ -6,7 +6,6 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { createReference } from '@medplum/core';
 import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
 import { ChatListItem } from './ChatListItem';
 
 const mockTopic: Communication = {
@@ -31,14 +30,14 @@ const mockLastCommunication: Communication = {
   ],
 };
 
-const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatListItem', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   const setup = (topic: Communication, lastCommunication: Communication | undefined, isSelected: boolean): void => {
