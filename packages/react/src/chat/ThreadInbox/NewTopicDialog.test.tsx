@@ -4,9 +4,9 @@ import { Notifications } from '@mantine/notifications';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { render, screen, waitFor } from '../../test-utils/render';
-import userEvent from '@testing-library/user-event';
 import { NewTopicDialog } from './NewTopicDialog';
 
 const mockOnSubmit = jest.fn();

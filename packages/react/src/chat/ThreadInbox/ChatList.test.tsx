@@ -4,7 +4,7 @@ import type { Communication, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { render, screen, waitFor } from '../../test-utils/render';
 import { ChatList } from './ChatList';
 
