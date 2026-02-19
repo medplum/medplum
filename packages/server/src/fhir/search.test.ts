@@ -187,50 +187,132 @@ describe('project-scoped Repository', () => {
     }
   );
 
-  test('getCount returns estimate and accurate with forceAccurate', () =>
-    withTestContext(async () => {
-      const result = await getCount(repo, { resourceType: 'Patient' }, { forceAccurate: true });
-      expect(result).toHaveProperty('estimate');
-      expect(result).toHaveProperty('accurate');
-      expect(typeof result.estimate).toBe('number');
-      expect(typeof result.accurate).toBe('number');
-    }));
+  describe('getCount', () => {
+    let getDbClientSpy: jest.SpyInstance;
 
-  test('getCount returns estimate without forceAccurate when below threshold', () =>
-    withTestContext(async () => {
-      // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
-      // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
-      const result = await getCount(repo, { resourceType: 'Patient' });
-      expect(result).toHaveProperty('estimate');
-      expect(typeof result.estimate).toBe('number');
-      // With low data counts, accurate should still be returned since estimate < threshold
-      expect(result).toHaveProperty('accurate');
-    }));
+    beforeEach(() => {
+      getDbClientSpy = jest.spyOn(repo, 'getDatabaseClient');
+    });
 
-  test('getCount returns only estimate when above threshold', () =>
-    withTestContext(async () => {
-      const prevThreshold = config.accurateCountThreshold;
-      config.accurateCountThreshold = 0;
+    afterEach(() => {
+      getDbClientSpy.mockRestore();
+    });
 
-      const result = await getCount(repo, { resourceType: 'Patient' });
-      expect(result).toHaveProperty('estimate');
-      expect(typeof result.estimate).toBe('number');
-      expect(result).not.toHaveProperty('accurate');
+    test('returns estimate and accurate with forceAccurate', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+      }));
 
-      config.accurateCountThreshold = prevThreshold;
-    }));
+    test('returns estimate without forceAccurate when below threshold', () =>
+      withTestContext(async () => {
+        // Without forceAccurate, accurate is only returned if estimate < accurateCountThreshold
+        // Since we're testing with minimal data, both should be returned (estimate will be below threshold)
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        // With low data counts, accurate should still be returned since estimate < threshold
+        expect(result).toHaveProperty('accurate');
+      }));
 
-  test('getCount uses rowCount option for clamping', () =>
-    withTestContext(async () => {
-      // Create some patients to ensure non-zero counts
-      await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest1' }] });
-      await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest2' }] });
+    test('returns only estimate when above threshold', () =>
+      withTestContext(async () => {
+        const prevThreshold = config.accurateCountThreshold;
+        config.accurateCountThreshold = 0;
 
-      const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 2, forceAccurate: true });
-      expect(result).toHaveProperty('estimate');
-      expect(result).toHaveProperty('accurate');
-      expect(result.accurate).toBeGreaterThanOrEqual(2);
-    }));
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(result).not.toHaveProperty('accurate');
+
+        config.accurateCountThreshold = prevThreshold;
+      }));
+
+    test('uses rowCount option for clamping', () =>
+      withTestContext(async () => {
+        // Create some patients to ensure non-zero counts
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest1' }] });
+        await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family: 'CountTest2' }] });
+
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 2, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(result.accurate).toBeGreaterThanOrEqual(2);
+      }));
+
+    test('short-circuits when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5 });
+        expect(result).toStrictEqual({ estimate: 5, accurate: 5 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with offset when rowCount <= pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 10 }, { rowCount: 3 });
+        expect(result).toStrictEqual({ estimate: 13, accurate: 13 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits with explicit count when rowCount <= count', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', count: 50 }, { rowCount: 30 });
+        expect(result).toStrictEqual({ estimate: 30, accurate: 30 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('short-circuits when rowCount is 0 and no offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 0 });
+        expect(result).toStrictEqual({ estimate: 0, accurate: 0 });
+        expect(getDbClientSpy).not.toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is 0 with offset', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', offset: 20 }, { rowCount: 0 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when forceAccurate is set', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 5, forceAccurate: true });
+        expect(result).toHaveProperty('estimate');
+        expect(result).toHaveProperty('accurate');
+        expect(typeof result.estimate).toBe('number');
+        expect(typeof result.accurate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when cursor is present', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient', cursor: 'abc123' }, { rowCount: 5 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount > pageSize', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' }, { rowCount: 21 });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+
+    test('does not short-circuit when rowCount is undefined', () =>
+      withTestContext(async () => {
+        const result = await getCount(repo, { resourceType: 'Patient' });
+        expect(result).toHaveProperty('estimate');
+        expect(typeof result.estimate).toBe('number');
+        expect(getDbClientSpy).toHaveBeenCalled();
+      }));
+  });
 
   test('Search _summary', () =>
     withTestContext(async () => {

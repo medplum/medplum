@@ -45,6 +45,12 @@ export interface WebSocketSubMetadata {
 
 export type WebSocketSubToken = MedplumBaseClaims & AdditionalWsBindingClaims;
 
+export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
+export type V1SubEventPayload = V1SubEventEntry[];
+
+export type V2SubEventEntry = [string, SubEventsOptions];
+export type V2SubEventPayload = { resource: WithId<Resource>; events: V2SubEventEntry[] };
+
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 
@@ -62,12 +68,20 @@ async function setupSubscriptionHandler(): Promise<void> {
   redisSubscriber = getRedisSubscriber();
   redisSubscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    const subEventArgsArr = JSON.parse(events) as [
-      WithId<Resource>,
-      subscriptionId: string,
-      options?: SubEventsOptions,
-    ][];
-    for (const [resource, subscriptionId, options] of subEventArgsArr) {
+    const subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+    let resource: WithId<Resource>;
+    let subEventArgsArr: [string, SubEventsOptions][];
+
+    // TODO: v5.2.0+ - Deprecate v1
+    if (isV1SubEventPayload(subEventPayload)) {
+      resource = subEventPayload[0][0];
+      subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);
+    } else {
+      resource = subEventPayload.resource;
+      subEventArgsArr = subEventPayload.events;
+    }
+
+    for (const [subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
       for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
         // Get the repo for this socket in the context of the subscription
@@ -105,6 +119,10 @@ async function setupSubscriptionHandler(): Promise<void> {
     }
   });
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
+}
+
+function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
+  return Array.isArray(candidate) && candidate.length !== 0;
 }
 
 function ensureHeartbeatHandler(): void {
