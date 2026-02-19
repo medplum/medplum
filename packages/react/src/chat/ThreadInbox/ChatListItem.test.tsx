@@ -5,10 +5,6 @@ import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-<<<<<<< HEAD
-=======
-import { beforeEach, describe, expect, test } from 'vitest';
->>>>>>> e8992c53ff4c160bcf399b67c7b056148972dc5e
 import { render, screen, waitFor } from '../../test-utils/render';
 import { ChatListItem } from './ChatListItem';
 
