@@ -3,7 +3,7 @@
 import type { Communication } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { ThreadInbox } from '../components/messages/ThreadInbox';
+import { ThreadInbox } from '@medplum/react';
 import classes from './MessagesPage.module.css';
 import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
