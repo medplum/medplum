@@ -162,9 +162,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
       const updatedThread = await medplum.updateResource({ ...selectedThread, status: newStatus });
       setSelectedThread(updatedThread);
       setThreadMessages((prev) =>
-        prev.map(([parent, lastMsg]) =>
-          parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]
-        )
+        prev.map(([parent, lastMsg]) => (parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]))
       );
     };
     doUpdate().catch((err: Error) => setError(err));
