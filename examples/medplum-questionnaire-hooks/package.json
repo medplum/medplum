@@ -1,6 +1,6 @@
 {
   "name": "medplum-questionnaire-hooks",
-  "version": "5.0.14",
+  "version": "5.0.15",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,10 +14,10 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@medplum/core": "5.0.14",
-    "@medplum/eslint-config": "5.0.14",
-    "@medplum/fhirtypes": "5.0.14",
-    "@medplum/react-hooks": "5.0.14",
+    "@medplum/core": "5.0.15",
+    "@medplum/eslint-config": "5.0.15",
+    "@medplum/fhirtypes": "5.0.15",
+    "@medplum/react-hooks": "5.0.15",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
