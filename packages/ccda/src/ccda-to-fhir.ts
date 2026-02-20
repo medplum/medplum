@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { append, createReference, EMPTY, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
-import { NIL, v5 } from 'uuid';
 import type {
   Address,
   AllergyIntolerance,
@@ -40,6 +39,7 @@ import type {
   RelatedPerson,
   Resource,
 } from '@medplum/fhirtypes';
+import { NIL, v5 as uuidv5 } from 'uuid';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL,
@@ -264,12 +264,12 @@ class CcdaToFhirConverter {
         const input = idWithRoot['@_extension']
           ? `${idWithRoot['@_root']}:${idWithRoot['@_extension']}`
           : (idWithRoot['@_root'] as string);
-        return v5(input, NIL);
+        return uuidv5(input, NIL);
       }
 
       // No ID → deterministic UUID v5 from stringified element content
       if (element) {
-        return v5(JSON.stringify(element), NIL);
+        return uuidv5(JSON.stringify(element), NIL);
       }
     }
 
@@ -997,7 +997,10 @@ class CcdaToFhirConverter {
 
     const organization: Organization = {
       resourceType: 'Organization',
-      id: this.mapId(custodian.assignedCustodian.representedCustodianOrganization.id, custodian.assignedCustodian.representedCustodianOrganization),
+      id: this.mapId(
+        custodian.assignedCustodian.representedCustodianOrganization.id,
+        custodian.assignedCustodian.representedCustodianOrganization
+      ),
       identifier: this.mapIdentifiers(custodian.assignedCustodian.representedCustodianOrganization.id),
       name: custodian.assignedCustodian.representedCustodianOrganization.name?.[0],
       address: this.mapAddresses(custodian.assignedCustodian.representedCustodianOrganization.addr),
