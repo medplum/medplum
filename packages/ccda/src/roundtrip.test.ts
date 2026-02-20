@@ -80,6 +80,51 @@ describe('convertCcdaToFhir', () => {
   });
 });
 
+describe('deterministicIds', () => {
+  test('same CCDA produces identical output when deterministicIds is true', () => {
+    const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, 'ProblemPneumonia.xml'), 'utf8'));
+    const bundle1 = normalizeFhir(convertCcdaToFhir(ccda, { deterministicIds: true }));
+    const bundle2 = normalizeFhir(convertCcdaToFhir(ccda, { deterministicIds: true }));
+    expect(bundle1).toEqual(bundle2);
+  });
+
+  test('produces different output without deterministicIds', () => {
+    const ccda = convertXmlToCcda(
+      readFileSync(join(testDataFolder, '170.315_b1_toc_amb_ccd_r21_sample1_v13.xml'), 'utf8')
+    );
+    const bundle1 = normalizeFhir(convertCcdaToFhir(ccda, { ignoreUnsupportedSections: true }));
+    const bundle2 = normalizeFhir(convertCcdaToFhir(ccda, { ignoreUnsupportedSections: true }));
+    expect(bundle1).not.toEqual(bundle2);
+  });
+
+  test('generates stable UUID v5 from OID root and extension', () => {
+    const ccda = convertXmlToCcda(
+      readFileSync(join(testDataFolder, '170.315_b1_toc_amb_ccd_r21_sample1_v13.xml'), 'utf8')
+    );
+    const bundle1 = normalizeFhir(
+      convertCcdaToFhir(ccda, { deterministicIds: true, ignoreUnsupportedSections: true })
+    );
+    const bundle2 = normalizeFhir(
+      convertCcdaToFhir(ccda, { deterministicIds: true, ignoreUnsupportedSections: true })
+    );
+    expect(bundle1).toEqual(bundle2);
+  });
+
+  test('170.315 b1 samples convert successfully with deterministicIds', () => {
+    const samples = [
+      '170.315_b1_toc_amb_ccd_r21_sample1_v13',
+      '170.315_b1_toc_amb_ccd_r21_sample2_v11',
+    ];
+    for (const name of samples) {
+      const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
+      const bundle = convertCcdaToFhir(ccda, { deterministicIds: true, ignoreUnsupportedSections: true });
+      expect(bundle).toBeDefined();
+      expect(bundle.entry).toBeDefined();
+      expect(bundle.entry!.length).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('convertFhirToCcda', () => {
   test.each(testData)('should convert %s FHIR to CCDA', (name) => {
     const bundle = JSON.parse(readFileSync(join(testDataFolder, `${name}.json`), 'utf8')) as Bundle;

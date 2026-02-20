@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { append, createReference, EMPTY, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
+import { NIL, v5 } from 'uuid';
 import type {
   Address,
   AllergyIntolerance,
@@ -126,6 +127,7 @@ import { convertToCompactXml } from './xml';
 
 export interface CcdaToFhirOptions {
   ignoreUnsupportedSections?: boolean;
+  deterministicIds?: boolean;
 }
 
 /**
@@ -202,7 +204,7 @@ class CcdaToFhirConverter {
 
     return {
       resourceType: 'Patient',
-      id: this.mapId(patientRole.id),
+      id: this.mapId(patientRole.id, patientRole),
       identifier: this.mapIdentifiers(patientRole.id),
       name: this.mapCcdaNameArrayFhirHumanNameArray(patient.name),
       gender: this.mapGenderCode(patient.administrativeGenderCode?.['@_code']),
@@ -238,7 +240,7 @@ class CcdaToFhirConverter {
 
     return {
       resourceType: 'RelatedPerson',
-      id: this.mapId(associatedEntity.id),
+      id: this.mapId(associatedEntity.id, associatedEntity),
       patient: createReference(patient),
       relationship: relationship ? [relationship] : undefined,
       identifier: this.mapIdentifiers(associatedEntity.id),
@@ -248,14 +250,30 @@ class CcdaToFhirConverter {
     };
   }
 
-  private mapId(ids: CcdaId[] | undefined): string {
-    // If there is an id without a root, then use that as the FHIR resource ID
+  private mapId(ids: CcdaId[] | undefined, element?: unknown): string {
+    // If there is an id without an extension that is a UUID, then use that as the FHIR resource ID
     const serverId = ids?.find((id) => !id['@_extension'] && id['@_root'] && isUUID(id['@_root']));
     if (serverId) {
       return serverId['@_root'] as string;
     }
 
-    // Otherwise generate a UUID
+    if (this.options?.deterministicIds) {
+      // Has root → deterministic UUID v5 from root:extension
+      const idWithRoot = ids?.find((id) => id['@_root']);
+      if (idWithRoot) {
+        const input = idWithRoot['@_extension']
+          ? `${idWithRoot['@_root']}:${idWithRoot['@_extension']}`
+          : idWithRoot['@_root']!;
+        return v5(input, NIL);
+      }
+
+      // No ID → deterministic UUID v5 from stringified element content
+      if (element) {
+        return v5(JSON.stringify(element), NIL);
+      }
+    }
+
+    // Otherwise generate a random UUID
     return generateId();
   }
 
@@ -356,7 +374,7 @@ class CcdaToFhirConverter {
 
     return {
       resourceType: 'Composition',
-      id: this.mapId(this.ccda.id),
+      id: this.mapId(this.ccda.id, this.ccda),
       language: this.ccda.languageCode?.['@_code'],
       status: 'final',
       type: this.ccda.code
@@ -467,7 +485,7 @@ class CcdaToFhirConverter {
 
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
-      id: this.mapId(act.id),
+      id: this.mapId(act.id, act),
       clinicalStatus: this.createClinicalStatus(act),
       verificationStatus: this.createVerificationStatus(),
       type: 'allergy',
@@ -515,7 +533,7 @@ class CcdaToFhirConverter {
 
     const result: Condition = {
       resourceType: 'Condition',
-      id: this.mapId(act.id),
+      id: this.mapId(act.id, act),
       identifier: this.concatArrays(this.mapIdentifiers(act.id), this.mapIdentifiers(observation.id)),
       meta: {
         profile: [US_CORE_CONDITION_URL],
@@ -564,7 +582,7 @@ class CcdaToFhirConverter {
   private processCarePlanAct(act: CcdaAct): Resource | undefined {
     const result: CarePlan = {
       resourceType: 'CarePlan',
-      id: this.mapId(act.id),
+      id: this.mapId(act.id, act),
       identifier: this.mapIdentifiers(act.id),
       status: 'completed',
       intent: 'plan',
@@ -580,7 +598,7 @@ class CcdaToFhirConverter {
   private processProcedureAct(act: CcdaAct): Resource | undefined {
     const result: Procedure = {
       resourceType: 'Procedure',
-      id: this.mapId(act.id),
+      id: this.mapId(act.id, act),
       identifier: this.mapIdentifiers(act.id),
       status: 'completed',
       code: this.mapCode(act.code),
@@ -615,7 +633,7 @@ class CcdaToFhirConverter {
   }
 
   private processMedicationSubstanceAdministration(substanceAdmin: CcdaSubstanceAdministration): Resource | undefined {
-    const cdaId = this.mapId(substanceAdmin.id);
+    const cdaId = this.mapId(substanceAdmin.id, substanceAdmin);
     const medicationCode = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0];
     const routeCode = substanceAdmin.routeCode;
     const doseQuantity = substanceAdmin.doseQuantity;
@@ -715,7 +733,7 @@ class CcdaToFhirConverter {
 
     const result: Immunization = {
       resourceType: 'Immunization',
-      id: this.mapId(substanceAdmin.id),
+      id: this.mapId(substanceAdmin.id, substanceAdmin),
       identifier: this.mapIdentifiers(substanceAdmin.id),
       status: IMMUNIZATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'completed'),
       vaccineCode: this.mapCode(
@@ -743,7 +761,7 @@ class CcdaToFhirConverter {
 
   private processReaction(reactionObs: CcdaObservation): AllergyIntoleranceReaction {
     const reaction: AllergyIntoleranceReaction = {
-      id: this.mapId(reactionObs.id),
+      id: this.mapId(reactionObs.id, reactionObs),
       manifestation: [this.mapCode(reactionObs.value as CcdaCode)] as CodeableConcept[],
       onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value']),
     };
@@ -918,7 +936,7 @@ class CcdaToFhirConverter {
 
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      id: this.mapId(author.assignedAuthor?.id),
+      id: this.mapId(author.assignedAuthor?.id, author.assignedAuthor),
       identifier: this.mapIdentifiers(author.assignedAuthor?.id),
       name: this.mapCcdaNameArrayFhirHumanNameArray(author.assignedAuthor?.assignedPerson?.name),
       address: this.mapAddresses(author.assignedAuthor?.addr),
@@ -943,7 +961,7 @@ class CcdaToFhirConverter {
 
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      id: this.mapId(assignedEntity?.id),
+      id: this.mapId(assignedEntity?.id, assignedEntity),
       identifier: this.mapIdentifiers(assignedEntity?.id),
       name: this.mapCcdaNameArrayFhirHumanNameArray(assignedPerson?.name),
       address: this.mapAddresses(assignedEntity?.addr),
@@ -954,7 +972,7 @@ class CcdaToFhirConverter {
 
     const organization: Organization = {
       resourceType: 'Organization',
-      id: this.mapId(assignedEntity?.id),
+      id: this.mapId(assignedEntity?.id, assignedEntity),
       identifier: this.mapIdentifiers(representedOrganization?.id),
       name: representedOrganization?.name?.[0],
       address: this.mapAddresses(representedOrganization?.addr),
@@ -963,7 +981,7 @@ class CcdaToFhirConverter {
 
     const practitionerRole: PractitionerRole = {
       resourceType: 'PractitionerRole',
-      id: this.mapId(assignedEntity?.id),
+      id: this.mapId(assignedEntity?.id, assignedEntity),
       practitioner: createReference(practitioner),
       organization: createReference(organization),
     };
@@ -979,7 +997,7 @@ class CcdaToFhirConverter {
 
     const organization: Organization = {
       resourceType: 'Organization',
-      id: this.mapId(custodian.assignedCustodian.representedCustodianOrganization.id),
+      id: this.mapId(custodian.assignedCustodian.representedCustodianOrganization.id, custodian.assignedCustodian.representedCustodianOrganization),
       identifier: this.mapIdentifiers(custodian.assignedCustodian.representedCustodianOrganization.id),
       name: custodian.assignedCustodian.representedCustodianOrganization.name?.[0],
       address: this.mapAddresses(custodian.assignedCustodian.representedCustodianOrganization.addr),
@@ -1053,7 +1071,7 @@ class CcdaToFhirConverter {
 
     const result: CareTeam = {
       resourceType: 'CareTeam',
-      id: this.mapId(organizer.id),
+      id: this.mapId(organizer.id, organizer),
       identifier: this.mapIdentifiers(organizer.id),
       participant: participants.length > 0 ? participants : undefined,
     };
@@ -1082,7 +1100,7 @@ class CcdaToFhirConverter {
   private processVitalsOrganizer(organizer: CcdaOrganizer): Observation {
     const result: Observation = {
       resourceType: 'Observation',
-      id: this.mapId(organizer.id),
+      id: this.mapId(organizer.id, organizer),
       identifier: this.mapIdentifiers(organizer.id),
       status: 'final',
       category: this.mapObservationTemplateIdToObservationCategory(organizer.templateId),
@@ -1164,7 +1182,7 @@ class CcdaToFhirConverter {
 
     const result: Goal = {
       resourceType: 'Goal',
-      id: this.mapId(observation.id),
+      id: this.mapId(observation.id, observation),
       extension: this.mapTextReference(observation.text),
       identifier: this.mapIdentifiers(observation.id),
       lifecycleStatus: this.mapGoalLifecycleStatus(observation),
@@ -1204,7 +1222,7 @@ class CcdaToFhirConverter {
 
     const result: Observation = {
       resourceType: 'Observation',
-      id: this.mapId(observation.id),
+      id: this.mapId(observation.id, observation),
       identifier: this.mapIdentifiers(observation.id),
       status: 'final',
       category: this.mapObservationTemplateIdToObservationCategory(observation.templateId),
@@ -1325,7 +1343,7 @@ class CcdaToFhirConverter {
     // Create the main encounter resource
     const result: Encounter = {
       resourceType: 'Encounter',
-      id: this.mapId(encounter.id),
+      id: this.mapId(encounter.id, encounter),
       identifier: this.mapIdentifiers(encounter.id),
       status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
       class: {
@@ -1369,7 +1387,7 @@ class CcdaToFhirConverter {
           // Create Condition resource
           const condition: Condition = {
             resourceType: 'Condition',
-            id: this.mapId(observation.id),
+            id: this.mapId(observation.id, observation),
             identifier: this.mapIdentifiers(observation.id),
             clinicalStatus: {
               coding: [
@@ -1423,7 +1441,7 @@ class CcdaToFhirConverter {
   private processProcedure(section: CcdaSection, procedure: CcdaProcedure): Procedure {
     const result: Procedure = {
       resourceType: 'Procedure',
-      id: this.mapId(procedure.id),
+      id: this.mapId(procedure.id, procedure),
       identifier: this.mapIdentifiers(procedure.id),
       status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(
         procedure.statusCode?.['@_code'],
