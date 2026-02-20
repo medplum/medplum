@@ -1419,21 +1419,6 @@ function validateDateValue(value: string): void {
   if (Number.isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
   }
-  /**
-   *  new Date(value) silently rolls over invalid dates to the next valid date (e.g. 2026-02-29 -> 2026-03-01).
-   *  Throws a badRequest OperationOutcomeError if the parsed components do not match the original input.
-   */
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) {
-    const [, year, month, day] = match.map(Number);
-    if (
-      dateValue.getUTCFullYear() !== year ||
-      dateValue.getUTCMonth() + 1 !== month ||
-      dateValue.getUTCDate() !== day
-    ) {
-      throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
-    }
-  }
 }
 
 /**
