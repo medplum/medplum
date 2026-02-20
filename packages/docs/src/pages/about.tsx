@@ -199,6 +199,13 @@ export default function AboutPage(): JSX.Element {
               linkedInUrl="https://www.linkedin.com/in/alexanderxlin/"
               githubUrl="https://github.com/alexanderxlin"
             />
+            <ProfileCard
+              name="Oleg Rocklin"
+              title="Integration Engineer"
+              imgUrl="/img/people/oleg.webp"
+              linkedInUrl="https://www.linkedin.com/in/olegrocklin/"
+              githubUrl="https://github.com/oleg-mp"
+            />
           </CardContainer>
         </Section>
       </Container>
