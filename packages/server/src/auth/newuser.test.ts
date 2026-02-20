@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest } from '@medplum/core';
-import type { OperationOutcome } from '@medplum/fhirtypes';
+import { Operator, badRequest } from '@medplum/core';
+import type { OperationOutcome, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -555,6 +555,59 @@ describe('New user', () => {
     expect(res6.status).toBe(404);
     expect(res6.body.login).toBeUndefined();
     expect(res6.body.code).toBeUndefined();
+  });
+
+  test('Self-registered user has meta.project set when projectId is provided', async () => {
+    const email = `meta-project${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Register a project owner so we have a valid projectId
+    const { project } = await withTestContext(() =>
+      registerNew({ firstName: 'Owner', lastName: 'Owner', projectName: 'MetaProjectTest', email, password })
+    );
+
+    // Register a new user into that project via the self-registration endpoint
+    const newEmail = `patient${randomUUID()}@example.com`;
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      projectId: project.id,
+      firstName: 'Patient',
+      lastName: 'One',
+      email: newEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+    });
+
+    expect(res.status).toBe(200);
+
+    // Read the User back directly and assert meta.project is set
+    const systemRepo = getGlobalSystemRepo();
+    const bundle = await systemRepo.search<User>({
+      resourceType: 'User',
+      filters: [{ code: 'email', operator: Operator.EXACT, value: newEmail }],
+    });
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0].resource?.meta?.project).toBe(project.id);
+  });
+
+  test('Self-registered user without projectId has no meta.project', async () => {
+    const newEmail = `no-project${randomUUID()}@example.com`;
+    const res = await request(app).post('/auth/newuser').type('json').send({
+      firstName: 'No',
+      lastName: 'Project',
+      email: newEmail,
+      password: 'password!@#',
+      recaptchaToken: 'xyz',
+    });
+
+    expect(res.status).toBe(200);
+
+    const systemRepo = getGlobalSystemRepo();
+    const bundle = await systemRepo.search<User>({
+      resourceType: 'User',
+      filters: [{ code: 'email', operator: Operator.EXACT, value: newEmail }],
+    });
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0].resource?.meta?.project).toBeUndefined();
   });
 
   test('Success when config has empty recaptchaSecretKey and missing recaptcha token', async () => {
