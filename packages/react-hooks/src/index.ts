@@ -10,3 +10,4 @@ export * from './useQuestionnaireForm/utils';
 export * from './useResource/useResource';
 export * from './useSearch/useSearch';
 export * from './useSubscription/useSubscription';
+export * from './useThreadInbox/useThreadInbox';

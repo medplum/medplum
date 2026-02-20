@@ -10,9 +10,8 @@
 }
 
 .contentContainer {
-  transition: background 0.2s;
-  cursor: pointer;
   transition: all 0.2s ease;
+  cursor: pointer;
   border: 1px solid transparent;
   text-decoration: none;
   color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));

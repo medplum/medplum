@@ -1,37 +1,36 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import type { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '../../test-utils/render';
 import { NewTopicDialog } from './NewTopicDialog';
 
-const mockOnSubmit = vi.fn();
-const mockOnClose = vi.fn();
+const mockOnSubmit = jest.fn();
+const mockOnClose = jest.fn();
 
 describe('NewTopicDialog', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   const setup = (opened = true, subject?: Patient): void => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <Notifications />
-            <NewTopicDialog opened={opened} onClose={mockOnClose} onSubmit={mockOnSubmit} subject={subject} />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
+      <>
+        <Notifications />
+        <NewTopicDialog opened={opened} onClose={mockOnClose} onSubmit={mockOnSubmit} subject={subject} />
+      </>,
+      ({ children }) => (
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+        </MemoryRouter>
+      )
     );
   };
 

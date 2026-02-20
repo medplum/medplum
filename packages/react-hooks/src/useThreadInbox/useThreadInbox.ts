@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useState, useEffect, useCallback } from 'react';
-import type { Communication } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import { useCallback, useEffect, useState } from 'react';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface UseThreadInboxOptions {
   query: string;
@@ -18,7 +18,7 @@ export interface UseThreadInboxReturn {
   selectedThread: Communication | undefined;
   total: number | undefined;
   addThreadMessage: (message: Communication) => void;
-  handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
+  handleThreadStatusChange: (newStatus: Communication['status']) => void;
   refreshThreadMessages: () => Promise<void>;
 }
 
@@ -62,7 +62,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     }
 
     const queryParts = parents.map((parent) => {
-      const safeId = parent.id?.replace(/-/g, '') || '';
+      const safeId = parent.id?.replaceAll('-', '') || '';
       const alias = `thread_${safeId}`;
       const ref = getReferenceString(parent);
 
@@ -102,7 +102,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
     const threadsWithReplies = parents
       .map((parent) => {
-        const safeId = parent.id?.replace(/-/g, '') || '';
+        const safeId = parent.id?.replaceAll('-', '') || '';
         const alias = `thread_${safeId}`;
         const childList = response.data[alias] as Communication[] | undefined;
         const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
@@ -126,59 +126,54 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
   useEffect(() => {
     const fetchThread = async (): Promise<void> => {
-      if (threadId) {
-        const thread = threadMessages.find((t) => t[0].id === threadId);
-        if (thread) {
-          setSelectedThread(thread[0]);
-        } else {
-          try {
-            const communication: Communication = await medplum.readResource('Communication', threadId);
-
-            if (communication.partOf === undefined) {
-              setSelectedThread(communication);
-            } else {
-              const parentRef = communication.partOf[0].reference;
-              if (parentRef) {
-                const parent = await medplum.readReference({ reference: parentRef } as any);
-                setSelectedThread(parent as Communication);
-              }
-            }
-          } catch (err) {
-            setError(err as Error);
-          }
-        }
-      } else {
+      if (!threadId) {
         setSelectedThread(undefined);
+        return;
+      }
+
+      const thread = threadMessages.find((t) => t[0].id === threadId);
+      if (thread) {
+        setSelectedThread(thread[0]);
+        return;
+      }
+
+      const communication: Communication = await medplum.readResource('Communication', threadId);
+      if (communication.partOf === undefined) {
+        setSelectedThread(communication);
+      } else {
+        const parentRef = communication.partOf[0].reference;
+        if (parentRef) {
+          const parent = await medplum.readReference({ reference: parentRef } as any);
+          setSelectedThread(parent as Communication);
+        }
       }
     };
 
-    fetchThread().catch((err) => {
-      setError(err as Error);
+    fetchThread().catch((err: Error) => {
+      setError(err);
     });
   }, [threadId, threadMessages, medplum]);
 
-  const handleThreadStatusChange = async (newStatus: Communication['status']): Promise<void> => {
+  const handleThreadStatusChange = (newStatus: Communication['status']): void => {
     if (!selectedThread) {
       return;
     }
-    try {
-      const updatedThread = await medplum.updateResource({
-        ...selectedThread,
-        status: newStatus,
-      });
-
+    const doUpdate = async (): Promise<void> => {
+      const updatedThread = await medplum.updateResource({ ...selectedThread, status: newStatus });
       setSelectedThread(updatedThread);
       setThreadMessages((prev) =>
         prev.map(([parent, lastMsg]) => (parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]))
       );
-    } catch (err) {
-      setError(err as Error);
-    }
+    };
+    doUpdate().catch((err: Error) => setError(err));
   };
 
-  const addThreadMessage = async (message: Communication): Promise<void> => {
-    await fetchAllCommunications();
-    setThreadMessages((prev) => [[message, undefined], ...prev]);
+  const addThreadMessage = (message: Communication): void => {
+    const doAdd = async (): Promise<void> => {
+      await fetchAllCommunications();
+      setThreadMessages((prev) => [[message, undefined], ...prev]);
+    };
+    doAdd().catch((err: Error) => setError(err));
   };
 
   return {
