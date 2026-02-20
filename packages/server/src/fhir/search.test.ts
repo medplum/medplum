@@ -1224,6 +1224,8 @@ describe('project-scoped Repository', () => {
     ['1985-11-30T05:05:55-14:00', true],
     ['1985-11-30T05:05:55.000000000-14:00', true],
     ['1985-11-30T05:05:55-15:00', false],
+    ['2026-02-29', false],
+    ['2024-02-29', true],
   ])('Handle_lastUpdated value %s, isValid? %s', async (value, isValid) =>
     withTestContext(async () => {
       const searchPromise = repo.search({
