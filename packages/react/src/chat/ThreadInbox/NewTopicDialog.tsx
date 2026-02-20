@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG, normalizeErrorString } from '@medplum/core';
 import type {
   Communication,
   Patient,
@@ -153,11 +153,11 @@ const questionnaire: Questionnaire = {
       repeats: true,
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+          url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-referenceResource`,
           valueCodeableConcept: {
             coding: [
               {
-                system: 'http://hl7.org/fhir/fhir-types',
+                system: `${HTTP_HL7_ORG}/fhir/fhir-types`,
                 display: 'Practitioner',
                 code: 'Practitioner',
               },
