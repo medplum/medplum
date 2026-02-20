@@ -18,7 +18,7 @@ export interface UseThreadInboxReturn {
   selectedThread: Communication | undefined;
   total: number | undefined;
   addThreadMessage: (message: Communication) => void;
-  handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
+  handleThreadStatusChange: (newStatus: Communication['status']) => void;
   refreshThreadMessages: () => Promise<void>;
 }
 
@@ -154,28 +154,28 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     });
   }, [threadId, threadMessages, medplum]);
 
-  const handleThreadStatusChange = async (newStatus: Communication['status']): Promise<void> => {
+  const handleThreadStatusChange = (newStatus: Communication['status']): void => {
     if (!selectedThread) {
       return;
     }
-    const updatedThread = await medplum.updateResource({
-      ...selectedThread,
-      status: newStatus,
-    });
-    setSelectedThread(updatedThread);
-    setThreadMessages((prev) =>
-      prev.map(([parent, lastMsg]) => (parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]))
-    );
+    const doUpdate = async (): Promise<void> => {
+      const updatedThread = await medplum.updateResource({ ...selectedThread, status: newStatus });
+      setSelectedThread(updatedThread);
+      setThreadMessages((prev) =>
+        prev.map(([parent, lastMsg]) =>
+          parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]
+        )
+      );
+    };
+    doUpdate().catch((err: Error) => setError(err));
   };
 
   const addThreadMessage = (message: Communication): void => {
-    fetchAllCommunications()
-      .then(() => {
-        setThreadMessages((prev) => [[message, undefined], ...prev]);
-      })
-      .catch((err: Error) => {
-        setError(err);
-      });
+    const doAdd = async (): Promise<void> => {
+      await fetchAllCommunications();
+      setThreadMessages((prev) => [[message, undefined], ...prev]);
+    };
+    doAdd().catch((err: Error) => setError(err));
   };
 
   return {
