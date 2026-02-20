@@ -1,12 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MantineProvider } from '@mantine/core';
 import type { Communication, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '../../test-utils/render';
 import { ChatList } from './ChatList';
 
 const mockPatient1: Patient = {
@@ -45,16 +43,14 @@ const mockLastCommunication1: Communication = {
   sent: '2024-01-01T12:00:00Z',
 };
 
-const mockGetThreadUri = vi.fn((topic: Communication) => `/Message/${topic.id}`);
+const mockGetThreadUri = jest.fn((topic: Communication) => `/Message/${topic.id}`);
 
 describe('ChatList', () => {
   let medplum: MockClient;
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
-
-    // Create patient resources
+    jest.clearAllMocks();
     await medplum.createResource(mockPatient1);
     await medplum.createResource(mockPatient2);
   });
@@ -64,13 +60,12 @@ describe('ChatList', () => {
     selectedCommunication?: Communication
   ): void => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <MantineProvider>
-            <ChatList threads={threads} selectedCommunication={selectedCommunication} getThreadUri={mockGetThreadUri} />
-          </MantineProvider>
-        </MedplumProvider>
-      </MemoryRouter>
+      <ChatList threads={threads} selectedCommunication={selectedCommunication} getThreadUri={mockGetThreadUri} />,
+      ({ children }) => (
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+        </MemoryRouter>
+      )
     );
   };
 
@@ -103,7 +98,6 @@ describe('ChatList', () => {
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
-    // When topic has text, it shows the topic text instead of message content
     expect(screen.getByText('Topic 1')).toBeInTheDocument();
   });
 
@@ -112,7 +106,6 @@ describe('ChatList', () => {
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
-    // When topic has text, it shows the topic text instead of "No messages available"
     expect(screen.getByText('Topic 1')).toBeInTheDocument();
   });
 

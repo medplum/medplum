@@ -13,12 +13,9 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 const dayNames: DayOfWeek[] = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 function eachDayOfInterval(interval: Interval, timeZone: string): Temporal.ZonedDateTime[] {
-  let t = Temporal.ZonedDateTime.from({
-    year: interval.start.getFullYear(),
-    month: interval.start.getMonth() + 1,
-    day: interval.start.getDate(),
-    timeZone,
-  });
+  let t = Temporal.Instant.fromEpochMilliseconds(interval.start.valueOf())
+    .toZonedDateTimeISO(timeZone)
+    .withPlainTime({ hour: 0, minute: 0, second: 0, millisecond: 0 });
 
   const results: Temporal.ZonedDateTime[] = [];
   while (t.epochMilliseconds < interval.end.valueOf()) {

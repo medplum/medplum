@@ -847,6 +847,20 @@ export async function getCount(
   searchRequest: SearchRequest,
   options?: GetCountOptions
 ): Promise<CountResult> {
+  // When the data query returned fewer rows than the page size and we're not
+  // using cursor pagination, we already know the exact total: offset + rowCount.
+  // Skip both the EXPLAIN and COUNT(*) queries.
+  if (
+    options?.rowCount !== undefined && // We actually fetched results
+    !options.forceAccurate && // Caller isn't explicitly requesting a DB count
+    !searchRequest.cursor && // Cursor adds WHERE clauses the count query won't have, so rowCount isn't representative
+    options.rowCount <= (searchRequest.count ?? DEFAULT_SEARCH_COUNT) && // Fewer results than requested means we've seen them all
+    (options.rowCount > 0 || (searchRequest.offset ?? 0) === 0) // With offset + zero rows, total could be 0..offset
+  ) {
+    const exact = (searchRequest.offset ?? 0) + options.rowCount;
+    return { estimate: exact, accurate: exact };
+  }
+
   let estimate = await getEstimateCount(repo, searchRequest);
   estimate = clampEstimateCount(searchRequest, estimate, options?.rowCount);
 
@@ -1404,6 +1418,21 @@ function validateDateValue(value: string): void {
   const dateValue = new Date(value);
   if (Number.isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
+  }
+  /**
+   *  new Date(value) silently rolls over invalid dates to the next valid date (e.g. 2026-02-29 -> 2026-03-01).
+   *  Throws a badRequest OperationOutcomeError if the parsed components do not match the original input.
+   */
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match.map(Number);
+    if (
+      dateValue.getUTCFullYear() !== year ||
+      dateValue.getUTCMonth() + 1 !== month ||
+      dateValue.getUTCDate() !== day
+    ) {
+      throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
+    }
   }
 }
 

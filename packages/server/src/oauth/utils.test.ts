@@ -6,8 +6,8 @@ import type { ClientApplication, Login, Patient, Project, ProjectMembership, Use
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import {} from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { verifyJwt } from './keys';
 import {
@@ -210,16 +210,14 @@ describe('OAuth utils', () => {
   });
 
   test('Login successfully', async () => {
-    const login = await withTestContext(() =>
-      tryLogin({
-        clientId: client.id,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-      })
-    );
+    const login = await tryLogin({
+      clientId: client.id,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      nonce: 'nonce',
+    });
     expect(login).toBeDefined();
   });
 
@@ -437,19 +435,19 @@ describe('OAuth utils', () => {
   describe('getAuthTokens with email scope', () => {
     let project: WithId<Project>;
     let repo: Repository;
+    let systemRepo: SystemRepository;
 
     beforeAll(async () => {
       await withTestContext(async () => {
         const result = await createTestProject({ withRepo: true });
         project = result.project;
         repo = result.repo;
+        systemRepo = repo.getSystemRepo();
       });
     });
 
     test('Access token includes email when email scope is requested for User', async () => {
       await withTestContext(async () => {
-        const systemRepo = getSystemRepo();
-
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
         const user = await systemRepo.createResource<User>({
@@ -500,8 +498,6 @@ describe('OAuth utils', () => {
 
     test('Access token does not include email when email scope is not requested', async () => {
       await withTestContext(async () => {
-        const systemRepo = getSystemRepo();
-
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
         const user = await systemRepo.createResource<User>({
@@ -552,8 +548,6 @@ describe('OAuth utils', () => {
 
     test('Access token does not include email for ClientApplication even with email scope', async () => {
       await withTestContext(async () => {
-        const systemRepo = getSystemRepo();
-
         // Create a ClientApplication
         const client = await repo.createResource<ClientApplication>({
           resourceType: 'ClientApplication',
@@ -603,8 +597,6 @@ describe('OAuth utils', () => {
 
     test('Access token does not include email when user has no email address', async () => {
       await withTestContext(async () => {
-        const systemRepo = getSystemRepo();
-
         // Create a User without email
         const user = await systemRepo.createResource<User>({
           resourceType: 'User',

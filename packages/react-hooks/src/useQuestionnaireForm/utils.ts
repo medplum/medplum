@@ -61,6 +61,7 @@ export const QUESTIONNAIRE_ENABLED_WHEN_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/u
 export const QUESTIONNAIRE_CALCULATED_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression`;
 export const QUESTIONNAIRE_SIGNATURE_REQUIRED_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`;
 export const QUESTIONNAIRE_SIGNATURE_RESPONSE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`;
+export const QUESTIONNAIRE_HIDDEN_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-hidden`;
 
 /**
  * Returns true if the item is a choice question.
@@ -81,6 +82,12 @@ export function isQuestionEnabled(
   item: QuestionnaireItem,
   questionnaireResponse: QuestionnaireResponse | undefined
 ): boolean {
+  // Check for questionnaire-hidden extension first - if present and true, the item is permanently hidden
+  const hiddenExtension = getExtension(item, QUESTIONNAIRE_HIDDEN_URL);
+  if (hiddenExtension?.valueBoolean === true) {
+    return false;
+  }
+
   const extensionResult = isQuestionEnabledViaExtension(item, questionnaireResponse);
   if (extensionResult !== undefined) {
     return extensionResult;

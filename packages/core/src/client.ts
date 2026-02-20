@@ -3439,6 +3439,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setCacheEntry(key: string, value: ReadablePromise<any>, options: MedplumRequestOptions | undefined): void {
     if (this.isCacheEnabled(options)) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
+
+      // If the request is aborted, remove the abort result from the cache so
+      // later attempts will not re-resolve the abort.
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          this.requestCache.delete(key);
+        });
+      }
     }
   }
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG, normalizeErrorString } from '@medplum/core';
 import type {
   Communication,
   Patient,
@@ -11,10 +11,11 @@ import type {
   QuestionnaireResponse,
   Reference,
 } from '@medplum/fhirtypes';
-import { QuestionnaireForm, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useMemo, useState } from 'react';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
 import type { JSX } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
+import { useMemo, useState } from 'react';
+import { QuestionnaireForm } from '../../QuestionnaireForm/QuestionnaireForm';
+import { ResourceInput } from '../../ResourceInput/ResourceInput';
 
 interface NewTopicDialogProps {
   subject: Reference<Patient> | Patient | undefined;
@@ -85,7 +86,11 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
       onSubmit?.(createdCommunication);
       onClose();
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({
+        title: 'Error',
+        message: normalizeErrorString(error),
+        color: 'red',
+      });
     }
   };
 
@@ -148,11 +153,11 @@ const questionnaire: Questionnaire = {
       repeats: true,
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+          url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-referenceResource`,
           valueCodeableConcept: {
             coding: [
               {
-                system: 'http://hl7.org/fhir/fhir-types',
+                system: `${HTTP_HL7_ORG}/fhir/fhir-types`,
                 display: 'Practitioner',
                 code: 'Practitioner',
               },

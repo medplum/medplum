@@ -4288,6 +4288,42 @@ describe('Client', () => {
     expect(response2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  test('Aborted requests are not cached', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = jest
+      .fn()
+      .mockImplementationOnce((async (_url: string, options?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          if (!options?.signal) {
+            throw new Error('options.signal required for this test');
+          }
+
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout'));
+          }, 3000);
+
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          });
+        });
+      }) satisfies FetchLike)
+      .mockImplementation(async () => mockFetchResponse(200, patient));
+
+    const client = new MedplumClient({ fetch });
+    const controller = new AbortController();
+
+    const getPromise1 = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
+    await sleep(0);
+    controller.abort();
+    await expect(getPromise1).rejects.toThrow('Request aborted');
+
+    const getPromise2 = client.get(client.fhirUrl('Patient', '123'));
+    await expect(getPromise2).resolves.toEqual(patient);
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
