@@ -176,7 +176,6 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate, appointmentDetailsHandlers]
   );
 
-  const height = window.innerHeight - 60;
   const serviceTypes = useMemo(() => schedule && serviceTypesFromSchedulingParameters(schedule), [schedule]);
 
   const handleAppointmentUpdate = useCallback((updated: Appointment) => {
@@ -185,11 +184,10 @@ export function SchedulePage(): JSX.Element | null {
   }, []);
 
   return (
-    <Box pos="relative" bg="white" p="md" style={{ height }}>
+    <Box pos="relative" bg="white" p="md" className={classes.fullHeight}>
       <div className={classes.container}>
         <div className={classes.calendar}>
           <Calendar
-            style={{ height: height - 150 }}
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
             onSelectSlot={handleSelectSlot}
@@ -205,7 +203,6 @@ export function SchedulePage(): JSX.Element | null {
           </Stack>
         )}
       </div>
-
       {/* Modals */}
       <Drawer
         opened={createAppointmentOpened}
