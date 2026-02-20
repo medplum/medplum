@@ -263,7 +263,7 @@ class CcdaToFhirConverter {
       if (idWithRoot) {
         const input = idWithRoot['@_extension']
           ? `${idWithRoot['@_root']}:${idWithRoot['@_extension']}`
-          : idWithRoot['@_root']!;
+          : (idWithRoot['@_root'] as string);
         return v5(input, NIL);
       }
 
