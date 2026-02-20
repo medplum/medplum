@@ -27,6 +27,7 @@ import type {
   Questionnaire,
   QuestionnaireItem,
   Resource,
+  RiskAssessment,
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
@@ -1992,6 +1993,30 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
+  });
+
+  test('RiskAssessment ras-2', () => {
+    const ra1: RiskAssessment = {
+      resourceType: 'RiskAssessment',
+      status: 'preliminary',
+      subject: { reference: 'Patient/123' },
+      prediction: [
+        {
+          // probabilityDecimal: 0, // <--- without this optional property, constraint validation fails on ras-2
+          qualitativeRisk: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/risk-probability',
+                code: 'high',
+                display: 'High likelihood',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => validateResource(ra1)).not.toThrow();
   });
 });
 
