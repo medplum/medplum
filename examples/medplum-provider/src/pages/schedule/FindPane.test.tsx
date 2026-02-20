@@ -8,7 +8,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
 import { FindPane } from './FindPane';
 
@@ -88,7 +88,7 @@ describe('FindPane', () => {
     schedule?: WithId<Schedule>;
     range?: { start: Date; end: Date };
     onChange?: (slots: Slot[]) => void;
-    onSelectSlot?: (slot: Slot) => void;
+    onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
     slots?: Slot[];
   };
 
@@ -96,7 +96,7 @@ describe('FindPane', () => {
     const {
       schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]),
       range = defaultRange,
-      onSelectSlot = vi.fn(),
+      onSuccess = vi.fn(),
     } = options;
 
     return render(
@@ -104,7 +104,7 @@ describe('FindPane', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <FindPane schedule={schedule} range={range} onSelectSlot={onSelectSlot} />
+            <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -254,12 +254,12 @@ describe('FindPane', () => {
   });
 
   describe('Slot Selection', () => {
-    test('calls onSelectSlot when a slot button is clicked', async () => {
+    test('Displays a form for the chosen slot', async () => {
       const user = userEvent.setup();
-      const onSelectSlot = vi.fn();
+      const onSuccess = vi.fn();
 
       await act(async () => {
-        setup({ slots: mockSlots, onSelectSlot });
+        setup({ slots: mockSlots, onSuccess });
       });
 
       // Select a service type first
@@ -273,10 +273,19 @@ describe('FindPane', () => {
 
       // Click on a slot button
       const slotButtons = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
-      if (slotButtons.length > 0) {
-        await user.click(slotButtons[0]);
-        expect(onSelectSlot).toHaveBeenCalledWith(mockSlots[0]);
-      }
+      expect(slotButtons).not.toHaveLength(0);
+      await user.click(slotButtons[0]);
+
+      // See creation form become visible
+      expect(screen.getByRole('button', { name: 'Create Appointment' })).toBeInTheDocument();
+
+      // Dismissing the form takes us back to the slot choices
+      const dismissButton = screen.getByLabelText('Clear selection');
+      expect(dismissButton).toBeInTheDocument();
+      await user.click(dismissButton);
+
+      const slotButtons2 = screen.getAllByRole('button').filter((btn) => btn.textContent?.includes('2024'));
+      expect(slotButtons2).not.toHaveLength(0);
     });
   });
 

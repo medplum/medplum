@@ -3,7 +3,7 @@
 import { Button, Group, Stack, Title } from '@mantine/core';
 import { EMPTY, isDefined, formatDateTime } from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
@@ -13,11 +13,12 @@ import type { Range } from '../../types/scheduling';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import { serviceTypesFromSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
+import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
-  onSelectSlot: (slot: Slot) => void;
+  onSuccess: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
 };
 
 // Allows selection of a ServiceType found in the schedule's
@@ -27,7 +28,8 @@ type FindPaneProps = {
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element {
   const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const { schedule, range } = props;
+  const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
+  const { schedule, range, onSuccess } = props;
   const serviceTypes = useMemo(
     () =>
       serviceTypesFromSchedulingParameters(schedule).map((codeableConcept) => ({
@@ -95,6 +97,34 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     setSlots([]);
   }, []);
 
+  const handleBookSuccess = useCallback(
+    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+      setServiceType(null);
+      setSlots([]);
+      setChosenSlot(undefined);
+      onSuccess(results);
+    },
+    [onSuccess]
+  );
+
+  if (chosenSlot) {
+    return (
+      <Stack gap="sm" justify="flex-start">
+        <Title order={4}>
+          <Group justify="space-between">
+            <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
+            <Button variant="subtle" onClick={() => setChosenSlot(undefined)} aria-label="Clear selection">
+              <IconX size={20} />
+            </Button>
+          </Group>
+        </Title>
+        <BookAppointmentForm slot={chosenSlot} onSuccess={handleBookSuccess} />
+      </Stack>
+    );
+  }
+
+  // tricky: `undefined` means the "wildcard" service type, so we explicitly
+  // test against `null` here.
   if (serviceType !== null) {
     return (
       <Stack gap="sm" justify="flex-start">
@@ -114,7 +144,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
             variant="outline"
             color="gray.3"
             styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
-            onClick={() => props.onSelectSlot(slot)}
+            onClick={() => setChosenSlot(slot)}
           >
             {formatDateTime(slot.start)}
           </Button>

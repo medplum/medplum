@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { MockClient } from '@medplum/mock';
+import { createReference, ReadablePromise } from '@medplum/core';
+import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -302,215 +303,300 @@ describe('SchedulePage', () => {
       });
     });
   });
+});
 
-  describe('ScheduleFindPane Integration', () => {
-    const serviceType1: CodeableConcept = {
-      coding: [
+describe('$find/$book component integration tests', () => {
+  let medplum: MockClient;
+
+  beforeEach(async () => {
+    medplum = new MockClient({ profile: DrAliceSmith });
+    vi.clearAllMocks();
+
+    // Mock window.innerHeight for calendar height calculation
+    Object.defineProperty(window, 'innerHeight', {
+      writable: true,
+      configurable: true,
+      value: 800,
+    });
+  });
+
+  const setup = (): ReturnType<typeof render> => {
+    return render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <Notifications />
+            <SchedulePage />
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  };
+
+  const serviceType1: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'checkup',
+      },
+    ],
+    text: 'Annual Checkup',
+  };
+
+  const serviceType2: CodeableConcept = {
+    coding: [
+      {
+        system: 'http://example.com/service-types',
+        code: 'followup',
+      },
+    ],
+    text: 'Follow-up Visit',
+  };
+
+  const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): Schedule => ({
+    resourceType: 'Schedule',
+    id: `schedule-1`,
+    actor: [{ reference: 'Practitioner/practitioner-1' }],
+    active: true,
+    extension: serviceTypes.map((st) => ({
+      url: SchedulingParametersURI,
+      extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
+    })),
+  });
+
+  test('renders ScheduleFindPane when schedule has scheduling parameters', async () => {
+    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
+    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+
+    // Mock the $find operation
+    medplum.get = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    } as Bundle<Slot>);
+
+    await act(async () => {
+      setup();
+    });
+
+    // Check Calendar component rendered correctly
+    expect(screen.getByText('Today')).toBeInTheDocument();
+
+    // ScheduleFindPane should be rendered with the single service type selected
+    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+  });
+
+  test('does not render ScheduleFindPane when schedule has no scheduling parameters', async () => {
+    // mockSchedule has no extensions/scheduling parameters
+    await act(async () => {
+      setup();
+    });
+
+    // Check Calendar component rendered correctly
+    expect(screen.getByText('Today')).toBeInTheDocument();
+
+    // ScheduleFindPane should NOT be rendered
+    expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
+  });
+
+  test('Adds new appointments and slots after ScheduleFindPane $book success', async () => {
+    // set system clock so the week we are creating an event for is visible in the big calendar
+    vi.setSystemTime('2024-01-15');
+    const slotStart = '2024-01-16T10:00:00Z';
+    const slotEnd = '2024-01-16T10:30:00Z';
+    const bufferEnd = '2024-01-16T10:45:00Z';
+
+    const user = userEvent.setup();
+
+    // Add scheduling parameter extension to Alice's schedule
+    await medplum.updateResource({
+      ...DrAliceSmithSchedule,
+      extension: [
         {
-          system: 'http://example.com/service-types',
-          code: 'checkup',
+          url: SchedulingParametersURI,
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: serviceType1 },
+            { url: 'bufferAfter', valueDuration: { value: 15, unit: 'min' } },
+          ],
         },
       ],
-      text: 'Annual Checkup',
-    };
+    } satisfies Schedule);
 
-    const serviceType2: CodeableConcept = {
-      coding: [
+    // Mock $find operation
+    const originalGet = medplum.get.bind(medplum);
+    const mockFindSlots: Slot[] = [
+      {
+        resourceType: 'Slot',
+        id: 'find-slot-1',
+        schedule: createReference(DrAliceSmithSchedule),
+        status: 'free',
+        start: slotStart,
+        end: slotEnd,
+      },
+    ];
+    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: mockFindSlots.map((slot) => ({ resource: slot })),
+          } satisfies Bundle<Slot>)
+        );
+      }
+      return originalGet(url, options);
+    });
+
+    // Mock $book operation
+    const mockBookResponse: Bundle<Appointment | Slot> = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
         {
-          system: 'http://example.com/service-types',
-          code: 'followup',
-        },
-      ],
-      text: 'Follow-up Visit',
-    };
-
-    const createScheduleWithServiceTypes = (serviceTypes: (CodeableConcept | undefined)[]): Schedule => ({
-      resourceType: 'Schedule',
-      id: 'schedule-1',
-      actor: [{ reference: 'Practitioner/practitioner-1' }],
-      active: true,
-      extension: serviceTypes.map((st) => ({
-        url: SchedulingParametersURI,
-        extension: st ? [{ url: 'serviceType', valueCodeableConcept: st }] : [],
-      })),
-    });
-
-    test('renders ScheduleFindPane when schedule has scheduling parameters', async () => {
-      const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
-
-      // Mock the $find operation
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      } as Bundle<Slot>);
-
-      await act(async () => {
-        setup();
-      });
-
-      // Check Calendar component rendered correctly
-      expect(screen.getByText('Today')).toBeInTheDocument();
-
-      // ScheduleFindPane should be rendered with the single service type selected
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-    });
-
-    test('does not render ScheduleFindPane when schedule has no scheduling parameters', async () => {
-      // mockSchedule has no extensions/scheduling parameters
-      await act(async () => {
-        setup();
-      });
-
-      // Check Calendar component rendered correctly
-      expect(screen.getByText('Today')).toBeInTheDocument();
-
-      // ScheduleFindPane should NOT be rendered
-      expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-    });
-
-    test('uses $book to create an appointment when a slot from ScheduleFindPane is chosen', async () => {
-      const user = userEvent.setup();
-      const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
-
-      const mockFindSlots: Slot[] = [
-        {
-          resourceType: 'Slot',
-          id: 'find-slot-1',
-          schedule: { reference: 'Schedule/schedule-1' },
-          status: 'free',
-          start: '2024-01-16T10:00:00Z',
-          end: '2024-01-16T10:30:00Z',
-        },
-      ];
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: mockFindSlots.map((slot) => ({ resource: slot })),
-      } as Bundle<Slot>);
-
-      const mockBookResponse: Bundle<Appointment | Slot> = {
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [
-          {
-            resource: {
-              resourceType: 'Appointment',
-              id: 'appointment-123',
-              status: 'booked',
-              start: '2024-01-16T10:00:00Z',
-              end: '2024-01-16T10:30:00Z',
-              participant: [{ actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' }],
-            },
+          resource: {
+            resourceType: 'Appointment',
+            id: 'appointment-123',
+            status: 'booked',
+            start: slotStart,
+            end: slotEnd,
+            participant: [
+              { actor: { reference: 'Practitioner/practitioner-1' }, status: 'tentative' },
+              { actor: createReference(HomerSimpson), status: 'accepted' },
+            ],
           },
-        ],
-      };
-      medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
+        },
+        {
+          // a "busy" slot is created matching the created appointment time
+          resource: {
+            resourceType: 'Slot',
+            id: 'slot-123',
+            status: 'busy',
+            start: slotStart,
+            end: slotEnd,
+            schedule: { reference: 'Schedule/schedule-1' },
+          },
+        },
+        {
+          // example of a "buffer-after" slot that can be created by $book
+          resource: {
+            resourceType: 'Slot',
+            id: 'slot-124',
+            status: 'busy-unavailable',
+            start: slotEnd,
+            end: bufferEnd,
+            schedule: { reference: 'Schedule/schedule-1' },
+          },
+        },
+      ],
+    };
+    medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
 
-      await act(async () => {
-        setup();
-      });
+    await act(async () => {
+      setup();
+    });
 
-      // Pane header shows selected service type
+    const patientInput0 = screen.queryByRole('searchbox');
+    expect(patientInput0).toBeNull();
+
+    // Pane header shows selected service type
+    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+
+    // Click on a slot button from the find pane
+    const slotButtons = screen.getAllByText(/1\/16\/2024/);
+    expect(slotButtons.length).toEqual(1);
+    await user.click(slotButtons[0]);
+
+    // Choose a patient
+    const patientInput = screen.getByRole('searchbox');
+    await user.type(patientInput, 'Homer');
+    await waitFor(() => {
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    });
+    await user.click(screen.getByText('Homer Simpson'));
+
+    // Submit the form
+    await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
+
+    // Appointment should be in the big calendar
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    // Buffer-after unavailable slot should be in the big calendar
+    expect(screen.getByText('Blocked')).toBeInTheDocument();
+  });
+
+  test('fetches slots via $find operation when ScheduleFindPane is active', async () => {
+    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
+    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+
+    medplum.get = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    } as Bundle<Slot>);
+
+    await act(async () => {
+      setup();
+    });
+
+    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+
+    // With single service type, it auto-selects and fetches
+    expect(medplum.get).toHaveBeenCalledWith(expect.stringContaining('Schedule/schedule-1/$find'), expect.any(Object));
+  });
+
+  test('renders multiple service types in ScheduleFindPane', async () => {
+    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
+    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+
+    medplum.get = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    } as Bundle<Slot>);
+
+    await act(async () => {
+      setup();
+    });
+
+    // Test calendar pane rendered
+    expect(screen.getByText('Today')).toBeInTheDocument();
+
+    // Test ScheduleFindPane header rendered
+    expect(screen.getByText('Schedule…')).toBeInTheDocument();
+
+    // Both service types should be rendered as options
+    expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
+    expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
+  });
+
+  test('allows selecting different service types', async () => {
+    const user = userEvent.setup();
+    const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
+    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+
+    medplum.get = vi.fn().mockResolvedValue({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+    } as Bundle<Slot>);
+
+    await act(async () => {
+      setup();
+    });
+
+    await waitFor(() => {
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-
-      // Click on a slot button from the find pane
-      const slotButtons = screen.getAllByText(/1\/16\/2024/);
-      expect(slotButtons.length).toEqual(1);
-      await user.click(slotButtons[0]);
-
-      // Test that the right operation was invoked
-      expect(medplum.post).toHaveBeenCalledWith(new URL('https://example.com/fhir/R4/Appointment/$book'), {
-        resourceType: 'Parameters',
-        parameter: [{ name: 'slot', resource: mockFindSlots[0] }],
-      });
-
-      // Appointment Details Drawer should open
-      await waitFor(() => {
-        expect(screen.getByText('Appointment Details')).toBeInTheDocument();
-      });
     });
 
-    test('fetches slots via $find operation when ScheduleFindPane is active', async () => {
-      const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+    // Select the first service type
+    await user.click(screen.getByText('Annual Checkup'));
 
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      } as Bundle<Slot>);
+    expect(medplum.get).toHaveBeenCalledWith(
+      expect.stringContaining(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`),
+      expect.any(Object)
+    );
 
-      await act(async () => {
-        setup();
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-
-      // With single service type, it auto-selects and fetches
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.stringContaining('Schedule/schedule-1/$find'),
-        expect.any(Object)
-      );
-    });
-
-    test('renders multiple service types in ScheduleFindPane', async () => {
-      const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      } as Bundle<Slot>);
-
-      await act(async () => {
-        setup();
-      });
-
-      // Test calendar pane rendered
-      expect(screen.getByText('Today')).toBeInTheDocument();
-
-      // Test ScheduleFindPane header rendered
-      expect(screen.getByText('Schedule…')).toBeInTheDocument();
-
-      // Both service types should be rendered as options
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
-    });
-
-    test('allows selecting different service types', async () => {
-      const user = userEvent.setup();
-      const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-      medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        entry: [],
-      } as Bundle<Slot>);
-
-      await act(async () => {
-        setup();
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      });
-
-      // Select the first service type
-      await user.click(screen.getByText('Annual Checkup'));
-
-      expect(medplum.get).toHaveBeenCalledWith(
-        expect.stringContaining(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`),
-        expect.any(Object)
-      );
-
-      // Verify the service type is shown as selected (title changes)
-      expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
-    });
+    // Verify the service type is shown as selected (title changes)
+    expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
   });
 });
