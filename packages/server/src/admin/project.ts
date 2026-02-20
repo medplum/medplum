@@ -140,12 +140,11 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
   // Check if the user is project-scoped (has a project field matching the current project)
   if (user.project?.reference === getReferenceString(ctx.project)) {
     // Wrap search and delete operations in a transaction
-    await systemRepo.withTransaction(async (conn) => {
-      const systemRepoInTransaction = getSystemRepo(conn);
+    await systemRepo.withTransaction(async () => {
 
       // Check if there are other ProjectMemberships for this user
       // (search before deleting to get accurate count)
-      const otherMemberships = await systemRepoInTransaction.searchResources<ProjectMembership>({
+      const otherMemberships = await systemRepo.searchResources<ProjectMembership>({
         resourceType: 'ProjectMembership',
         filters: [
           {
@@ -158,12 +157,12 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
       });
 
       // Delete the ProjectMembership
-      await systemRepoInTransaction.deleteResource('ProjectMembership', membershipId);
+      await systemRepo.deleteResource('ProjectMembership', membershipId);
 
       // Delete the User resource if it's project-scoped and this was their only membership
       // (project-scoped users should only have memberships in one project)
       if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
-        await systemRepoInTransaction.deleteResource('User', user.id);
+        await systemRepo.deleteResource('User', user.id);
       }
     });
   } else {
