@@ -250,6 +250,41 @@ For example, searching for `Patients` whose name includes the substring `"stein"
   </TabItem>
 </Tabs>
 
+## Available Operators by Search Parameter Type
+
+Different search parameter types support different operators and modifiers. The table below shows which operators are available for each search parameter type in Medplum:
+
+| Search Parameter Type | Available Operators                                                                                                                              | Notes                                                                                    |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `string`              | `equals` (default), `not`, `contains`, `exact`                                                                                                    | Case-insensitive prefix match by default. Use `:contains` for substring search anywhere. |
+| `fulltext`            | `equals` (default), `not`, `contains`, `exact`                                                                                                    | Similar to `string` type.                                                                |
+| `token`               | `equals` (default), `not`, `text`                                                                                                                  | Case-sensitive exact match by default. Use `:text` for case-insensitive search.          |
+| `uri`                 | `equals` (default), `not`, `above`, `below`                                                                                                        | Exact match only. `:above` and `:below` for hierarchical URI matching.                    |
+| `reference`           | `equals` (default), `not`                                                                                                                          | Exact reference match only.                                                               |
+| `date`                | `equals` (default), `not equals`, `greater than`, `less than`, `greater than or equal`, `less than or equal`, `starts after`, `ends before`, `approximately` | Use prefix operators: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`               |
+| `datetime`            | `equals` (default), `not equals`, `greater than`, `less than`, `greater than or equal`, `less than or equal`, `starts after`, `ends before`, `approximately` | Use prefix operators: `eq`, `ne`, `gt`, `lt`, `ge`, `le`, `sa`, `eb`, `ap`               |
+| `number`              | `equals` (default), `not equals`, `greater than`, `less than`, `greater than or equal`, `less than or equal`                                   | Use prefix operators: `eq`, `ne`, `gt`, `lt`, `ge`, `le`                                 |
+| `quantity`            | `equals` (default), `not equals`, `greater than`, `less than`, `greater than or equal`, `less than or equal`                                     | Use prefix operators: `eq`, `ne`, `gt`, `lt`, `ge`, `le`                                 |
+
+:::important Operator Availability
+
+- **`string` and `fulltext`** types are the only ones that support the `:contains` modifier for substring searching
+- **`uri` and `token`** types do **not** support `:contains` or `starts with` operators - they only support exact matches
+- **`date`, `datetime`, `number`, and `quantity`** types use prefix operators (e.g., `gt`, `lt`) rather than modifiers
+- All parameter types support `:missing` and `:not` modifiers (not shown in table above)
+
+:::
+
+:::tip Finding a Search Parameter's Type
+
+To find out what type a search parameter is, you can:
+
+1. Check the resource's search parameter documentation (e.g., [Patient search parameters](/docs/api/fhir/resources/patient#search-parameters))
+2. Query the `SearchParameter` resource directly: `GET /fhir/R4/SearchParameter?base=Patient&code=name`
+3. Use the Medplum UI - the operator dropdown will only show operators that are valid for that parameter type
+
+:::
+
 ## Searching by Comparison
 
 FHIR provides a mechanism to search for resources that have a value greater or less than a certain threshold, or that have a value within a specific range, by adding a prefix to your query value. The table below lists the common prefixes used for `quantity`, `number`, and `date` search parameters:
