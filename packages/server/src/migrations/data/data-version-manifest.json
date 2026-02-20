@@ -116,12 +116,15 @@
     "requiredBefore": "5.0.0"
   },
   "v30": {
-    "serverVersion": "5.0.0"
+    "serverVersion": "5.0.0",
+    "requiredBefore": "5.1.0"
   },
   "v31": {
-    "serverVersion": "5.0.0"
+    "serverVersion": "5.0.0",
+    "requiredBefore": "5.1.0"
   },
   "v32": {
-    "serverVersion": "5.0.11"
+    "serverVersion": "5.0.11",
+    "requiredBefore": "5.1.0"
   }
 }
