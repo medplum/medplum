@@ -160,7 +160,9 @@ describe('EnumMapper', () => {
       const result = mapCcdaCodeToCodeableConcept({
         '@_nullFlavor': 'OTH',
         '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-        translation: [{ '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'trans1', '@_displayName': 'Translation 1' }],
+        translation: [
+          { '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'trans1', '@_displayName': 'Translation 1' },
+        ],
       });
       expect(result).toBeDefined();
       expect(result?.coding?.length).toBe(2);
