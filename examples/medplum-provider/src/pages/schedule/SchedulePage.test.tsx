@@ -116,6 +116,38 @@ describe('SchedulePage', () => {
         expect(screen.getByText('Today')).toBeInTheDocument();
       });
     });
+
+
+    test('shows a loading state before the schedule resolves, then renders the calendar', async () => {
+      let resolveSearch: (schedule: Schedule | undefined) => void;
+      medplum.searchOne = vi.fn().mockReturnValue(
+        new Promise<Schedule | undefined>((resolve) => {
+          resolveSearch = resolve;
+        })
+      );
+
+      await act(async () => {
+        setup();
+      });
+
+      // While the schedule fetch is pending the calendar should not be visible
+      expect(screen.queryByText('Today')).not.toBeInTheDocument();
+
+      // A loading state is shown
+      const loader = document.querySelector('.mantine-Loader-root');
+      expect(loader).toBeInTheDocument();
+
+      // Resolve the search with a schedule
+      await act(async () => {
+        resolveSearch(mockSchedule);
+      });
+
+      // Calendar should now be rendered
+      await waitFor(() => {
+        expect(screen.getByText('Today')).toBeInTheDocument();
+        expect(loader).not.toBeInTheDocument();
+      });
+    });
   });
 
   describe('Toolbar', () => {
