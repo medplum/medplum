@@ -51,16 +51,16 @@ import classes from './ThreadInbox.module.css';
  */
 
 export interface ThreadInboxProps {
-  query: string;
-  threadId: string | undefined;
-  subject?: Reference<Patient> | Patient;
-  showPatientSummary?: boolean;
-  pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
-  onNew: (message: Communication) => void;
-  getThreadUri: (topic: Communication) => string;
-  onChange: (search: SearchRequest) => void;
-  inProgressUri: string;
-  completedUri: string;
+  readonly query: string;
+  readonly threadId: string | undefined;
+  readonly subject?: Reference<Patient> | Patient;
+  readonly showPatientSummary?: boolean;
+  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly onNew: (message: Communication) => void;
+  readonly getThreadUri: (topic: Communication) => string;
+  readonly onChange: (search: SearchRequest) => void;
+  readonly inProgressUri: string;
+  readonly completedUri: string;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -135,6 +135,9 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     [currentSearch, onChange]
   );
 
+  const skeletonTitleWidths = [80, 72, 68, 64];
+  const skeletonSubtitleWidths = [85, 78, 70, 60];
+
   useEffect(() => {
     if (error) {
       showNotification({
@@ -162,9 +165,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     addThreadMessage(message);
     onNew(message);
   };
-
-  const skeletonTitleWidths = [80, 72, 68, 64];
-  const skeletonSubtitleWidths = [85, 78, 70, 60];
 
   return (
     <>
@@ -284,13 +284,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         </Menu.Target>
 
                         {selectedThread.status !== 'completed' && (
-                          <>
-                            <Menu.Dropdown>
-                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
-                                Completed
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
+                              Completed
+                            </Menu.Item>
+                          </Menu.Dropdown>
                         )}
                       </Menu>
                     </Flex>

@@ -13,8 +13,8 @@ import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './ParticipantFilter.module.css';
 
 interface ParticipantFilterProps {
-  selectedParticipants: Reference<Patient | Practitioner>[];
-  onFilterChange: (participants: Reference<Patient | Practitioner>[]) => void;
+  readonly selectedParticipants: Reference<Patient | Practitioner>[];
+  readonly onFilterChange: (participants: Reference<Patient | Practitioner>[]) => void;
 }
 
 export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
@@ -203,11 +203,11 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
 }
 
 interface ParticipantItemProps {
-  participant: Reference<Patient | Practitioner>;
-  isSelected: boolean;
-  isCurrentUser: boolean;
-  onToggle: () => void;
-  onRemove?: () => void;
+  readonly participant: Reference<Patient | Practitioner>;
+  readonly isSelected: boolean;
+  readonly isCurrentUser: boolean;
+  readonly onToggle: () => void;
+  readonly onRemove?: () => void;
 }
 
 function ParticipantItem(props: ParticipantItemProps): JSX.Element | null {

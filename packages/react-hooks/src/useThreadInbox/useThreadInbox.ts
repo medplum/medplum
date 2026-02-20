@@ -62,7 +62,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     }
 
     const queryParts = parents.map((parent) => {
-      const safeId = parent.id?.replace(/-/g, '') || '';
+      const safeId = parent.id?.replaceAll('-', '') || '';
       const alias = `thread_${safeId}`;
       const ref = getReferenceString(parent);
 
@@ -102,7 +102,7 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
 
     const threadsWithReplies = parents
       .map((parent) => {
-        const safeId = parent.id?.replace(/-/g, '') || '';
+        const safeId = parent.id?.replaceAll('-', '') || '';
         const alias = `thread_${safeId}`;
         const childList = response.data[alias] as Communication[] | undefined;
         const lastMessage = childList && childList.length > 0 ? childList[0] : undefined;
