@@ -719,7 +719,7 @@ describe('WebSocket Subscription', () => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
             return false;
           }
-          const status = msg.entry[0].resource as SubscriptionStatus;
+          const status = msg.entry[0].resource;
           if (status.type !== 'event-notification') {
             return false;
           }
@@ -736,7 +736,7 @@ describe('WebSocket Subscription', () => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
             return false;
           }
-          const status = msg.entry[0].resource as SubscriptionStatus;
+          const status = msg.entry[0].resource;
           if (status.type !== 'event-notification') {
             return false;
           }
