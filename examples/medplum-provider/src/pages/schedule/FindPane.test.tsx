@@ -8,9 +8,19 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { SchedulingContextProvider } from '../../contexts/SchedulingContext';
+import { useScheduling } from '../../hooks/useScheduling';
 import { FindPane } from './FindPane';
+
+function ContextSpy(): JSX.Element {
+  const { selectedSchedulingParameters } = useScheduling();
+  const serviceType = selectedSchedulingParameters?.extension.find((e) => e.url === 'serviceType')?.valueCodeableConcept
+    ?.text;
+  return <div data-testid="selected-params">{serviceType ?? 'none'}</div>;
+}
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -90,6 +100,7 @@ describe('FindPane', () => {
     onChange?: (slots: Slot[]) => void;
     onSuccess?: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
     slots?: Slot[];
+    extraChildren?: JSX.Element;
   };
 
   const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
@@ -97,6 +108,7 @@ describe('FindPane', () => {
       schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]),
       range = defaultRange,
       onSuccess = vi.fn(),
+      extraChildren,
     } = options;
 
     return render(
@@ -104,7 +116,10 @@ describe('FindPane', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+            <SchedulingContextProvider resources={[schedule]}>
+              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+              {extraChildren}
+            </SchedulingContextProvider>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -165,6 +180,20 @@ describe('FindPane', () => {
       );
     });
 
+    test('selected scheduling parameters are added to the scheduling context', async () => {
+      const user = userEvent.setup();
+
+      await act(async () => {
+        setup({ extraChildren: <ContextSpy /> });
+      });
+
+      expect(screen.getByTestId('selected-params')).toHaveTextContent('none');
+
+      await user.click(screen.getByText('Annual Checkup'));
+
+      expect(screen.getByTestId('selected-params')).toHaveTextContent('Annual Checkup');
+    });
+
     test('displays service type name after selection', async () => {
       const user = userEvent.setup();
 
@@ -220,6 +249,21 @@ describe('FindPane', () => {
       await user.click(screen.getByLabelText('Clear selection'));
 
       expect(screen.getByText('Schedule…')).toBeInTheDocument();
+    });
+
+    test('clears selected scheduling parameters from the context', async () => {
+      const user = userEvent.setup();
+
+      await act(async () => {
+        setup({ extraChildren: <ContextSpy /> });
+      });
+      expect(screen.getByTestId('selected-params')).toHaveTextContent('none');
+
+      await user.click(screen.getByText('Annual Checkup'));
+      expect(screen.getByTestId('selected-params')).toHaveTextContent('Annual Checkup');
+
+      await user.click(screen.getByLabelText('Clear selection'));
+      expect(screen.getByTestId('selected-params')).toHaveTextContent('none');
     });
   });
 
