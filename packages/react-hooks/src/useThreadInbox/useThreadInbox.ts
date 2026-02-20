@@ -18,7 +18,7 @@ export interface UseThreadInboxReturn {
   selectedThread: Communication | undefined;
   total: number | undefined;
   addThreadMessage: (message: Communication) => void;
-  handleThreadStatusChange: (newStatus: Communication['status']) => void;
+  handleThreadStatusChange: (newStatus: Communication['status']) => Promise<void>;
   refreshThreadMessages: () => Promise<void>;
 }
 
@@ -154,23 +154,18 @@ export function useThreadInbox({ query, threadId }: UseThreadInboxOptions): UseT
     });
   }, [threadId, threadMessages, medplum]);
 
-  const handleThreadStatusChange = (newStatus: Communication['status']): void => {
+  const handleThreadStatusChange = async (newStatus: Communication['status']): Promise<void> => {
     if (!selectedThread) {
       return;
     }
-    medplum
-      .updateResource({ ...selectedThread, status: newStatus })
-      .then((updatedThread) => {
-        setSelectedThread(updatedThread);
-        setThreadMessages((prev) =>
-          prev.map(([parent, lastMsg]) =>
-            parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]
-          )
-        );
-      })
-      .catch((err: Error) => {
-        setError(err);
-      });
+    const updatedThread = await medplum.updateResource({
+      ...selectedThread,
+      status: newStatus,
+    });
+    setSelectedThread(updatedThread);
+    setThreadMessages((prev) =>
+      prev.map(([parent, lastMsg]) => (parent.id === updatedThread.id ? [updatedThread, lastMsg] : [parent, lastMsg]))
+    );
   };
 
   const addThreadMessage = (message: Communication): void => {

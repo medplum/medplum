@@ -53,9 +53,9 @@ import classes from './ThreadInbox.module.css';
 export interface ThreadInboxProps {
   query: string;
   threadId: string | undefined;
-  subject?: Reference<Patient> | Patient | undefined;
-  showPatientSummary?: boolean | undefined;
-  pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps> | undefined;
+  subject?: Reference<Patient> | Patient;
+  showPatientSummary?: boolean;
+  pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
   onNew: (message: Communication) => void;
   getThreadUri: (topic: Communication) => string;
   onChange: (search: SearchRequest) => void;
@@ -146,8 +146,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
   }, [error]);
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
+    handleThreadStatusChange(newStatus);
     try {
-      await handleThreadStatusChange(newStatus);
       await refreshThreadMessages();
     } catch (error) {
       showNotification({
