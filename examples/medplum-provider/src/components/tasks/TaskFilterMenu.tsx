@@ -62,6 +62,48 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
   );
 }
 
+function capitalizeLabel(value: string): string {
+  return value
+    .split(/[- ]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function ActiveDot(): JSX.Element {
+  return <Box w={8} h={8} style={{ borderRadius: 4, backgroundColor: 'var(--mantine-color-blue-6)' }} />;
+}
+
+interface FilterSubmenuProps {
+  icon: ReactNode;
+  label: string;
+  isActive: boolean;
+  children: ReactNode;
+}
+
+function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps): JSX.Element {
+  return (
+    <Menu.Item p={0}>
+      <Menu trigger="hover" position="right-start" offset={{ mainAxis: 0, crossAxis: -8 }} shadow="md" radius="md">
+        <Menu.Target>
+          <Flex align="center" justify="space-between" w="100%" px="sm" py="xs" style={{ cursor: 'default' }}>
+            <Flex align="center" gap="xs">
+              {icon}
+              <Text size="sm">{label}</Text>
+            </Flex>
+            <Flex align="center" gap={4}>
+              {isActive && <ActiveDot />}
+              <IconChevronRight size={16} color="var(--mantine-color-gray-6)" />
+            </Flex>
+          </Flex>
+        </Menu.Target>
+        <Menu.Dropdown className="filter-submenu-dropdown">
+          {children}
+        </Menu.Dropdown>
+      </Menu>
+    </Menu.Item>
+  );
+}
+
 interface TaskFilterMenuProps {
   statuses?: Task['status'][];
   owner?: Task['owner'];

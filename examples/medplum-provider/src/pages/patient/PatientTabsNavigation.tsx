@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, Tabs, useMantineTheme } from '@mantine/core';
+import { Paper, Tabs } from '@mantine/core';
 import type { JSX } from 'react';
 import type { PatientPageTabInfo } from './PatientPage.utils';
 import classes from './PatientTabsNavigation.module.css';

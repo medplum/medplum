@@ -38,6 +38,36 @@ interface FilterState {
   performerType: CodeableConcept | undefined;
 }
 
+function parseFilterValues<T extends string>(search: SearchRequest, code: string): T[] {
+  const values: T[] = [];
+  for (const filter of search.filters?.filter((f) => f.code === code) || []) {
+    for (const raw of filter.value.split(',')) {
+      const v = raw.trim() as T;
+      if (v && !values.includes(v)) {
+        values.push(v);
+      }
+    }
+  }
+  return values;
+}
+
+function toggleFilterValue<T extends string>(
+  search: SearchRequest,
+  code: string,
+  selected: T[],
+  value: T
+): SearchRequest {
+  const updated = selected.includes(value) ? selected.filter((s) => s !== value) : [...selected, value];
+  const otherFilters = search.filters?.filter((f) => f.code !== code) || [];
+  return {
+    ...search,
+    filters: updated.length > 0
+      ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
+      : otherFilters,
+    offset: 0,
+  };
+}
+
 /**
  * TaskBoardProps is the props for the TaskBoard component.
  * @property query - The query string for the search request.
