@@ -1,7 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { ActionIcon, Checkbox, CloseButton, Group, Indicator, Popover, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import {
+  ActionIcon,
+  Checkbox,
+  CloseButton,
+  Group,
+  Indicator,
+  Popover,
+  Stack,
+  Text,
+  TextInput,
+  Tooltip,
+} from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';

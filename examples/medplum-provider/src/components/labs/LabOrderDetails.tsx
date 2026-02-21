@@ -393,9 +393,7 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                     <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
                       {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
                     </Tabs.Tab>
-                    <Tabs.Tab value="order">
-                      Order Details
-                    </Tabs.Tab>
+                    <Tabs.Tab value="order">Order Details</Tabs.Tab>
                   </Tabs.List>
                 </Tabs>
                 <Badge size="lg" color={getStatusColor(order.status)} variant="light">

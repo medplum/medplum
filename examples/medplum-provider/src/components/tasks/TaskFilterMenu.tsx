@@ -56,9 +56,7 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
             </Flex>
           </Flex>
         </Menu.Target>
-        <Menu.Dropdown className="filter-submenu-dropdown">
-          {children}
-        </Menu.Dropdown>
+        <Menu.Dropdown className="filter-submenu-dropdown">{children}</Menu.Dropdown>
       </Menu>
     </Menu.Item>
   );
@@ -118,7 +116,9 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
             <Menu.Item
               key={taskStatus}
               onClick={() => onFilterChange?.(TaskFilterType.STATUS, taskStatus)}
-              rightSection={statuses.includes(taskStatus) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null}
+              rightSection={
+                statuses.includes(taskStatus) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null
+              }
             >
               <Text size="sm">{TASK_STATUS_LABELS[taskStatus]}</Text>
             </Menu.Item>
@@ -134,7 +134,9 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
             <Menu.Item
               key={taskPriority}
               onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority ?? '')}
-              rightSection={priorities.includes(taskPriority) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null}
+              rightSection={
+                priorities.includes(taskPriority) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null
+              }
             >
               <Text size="sm">{taskPriority ? TASK_PRIORITY_LABELS[taskPriority] : ''}</Text>
             </Menu.Item>
@@ -152,10 +154,14 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
                 key={`${type.coding?.[0]?.code ?? index}`}
                 onClick={() => onFilterChange?.(TaskFilterType.PERFORMER_TYPE, type)}
                 rightSection={
-                  performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null
+                  performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? (
+                    <IconCheck size={16} color="var(--mantine-color-blue-6)" />
+                  ) : null
                 }
               >
-                <Text size="sm">{capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}</Text>
+                <Text size="sm">
+                  {capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}
+                </Text>
               </Menu.Item>
             ))
           ) : (

@@ -123,13 +123,25 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             {status === 'cancelled' || status === 'finished' ? (
               <>
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
-                  <ActionIcon radius="xl" variant="transparent" size={32} className="outline-icon-button" onClick={handleSign}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
                     <IconLock size={16} />
                   </ActionIcon>
                 )}
 
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
-                  <ActionIcon radius="xl" variant="transparent" size={32} className="outline-icon-button" onClick={handleSign}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
                     <IconLockOpen size={16} />
                   </ActionIcon>
                 )}

@@ -61,9 +61,10 @@ function toggleFilterValue<T extends string>(
   const otherFilters = search.filters?.filter((f) => f.code !== code) || [];
   return {
     ...search,
-    filters: updated.length > 0
-      ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
-      : otherFilters,
+    filters:
+      updated.length > 0
+        ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
+        : otherFilters,
     offset: 0,
   };
 }
@@ -126,10 +127,7 @@ export function TaskBoard({
   // Parse current search from query string
   const currentSearch = useMemo(() => parseSearchRequest(`Task?${query}`), [query]);
 
-  const selectedStatuses = useMemo(
-    () => parseFilterValues<Task['status']>(currentSearch, 'status'),
-    [currentSearch]
-  );
+  const selectedStatuses = useMemo(() => parseFilterValues<Task['status']>(currentSearch, 'status'), [currentSearch]);
 
   const selectedPriorities = useMemo(
     () => parseFilterValues<NonNullable<Task['priority']>>(currentSearch, 'priority'),
@@ -239,7 +237,9 @@ export function TaskBoard({
         onChange(toggleFilterValue(currentSearch, 'status', selectedStatuses, value as Task['status']));
         break;
       case TaskFilterType.PRIORITY:
-        onChange(toggleFilterValue(currentSearch, 'priority', selectedPriorities, value as NonNullable<Task['priority']>));
+        onChange(
+          toggleFilterValue(currentSearch, 'priority', selectedPriorities, value as NonNullable<Task['priority']>)
+        );
         break;
       case TaskFilterType.PERFORMER_TYPE: {
         const performerTypeCode = filters.performerType?.coding?.[0]?.code;
@@ -281,12 +281,8 @@ export function TaskBoard({
                   className="pill-tabs"
                 >
                   <Tabs.List>
-                    <Tabs.Tab value="my">
-                      My Tasks
-                    </Tabs.Tab>
-                    <Tabs.Tab value="all">
-                      All Tasks
-                    </Tabs.Tab>
+                    <Tabs.Tab value="my">My Tasks</Tabs.Tab>
+                    <Tabs.Tab value="all">All Tasks</Tabs.Tab>
                   </Tabs.List>
                 </Tabs>
 

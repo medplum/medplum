@@ -140,14 +140,15 @@ export function LabsPage(): JSX.Element {
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
-                  <Tabs value={activeTab} onChange={(value) => handleTabChange(value as string)} variant="unstyled" className="pill-tabs">
+                  <Tabs
+                    value={activeTab}
+                    onChange={(value) => handleTabChange(value as string)}
+                    variant="unstyled"
+                    className="pill-tabs"
+                  >
                     <Tabs.List>
-                      <Tabs.Tab value="completed">
-                        Completed
-                      </Tabs.Tab>
-                      <Tabs.Tab value="open">
-                        Open
-                      </Tabs.Tab>
+                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
+                      <Tabs.Tab value="open">Open</Tabs.Tab>
                     </Tabs.List>
                   </Tabs>
                 </Group>

@@ -21,12 +21,6 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "never"
   },
-  "cSpell.words": [
-    "auditevent",
-    "bullmq",
-    "FHIR",
-    "Fhircast",
-    "Medplum"
-  ],
+  "cSpell.words": ["auditevent", "bullmq", "FHIR", "Fhircast", "Medplum"],
   "claudeCode.preferredLocation": "panel"
 }

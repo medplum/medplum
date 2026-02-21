@@ -185,12 +185,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     className="pill-tabs"
                   >
                     <Tabs.List>
-                      <Tabs.Tab value="in-progress">
-                        In Progress
-                      </Tabs.Tab>
-                      <Tabs.Tab value="completed">
-                        Completed
-                      </Tabs.Tab>
+                      <Tabs.Tab value="in-progress">In Progress</Tabs.Tab>
+                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
                     </Tabs.List>
                   </Tabs>
                   <Group gap="xs">

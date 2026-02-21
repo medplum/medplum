@@ -15,7 +15,14 @@ export function PatientTabsNavigation({ tabs, currentTab, onTabChange }: Patient
   const activeTab = currentTab.toLowerCase();
 
   return (
-    <Paper w="100%" pt={16} pb={0} px={0} radius={0} style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}>
+    <Paper
+      w="100%"
+      pt={16}
+      pb={0}
+      px={0}
+      radius={0}
+      style={{ borderBottom: '1px solid var(--app-shell-border-color)' }}
+    >
       <Tabs value={activeTab} onChange={onTabChange} variant="unstyled" className="pill-tabs">
         <Tabs.List className={classes.list}>
           {tabs.map((t) => (
