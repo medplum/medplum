@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "esnext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -13,7 +17,40 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@medplum/core": [
+        "../../packages/core/src"
+      ],
+      "@medplum/dosespot-core": [
+        "../../packages/dosespot-core/src"
+      ],
+      "@medplum/dosespot-react": [
+        "../../packages/dosespot-react/src"
+      ],
+      "@medplum/fhirtypes": [
+        "../../packages/fhirtypes/src"
+      ],
+      "@medplum/health-gorilla-core": [
+        "../../packages/health-gorilla-core/src"
+      ],
+      "@medplum/health-gorilla-react": [
+        "../../packages/health-gorilla-react/src"
+      ],
+      "@medplum/react": [
+        "../../packages/react/src"
+      ],
+      "@medplum/react-hooks": [
+        "../../packages/react-hooks/src"
+      ]
+    }
   },
-  "exclude": ["dist"]
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
 }

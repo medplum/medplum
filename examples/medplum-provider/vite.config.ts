@@ -9,18 +9,23 @@ import { defineConfig } from 'vitest/config';
 
 dns.setDefaultResultOrder('verbatim');
 
-// Resolve aliases to local packages when working within the monorepo
-const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
-  Object.entries({
+// Resolve aliases to local packages when working within the monorepo.
+// Use array form so @medplum/react is resolved to source (dist may be stale and missing exports).
+const alias: NonNullable<UserConfig['resolve']>['alias'] = [
+  { find: /^@medplum\/react$/, replacement: path.resolve(__dirname, '../../packages/react/src') },
+  ...Object.entries({
     '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
+    '@medplum/dosespot-core': path.resolve(__dirname, '../../packages/dosespot-core/src'),
     '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
-    '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
     '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
     '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
     '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
-  }).filter(([, relPath]) => existsSync(relPath))
-);
+    'react-live': path.resolve(__dirname, '../../node_modules/react-live'),
+  })
+    .filter(([, relPath]) => !relPath.includes('node_modules') || existsSync(relPath))
+    .map(([find, replacement]) => ({ find, replacement })),
+];
 
 // https://vitejs.dev/config/
 export default defineConfig({
