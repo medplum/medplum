@@ -11,7 +11,7 @@ import { initApp, shutdownApp } from '../app';
 import type { RegisterResponse } from '../auth/register';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
@@ -435,7 +435,7 @@ describe('Project Admin routes', () => {
     expect(patientMember).toBeDefined();
 
     // Verify the user is project-scoped
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const user = await systemRepo.readReference<User>(patientMember.user as any);
     expect(user.project?.reference).toBe(getReferenceString(project));
 
@@ -487,7 +487,7 @@ describe('Project Admin routes', () => {
     expect(practitionerMember).toBeDefined();
 
     // Verify the user is server-scoped (no project field)
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     const user = await systemRepo.readReference<User>(practitionerMember.user as any);
     expect(user.project).toBeUndefined();
 

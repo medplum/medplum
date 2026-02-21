@@ -8,7 +8,6 @@ import { body, validationResult } from 'express-validator';
 import { setPassword } from '../auth/setpassword';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmailInProject } from '../oauth/utils';
 import { createBotHandler, createBotValidator } from './bot';
@@ -134,14 +133,13 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = ctx.systemRepo;
   const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
 
   // Check if the user is project-scoped (has a project field matching the current project)
   if (user.project?.reference === getReferenceString(ctx.project)) {
     // Wrap search and delete operations in a transaction
     await systemRepo.withTransaction(async () => {
-
       // Check if there are other ProjectMemberships for this user
       // (search before deleting to get accurate count)
       const otherMemberships = await systemRepo.searchResources<ProjectMembership>({
