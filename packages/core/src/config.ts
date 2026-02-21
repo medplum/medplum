@@ -52,6 +52,7 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsForceRetain?: ValueOrExternalSecret<boolean>;
   rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
@@ -156,6 +157,7 @@ export interface MedplumInfraConfig {
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
+  rdsForceRetain?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
   desiredServerCount: number;

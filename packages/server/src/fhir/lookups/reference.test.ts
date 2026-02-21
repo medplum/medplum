@@ -6,13 +6,13 @@ import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
-import { getSystemRepo } from '../repo';
+import { getGlobalSystemRepo } from '../repo';
 import { lookupTables } from '../searchparameter';
 import type { ReferenceTableRow } from './reference';
 import { ReferenceTable } from './reference';
 
 describe('ReferenceTable', () => {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let refTable: ReferenceTable;
 
   beforeAll(async () => {

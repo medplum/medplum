@@ -6,6 +6,7 @@ import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
+  Bot,
   ChargeItem,
   Claim,
   ClaimDiagnosis,
@@ -20,7 +21,7 @@ import type {
 import { useMedplum } from '@medplum/react';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { calculateTotalPrice } from '../../utils/chargeitems';
@@ -58,6 +59,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [submitting, setSubmitting] = useState(false);
+  const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
+  const conditionsRef = useRef<Condition[]>(conditions);
+  conditionsRef.current = conditions;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   useEffect(() => {
@@ -73,6 +78,15 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
     fetchCoverage().catch((err) => showErrorNotification(err));
   }, [medplum, patient]);
+
+  useEffect(() => {
+    medplum
+      .searchOne('Bot', {
+        identifier: 'https://medplum.com/integrations/candid-health|send-to-candid',
+      })
+      .then((bot) => setBillingBot(bot ?? null))
+      .catch(() => setBillingBot(null));
+  }, [medplum]);
 
   const exportClaimAsCMS1500 = async (): Promise<void> => {
     if (!claim?.id || !patient?.id) {
@@ -190,6 +204,66 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [setChargeItems, claim, encounter, setClaim, debouncedUpdateResource]
   );
 
+  const submitClaim = useCallback(async (): Promise<void> => {
+    if (!claim) {
+      return;
+    }
+
+    const currentConditions = conditionsRef.current;
+    if (!currentConditions || currentConditions.length === 0) {
+      showNotification({
+        title: 'Missing Diagnosis',
+        message: 'Please add at least one diagnosis before submitting a claim',
+        color: 'red',
+      });
+      return;
+    }
+
+    if (!billingBot) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      let coverageForClaim = coverage;
+      if (!coverageForClaim) {
+        const coverageResults = await medplum.searchResources(
+          'Coverage',
+          `patient=${getReferenceString(patient)}&status=active`
+        );
+        if (coverageResults.length > 0) {
+          coverageForClaim = coverageResults[0];
+        } else {
+          coverageForClaim = await createSelfPayCoverage(medplum, patient);
+        }
+      }
+
+      const diagnosisArray = createDiagnosisArray(currentConditions);
+      const claimToSubmit: Claim = {
+        ...claim,
+        insurance: [
+          {
+            sequence: 1,
+            focal: true,
+            coverage: { reference: getReferenceString(coverageForClaim) },
+          },
+        ],
+        diagnosis: diagnosisArray,
+      };
+
+      const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
+      showNotification({
+        title: 'Claim Submitted',
+        message: result?.message || 'Claim successfully submitted to Candid Health',
+        color: 'green',
+      });
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [billingBot, claim, coverage, medplum, patient]);
+
   return (
     <Stack gap="md">
       {claim && (
@@ -242,9 +316,22 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
               </Menu.Dropdown>
             </Menu>
 
-            <Button variant="outline" leftSection={<IconSend size={16} />}>
-              Request to connect a billing service
-            </Button>
+            {billingBot && (
+              <Button variant="outline" leftSection={<IconSend size={16} />} loading={submitting} onClick={submitClaim}>
+                Submit Claim
+              </Button>
+            )}
+            {billingBot === null && (
+              <Button
+                variant="outline"
+                leftSection={<IconSend size={16} />}
+                onClick={() => {
+                  window.open('https://www.medplum.com/contact', '_blank');
+                }}
+              >
+                Request to connect a billing service
+              </Button>
+            )}
           </Flex>
         </Card>
       )}

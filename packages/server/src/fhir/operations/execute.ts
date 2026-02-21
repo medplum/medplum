@@ -26,7 +26,6 @@ import {
 } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
 import { sendFhirResponse } from '../response';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -96,8 +95,7 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   }
 
   // Then read the bot as system user to load extended metadata
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Check if client accepts streaming
   const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');

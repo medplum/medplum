@@ -2,40 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
-  Flex,
-  Paper,
-  ScrollArea,
-  Stack,
-  Text,
   ActionIcon,
-  Divider,
+  Box,
   Button,
   Center,
-  ThemeIcon,
-  Menu,
-  Skeleton,
-  Box,
-  Pagination,
+  Divider,
+  Flex,
   Group,
+  Menu,
+  Pagination,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
   Tabs,
+  Text,
+  ThemeIcon,
   Tooltip,
 } from '@mantine/core';
-import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
-import { PatientSummary, ThreadChat } from '@medplum/react';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
-import { useCallback, useEffect, useMemo } from 'react';
-import type { JSX } from 'react';
-import { IconMessageCircle, IconChevronDown, IconPlus } from '@tabler/icons-react';
-import { getReferenceString, Operator, parseSearchRequest } from '@medplum/core';
+import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
+import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
+import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
+import type { ComponentType, JSX } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { PatientSummary } from '../../PatientSummary/PatientSummary';
+import type { PharmacyDialogBaseProps } from '../../PatientSummary/Pharmacies';
+import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
 import { NewTopicDialog } from './NewTopicDialog';
 import { ParticipantFilter } from './ParticipantFilter';
-import { useThreadInbox } from '../../hooks/useThreadInbox';
 import classes from './ThreadInbox.module.css';
-import { useDisclosure } from '@mantine/hooks';
-import { showErrorNotification } from '../../utils/notifications';
-import { useNavigate } from 'react-router';
 
 /**
  * ThreadInbox is a component that displays a list of threads and allows the user to select a thread to view.
@@ -43,6 +43,7 @@ import { useNavigate } from 'react-router';
  * @param threadId - The id of the thread to select.
  * @param subject - The default subject when creating a new thread.
  * @param showPatientSummary - Whether to show the patient summary.
+ * @param pharmacyDialogComponent - Optional component to render as the pharmacy dialog in the patient summary.
  * @param onNew - A function to handle a new thread.
  * @param getThreadUri - A function to build thread URIs.
  * @param onChange - A function to handle search changes.
@@ -50,16 +51,17 @@ import { useNavigate } from 'react-router';
  * @param completedUri - The URI for completed threads.
  */
 
-interface ThreadInboxProps {
-  query: string;
-  threadId: string | undefined;
-  subject?: Reference<Patient> | Patient | undefined;
-  showPatientSummary?: boolean | undefined;
-  onNew: (message: Communication) => void;
-  getThreadUri: (topic: Communication) => string;
-  onChange: (search: SearchRequest) => void;
-  inProgressUri: string;
-  completedUri: string;
+export interface ThreadInboxProps {
+  readonly query: string;
+  readonly threadId: string | undefined;
+  readonly subject?: Reference<Patient> | Patient;
+  readonly showPatientSummary?: boolean;
+  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly onNew: (message: Communication) => void;
+  readonly getThreadUri: (topic: Communication) => string;
+  readonly onChange: (search: SearchRequest) => void;
+  readonly inProgressUri: string;
+  readonly completedUri: string;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -68,6 +70,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     threadId,
     subject,
     showPatientSummary = false,
+    pharmacyDialogComponent,
     onNew,
     getThreadUri,
     onChange,
@@ -75,8 +78,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     completedUri,
   } = props;
 
+  const navigate = useMedplumNavigate();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
-  const navigate = useNavigate();
 
   const currentSearch = useMemo(() => parseSearchRequest(`Communication?${query}`), [query]);
 
@@ -133,18 +136,29 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     [currentSearch, onChange]
   );
 
+  const skeletonTitleWidths = [80, 72, 68, 64];
+  const skeletonSubtitleWidths = [85, 78, 70, 60];
+
   useEffect(() => {
     if (error) {
-      showErrorNotification(error);
+      showNotification({
+        title: 'Error',
+        message: normalizeErrorString(error),
+        color: 'red',
+      });
     }
   }, [error]);
 
   const handleTopicStatusChangeWithErrorHandling = async (newStatus: Communication['status']): Promise<void> => {
+    handleThreadStatusChange(newStatus);
     try {
-      await handleThreadStatusChange(newStatus);
       await refreshThreadMessages();
     } catch (error) {
-      showErrorNotification(error);
+      showNotification({
+        title: 'Error',
+        message: normalizeErrorString(error),
+        color: 'red',
+      });
     }
   };
 
@@ -152,9 +166,6 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     addThreadMessage(message);
     onNew(message);
   };
-
-  const skeletonTitleWidths = [80, 72, 68, 64];
-  const skeletonSubtitleWidths = [85, 78, 70, 60];
 
   return (
     <>
@@ -277,13 +288,11 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         </Menu.Target>
 
                         {selectedThread.status !== 'completed' && (
-                          <>
-                            <Menu.Dropdown>
-                              <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
-                                Completed
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </>
+                          <Menu.Dropdown>
+                            <Menu.Item onClick={() => handleTopicStatusChangeWithErrorHandling('completed')}>
+                              Completed
+                            </Menu.Item>
+                          </Menu.Dropdown>
                         )}
                       </Menu>
                     </Flex>
@@ -307,7 +316,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     <PatientSummary
                       key={selectedThread.id}
                       patient={selectedThread.subject as Reference<Patient>}
-                      pharmacyDialogComponent={DoseSpotPharmacyDialog}
+                      pharmacyDialogComponent={pharmacyDialogComponent}
                     />
                   </ScrollArea>
                 </Flex>

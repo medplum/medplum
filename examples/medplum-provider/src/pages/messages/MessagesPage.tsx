@@ -3,12 +3,13 @@
 import type { Communication } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
-import { ThreadInbox } from '../../components/messages/ThreadInbox';
+import { ThreadInbox } from '@medplum/react';
 import classes from './MessagesPage.module.css';
 import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
 import { useEffect, useMemo } from 'react';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
+import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
 /**
  * Fetches
  * @returns A React component that displays all Threads/Topics.
@@ -67,6 +68,7 @@ export function MessagesPage(): JSX.Element {
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}
         showPatientSummary={true}
+        pharmacyDialogComponent={DoseSpotPharmacyDialog}
         onNew={onNew}
         getThreadUri={getThreadUri}
         onChange={onChange}
