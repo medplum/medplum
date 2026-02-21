@@ -137,7 +137,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
       withinPortal
     >
       <Popover.Target>
-        <Tooltip label="Filter Participants" position="bottom" openDelay={500} disabled={opened}>
+        <Tooltip label="Message Participants" position="bottom" openDelay={500} disabled={opened}>
           <Indicator disabled={!hasActiveFilter} color="blue" size={8} offset={4}>
             <ActionIcon
               variant="transparent"
@@ -156,7 +156,7 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
       <Popover.Dropdown p="md">
         <Stack gap="md">
           <Text size="xs" c="dimmed" fw={500}>
-            Filter Participants
+            Message Participants
           </Text>
 
           <TextInput

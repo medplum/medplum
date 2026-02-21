@@ -337,7 +337,7 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
@@ -368,7 +368,7 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
@@ -452,7 +452,7 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
