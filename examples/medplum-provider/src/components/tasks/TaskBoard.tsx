@@ -61,9 +61,10 @@ function toggleFilterValue<T extends string>(
   const otherFilters = search.filters?.filter((f) => f.code !== code) || [];
   return {
     ...search,
-    filters: updated.length > 0
-      ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
-      : otherFilters,
+    filters:
+      updated.length > 0
+        ? [...otherFilters, { code, operator: Operator.EQUALS, value: updated.join(',') }]
+        : otherFilters,
     offset: 0,
   };
 }

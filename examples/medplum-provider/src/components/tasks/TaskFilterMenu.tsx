@@ -96,9 +96,7 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
             </Flex>
           </Flex>
         </Menu.Target>
-        <Menu.Dropdown className="filter-submenu-dropdown">
-          {children}
-        </Menu.Dropdown>
+        <Menu.Dropdown className="filter-submenu-dropdown">{children}</Menu.Dropdown>
       </Menu>
     </Menu.Item>
   );
