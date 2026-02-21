@@ -179,7 +179,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                   <Tabs
                     value={status}
                     onChange={(value) => {
-                      navigate(value === 'in-progress' ? inProgressUri : completedUri)?.catch(console.error);
+                      navigate(value === 'in-progress' ? inProgressUri : completedUri);
                     }}
                     variant="unstyled"
                     className="pill-tabs"
