@@ -25,7 +25,7 @@ export const TASK_STATUSES: Task['status'][] = [
   'completed',
 ];
 
-export const TASK_STATUS_LABELS: Record<Task['status'], string> = {
+export const TASK_STATUS_LABELS: Partial<Record<Task['status'], string>> = {
   draft: 'Draft',
   requested: 'Requested',
   received: 'Received',
@@ -40,7 +40,7 @@ export const TASK_STATUS_LABELS: Record<Task['status'], string> = {
 
 export const TASK_PRIORITIES: Task['priority'][] = ['routine', 'urgent', 'asap', 'stat'];
 
-export const TASK_PRIORITY_LABELS: Record<Task['priority'], string> = {
+export const TASK_PRIORITY_LABELS: Record<NonNullable<Task['priority']>, string> = {
   routine: 'Routine',
   urgent: 'Urgent',
   asap: 'ASAP',
