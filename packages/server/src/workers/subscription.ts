@@ -291,7 +291,7 @@ export async function addSubscriptionJobs(
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsEvents = [] as [Resource, string, SubEventsOptions][];
+  const wsSubEvents = [] as [string, SubEventsOptions][];
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
@@ -322,7 +322,7 @@ export async function addSubscriptionJobs(
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id, { includeResource: true }]);
+        wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
@@ -341,8 +341,8 @@ export async function addSubscriptionJobs(
     }
   }
 
-  if (wsEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
+  if (wsSubEvents.length) {
+    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 

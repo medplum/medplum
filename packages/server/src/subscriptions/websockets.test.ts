@@ -630,6 +630,133 @@ describe('WebSocket Subscription', () => {
         .expectClosed();
     }));
 
+  test('V2 payload with multiple subscriptions fires all events', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Multi'], family: 'Sub' }],
+      });
+
+      // Create two subscriptions both watching Patient
+      const subscription1 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const subscription2 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      // Get binding tokens for both subscriptions
+      const res1 = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription1.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token1 = (res1.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const res2 = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription2.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token2 = (res2.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const receivedSubRefs: string[] = [];
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        // Bind first subscription
+        .sendJson({ type: 'bind-with-token', payload: { token: token1 } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        // Bind second subscription
+        .sendJson({ type: 'bind-with-token', payload: { token: token2 } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Wait for both subscriptions to be active
+          let sub1Active = false;
+          let sub2Active = false;
+          while (!sub1Active || !sub2Active) {
+            await sleep(0);
+            sub1Active =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
+                `Subscription/${subscription1.id}`
+              )) === 1;
+            sub2Active =
+              (await getRedis().hexists(
+                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
+                `Subscription/${subscription2.id}`
+              )) === 1;
+          }
+          // Publish a single v2 payload with both subscriptions in the events array
+          const v2Payload = {
+            resource: patient,
+            events: [
+              [subscription1.id, { includeResource: true }],
+              [subscription2.id, { includeResource: true }],
+            ],
+          };
+          await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+        })
+        // Expect first event-notification
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          receivedSubRefs.push(status.subscription?.reference ?? '');
+          // Verify the resource is included
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        // Expect second event-notification
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          receivedSubRefs.push(status.subscription?.reference ?? '');
+          // Verify the resource is included
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        .close()
+        .expectClosed();
+
+      // Verify both subscriptions received notifications
+      expect(receivedSubRefs.sort()).toEqual(
+        [`Subscription/${subscription1.id}`, `Subscription/${subscription2.id}`].sort()
+      );
+    }));
+
   test('Attachments are rewritten', () =>
     withTestContext(async () => {
       const binary = await repo.createResource<Binary>({
