@@ -17,6 +17,7 @@ import { SchedulingContextProvider } from '../../contexts/SchedulingContext';
 import { useScheduling } from '../../hooks/useScheduling';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
+import { extractAvailability } from '../../utils/scheduling';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
@@ -214,6 +215,16 @@ export function SchedulePageContent(props: SchedulePageContentProps): JSX.Elemen
     setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
   }, []);
 
+  const availability = useMemo(() => {
+    if (!scheduling.selectedSchedulingParameters) {
+      return undefined;
+    }
+    return {
+      byDay: extractAvailability(scheduling.selectedSchedulingParameters),
+      timeZone: scheduling.timeZone,
+    };
+  }, [scheduling.selectedSchedulingParameters, scheduling.timeZone]);
+
   return (
     <>
       <div className={classes.container}>
@@ -225,6 +236,7 @@ export function SchedulePageContent(props: SchedulePageContentProps): JSX.Elemen
             slots={slots ?? []}
             appointments={appointments ?? []}
             onRangeChange={setRange}
+            availability={availability}
           />
         </div>
 

@@ -1,0 +1,12 @@
+.unavailable {
+  flex-grow: 1;
+  background-color: rgb(248 249 250);
+
+  > :global(.rbc-time-slot) {
+    border-color: rgb(247 247 247 / 0.9);
+  }
+}
+
+:global(.rbc-time-gutter) .unavailable {
+  background-color: rgb(0 0 0 / 0);
+}
