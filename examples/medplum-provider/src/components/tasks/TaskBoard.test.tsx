@@ -641,10 +641,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -685,10 +685,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -725,10 +725,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('Urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('urgent'));
+    await user.click(screen.getByText('Urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
