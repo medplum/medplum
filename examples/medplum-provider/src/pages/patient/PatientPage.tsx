@@ -107,7 +107,9 @@ export function PatientPage(): JSX.Element {
 
         <div className={classes.content}>
           <PatientTabsNavigation tabs={tabs} currentTab={currentTab} onTabChange={onTabChange} />
-          <Outlet />
+          <div className={classes.contentBody}>
+            <Outlet />
+          </div>
         </div>
       </div>
       <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">

@@ -140,21 +140,21 @@ export function LabsPage(): JSX.Element {
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
                 <Group gap="xs">
-                  <Tabs value={activeTab} onChange={(value) => handleTabChange(value as string)} variant="unstyled">
-                    <Tabs.List className={classes.tabList}>
-                      <Tabs.Tab value="completed" className={classes.tab}>
+                  <Tabs value={activeTab} onChange={(value) => handleTabChange(value as string)} variant="unstyled" className="pill-tabs">
+                    <Tabs.List>
+                      <Tabs.Tab value="completed">
                         Completed
                       </Tabs.Tab>
-                      <Tabs.Tab value="open" className={classes.tab}>
+                      <Tabs.Tab value="open">
                         Open
                       </Tabs.Tab>
                     </Tabs.List>
                   </Tabs>
                 </Group>
 
-                <Tooltip label="Order Labs" position="bottom" openDelay={300}>
+                <Tooltip label="Order Labs" position="bottom" openDelay={500}>
                   <ActionIcon
-                    radius="50%"
+                    radius="xl"
                     variant="filled"
                     color="blue"
                     size={32}

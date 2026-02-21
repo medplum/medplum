@@ -1,19 +1,68 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Menu, ActionIcon, Text, Flex, Tooltip } from '@mantine/core';
+import { Menu, ActionIcon, Text, Flex, Tooltip, Indicator, Divider, Box } from '@mantine/core';
 import {
-  IconFilter,
+  IconFilter2Plus,
   IconChevronRight,
   IconUserCheck,
   IconStethoscope,
   IconCheck,
   IconExclamationCircle,
+  IconX,
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import type { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
-import { TaskFilterType, TASK_STATUSES, TASK_PRIORITIES } from './TaskFilterMenu.utils';
+import {
+  TaskFilterType,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABELS,
+} from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
+
+function capitalizeLabel(value: string): string {
+  return value
+    .split(/[- ]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function ActiveDot(): JSX.Element {
+  return <Box w={8} h={8} style={{ borderRadius: 4, backgroundColor: 'var(--mantine-color-blue-6)' }} />;
+}
+
+interface FilterSubmenuProps {
+  icon: ReactNode;
+  label: string;
+  isActive: boolean;
+  children: ReactNode;
+}
+
+function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps): JSX.Element {
+  return (
+    <Menu.Item p={0}>
+      <Menu trigger="hover" position="right-start" offset={{ mainAxis: 0, crossAxis: -8 }} shadow="md" radius="md">
+        <Menu.Target>
+          <Flex align="center" justify="space-between" w="100%" px="sm" py="xs" style={{ cursor: 'default' }}>
+            <Flex align="center" gap="xs">
+              {icon}
+              <Text size="sm">{label}</Text>
+            </Flex>
+            <Flex align="center" gap={4}>
+              {isActive && <ActiveDot />}
+              <IconChevronRight size={16} color="var(--mantine-color-gray-6)" />
+            </Flex>
+          </Flex>
+        </Menu.Target>
+        <Menu.Dropdown className="filter-submenu-dropdown">
+          {children}
+        </Menu.Dropdown>
+      </Menu>
+    </Menu.Item>
+  );
+}
 
 interface TaskFilterMenuProps {
   statuses?: Task['status'][];
@@ -23,10 +72,11 @@ interface TaskFilterMenuProps {
   patient?: Patient;
   performerTypes?: CodeableConcept[];
   onFilterChange?: (filterType: TaskFilterType, value: TaskFilterValue) => void;
+  onClearAllFilters?: () => void;
 }
 
 export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
-  const { statuses = [], priorities = [], performerType, performerTypes, onFilterChange } = props;
+  const { statuses = [], priorities = [], performerType, performerTypes, onFilterChange, onClearAllFilters } = props;
   const [opened, { open, close }] = useDisclosure(false);
 
   const uniquePerformerTypes =
@@ -35,117 +85,102 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
       return identifier && self.findIndex((pt) => (pt.coding?.[0]?.code || pt.text) === identifier) === index;
     }) || [];
 
+  const hasActiveFilter = statuses.length > 0 || priorities.length > 0 || !!performerType;
+
   return (
-    <Menu shadow="md" width={200} position="bottom-start" opened={opened} onOpen={open} onClose={close}>
+    <Menu shadow="md" width={200} position="bottom-start" radius="md" opened={opened} onOpen={open} onClose={close}>
       <Menu.Target>
-        <Tooltip label="Filter Tasks" position="bottom" openDelay={300} disabled={opened}>
-          <ActionIcon
-            variant="transparent"
-            size={32}
-            radius="xl"
-            aria-label="Filter tasks"
-            style={{ border: '1px solid var(--mantine-color-gray-3)' }}
-          >
-            <IconFilter size={16} color="var(--mantine-color-gray-6)" />
-          </ActionIcon>
+        <Tooltip label="Filter Tasks" position="bottom" openDelay={500} disabled={opened}>
+          <Indicator disabled={!hasActiveFilter} color="blue" size={8} offset={5}>
+            <ActionIcon
+              variant="transparent"
+              size={32}
+              radius="xl"
+              aria-label="Filter tasks"
+              className="outline-icon-button"
+              data-opened={opened || undefined}
+            >
+              <IconFilter2Plus size={16} />
+            </ActionIcon>
+          </Indicator>
         </Tooltip>
       </Menu.Target>
 
       <Menu.Dropdown>
-        <Menu.Label>Filters</Menu.Label>
+        <Menu.Label>Filter Tasks</Menu.Label>
 
-        {/* Status Submenu */}
-        <Menu.Item>
-          <Menu trigger="hover" openDelay={100} closeDelay={400} position="right-start" offset={5}>
-            <Menu.Target>
-              <Flex align="center" justify="space-between" w="100%">
-                <Flex align="center" gap="xs">
-                  <IconStethoscope size={16} />
-                  <Text size="sm">Status</Text>
-                </Flex>
-                <IconChevronRight size={16} />
-              </Flex>
-            </Menu.Target>
+        <FilterSubmenu
+          icon={<IconStethoscope size={16} color="var(--mantine-color-gray-6)" />}
+          label="Status"
+          isActive={statuses.length > 0}
+        >
+          {TASK_STATUSES.map((taskStatus) => (
+            <Menu.Item
+              key={taskStatus}
+              onClick={() => onFilterChange?.(TaskFilterType.STATUS, taskStatus)}
+              rightSection={statuses.includes(taskStatus) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null}
+            >
+              <Text size="sm">{TASK_STATUS_LABELS[taskStatus]}</Text>
+            </Menu.Item>
+          ))}
+        </FilterSubmenu>
 
-            <Menu.Dropdown>
-              <Menu.Label>Task Status</Menu.Label>
-              {TASK_STATUSES.map((taskStatus) => (
-                <Menu.Item
-                  key={taskStatus}
-                  onClick={() => onFilterChange?.(TaskFilterType.STATUS, taskStatus)}
-                  rightSection={statuses.includes(taskStatus) ? <IconCheck size={16} /> : null}
-                >
-                  <Text size="sm">{taskStatus}</Text>
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-        </Menu.Item>
+        <FilterSubmenu
+          icon={<IconExclamationCircle size={16} color="var(--mantine-color-gray-6)" />}
+          label="Priority"
+          isActive={priorities.length > 0}
+        >
+          {TASK_PRIORITIES.map((taskPriority) => (
+            <Menu.Item
+              key={taskPriority}
+              onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority ?? '')}
+              rightSection={priorities.includes(taskPriority) ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null}
+            >
+              <Text size="sm">{taskPriority ? TASK_PRIORITY_LABELS[taskPriority] : ''}</Text>
+            </Menu.Item>
+          ))}
+        </FilterSubmenu>
 
-        {/* Priority Submenu */}
-        <Menu.Item>
-          <Menu trigger="hover" openDelay={100} closeDelay={400} position="right-start" offset={5}>
-            <Menu.Target>
-              <Flex align="center" justify="space-between" w="100%">
-                <Flex align="center" gap="xs">
-                  <IconExclamationCircle size={16} />
-                  <Text size="sm">Priority</Text>
-                </Flex>
-                <IconChevronRight size={16} />
-              </Flex>
-            </Menu.Target>
+        <FilterSubmenu
+          icon={<IconUserCheck size={16} color="var(--mantine-color-gray-6)" />}
+          label="Performer Type"
+          isActive={!!performerType}
+        >
+          {uniquePerformerTypes.length > 0 ? (
+            uniquePerformerTypes.map((type, index) => (
+              <Menu.Item
+                key={`${type.coding?.[0]?.code ?? index}`}
+                onClick={() => onFilterChange?.(TaskFilterType.PERFORMER_TYPE, type)}
+                rightSection={
+                  performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? <IconCheck size={16} color="var(--mantine-color-blue-6)" /> : null
+                }
+              >
+                <Text size="sm">{capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}</Text>
+              </Menu.Item>
+            ))
+          ) : (
+            <Menu.Item disabled>
+              <Text size="sm" c="dimmed">
+                No performer types available
+              </Text>
+            </Menu.Item>
+          )}
+        </FilterSubmenu>
 
-            <Menu.Dropdown>
-              <Menu.Label>Task Priority</Menu.Label>
-              {TASK_PRIORITIES.map((taskPriority) => (
-                <Menu.Item
-                  key={taskPriority}
-                  onClick={() => onFilterChange?.(TaskFilterType.PRIORITY, taskPriority ?? '')}
-                  rightSection={priorities.includes(taskPriority) ? <IconCheck size={16} /> : null}
-                >
-                  <Text size="sm">{taskPriority}</Text>
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-        </Menu.Item>
-
-        <Menu.Item>
-          <Menu trigger="hover" openDelay={100} closeDelay={400} position="right-start" offset={5}>
-            <Menu.Target>
-              <Flex align="center" justify="space-between" w="100%">
-                <Flex align="center" gap="xs">
-                  <IconUserCheck size={16} />
-                  <Text size="sm">Performer Type</Text>
-                </Flex>
-                <IconChevronRight size={16} />
-              </Flex>
-            </Menu.Target>
-
-            <Menu.Dropdown>
-              <Menu.Label>Performer Types</Menu.Label>
-              {uniquePerformerTypes.length > 0 ? (
-                uniquePerformerTypes.map((type, index) => (
-                  <Menu.Item
-                    key={`${type.coding?.[0]?.code ?? index}`}
-                    onClick={() => onFilterChange?.(TaskFilterType.PERFORMER_TYPE, type)}
-                    rightSection={
-                      performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? <IconCheck size={16} /> : null
-                    }
-                  >
-                    <Text size="sm">{type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown'}</Text>
-                  </Menu.Item>
-                ))
-              ) : (
-                <Menu.Item disabled>
-                  <Text size="sm" c="dimmed">
-                    No performer types available
-                  </Text>
-                </Menu.Item>
-              )}
-            </Menu.Dropdown>
-          </Menu>
-        </Menu.Item>
+        {hasActiveFilter && (
+          <>
+            <Divider my={4} mx={4} />
+            <Menu.Item
+              leftSection={<IconX size={16} color="var(--mantine-color-gray-6)" />}
+              onClick={() => {
+                onClearAllFilters?.();
+                close();
+              }}
+            >
+              <Text size="sm">Clear All Filters</Text>
+            </Menu.Item>
+          </>
+        )}
       </Menu.Dropdown>
     </Menu>
   );

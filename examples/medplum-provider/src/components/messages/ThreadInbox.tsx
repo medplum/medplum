@@ -171,12 +171,13 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       navigate(value === 'in-progress' ? inProgressUri : completedUri)?.catch(console.error);
                     }}
                     variant="unstyled"
+                    className="pill-tabs"
                   >
-                    <Tabs.List className={classes.tabList}>
-                      <Tabs.Tab value="in-progress" className={classes.tab}>
+                    <Tabs.List>
+                      <Tabs.Tab value="in-progress">
                         In Progress
                       </Tabs.Tab>
-                      <Tabs.Tab value="completed" className={classes.tab}>
+                      <Tabs.Tab value="completed">
                         Completed
                       </Tabs.Tab>
                     </Tabs.List>
@@ -186,8 +187,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                       selectedParticipants={selectedParticipants}
                       onFilterChange={handleParticipantsChange}
                     />
-                    <Tooltip label="New Message" position="bottom" openDelay={300}>
-                      <ActionIcon radius="50%" variant="filled" color="blue" size={32} onClick={openModal}>
+                    <Tooltip label="New Message" position="bottom" openDelay={500}>
+                      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openModal}>
                         <IconPlus size={16} />
                       </ActionIcon>
                     </Tooltip>

@@ -29,7 +29,7 @@ import { useResource, useMedplum, AttachmentDisplay, ObservationTable } from '@m
 import { IconSend, IconCheck, IconFlask, IconClipboardCheck } from '@tabler/icons-react';
 import { useState, useEffect, useMemo } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
-import classes from './LabOrderDetails.module.css';
+
 import { showErrorNotification } from '../../utils/notifications';
 
 interface LabOrderDetailsProps {
@@ -387,12 +387,13 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
                   value={activeDetailTab}
                   onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
                   variant="unstyled"
+                  className="pill-tabs"
                 >
-                  <Tabs.List className={classes.tabList}>
-                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'} className={classes.tab}>
+                  <Tabs.List>
+                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
                       {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
                     </Tabs.Tab>
-                    <Tabs.Tab value="order" className={classes.tab}>
+                    <Tabs.Tab value="order">
                       Order Details
                     </Tabs.Tab>
                   </Tabs.List>

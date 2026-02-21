@@ -139,28 +139,28 @@ export function TaskInputNote(props: TaskInputNoteProps): React.JSX.Element {
           {allowEdit && (
             <Flex align="center" gap="xs">
               {onDeleteTask && (
-                <Tooltip label="Delete Task" position="bottom" openDelay={300}>
+                <Tooltip label="Delete Task" position="bottom" openDelay={500}>
                   <ActionIcon
                     variant="transparent"
                     aria-label="Delete Task"
                     radius="xl"
                     size={32}
-                    onClick={() => handleDeleteTask()}
-                    style={{ border: '1px solid var(--mantine-color-gray-3)' }}
+                    className="outline-icon-button"
+                    onClick={handleDeleteTask}
                   >
-                    <IconTrash size={16} color="var(--mantine-color-gray-6)" />
+                    <IconTrash size={16} />
                   </ActionIcon>
                 </Tooltip>
               )}
 
-              <Tooltip label="Mark as Completed" position="bottom" openDelay={300}>
+              <Tooltip label="Mark as Completed" position="bottom" openDelay={500}>
                 <ActionIcon
                   variant="filled"
                   color="blue"
                   aria-label="Mark as Completed"
                   radius="xl"
                   size={32}
-                  onClick={() => handleMarkAsCompleted()}
+                  onClick={handleMarkAsCompleted}
                 >
                   <IconCheck size={16} />
                 </ActionIcon>
