@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:fast:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx turbo run build:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git stash:*)",
+      "Bash(npm test:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}
