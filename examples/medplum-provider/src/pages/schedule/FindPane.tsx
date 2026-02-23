@@ -52,16 +52,18 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
   // Ensure that we are searching for slots in the future by at least 30 minutes.
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
-  const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
-  const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + 1000 * 60 * 60 * 24 * 7);
-
-  const start = searchStart.toISOString();
-  const end = searchEnd.toISOString();
 
   useEffect(() => {
     if (!schedule || serviceType === null) {
       return () => {};
     }
+
+    // Compute search range
+    const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
+    const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const start = searchStart.toISOString();
+    const end = searchEnd.toISOString();
+
     const controller = new AbortController();
     const signal = controller.signal;
     const params = new URLSearchParams({ start, end });
@@ -90,7 +92,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     return () => {
       controller.abort();
     };
-  }, [medplum, schedule, serviceType, start, end]);
+  }, [medplum, schedule, serviceType, range, earliestSchedulable]);
 
   const handleDismiss = useCallback(() => {
     setServiceType(null);
