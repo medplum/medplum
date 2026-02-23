@@ -698,10 +698,20 @@ describe('Client', () => {
 
   describe('Get external auth redirect URI', () => {
     let client: MedplumClient;
+    let consoleErrorSpy: jest.SpyInstance;
 
     beforeAll(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const fetch = mockFetch(200, {});
       client = new MedplumClient({ fetch });
+    });
+
+    afterAll(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
     test('should give a valid url with all fields for PKCE exchange', async () => {
@@ -3376,7 +3386,7 @@ describe('Client', () => {
       headers: { get: () => ContentType.JSON },
       json: () => Promise.reject(new Error('Not JSON')),
     }));
-    console.error = jest.fn();
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const client = new MedplumClient({ fetch });
     try {
       await client.readResource('Patient', '123');
@@ -3384,7 +3394,8 @@ describe('Client', () => {
     } catch (err) {
       expect(err).toBeDefined();
     }
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
   });
 
   describe('Bulk Data Export', () => {
@@ -4368,6 +4379,7 @@ describe('Passed in async-backed `ClientStorage`', () => {
     const medplum = new MedplumClient({ fetch, storage });
     const dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
 
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     storage.rejectInitPromise();
 
     await expect(medplum.getInitPromise()).rejects.toThrow('Storage init failed!');
@@ -4375,6 +4387,7 @@ describe('Passed in async-backed `ClientStorage`', () => {
       type: 'storageInitFailed',
       payload: { error: new Error('Storage init failed!') },
     });
+    consoleErrorSpy.mockRestore();
   });
 });
 

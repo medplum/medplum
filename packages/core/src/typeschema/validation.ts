@@ -781,10 +781,8 @@ function isTerminologyType(type: string): boolean {
   }
 }
 
-/**
- * Validates FHIR base64Binary format without regex backtracking
- */
 function isValidBase64Binary(str: string): boolean {
+  // validates FHIR base64Binary format without regex backtracking to avoid catastrophic backtracking
   if (str.length === 0) {
     return false;
   }
