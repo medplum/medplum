@@ -1020,11 +1020,21 @@ describe('FHIR resource validation', () => {
     binary.data = 123 as unknown as string;
     expect(() => validateResource(binary)).toThrow('Invalid JSON type: expected string, but got number (Binary.data)');
 
+    binary.data = '==';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
     binary.data = '===';
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
+
+    binary.data = 'AAAA===';
     expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
 
     binary.data = 'aGVsbG8=';
     expect(() => validateResource(binary)).not.toThrow();
+
+    // Long invalid base64 (valid chars but invalid char at end) don't cause catastrophic backtracking
+    binary.data = 'A'.repeat(10000) + '!'; // Invalid: '!' not in base64 alphabet
+    expect(() => validateResource(binary)).toThrow('Invalid base64Binary format');
   });
 
   test('Binary.data can exceed default when cap override is provided', () => {
