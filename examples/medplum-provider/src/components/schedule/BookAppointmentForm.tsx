@@ -3,7 +3,7 @@
 import { Button, Stack, Text } from '@mantine/core';
 import { Form, ResourceInput, useMedplum } from '@medplum/react';
 import { createReference, EMPTY, isDefined, formatPeriod } from '@medplum/core';
-import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Patient, Resource, Slot } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
@@ -59,6 +59,13 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
     }
   }, [patient, bookSlot]);
 
+  const choosePatient = useCallback((patient: Resource | undefined) => {
+    if (patient && patient.resourceType !== 'Patient') {
+      throw new Error(`Got unexpected resource type; expected 'Patient', got '${patient.resourceType}'`);
+    }
+    setPatient(patient);
+  }, []);
+
   return (
     <Form onSubmit={handleSubmit}>
       <Stack gap="md">
@@ -68,7 +75,7 @@ export function BookAppointmentForm(props: BookAppointmentFormProps): JSX.Elemen
           resourceType="Patient"
           name="Patient-id"
           required={true}
-          onChange={(value) => setPatient(value as Patient)}
+          onChange={choosePatient}
           disabled={loading}
         />
 
