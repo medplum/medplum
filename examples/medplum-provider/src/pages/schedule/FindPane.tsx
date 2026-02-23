@@ -64,6 +64,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     const start = searchStart.toISOString();
     const end = searchEnd.toISOString();
 
+    let completed = false;
     const controller = new AbortController();
     const signal = controller.signal;
     const params = new URLSearchParams({ start, end });
@@ -74,23 +75,30 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     }
     medplum
       .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
-      .then((bundle) => {
-        if (!signal.aborted) {
-          if (bundle.entry) {
-            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-            setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
-          } else {
-            setSlots([]);
+      .then(
+        (bundle) => {
+          if (!signal.aborted) {
+            if (bundle.entry) {
+              bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
+              setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
+            } else {
+              setSlots([]);
+            }
+          }
+        },
+        (error) => {
+          if (!signal.aborted) {
+            showErrorNotification(error);
           }
         }
-      })
-      .catch((error) => {
-        if (!signal.aborted) {
-          showErrorNotification(error);
-        }
+      )
+      .finally(() => {
+        completed = true;
       });
     return () => {
-      controller.abort();
+      if (!completed) {
+        controller.abort();
+      }
     };
   }, [medplum, schedule, serviceType, range, earliestSchedulable]);
 
