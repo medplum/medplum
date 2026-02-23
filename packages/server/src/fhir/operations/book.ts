@@ -7,6 +7,7 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   EMPTY,
   getReferenceString,
+  isNotFound,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -148,8 +149,12 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     // validate that the patient reference exists and is visible to the caller
     try {
       await ctx.repo.readReference(params['patient-reference']);
-    } catch {
-      throw new OperationOutcomeError(badRequest('Invalid patient-reference'));
+    } catch (err: unknown) {
+      // convert from 404 not-found to 400 bad-request
+      if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+        throw new OperationOutcomeError(badRequest('Invalid patient-reference'));
+      }
+      throw err;
     }
   }
 
