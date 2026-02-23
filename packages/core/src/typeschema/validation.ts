@@ -786,11 +786,18 @@ function isValidBase64Binary(str: string): boolean {
   if (str.length === 0) {
     return false;
   }
-  const padding = str.endsWith('==') ? 2 : str.endsWith('=') ? 1 : 0;
+  let padding = 0;
+  if (str.endsWith('==')) {
+    padding = 2;
+  } else if (str.endsWith('=')) {
+    padding = 1;
+  }
+
   const dataLen = str.length - padding;
   if (dataLen < 0) {
     return false;
   }
+  // add padding to dataLen instead of using str.length to check for invalid padding like ===
   if ((padding + dataLen) % 4 !== 0) {
     return false;
   }
