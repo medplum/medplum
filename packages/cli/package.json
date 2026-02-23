@@ -60,13 +60,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.990.0",
-    "@aws-sdk/client-cloudformation": "3.990.0",
-    "@aws-sdk/client-cloudfront": "3.990.0",
-    "@aws-sdk/client-ecs": "3.990.0",
-    "@aws-sdk/client-s3": "3.990.0",
-    "@aws-sdk/client-ssm": "3.990.0",
-    "@aws-sdk/client-sts": "3.990.0",
+    "@aws-sdk/client-acm": "3.994.0",
+    "@aws-sdk/client-cloudformation": "3.994.0",
+    "@aws-sdk/client-cloudfront": "3.994.0",
+    "@aws-sdk/client-ecs": "3.994.0",
+    "@aws-sdk/client-s3": "3.994.0",
+    "@aws-sdk/client-ssm": "3.994.0",
+    "@aws-sdk/client-sts": "3.994.0",
     "@aws-sdk/types": "3.973.1",
     "@medplum/core": "5.0.15",
     "@medplum/hl7": "5.0.15",
@@ -76,7 +76,7 @@
     "iconv-lite": "0.7.2",
     "node-fetch": "2.7.0",
     "semver": "7.7.4",
-    "tar": "7.5.7"
+    "tar": "7.5.9"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.0.15",

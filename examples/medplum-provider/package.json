@@ -18,10 +18,10 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "8.3.14",
-    "@mantine/hooks": "8.3.14",
-    "@mantine/notifications": "8.3.14",
-    "@mantine/spotlight": "8.3.14",
+    "@mantine/core": "8.3.15",
+    "@mantine/hooks": "8.3.15",
+    "@mantine/notifications": "8.3.15",
+    "@mantine/spotlight": "8.3.15",
     "@medplum/core": "5.0.15",
     "@medplum/dosespot-react": "5.0.15",
     "@medplum/eslint-config": "5.0.15",
@@ -29,7 +29,7 @@
     "@medplum/health-gorilla-core": "5.0.15",
     "@medplum/health-gorilla-react": "5.0.15",
     "@medplum/react": "5.0.15",
-    "@tabler/icons-react": "3.36.1",
+    "@tabler/icons-react": "3.37.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
