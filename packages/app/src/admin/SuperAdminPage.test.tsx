@@ -668,6 +668,4 @@ describe('SuperAdminPage', () => {
       expect(explainSections.length).toBeGreaterThan(0);
     });
   });
-
 });
-

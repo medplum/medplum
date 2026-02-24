@@ -583,4 +583,3 @@ export function ExplainSearchForm({
     </Form>
   );
 }
-
