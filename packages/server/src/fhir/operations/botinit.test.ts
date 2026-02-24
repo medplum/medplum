@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, streamToBuffer } from '@medplum/core';
+import { badRequest, ContentType, streamToBuffer } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -36,6 +36,42 @@ describe('Bot $init', () => {
         description: 'Alice bot description',
       });
     expect(res2.status).toBe(403);
+  });
+
+  test('Missing both data and url', async () => {
+    const { accessToken } = await createTestProject({
+      membership: { admin: true },
+      withAccessToken: true,
+    });
+    const res2 = await request(app)
+      .post('/fhir/R4/Bot/$init')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+        sourceCode: { title: 'missing data and url', contentType: ContentType.JAVASCRIPT },
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Invalid attachment: Missing data or url'));
+  });
+
+  test('Invalid base-64 data', async () => {
+    const { accessToken } = await createTestProject({
+      membership: { admin: true },
+      withAccessToken: true,
+    });
+    const res2 = await request(app)
+      .post('/fhir/R4/Bot/$init')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+        sourceCode: { title: 'invalid base-64 data', contentType: ContentType.JAVASCRIPT, data: 'invalid-base64' },
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Invalid attachment: Invalid base64 data'));
   });
 
   test('Create new bot', async () => {
@@ -133,7 +169,7 @@ describe('Bot $init', () => {
 });
 
 function extractBinaryId(url: string): string {
-  return url.replace('http://localhost:8103/storage/', '').split('/')?.[0]; //?.split('?')?.[0] || '';
+  return url.replace('http://localhost:8103/storage/', '').split('/')?.[0];
 }
 
 async function readBinaryContent(repo: Repository, binaryId: string): Promise<string> {

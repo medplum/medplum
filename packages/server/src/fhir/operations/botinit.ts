@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, createReference, created, forbidden, getReferenceString } from '@medplum/core';
+import {
+  ContentType,
+  OperationOutcomeError,
+  badRequest,
+  createReference,
+  created,
+  forbidden,
+  getReferenceString,
+} from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
   AccessPolicy,
@@ -50,6 +58,11 @@ export interface BotInitParameters {
   readonly executableCode?: Attachment;
 }
 
+/**
+ * Default bot code to use when creating a new bot without providing source code.
+ * Note that the function signature must match the expected handler signature for the bot runtime.
+ * This function signature is critical for backwards compatibility.
+ */
 const defaultBotCode = `import { BotEvent, MedplumClient } from '@medplum/core';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
@@ -79,6 +92,13 @@ export async function botInitHandler(req: FhirRequest): Promise<FhirResponse> {
   return [created, buildOutputParameters(botInitOperation, bot)];
 }
 
+/**
+ * Creates a new Bot resource with the given parameters.
+ * @param repo - The current user's repository.
+ * @param project - The project to create the bot in.
+ * @param params - Additional bot initialization parameters.
+ * @returns The created Bot resource.
+ */
 export async function createBot(
   repo: Repository,
   project: WithId<Project>,
@@ -135,12 +155,17 @@ async function createCodeBinary(repo: Repository, attachment: Attachment): Promi
       return attachment;
     }
 
-    throw new Error('Invalid attachment: URL must start with Binary/');
+    throw new OperationOutcomeError(badRequest('Invalid attachment: URL must start with Binary/'));
   }
 
   const data = attachment.data;
   if (!data) {
-    throw new Error('Invalid attachment: Missing data or url');
+    throw new OperationOutcomeError(badRequest('Invalid attachment: Missing data or url'));
+  }
+
+  const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+  if (!base64Regex.test(data)) {
+    throw new OperationOutcomeError(badRequest('Invalid attachment: Invalid base64 data'));
   }
 
   const code = Buffer.from(data, 'base64').toString('utf8');
