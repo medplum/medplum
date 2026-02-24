@@ -1628,7 +1628,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const expressions: Expression[] = [];
 
     for (const policy of accessPolicy.resource) {
-      if (policy.resourceType === resourceType || policy.resourceType === '*') {
+      if (
+        (policy.resourceType === resourceType || policy.resourceType === '*') &&
+        (!policy.interaction || policy.interaction.includes(AccessPolicyInteraction.SEARCH))
+      ) {
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
