@@ -3,12 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HealthieClient } from './client';
 import { HEALTHIE_POLICY_ID_SYSTEM } from './constants';
-import {
-  convertHealthiePolicyToFhir,
-  fetchPolicies,
-  mapPriorityType,
-  mapHolderRelationship,
-} from './coverage';
+import { convertHealthiePolicyToFhir, fetchPolicies, mapPriorityType, mapHolderRelationship } from './coverage';
 import type { HealthiePolicy } from './coverage';
 
 type MockResponse = {

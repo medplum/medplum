@@ -112,18 +112,13 @@ export async function fetchPolicies(healthie: HealthieClient, patientId: string)
  * @param patientReference - The reference to the patient.
  * @returns A FHIR Coverage resource.
  */
-export function convertHealthiePolicyToFhir(
-  policy: HealthiePolicy,
-  patientReference: Reference<Patient>
-): Coverage {
+export function convertHealthiePolicyToFhir(policy: HealthiePolicy, patientReference: Reference<Patient>): Coverage {
   const coverage: Coverage = {
     resourceType: 'Coverage',
     identifier: [{ system: HEALTHIE_POLICY_ID_SYSTEM, value: policy.id }],
     status: 'active',
     beneficiary: patientReference,
-    payor: policy.insurance_plan?.payer_name
-      ? [{ display: policy.insurance_plan.payer_name }]
-      : [patientReference],
+    payor: policy.insurance_plan?.payer_name ? [{ display: policy.insurance_plan.payer_name }] : [patientReference],
     relationship: mapHolderRelationship(policy.holder_relationship),
     order: mapPriorityType(policy.priority_type),
     subscriberId: policy.num || undefined,
