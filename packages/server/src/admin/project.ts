@@ -148,7 +148,7 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
           {
             code: 'user',
             operator: Operator.EQUALS,
-            value: user.id,
+            value: getReferenceString(user),
           },
         ],
         count: 2,
