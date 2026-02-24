@@ -1,44 +1,25 @@
-/* Single wrapper for all landing content (except full-bleed CTA background).
-   max-width 76rem = 72rem content + 2rem padding each side. */
+/* Shared layout dimensions come from --layout-* custom properties in custom.css */
 .landingContent {
   width: 100%;
-  max-width: 80rem;
+  max-width: var(--layout-max-width);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 2rem;
-  padding-right: 2rem;
+  padding-left: var(--layout-padding);
+  padding-right: var(--layout-padding);
   box-sizing: border-box;
 }
 
 @media screen and (max-width: 996px) {
   .landingContent {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: var(--layout-padding-md);
+    padding-right: var(--layout-padding-md);
   }
 }
 
 @media screen and (max-width: 600px) {
   .landingContent {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-
-.section {
-  max-width: 100%;
-  display: flex;
-  margin: 50px auto 50px auto;
-  padding: 20px;
-}
-
-@media screen and (max-width: 996px) {
-  .section {
-    flex-direction: column;
-  }
-
-  .heroSection .section {
-    flex-direction: column-reverse;
-    gap: 2rem;
+    padding-left: var(--layout-padding-sm);
+    padding-right: var(--layout-padding-sm);
   }
 }
 
@@ -71,6 +52,7 @@
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
+  text-wrap-style: balance;
   color: var(--oc-gray-8);
 }
 
@@ -97,9 +79,13 @@
 }
 
 .heroImageContainer {
-  padding: 4rem;
+  position: relative;
+  overflow: hidden;
   background-color: var(--oc-orange-1);
+  border: 1px solid rgba(var(--oc-orange-0-rgb), 0.25);
   border-radius: 4px;
+  aspect-ratio: 16 / 8;
+
 }
 
 [data-theme='dark'] .heroImageContainer {
@@ -108,9 +94,14 @@
 }
 
 .heroImage {
-  width: 100%;
-  border: 0px 8px 24px rgba(var(--oc-orange-3-rgb), 0.5);
-  border-radius: 1rem;
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 85%;
+  height: auto;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
   box-shadow: 0px 8px 40px rgba(var(--oc-orange-3-rgb), 0.75);
 }
 
@@ -119,6 +110,12 @@
   border: 1px solid rgba(var(--oc-gray-7-rgb), 0.75);
 }
 
+@media screen and (max-width: 996px) {
+  .heroImage {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+}
 
 .heroButtons {
   display: flex;
@@ -128,9 +125,15 @@
   margin-bottom: 2rem;
 }
 
-@media screen and (max-width: 996px) {
+@media screen and (max-width: 600px) {
   .heroButtons {
     flex-direction: column;
+    width: 100%;
+  }
+
+  .heroButtons > a,
+  .heroButtons > button {
+    width: 100%;
   }
 }
 
@@ -167,14 +170,36 @@
 }
 
 .ctaBanner {
+  position: relative;
   background-color: var(--oc-grape-0);
   width: 100%;
-  padding: 6rem 2rem 4rem 2rem;
+  padding: 6rem 0 4rem 0;
   margin-top: 10rem;
+}
+
+.ctaBanner::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(to bottom, transparent, var(--oc-grape-0));
+  pointer-events: none;
 }
 
 [data-theme='dark'] .ctaBanner {
   background-color: var(--oc-gray-9);
+}
+
+@media screen and (max-width: 996px) {
+  .ctaBanner {
+    padding: 4rem 0 3rem 0;
+  }
+}
+
+[data-theme='dark'] .ctaBanner::before {
+  background: linear-gradient(to bottom, transparent, var(--oc-gray-9));
 }
 
 /* CTA inner uses .landingContent for width; only CTA-specific descendant styles below */
@@ -184,6 +209,7 @@
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.025em;
+  text-wrap-style: balance;
   color: var(--oc-gray-8);
   margin-bottom: 1rem;
 }
@@ -204,6 +230,12 @@
 
 [data-theme='dark'] .ctaBannerDescription {
   color: #b2b2b2;
+}
+
+@media screen and (max-width: 996px) {
+  .ctaBannerDescription {
+    width: 90%;
+  }
 }
 
 .ctaWhiteButton {

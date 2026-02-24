@@ -125,9 +125,35 @@
   color: var(--oc-gray-4);
 }
 
+.securityLink {
+  display: inline-flex;
+  color: var(--oc-gray-5);
+  transition: color 150ms ease;
+}
+
+.securityLink:hover {
+  color: var(--oc-grape-8);
+}
+
 @media screen and (max-width: 996px) {
   .item {
-    padding: 1.5rem 1rem;
+    padding: 2rem;
+  }
+
+  .item:nth-child(1)::before,
+  .item:nth-child(3)::before {
+    left: 2rem;
+  }
+
+  .item:nth-child(2)::before,
+  .item:nth-child(4)::before {
+    right: 2rem;
+  }
+
+  .item:nth-child(1)::after,
+  .item:nth-child(3)::after {
+    top: 2rem;
+    bottom: 2rem;
   }
 }
 

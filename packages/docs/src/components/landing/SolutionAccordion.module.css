@@ -160,7 +160,7 @@
 .text {
   flex: 1;
   padding-top: 2rem;
-  border-top: 1px solid rgba(var(--oc-violet-0-rgb), 0.75);
+  border-top: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
 }
 
 [data-theme='dark'] .text {
@@ -254,8 +254,8 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  background-color: var(--oc-indigo-0);
-  border: 1px solid rgba(var(--oc-indigo-0-rgb), 0.5);
+  background-color: rgba(var(--oc-grape-0-rgb), 0.75);
+  border: 1px solid rgba(var(--oc-grape-0-rgb), 0.75);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -274,7 +274,33 @@
   object-fit: contain;
   object-position: bottom right;
   border-top-left-radius: 16px;
-  box-shadow: 0px 8px 40px rgba(var(--oc-indigo-3-rgb), 0.5);
+  box-shadow: 0px 8px 40px rgba(var(--oc-grape-2-rgb), 0.5);
+}
+
+.imgPatientEngagement {
+  right: auto;
+  left: 50%;
+  width: 70%;
+  transform: translateX(-50%);
+  object-position: bottom center;
+  border-top-left-radius: 32px;
+  border-top-right-radius: 32px;
+}
+
+.imgScribeAgents {
+  top: 0;
+  bottom: auto;
+  object-position: top right;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 16px;
+}
+
+.imgRcm {
+  right: auto;
+  left: 0;
+  object-position: bottom left;
+  border-top-left-radius: 0;
+  border-top-right-radius: 16px;
 }
 
 [data-theme='dark'] .imagePlaceholderImg {
@@ -305,6 +331,7 @@
   }
 
   .title {
-    font-size: 1rem;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
   }
 }

@@ -14,6 +14,7 @@ import {
   IconShieldCheck,
   IconTestPipe,
 } from '@tabler/icons-react';
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
@@ -51,17 +52,15 @@ export function LandingPage(): JSX.Element {
             <div className={styles.heroContent}>
               <h1 className={styles.heroTitle}>Build and run modern healthcare apps</h1>
               <p className={styles.heroText}>
-                Medplum is the open source developer platform for shipping clinical software.<br></br>Start with our
+                Medplum is the open source developer platform for shipping clinical software.
+                <br />
+                Start with our
                 production-ready apps, then customize them to fit your needs.
               </p>
               <div className={styles.heroButtons}>
-                <button
-                  type="button"
-                  className={styles.purpleButton}
-                  onClick={() => (window.location.href = '/docs/provider')}
-                >
+                <Link to="/docs/provider" className={styles.purpleButton}>
                   Explore the Provider App
-                </button>
+                </Link>
                 <BuildDropdown />
               </div>
             </div>
@@ -144,7 +143,7 @@ export function LandingPage(): JSX.Element {
           <SectionHeader>
             <h2>Trusted infrastructure, to meet any future you build</h2>
             <p>
-              Mepdplum lets your team skip the plumbing and ship what matters, geting you to market faster with a
+              Medplum lets your team skip the plumbing and ship what matters, getting you to market faster with a
               secure, compliant, and scalable foundation.
             </p>
           </SectionHeader>
@@ -189,6 +188,16 @@ export function LandingPage(): JSX.Element {
             </Card>
             <Card>
               <TestimonialHeader
+                name="Brendan Keeler"
+                title="Health API Guy Newsletter"
+                imgSrc="/img/avatars/brendan-keeler.webp"
+              />
+              <p>
+                I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.
+              </p>
+            </Card>
+            <Card>
+              <TestimonialHeader
                 name="Florencia Herra Vega"
                 title="CEO, AlleyCorp Nord"
                 imgSrc="/img/avatars/florencia.webp"
@@ -208,16 +217,6 @@ export function LandingPage(): JSX.Element {
             <Card>
               <TestimonialHeader name="Dima Goncharov" title="CEO, Metriport" imgSrc="/img/avatars/dima.webp" />
               <p>Open source will transform healthcare, and Medplum is a prime example.</p>
-            </Card>
-            <Card>
-              <TestimonialHeader
-                name="Brendan Keeler"
-                title="Health API Guy Newsletter"
-                imgSrc="/img/avatars/brendan-keeler.webp"
-              />
-              <p>
-                I want to say it loudly for everyone to hear: I love Medplum, I love it so much. […] They’re awesome.
-              </p>
             </Card>
             <Card>
               <TestimonialHeader
@@ -262,16 +261,12 @@ export function LandingPage(): JSX.Element {
               compliant healthcare apps.
             </p>
             <div className={styles.heroButtons}>
-              <button type="button" className={styles.ctaWhiteButton} onClick={() => (window.location.href = '/docs')}>
+              <Link to="/docs" className={styles.ctaWhiteButton}>
                 See Documentation
-              </button>
-              <button
-                type="button"
-                className={styles.purpleButton}
-                onClick={() => (window.location.href = 'mailto:hello@medplum.com')}
-              >
+              </Link>
+              <Link to="https://cal.com/medplum/demo?overlayCalendar=true" className={styles.purpleButton}>
                 Book a Demo
-              </button>
+              </Link>
             </div>
           </div>
         </div>

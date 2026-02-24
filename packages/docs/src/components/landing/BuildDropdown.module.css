@@ -268,9 +268,17 @@
   }
 }
 
-@media screen and (max-width: 996px) {
+@media screen and (max-width: 600px) {
+  .dropdownWrapper {
+    width: 100%;
+  }
+
+  .dropdownTrigger {
+    width: 100%;
+  }
+
   .dropdownMenu {
-    width: 380px;
+    width: 100%;
     max-width: calc(100vw - 2rem);
     left: 0;
   }

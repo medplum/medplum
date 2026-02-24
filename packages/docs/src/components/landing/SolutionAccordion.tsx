@@ -17,76 +17,78 @@ import { useEffect, useRef, useState } from 'react';
 import { SectionHeader } from './SectionHeader';
 import styles from './SolutionAccordion.module.css';
 
-const CUSTOM_EHR_IMAGE = '/img/custom-ehr.webp';
-
 interface SolutionItem {
   title: string;
   description: string[];
   icon: JSX.Element;
   link: string;
   imageSrc: string;
+  imageClassName?: string;
 }
 
 const solutions: SolutionItem[] = [
   {
     title: 'Custom EHR',
     description: [
-      'Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and specifications.',
-      'Gain complete control over your clinical data and operations.',
+      'Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and specifications',
+      'Gain complete control over your clinical data and operations',
     ],
     icon: <IconHeartRateMonitor size={24} />,
     link: '/solutions/custom-ehr',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/custom-ehr.webp',
   },
   {
     title: 'Patient Engagement',
     description: [
-      'Deepen your connection with patients by creating custom, modern experiences that truly resonate.',
-      'Drive better health outcomes through seamless and engaging interactions.',
+      'Deepen your connection with patients by creating custom, modern experiences that truly resonate',
+      'Drive better health outcomes through seamless and engaging interactions',
     ],
     icon: <IconUserHeart size={24} />,
     link: '/solutions/patient-portal',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/patient-engagement.webp',
+    imageClassName: styles.imgPatientEngagement,
   },
   {
     title: 'Scribe & Agents',
     description: [
-      'Go beyond simple transcription with agentic scribes that take action, not just notes.',
-      'Elevate your AI capabilities to streamline operations and enhance decision-making.',
+      'Go beyond simple transcription with agentic scribes that take action, not just notes',
+      'Elevate your AI capabilities to streamline operations and enhance decision-making',
     ],
     icon: <IconFileTextSpark size={24} />,
     link: '/solutions',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/scribe-agents.webp',
+    imageClassName: styles.imgScribeAgents,
   },
   {
     title: 'Population Health',
     description: [
-      'Transform fragmented patient data into powerful insights for coordinated care delivery.',
-      'Our platform empowers population health teams to improve outcomes and maximize shared savings.',
+      'Transform fragmented patient data into powerful insights for coordinated care delivery',
+      'Our platform empowers population health teams to improve outcomes and maximize shared savings',
     ],
     icon: <IconChartHistogram size={24} />,
     link: '/solutions',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/population-health.webp',
   },
   {
     title: 'Care Management',
     description: [
-      'Free your care managers to focus on providing truly compassionate and personalized support.',
-      'Streamline administrative tasks so they can dedicate more time to what matters most: patient well-being.',
+      'Free your care managers to focus on providing truly compassionate and personalized support',
+      'Streamline administrative tasks so they can dedicate more time to what matters most: patient well-being',
     ],
     icon: <IconFirstAidKit size={24} />,
     link: '/solutions',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/care-management.webp',
   },
   {
     title: 'Revenue Cycle Management',
     description: [
-      'Design and automate custom routing and business rules that perfectly fit your financial operations.',
-      'Optimize your revenue cycle for efficiency and maximum returns.',
+      'Design and automate custom routing and business rules that perfectly fit your financial operations',
+      'Optimize your revenue cycle for efficiency and maximum returns',
     ],
     icon: <IconReceiptDollar size={24} />,
     link: '/solutions',
-    imageSrc: CUSTOM_EHR_IMAGE,
+    imageSrc: '/img/solutions/rcm.webp',
+    imageClassName: styles.imgRcm,
   },
 ];
 
@@ -170,7 +172,11 @@ export function SolutionAccordion(): JSX.Element {
                     </div>
                     <div className={styles.image}>
                       <div className={styles.imagePlaceholder}>
-                        <img src={solution.imageSrc} alt="" className={styles.imagePlaceholderImg} />
+                        <img
+                          src={solution.imageSrc}
+                          alt=""
+                          className={`${styles.imagePlaceholderImg} ${solution.imageClassName ?? ''}`}
+                        />
                       </div>
                     </div>
                   </div>
