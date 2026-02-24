@@ -40,6 +40,7 @@ import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
+import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
@@ -390,6 +391,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('POST', '/$get-ws-sub-stats', getWsSubStatsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
