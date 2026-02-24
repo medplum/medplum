@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "5.0.15",
+  "version": "5.1.0",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
