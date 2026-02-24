@@ -759,9 +759,9 @@ describe('SuperAdminPage', () => {
       expect(screen.queryByText('Observation')).not.toBeInTheDocument();
 
       // Click the project row (via closest <tr> to avoid anchor interfering)
-      const projectRow = screen.getByText('Test Project Alpha').closest('tr');
+      const projectRow = screen.getByText('Test Project Alpha').closest('tr') as HTMLElement;
       await act(async () => {
-        fireEvent.click(projectRow!);
+        fireEvent.click(projectRow);
       });
 
       // Observation and its count are visible
@@ -789,16 +789,16 @@ describe('SuperAdminPage', () => {
 
       await screen.findByText('Test Project Alpha');
 
-      const projectRow = screen.getByText('Test Project Alpha').closest('tr');
+      const projectRow = screen.getByText('Test Project Alpha').closest('tr') as HTMLElement;
 
       await act(async () => {
-        fireEvent.click(projectRow!);
+        fireEvent.click(projectRow);
       });
 
       expect(screen.getByText('Observation')).toBeInTheDocument();
 
       await act(async () => {
-        fireEvent.click(projectRow!);
+        fireEvent.click(projectRow);
       });
 
       expect(screen.queryByText('Observation')).not.toBeInTheDocument();
@@ -822,17 +822,17 @@ describe('SuperAdminPage', () => {
       await screen.findByText('Test Project Alpha');
 
       // Expand project row
-      const projectRow = screen.getByText('Test Project Alpha').closest('tr');
+      const projectRow = screen.getByText('Test Project Alpha').closest('tr') as HTMLElement;
       await act(async () => {
-        fireEvent.click(projectRow!);
+        fireEvent.click(projectRow);
       });
 
       expect(screen.queryByText('Observation?code=85354-9')).not.toBeInTheDocument();
 
       // Expand Observation resource type row
-      const resourceTypeRow = screen.getByText('Observation').closest('tr');
+      const resourceTypeRow = screen.getByText('Observation').closest('tr') as HTMLElement;
       await act(async () => {
-        fireEvent.click(resourceTypeRow!);
+        fireEvent.click(resourceTypeRow);
       });
 
       expect(screen.getByText('Observation?code=85354-9')).toBeInTheDocument();
