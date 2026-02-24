@@ -9,12 +9,13 @@ import type {
   Binary,
   Bot,
   OperationDefinition,
+  Project,
   ProjectMembership,
   Reference,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
-import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { Repository, getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -109,14 +110,15 @@ export async function botInitHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 
   const params = parseInputParameters<BotInitParameters>(botInitOperation, req);
-  const bot = await createBot(ctx, params);
+  const bot = await createBot(ctx.repo, ctx.project, params);
   return [created, buildOutputParameters(botInitOperation, bot)];
 }
 
-export async function createBot(ctx: AuthenticatedRequestContext, params: BotInitParameters): Promise<WithId<Bot>> {
-  const repo = ctx.repo;
-  const project = ctx.project;
-
+export async function createBot(
+  repo: Repository,
+  project: WithId<Project>,
+  params: BotInitParameters
+): Promise<WithId<Bot>> {
   let sourceCode: Attachment | undefined;
   if (params.sourceCode) {
     sourceCode = await createCodeBinary(repo, params.sourceCode);

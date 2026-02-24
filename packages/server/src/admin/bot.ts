@@ -12,6 +12,6 @@ export const createBotValidator = makeValidationMiddleware([
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const bot = await createBot(ctx, req.body);
+  const bot = await createBot(ctx.repo, ctx.project, req.body);
   res.status(201).json(bot);
 }
