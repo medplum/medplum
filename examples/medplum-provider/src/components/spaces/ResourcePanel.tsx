@@ -3,6 +3,7 @@
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTable, useResource } from '@medplum/react';
+import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
@@ -24,7 +25,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} />;
+        return <PatientSummary patient={displayResource} pharmacyDialogComponent={DoseSpotPharmacyDialog} />;
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':

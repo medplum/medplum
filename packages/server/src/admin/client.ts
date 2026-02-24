@@ -14,7 +14,6 @@ import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -54,7 +53,7 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = repo.getSystemRepo();
   const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,

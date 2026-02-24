@@ -102,7 +102,7 @@ export class BackEnd extends Construct {
 
     // RDS
     this.rdsSecretsArn = config.rdsSecretsArn;
-    if (!this.rdsSecretsArn) {
+    if (!this.rdsSecretsArn || config.rdsForceRetain) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
         rds.AuroraPostgresEngineVersion.VER_16_9
@@ -233,7 +233,9 @@ export class BackEnd extends Construct {
       assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
       secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
 
-      this.rdsSecretsArn = secretAttachment.secretArn;
+      if (!this.rdsSecretsArn) {
+        this.rdsSecretsArn = secretAttachment.secretArn;
+      }
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {

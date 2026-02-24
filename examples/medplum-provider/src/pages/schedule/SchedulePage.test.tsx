@@ -598,9 +598,7 @@ describe('ScheduleFindPane', () => {
     const {
       schedule = createScheduleWithServiceTypes([serviceType1, serviceType2]),
       range = defaultRange,
-      onChange = vi.fn(),
       onSelectSlot = vi.fn(),
-      slots,
     } = options;
 
     return render(
@@ -608,13 +606,7 @@ describe('ScheduleFindPane', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <ScheduleFindPane
-              schedule={schedule}
-              range={range}
-              onChange={onChange}
-              onSelectSlot={onSelectSlot}
-              slots={slots}
-            />
+            <ScheduleFindPane schedule={schedule} range={range} onSelectSlot={onSelectSlot} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -675,19 +667,6 @@ describe('ScheduleFindPane', () => {
       );
     });
 
-    test('calls onChange with fetched slots', async () => {
-      const user = userEvent.setup();
-      const onChange = vi.fn();
-
-      await act(async () => {
-        setup({ onChange });
-      });
-
-      await user.click(screen.getByText('Annual Checkup'));
-
-      expect(onChange).toHaveBeenCalledWith(mockSlots);
-    });
-
     test('displays service type name after selection', async () => {
       const user = userEvent.setup();
 
@@ -730,21 +709,18 @@ describe('ScheduleFindPane', () => {
       expect(screen.getByLabelText('Clear selection')).toBeInTheDocument();
     });
 
-    test('clears selection and calls onChange with empty array when dismissed', async () => {
+    test('clears selection when dismissed', async () => {
       const user = userEvent.setup();
-      const onChange = vi.fn();
 
       await act(async () => {
-        setup({ onChange });
+        setup();
       });
 
       await user.click(screen.getByText('Annual Checkup'));
       expect(screen.getByLabelText('Clear selection')).toBeInTheDocument();
 
-      onChange.mockClear();
       await user.click(screen.getByLabelText('Clear selection'));
 
-      expect(onChange).toHaveBeenCalledWith([]);
       expect(screen.getByText('Schedule…')).toBeInTheDocument();
     });
   });
@@ -752,10 +728,9 @@ describe('ScheduleFindPane', () => {
   describe('Auto-Selection with Single Service Type', () => {
     test('auto-selects when there is exactly one service type', async () => {
       const schedule = createScheduleWithServiceTypes([serviceType1]);
-      const onChange = vi.fn();
 
       await act(async () => {
-        setup({ schedule, onChange });
+        setup({ schedule });
       });
 
       // Should immediately show the service type name, not the selection UI
@@ -821,24 +796,6 @@ describe('ScheduleFindPane', () => {
 
       // Error notification should be shown
       expect(screen.getByText(/Network error/i)).toBeInTheDocument();
-    });
-
-    test('calls onChange with empty array when response has no entries', async () => {
-      const user = userEvent.setup();
-      const onChange = vi.fn();
-
-      medplum.get = vi.fn().mockResolvedValue({
-        resourceType: 'Bundle',
-        type: 'searchset',
-        // No entry property
-      } as Bundle<Slot>);
-
-      await act(async () => {
-        setup({ onChange });
-      });
-
-      await user.click(screen.getByText('Annual Checkup'));
-      expect(onChange).toHaveBeenCalledWith([]);
     });
   });
 

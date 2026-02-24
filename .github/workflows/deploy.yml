@@ -1,7 +1,7 @@
 name: Deploy
 
 concurrency:
-  group: ci-deploy-${{ github.sha }}
+  group: ci-deploy-main
   cancel-in-progress: false
 
 on:

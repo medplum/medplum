@@ -54,12 +54,13 @@ import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
+  const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
 
   let testProjectRepo: Repository;
@@ -73,10 +74,11 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
-    testProject = await getSystemRepo().createResource({
+    testProject = await globalSystemRepo.createResource({
       resourceType: 'Project',
       id: randomUUID(),
     });
+    systemRepo = getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
@@ -88,10 +90,6 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  beforeEach(() => {
-    systemRepo = getSystemRepo();
   });
 
   test('getRepoForLogin', async () => {
@@ -232,8 +230,6 @@ describe('FHIR Repo', () => {
 
     beforeAll(async () =>
       withTestContext(async () => {
-        systemRepo ??= getSystemRepo();
-
         versions.v1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
           meta: {
@@ -1517,7 +1513,7 @@ describe('FHIR Repo', () => {
   });
   async function getProjectIdColumn(id: string): Promise<string | null> {
     const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
-    const client = getSystemRepo().getDatabaseClient(DatabaseMode.WRITER);
+    const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
     return (await projectIdQuery.execute(client))[0].projectId;
   }
 
@@ -1556,7 +1552,6 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -1572,7 +1567,7 @@ describe('FHIR Repo', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const updatedProject = await systemRepo.updateResource({
+      const updatedProject = await globalSystemRepo.updateResource({
         ...project,
         link: [{ project: createReference(project2) }],
       });
@@ -1643,7 +1638,7 @@ describe('FHIR Repo', () => {
     }));
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
-    const repo = getSystemRepo();
+    const repo = systemRepo;
     const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
     const finalPostCommit = jest.fn();
 
@@ -1798,7 +1793,7 @@ describe('FHIR Repo', () => {
       let project = regResult.project;
 
       // add linkedProject to `Project.link`
-      project = await getSystemRepo().updateResource({
+      project = await globalSystemRepo.updateResource({
         ...project,
         link: [{ project: createReference(linkedProject) }],
       });

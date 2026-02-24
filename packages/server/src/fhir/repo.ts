@@ -41,6 +41,7 @@ import {
   isObject,
   isOk,
   isResource,
+  isResourceType,
   isResourceWithId,
   isUUID,
   normalizeErrorString,
@@ -86,6 +87,7 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
+import type { Redis } from 'ioredis';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
@@ -99,6 +101,7 @@ import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import { getActiveSubsKey } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -135,6 +138,7 @@ import type { SearchOptions } from './search';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { GLOBAL_SHARD_ID } from './sharding';
 import type { Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
@@ -145,6 +149,7 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
+  truncateTextColumn,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
@@ -159,6 +164,12 @@ const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFai
  * such as "who is the current user?" and "what is the current project?"
  */
 export interface RepositoryContext {
+  /**
+   * The shard ID for this repository. Currently ignored.
+   * Defaults to GLOBAL_SHARD_ID if not specified.
+   */
+  shardId?: string;
+
   /**
    * The current author reference.
    * This should be a FHIR reference string (i.e., "resourceType/id").
@@ -319,6 +330,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return new Repository(this.context, conn ?? this.conn);
   }
 
+  get shardId(): string {
+    return this.context.shardId ?? GLOBAL_SHARD_ID;
+  }
+
+  getRedis(): Redis {
+    return getRedis();
+  }
+
+  /**
+   * Use this when you need elevated privileges within request handling.
+   * @param conn - Optional database client.
+   * @returns a SystemRepository for the same shard as this repository.
+   */
+  getSystemRepo(conn?: PoolClient): SystemRepository {
+    return createSystemRepository(this.shardId, conn);
+  }
+
   setMode(mode: RepositoryMode): void {
     this.mode = mode;
   }
@@ -350,7 +378,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId === this.context.currentProject?.id) {
       return this.context.currentProject;
     }
-    return getSystemRepo().readResource<Project>('Project', projectId);
+    return this.getSystemRepo().readResource<Project>('Project', projectId);
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
@@ -359,7 +387,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (options?.assignedId && resource.id && !this.context.superAdmin) {
       // NB: To be removed after proper client assigned ID support is added
-      const systemRepo = getSystemRepo();
+      const systemRepo = this.getSystemRepo();
       try {
         const existing = await systemRepo.readResourceImpl(resource.resourceType, resource.id);
         if (existing) {
@@ -914,9 +942,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      // We added v2 to the key because historically this was a Redis Set and then we had to migrate the key to a Redis Hash which would conflict
+      // The active list is sharded by resource type so that lookups only scan relevant subscriptions
+      const criteriaResourceType = resource.criteria.split('?')[0];
+      if (!isResourceType(criteriaResourceType)) {
+        getLogger().debug('[WS] Subscription has invalid criteria resource type', {
+          subscription: `Subscription/${resource.id}`,
+          criteria: resource.criteria,
+        });
+        return;
+      }
       await redis.hset(
-        `medplum:subscriptions:r4:project:${project}:active:v2`,
+        getActiveSubsKey(project, criteriaResourceType),
         `Subscription/${resource.id}`,
         resource.criteria
       );
@@ -1109,7 +1145,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (this.context.projects?.length && profile) {
       // Store loaded profile in cache
-      await cacheProfile(profile);
+      await cacheProfile(this.getSystemRepo(), profile);
     }
     return profile;
   }
@@ -1799,7 +1835,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     if (impl.searchStrategy === 'lookup-table') {
       if (impl.sortColumnName) {
-        columns[impl.sortColumnName] = getHumanNameSortValue((resource as HumanNameResource).name, searchParam);
+        columns[impl.sortColumnName] = truncateTextColumn(
+          getHumanNameSortValue((resource as HumanNameResource).name, searchParam)
+        );
       }
       return;
     }
@@ -2061,7 +2099,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         accounts.add(account.reference as string);
       }
     } else {
-      const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = this.getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
@@ -2786,13 +2824,14 @@ function getCacheKey(resourceType: string, id: string): string {
 
 /**
  * Writes a FHIR profile cache entry to Redis.
+ * @param systemRepo - The system repository.
  * @param profile - The profile structure definition.
  */
-async function cacheProfile(profile: StructureDefinition): Promise<void> {
+async function cacheProfile(systemRepo: SystemRepository, profile: StructureDefinition): Promise<void> {
   if (!profile.url || !profile.meta?.project) {
     return;
   }
-  profile = await getSystemRepo().readReference(createReference(profile));
+  profile = await systemRepo.readReference(createReference(profile));
   await getCacheRedis().set(
     getProfileCacheKey(profile.meta?.project as string, profile.url),
     JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
@@ -2822,9 +2861,18 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(conn?: PoolClient): Repository {
-  return new Repository(
+export class SystemRepository extends Repository {}
+
+/**
+ * Creates a SystemRepository for the specified shard.
+ * @param shardId - The shard ID.
+ * @param conn - Optional database connection for transaction support.
+ * @returns A SystemRepository instance.
+ */
+function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepository {
+  return new SystemRepository(
     {
+      shardId,
       superAdmin: true,
       strictMode: true,
       extendedMode: true,
@@ -2835,6 +2883,49 @@ export function getSystemRepo(conn?: PoolClient): Repository {
     },
     conn
   );
+}
+
+/**
+ * Returns a SystemRepository for the global shard.
+ *
+ * Use this for operations that don't have project context:
+ * - Authentication (before project is known)
+ * - Looking up Users, Logins, ClientApplications
+ * - Cross-project operations by super admins
+ *
+ * @param client - Option database client connection to use in new Repository.
+ * @returns A SystemRepository for the global shard.
+ */
+export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
+  return createSystemRepository(GLOBAL_SHARD_ID, client);
+}
+
+/**
+ * This is a sharding future-proofing function that returns a SystemRepository for the specified shard.
+ * Prefer using `Repository.getSystemRepo` or `getProjectSystemRepo` if working in the context of a project
+ * or `getGlobalSystemRepo` if intentionally working in the global shard.
+ * @param shardId - The shard ID. Currently ignored.
+ * @param client - Option database client connection to use in new Repository.
+ * @returns A SystemRepository for the specified shard.
+ */
+export function getShardSystemRepo(shardId: string, client?: PoolClient): SystemRepository {
+  return createSystemRepository(shardId, client);
+}
+
+/**
+ * Returns a SystemRepository for the specified project's shard.
+ *
+ * Note: This is a passthrough to `getGlobalSystemRepo` to facilitate
+ * future sharding support.
+ *
+ * @param _projectId - The project's ID, reference, or resource.
+ * @returns A SystemRepository for the project's shard.
+ */
+export function getProjectSystemRepo(_projectId: string | Reference<Project> | WithId<Project>): SystemRepository {
+  // Eventually, this will resolve the project's shard and return
+  // a SystemRepository for that shard.
+  // But for now, all projects are on the global shard.
+  return getGlobalSystemRepo();
 }
 
 function lowercaseFirstLetter(str: string): string {
@@ -2864,28 +2955,6 @@ export function setTypedPropertyValue(target: TypedValue, path: string, replacem
     patchPath = patchPath.slice(0, -1);
   }
   patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
-}
-
-const textEncoder = new TextEncoder();
-
-/**
- * Apply a maximum string length to ensure the value can accommodate the maximum
- * size for a btree index entry: 2704 bytes. If the string is too large,
- * be as conservative as possible to avoid write errors by truncating to 675 characters
- * to accommodate the entire string being 4-byte UTF-8 code points.
- * @param value - The column value to truncate.
- * @returns The possibly truncated column value.
- */
-function truncateTextColumn(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (textEncoder.encode(value).length <= 2704) {
-    return value;
-  }
-
-  return Array.from(value).slice(0, 675).join('');
 }
 
 function getArrayPaddingConfig(

@@ -42,13 +42,20 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
     ({ accessToken } = await createTestProject({ withAccessToken: true }));
 
+    // Allow first request
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
     expect(res.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
 
+    // Block next request
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res2.status).toBe(429);
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
+
+    // Block subsequent request
+    const res3 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res3.status).toBe(429);
+    expect(res3.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
   test('Blocks single too-expensive request', async () => {
