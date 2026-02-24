@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import Link from '@docusaurus/Link';
 import {
   IconApps,
   IconBrandOpenSource,
@@ -14,7 +15,6 @@ import {
   IconShieldCheck,
   IconTestPipe,
 } from '@tabler/icons-react';
-import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
@@ -54,8 +54,7 @@ export function LandingPage(): JSX.Element {
               <p className={styles.heroText}>
                 Medplum is the open source developer platform for shipping clinical software.
                 <br />
-                Start with our
-                production-ready apps, then customize them to fit your needs.
+                Start with our production-ready apps, then customize them to fit your needs.
               </p>
               <div className={styles.heroButtons}>
                 <Link to="/docs/provider" className={styles.purpleButton}>
