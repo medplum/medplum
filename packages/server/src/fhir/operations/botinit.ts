@@ -16,7 +16,8 @@ import type {
 import { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { Repository, getGlobalSystemRepo } from '../../fhir/repo';
+import type { Repository } from '../../fhir/repo';
+import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -31,48 +32,12 @@ const botInitOperation: OperationDefinition = {
   type: true,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'name',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'description',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'accessPolicy',
-      type: 'Reference',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'sourceCode',
-      type: 'Attachment',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'executableCode',
-      type: 'Attachment',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'return',
-      type: 'Bot',
-      min: 1,
-      max: '1',
-    },
+    { use: 'in', name: 'name', type: 'string', min: 1, max: '1' },
+    { use: 'in', name: 'description', type: 'string', min: 0, max: '1' },
+    { use: 'in', name: 'accessPolicy', type: 'Reference', min: 0, max: '1' },
+    { use: 'in', name: 'sourceCode', type: 'Attachment', min: 0, max: '1' },
+    { use: 'in', name: 'executableCode', type: 'Attachment', min: 0, max: '1' },
+    { use: 'out', name: 'return', type: 'Bot', min: 1, max: '1' },
   ],
 };
 

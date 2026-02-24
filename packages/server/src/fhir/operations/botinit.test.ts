@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, streamToBuffer } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
+import type { Binary } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject } from '../../test.setup';
-import { Repository } from '../repo';
+import type { Repository } from '../repo';
 
 const app = express();
 
