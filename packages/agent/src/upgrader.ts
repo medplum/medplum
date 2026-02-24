@@ -65,7 +65,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
 
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    spawnSync(`"${binPath}" /S`, { windowsHide: true, shell: true });
+    spawnSync(binPath, ['/S'], { windowsHide: true });
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
