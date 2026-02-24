@@ -18,7 +18,7 @@ import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
-import { hasDoseSpotIdentifier } from './components/utils';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from './components/utils';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -32,6 +32,7 @@ import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
+import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
@@ -71,6 +72,7 @@ export function App(): JSX.Element | null {
 
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const hasScriptSure = hasScriptSureIdentifier(membership);
 
   return (
     <AppShell
@@ -140,6 +142,15 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
+                  ...(hasScriptSure
+                    ? [
+                        {
+                          icon: <IconPill />,
+                          label: 'ScriptSure',
+                          href: '/scriptsure',
+                        },
+                      ]
+                    : []),
                 ],
               },
             ]
@@ -182,6 +193,7 @@ export function App(): JSX.Element | null {
                 <Route path="Task" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
+                {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />

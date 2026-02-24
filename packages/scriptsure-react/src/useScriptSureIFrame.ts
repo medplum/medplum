@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
-import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
+import { SCRIPTSURE_IFRAME_BOT, SCRIPTSURE_PATIENT_SYNC_BOT } from './common';
 
-export interface DoseSpotIFrameOptions {
+export interface ScriptSureIFrameOptions {
   readonly patientId?: string;
   readonly onPatientSyncSuccess?: () => void;
   readonly onIframeSuccess?: (url: string) => void;
@@ -12,7 +12,7 @@ export interface DoseSpotIFrameOptions {
 }
 
 /**
- * React hook that syncs a patient to DoseSpot and returns the iframe URL.
+ * React hook that syncs a patient to ScriptSure and returns the iframe URL.
  *
  * Executes the patient-sync bot first (if patientId is provided), then
  * the iframe bot to obtain the prescribing UI URL.
@@ -21,9 +21,9 @@ export interface DoseSpotIFrameOptions {
  * trigger duplicate bot executions.
  *
  * @param options - Configuration and callback options.
- * @returns The DoseSpot iframe URL, or undefined while loading.
+ * @returns The ScriptSure iframe URL, or undefined while loading.
  */
-export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | undefined {
+export function useScriptSureIFrame(options: ScriptSureIFrameOptions): string | undefined {
   const medplum = useMedplum();
   const { patientId, onPatientSyncSuccess, onIframeSuccess, onError } = options;
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
@@ -43,13 +43,13 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
     (async (): Promise<void> => {
       try {
         if (patientId) {
-          await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, { patientId });
+          await medplum.executeBot(SCRIPTSURE_PATIENT_SYNC_BOT, { patientId });
           if (cancelled) {
             return;
           }
           onPatientSyncSuccessRef.current?.();
         }
-        const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId });
+        const result = await medplum.executeBot(SCRIPTSURE_IFRAME_BOT, { patientId });
         if (cancelled) {
           return;
         }
