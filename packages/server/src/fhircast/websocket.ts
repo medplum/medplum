@@ -14,6 +14,9 @@ import { getRedis, getRedisSubscriber } from '../redis';
 export async function handleFhircastConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
   // TODO: Map URL slug to topic ID
   const topic = (request.url as string).split('/').filter(Boolean)[2];
+  const connectionId = generateId();
+
+  globalLogger.info('FHIRcast client connected', { connectionId, topic });
 
   // Create a redis client for this connection.
   // According to Redis documentation: http://redis.io/commands/subscribe
@@ -41,8 +44,33 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   heartbeat.addEventListener('heartbeat', heartbeatHandler);
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
+    let eventType: string | undefined;
+    try {
+      const payload = JSON.parse(message) as { event?: { 'hub.event'?: string } };
+      eventType = payload?.event?.['hub.event'];
+    } catch {
+      globalLogger.debug('non-JSON or unexpected shape - invalid message', {
+        connectionId,
+        topic,
+        message,
+      });
+    }
+
+    globalLogger.debug('Sending fhircast message to client', {
+      connectionId,
+      topic,
+      eventType: eventType ?? '(unknown)',
+      payload: message,
+    });
+
     // Forward the message to the client
     socket.send(message, { binary: false });
+
+    globalLogger.debug('Sent fhircast message to client successfully', {
+      connectionId,
+      topic,
+      eventType: eventType ?? '(unknown)',
+    });
   });
 
   socket.on(
@@ -54,6 +82,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   );
 
   socket.on('close', () => {
+    globalLogger.info('FHIRcast client disconnected', { connectionId, topic });
     heartbeat.removeEventListener('heartbeat', heartbeatHandler);
     redisSubscriber.disconnect();
   });
