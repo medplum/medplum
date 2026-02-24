@@ -173,7 +173,7 @@ There are a few different ways a bot can be executed:
 
 ### _Executing from the Code Editor_
 
-The simplest way to to execute a bot is to click the "Execute" button inside the Bot's **Editor** tab.
+The simplest way to execute a bot is to click the "Execute" button inside the Bot's **Editor** tab.
 This will execute the most recently deployed version of your Bot, with the `event.input` set to the contents of the
 **Input Pane**.
 
@@ -257,7 +257,7 @@ The criteria of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir
 
 Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
-Because, Bots can be are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
+Because Bots are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
 
 ![Subscription Channel](/img/app/bots/subscription_channel.png)
 

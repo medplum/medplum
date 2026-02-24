@@ -7,7 +7,6 @@ import { Router } from 'express';
 import { executeBot } from '../bots/execute';
 import { getBotDefaultHeaders, getResponseBodyFromResult } from '../bots/utils';
 import { getAuthenticatedContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
 import { authenticateRequest } from '../oauth/middleware';
 
 // CDS Hooks
@@ -61,8 +60,7 @@ cdsRouter.post('/:id', async (req: Request, res: Response) => {
   }
 
   // Read the bot again as system repo to get full bot details
-  const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', id);
+  const bot = await ctx.systemRepo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   // This also handles logging, auditing, etc.

@@ -698,10 +698,20 @@ describe('Client', () => {
 
   describe('Get external auth redirect URI', () => {
     let client: MedplumClient;
+    let consoleErrorSpy: jest.SpyInstance;
 
     beforeAll(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const fetch = mockFetch(200, {});
       client = new MedplumClient({ fetch });
+    });
+
+    afterAll(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    beforeEach(() => {
+      jest.resetAllMocks();
     });
 
     test('should give a valid url with all fields for PKCE exchange', async () => {
@@ -3376,7 +3386,7 @@ describe('Client', () => {
       headers: { get: () => ContentType.JSON },
       json: () => Promise.reject(new Error('Not JSON')),
     }));
-    console.error = jest.fn();
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const client = new MedplumClient({ fetch });
     try {
       await client.readResource('Patient', '123');
@@ -3384,7 +3394,8 @@ describe('Client', () => {
     } catch (err) {
       expect(err).toBeDefined();
     }
-    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
   });
 
   describe('Bulk Data Export', () => {
@@ -4288,6 +4299,42 @@ describe('Client', () => {
     expect(response2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(2);
   });
+
+  test('Aborted requests are not cached', async () => {
+    const patient: Patient = { resourceType: 'Patient', id: '123' };
+    const fetch = jest
+      .fn()
+      .mockImplementationOnce((async (_url: string, options?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          if (!options?.signal) {
+            throw new Error('options.signal required for this test');
+          }
+
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout'));
+          }, 3000);
+
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          });
+        });
+      }) satisfies FetchLike)
+      .mockImplementation(async () => mockFetchResponse(200, patient));
+
+    const client = new MedplumClient({ fetch });
+    const controller = new AbortController();
+
+    const getPromise1 = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
+    await sleep(0);
+    controller.abort();
+    await expect(getPromise1).rejects.toThrow('Request aborted');
+
+    const getPromise2 = client.get(client.fhirUrl('Patient', '123'));
+    await expect(getPromise2).resolves.toEqual(patient);
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
@@ -4332,6 +4379,7 @@ describe('Passed in async-backed `ClientStorage`', () => {
     const medplum = new MedplumClient({ fetch, storage });
     const dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
 
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     storage.rejectInitPromise();
 
     await expect(medplum.getInitPromise()).rejects.toThrow('Storage init failed!');
@@ -4339,6 +4387,7 @@ describe('Passed in async-backed `ClientStorage`', () => {
       type: 'storageInitFailed',
       payload: { error: new Error('Storage init failed!') },
     });
+    consoleErrorSpy.mockRestore();
   });
 });
 

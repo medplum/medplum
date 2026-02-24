@@ -1921,6 +1921,107 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('Questionnaire hidden extension', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'hidden-extension',
+        title: 'Hidden Extension Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Visible Question',
+            type: 'string',
+          },
+          {
+            linkId: 'q2',
+            text: 'Hidden Question',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+                valueBoolean: true,
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Another Visible Question',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // Visible questions should be rendered
+    expect(screen.getByText('Visible Question')).toBeInTheDocument();
+    expect(screen.getByText('Another Visible Question')).toBeInTheDocument();
+
+    // Hidden question should not be rendered
+    expect(screen.queryByText('Hidden Question')).not.toBeInTheDocument();
+  });
+
+  test('Questionnaire hidden extension takes precedence over enableWhen', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'hidden-precedence',
+        title: 'Hidden Precedence Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Trigger Question',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Should Be Hidden',
+            type: 'string',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-hidden',
+                valueBoolean: true,
+              },
+            ],
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // Trigger question should be visible
+    expect(screen.getByText('Trigger Question')).toBeInTheDocument();
+
+    // Hidden question should not be rendered even when enableWhen condition is met
+    expect(screen.queryByText('Should Be Hidden')).not.toBeInTheDocument();
+
+    // Click on "Yes" to satisfy enableWhen condition
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Yes'));
+    });
+
+    // Hidden question should still not be rendered because hidden extension takes precedence
+    expect(screen.queryByText('Should Be Hidden')).not.toBeInTheDocument();
+  });
+
   test('Multi Select', async () => {
     await setup({
       questionnaire: {
