@@ -2546,7 +2546,7 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getRedis();
+        const redis = getCacheRedis();
         const criteria = await redis.hget(
           `medplum:subscriptions:r4:project:${wsProject.id}:active:FakeResourceType`,
           `Subscription/${subscription.id}`

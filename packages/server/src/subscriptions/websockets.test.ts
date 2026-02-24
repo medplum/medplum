@@ -27,7 +27,7 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { getCacheRedis } from '../redis';
+import { getCacheRedis, getPubSubRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -372,7 +372,7 @@ describe('WebSocket Subscription', () => {
         })
         .exec(async () => {
           // Verify both are in their respective resource-type hashes
-          const redis = getRedis();
+          const redis = getCacheRedis();
           let patientActive = false;
           let observationActive = false;
           while (!patientActive || !observationActive) {
@@ -395,7 +395,7 @@ describe('WebSocket Subscription', () => {
         .expectClosed()
         .exec(async () => {
           // After disconnect, both should be removed from their respective hashes
-          const redis = getRedis();
+          const redis = getCacheRedis();
           let patientActive = true;
           let observationActive = true;
           while (patientActive || observationActive) {
@@ -524,14 +524,14 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
+              (await getCacheRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
           // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
           const v1Payload = [[patient, subscription.id, { includeResource: true }]];
-          await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
+          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -595,14 +595,14 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
+              (await getCacheRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription.id}`
               )) === 1;
           }
           // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
           const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
-          await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -694,12 +694,12 @@ describe('WebSocket Subscription', () => {
           while (!sub1Active || !sub2Active) {
             await sleep(0);
             sub1Active =
-              (await getRedis().hexists(
+              (await getCacheRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription1.id}`
               )) === 1;
             sub2Active =
-              (await getRedis().hexists(
+              (await getCacheRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription2.id}`
               )) === 1;
@@ -712,7 +712,7 @@ describe('WebSocket Subscription', () => {
               [subscription2.id, { includeResource: true }],
             ],
           };
-          await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
         })
         // Expect first event-notification
         .expectJson((msg: Bundle): boolean => {

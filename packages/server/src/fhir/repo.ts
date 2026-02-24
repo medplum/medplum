@@ -87,7 +87,6 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
-import type { Redis } from 'ioredis';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
@@ -332,10 +331,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   get shardId(): string {
     return this.context.shardId ?? GLOBAL_SHARD_ID;
-  }
-
-  getRedis(): Redis {
-    return getRedis();
   }
 
   /**
