@@ -105,7 +105,7 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
       resourceTypeMap.set(resourceType, criteriaMap);
     }
 
-    const entries = await redis.hgetall(key);
+    const entries = await redis.hvals(key);
     for (const criteria of Object.values(entries)) {
       criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
     }
