@@ -21,15 +21,21 @@ export async function encryptSHA256(str: string): Promise<ArrayBuffer> {
 
 /**
  * Cross platform random UUID generator
- * Note that this is not intended for production use, but rather for testing
- * This should be replaced when crypto.randomUUID is fully supported
- * See: https://stackoverflow.com/revisions/2117523/28
+ * Uses cryptographically secure randomness.
  * @returns A random UUID.
  */
 export function generateId(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  const randomBytes = new Uint8Array(16);
+  crypto.getRandomValues(randomBytes);
+
+  // Set UUID version (4) and variant bits per RFC 4122.
+  randomBytes[6] = (randomBytes[6] & 0x0f) | 0x40;
+  randomBytes[8] = (randomBytes[8] & 0x3f) | 0x80;
+
+  const hex = arrayBufferToHex(randomBytes.buffer);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
