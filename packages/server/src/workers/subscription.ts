@@ -49,9 +49,9 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getCacheRedis, getPubSubRedis } from '../redis';
+import { getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
-import { getActiveSubsKey } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
@@ -348,10 +348,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await getPubSubRedis().publish(
-      'medplum:subscriptions:r4:websockets',
-      JSON.stringify({ resource, events: wsSubEvents })
-    );
+    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -416,9 +413,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const pubsubRedis = getPubSubRedis();
-  const hashKey = getActiveSubsKey(projectId, resource.resourceType);
-  const entries = await pubsubRedis.hgetall(hashKey);
+  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     try {
@@ -446,7 +441,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await pubsubRedis.hdel(hashKey, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, ...inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];

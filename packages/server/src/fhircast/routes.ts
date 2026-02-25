@@ -31,7 +31,8 @@ import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { getCacheRedis, getPubSubRedis } from '../redis';
+import { publish } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import {
   cleanupContextForResource,
   extractAnchorResourceType,
@@ -220,16 +221,15 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       res.status(202).json({
         'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
       });
-      getPubSubRedis()
-        .publish(
-          `${ctx.project.id}:${topic}`,
-          JSON.stringify({
-            'hub.mode': 'denied',
-            'hub.topic': topic,
-            'hub.events': req.body['hub.events'],
-            'hub.reason': 'Subscriber unsubscribed from topic',
-          })
-        )
+      publish(
+        `${ctx.project.id}:${topic}`,
+        JSON.stringify({
+          'hub.mode': 'denied',
+          'hub.topic': topic,
+          'hub.events': req.body['hub.events'],
+          'hub.reason': 'Subscriber unsubscribed from topic',
+        })
+      )
         .catch((err: Error) => {
           getLogger().error(
             `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
@@ -489,7 +489,7 @@ async function finalizeContextChangeRequest(
   projectId: string,
   payload: FhircastMessagePayload
 ): Promise<void> {
-  await getPubSubRedis().publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
+  await publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
   // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
   // Only HTTP status code is defined for response for RequestContextChange
   res.status(202).json({ success: true, event: payload });

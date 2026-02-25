@@ -19,7 +19,8 @@ import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getCacheRedis, getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
+import { removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -440,10 +441,6 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
-export function getActiveSubsKey(projectId: string, resourceType: string): string {
-  return `medplum:subscriptions:r4:project:${projectId}:active:${resourceType}`;
-}
-
 export function getSubIdsByResourceType(subscriptionEntries: Map<string, WebSocketSubMetadata>): Map<string, string[]> {
   const byResourceType = new Map<string, string[]>();
   for (const [subscriptionId, metadata] of subscriptionEntries) {
@@ -461,24 +458,26 @@ export async function markInMemorySubscriptionsInactive(
   projectId: string,
   subIdsByResourceType: Map<string, string[]>
 ): Promise<void> {
-  let pubsubRedis: Redis | undefined;
   let cacheRedis: Redis | undefined;
   try {
-    pubsubRedis = getPubSubRedis();
     cacheRedis = getCacheRedis();
   } catch {
-    pubsubRedis = undefined;
     cacheRedis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  if (!pubsubRedis || !subIdsByResourceType.size) {
+  if (!subIdsByResourceType.size) {
     return;
   }
   const refStrs: string[] = [];
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
     refStrs.push(...refs);
-    await pubsubRedis.hdel(getActiveSubsKey(projectId, resourceType), ...refs);
+    try {
+      await removeActiveSubscriptions(projectId, resourceType, ...refs);
+    } catch {
+      globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
+      return;
+    }
   }
   if (cacheRedis) {
     await cacheRedis.del(refStrs);

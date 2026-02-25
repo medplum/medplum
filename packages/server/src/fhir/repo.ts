@@ -98,9 +98,9 @@ import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
-import { getCacheRedis, getPubSubRedis } from '../redis';
+import { setActiveSubscription } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
-import { getActiveSubsKey } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -931,7 +931,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Handle special cases for resource caching
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const pubsubRedis = getPubSubRedis();
       const project = resource?.meta?.project;
       if (!project) {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
@@ -946,11 +945,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
         return;
       }
-      await pubsubRedis.hset(
-        getActiveSubsKey(project, criteriaResourceType),
-        `Subscription/${resource.id}`,
-        resource.criteria
-      );
+      await setActiveSubscription(project, criteriaResourceType, `Subscription/${resource.id}`, resource.criteria);
     }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);

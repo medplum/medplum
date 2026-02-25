@@ -27,7 +27,7 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { getPubSubRedis } from '../redis';
+import { isSubscriptionActive, publish } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -146,10 +146,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -180,10 +177,7 @@ describe('WebSocket Subscription', () => {
       while (subActive) {
         await sleep(0);
         subActive =
-          (await getPubSubRedis().hexists(
-            `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-            `Subscription/${patientSubscription?.id}`
-          )) === 1;
+          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
       }
       expect(subActive).toStrictEqual(false);
 
@@ -269,10 +263,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -299,10 +290,7 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${patientSubscription?.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -372,21 +360,14 @@ describe('WebSocket Subscription', () => {
         })
         .exec(async () => {
           // Verify both are in their respective resource-type hashes
-          const pubsubRedis = getPubSubRedis();
           let patientActive = false;
           let observationActive = false;
           while (!patientActive || !observationActive) {
             await sleep(0);
             patientActive =
-              (await pubsubRedis.hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${patientSub.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await pubsubRedis.hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
-                `Subscription/${observationSub.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) === 1;
           }
           expect(patientActive).toStrictEqual(true);
           expect(observationActive).toStrictEqual(true);
@@ -395,21 +376,14 @@ describe('WebSocket Subscription', () => {
         .expectClosed()
         .exec(async () => {
           // After disconnect, both should be removed from their respective hashes
-          const pubsubRedis = getPubSubRedis();
           let patientActive = true;
           let observationActive = true;
           while (patientActive || observationActive) {
             await sleep(0);
             patientActive =
-              (await pubsubRedis.hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${patientSub.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await pubsubRedis.hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
-                `Subscription/${observationSub.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) === 1;
           }
           expect(patientActive).toStrictEqual(false);
           expect(observationActive).toStrictEqual(false);
@@ -524,14 +498,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
           }
           // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
           const v1Payload = [[patient, subscription.id, { includeResource: true }]];
-          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -595,14 +566,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
           }
           // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
           const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
-          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -694,15 +662,9 @@ describe('WebSocket Subscription', () => {
           while (!sub1Active || !sub2Active) {
             await sleep(0);
             sub1Active =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${subscription1.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription1.id}`)) === 1;
             sub2Active =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
-                `Subscription/${subscription2.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription2.id}`)) === 1;
           }
           // Publish a single v2 payload with both subscriptions in the events array
           const v2Payload = {
@@ -712,7 +674,7 @@ describe('WebSocket Subscription', () => {
               [subscription2.id, { includeResource: true }],
             ],
           };
-          await getPubSubRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
         })
         // Expect first event-notification
         .expectJson((msg: Bundle): boolean => {
@@ -831,10 +793,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1035,10 +994,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1162,10 +1118,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getPubSubRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
-                `Subscription/${subscription.id}`
-              )) === 1;
+              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })

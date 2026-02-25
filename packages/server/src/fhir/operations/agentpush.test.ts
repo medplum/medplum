@@ -18,7 +18,7 @@ import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getPubSubRedis } from '../../redis';
+import * as pubsub from '../../pubsub';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
@@ -279,8 +279,7 @@ describe('Agent Push', () => {
   });
 
   test('Ping -- Successful ping to IP', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -320,7 +319,7 @@ describe('Agent Push', () => {
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getPubSubRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -345,8 +344,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
   });
 
   test('Ping -- Successful ping to hostname', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -386,7 +384,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getPubSubRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -411,8 +409,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Ping -- Error', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -452,7 +449,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getPubSubRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -475,8 +472,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Prefer: respond-async', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -517,7 +513,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getPubSubRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -616,8 +612,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck parameter', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -643,8 +638,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit with returnAck=first parameter', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -670,8 +664,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Submit without returnAck parameter does not include it in request', async () => {
-    const redis = getPubSubRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     const res = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)

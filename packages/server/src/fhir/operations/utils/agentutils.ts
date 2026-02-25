@@ -20,7 +20,8 @@ import type { Request } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isIPv4 } from 'node:net';
 import { getAuthenticatedContext } from '../../../context';
-import { getPubSubRedis, getPubSubRedisSubscriber } from '../../../redis';
+import { publish } from '../../../pubsub';
+import { getPubSubRedisSubscriber } from '../../../redis';
 import type { Repository } from '../../repo';
 import type { AgentPushParameters } from '../agentpush';
 
@@ -245,5 +246,5 @@ function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessa
   agent: WithId<Agent>,
   message: T
 ): Promise<number> {
-  return getPubSubRedis().publish(getReferenceString(agent), JSON.stringify(message));
+  return publish(getReferenceString(agent), JSON.stringify(message));
 }

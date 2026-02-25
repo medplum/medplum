@@ -8,7 +8,8 @@ import type { RawData, WebSocket } from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { setGauge } from '../otel/otel';
-import { getCacheRedis, getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
+import { publish } from '../pubsub';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -31,17 +32,14 @@ export function initFhircastHeartbeat(): void {
         },
       };
 
-      const redis = getPubSubRedis();
       for (const projectAndTopic of topicRefCountMap.keys()) {
-        redis
-          .publish(
-            projectAndTopic,
-            JSON.stringify({
-              ...baseHeartbeatPayload,
-              event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
-            })
-          )
-          .catch(console.error);
+        publish(
+          projectAndTopic,
+          JSON.stringify({
+            ...baseHeartbeatPayload,
+            event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
+          })
+        ).catch(console.error);
       }
 
       const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;

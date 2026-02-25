@@ -41,7 +41,8 @@ import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
+import { getActiveSubscriptions } from '../pubsub';
+import { getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -2520,12 +2521,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const pubsubRedis = getPubSubRedis();
-        const criteria = await pubsubRedis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:Patient`,
-          `Subscription/${subscription.id}`
-        );
-        expect(criteria).toStrictEqual('Patient?name=Alice');
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toStrictEqual('Patient?name=Alice');
       }));
 
     test('Invalid criteria resource type is not added to Redis hash', () =>
@@ -2546,12 +2543,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const pubsubRedis = getPubSubRedis();
-        const criteria = await pubsubRedis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:FakeResourceType`,
-          `Subscription/${subscription.id}`
-        );
-        expect(criteria).toBeNull();
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'FakeResourceType');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toBeUndefined();
       }));
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>
