@@ -149,15 +149,15 @@ describe('Config', () => {
     expect(config.rateLimitRedis?.port).toStrictEqual(6381);
   });
 
-  test('Env config pubsubRedis prefix', async () => {
+  test('Env config pubSubRedis prefix', async () => {
     setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
     setEnv('MEDPLUM_PUBSUB_REDIS_HOST', 'pubsub-redis.example.com');
     setEnv('MEDPLUM_PUBSUB_REDIS_PORT', '6382');
 
     const config = await loadConfig('env');
-    expect(config.pubsubRedis).toBeDefined();
-    expect(config.pubsubRedis?.host).toStrictEqual('pubsub-redis.example.com');
-    expect(config.pubsubRedis?.port).toStrictEqual(6382);
+    expect(config.pubSubRedis).toBeDefined();
+    expect(config.pubSubRedis?.host).toStrictEqual('pubsub-redis.example.com');
+    expect(config.pubSubRedis?.port).toStrictEqual(6382);
   });
 
   test('Env config backgroundJobsRedis prefix', async () => {

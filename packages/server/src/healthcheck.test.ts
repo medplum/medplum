@@ -33,7 +33,7 @@ describe('Health check', () => {
     expect(res.body.redisInstances).toEqual({
       default: true,
       rateLimit: true,
-      pubsub: true,
+      pubSub: true,
       backgroundJobs: true,
     });
   });
@@ -49,7 +49,7 @@ describe('Health check', () => {
       default: true,
       cache: true,
       rateLimit: true,
-      pubsub: true,
+      pubSub: true,
       backgroundJobs: true,
     });
   });

@@ -417,7 +417,7 @@ describe('Infra', () => {
       stackName: 'MedplumPurposeRedisStack',
       cacheRedis: { nodeType: 'cache.r6g.large' },
       rateLimitRedis: { nodeType: 'cache.t3.small' },
-      pubsubRedis: {},
+      pubSubRedis: {},
       backgroundJobsRedis: { securityGroupId: 'sg-1234' },
     });
 

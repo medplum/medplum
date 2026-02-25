@@ -46,7 +46,7 @@ export interface MedplumServerConfig {
    * Falls back to `redis` if not specified.
    * Separating pub/sub from other purposes can improve performance under high load by isolating pub/sub operations.
    */
-  pubsubRedis?: MedplumRedisConfig;
+  pubSubRedis?: MedplumRedisConfig;
   /**
    * Optional separate Redis config for BullMQ job queues (all background workers).
    * Falls back to `redis` if not specified.

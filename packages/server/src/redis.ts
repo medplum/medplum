@@ -16,13 +16,13 @@ type RedisInstance = { redis: RedisWithoutDuplicate | undefined };
 const redisInstances: {
   cache: RedisInstance;
   rateLimit: RedisInstance;
-  pubsub: RedisInstance & { subscribers: Set<Redis> };
+  pubSub: RedisInstance & { subscribers: Set<Redis> };
   backgroundJobs: RedisInstance;
   default: RedisInstance;
 } = {
   cache: { redis: undefined },
   rateLimit: { redis: undefined },
-  pubsub: { redis: undefined, subscribers: new Set() },
+  pubSub: { redis: undefined, subscribers: new Set() },
   backgroundJobs: { redis: undefined },
   default: { redis: undefined },
 };
@@ -58,9 +58,9 @@ export function initRedis(config: MedplumServerConfig): void {
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }
-  if (config.pubsubRedis) {
-    redisInstances.pubsub.redis = new Redis({
-      ...config.pubsubRedis,
+  if (config.pubSubRedis) {
+    redisInstances.pubSub.redis = new Redis({
+      ...config.pubSubRedis,
       reconnectOnError,
     }) as RedisWithoutDuplicate;
   }
@@ -78,11 +78,11 @@ export async function closeRedis(): Promise<void> {
     closing = true;
 
     // Disconnect pub/sub subscribers
-    for (const subscriber of redisInstances.pubsub.subscribers) {
+    for (const subscriber of redisInstances.pubSub.subscribers) {
       subscriber.disconnect();
-      redisInstances.pubsub.subscribers.delete(subscriber);
+      redisInstances.pubSub.subscribers.delete(subscriber);
     }
-    redisInstances.pubsub.subscribers.clear();
+    redisInstances.pubSub.subscribers.clear();
 
     let quitAny = false;
     let key: keyof typeof redisInstances;
@@ -141,7 +141,7 @@ export function getRateLimitRedis(): RedisWithoutDuplicate {
  * @returns The pub/sub `Redis` instance.
  */
 export function getPubSubRedis(): RedisWithoutDuplicate {
-  return getRedisInstance('pubsub');
+  return getRedisInstance('pubSub');
 }
 
 /**
@@ -157,16 +157,16 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
     throw new Error('Redis is closing, cannot create subscriber');
   }
 
-  const sourceInstance = redisInstances.pubsub.redis ?? redisInstances.default.redis;
+  const sourceInstance = redisInstances.pubSub.redis ?? redisInstances.default.redis;
   if (!sourceInstance) {
     throw new Error('Redis not initialized');
   }
   const subscriber = (sourceInstance as Redis).duplicate();
-  redisInstances.pubsub.subscribers ??= new Set();
-  redisInstances.pubsub.subscribers.add(subscriber);
+  redisInstances.pubSub.subscribers ??= new Set();
+  redisInstances.pubSub.subscribers.add(subscriber);
 
   subscriber.on('end', () => {
-    redisInstances.pubsub.subscribers?.delete(subscriber);
+    redisInstances.pubSub.subscribers?.delete(subscriber);
   });
 
   return subscriber as RedisWithoutDuplicate & { quit: never };
@@ -176,7 +176,7 @@ export function getPubSubRedisSubscriber(): RedisWithoutDuplicate & { quit: neve
  * @returns The amount of active `Redis` subscriber instances.
  */
 export function getPubSubRedisSubscriberCount(): number {
-  return redisInstances.pubsub.subscribers?.size ?? 0;
+  return redisInstances.pubSub.subscribers?.size ?? 0;
 }
 
 /**

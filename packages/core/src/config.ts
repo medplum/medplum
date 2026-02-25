@@ -70,7 +70,7 @@ export interface MedplumSourceInfraConfig {
     engine?: ValueOrExternalSecret<string>;
     engineVersion?: ValueOrExternalSecret<string>;
   };
-  pubsubRedis?: {
+  pubSubRedis?: {
     nodeType?: ValueOrExternalSecret<string>;
     securityGroupId?: ValueOrExternalSecret<string>;
     engine?: ValueOrExternalSecret<string>;
@@ -200,7 +200,7 @@ export interface MedplumInfraConfig {
     engine?: string;
     engineVersion?: string;
   };
-  pubsubRedis?: {
+  pubSubRedis?: {
     nodeType?: string;
     securityGroupId?: string;
     engine?: string;

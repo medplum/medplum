@@ -68,22 +68,22 @@ describe('Redis', () => {
         ...config,
         cacheRedis: { ...config.redis },
         rateLimitRedis: { ...config.redis },
-        pubsubRedis: { ...config.redis },
+        pubSubRedis: { ...config.redis },
         backgroundJobsRedis: { ...config.redis },
       };
       initRedis(separateConfig);
 
       const cache = getCacheRedis();
       const rateLimit = getRateLimitRedis();
-      const pubsub = getPubSubRedis();
+      const pubSub = getPubSubRedis();
 
       expect(cache).toBeDefined();
       expect(rateLimit).toBeDefined();
-      expect(pubsub).toBeDefined();
+      expect(pubSub).toBeDefined();
 
       // When separate instances are configured, they should be different from each other
       expect(cache).not.toBe(rateLimit);
-      expect(cache).not.toBe(pubsub);
+      expect(cache).not.toBe(pubSub);
 
       await closeRedis();
     });
@@ -93,7 +93,7 @@ describe('Redis', () => {
         ...config,
         cacheRedis: undefined,
         rateLimitRedis: undefined,
-        pubsubRedis: undefined,
+        pubSubRedis: undefined,
         backgroundJobsRedis: undefined,
       };
       initRedis(defaultOnlyConfig);
@@ -101,10 +101,10 @@ describe('Redis', () => {
       // All should fall back to the default instance
       const cache = getCacheRedis();
       const rateLimit = getRateLimitRedis();
-      const pubsub = getPubSubRedis();
+      const pubSub = getPubSubRedis();
 
       expect(cache).toBe(rateLimit);
-      expect(cache).toBe(pubsub);
+      expect(cache).toBe(pubSub);
 
       await closeRedis();
     });
@@ -112,7 +112,7 @@ describe('Redis', () => {
     test('getPubSubRedisSubscriber uses pubsub instance when configured', async () => {
       const separateConfig: MedplumServerConfig = {
         ...config,
-        pubsubRedis: { ...config.redis },
+        pubSubRedis: { ...config.redis },
       };
       initRedis(separateConfig);
 
@@ -130,7 +130,7 @@ describe('Redis', () => {
         ...config,
         cacheRedis: undefined,
         rateLimitRedis: undefined,
-        pubsubRedis: undefined,
+        pubSubRedis: undefined,
         backgroundJobsRedis: undefined,
       };
       initRedis(defaultOnlyConfig);
@@ -147,7 +147,7 @@ describe('Redis', () => {
         ...config,
         cacheRedis: { ...config.redis },
         rateLimitRedis: { ...config.redis },
-        pubsubRedis: { ...config.redis },
+        pubSubRedis: { ...config.redis },
         backgroundJobsRedis: { ...config.redis },
       };
       initRedis(separateConfig);
@@ -158,7 +158,7 @@ describe('Redis', () => {
       expect(labels).toContain('default');
       expect(labels).toContain('cache');
       expect(labels).toContain('rateLimit');
-      expect(labels).toContain('pubsub');
+      expect(labels).toContain('pubSub');
       expect(labels).toContain('backgroundJobs');
 
       await closeRedis();

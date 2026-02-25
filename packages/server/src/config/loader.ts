@@ -89,7 +89,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
     ...config.redis,
     db: 8,
   };
-  config.pubsubRedis = {
+  config.pubSubRedis = {
     ...config.redis,
     db: 9,
   };
@@ -138,8 +138,8 @@ function loadEnvConfig(): MedplumServerConfig {
       section = 'rateLimitRedis';
     } else if (key.startsWith('PUBSUB_REDIS_')) {
       key = key.substring('PUBSUB_REDIS_'.length);
-      currConfig = config.pubsubRedis ??= {};
-      section = 'pubsubRedis';
+      currConfig = config.pubSubRedis ??= {};
+      section = 'pubSubRedis';
     } else if (key.startsWith('BACKGROUND_JOBS_REDIS_')) {
       key = key.substring('BACKGROUND_JOBS_REDIS_'.length);
       currConfig = config.backgroundJobsRedis ??= {};
