@@ -212,6 +212,18 @@ _Each patient has their own CareTeam. Nurse Jane's ProjectMembership accumulates
 
 Once you've chosen your tenant resource type, use it consistently throughout your implementation.
 
+### How many levels of your hierarchy need to be independently queryable?
+
+Before moving on, answer these questions — they determine whether you need to tag resources at multiple levels of your organizational hierarchy:
+
+| Question | If yes → |
+|---|---|
+| Do you need to query data at multiple levels of your org hierarchy (e.g., by clinic *and* by region)? | Tag patients at **all** levels |
+| Do you have users whose scope spans an entire subtree (e.g., a regional admin who oversees multiple clinics)? | The **parent org** must also be a compartment |
+| Is there a top-level entity that needs cross-cutting visibility across the whole system? | Include the **root org** as a compartment too |
+
+If any answer is "yes", read the [Hierarchical Tenancy](#hierarchical-tenancy-multi-level-org-hierarchies) section before proceeding. Otherwise, a single-level tenant model is sufficient.
+
 ## Step 2: Assigning data to tenants
 
 Once you've decided on your tenant resource type and created your tenant resources, you need to associate your data (patients, observations, encounters, etc.) with those tenants. This is done using compartments and the `$set-accounts` operation.
@@ -291,6 +303,12 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 ### Adding references to the meta.compartment field
 
 In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation to add references to the **meta.compartment** field.
+
+:::warning Tag at enrollment time — backfilling is expensive
+`$set-accounts` is a **replace** operation: when run with `propagate: true`, it overwrites all existing compartment references on the Patient _and_ re-stamps every related resource (Observations, Encounters, QuestionnaireResponses, etc.). On an established patient panel this can touch thousands of records.
+
+**It is far easier to tag patients with all relevant compartments at enrollment time than to backfill later.** If your org structure is hierarchical, tag at every level upfront — see [Hierarchical Tenancy](#hierarchical-tenancy-multi-level-org-hierarchies).
+:::
 
 
 <Tabs groupId="tenant-type">
@@ -683,6 +701,91 @@ To do this, do not include the `_compartment` check in resource type criteria fo
 <MedplumCodeBlock language="ts" selectBlocks="access-policy-mixed">
   {ExampleCode}
 </MedplumCodeBlock>
+
+## Hierarchical Tenancy: Multi-Level Org Hierarchies
+
+The examples above treat tenancy as flat — each user is scoped to one or more leaf-level tenants (clinics, services, or care teams). Many real-world deployments have a **nested** org structure: a Company owns Divisions that own Clinics. Users at any level need to be scopable to their subtree without granting them access to siblings.
+
+### Why chained search doesn't solve this
+
+`AccessPolicy` criteria evaluate against compartment references stored directly on each resource. There is **no support for chained search** (e.g., you cannot filter by `Organization.partOf`). This means you cannot write a policy that says "give me all patients whose clinic's parent org is Division X" — the policy engine can only match exact compartment references.
+
+### The triple-tag pattern
+
+The solution is to tag each patient with compartment references at **every level of the hierarchy at enrollment time**:
+
+```json
+// Patient tagged at all three levels of a Company → Division → Clinic hierarchy
+{
+  "resourceType": "Patient",
+  "meta": {
+    "compartment": [
+      { "reference": "Organization/acme-corp" },       // root company
+      { "reference": "Organization/northeast-division" }, // division
+      { "reference": "Organization/boston-clinic" }    // leaf clinic
+    ]
+  }
+}
+```
+
+Call `$set-accounts` once at enrollment with all three references and propagation enabled:
+
+```ts
+await medplum.post(medplum.fhirUrl('Patient', patientId, '$set-accounts'), {
+  accounts: [
+    { reference: 'Organization/acme-corp' },
+    { reference: 'Organization/northeast-division' },
+    { reference: 'Organization/boston-clinic' },
+  ],
+  propagate: true,
+});
+```
+
+### One policy, any tier
+
+Because the patient carries compartment references at every level, **the same parameterized `%organization` policy works for users at any tier**. The `%organization` variable simply resolves to whatever Organization reference is in that user's `ProjectMembership`:
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+flowchart LR
+    subgraph Users
+        U1["Regional Admin\n%org = northeast-division"]
+        U2["Clinic Staff\n%org = boston-clinic"]
+        U3["Executive\n%org = acme-corp"]
+    end
+
+    subgraph Policy["Same AccessPolicy\n(compartment: %organization)"]
+        AP["AccessPolicy/org-policy"]
+    end
+
+    subgraph Patient["Patient/alice\nmeta.compartment"]
+        C1["Organization/acme-corp"]
+        C2["Organization/northeast-division"]
+        C3["Organization/boston-clinic"]
+    end
+
+    U1 -->|resolves %org| AP
+    U2 -->|resolves %org| AP
+    U3 -->|resolves %org| AP
+    AP -->|matches| C2
+    AP -->|matches| C3
+    AP -->|matches| C1
+```
+
+- The **regional admin** (`%organization = Organization/northeast-division`) sees all patients tagged with `northeast-division` — which includes every clinic in that division.
+- The **clinic staff** (`%organization = Organization/boston-clinic`) sees only patients tagged with `boston-clinic`.
+- The **executive** (`%organization = Organization/acme-corp`) sees all patients across all divisions and clinics.
+
+No additional policy variants are needed — compartment matching "just works" because the patient is tagged at all three levels.
+
+### Hierarchy modeling checklist
+
+Before writing enrollment code, map out your org tree and answer:
+
+1. **Which orgs need to be independently queryable?** Each one must be a separate compartment tag.
+2. **What is the deepest level a user can be scoped to?** That level (and every level above it up to the root) must be tagged.
+3. **Are there cross-cutting users** (regional admins, executives) who need subtree visibility? Their tier's org must be tagged too.
+4. **Will your org structure ever change?** Tag at enrollment time. Restructuring later requires re-running `$set-accounts propagate: true` across every affected patient — see the [backfill warning](#adding-references-to-the-metacompartment-field).
 
 ## Conclusion
 
