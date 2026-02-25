@@ -5,7 +5,21 @@ import * as domUtils from '../utils/dom';
 import { CcdaDisplay } from './CcdaDisplay';
 
 const EXAMPLE_CCDA_URL = 'http://example.com/ccda';
-const VALIDATION_URL_PATTERN = 'https://ccda-validator.medplum.com/referenceccdaservice/';
+const VALIDATION_API_URL = new URL('https://ccda-validator.medplum.com/referenceccdaservice/');
+
+function isValidationApiUrl(url: string | URL): boolean {
+  try {
+    const parsedUrl = new URL(url.toString());
+    return (
+      parsedUrl.protocol === VALIDATION_API_URL.protocol &&
+      parsedUrl.hostname === VALIDATION_API_URL.hostname &&
+      parsedUrl.port === VALIDATION_API_URL.port &&
+      parsedUrl.pathname === VALIDATION_API_URL.pathname
+    );
+  } catch {
+    return false;
+  }
+}
 
 describe('CcdaDisplay', () => {
   let medplum: MockClient;
@@ -37,7 +51,7 @@ describe('CcdaDisplay', () => {
       }
 
       // For validation API (POST request)
-      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
+      if (isValidationApiUrl(url) && options?.method === 'POST') {
         const mockResponse = {
           resultsMetaData: {
             ccdaDocumentType: 'Care Plan',
@@ -137,7 +151,7 @@ describe('CcdaDisplay', () => {
       // Second call for validation API
       const calls = fetchSpy.mock.calls;
       const validationCall = calls.find(
-        (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
+        (call) => isValidationApiUrl(call[0] as string | URL) && call[1]?.method === 'POST'
       );
       expect(validationCall).toBeTruthy();
       expect(validationCall[1].credentials).toBe('omit');
@@ -193,7 +207,7 @@ describe('CcdaDisplay', () => {
       }
 
       // For validation API, return service error
-      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
+      if (isValidationApiUrl(url) && options?.method === 'POST') {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -246,7 +260,7 @@ describe('CcdaDisplay', () => {
       }
 
       // For validation API, return a server error response
-      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
+      if (isValidationApiUrl(url) && options?.method === 'POST') {
         return Promise.resolve({
           ok: false,
           status: 500,
