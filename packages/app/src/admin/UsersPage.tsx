@@ -10,8 +10,8 @@ export function UsersPage(): JSX.Element {
     <>
       <Title>ProjectMemberships by User and Profile Type</Title>
       <Text size="sm">
-        This page lists all ProjectMemberships by User and Profile Type. Each member has a profile type (Practitioner, Patient, or
-        RelatedPerson) that defines their role.{' '}
+        This page lists all ProjectMemberships by User and Profile Type. Each member has a profile type (Practitioner,
+        Patient, or RelatedPerson) that defines their role.{' '}
         <Anchor href="https://www.medplum.com/docs/user-management" target="_blank" rel="noopener noreferrer">
           Learn more about user management.
         </Anchor>

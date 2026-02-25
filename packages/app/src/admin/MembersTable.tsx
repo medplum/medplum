@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { SegmentedControl } from '@mantine/core';
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
-import { SegmentedControl } from '@mantine/core';
 import { SearchControl, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
@@ -49,12 +49,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
 
   return (
     <>
-      <SegmentedControl
-        mb="md"
-        value={profileType}
-        onChange={handleProfileTypeChange}
-        data={profileTypeOptions}
-      />
+      <SegmentedControl mb="md" value={profileType} onChange={handleProfileTypeChange} data={profileTypeOptions} />
       <SearchControl
         search={search}
         onClick={(e) => navigate(`/ProjectMembership/${e.resource.id}`)?.catch(console.error)}
