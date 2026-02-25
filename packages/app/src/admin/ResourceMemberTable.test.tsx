@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, renderAppRoutes, screen, waitFor } from '../test-utils/render';
+import { act, fireEvent, render, renderAppRoutes, screen } from '../test-utils/render';
 import { ResourceMemberTable } from './ResourceMemberTable';
 
 const medplum = new MockClient();
