@@ -49,9 +49,36 @@ describe('ProjectPage', () => {
     expect(await screen.findByText('Invite new user')).toBeInTheDocument();
   });
 
-  test('Patients page', async () => {
-    await setup('/admin/patients');
-    expect(await screen.findByText('Invite new patient')).toBeInTheDocument();
+  test('Users page shows profile type segmented control', async () => {
+    await setup('/admin/users');
+    expect(await screen.findByText('All')).toBeInTheDocument();
+    expect(screen.getAllByText('Practitioner').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Patient').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('RelatedPerson').length).toBeGreaterThan(0);
+  });
+
+  test('Users page segmented control filters by Practitioner', async () => {
+    await setup('/admin/users');
+    expect(await screen.findByText('All')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Practitioner')[0]);
+    });
+
+    expect(screen.getAllByText('Practitioner').length).toBeGreaterThan(0);
+    expect(screen.getByText('Invite new user')).toBeInTheDocument();
+  });
+
+  test('Clients page does not show profile type segmented control', async () => {
+    await setup('/admin/clients');
+    await screen.findByText('Create new client');
+    expect(screen.queryByText('RelatedPerson')).not.toBeInTheDocument();
+  });
+
+  test('Bots page does not show profile type segmented control', async () => {
+    await setup('/admin/bots');
+    await screen.findByText('Create new bot');
+    expect(screen.queryByText('RelatedPerson')).not.toBeInTheDocument();
   });
 
   test('Clients page', async () => {
