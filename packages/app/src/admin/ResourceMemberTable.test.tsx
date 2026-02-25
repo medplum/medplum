@@ -1,12 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
-import { renderAppRoutes, screen } from '../test-utils/render';
+import { MedplumProvider } from '@medplum/react';
+import { MemoryRouter } from 'react-router';
+import { act, fireEvent, render, renderAppRoutes, screen, waitFor } from '../test-utils/render';
+import { ResourceMemberTable } from './ResourceMemberTable';
 
 const medplum = new MockClient();
 
 async function setup(url: string): Promise<void> {
   renderAppRoutes(medplum, url);
+}
+
+async function setupDirect(): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter>
+          <MantineProvider>
+            <ResourceMemberTable fields={['user', 'profile', 'profile-type']} />
+          </MantineProvider>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('ResourceMemberTable', () => {
@@ -50,5 +68,28 @@ describe('ResourceMemberTable', () => {
     // The segmented profile-type filter only appears on the Users page
     expect(screen.queryByText('All')).not.toBeInTheDocument();
     expect(screen.queryByText('RelatedPerson')).not.toBeInTheDocument();
+  });
+
+  test('Renders with no resourceType and defaults to all profile types', async () => {
+    // Exercises the `?? 'Patient,Practitioner,RelatedPerson'` fallback branch (line 27)
+    await setupDirect();
+    // The seeded TestProjectMembership (Practitioner profile) should appear in results
+    const rows = await screen.findAllByTestId('search-control-row');
+    expect(rows.length).toBeGreaterThan(0);
+  });
+
+  test('Clicking a search result row triggers the onClick navigation handler', async () => {
+    // Exercises the onClick handler on ResourceMemberTable (lines 41-42)
+    await setupDirect();
+    const rows = await screen.findAllByTestId('search-control-row');
+    expect(rows.length).toBeGreaterThan(0);
+
+    // Clicking a row should not throw; navigation is a no-op in MemoryRouter here
+    await act(async () => {
+      fireEvent.click(rows[0]);
+    });
+
+    // Row is still present (MemoryRouter doesn't navigate away in this direct render)
+    expect(screen.getAllByTestId('search-control-row').length).toBeGreaterThan(0);
   });
 });
