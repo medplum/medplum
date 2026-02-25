@@ -493,7 +493,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
-    this.addSecurityFilters(builder, resourceType);
+    this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
     const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
@@ -1577,13 +1577,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Adds security filters to the select query.
    * @param builder - The select query builder.
    * @param resourceType - The resource type for compartments.
+   * @param interaction - The FHIR interaction being performed.
    */
-  addSecurityFilters(builder: SelectQuery, resourceType: string): void {
+  addSecurityFilters(builder: SelectQuery, resourceType: string, interaction: AccessPolicyInteraction): void {
     // No compartment restrictions for admins.
     if (!this.isSuperAdmin()) {
       this.addProjectFilters(builder, resourceType);
     }
-    this.addAccessPolicyFilters(builder, resourceType);
+    this.addAccessPolicyFilters(builder, resourceType, interaction);
   }
 
   /**
@@ -1612,9 +1613,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   /**
    * Adds access policy filters to the select query.
    * @param builder - The select query builder.
-   * @param resourceType - The resource type being searched.
+   * @param resourceType - The resource type being read or searched.
+   * @param interaction - The FHIR interaction being performed.
    */
-  private addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
+  private addAccessPolicyFilters(
+    builder: SelectQuery,
+    resourceType: string,
+    interaction: AccessPolicyInteraction
+  ): void {
     const accessPolicy = this.context.accessPolicy;
     if (!accessPolicy?.resource) {
       return;
@@ -1628,7 +1634,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const expressions: Expression[] = [];
 
     for (const policy of accessPolicy.resource) {
-      if (policy.resourceType === resourceType || policy.resourceType === '*') {
+      if (
+        (policy.resourceType === resourceType || policy.resourceType === '*') &&
+        (!policy.interaction || policy.interaction.includes(interaction))
+      ) {
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
