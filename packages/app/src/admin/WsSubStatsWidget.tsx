@@ -84,7 +84,7 @@ export function WsSubStatsWidget(): JSX.Element {
       <Modal opened={opened} onClose={close} title="WebSocket Subscription Stats" size="xl" centered>
         {!projects?.length && <Text>No active WebSocket subscriptions found.</Text>}
         {projects && projects.length > 0 && (
-          <Table striped highlightOnHover withTableBorder withColumnBorders>
+          <Table striped highlightOnHover withTableBorder withColumnBorders tabularNums>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Project / Resource Type / Criteria</Table.Th>
