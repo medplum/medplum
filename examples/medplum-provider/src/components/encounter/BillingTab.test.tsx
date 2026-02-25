@@ -253,9 +253,118 @@ describe('BillingTab', () => {
     windowOpenSpy.mockRestore();
   });
 
-  test('renders request billing service button', async () => {
+  test('renders request billing service button when bot is not found', async () => {
     await setup({ claim: mockClaim });
-    expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Submit Claim')).not.toBeInTheDocument();
+  });
+
+  test('renders submit claim button when billing bot exists', async () => {
+    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockBot as any);
+
+    await setup({ claim: mockClaim });
+
+    await waitFor(() => {
+      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Request to connect a billing service')).not.toBeInTheDocument();
+  });
+
+  test('request billing service button opens contact page', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const user = userEvent.setup();
+
+    await setup({ claim: mockClaim });
+
+    await waitFor(() => {
+      expect(screen.getByText('Request to connect a billing service')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Request to connect a billing service'));
+
+    expect(windowOpenSpy).toHaveBeenCalledWith('https://www.medplum.com/contact', '_blank');
+    windowOpenSpy.mockRestore();
+  });
+
+  test('shows missing diagnosis notification when submitting without conditions', async () => {
+    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockBot as any);
+
+    const user = userEvent.setup();
+
+    await setup({ claim: mockClaim });
+
+    await waitFor(() => {
+      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Submit Claim'));
+
+    await waitFor(() => {
+      expect(vi.mocked(showNotification)).toHaveBeenCalledWith({
+        title: 'Missing Diagnosis',
+        message: 'Please add at least one diagnosis before submitting a claim',
+        color: 'red',
+      });
+    });
+  });
+
+  test('submits claim successfully when bot and conditions exist', async () => {
+    const mockBot = { resourceType: 'Bot', id: 'bot-123', name: 'Candid Health Bot' };
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockBot as any);
+
+    const mockCondition = {
+      resourceType: 'Condition' as const,
+      id: 'condition-1',
+      code: {
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/sid/icd-10-cm',
+            code: 'R51',
+            display: 'Headache',
+          },
+        ],
+        text: 'Headache',
+      },
+    };
+
+    vi.spyOn(medplum, 'readReference').mockResolvedValue(mockCondition as any);
+    vi.spyOn(medplum, 'searchResources').mockResolvedValue([mockCoverage] as any);
+    vi.spyOn(medplum, 'executeBot').mockResolvedValue({ message: 'Claim submitted successfully' });
+
+    const user = userEvent.setup();
+
+    await setup({
+      claim: mockClaim,
+      encounter: {
+        ...mockEncounter,
+        diagnosis: [{ condition: { reference: 'Condition/condition-1' } }],
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Headache')).toBeInTheDocument();
+      expect(screen.getByText('Submit Claim')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Submit Claim'));
+
+    await waitFor(() => {
+      expect(medplum.executeBot).toHaveBeenCalledWith(
+        'bot-123',
+        expect.objectContaining({ resourceType: 'Claim' }),
+        'application/fhir+json'
+      );
+      expect(vi.mocked(showNotification)).toHaveBeenCalledWith({
+        title: 'Claim Submitted',
+        message: 'Claim submitted successfully',
+        color: 'green',
+      });
+    });
   });
 
   test('fetches coverage on mount', async () => {

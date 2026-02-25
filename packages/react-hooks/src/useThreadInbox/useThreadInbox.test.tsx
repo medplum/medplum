@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { renderHook, waitFor, act } from '@testing-library/react';
-import { MedplumProvider } from '@medplum/react';
-import type { JSX } from 'react';
+import type { WithId } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import type { JSX } from 'react';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useThreadInbox } from './useThreadInbox';
-import type { WithId } from '@medplum/core';
 
 const mockCommunication1: Communication = {
   resourceType: 'Communication',
@@ -31,7 +30,7 @@ describe('useThreadInbox', () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }): JSX.Element => (
@@ -58,14 +57,14 @@ describe('useThreadInbox', () => {
       partOf: [{ reference: 'Communication/comm-1' }],
     };
 
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       total: 1,
       entry: [{ resource: mockCommunication1 as WithId<Communication> }],
     });
 
-    const graphqlSpy = vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    const graphqlSpy = jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_comm1: [mockCommunication4],
       },
@@ -114,7 +113,7 @@ describe('useThreadInbox', () => {
       partOf: [{ reference: 'Communication/comm-with-replies' }],
     };
 
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       total: 2,
@@ -124,7 +123,7 @@ describe('useThreadInbox', () => {
       ],
     });
 
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_commnoreplies: [],
         thread_commwithreplies: [replyMessage],
@@ -151,7 +150,7 @@ describe('useThreadInbox', () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
 
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_comm1: [mockCommunication2],
       },
@@ -174,7 +173,7 @@ describe('useThreadInbox', () => {
     // Don't create the resource, so it won't be found in search
     // This simulates a thread that exists but isn't in the current search results
 
-    const readSpy = vi.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication1 as WithId<Communication>);
+    const readSpy = jest.spyOn(medplum, 'readResource').mockResolvedValue(mockCommunication1 as WithId<Communication>);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
       wrapper,
@@ -204,9 +203,9 @@ describe('useThreadInbox', () => {
       partOf: [{ reference: 'Communication/comm-0' }],
     };
 
-    vi.spyOn(medplum, 'readResource').mockResolvedValue(communicationWithPartOf as WithId<Communication>);
+    jest.spyOn(medplum, 'readResource').mockResolvedValue(communicationWithPartOf as WithId<Communication>);
 
-    const readReferenceSpy = vi.spyOn(medplum, 'readReference').mockResolvedValue(parentCommunication as any);
+    const readReferenceSpy = jest.spyOn(medplum, 'readReference').mockResolvedValue(parentCommunication as any);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
       wrapper,
@@ -223,14 +222,14 @@ describe('useThreadInbox', () => {
   });
 
   test('handles thread status update', async () => {
-    vi.spyOn(medplum, 'search').mockResolvedValue({
+    jest.spyOn(medplum, 'search').mockResolvedValue({
       resourceType: 'Bundle',
       type: 'searchset',
       total: 1,
       entry: [{ resource: mockCommunication1 as WithId<Communication> }],
     });
 
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_comm1: [mockCommunication2],
       },
@@ -241,7 +240,7 @@ describe('useThreadInbox', () => {
       status: 'in-progress',
     };
 
-    const updateSpy = vi
+    const updateSpy = jest
       .spyOn(medplum, 'updateResource')
       .mockResolvedValue(updatedCommunication as WithId<Communication>);
 
@@ -263,7 +262,7 @@ describe('useThreadInbox', () => {
   });
 
   test('does not update status when no thread is selected', async () => {
-    const updateSpy = vi.spyOn(medplum, 'updateResource');
+    const updateSpy = jest.spyOn(medplum, 'updateResource');
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,
@@ -282,14 +281,14 @@ describe('useThreadInbox', () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
 
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_comm1: [mockCommunication2],
       },
     } as any);
 
     const error = new Error('Update failed');
-    vi.spyOn(medplum, 'updateResource').mockRejectedValue(error);
+    jest.spyOn(medplum, 'updateResource').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: 'comm-1' }), {
       wrapper,
@@ -336,8 +335,8 @@ describe('useThreadInbox', () => {
 
   test('handles search errors gracefully', async () => {
     const error = new Error('Search failed');
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(medplum, 'search').mockRejectedValue(error);
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    jest.spyOn(medplum, 'search').mockRejectedValue(error);
 
     const { result } = renderHook(() => useThreadInbox({ query: 'status=completed', threadId: undefined }), {
       wrapper,
@@ -355,7 +354,7 @@ describe('useThreadInbox', () => {
     await medplum.createResource(mockCommunication1);
     await medplum.createResource(mockCommunication2);
 
-    vi.spyOn(medplum, 'graphql').mockResolvedValue({
+    jest.spyOn(medplum, 'graphql').mockResolvedValue({
       data: {
         thread_comm1: [mockCommunication2],
       },

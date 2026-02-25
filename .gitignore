@@ -97,5 +97,8 @@ playwright/.cache/
 # Cursor
 .cursor/
 
+# Claude
+.claude/
+
 # 0x profiling data
 *.0x

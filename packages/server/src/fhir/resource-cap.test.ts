@@ -10,7 +10,7 @@ import type { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
-import { getSystemRepo } from './repo';
+import { getProjectSystemRepo } from './repo';
 
 describe('FHIR Resource Limits', () => {
   let app: Express;
@@ -79,7 +79,7 @@ describe('FHIR Resource Limits', () => {
       },
     });
 
-    const systemRepo = getSystemRepo();
+    const systemRepo = getProjectSystemRepo(project);
     await systemRepo.createResource({ resourceType: 'Patient', meta: { project: project.id } });
 
     const res = await request(app)

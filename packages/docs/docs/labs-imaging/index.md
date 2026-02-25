@@ -1,5 +1,7 @@
 # Labs & Imaging
 
+Lab orders and imaging results in FHIR follow a request-and-report pattern. A [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) represents the order, and a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) captures the results. Individual measurements are stored as [`Observation`](/docs/api/fhir/resources/observation) resources linked to the report.
+
 ```mermaid
 
 flowchart RL
@@ -38,7 +40,7 @@ flowchart RL
 
 | **Code System**                                                | **Description**                                                                                  |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Speciment`](/docs/api/fhir/resources/specimen) resource. |
+| [UCUM](https://ucum.nlm.nih.gov/)                              | Used to define measurement units on a [`Specimen`](/docs/api/fhir/resources/specimen) resource. |
 | [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |
 | [SNOMED](https://www.snomed.org/)                              | Used to define [`Specimen`](/docs/api/fhir/resources/specimen) types and retrieval methods.      |
 | [LOINC](/docs/careplans/loinc)          | Used to annotate [`Observation`](/docs/api/fhir/resources/observation) resources for tracking.   |

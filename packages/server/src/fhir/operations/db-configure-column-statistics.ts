@@ -4,7 +4,8 @@ import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import { getSystemRepo } from '../repo';
+import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidColumnName, isValidTableName } from '../sql';
 import { makeOperationDefinitionParameter as param, parseInputParameters } from './utils/parameters';
 
@@ -63,7 +64,7 @@ export async function configureColumnStatisticsHandler(req: FhirRequest): Promis
     newStatisticsTarget = params.newStatisticsTarget;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
   await systemRepo.withTransaction(async (client) => {
     for (const columnName of params.columnNames) {
       await client.query(

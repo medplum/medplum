@@ -10,7 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { getBinaryStorage } from './loader';
 
@@ -19,12 +19,12 @@ let config: MedplumServerConfig;
 let binary: Binary;
 
 describe('Storage Routes', () => {
+  const systemRepo = getGlobalSystemRepo();
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
     binary = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const result = await systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.TEXT,
@@ -94,7 +94,6 @@ describe('Storage Routes', () => {
   test('File not found', async () => {
     // Create a Binary resource without writing a file to disk
     const resource = await withTestContext(async () => {
-      const systemRepo = getSystemRepo();
       const result = await systemRepo.createResource<Binary>({
         resourceType: 'Binary',
         contentType: ContentType.TEXT,
