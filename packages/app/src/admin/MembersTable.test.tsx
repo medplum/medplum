@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen, waitFor } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -91,5 +91,23 @@ describe('MemberTable (Users page)', () => {
 
     expect(screen.getByText('All')).toBeInTheDocument();
     expect(screen.getByText('Invite new user')).toBeInTheDocument();
+  });
+
+  test('Clicking a search result row navigates to the ProjectMembership page', async () => {
+    await setup('/admin/users');
+    expect(await screen.findByText('All')).toBeInTheDocument();
+
+    // Wait for the search results to load and a row to appear
+    const rows = await screen.findAllByTestId('search-control-row');
+    expect(rows.length).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(rows[0]);
+    });
+
+    // After clicking a row the router should navigate to /ProjectMembership/<id>
+    await waitFor(() => {
+      expect(screen.queryByText('Invite new user')).not.toBeInTheDocument();
+    });
   });
 });
