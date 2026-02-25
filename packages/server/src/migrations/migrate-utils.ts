@@ -1,15 +1,18 @@
 import { escapeIdentifier } from 'pg';
 
 /**
- * When writing SQL statements to a file, adds an escaped backslash, i.e. \\, before single quotes in the expression.
+ * Escapes SQL expressions for embedding inside generated TypeScript string literals.
+ *
+ * Escapes backslashes first, then single quotes. Escaping only single quotes is incomplete because
+ * existing backslashes can alter how quote escaping is interpreted in the generated string.
  *
  * @example doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)") => "to_tsvector(\\'simple\\'::regconfig, value)"
  *
- * @param expression - A SQL expression that may include single quotes
- * @returns The expression with single quotes escaped
+ * @param expression - A SQL expression that may include single quotes and backslashes
+ * @returns The expression with backslashes and single quotes escaped
  */
 export function doubleEscapeSingleQuotes(expression: string): string {
-  return expression.replace(/'/g, "\\'");
+  return expression.replaceAll('\\', '\\\\').replaceAll("'", "\\'");
 }
 
 /**

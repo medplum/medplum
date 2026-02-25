@@ -190,7 +190,7 @@ export class BackEnd extends Construct {
         storageEncrypted: true,
         // Instances with attached NVMe SSD (db.*d* instance classes) should utilize I/O optimized storage
         // to unlock additional performance improvements (e.g. tiered caching between memory and SSD)
-        storageType: writerInstanceType?.match(/^\w+d\w*\./i)
+        storageType: hasIOptimizedStorageInstanceClass(writerInstanceType)
           ? DBClusterStorageType.AURORA_IOPT1
           : DBClusterStorageType.AURORA,
         vpc: this.vpc,
@@ -719,4 +719,36 @@ function getPostgresEngine(
 
 function getDatabaseClusterId(majorVersion?: string): string {
   return majorVersion ? `DatabaseClusterPG${majorVersion}` : 'DatabaseCluster';
+}
+
+function hasIOptimizedStorageInstanceClass(instanceType?: string): boolean {
+  if (!instanceType) {
+    return false;
+  }
+
+  const dotIndex = instanceType.indexOf('.');
+  // Equivalent to: /^\w+d\w*\./i
+  // The first segment must be word chars, and include "d" (or "D") after at least one prior word char.
+  if (dotIndex < 2) {
+    return false;
+  }
+
+  let hasDAfterFirstChar = false;
+  for (let i = 0; i < dotIndex; i++) {
+    const code = instanceType.charCodeAt(i);
+    const isWordChar =
+      (code >= 48 && code <= 57) || // 0-9
+      (code >= 65 && code <= 90) || // A-Z
+      (code >= 97 && code <= 122) || // a-z
+      code === 95; // _
+    if (!isWordChar) {
+      return false;
+    }
+
+    if (i > 0 && (code === 68 || code === 100)) {
+      hasDAfterFirstChar = true;
+    }
+  }
+
+  return hasDAfterFirstChar;
 }

@@ -10,6 +10,7 @@ describe('migration-utils', () => {
     expect(doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)")).toEqual(
       "to_tsvector(\\'simple\\'::regconfig, value)"
     );
+    expect(doubleEscapeSingleQuotes(String.raw`E'foo\\bar'`)).toEqual(String.raw`E\'foo\\\\bar\'`);
   });
 
   test('tsVectorExpression', () => {

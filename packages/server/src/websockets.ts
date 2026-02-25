@@ -72,7 +72,7 @@ export function initWebSockets(server: http.Server): void {
 
     const path = getWebSocketPath(request.url as string);
     const handler = handlerMap.get(path);
-    if (handler) {
+    if (typeof handler === 'function') {
       await requestContextStore.run(RequestContext.empty(), () => handler(socket, request));
     } else {
       socket.close();

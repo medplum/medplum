@@ -1,7 +1,7 @@
 import { Quantity } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
-import { PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isTypedValue } from '../types';
 import {
   AndAtom,
   ArithemticOperatorAtom,
@@ -241,14 +241,9 @@ export function parseFhirPath(input: string): FhirPathAtom {
 export function evalFhirPath(expression: string | FhirPathAtom, input: unknown): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
-  const array = Array.isArray(input) ? input : [input];
-  for (let i = 0; i < array.length; i++) {
-    const el = array[i];
-    if (!(typeof el === 'object' && 'type' in el && 'value' in el)) {
-      array[i] = toTypedValue(array[i]);
-    }
-  }
-  return evalFhirPathTyped(expression, array).map((e) => e.value);
+  const values = Array.isArray(input) ? input : [input];
+  const typedValues = values.map((value) => (isTypedValue(value) ? value : toTypedValue(value)));
+  return evalFhirPathTyped(expression, typedValues).map((e) => e.value);
 }
 
 /**

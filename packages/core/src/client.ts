@@ -3492,8 +3492,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return [];
     }
     const header = this.currentRateLimits;
-    return header.split(/\s*;\s*/g).map((str) => {
-      const parts = str.split(/\s*,\s*/g);
+    return header.split(';').map((str) => {
+      const parts = str.split(',').map((part) => part.trim());
       if (parts.length !== 3) {
         throw new Error('Could not parse RateLimit header: ' + header);
       }

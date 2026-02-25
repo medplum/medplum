@@ -374,7 +374,7 @@ function rewriteLinksText(text: string | undefined): string {
   }
 
   // Replace all the links of [[[Type]]] with internal links
-  const typeLinks = Array.from(text.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
+  const typeLinks = Array.from(text.matchAll(/\[\[\[([A-Z][a-z]*)\]\]\]/gi));
   for (const match of typeLinks) {
     text = text.replace(match[0], `[${match[1]}](./${match[1].toLowerCase()})`);
   }
@@ -419,12 +419,20 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
 
         // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
         fileStream.on('finish', async () => {
+          const outputFolderResolved = path.resolve(outputFolder);
           fs.createReadStream(zipFilePath)
             .pipe(unzipper.Parse())
             .on('entry', function (entry) {
               const fileName = entry.path;
               const type = entry.type; // 'Directory' or 'File'
-              const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+              // const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+              const fullPath = path.resolve(outputFolderResolved, fileName);
+              // Ensure the extracted path is within the intended output folder to prevent Zip Slip.
+              if (!fullPath.startsWith(outputFolderResolved + path.sep) && fullPath !== outputFolderResolved) {
+                console.warn('Skipping suspicious zip entry path:', fileName);
+                entry.autodrain();
+                return;
+              }
 
               if (type === 'Directory') {
                 mkdirp.sync(fullPath);
@@ -614,7 +622,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
-  const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
+  const downloadURL = 'https://hl7.org/fhir/R4/fhir-spec.zip';
   const zipFile = path.resolve(__dirname, '..', 'output', 'fhir-spec.zip');
   const outputFolder = path.resolve(__dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');

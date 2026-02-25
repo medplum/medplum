@@ -213,7 +213,7 @@ const readOnlyScope = /^[rs]+$/;
 function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartScope): AccessPolicyResource {
   const result = deepClone(policy);
   if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
-    result.criteria = result.criteria.replace('*', scope.resourceType);
+    result.criteria = result.criteria.replace(/\*/g, scope.resourceType);
   }
 
   if (scope.scope.match(readOnlyScope)) {

@@ -52,6 +52,20 @@ describe('FHIRPath parser', () => {
     expect(result).toStrictEqual([]);
   });
 
+  test('Evaluate FHIRPath Patient.name.given on mixed input array', () => {
+    const patient1: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'] }],
+    };
+    const patient2: Patient = {
+      resourceType: 'Patient',
+      name: [{ given: ['Bob'] }],
+    };
+
+    const result = evalFhirPath('Patient.name.given', [null, patient1, toTypedValue(patient2)]);
+    expect(result).toStrictEqual(['Alice', 'Bob']);
+  });
+
   test('Evaluate FHIRPath Patient.name.given', () => {
     const result = evalFhirPath('Patient.name.given', [
       toTypedValue({
