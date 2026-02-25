@@ -9,9 +9,7 @@ export function BotsPage(): JSX.Element {
   return (
     <>
       <Title>Bots</Title>
-      <Text size="sm">
-        This page lists all ProjectMemberships for Bots. 
-      </Text>
+      <Text size="sm">This page lists all ProjectMemberships for Bots.</Text>
       <ResourceMemberTable
         resourceType="Bot"
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}

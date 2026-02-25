@@ -9,9 +9,7 @@ export function ClientsPage(): JSX.Element {
   return (
     <>
       <Title>ClientApps</Title>
-      <Text size="sm">
-        This page lists all ProjectMemberships for ClientApplications. 
-      </Text>
+      <Text size="sm">This page lists all ProjectMemberships for ClientApplications.</Text>
       <ResourceMemberTable
         resourceType="ClientApplication"
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
