@@ -8,9 +8,9 @@ import { MemberTable } from './MembersTable';
 export function UsersPage(): JSX.Element {
   return (
     <>
-      <Title>Members</Title>
+      <Title>ProjectMemberships by User and Profile Type</Title>
       <Text size="sm">
-        Project members are users with access to this project. Each member has a profile type (Practitioner, Patient, or
+        This page lists all ProjectMemberships by User and Profile Type. Each member has a profile type (Practitioner, Patient, or
         RelatedPerson) that defines their role.{' '}
         <Anchor href="https://www.medplum.com/docs/user-management" target="_blank" rel="noopener noreferrer">
           Learn more about user management.

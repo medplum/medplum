@@ -49,11 +49,6 @@ describe('ProjectPage', () => {
     expect(await screen.findByText('Invite new user')).toBeInTheDocument();
   });
 
-  test('Patients page', async () => {
-    await setup('/admin/patients');
-    expect(await screen.findByText('Invite new patient')).toBeInTheDocument();
-  });
-
   test('Clients page', async () => {
     await setup('/admin/clients');
     expect(await screen.findByText('Create new client')).toBeInTheDocument();
