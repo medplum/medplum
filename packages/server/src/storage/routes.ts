@@ -53,7 +53,7 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
   }
 
   const id = singularize(req.params.id) ?? '';
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
   try {
