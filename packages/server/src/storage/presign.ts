@@ -28,8 +28,6 @@ export async function generatePresignedUrl(binary: Binary, opts?: PresignedUrlOp
   if (config.signingKey) {
     const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
     const signature = createSign('sha256').update(url).sign(privateKey, 'base64');
-
-    console.log('===SIG', signature, result.toString());
     result.searchParams.set('Signature', signature);
   }
 

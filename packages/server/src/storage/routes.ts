@@ -66,7 +66,6 @@ storageRouter.get('/:id{/:versionId}', async (req: Request, res: Response) => {
 
 storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
   const originalUrl = new URL(req.originalUrl, `${req.protocol}://${req.get('host')}`);
-  console.log('===REQ', req.originalUrl, req.headers);
   const signature = originalUrl.searchParams.get('Signature');
   if (!signature) {
     res.sendStatus(401);
@@ -88,7 +87,6 @@ storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
   const publicKey = getPublicKey();
   const isVerified = verifier.verify(publicKey, signature, 'base64');
   if (!isVerified) {
-    console.log('===WTF', signature);
     res.status(401).send('Invalid signature');
     return;
   }
