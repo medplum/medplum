@@ -436,7 +436,7 @@ function getBaseSelectQueryForResourceType(
   if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
   }
-  repo.addSecurityFilters(builder, resourceType);
+  repo.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.SEARCH);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
