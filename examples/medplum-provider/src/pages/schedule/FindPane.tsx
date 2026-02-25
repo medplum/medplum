@@ -15,6 +15,8 @@ import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import { serviceTypesFromSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
 
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
@@ -27,7 +29,7 @@ type FindPaneProps = {
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
 export function FindPane(props: FindPaneProps): JSX.Element {
-  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
+  const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
   const { schedule, range, onSuccess } = props;
   const serviceTypes = useMemo(
@@ -60,7 +62,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
     // Compute search range
     const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
-    const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + 1000 * 60 * 60 * 24 * 7);
+    const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + ONE_WEEK_MS);
     const start = searchStart.toISOString();
     const end = searchEnd.toISOString();
 
@@ -77,13 +79,14 @@ export function FindPane(props: FindPaneProps): JSX.Element {
       .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
       .then(
         (bundle) => {
-          if (!signal.aborted) {
-            if (bundle.entry) {
-              bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-              setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
-            } else {
-              setSlots([]);
-            }
+          if (signal.aborted) {
+            return;
+          }
+          if (bundle.entry) {
+            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
+            setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
+          } else {
+            setSlots([]);
           }
         },
         (error) => {
@@ -104,7 +107,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
   const handleDismiss = useCallback(() => {
     setServiceType(null);
-    setSlots([]);
+    setSlots(EMPTY);
   }, []);
 
   const handleBookSuccess = useCallback(
