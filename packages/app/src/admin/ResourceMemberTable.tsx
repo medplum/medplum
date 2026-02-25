@@ -38,7 +38,7 @@ export function ResourceMemberTable(props: ResourceMemberTableProps): JSX.Elemen
   return (
     <SearchControl
       search={search}
-      onClick={(e) => navigate(`/ProjectMembership/${e.resource.id}`)?.catch(console.error)}
+      onClick={(e) => navigate(`/ProjectMembership/${e.resource.id}`)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar

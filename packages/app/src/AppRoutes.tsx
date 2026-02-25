@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { JSX } from 'react';
-import { Route, Routes } from 'react-router';
+import { Navigate, Route, Routes } from 'react-router';
 import { BotsPage } from './admin/BotsPage';
 import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
@@ -91,6 +91,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="details" element={<ProjectDetailsPage />} />
           <Route path="invite" element={<InvitePage />} />
+          <Route path="patients" element={<Navigate to="/admin/users" replace />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="project" element={<ProjectDetailsPage />} />
           <Route path="secrets" element={<SecretsPage />} />
