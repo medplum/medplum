@@ -146,7 +146,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -177,7 +181,8 @@ describe('WebSocket Subscription', () => {
       while (subActive) {
         await sleep(0);
         subActive =
-          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
+          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
+          1;
       }
       expect(subActive).toStrictEqual(false);
 
@@ -263,7 +268,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -290,7 +299,11 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(false);
         })
@@ -367,7 +380,8 @@ describe('WebSocket Subscription', () => {
             patientActive =
               (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) === 1;
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
+              1;
           }
           expect(patientActive).toStrictEqual(true);
           expect(observationActive).toStrictEqual(true);
@@ -383,7 +397,8 @@ describe('WebSocket Subscription', () => {
             patientActive =
               (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) === 1;
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
+              1;
           }
           expect(patientActive).toStrictEqual(false);
           expect(observationActive).toStrictEqual(false);
@@ -793,7 +808,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'DocumentReference',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -994,7 +1013,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'DocumentReference',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })
@@ -1118,7 +1141,11 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'DocumentReference', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                project.id as string,
+                'DocumentReference',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           expect(subActive).toStrictEqual(true);
         })

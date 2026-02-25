@@ -229,13 +229,12 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
           'hub.events': req.body['hub.events'],
           'hub.reason': 'Subscriber unsubscribed from topic',
         })
-      )
-        .catch((err: Error) => {
-          getLogger().error(
-            `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
-            { topic }
-          );
-        });
+      ).catch((err: Error) => {
+        getLogger().error(
+          `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
+          { topic }
+        );
+      });
       break;
   }
 }
