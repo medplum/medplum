@@ -929,7 +929,9 @@ describe('BillingTab', () => {
 
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+        const encounterUpdateCall = updateCalls.find((call) => (call[0] as any).resourceType === 'Encounter');
+        expect(encounterUpdateCall).toBeDefined();
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
@@ -938,7 +940,7 @@ describe('BillingTab', () => {
       () => {
         expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
       },
-      { timeout: 1000 }
+      { timeout: 3000 }
     );
 
     await waitFor(

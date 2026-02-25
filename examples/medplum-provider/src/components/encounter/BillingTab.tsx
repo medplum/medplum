@@ -63,6 +63,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
+  const claimRef = useRef<WithId<Claim> | undefined>(claim);
+  claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
 
   useEffect(() => {
@@ -70,9 +72,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (!patient) {
         return;
       }
-      const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
-      if (coverageResult.length > 0) {
-        setCoverage(coverageResult[0] as Coverage);
+      const coverageResults = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}&status=active`);
+      if (coverageResults.length > 0) {
+        setCoverage(coverageResults[0]);
+      } else {
+        const selfPayCoverage = await createSelfPayCoverage(medplum, patient);
+        setCoverage(selfPayCoverage);
       }
     };
 
@@ -88,50 +93,48 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setBillingBot(null));
   }, [medplum]);
 
-  const exportClaimAsCMS1500 = async (): Promise<void> => {
-    if (!claim?.id || !patient?.id) {
+  useEffect(() => {
+    const currentClaim = claimRef.current;
+    if (!currentClaim) {
       return;
     }
+    const diagnosisArray = createDiagnosisArray(conditions);
+    const updatedClaim = { ...currentClaim, diagnosis: diagnosisArray };
+    setClaim(updatedClaim);
+    medplum.updateResource(updatedClaim).catch((err) => showErrorNotification(err));
+  }, [conditions, medplum, setClaim]);
 
-    let coverageForClaim = coverage;
-    if (!coverageForClaim) {
-      const coverageResults = await medplum.searchResources(
-        'Coverage',
-        `patient=${getReferenceString(patient)}&status=active`
-      );
-      if (coverageResults === undefined) {
-        showErrorNotification('Failed to fetch coverage information');
-        return;
-      }
-
-      if (coverageResults.length > 0) {
-        coverageForClaim = coverageResults[0];
-      } else {
-        coverageForClaim = await createSelfPayCoverage(medplum, patient);
-      }
+  useEffect(() => {
+    const currentClaim = claimRef.current;
+    if (!currentClaim || !coverage) {
+      return;
     }
-
-    const diagnosisArray = createDiagnosisArray(conditions || []);
-    const claimToExport: Claim = {
-      ...claim,
+    const updatedClaim = {
+      ...currentClaim,
       insurance: [
         {
           sequence: 1,
           focal: true,
-          coverage: { reference: getReferenceString(coverageForClaim) },
+          coverage: { reference: getReferenceString(coverage) },
         },
       ],
-      diagnosis: diagnosisArray,
     };
+    setClaim(updatedClaim);
+    medplum.updateResource(updatedClaim).catch((err) => showErrorNotification(err));
+  }, [coverage, medplum, setClaim]);
+
+  const exportClaimAsCMS1500 = async (): Promise<void> => {
+    if (!claim?.id) {
+      return;
+    }
 
     const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
       resourceType: 'Parameters',
-      parameter: [{ name: 'resource', resource: claimToExport }],
+      parameter: [{ name: 'resource', resource: claim }],
     });
 
     if (response.resourceType === 'Media' && response.content?.url) {
-      const url = response.content.url;
-      window.open(url, '_blank');
+      window.open(response.content.url, '_blank');
     } else {
       showErrorNotification('Failed to download PDF');
     }
@@ -225,33 +228,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
     setSubmitting(true);
     try {
-      let coverageForClaim = coverage;
-      if (!coverageForClaim) {
-        const coverageResults = await medplum.searchResources(
-          'Coverage',
-          `patient=${getReferenceString(patient)}&status=active`
-        );
-        if (coverageResults.length > 0) {
-          coverageForClaim = coverageResults[0];
-        } else {
-          coverageForClaim = await createSelfPayCoverage(medplum, patient);
-        }
-      }
-
-      const diagnosisArray = createDiagnosisArray(currentConditions);
-      const claimToSubmit: Claim = {
-        ...claim,
-        insurance: [
-          {
-            sequence: 1,
-            focal: true,
-            coverage: { reference: getReferenceString(coverageForClaim) },
-          },
-        ],
-        diagnosis: diagnosisArray,
-      };
-
-      const result = await medplum.executeBot(billingBot.id, claimToSubmit, 'application/fhir+json');
+      const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
       showNotification({
         title: 'Claim Submitted',
         message: result?.message || 'Claim successfully submitted to Candid Health',
@@ -262,7 +239,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     } finally {
       setSubmitting(false);
     }
-  }, [billingBot, claim, coverage, medplum, patient]);
+  }, [billingBot, claim, medplum]);
 
   return (
     <Stack gap="md">
