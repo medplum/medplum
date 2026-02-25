@@ -419,12 +419,20 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
 
         // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
         fileStream.on('finish', async () => {
+          const outputFolderResolved = path.resolve(outputFolder);
           fs.createReadStream(zipFilePath)
             .pipe(unzipper.Parse())
             .on('entry', function (entry) {
               const fileName = entry.path;
               const type = entry.type; // 'Directory' or 'File'
-              const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+              // const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+              const fullPath = path.resolve(outputFolderResolved, fileName);
+              // Ensure the extracted path is within the intended output folder to prevent Zip Slip.
+              if (!fullPath.startsWith(outputFolderResolved + path.sep) && fullPath !== outputFolderResolved) {
+                console.warn('Skipping suspicious zip entry path:', fileName);
+                entry.autodrain();
+                return;
+              }
 
               if (type === 'Directory') {
                 mkdirp.sync(fullPath);
