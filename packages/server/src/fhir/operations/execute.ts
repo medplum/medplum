@@ -97,8 +97,8 @@ async function executeOperation(req: Request, res: Response): Promise<OperationO
   // Then read the bot as system user to load extended metadata
   const bot = await ctx.systemRepo.readResource<Bot>('Bot', userBot.id);
 
-  // Check if client accepts streaming
-  const acceptsStreaming = req.header('Accept')?.includes('text/event-stream');
+  // Check if client accepts streaming and bot supports it
+  const acceptsStreaming = bot.streamingEnabled && req.header('Accept')?.includes('text/event-stream');
   let responseStream: BotResponseStream | undefined = undefined;
   if (acceptsStreaming) {
     // Create a BotResponseStream that wraps the Express response.
