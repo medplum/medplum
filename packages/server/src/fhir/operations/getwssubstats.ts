@@ -149,13 +149,14 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
   projects.sort((a, b) => b.subscriptionCount - a.subscriptionCount);
 
   const { repo } = getAuthenticatedContext();
-  for (const project of projects) {
-    try {
-      const projectResource = await repo.readResource<Project>('Project', project.projectId);
-      project.projectName = projectResource.name;
-    } catch {
-      // Project not found or inaccessible; leave projectName undefined
+  const projectRefStrs = projects.map((projectInfo) => ({ reference: `Project/${projectInfo.projectId}` }));
+  const projectResources = await repo.readReferences<Project>(projectRefStrs);
+  for (let i = 0; i < projects.length; i++) {
+    const projectOrError = projectResources[i];
+    if (projectOrError instanceof Error) {
+      continue;
     }
+    projects[i].projectName = projectOrError.name;
   }
 
   const stats: WsSubStats = { projects };
