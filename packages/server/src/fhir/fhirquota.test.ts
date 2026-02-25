@@ -17,23 +17,23 @@ import { createTestProject, deleteRedisKeys } from '../test.setup';
 describe('FHIR Rate Limits', () => {
   let app: Express;
   let config: MedplumServerConfig;
-  let redisConfig: TestRedisConfig;
+  let rateLimitRedisConfig: TestRedisConfig;
   let accessToken: string;
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    redisConfig = config.redis as TestRedisConfig;
+    rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
   });
 
   beforeEach(async () => {
     app = express();
     config.defaultRateLimit = -1;
-    redisConfig.db = 6; // Use different temp Redis instance for these tests
-    redisConfig.keyPrefix = 'fhir-quota:';
+    rateLimitRedisConfig.keyPrefix = 'fhir-quota:';
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRateLimitRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

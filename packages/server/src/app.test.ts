@@ -280,16 +280,16 @@ describe('App', () => {
     const config = await loadTestConfig();
     config.defaultRateLimit = 1;
 
-    const testRedisConfig = config.redis as TestRedisConfig;
-    testRedisConfig.db = 6; // Use different temp Redis instance for this test only
-    testRedisConfig.keyPrefix = 'server-rate-limit:';
+    const rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
+    rateLimitRedisConfig.keyPrefix = 'server-rate-limit:';
     await initApp(app, config);
 
     const res = await request(app).get('/api/');
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRateLimitRedis(), testRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

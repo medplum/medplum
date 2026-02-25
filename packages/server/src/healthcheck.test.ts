@@ -30,13 +30,17 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
     expect(res.body.redis).toBe(true);
-    expect(res.body.redisInstances).toEqual({ default: true });
+    expect(res.body.redisInstances).toEqual({
+      default: true,
+      rateLimit: true,
+      pubsub: true,
+      backgroundJobs: true,
+    });
   });
 
   test('Get /healthcheck with separate Redis instances', async () => {
     const config = await loadTestConfig();
-    config.cacheRedis = { ...config.redis, db: 8 };
-    config.rateLimitRedis = { ...config.redis, db: 9 };
+    config.cacheRedis = { ...config.redis, db: 11 };
     await initApp(app, config);
 
     const res = await request(app).get('/healthcheck');
@@ -45,6 +49,8 @@ describe('Health check', () => {
       default: true,
       cache: true,
       rateLimit: true,
+      pubsub: true,
+      backgroundJobs: true,
     });
   });
 
@@ -57,7 +63,7 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(3);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(6);
   });
 
   test('Get /healthcheck when OTel is enabled and read and write instance are the same', async () => {
@@ -70,6 +76,6 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(2);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(5);
   });
 });
