@@ -91,7 +91,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="clients" element={<ClientsPage />} />
           <Route path="details" element={<ProjectDetailsPage />} />
           <Route path="invite" element={<InvitePage />} />
-          <Route path="members" element={<UsersPage />} />
+          <Route path="users" element={<UsersPage />} />
           <Route path="project" element={<ProjectDetailsPage />} />
           <Route path="secrets" element={<SecretsPage />} />
           <Route path="sites" element={<SitesPage />} />
