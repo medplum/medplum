@@ -19,7 +19,7 @@ import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getCacheRedis, getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -461,21 +461,26 @@ export async function markInMemorySubscriptionsInactive(
   projectId: string,
   subIdsByResourceType: Map<string, string[]>
 ): Promise<void> {
-  let redis: Redis | undefined;
+  let pubsubRedis: Redis | undefined;
+  let cacheRedis: Redis | undefined;
   try {
-    redis = getCacheRedis();
+    pubsubRedis = getPubSubRedis();
+    cacheRedis = getCacheRedis();
   } catch {
-    redis = undefined;
+    pubsubRedis = undefined;
+    cacheRedis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  if (!redis || !subIdsByResourceType.size) {
+  if (!pubsubRedis || !subIdsByResourceType.size) {
     return;
   }
   const refStrs: string[] = [];
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
     refStrs.push(...refs);
-    await redis.hdel(getActiveSubsKey(projectId, resourceType), ...refs);
+    await pubsubRedis.hdel(getActiveSubsKey(projectId, resourceType), ...refs);
   }
-  await redis.del(refStrs);
+  if (cacheRedis) {
+    await cacheRedis.del(refStrs);
+  }
 }

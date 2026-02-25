@@ -27,7 +27,7 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { getCacheRedis, getPubSubRedis } from '../redis';
+import { getPubSubRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -146,7 +146,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
@@ -180,7 +180,7 @@ describe('WebSocket Subscription', () => {
       while (subActive) {
         await sleep(0);
         subActive =
-          (await getCacheRedis().hexists(
+          (await getPubSubRedis().hexists(
             `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
             `Subscription/${patientSubscription?.id}`
           )) === 1;
@@ -269,7 +269,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
@@ -299,7 +299,7 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
@@ -372,18 +372,18 @@ describe('WebSocket Subscription', () => {
         })
         .exec(async () => {
           // Verify both are in their respective resource-type hashes
-          const redis = getCacheRedis();
+          const pubsubRedis = getPubSubRedis();
           let patientActive = false;
           let observationActive = false;
           while (!patientActive || !observationActive) {
             await sleep(0);
             patientActive =
-              (await redis.hexists(
+              (await pubsubRedis.hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSub.id}`
               )) === 1;
             observationActive =
-              (await redis.hexists(
+              (await pubsubRedis.hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
                 `Subscription/${observationSub.id}`
               )) === 1;
@@ -395,18 +395,18 @@ describe('WebSocket Subscription', () => {
         .expectClosed()
         .exec(async () => {
           // After disconnect, both should be removed from their respective hashes
-          const redis = getCacheRedis();
+          const pubsubRedis = getPubSubRedis();
           let patientActive = true;
           let observationActive = true;
           while (patientActive || observationActive) {
             await sleep(0);
             patientActive =
-              (await redis.hexists(
+              (await pubsubRedis.hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${patientSub.id}`
               )) === 1;
             observationActive =
-              (await redis.hexists(
+              (await pubsubRedis.hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Observation`,
                 `Subscription/${observationSub.id}`
               )) === 1;
@@ -524,7 +524,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription.id}`
               )) === 1;
@@ -595,7 +595,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription.id}`
               )) === 1;
@@ -694,12 +694,12 @@ describe('WebSocket Subscription', () => {
           while (!sub1Active || !sub2Active) {
             await sleep(0);
             sub1Active =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription1.id}`
               )) === 1;
             sub2Active =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:Patient`,
                 `Subscription/${subscription2.id}`
               )) === 1;
@@ -831,7 +831,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
@@ -1035,7 +1035,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;
@@ -1162,7 +1162,7 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getCacheRedis().hexists(
+              (await getPubSubRedis().hexists(
                 `medplum:subscriptions:r4:project:${project.id}:active:DocumentReference`,
                 `Subscription/${subscription.id}`
               )) === 1;

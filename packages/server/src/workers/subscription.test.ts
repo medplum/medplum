@@ -41,7 +41,7 @@ import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { getPubSubRedis, getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -2520,8 +2520,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getCacheRedis();
-        const criteria = await redis.hget(
+        const pubsubRedis = getPubSubRedis();
+        const criteria = await pubsubRedis.hget(
           `medplum:subscriptions:r4:project:${wsProject.id}:active:Patient`,
           `Subscription/${subscription.id}`
         );
@@ -2546,8 +2546,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getCacheRedis();
-        const criteria = await redis.hget(
+        const pubsubRedis = getPubSubRedis();
+        const criteria = await pubsubRedis.hget(
           `medplum:subscriptions:r4:project:${wsProject.id}:active:FakeResourceType`,
           `Subscription/${subscription.id}`
         );

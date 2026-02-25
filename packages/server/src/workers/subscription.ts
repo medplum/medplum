@@ -416,9 +416,9 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getCacheRedis();
+  const pubsubRedis = getPubSubRedis();
   const hashKey = getActiveSubsKey(projectId, resource.resourceType);
-  const entries = await redis.hgetall(hashKey);
+  const entries = await pubsubRedis.hgetall(hashKey);
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     try {
@@ -430,7 +430,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     }
   }
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
+    const cacheRedis = getCacheRedis();
+    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
@@ -445,7 +446,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.hdel(hashKey, ...inactiveSubs);
+        await pubsubRedis.hdel(hashKey, ...inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
