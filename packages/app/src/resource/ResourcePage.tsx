@@ -34,6 +34,10 @@ function getTabs(resourceType: string): string[] {
     result.push('Preview');
   }
 
+  if (resourceType === 'ConceptMap') {
+    result.push('Mappings');
+  }
+
   if (resourceType === 'DiagnosticReport' || resourceType === 'MeasureReport') {
     result.push('Report');
   }
