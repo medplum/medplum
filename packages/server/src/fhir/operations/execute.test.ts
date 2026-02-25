@@ -138,13 +138,13 @@ exports.handler = async function (medplum, event) {
 ] as [string, string][];
 
 type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
-const botDefinitions: { name: BotName; system: boolean; code: [string, string] }[] = [
+const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
-  { name: 'streamingBot', system: false, code: botCodes[3] },
-  { name: 'streamingErrorBot', system: false, code: botCodes[4] },
+  { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
+  { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
 ];
 
 describe('Execute', () => {
@@ -176,7 +176,13 @@ describe('Execute', () => {
     project1 = testSetup.project;
     accessToken1 = testSetup.accessToken;
 
-    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<WithId<Bot>> {
+    async function setupBot(
+      name: string,
+      system: boolean,
+      esmCode: string,
+      cjsCode: string,
+      streaming?: boolean
+    ): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
         .set('Content-Type', ContentType.FHIR_JSON)
@@ -188,6 +194,7 @@ describe('Execute', () => {
           runtimeVersion: 'vmcontext',
           code: esmCode,
           system,
+          ...(streaming && { streamingEnabled: true }),
         });
 
       expect(res1.status).toBe(201);
@@ -206,8 +213,8 @@ describe('Execute', () => {
       return bot;
     }
 
-    for (const { name, system, code } of botDefinitions) {
-      bots[name] = await setupBot(name, system, code[0], code[1]);
+    for (const { name, system, code, streaming } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1], streaming);
     }
   });
 
