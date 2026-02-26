@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { Patient } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
-import { MockClient, HomerSimpson } from '@medplum/mock';
-import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Patient } from '@medplum/fhirtypes';
 import type { SlotInfo } from 'react-big-calendar';
+import { MemoryRouter } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { CreateVisit } from './CreateVisit';
 
 describe('CreateVisit', () => {

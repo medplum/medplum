@@ -5,8 +5,8 @@ import { Notifications } from '@mantine/notifications';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MedicationsPage } from './MedicationsPage';
 
 function createDoseSpotMembership(): ReturnType<MockClient['getProjectMembership']> {

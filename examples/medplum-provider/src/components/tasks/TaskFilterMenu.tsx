@@ -1,18 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Menu, ActionIcon, Text, Flex } from '@mantine/core';
+import { ActionIcon, Flex, Menu, Text } from '@mantine/core';
+import type { CodeableConcept, Patient, Task } from '@medplum/fhirtypes';
 import {
-  IconFilter,
-  IconChevronRight,
-  IconUserCheck,
-  IconStethoscope,
   IconCheck,
+  IconChevronRight,
   IconExclamationCircle,
+  IconFilter,
+  IconStethoscope,
+  IconUserCheck,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import type { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
-import { TaskFilterType, TASK_STATUSES, TASK_PRIORITIES } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { TASK_PRIORITIES, TASK_STATUSES, TaskFilterType } from './TaskFilterMenu.utils';
 
 interface TaskFilterMenuProps {
   statuses?: Task['status'][];

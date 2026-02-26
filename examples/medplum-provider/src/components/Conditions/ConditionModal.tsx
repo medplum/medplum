@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
 import { Group, Stack } from '@mantine/core';
-import { useCallback, useState } from 'react';
-import type { JSX } from 'react';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import type { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
+import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 
 export interface ConditionDialogProps {
