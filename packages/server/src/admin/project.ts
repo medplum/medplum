@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden, getReferenceString } from '@medplum/core';
-import type { ProjectMembership } from '@medplum/fhirtypes';
+import { allOk, badRequest, forbidden, getReferenceString, Operator } from '@medplum/core';
+import type { ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -132,6 +132,41 @@ projectAdminRouter.delete('/:projectId/members/:membershipId', async (req: Reque
     sendOutcome(res, badRequest('Cannot delete the owner of the project'));
     return;
   }
-  await ctx.repo.deleteResource('ProjectMembership', membershipId);
+
+  const systemRepo = ctx.systemRepo;
+  const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+
+  // Check if the user is project-scoped (has a project field matching the current project)
+  if (user.project?.reference === getReferenceString(ctx.project)) {
+    // Wrap search and delete operations in a transaction
+    await systemRepo.withTransaction(async () => {
+      // Check if there are other ProjectMemberships for this user
+      // (search before deleting to get accurate count)
+      const otherMemberships = await systemRepo.searchResources<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        filters: [
+          {
+            code: 'user',
+            operator: Operator.EQUALS,
+            value: getReferenceString(user),
+          },
+        ],
+        count: 2,
+      });
+
+      // Delete the ProjectMembership
+      await systemRepo.deleteResource('ProjectMembership', membershipId);
+
+      // Delete the User resource if it's project-scoped and this was their only membership
+      // (project-scoped users should only have memberships in one project)
+      if (otherMemberships.length === 1 && otherMemberships[0].id === membershipId) {
+        await systemRepo.deleteResource('User', user.id);
+      }
+    });
+  } else {
+    // User is not project-scoped, just delete the ProjectMembership
+    await ctx.repo.deleteResource('ProjectMembership', membershipId);
+  }
+
   sendOutcome(res, allOk);
 });

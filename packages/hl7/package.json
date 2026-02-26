@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "5.0.15",
+  "version": "5.1.0",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
@@ -56,11 +56,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "5.0.15",
+    "@medplum/core": "5.1.0",
     "iconv-lite": "0.7.2"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "5.0.15"
+    "@medplum/fhirtypes": "5.1.0"
   },
   "engines": {
     "node": "^22.18.0 || >=24.2.0"

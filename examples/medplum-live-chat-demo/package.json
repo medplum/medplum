@@ -1,6 +1,6 @@
 {
   "name": "medplum-live-chat-demo",
-  "version": "5.0.15",
+  "version": "5.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,14 +16,14 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "8.3.14",
-    "@mantine/hooks": "8.3.14",
-    "@mantine/notifications": "8.3.14",
-    "@medplum/core": "5.0.15",
-    "@medplum/eslint-config": "5.0.15",
-    "@medplum/fhirtypes": "5.0.15",
-    "@medplum/react": "5.0.15",
-    "@tabler/icons-react": "3.36.1",
+    "@mantine/core": "8.3.15",
+    "@mantine/hooks": "8.3.15",
+    "@mantine/notifications": "8.3.15",
+    "@medplum/core": "5.1.0",
+    "@medplum/eslint-config": "5.1.0",
+    "@medplum/fhirtypes": "5.1.0",
+    "@medplum/react": "5.1.0",
+    "@tabler/icons-react": "3.37.1",
     "@types/node": "22.19.11",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
