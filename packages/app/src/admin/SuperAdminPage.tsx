@@ -35,6 +35,7 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
+import { WsSubStatsWidget } from './WsSubStatsWidget';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -267,7 +268,10 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Explain Search</Title>
       <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
-
+      <Divider my="lg" />
+      <Title order={2}>WebSocket Subscription Stats</Title>
+      <p>View active WebSocket subscription statistics by project, resource type, and criteria.</p>
+      <WsSubStatsWidget />
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>

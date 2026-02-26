@@ -9,11 +9,11 @@ import { runInAsyncContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -35,7 +35,7 @@ const jobName = 'SetAccountsJobData';
 
 export const initSetAccountsWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SetAccountsJobData>(queueName, {
@@ -83,17 +83,14 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
   const { resourceType, id, accounts } = job.data;
   const { login, project, membership } = job.data.authState;
-  const systemRepo = getSystemRepo();
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
 
-  try {
-    const result = await setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
-    await exec.completeJob(repo, result);
-  } catch (err) {
-    await exec.failJob(repo, err as Error);
-  }
+  const exec = new AsyncJobExecutor(repo, job.data.asyncJob);
+  await exec.startAsync(async () => {
+    return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });
+  });
 }

@@ -4,7 +4,7 @@
 
 ### On-Prem Medplum Agent
 
-We offer a developer-first alternative to Mirth, Corepoint, site-to-site VPN tunnels, and other HL7 connection solutions called the Medplum Agent. For FAQ's regarding the Medplum Agent, see [this page](/solutions/interoperability/agent-faqs). For information on how to install and use the Medplum agent, see our [documentation](/docs/agent). 
+We offer a developer-first alternative to Mirth, Corepoint, site-to-site VPN tunnels, and other HL7 connection solutions called the Medplum Agent. For FAQ's regarding the Medplum Agent, see [this page](/solutions/agent). For information on how to install and use the Medplum agent, see our [documentation](/docs/agent). 
 
 ### SFTP Server Integrations 
 

@@ -14,7 +14,7 @@ import type { ArrayColumnPaddingConfig } from '../config/types';
 import type { TokenColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation } from './searchparameter';
 import type { Expression, SelectQuery } from './sql';
-import { Column, Condition, Disjunction, Negation, TypedCondition } from './sql';
+import { Column, Condition, Disjunction, Negation, truncateTextColumn, TypedCondition } from './sql';
 import type { Token } from './tokens';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent } from './tokens';
 
@@ -119,7 +119,7 @@ export function buildTokenColumns(
 
   columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
-  columns[impl.sortColumnName] = sortColumnValue;
+  columns[impl.sortColumnName] = truncateTextColumn(sortColumnValue);
 }
 
 function addHashedToken(tokenSet: Set<string>, token: string): void {

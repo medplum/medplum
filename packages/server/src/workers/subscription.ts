@@ -42,18 +42,26 @@ import { executeBot } from '../bots/execute';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
-import type { Repository, ResendSubscriptionsOptions } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getRedis, reconnectOnError } from '../redis';
+import { getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  findProjectMembership,
+  getBullmqRedisConnectionOptions,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -120,7 +128,7 @@ const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
@@ -289,7 +297,7 @@ export async function addSubscriptionJobs(
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsEvents = [] as [Resource, string, SubEventsOptions][];
+  const wsSubEvents = [] as [string, SubEventsOptions][];
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
@@ -320,7 +328,7 @@ export async function addSubscriptionJobs(
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id, { includeResource: true }]);
+        wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
@@ -339,8 +347,8 @@ export async function addSubscriptionJobs(
     }
   }
 
-  if (wsEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
+  if (wsSubEvents.length) {
+    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -388,7 +396,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getSystemRepo();
+  const systemRepo = getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -405,15 +413,9 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
-  const hashKey = `medplum:subscriptions:r4:project:${projectId}:active:v2`;
-  const entries = await redis.hgetall(hashKey);
+  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
-    const criteriaResourceType = criteria.split('?')[0];
-    if (criteriaResourceType !== resource.resourceType) {
-      continue;
-    }
     try {
       if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
         redisOnlySubRefStrs.push(ref);
@@ -423,7 +425,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     }
   }
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
+    const cacheRedis = getCacheRedis();
+    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
@@ -438,7 +441,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.hdel(hashKey, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, ...inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
@@ -459,12 +462,13 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
  * @param job - The subscription job details.
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
+  let systemRepo: SystemRepository;
   let subscription: WithId<Subscription> | undefined;
   let rewrittenResource: Resource;
 
   try {
-    const systemRepo = getSystemRepo();
     const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
+    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
     const logger = getLogger();
     const logFn = verbose ? logger.info : logger.debug;
 
@@ -520,7 +524,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // Errors in this try/catch are considered to be issues in the client's rest hook or bot
     // and should trigger retries according to the subscription's max attempts
     if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
+      await execBot(systemRepo, job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     } else {
       await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
@@ -530,7 +534,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 }
 
 async function tryGetSubscription(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   subscriptionId: string,
   channelType: SubscriptionJobData['channelType']
 ): Promise<WithId<Subscription> | undefined> {
@@ -552,7 +556,7 @@ async function tryGetSubscription(
 }
 
 async function tryGetCurrentVersion<T extends Resource = Resource>(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   resourceType: T['resourceType'],
   id: string
 ): Promise<T | undefined> {
@@ -598,6 +602,12 @@ async function sendRestHook(
 
   const fetchStartTime = Date.now();
   let fetchEndTime: number;
+  let systemRepo: SystemRepository;
+  if (subscription.meta?.project) {
+    systemRepo = getProjectSystemRepo(subscription.meta.project);
+  } else {
+    systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
+  }
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
@@ -606,6 +616,7 @@ async function sendRestHook(
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createSubscriptionAuditEvent(
+      systemRepo,
       resource,
       requestTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
@@ -620,6 +631,7 @@ async function sendRestHook(
     fetchEndTime = Date.now();
     log.info('Subscription exception: ' + ex);
     await createSubscriptionAuditEvent(
+      systemRepo,
       resource,
       requestTime,
       AuditEventOutcome.MinorFailure,
@@ -696,6 +708,7 @@ function buildRestHookHeaders(
 
 /**
  * Executes a Bot subscription.
+ * @param systemRepo - The system repository.
  * @param job - The subscription job.
  * @param subscription - The subscription.
  * @param resource - The resource that triggered the subscription.
@@ -703,6 +716,7 @@ function buildRestHookHeaders(
  * @param requestTime - The request time.
  */
 async function execBot(
+  systemRepo: SystemRepository,
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
@@ -718,7 +732,6 @@ async function execBot(
   }
 
   // URL should be a Bot reference string
-  const systemRepo = getSystemRepo();
   const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = subscription.meta?.project as string;

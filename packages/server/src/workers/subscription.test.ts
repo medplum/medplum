@@ -36,11 +36,13 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext } from '../context';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { getActiveSubscriptions } from '../pubsub';
+import { getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -51,7 +53,7 @@ jest.mock('node-fetch');
 const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
-  const systemRepo = getSystemRepo();
+  let systemRepo: SystemRepository;
   let repo: Repository;
   let botRepo: Repository;
   let mockLambdaClient: AwsClientStub<LambdaClient>;
@@ -82,6 +84,7 @@ describe('Subscription Worker', () => {
     );
 
     repo = _repo;
+    systemRepo = repo.getSystemRepo();
     superAdminRepo = new Repository({ extendedMode: true, superAdmin: true, author: createReference(client) });
 
     // Create another project, this one with bots enabled
@@ -2055,11 +2058,12 @@ describe('Subscription Worker', () => {
     let rejectNotExpected: ((err: Error) => void) | undefined;
 
     beforeAll(async () => {
-      subscriber = getRedisSubscriber();
-      subscriber.on('message', (_channel, argsArr) => {
-        const parsedArgsArr = JSON.parse(argsArr) as [Resource, string, SubEventsOptions][];
+      subscriber = getPubSubRedisSubscriber();
+      subscriber.on('message', (_channel, payload) => {
+        const parsed = JSON.parse(payload) as { resource: Resource; events: [string, SubEventsOptions][] };
+        const args: EventNotificationArgs<Resource> = [parsed.resource, parsed.events[0][0], parsed.events[0][1]];
         if (resolveExpected) {
-          resolveExpected(parsedArgsArr[0]);
+          resolveExpected(args);
         } else if (rejectNotExpected) {
           rejectNotExpected(new Error('Received subscription notification when not expected'));
           rejectNotExpected = undefined;
@@ -2517,12 +2521,30 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getRedis();
-        const criteria = await redis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:v2`,
-          `Subscription/${subscription.id}`
-        );
-        expect(criteria).toStrictEqual('Patient?name=Alice');
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toStrictEqual('Patient?name=Alice');
+      }));
+
+    test('Invalid criteria resource type is not added to Redis hash', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+          project: { name: 'WebSocket Subs Invalid Criteria Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'FakeResourceType?name=Alice',
+          channel: {
+            type: 'websocket',
+          },
+        });
+        expect(subscription).toBeDefined();
+
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'FakeResourceType');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toBeUndefined();
       }));
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>

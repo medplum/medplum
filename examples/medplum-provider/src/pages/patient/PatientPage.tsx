@@ -4,6 +4,7 @@ import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary, useMedplum } from '@medplum/react';
+import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
 import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
@@ -98,6 +99,7 @@ export function PatientPage(): JSX.Element {
               onRequestLabs={() => {
                 setIsLabsModalOpen(true);
               }}
+              pharmacyDialogComponent={DoseSpotPharmacyDialog}
             />
           </ScrollArea>
         </div>

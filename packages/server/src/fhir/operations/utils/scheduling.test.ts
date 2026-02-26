@@ -142,6 +142,35 @@ describe('resolveAvailability', () => {
     ]);
   });
 
+  // regression test for https://github.com/medplum/medplum/issues/8417
+  test('when the request starts early in a UTC day', () => {
+    const schedulingParameters: SchedulingParameters = {
+      availability: [
+        {
+          dayOfWeek: ['tue', 'wed', 'thu'],
+          timeOfDay: ['20:00:00'],
+          duration: 360,
+        },
+      ],
+      duration: 60,
+      bufferBefore: 0,
+      bufferAfter: 0,
+      alignmentInterval: 60,
+      alignmentOffset: 0,
+      serviceType: [],
+    };
+
+    const range = {
+      start: new Date('2026-01-14T19:00:00.000-05:00'), // Wed Jan 14, 7pm ET (which is Jan 15, 12am UTC)
+      end: new Date('2026-01-15T05:00:00.000-05:00'), // Thu, Jan 15 5am ET
+    };
+
+    expect(resolveAvailability(schedulingParameters, range, 'America/New_York')).toEqual([
+      // Wed Jan 14 20:00 ET - Thu Jan 15, 2:00am ET
+      { start: new Date('2026-01-15T01:00:00.000Z'), end: new Date('2026-01-15T07:00:00.000Z') },
+    ]);
+  });
+
   test('on days with DST transitions', () => {
     const schedulingParameters: SchedulingParameters = {
       availability: [

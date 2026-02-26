@@ -9,7 +9,6 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, withTestContext } from '../../test.setup';
 import type { Repository } from '../repo';
-import { getSystemRepo } from '../repo';
 
 describe('$refresh-reference-display', () => {
   const app = express();
@@ -23,7 +22,6 @@ describe('$refresh-reference-display', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    systemRepo = getSystemRepo();
     ({ repo, accessToken, client, accessPolicy } = await createTestProject({
       withAccessToken: true,
       withRepo: true,
@@ -39,6 +37,7 @@ describe('$refresh-reference-display', () => {
         ],
       },
     }));
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {

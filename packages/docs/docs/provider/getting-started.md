@@ -26,7 +26,7 @@ Practitioners represent healthcare providers, clinicians, and other staff member
    - On the Users page, click the "Invite New User" link at the bottom of the page
    - Choose "Practitioner" for this user's Role and add the other required information
    - If applicable, choose an Access Policy and/or check if you'd like for this user to be an "Admin" or "Project Scoped" (only added to this project)
-     - See out [User Management Guide](https://www.medplum.com/docs/user-management) for details on this
+     - See out [User Management Guide](/docs/user-management) for details on this
    - Check "Send email" if you'd like to send an automated email invite to this practitioner (recommended)
    - Click the "Invite" button to add and invite this practitioner
 
@@ -45,4 +45,4 @@ The data import feature allows you to transfer existing patient records, medical
 
 ### How to Import Data
 
-See [Importing Sample Data](https://www.medplum.com/docs/tutorials/importing-sample-data) for details about formatting and batch-uploading data.
+See [Importing Sample Data](/docs/tutorials/importing-sample-data) for details about formatting and batch-uploading data.

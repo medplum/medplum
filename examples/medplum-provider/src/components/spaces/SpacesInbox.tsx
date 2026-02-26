@@ -19,7 +19,7 @@ import type { Message } from '../../types/spaces';
 import { loadConversationMessages } from '../../utils/spacePersistence';
 import { processMessage } from '../../utils/spaceMessaging';
 import { HistoryList } from './HistoryList';
-import { ChatInput } from '../../pages/spaces/ChatInput';
+import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import classes from './SpacesInbox.module.css';
 import cx from 'clsx';
@@ -38,7 +38,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [hasStarted, setHasStarted] = useState(false);
   const [currentFhirRequest, setCurrentFhirRequest] = useState<string | undefined>();
   const [currentTopicId, setCurrentTopicId] = useState<string | undefined>(topic?.id);

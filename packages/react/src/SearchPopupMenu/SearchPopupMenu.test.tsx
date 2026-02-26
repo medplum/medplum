@@ -560,6 +560,73 @@ describe('SearchPopupMenu', () => {
     }
   });
 
+  test('Token submenu prompt', async () => {
+    const searchParam = globalSchema.types['MedicationRequest'].searchParams?.['code'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'MedicationRequest',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
+      { text: 'Text contains...', operator: Operator.TEXT },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      const optionButton = await screen.findByText(option.text);
+      await act(async () => {
+        fireEvent.click(optionButton);
+      });
+
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
+        code: 'code',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('URI submenu prompt', async () => {
+    const searchParam = globalSchema.types['Device'].searchParams?.['url'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'Device',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      const optionButton = await screen.findByText(option.text);
+      await act(async () => {
+        fireEvent.click(optionButton);
+      });
+
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
+        code: 'url',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
   test('Renders meta.versionId', async () => {
     const search: SearchRequest = {
       resourceType: 'Patient',
