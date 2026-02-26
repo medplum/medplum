@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
-import { useState, useMemo } from 'react';
-import type { JSX } from 'react';
 import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
+import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
-import classes from './CreateVisit.module.css';
+import type { JSX } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
+import type { Range } from '../../types/scheduling';
 import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
-import { useNavigate } from 'react-router';
-import { showNotification } from '@mantine/notifications';
-import type { Range } from '../../types/scheduling';
+import classes from './CreateVisit.module.css';
 
 interface CreateVisitProps {
   appointmentSlot: Range | undefined;

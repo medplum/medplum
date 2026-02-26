@@ -4,10 +4,10 @@ import { getDisplayString, getReferenceString } from '@medplum/core';
 import type { Patient, Resource } from '@medplum/fhirtypes';
 import type { LabOrderInputErrors, LabOrganization } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
-import { AsyncAutocomplete } from '@medplum/react';
 import type { AsyncAutocompleteOption } from '@medplum/react';
-import { useEffect } from 'react';
+import { AsyncAutocomplete } from '@medplum/react';
 import type { JSX } from 'react';
+import { useEffect } from 'react';
 
 export type PractitionerInputProps = {
   patient: Patient | undefined;

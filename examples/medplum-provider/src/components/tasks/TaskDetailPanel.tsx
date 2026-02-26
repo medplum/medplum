@@ -4,13 +4,13 @@ import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useResource } from '@medplum/react';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
+import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
+import classes from './TaskBoard.module.css';
 import { TaskInputNote } from './TaskInputNote';
 import { TaskProperties } from './TaskProperties';
-import classes from './TaskBoard.module.css';
-import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskDetailPanelProps {
   task: Task | Reference<Task>;

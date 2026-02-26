@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, Textarea, Select, Button, Group, Stack } from '@mantine/core';
+import { Button, Group, Paper, Select, Stack, Textarea } from '@mantine/core';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 

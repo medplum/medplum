@@ -1,28 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import React, { useEffect, useState } from 'react';
 import {
-  Container,
-  Title,
-  Paper,
-  Button,
-  Modal,
-  Group,
   Box,
-  TextInput,
-  Stack,
+  Button,
+  Container,
   Divider,
+  Group,
   Group as MantineGroup,
+  Modal,
+  Paper,
+  Stack,
+  TextInput,
+  Title,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import type { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
-import { IconPlus } from '@tabler/icons-react';
-import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';
-import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
-import { showErrorNotification } from '../../utils/notifications';
+import { IconPlus } from '@tabler/icons-react';
+import React, { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { showErrorNotification } from '../../utils/notifications';
+import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 
 /**
  * This is a demo component for how you could display your favorite Medications

@@ -14,9 +14,9 @@ import {
   Text,
   Title,
 } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { convertToTransactionBundle } from '@medplum/core';
 import type { Bundle, BundleEntry } from '@medplum/fhirtypes';
-import { showNotification } from '@mantine/notifications';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import {
   IconApps,
@@ -32,8 +32,8 @@ import {
   IconMail,
   IconUser,
 } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useState } from 'react';
 import patientBundleData from '../../data/patient-david-james-williams.json';
 import visitBundleData from '../../data/simple-initial-visit-bundle.json';
 import { showErrorNotification } from '../../utils/notifications';
