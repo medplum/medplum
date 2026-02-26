@@ -27,14 +27,16 @@ describe('encounter utils', () => {
 
   describe('createEncounter', () => {
     test('creates encounter and related resources', async () => {
-      // Capture createResource calls and respond with deterministic IDs
+      const executeBatchSpy = vi.spyOn(medplum, 'executeBatch').mockResolvedValue({
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [
+          { resource: { resourceType: 'Appointment', id: 'appt-1', status: 'booked' } },
+          { resource: { resourceType: 'Encounter', id: 'enc-1', status: 'planned' } },
+          { resource: { resourceType: 'ClinicalImpression', id: 'ci-1', status: 'in-progress' } },
+        ],
+      } as any);
       const createResourceSpy = vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
-        if (resource.resourceType === 'Appointment') {
-          return { ...resource, id: 'appt-1' };
-        }
-        if (resource.resourceType === 'Encounter') {
-          return { ...resource, id: 'enc-1' };
-        }
         if (resource.resourceType === 'ChargeItem') {
           return { ...resource, id: `charge-${Math.random()}` };
         }
@@ -95,7 +97,17 @@ describe('encounter utils', () => {
 
       expect(encounter.status).toBe('planned');
       expect(encounter.id).toBe('enc-1');
-      expect(createResourceSpy).toHaveBeenCalledWith(expect.objectContaining({ resourceType: 'Appointment' }));
+      expect(executeBatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: expect.arrayContaining([
+            expect.objectContaining({ resource: expect.objectContaining({ resourceType: 'Appointment' }) }),
+            expect.objectContaining({ resource: expect.objectContaining({ resourceType: 'Encounter' }) }),
+            expect.objectContaining({ resource: expect.objectContaining({ resourceType: 'ClinicalImpression' }) }),
+          ]),
+        })
+      );
       expect(postSpy).toHaveBeenCalled();
       expect(searchSpy).toHaveBeenCalledWith('Task', expect.objectContaining({ encounter: 'Encounter/enc-1' }));
       expect(readReferenceSpy).toHaveBeenCalledWith({ reference: 'ServiceRequest/sr-1' });

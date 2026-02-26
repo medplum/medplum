@@ -4,6 +4,8 @@ import type { MedplumClient, WithId } from '@medplum/core';
 import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Appointment,
+  Bundle,
+  BundleEntry,
   ChargeItem,
   ClinicalImpression,
   Coding,
@@ -11,9 +13,28 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  Resource,
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
+import { v4 as uuidv4 } from 'uuid';
+
+type BundleEntryify<T extends Resource[]> = { [K in keyof T]: BundleEntry<T[K]> };
+type TransactionResponseBundle<T extends Resource[]> = Omit<Bundle, 'entry'> & {
+  entry: BundleEntryify<T>;
+  type: 'transaction-response';
+};
+
+function transact<T extends Resource[]>(
+  medplum: MedplumClient,
+  entry: BundleEntryify<T>
+): Promise<TransactionResponseBundle<T>> {
+  return medplum.executeBatch({
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry,
+  }) as Promise<TransactionResponseBundle<T>>;
+}
 
 export async function createEncounter(
   medplum: MedplumClient,
@@ -23,48 +44,73 @@ export async function createEncounter(
   patient: Patient,
   planDefinition: PlanDefinition
 ): Promise<Encounter> {
-  const appointment = await medplum.createResource({
-    resourceType: 'Appointment',
-    status: 'booked',
-    start: start.toISOString(),
-    end: end.toISOString(),
-    participant: [
-      {
-        actor: createReference(patient),
-        status: 'accepted',
-      },
-      {
-        actor: createReference(medplum.getProfile() as Practitioner),
-        status: 'accepted',
-      },
-    ],
-  });
-
-  const encounter: Encounter = await medplum.createResource({
-    resourceType: 'Encounter',
-    status: 'planned',
-    statusHistory: [],
-    classHistory: [],
-    class: classification,
-    subject: createReference(patient),
-    appointment: [createReference(appointment)],
-    participant: [
-      {
-        individual: createReference(medplum.getProfile() as Practitioner),
-      },
-    ],
-  });
-
-  const clinicalImpressionData: ClinicalImpression = {
-    resourceType: 'ClinicalImpression',
-    status: 'in-progress',
-    description: 'Initial clinical impression',
-    subject: createReference(patient),
-    encounter: createReference(encounter),
-    date: new Date().toISOString(),
+  const appointmentEntry: BundleEntry<Appointment> = {
+    fullUrl: `urn:uuid:${uuidv4()}`,
+    request: {
+      method: 'POST',
+      url: 'Appointment',
+    },
+    resource: {
+      resourceType: 'Appointment',
+      status: 'booked',
+      start: start.toISOString(),
+      end: end.toISOString(),
+      participant: [
+        {
+          actor: createReference(patient),
+          status: 'accepted',
+        },
+        {
+          actor: createReference(medplum.getProfile() as Practitioner),
+          status: 'accepted',
+        },
+      ],
+    },
   };
 
-  await medplum.createResource(clinicalImpressionData);
+  const encounterEntry: BundleEntry<Encounter> = {
+    fullUrl: `urn:uuid:${uuidv4()}`,
+    request: {
+      method: 'POST',
+      url: 'Encounter',
+    },
+    resource: {
+      resourceType: 'Encounter',
+      status: 'planned',
+      statusHistory: [],
+      classHistory: [],
+      class: classification,
+      subject: createReference(patient),
+      appointment: [{ reference: appointmentEntry.fullUrl }],
+      participant: [
+        {
+          individual: createReference(medplum.getProfile() as Practitioner),
+        },
+      ],
+    },
+  };
+
+  const clinicalImpressionEntry: BundleEntry<ClinicalImpression> = {
+    request: {
+      method: 'POST',
+      url: 'ClinicalImpression',
+    },
+    resource: {
+      resourceType: 'ClinicalImpression',
+      status: 'in-progress',
+      description: 'Initial clinical impression',
+      subject: createReference(patient),
+      encounter: { reference: encounterEntry.fullUrl },
+      date: new Date().toISOString(),
+    },
+  };
+
+  const result = await transact(medplum, [appointmentEntry, encounterEntry, clinicalImpressionEntry]);
+
+  const encounter = result.entry[1].resource;
+  if (!encounter) {
+    throw new Error('Transaction succeeded but did not return an encounter resource in position 1');
+  }
 
   await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinition.id as string, '$apply'), {
     resourceType: 'Parameters',
