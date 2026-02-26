@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Title } from '@mantine/core';
-import { IconUserPlus } from '@tabler/icons-react';
 import { MedplumLink } from '@medplum/react';
+import { IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { MemberTable } from './MembersTable';
 
