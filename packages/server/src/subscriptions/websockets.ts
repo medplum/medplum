@@ -150,6 +150,13 @@ async function setupSubscriptionHandler(): Promise<void> {
           subIds.push(deadSubscriptionIds[i]);
         }
         for (const [projectId, subIdsByResourceType] of projectToSubsByResourceType) {
+          for (const [resourceType, subIds] of subIdsByResourceType) {
+            globalLogger.info('[WS] Cleaning up dead subscriptions with invalid token', {
+              count: subIds.length,
+              projectId,
+              resourceType,
+            });
+          }
           await markInMemorySubscriptionsInactive(projectId, subIdsByResourceType);
         }
       } catch (err) {
