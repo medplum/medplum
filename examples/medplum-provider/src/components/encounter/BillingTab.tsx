@@ -72,7 +72,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (!patient) {
         return;
       }
-      const coverageResults = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}&status=active`);
+      const coverageResults = await medplum.searchResources(
+        'Coverage',
+        `patient=${getReferenceString(patient)}&status=active`
+      );
       if (coverageResults.length > 0) {
         setCoverage(coverageResults[0]);
       } else {
