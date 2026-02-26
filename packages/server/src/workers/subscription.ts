@@ -414,10 +414,21 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     ],
   });
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
+  const cachedCriteriaEvalMap = new Map<string, boolean>();
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     try {
-      if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
+      const cached = cachedCriteriaEvalMap.get(criteria);
+      let matches: boolean;
+
+      if (cached !== undefined) {
+        matches = cached;
+      } else {
+        matches = matchesSearchRequest(resource, parseSearchRequest(criteria));
+        cachedCriteriaEvalMap.set(criteria, matches);
+      }
+
+      if (matches) {
         redisOnlySubRefStrs.push(ref);
       }
     } catch (err) {
