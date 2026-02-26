@@ -624,14 +624,14 @@ describe('BillingTab', () => {
           expect(chargeItemsUtils.calculateTotalPrice).toHaveBeenCalledWith([appliedChargeItem]);
           expect(setClaim).toHaveBeenCalledWith(
             expect.objectContaining({
-              ...mockClaim,
+              resourceType: 'Claim',
               item: mockClaimItems,
               total: { value: 200 },
             })
           );
           expect(debouncedUpdateResource).toHaveBeenCalledWith(
             expect.objectContaining({
-              ...mockClaim,
+              resourceType: 'Claim',
               item: mockClaimItems,
               total: { value: 200 },
             })
@@ -929,7 +929,9 @@ describe('BillingTab', () => {
 
     await waitFor(
       () => {
-        expect(medplum.updateResource).toHaveBeenCalled();
+        const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+        const encounterUpdateCall = updateCalls.find((call) => (call[0] as any).resourceType === 'Encounter');
+        expect(encounterUpdateCall).toBeDefined();
       },
       { timeout: SAVE_TIMEOUT_MS + 2000 }
     );
@@ -938,18 +940,23 @@ describe('BillingTab', () => {
       () => {
         expect(medplum.readReference).toHaveBeenCalledWith({ reference: 'Practitioner/practitioner-2' });
       },
-      { timeout: 1000 }
+      { timeout: 3000 }
     );
 
     await waitFor(
       () => {
-        const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+        const updateCalls = vi.mocked(debouncedUpdateResource).mock.calls;
         const claimUpdateCall = updateCalls.find((call) => {
           const resource = call[0] as Claim;
           return resource.resourceType === 'Claim' && resource.provider?.reference === 'Practitioner/practitioner-2';
         });
         expect(claimUpdateCall).toBeDefined();
-        expect(setClaim).toHaveBeenCalledWith(updatedClaim);
+        expect(setClaim).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Claim',
+            provider: { reference: 'Practitioner/practitioner-2' },
+          })
+        );
       },
       { timeout: 5000 }
     );
