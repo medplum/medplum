@@ -50,6 +50,7 @@ import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
 import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
+import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -390,6 +391,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('POST', '/$get-ws-sub-stats', getWsSubStatsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
