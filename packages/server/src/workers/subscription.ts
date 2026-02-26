@@ -416,7 +416,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 
   const redisOnlySubRefStrs: string[] = [];
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
-  if (entries.length) {
+  if (Object.keys(entries).length) {
     const cachedCriteriaEvalMap = new Map<string, boolean>();
     const wsEvalStartTime = Date.now();
     for (const [ref, criteria] of Object.entries(entries)) {
