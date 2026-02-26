@@ -96,39 +96,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setBillingBot(null));
   }, [medplum]);
 
-  useEffect(() => {
-    const currentClaim = claimRef.current;
-    if (!currentClaim) {
-      return;
-    }
-    const updatedClaim = {
-      ...currentClaim,
-      diagnosis: createDiagnosisArray(conditions),
-      ...(coverage && {
-        insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
-      }),
-    };
-    setClaim(updatedClaim);
-    debouncedUpdateResource(updatedClaim).catch((err) => showErrorNotification(err));
-  }, [conditions, coverage, claim?.id, setClaim, debouncedUpdateResource]);
-
-  const exportClaimAsCMS1500 = async (): Promise<void> => {
-    if (!claim?.id) {
-      return;
-    }
-
-    const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
-      resourceType: 'Parameters',
-      parameter: [{ name: 'resource', resource: claim }],
-    });
-
-    if (response.resourceType === 'Media' && response.content?.url) {
-      window.open(response.content.url, '_blank');
-    } else {
-      showErrorNotification('Failed to download PDF');
-    }
-  };
-
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
       const updatedEncounter = { ...encounter, diagnosis };
@@ -139,15 +106,23 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   );
 
   // Creates the claim if it doesn't exist yet, otherwise updates it with the given patch.
+  // Always folds in current diagnosis and insurance so every save is complete.
   // Pass creationArgs to override encounter/practitioner/items used at creation time.
   const syncClaim = useCallback(
     async (
-      patch: Partial<Claim>,
+      patch: Partial<Claim> = {},
       creationArgs?: { enc?: WithId<Encounter>; prac?: WithId<Practitioner>; items?: WithId<ChargeItem>[] }
     ): Promise<void> => {
       const currentClaim = claimRef.current;
       if (currentClaim) {
-        const updatedClaim = { ...currentClaim, ...patch };
+        const updatedClaim = {
+          ...currentClaim,
+          diagnosis: createDiagnosisArray(conditionsRef.current),
+          ...(coverage && {
+            insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
+          }),
+          ...patch,
+        };
         setClaim(updatedClaim);
         debouncedUpdateResource(updatedClaim).catch((err) => showErrorNotification(err));
         return;
@@ -163,8 +138,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         setClaim(newClaim);
       }
     },
-    [chargeItems, debouncedUpdateResource, encounter, medplum, patient, practitioner, setClaim]
+    [chargeItems, coverage, debouncedUpdateResource, encounter, medplum, patient, practitioner, setClaim]
   );
+
+  // Re-sync claim whenever conditions, coverage, or claim id changes.
+  useEffect(() => {
+    if (!claimRef.current) {
+      return;
+    }
+    syncClaim().catch((err) => showErrorNotification(err));
+  }, [conditions, coverage, claim?.id, syncClaim]);
 
   const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
     try {
@@ -207,6 +190,23 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     },
     [patient, encounter, practitioner, syncClaim, setChargeItems]
   );
+
+  const exportClaimAsCMS1500 = async (): Promise<void> => {
+    if (!claim?.id) {
+      return;
+    }
+
+    const response = await medplum.post<Media>(medplum.fhirUrl('Claim', '$export'), {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'resource', resource: claim }],
+    });
+
+    if (response.resourceType === 'Media' && response.content?.url) {
+      window.open(response.content.url, '_blank');
+    } else {
+      showErrorNotification('Failed to download PDF');
+    }
+  };
 
   const submitClaim = useCallback(async (): Promise<void> => {
     if (!claim) {
