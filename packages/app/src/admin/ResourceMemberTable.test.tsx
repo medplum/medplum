@@ -44,13 +44,13 @@ describe('ResourceMemberTable', () => {
   test('Renders on Clients page with ClientApplication resourceType', async () => {
     await setup('/admin/clients');
     // Page title and create link confirm ResourceMemberTable rendered without crashing
-    expect(await screen.findByText('ClientApps')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'ProjectMemberships for ClientApplications' })).toBeInTheDocument();
     expect(screen.getByText('Create new client')).toBeInTheDocument();
   });
 
   test('Does not render segmented control on Clients page', async () => {
     await setup('/admin/clients');
-    await screen.findByText('ClientApps');
+    await screen.findByRole('heading', { name: 'ProjectMemberships for ClientApplications' });
     // The segmented profile-type filter only appears on the Users page
     expect(screen.queryByText('All')).not.toBeInTheDocument();
     expect(screen.queryByText('RelatedPerson')).not.toBeInTheDocument();
@@ -58,13 +58,13 @@ describe('ResourceMemberTable', () => {
 
   test('Renders on Bots page with Bot resourceType', async () => {
     await setup('/admin/bots');
-    expect(await screen.findByRole('heading', { name: 'Bots' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'ProjectMemberships for Bots' })).toBeInTheDocument();
     expect(screen.getByText('Create new bot')).toBeInTheDocument();
   });
 
   test('Does not render segmented control on Bots page', async () => {
     await setup('/admin/bots');
-    await screen.findByRole('heading', { name: 'Bots' });
+    await screen.findByRole('heading', { name: 'ProjectMemberships for Bots' });
     // The segmented profile-type filter only appears on the Users page
     expect(screen.queryByText('All')).not.toBeInTheDocument();
     expect(screen.queryByText('RelatedPerson')).not.toBeInTheDocument();
