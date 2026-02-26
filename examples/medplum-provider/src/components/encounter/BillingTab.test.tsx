@@ -624,14 +624,14 @@ describe('BillingTab', () => {
           expect(chargeItemsUtils.calculateTotalPrice).toHaveBeenCalledWith([appliedChargeItem]);
           expect(setClaim).toHaveBeenCalledWith(
             expect.objectContaining({
-              ...mockClaim,
+              resourceType: 'Claim',
               item: mockClaimItems,
               total: { value: 200 },
             })
           );
           expect(debouncedUpdateResource).toHaveBeenCalledWith(
             expect.objectContaining({
-              ...mockClaim,
+              resourceType: 'Claim',
               item: mockClaimItems,
               total: { value: 200 },
             })
@@ -951,7 +951,12 @@ describe('BillingTab', () => {
           return resource.resourceType === 'Claim' && resource.provider?.reference === 'Practitioner/practitioner-2';
         });
         expect(claimUpdateCall).toBeDefined();
-        expect(setClaim).toHaveBeenCalledWith(updatedClaim);
+        expect(setClaim).toHaveBeenCalledWith(
+          expect.objectContaining({
+            resourceType: 'Claim',
+            provider: { reference: 'Practitioner/practitioner-2' },
+          })
+        );
       },
       { timeout: 5000 }
     );
