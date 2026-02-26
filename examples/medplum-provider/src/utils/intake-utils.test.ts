@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import type {
   Coding,
+  Organization,
   Patient,
   Questionnaire,
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
   Reference,
-  Organization,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   addAllergy,
   addCondition,

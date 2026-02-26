@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Drawer, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
+import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import { showErrorNotification } from '../../utils/notifications';
-import { Calendar } from '../../components/Calendar';
-import { mergeOverlappingSlots } from '../../utils/slots';
 import type { Range } from '../../types/scheduling';
-import classes from './SchedulePage.module.css';
+import { showErrorNotification } from '../../utils/notifications';
 import { serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
+import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
+import classes from './SchedulePage.module.css';
 
 /**
  * Schedule page that displays the practitioner's schedule.

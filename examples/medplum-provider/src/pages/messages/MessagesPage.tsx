@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router';
-import { ThreadInbox } from '@medplum/react';
-import classes from './MessagesPage.module.css';
-import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import { ThreadInbox } from '@medplum/react';
+import type { JSX } from 'react';
 import { useEffect, useMemo } from 'react';
-import { normalizeCommunicationSearch } from '../../utils/communication-search';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import { normalizeCommunicationSearch } from '../../utils/communication-search';
+import classes from './MessagesPage.module.css';
 /**
  * Fetches
  * @returns A React component that displays all Threads/Topics.

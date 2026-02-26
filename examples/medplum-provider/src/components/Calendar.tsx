@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useCallback, useState, useEffect } from 'react';
-import type { JSX } from 'react';
 import { Button, Group, SegmentedControl, Title } from '@mantine/core';
 import type { Appointment, Slot } from '@medplum/fhirtypes';
-import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
-import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
+import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Range } from '../types/scheduling';
 import { SchedulingTransientIdentifier } from '../utils/scheduling';

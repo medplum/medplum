@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, test, vi } from 'vitest';
 import { act, render, screen, waitFor } from '../../test-utils/render';
-import { useDoseSpotIFrame } from '@medplum/dosespot-react';
 import { DoseSpotNotificationsPage } from './DoseSpotNotificationsPage';
 
 // Mock useDoseSpotIFrame

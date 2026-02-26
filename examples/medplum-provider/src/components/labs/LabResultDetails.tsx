@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Paper, Stack, Text, Group, Badge, Divider } from '@mantine/core';
+import { Badge, Divider, Group, Paper, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type { DiagnosticReport, HumanName, Reference } from '@medplum/fhirtypes';
+import { ObservationTable, useResource } from '@medplum/react';
 import type { JSX } from 'react';
-import { useResource, ObservationTable } from '@medplum/react';
 
 interface LabResultDetailsProps {
   result: DiagnosticReport | Reference<DiagnosticReport>;

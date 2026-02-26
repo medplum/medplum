@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Title } from '@mantine/core';
-import { EMPTY, isDefined, formatDateTime } from '@medplum/core';
 import type { WithId } from '@medplum/core';
+import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { JSX } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { showErrorNotification } from '../../utils/notifications';
-import type { Range } from '../../types/scheduling';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
-import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
-import { serviceTypesFromSchedulingParameters, SchedulingTransientIdentifier } from '../../utils/scheduling';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { BookAppointmentForm } from '../../components/schedule/BookAppointmentForm';
+import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
+import type { Range } from '../../types/scheduling';
+import { showErrorNotification } from '../../utils/notifications';
+import { SchedulingTransientIdentifier, serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 

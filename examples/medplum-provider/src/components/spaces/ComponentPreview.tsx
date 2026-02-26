@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Component, useState } from 'react';
-import type { JSX, ReactNode } from 'react';
-import { Tabs, Code, ScrollArea, Box, Alert } from '@mantine/core';
-import { LiveProvider, LivePreview, LiveError } from 'react-live';
-import * as Recharts from 'recharts';
 import * as Mantine from '@mantine/core';
+import { Alert, Box, Code, ScrollArea, Tabs } from '@mantine/core';
+import type { JSX, ReactNode } from 'react';
+import { Component, useState } from 'react';
+import { LiveError, LivePreview, LiveProvider } from 'react-live';
+import * as Recharts from 'recharts';
 
 interface ErrorBoundaryState {
   hasError: boolean;
