@@ -5,7 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Project } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
+import { getPubSubRedis } from '../../redis';
 import { buildOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -71,7 +71,7 @@ export function parseActiveSubKey(key: string): { projectId: string; resourceTyp
 export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const redis = getRedis();
+  const redis = getPubSubRedis();
 
   // Scan for all active subscription hash keys
   const pattern = 'medplum:subscriptions:r4:project:*:active:*';
