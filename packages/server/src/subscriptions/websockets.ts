@@ -19,7 +19,8 @@ import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -65,7 +66,7 @@ let subscriptionMessagesSent = 0;
 let subscriptionMessagesReceived = 0;
 
 async function setupSubscriptionHandler(): Promise<void> {
-  redisSubscriber = getRedisSubscriber();
+  redisSubscriber = getPubSubRedisSubscriber();
   redisSubscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
     const subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
@@ -221,7 +222,7 @@ function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
 export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
-  const redis = getRedis();
+  const redis = getCacheRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
@@ -440,10 +441,6 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
-export function getActiveSubsKey(projectId: string, resourceType: string): string {
-  return `medplum:subscriptions:r4:project:${projectId}:active:${resourceType}`;
-}
-
 export function getSubIdsByResourceType(subscriptionEntries: Map<string, WebSocketSubMetadata>): Map<string, string[]> {
   const byResourceType = new Map<string, string[]>();
   for (const [subscriptionId, metadata] of subscriptionEntries) {
@@ -461,21 +458,28 @@ export async function markInMemorySubscriptionsInactive(
   projectId: string,
   subIdsByResourceType: Map<string, string[]>
 ): Promise<void> {
-  let redis: Redis | undefined;
+  let cacheRedis: Redis | undefined;
   try {
-    redis = getRedis();
+    cacheRedis = getCacheRedis();
   } catch {
-    redis = undefined;
+    cacheRedis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  if (!redis || !subIdsByResourceType.size) {
+  if (!subIdsByResourceType.size) {
     return;
   }
   const refStrs: string[] = [];
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
     refStrs.push(...refs);
-    await redis.hdel(getActiveSubsKey(projectId, resourceType), ...refs);
+    try {
+      await removeActiveSubscriptions(projectId, resourceType, ...refs);
+    } catch {
+      globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
+      return;
+    }
   }
-  await redis.del(refStrs);
+  if (cacheRedis) {
+    await cacheRedis.del(refStrs);
+  }
 }

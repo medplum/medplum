@@ -48,7 +48,7 @@ import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -1077,7 +1077,7 @@ async function tryExternalAuth(
     return undefined;
   }
 
-  const redis = getRedis();
+  const redis = getCacheRedis();
   const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
   let login: Login;
