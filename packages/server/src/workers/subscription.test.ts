@@ -2052,15 +2052,22 @@ describe('Subscription Worker', () => {
 
   describe('WebSocket Subscriptions', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
+    type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
     let subscriber: Redis;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
+    let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
 
     beforeAll(async () => {
       subscriber = getPubSubRedisSubscriber();
       subscriber.on('message', (_channel, payload) => {
-        const parsed = JSON.parse(payload) as { resource: Resource; events: [string, SubEventsOptions][] };
+        const parsed = JSON.parse(payload) as WsSubMessage;
+        if (resolveExpectedFullMessage) {
+          resolveExpectedFullMessage(parsed);
+          resolveExpectedFullMessage = undefined;
+          return;
+        }
         const args: EventNotificationArgs<Resource> = [parsed.resource, parsed.events[0][0], parsed.events[0][1]];
         if (resolveExpected) {
           resolveExpected(args);
@@ -2114,6 +2121,26 @@ describe('Subscription Worker', () => {
       const args = await deferredPromise;
       clearTimeout(notificationTimeout);
       return args;
+    }
+
+    async function waitForNextSubMessage(timeoutMs?: number): Promise<WsSubMessage> {
+      let resolve!: (message: WsSubMessage) => void;
+      let reject!: (err: Error) => void;
+      const deferredPromise = new Promise<WsSubMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      const notificationTimeout = setTimeout(
+        () => reject(new Error('Timeout while waiting for sub message')),
+        timeoutMs ?? 1000
+      );
+
+      resolveExpectedFullMessage = resolve;
+
+      const message = await deferredPromise;
+      clearTimeout(notificationTimeout);
+      return message;
     }
 
     test('Enabled', () =>
@@ -2681,6 +2708,151 @@ describe('Subscription Worker', () => {
         expect(updatedPatient).toBeDefined();
 
         await assertPromise;
+      }));
+
+    test('Cached criteria - multiple subscriptions with same matching criteria all receive notification', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria Match Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const criteria = 'Patient?name=Alice';
+
+        const sub1 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const sub2 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const sub3 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const nextMessagePromise = waitForNextSubMessage();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        const message = await nextMessagePromise;
+        const subIds = message.events.map(([subId]) => subId);
+        expect(subIds).toHaveLength(3);
+        expect(subIds).toContain(sub1.id);
+        expect(subIds).toContain(sub2.id);
+        expect(subIds).toContain(sub3.id);
+      }));
+
+    test('Cached criteria - multiple subscriptions with same non-matching criteria do not fire', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria No Match Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const criteria = 'Patient?name=Alice';
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const assertPromise = assertNoWsNotifications();
+        await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Jones' }],
+        });
+        await assertPromise;
+      }));
+
+    test('Cached criteria - subscriptions with different criteria are evaluated independently', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria Mixed Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        // Two subscriptions with criteria that will match
+        const aliceSub1 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: { type: 'websocket' },
+        });
+
+        const aliceSub2 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: { type: 'websocket' },
+        });
+
+        // Two subscriptions with criteria that will NOT match
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Bob',
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Bob',
+          channel: { type: 'websocket' },
+        });
+
+        const nextMessagePromise = waitForNextSubMessage();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        // Only the Alice subscriptions should fire; Bob subscriptions should be skipped via cached result
+        const message = await nextMessagePromise;
+        const subIds = message.events.map(([subId]) => subId);
+        expect(subIds).toHaveLength(2);
+        expect(subIds).toContain(aliceSub1.id);
+        expect(subIds).toContain(aliceSub2.id);
       }));
   });
 });
