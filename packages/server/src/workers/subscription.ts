@@ -49,13 +49,19 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getRedis, reconnectOnError } from '../redis';
+import { getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
-import { getActiveSubsKey } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
 import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import {
+  addVerboseQueueLogging,
+  findProjectMembership,
+  getBullmqRedisConnectionOptions,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -122,7 +128,7 @@ const jobName = 'SubscriptionJobData';
 
 export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
@@ -342,7 +348,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
+    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -407,9 +413,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
-  const hashKey = getActiveSubsKey(projectId, resource.resourceType);
-  const entries = await redis.hgetall(hashKey);
+  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
   const redisOnlySubRefStrs: string[] = [];
   for (const [ref, criteria] of Object.entries(entries)) {
     try {
@@ -421,7 +425,8 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
     }
   }
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
+    const cacheRedis = getCacheRedis();
+    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
@@ -436,7 +441,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.hdel(hashKey, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, ...inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];

@@ -12,9 +12,8 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The set-accounts worker asynchronously updates all account references
@@ -36,7 +35,7 @@ const jobName = 'SetAccountsJobData';
 
 export const initSetAccountsWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SetAccountsJobData>(queueName, {
