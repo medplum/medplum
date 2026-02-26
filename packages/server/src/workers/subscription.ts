@@ -416,6 +416,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
   const entries = await getActiveSubscriptions(projectId, resource.resourceType);
   const cachedCriteriaEvalMap = new Map<string, boolean>();
   const redisOnlySubRefStrs: string[] = [];
+  const wsEvalStartTime = Date.now();
   for (const [ref, criteria] of Object.entries(entries)) {
     try {
       const cached = cachedCriteriaEvalMap.get(criteria);
@@ -435,6 +436,12 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
     }
   }
+  getLogger().info('[WS] Evaluated active subscription criteria', {
+    projectId,
+    resourceType: resource.resourceType,
+    numSubscriptions: Object.keys(entries).length,
+    evalDurationMs: Date.now() - wsEvalStartTime,
+  });
   if (redisOnlySubRefStrs.length) {
     const cacheRedis = getCacheRedis();
     const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);

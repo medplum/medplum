@@ -47,7 +47,7 @@ import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubscriptionJobData } from './subscription';
-import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 
 jest.mock('node-fetch');
 const mockBullmq = jest.mocked(bullmqModule);
@@ -2853,6 +2853,49 @@ describe('Subscription Worker', () => {
         expect(subIds).toHaveLength(2);
         expect(subIds).toContain(aliceSub1.id);
         expect(subIds).toContain(aliceSub2.id);
+      }));
+
+    test('Logs WS subscription eval info after evaluating criteria', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+          project: { name: 'WS Sub Eval Log Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const mockInfo = jest.fn();
+        const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
+          info: mockInfo,
+          warn: jest.fn(),
+          debug: jest.fn(),
+          error: jest.fn(),
+        } as any);
+
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await addSubscriptionJobs(patient, undefined, { project: wsProject, interaction: 'create' });
+
+        expect(mockInfo).toHaveBeenCalledWith(
+          '[WS] Evaluated active subscription criteria',
+          expect.objectContaining({
+            projectId: wsProject.id,
+            resourceType: 'Patient',
+            numSubscriptions: expect.any(Number),
+            evalDurationMs: expect.any(Number),
+          })
+        );
+
+        getLoggerSpy.mockRestore();
       }));
   });
 });
