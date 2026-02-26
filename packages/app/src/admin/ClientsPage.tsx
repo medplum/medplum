@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Group, Text, Title } from '@mantine/core';
+import { Group, Title } from '@mantine/core';
 import { MedplumLink } from '@medplum/react';
 import type { JSX } from 'react';
 import { ResourceMemberTable } from './ResourceMemberTable';
@@ -8,8 +8,7 @@ import { ResourceMemberTable } from './ResourceMemberTable';
 export function ClientsPage(): JSX.Element {
   return (
     <>
-      <Title>ClientApps</Title>
-      <Text size="sm">This page lists all ProjectMemberships for ClientApplications.</Text>
+      <Title>ProjectMemberships for ClientApplications</Title>
       <ResourceMemberTable
         resourceType="ClientApplication"
         fields={['user', 'profile', 'accessPolicy', 'userConfiguration', 'active', 'admin']}
