@@ -31,6 +31,236 @@ Enter FHIR's purpose-built resources. The FHIR spec maps the SOAP framework dire
 | Assessment | [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression)                                       | Clinical analysis, differential, and summary  |
 | Plan       | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`CarePlan`](/docs/api/fhir/resources/careplan) | Orders, prescriptions, and treatment strategy |
 
+## How It All Fits Together
+
+All four SOAP components are linked back to the same [`Encounter`](/docs/api/fhir/resources/encounter), which serves as the central organizing resource for a visit.
+
+```mermaid
+flowchart BT
+  patient[Patient]
+  encounter[Encounter]
+  obsSubjective["Observation (Subjective)"]
+  obsObjective["Observation (Objective)"]
+  clinicalImpression["ClinicalImpression (Assessment)"]
+  condition["Condition (Diagnosis)"]
+  serviceRequest["ServiceRequest / MedicationRequest (Plan)"]
+
+  encounter -->|subject| patient
+  obsSubjective -->|encounter| encounter
+  obsObjective -->|encounter| encounter
+  clinicalImpression -->|encounter| encounter
+  condition -->|encounter| encounter
+  serviceRequest -->|encounter| encounter
+  clinicalImpression -.->|"leads to"| condition
+```
+
+A typical workflow looks something like this:
+
+1. A practitioner opens a chart for an `Encounter`.
+2. Patient-reported symptoms are saved as `Observation` resources with `performer` set to the patient (Subjective).
+3. The clinician records their measurements as `Observation` resources with `performer` set to the practitioner or device (Objective).
+4. A `ClinicalImpression` is created (or updated) with the clinical analysis and `note` (Assessment).
+5. One or more `Condition` resources are created for formal diagnoses arising from the assessment.
+6. Orders are placed as `ServiceRequest` or `MedicationRequest` resources (Plan).
+7. The `ClinicalImpression` status is set to `completed` and a `Provenance` record is created to sign and lock the note.
+
+<details>
+  <summary>Example: full SOAP note FHIR R4 Bundle</summary>
+
+[Download soap-note-bundle.json](/examples/soap-note-bundle.json)
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:example-encounter",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "example-encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "subject": { "reference": "Patient/homer-simpson" },
+        "participant": [
+          {
+            "individual": { "reference": "Practitioner/dr-alice-smith" }
+          }
+        ],
+        "period": {
+          "start": "2024-01-15T10:00:00Z",
+          "end": "2024-01-15T11:30:00Z"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-subjective-fatigue",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-subjective-fatigue",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "75325-1",
+              "display": "Symptom"
+            }
+          ],
+          "text": "Fatigue"
+        },
+        "subject": { "reference": "Patient/homer-simpson" },
+        "encounter": { "reference": "Encounter/example-encounter" },
+        "performer": [{ "reference": "Patient/homer-simpson" }],
+        "valueString": "Patient reports feeling lethargic for the past week"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:obs-objective-heart-rate",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "obs-objective-heart-rate",
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart rate"
+            }
+          ]
+        },
+        "subject": { "reference": "Patient/homer-simpson" },
+        "encounter": { "reference": "Encounter/example-encounter" },
+        "performer": [{ "reference": "Practitioner/dr-alice-smith" }],
+        "valueQuantity": {
+          "value": 112,
+          "unit": "beats/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "{Beats}/min"
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:clinical-impression-assessment",
+      "resource": {
+        "resourceType": "ClinicalImpression",
+        "id": "clinical-impression-assessment",
+        "status": "completed",
+        "subject": { "reference": "Patient/homer-simpson" },
+        "encounter": { "reference": "Encounter/example-encounter" },
+        "date": "2024-01-15T11:00:00Z",
+        "description": "Patient presents with fatigue and abdominal pain.",
+        "finding": [
+          {
+            "itemReference": { "reference": "Condition/condition-gastritis" }
+          }
+        ],
+        "note": [
+          {
+            "text": "Assessment: symptoms consistent with gastritis. Differential includes peptic ulcer disease. Will monitor response to treatment."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:condition-gastritis",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-gastritis",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "K29.70",
+              "display": "Gastritis, unspecified, without bleeding"
+            }
+          ]
+        },
+        "subject": { "reference": "Patient/homer-simpson" },
+        "encounter": { "reference": "Encounter/example-encounter" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:service-request-lab",
+      "resource": {
+        "resourceType": "ServiceRequest",
+        "id": "service-request-lab",
+        "status": "active",
+        "intent": "order",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "13958-0",
+              "display": "Helicobacter pylori [Presence] in Stool by Immunoassay"
+            }
+          ]
+        },
+        "subject": { "reference": "Patient/homer-simpson" },
+        "encounter": { "reference": "Encounter/example-encounter" },
+        "requester": { "reference": "Practitioner/dr-alice-smith" }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:provenance-note-signed",
+      "resource": {
+        "resourceType": "Provenance",
+        "id": "provenance-note-signed",
+        "target": [{ "reference": "Encounter/example-encounter" }],
+        "recorded": "2024-01-15T11:30:00Z",
+        "reason": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+                "code": "SIGN",
+                "display": "Signed"
+              }
+            ]
+          }
+        ],
+        "agent": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/provenance-participant-type",
+                  "code": "author"
+                }
+              ]
+            },
+            "who": { "reference": "Practitioner/dr-alice-smith" }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+</details>
+
 ## Subjective & Objective — `Observation`
 
 Both the Subjective and Objective components of a SOAP note are stored as [`Observation`](/docs/api/fhir/resources/observation) resources. The key distinction is in the `performer` field:
@@ -102,9 +332,9 @@ For a deeper look at `Observation` resources and how to model measurements with 
 
 `ClinicalImpression` is the FHIR-native resource for recording a clinical assessment. Per the FHIR specification, it is literally the equivalent of the "A" in SOAP — it represents the clinician's summary, differential diagnosis, and overall impression formed during the encounter.
 
-:::tip Why not QuestionnaireResponse?
+:::tip Why `ClinicalImpression` and not `DocumentReference` or `QuestionnaireResponse`?
 
-A `QuestionnaireResponse` captures the raw answers a practitioner typed into a form. A `ClinicalImpression` represents a structured, searchable clinical record that other systems can consume and reason over. Using `ClinicalImpression` ensures your notes are interoperable, reportable, and linked to the right patient and encounter context.
+Some implementations store the Assessment as a `DocumentReference` or leave it as a raw `QuestionnaireResponse`, treating the entire note as an opaque blob of text. `ClinicalImpression` is the recommended approach because it gives each part of the assessment a structured home — findings, differentials, and clinical reasoning are all discrete, searchable fields that other systems can consume. The goal is to maximize structured, codified data and minimize free-text wherever possible.
 
 :::
 
@@ -142,13 +372,27 @@ A `ClinicalImpression` is typically created at the start of an encounter with a 
 
 </details>
 
-### From Assessment to Diagnosis
-
 A `ClinicalImpression` often leads to a formal diagnosis, which is modeled as a [`Condition`](/docs/api/fhir/resources/condition) resource. The `Condition` represents the persistent, codified diagnosis (using ICD-10 or SNOMED), while the `ClinicalImpression` captures the clinical reasoning behind it. For more on how to model diagnoses, see [Representing Diagnoses](/docs/charting/representing-diagnoses).
 
-### Signing and Locking Notes
+## Plan — Orders and Care
 
-Once the note is complete and reviewed, the `ClinicalImpression` status should be set to `completed`. In addition, a [`Provenance`](/docs/api/fhir/resources/provenance) resource can be created to record who signed the note and when. Once a `Provenance` record exists for the associated `Encounter` and the `ClinicalImpression` is `completed`, the note is considered signed and locked.
+The Plan component maps to the order resources in FHIR. Depending on what the clinician intends to do, the appropriate resource will differ:
+
+| **Plan Action**          | **FHIR Resource**                                                                       |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| Lab or imaging order     | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)                             |
+| Medication prescription  | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest)                       |
+| Ongoing care strategy    | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
+| Referral                 | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
+
+For details on placing orders, see [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
+
+## Signing and Locking Notes
+
+Once the full note is complete and reviewed, the `ClinicalImpression` status should be set to `completed`. A [`Provenance`](/docs/api/fhir/resources/provenance) resource is then created to record who signed the note and when. Once both conditions are met — the `ClinicalImpression` is `completed` and a `Provenance` record exists for the associated `Encounter` — the note is considered signed and locked.
+
+<details>
+  <summary>Example: Provenance record indicating a clinician sign-off</summary>
 
 ```json
 {
@@ -182,51 +426,24 @@ Once the note is complete and reviewed, the `ClinicalImpression` status should b
 }
 ```
 
-## Plan — Orders and Care
+</details>
 
-The Plan component maps to the order resources in FHIR. Depending on what the clinician intends to do, the appropriate resource will differ:
 
-| **Plan Action**          | **FHIR Resource**                                                                       |
-| ------------------------ | --------------------------------------------------------------------------------------- |
-| Lab or imaging order     | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)                             |
-| Medication prescription  | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest)                       |
-| Ongoing care strategy    | [`CarePlan`](/docs/api/fhir/resources/careplan)                                         |
-| Referral                 | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) with appropriate `category` |
+## Workflow Design Considerations
 
-For details on placing orders, see [Ordering Labs and Imaging](/docs/charting/ordering-labs-imaging) and [Representing Prescriptions](/docs/medications/representing-prescriptions-and-medication-orders).
+The FHIR resource mapping above describes the standard pattern, but how notes are actually captured and processed varies significantly by practice type. The examples below illustrate common patterns:
 
-## Putting It All Together
+### Questionnaire-Driven Capture (e.g., Primary Care)
 
-All four SOAP components are linked back to the same [`Encounter`](/docs/api/fhir/resources/encounter), which serves as the central organizing resource for a visit.
+Many practices collect notes through a `Questionnaire` that always includes a standard set of fields — for example, a primary care practice might require blood pressure and weight at every visit. The `QuestionnaireResponse` holds the raw form submission, but those answers should be parsed into structured `Observation` resources so the data is searchable and interoperable. See [Structured Data Capture](/docs/questionnaires/structured-data-capture) for how to use the `$extract` operation to automate this, and [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) for a custom parsing approach using Bots.
 
-```mermaid
-flowchart BT
-  patient[Patient]
-  encounter[Encounter]
-  obsSubjective["Observation (Subjective)"]
-  obsObjective["Observation (Objective)"]
-  clinicalImpression["ClinicalImpression (Assessment)"]
-  condition["Condition (Diagnosis)"]
-  serviceRequest["ServiceRequest / MedicationRequest (Plan)"]
+### Template-Driven Plan Section (e.g., Specialty Protocols)
 
-  encounter -->|subject| patient
-  obsSubjective -->|encounter| encounter
-  obsObjective -->|encounter| encounter
-  clinicalImpression -->|encounter| encounter
-  condition -->|encounter| encounter
-  serviceRequest -->|encounter| encounter
-  clinicalImpression -.->|"leads to"| condition
-```
+Some practices maintain a library of pre-built [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) resources for common treatment protocols. Instead of a freeform Plan section, the clinician selects a template and the application instantiates the corresponding `ServiceRequest`, `MedicationRequest`, or `CarePlan` resources automatically via the [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply).
 
-A typical workflow looks like this:
+### Pre-Filled Notes from Patient Intake (e.g., Dermatology)
 
-1. A practitioner opens a chart for an `Encounter`.
-2. Patient-reported symptoms are saved as `Observation` resources with `performer` set to the patient (Subjective).
-3. The clinician records their measurements as `Observation` resources with `performer` set to the practitioner or device (Objective).
-4. A `ClinicalImpression` is created (or updated) with the clinical analysis and `note` (Assessment).
-5. One or more `Condition` resources are created for formal diagnoses arising from the assessment.
-6. Orders are placed as `ServiceRequest` or `MedicationRequest` resources (Plan).
-7. The `ClinicalImpression` status is set to `completed` and a `Provenance` record is created to sign and lock the note.
+In specialties with a bounded set of conditions — like dermatology — patients can pre-select what they want to be seen for during intake. Because those values are known in advance, developers can pre-populate the Subjective and Objective sections before the clinician opens the chart, reducing data entry to a review-and-confirm step.
 
 ## Reference
 
