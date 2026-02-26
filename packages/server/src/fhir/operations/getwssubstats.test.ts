@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getRedis } from '../../redis';
+import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 import type { WsSubStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
@@ -53,7 +53,7 @@ describe('$get-ws-sub-stats', () => {
   });
 
   test('Returns stats with subscriptions', async () => {
-    const redis = getRedis();
+    const redis = getPubSubRedis();
     const projectId = randomUUID();
 
     await redis.hset(
