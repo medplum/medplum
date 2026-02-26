@@ -183,6 +183,33 @@ describe('ResourceInput', () => {
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  test('Respects maxResults prop in search query', async () => {
+    const searchResourcesSpy = jest.spyOn(medplum, 'searchResources');
+
+    setup({
+      resourceType: 'Patient',
+      name: 'foo',
+      placeholder: 'Test',
+      maxResults: 25,
+    });
+
+    const input = screen.getByPlaceholderText('Test');
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Simpson' } });
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    const callArgs = searchResourcesSpy.mock.calls[0];
+    const searchParams = callArgs[1] as URLSearchParams;
+    expect(searchParams.get('_count')).toBe('25');
+
+    searchResourcesSpy.mockRestore();
+  });
+
   test('Custom item component', async () => {
     const MyTestItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
       ({ label, resource, active: _active, ...others }: AsyncAutocompleteOption<Resource>, ref) => {

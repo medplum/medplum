@@ -20,6 +20,8 @@ export interface ReferenceInputProps<T extends Resource = Resource> {
   readonly required?: boolean;
   readonly onChange?: (value: Reference<T> | undefined) => void;
   readonly disabled?: boolean;
+  /** Maximum number of search results to return. Defaults to 10. */
+  readonly maxResults?: number;
 }
 
 interface BaseTargetType {
@@ -194,6 +196,7 @@ export function ReferenceInput<T extends Resource = Resource>(props: ReferenceIn
           searchCriteria={searchCriteria}
           onChange={setValueHelper}
           disabled={props.disabled}
+          maxResults={props.maxResults}
         />
       </Group>
     </>

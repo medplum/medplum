@@ -90,6 +90,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
+  /** Maximum number of search results to return. Defaults to 10. */
+  readonly maxResults?: number;
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
@@ -102,7 +104,7 @@ function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
 
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
   const medplum = useMedplum();
-  const { resourceType, searchCriteria } = props;
+  const { resourceType, searchCriteria, maxResults = 10 } = props;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const defaultValue = useResource(props.defaultValue, setOutcome);
   const ItemComponent = props.itemComponent ?? DefaultItemComponent;
@@ -113,14 +115,14 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       const searchCode = getSearchParamForResourceType(resourceType);
       const searchParams = new URLSearchParams({
         [searchCode]: input ?? '',
-        _count: '10',
+        _count: String(maxResults),
         ...searchCriteria,
       });
 
       const resources = await medplum.searchResources(resourceType, searchParams, { signal });
       return resources as unknown as T[];
     },
-    [medplum, resourceType, searchCriteria]
+    [medplum, maxResults, resourceType, searchCriteria]
   );
 
   const handleChange = useCallback(
