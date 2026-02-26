@@ -44,7 +44,9 @@ describe('ResourceMemberTable', () => {
   test('Renders on Clients page with ClientApplication resourceType', async () => {
     await setup('/admin/clients');
     // Page title and create link confirm ResourceMemberTable rendered without crashing
-    expect(await screen.findByRole('heading', { name: 'ProjectMemberships for ClientApplications' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'ProjectMemberships for ClientApplications' })
+    ).toBeInTheDocument();
     expect(screen.getByText('Create new client')).toBeInTheDocument();
   });
 
