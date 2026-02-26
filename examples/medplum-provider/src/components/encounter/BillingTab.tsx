@@ -98,30 +98,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (!currentClaim) {
       return;
     }
-    const diagnosisArray = createDiagnosisArray(conditions);
-    const updatedClaim = { ...currentClaim, diagnosis: diagnosisArray };
-    setClaim(updatedClaim);
-    medplum.updateResource(updatedClaim).catch((err) => showErrorNotification(err));
-  }, [conditions, medplum, setClaim]);
-
-  useEffect(() => {
-    const currentClaim = claimRef.current;
-    if (!currentClaim || !coverage) {
-      return;
-    }
     const updatedClaim = {
       ...currentClaim,
-      insurance: [
-        {
-          sequence: 1,
-          focal: true,
-          coverage: { reference: getReferenceString(coverage) },
-        },
-      ],
+      diagnosis: createDiagnosisArray(conditions),
+      ...(coverage && {
+        insurance: [{ sequence: 1, focal: true, coverage: { reference: getReferenceString(coverage) } }],
+      }),
     };
     setClaim(updatedClaim);
-    medplum.updateResource(updatedClaim).catch((err) => showErrorNotification(err));
-  }, [coverage, medplum, setClaim]);
+    debouncedUpdateResource(updatedClaim).catch((err) => showErrorNotification(err));
+  }, [conditions, coverage, claim?.id, setClaim, debouncedUpdateResource]);
 
   const exportClaimAsCMS1500 = async (): Promise<void> => {
     if (!claim?.id) {
@@ -149,6 +135,34 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     [encounter, setEncounter, debouncedUpdateResource]
   );
 
+  // Creates the claim if it doesn't exist yet, otherwise updates it with the given patch.
+  // Pass creationArgs to override encounter/practitioner/items used at creation time.
+  const syncClaim = useCallback(
+    async (
+      patch: Partial<Claim>,
+      creationArgs?: { enc?: WithId<Encounter>; prac?: WithId<Practitioner>; items?: WithId<ChargeItem>[] }
+    ): Promise<void> => {
+      const currentClaim = claimRef.current;
+      if (currentClaim) {
+        const updatedClaim = { ...currentClaim, ...patch };
+        setClaim(updatedClaim);
+        debouncedUpdateResource(updatedClaim).catch((err) => showErrorNotification(err));
+        return;
+      }
+      const enc = creationArgs?.enc ?? encounter;
+      const prac = creationArgs?.prac ?? practitioner;
+      const items = creationArgs?.items ?? chargeItems;
+      if (!patient?.id || !enc?.id || !prac?.id || !items?.length) {
+        return;
+      }
+      const newClaim = await createClaimFromEncounter(medplum, patient, enc, prac, items);
+      if (newClaim) {
+        setClaim(newClaim);
+      }
+    },
+    [chargeItems, debouncedUpdateResource, encounter, medplum, patient, practitioner, setClaim]
+  );
+
   const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
     try {
       const savedEncounter = await medplum.updateResource(updatedEncounter);
@@ -165,27 +179,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         return;
       }
 
-      if (!claim) {
-        const newClaim = await createClaimFromEncounter(
-          medplum,
-          patient,
-          savedEncounter,
-          currentPractitioner,
-          chargeItems
-        );
-        if (newClaim) {
-          setClaim(newClaim);
-        }
-      } else {
-        const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(currentPractitioner);
-        if (providerRefNeedsUpdate) {
-          const updatedClaim = await medplum.updateResource({
-            ...claim,
-            provider: { reference: getReferenceString(currentPractitioner) },
-          });
-          setClaim(updatedClaim);
-        }
-      }
+      await syncClaim(
+        { provider: { reference: getReferenceString(currentPractitioner) } },
+        { enc: savedEncounter, prac: currentPractitioner }
+      );
     } catch (err) {
       showErrorNotification(err);
     }
@@ -194,17 +191,18 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const updateChargeItems = useCallback(
     async (updatedChargeItems: WithId<ChargeItem>[]): Promise<void> => {
       setChargeItems(updatedChargeItems);
-      if (claim?.id && updatedChargeItems.length > 0 && encounter) {
-        const updatedClaim = {
-          ...claim,
+      if (!patient?.id || !encounter?.id || !practitioner?.id || !updatedChargeItems.length) {
+        return;
+      }
+      await syncClaim(
+        {
           item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
           total: { value: calculateTotalPrice(updatedChargeItems) },
-        };
-        setClaim(updatedClaim);
-        await debouncedUpdateResource(updatedClaim);
-      }
+        },
+        { items: updatedChargeItems }
+      );
     },
-    [setChargeItems, claim, encounter, setClaim, debouncedUpdateResource]
+    [patient, encounter, practitioner, syncClaim, setChargeItems]
   );
 
   const submitClaim = useCallback(async (): Promise<void> => {

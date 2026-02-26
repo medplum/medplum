@@ -945,7 +945,7 @@ describe('BillingTab', () => {
 
     await waitFor(
       () => {
-        const updateCalls = vi.mocked(medplum.updateResource).mock.calls;
+        const updateCalls = vi.mocked(debouncedUpdateResource).mock.calls;
         const claimUpdateCall = updateCalls.find((call) => {
           const resource = call[0] as Claim;
           return resource.resourceType === 'Claim' && resource.provider?.reference === 'Practitioner/practitioner-2';
