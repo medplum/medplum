@@ -53,7 +53,10 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
   let config = await loadSingleConfig(segments[0]);
   for (let i = 1; i < segments.length; i++) {
     const overlay = await loadSingleConfig(segments[i]);
-    config = deepMerge(config as unknown as Record<string, unknown>, overlay as unknown as Record<string, unknown>) as unknown as MedplumServerConfig;
+    config = deepMerge(
+      config as unknown as Record<string, unknown>,
+      overlay as unknown as Record<string, unknown>
+    ) as unknown as MedplumServerConfig;
   }
 
   if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
