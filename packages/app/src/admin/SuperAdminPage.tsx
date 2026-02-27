@@ -305,9 +305,7 @@ export function SuperAdminPage(): JSX.Element {
           />
         </FormSection>
         <div>
-          <Button onClick={openClearWsSubsConfirm}>
-            Clear All WebSocket Subscriptions
-          </Button>
+          <Button onClick={openClearWsSubsConfirm}>Clear All WebSocket Subscriptions</Button>
         </div>
       </Stack>
       <Modal
