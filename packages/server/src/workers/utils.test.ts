@@ -4,6 +4,7 @@ import type { Subscription } from '@medplum/fhirtypes';
 import type { Job, Worker } from 'bullmq';
 import { Queue } from 'bullmq';
 import EventEmitter from 'node:events';
+import type { MedplumServerConfig } from '../config/types';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
