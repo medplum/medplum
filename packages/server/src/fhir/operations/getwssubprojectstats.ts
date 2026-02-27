@@ -5,9 +5,9 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getPubSubRedis } from '../../redis';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import type { WsSubCriteriaStats, WsSubProjectDetailStats, WsSubResourceTypeDetailStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectStatsOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
