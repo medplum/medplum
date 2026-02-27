@@ -114,4 +114,40 @@ describe('$get-ws-sub-project-stats', () => {
       );
     }
   });
+
+  test('Ignores legacy v2 keys in project stats', async () => {
+    const redis = getPubSubRedis();
+    const projectId = randomUUID();
+
+    await redis.hset(
+      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      'Subscription/sub1',
+      'Observation?code=85354-9'
+    );
+    // Legacy key that should not appear in stats
+    await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub2', 'Observation');
+
+    try {
+      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+      const res = await request(app)
+        .get('/fhir/R4/$get-ws-sub-project-stats')
+        .query({ projectId })
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+
+      const params = res.body as Parameters;
+      const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
+      const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
+
+      expect(stats.resourceTypes.every((rt) => rt.resourceType !== 'v2')).toBe(true);
+      const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
+      expect(obType?.count).toBe(1);
+    } finally {
+      await redis.del(
+        `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+        `medplum:subscriptions:r4:project:${projectId}:active:v2`
+      );
+    }
+  });
 });

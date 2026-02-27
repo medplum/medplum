@@ -117,5 +117,43 @@ describe('$get-ws-sub-stats', () => {
 
     expect(parseActiveSubKey('invalid:key')).toBeUndefined();
     expect(parseActiveSubKey('medplum:subscriptions:r4:project:no-active-part')).toBeUndefined();
+    // Legacy pre-release key format — must be filtered out
+    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:v2`)).toBeUndefined();
+  });
+
+  test('Ignores legacy v2 keys in stats', async () => {
+    const redis = getPubSubRedis();
+    const projectId = randomUUID();
+
+    await redis.hset(
+      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      'Subscription/sub1',
+      'Observation?code=85354-9'
+    );
+    // Legacy key that should not appear in stats
+    await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub2', 'Observation');
+
+    try {
+      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+      const res = await request(app)
+        .get('/fhir/R4/$get-ws-sub-stats')
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+
+      const params = res.body as Parameters;
+      const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
+      const stats = JSON.parse(statsStr as string) as WsSubStats;
+
+      const project = stats.projects.find((p) => p.projectId === projectId);
+      expect(project).toBeDefined();
+      expect(project?.subscriptionCount).toBe(1);
+      expect(project?.resourceTypes.every((rt) => rt.resourceType !== 'v2')).toBe(true);
+    } finally {
+      await redis.del(
+        `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+        `medplum:subscriptions:r4:project:${projectId}:active:v2`
+      );
+    }
   });
 });

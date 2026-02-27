@@ -75,6 +75,10 @@ export function parseActiveSubKey(key: string): { projectId: string; resourceTyp
   }
   const projectId = withoutPrefix.slice(0, activeIdx);
   const resourceType = withoutPrefix.slice(activeIdx + ACTIVE_PART.length);
+  // Filter out legacy pre-release keys that used 'v2' instead of a resource type
+  if (resourceType === 'v2') {
+    return undefined;
+  }
   return { projectId, resourceType };
 }
 
