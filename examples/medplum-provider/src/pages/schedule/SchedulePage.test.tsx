@@ -117,7 +117,6 @@ describe('SchedulePage', () => {
       });
     });
 
-
     test('shows a loading state before the schedule resolves, then renders the calendar', async () => {
       let resolveSearch: (schedule: Schedule | undefined) => void;
       medplum.searchOne = vi.fn().mockReturnValue(
