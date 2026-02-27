@@ -22,13 +22,21 @@ import type { ProfileResource, WithId } from '@medplum/core';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import type { Attachment, Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl, useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
-import { IconArrowRight, IconDots, IconDownload, IconFileExport, IconFileText, IconPaperclip, IconX } from '@tabler/icons-react';
-import { DocumentPicker } from './DocumentPicker';
+import {
+  IconArrowRight,
+  IconDots,
+  IconDownload,
+  IconFileExport,
+  IconFileText,
+  IconPaperclip,
+  IconX,
+} from '@tabler/icons-react';
 import type { JSX, LegacyRef } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
+import { DocumentPicker } from './DocumentPicker';
 
 function showError(message: string): void {
   showNotification({
