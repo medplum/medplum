@@ -430,7 +430,7 @@ describe('Infra', () => {
       ...baseConfig,
       name: 'worker',
       stackName: 'MedplumWorkerStack',
-      additionalServices: [
+      workerServices: [
         {
           id: 'Worker',
           desiredCount: 2,
@@ -451,7 +451,7 @@ describe('Infra', () => {
       ...baseConfig,
       name: 'workerAutoScaling',
       stackName: 'MedplumWorkerAutoScalingStack',
-      additionalServices: [
+      workerServices: [
         {
           id: 'Worker',
           desiredCount: 1,
@@ -477,7 +477,7 @@ describe('Infra', () => {
       ...baseConfig,
       name: 'multiService',
       stackName: 'MedplumMultiServiceStack',
-      additionalServices: [
+      workerServices: [
         {
           id: 'SubscriptionWorker',
           desiredCount: 2,

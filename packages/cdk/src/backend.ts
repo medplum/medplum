@@ -628,7 +628,7 @@ export class BackEnd extends Construct {
     }
 
     // Additional Services (e.g., background workers)
-    for (const service of config.additionalServices ?? []) {
+    for (const service of config.workerServices ?? []) {
       this.createAdditionalService(config, service, containerRegistryCredentials, purposeRedisClusters);
     }
 
@@ -817,7 +817,7 @@ export class BackEnd extends Construct {
    */
   private createAdditionalService(
     config: MedplumInfraConfig,
-    service: NonNullable<MedplumInfraConfig['additionalServices']>[number],
+    service: NonNullable<MedplumInfraConfig['workerServices']>[number],
     containerRegistryCredentials: secretsmanager.ISecret | undefined,
     purposeRedisClusters: { cluster: elasticache.CfnReplicationGroup }[]
   ): void {
