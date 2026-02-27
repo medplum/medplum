@@ -392,9 +392,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef && <IconFileText size="0.75rem" />}
-            {!pendingDocRef && previewUrl && (
-              <img src={previewUrl} className={classes.chatPendingFileThumbnail} />
-            )}
+            {!pendingDocRef && previewUrl && <img src={previewUrl} className={classes.chatPendingFileThumbnail} />}
             {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
               {pendingDocRef
