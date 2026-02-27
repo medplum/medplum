@@ -183,6 +183,33 @@ describe('WsSubStatsWidget', () => {
       },
     ]);
 
+    const projectDetailStats = {
+      projectId: 'project-1',
+      resourceTypes: [
+        {
+          resourceType: 'Observation',
+          count: 3,
+          criteria: [
+            { criteria: 'Observation?code=85354-9', count: 2 },
+            { criteria: 'Observation?status=final', count: 1 },
+          ],
+        },
+        {
+          resourceType: 'Patient',
+          count: 1,
+          criteria: [{ criteria: 'Patient?name=Alice', count: 1 }],
+        },
+      ],
+    };
+
+    medplum.router.add('POST', '$get-ws-sub-project-stats', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'stats', valueString: JSON.stringify(projectDetailStats) }],
+      },
+    ]);
+
     setup();
 
     await act(async () => {
@@ -205,7 +232,7 @@ describe('WsSubStatsWidget', () => {
       fireEvent.click(resourceTypeRow);
     });
 
-    expect(screen.getByText('Observation?code=85354-9')).toBeInTheDocument();
+    expect(await screen.findByText('Observation?code=85354-9')).toBeInTheDocument();
     expect(screen.getByText('Observation?status=final')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
   });
