@@ -2457,6 +2457,75 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
+    test('Access policy cache is keyed by channel type -- rest-hook result does not bleed into websocket eval', () =>
+      withTestContext(async () => {
+        // satisfiesAccessPolicy() is hardcoded to return `true` for non-websocket channel types
+        // (rest-hook enforcement is not yet implemented).  If the per-author cache were shared
+        // across channel types, the cached `true` from the rest-hook subscription would incorrectly
+        // allow the websocket subscription to bypass the access-policy check.
+        const url = 'https://example.com/subscription';
+
+        // An access policy that restricts Patient to a specific ID that will never match our patient.
+        const accessPolicy = await repo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+        });
+
+        // Create a project whose membership carries the denying access policy.
+        // The project must have 'websocket-subscriptions' enabled so that the websocket
+        // subscription is fetched and evaluated.
+        const { repo: testRepo } = await createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: {
+            name: 'Access Policy Cache Channel Type Isolation Project',
+            features: ['websocket-subscriptions'],
+          },
+          membership: {
+            accessPolicy: createReference(accessPolicy),
+          },
+        });
+
+        // Both subscriptions share the same author (the project client).
+        const restHookSub = await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+        });
+        expect(restHookSub.id).toBeDefined();
+
+        const wsSub = await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+        expect(wsSub.id).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        // Register the no-notification assertion before creating the patient so that
+        // any spurious WebSocket publish is caught immediately.
+        const assertPromise = assertNoWsNotifications();
+
+        await testRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        // The websocket subscription must NOT have fired -- the access policy denied access
+        // and the rest-hook's cached `true` must not have been reused for the websocket check.
+        await assertPromise;
+
+        // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
+        // unconditionally returns `true` for non-websocket channel types.
+        expect(queue.add).toHaveBeenCalledTimes(1);
+      }));
+
     test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;

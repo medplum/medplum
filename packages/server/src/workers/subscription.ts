@@ -298,9 +298,9 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsSubEvents = [] as [string, SubEventsOptions][];
-  // Cache access policy results per author for the duration of this evaluation.
+  // Cache access policy results per (author, channel type) for the duration of this evaluation.
   // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
-  // so the boolean result is identical for all subscriptions sharing the same author.
+  // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
   const accessPolicyCache = new Map<string, boolean>();
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
@@ -328,10 +328,15 @@ export async function addSubscriptionJobs(
     }
     if (matches) {
       const authorRef = getReferenceString(subscription.meta?.author as Reference);
-      let satisfied = accessPolicyCache.get(authorRef ?? '');
+      // Channel type is part of the key because satisfiesAccessPolicy() is hardcoded to always
+      // return `true` for rest-hook subscriptions (see the TODO comment on that function).
+      // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
+      // for a websocket sub sharing the same author.
+      const cacheKey = `${authorRef}:${subscription.channel.type}`;
+      let satisfied = accessPolicyCache.get(cacheKey);
       if (satisfied === undefined) {
         satisfied = await satisfiesAccessPolicy(resource, project, subscription);
-        accessPolicyCache.set(authorRef ?? '', satisfied);
+        accessPolicyCache.set(cacheKey, satisfied);
       }
       if (!satisfied) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
