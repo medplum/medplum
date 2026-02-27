@@ -37,6 +37,11 @@ export interface WsSubCriteriaStats {
 export interface WsSubResourceTypeStats {
   resourceType: string;
   count: number;
+}
+
+export interface WsSubResourceTypeDetailStats {
+  resourceType: string;
+  count: number;
   criteria: WsSubCriteriaStats[];
 }
 
@@ -45,6 +50,11 @@ export interface WsSubProjectStats {
   projectName?: string;
   subscriptionCount: number;
   resourceTypes: WsSubResourceTypeStats[];
+}
+
+export interface WsSubProjectDetailStats {
+  projectId: string;
+  resourceTypes: WsSubResourceTypeDetailStats[];
 }
 
 export interface WsSubStats {
@@ -83,8 +93,8 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
     keys.push(...foundKeys);
   } while (cursor !== '0');
 
-  // Build stats: projectId -> resourceType -> criteria -> count
-  const projectMap = new Map<string, Map<string, Map<string, number>>>();
+  // Build stats: projectId -> resourceType -> count
+  const projectMap = new Map<string, Map<string, number>>();
 
   for (const key of keys) {
     const parsed = parseActiveSubKey(key);
@@ -99,16 +109,8 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
       projectMap.set(projectId, resourceTypeMap);
     }
 
-    let criteriaMap = resourceTypeMap.get(resourceType);
-    if (!criteriaMap) {
-      criteriaMap = new Map();
-      resourceTypeMap.set(resourceType, criteriaMap);
-    }
-
-    const entries = await redis.hvals(key);
-    for (const criteria of Object.values(entries)) {
-      criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
-    }
+    const count = await redis.hlen(key);
+    resourceTypeMap.set(resourceType, (resourceTypeMap.get(resourceType) ?? 0) + count);
   }
 
   // Convert to output structure, sorted by count descending at each level
@@ -117,24 +119,9 @@ export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirRespo
     const resourceTypes: WsSubResourceTypeStats[] = [];
     let totalCount = 0;
 
-    for (const [resourceType, criteriaMap] of resourceTypeMap) {
-      const criteriaStats: WsSubCriteriaStats[] = [];
-      let resourceTypeCount = 0;
-
-      for (const [criteria, count] of criteriaMap) {
-        criteriaStats.push({ criteria, count });
-        resourceTypeCount += count;
-      }
-
-      criteriaStats.sort((a, b) => b.count - a.count);
-
-      resourceTypes.push({
-        resourceType,
-        count: resourceTypeCount,
-        criteria: criteriaStats,
-      });
-
-      totalCount += resourceTypeCount;
+    for (const [resourceType, count] of resourceTypeMap) {
+      resourceTypes.push({ resourceType, count });
+      totalCount += count;
     }
 
     resourceTypes.sort((a, b) => b.count - a.count);
