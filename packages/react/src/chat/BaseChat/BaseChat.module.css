@@ -17,6 +17,7 @@
 .chatBody {
   background-color: var(--mantine-color-body);
   flex: 1;
+  min-height: 0;
   position: relative;
 }
 
@@ -26,7 +27,19 @@
 
 .chatInputContainer {
   background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  flex-shrink: 0;
   padding: 6px 8px;
+  position: relative;
+}
+
+.chatPendingFile {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3));
+  padding: 4px 8px;
 }
 
 .chatBubbleOuterWrap {
@@ -64,4 +77,44 @@
 
 .chatBubbleNameRight {
   text-align: right;
+}
+
+.chatPendingFile {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+  border-top: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-3));
+  padding: 4px 8px;
+}
+
+.chatPendingFileThumbnail {
+  height: 36px;
+  width: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.chatBubbleAttachmentWithText {
+  margin-top: 6px;
+}
+
+.chatBubbleAttachmentImage {
+  display: block;
+  max-width: 240px;
+  max-height: 240px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.chatBubbleAttachmentIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.chatBubbleMenu {
+  align-self: center;
 }

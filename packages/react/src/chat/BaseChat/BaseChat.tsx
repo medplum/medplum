@@ -3,9 +3,12 @@
 import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
+  Anchor,
   Group,
   LoadingOverlay,
+  Menu,
   Paper,
+  Popover,
   ScrollArea,
   Skeleton,
   Stack,
@@ -17,9 +20,10 @@ import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { ProfileResource, WithId } from '@medplum/core';
 import { getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
-import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
-import { IconArrowRight } from '@tabler/icons-react';
+import type { Attachment, Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
+import { useCachedBinaryUrl, useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
+import { IconArrowRight, IconDots, IconDownload, IconFileExport, IconFileText, IconPaperclip, IconX } from '@tabler/icons-react';
+import { DocumentPicker } from './DocumentPicker';
 import type { JSX, LegacyRef } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
@@ -83,12 +87,14 @@ export interface BaseChatProps extends PaperProps {
   readonly communications: Communication[];
   readonly setCommunications: (communications: Communication[]) => void;
   readonly query: string;
-  readonly sendMessage: (content: string) => void;
+  readonly sendMessage: (content: string, file?: File, existingDocRef?: DocumentReference) => void;
   readonly onMessageReceived?: (message: Communication) => void;
   readonly onMessageUpdated?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
   readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
+  readonly attachmentSubjectRef?: Reference;
+  readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
 
 /**
@@ -111,6 +117,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     inputDisabled,
     onError,
     excludeHeader = false,
+    attachmentSubjectRef,
+    onViewInDocuments,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -123,6 +131,21 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const [profile, setProfile] = useState(medplum.getProfile());
   const [reconnecting, setReconnecting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
+  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+  const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!pendingFile?.type.startsWith('image/')) {
+      setPreviewUrl(undefined);
+      return undefined;
+    }
+    const url = URL.createObjectURL(pendingFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [pendingFile]);
 
   if (!loading) {
     initialLoadRef.current = false;
@@ -201,13 +224,22 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       if (inputDisabled) {
         return;
       }
+      const message = formData.message?.trim() ?? '';
+      if (!message && !pendingFile && !pendingDocRef) {
+        return;
+      }
       if (inputRef.current) {
         inputRef.current.value = '';
       }
-      sendMessage(formData.message);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      sendMessage(message, pendingFile, pendingDocRef);
+      setPendingFile(undefined);
+      setPendingDocRef(undefined);
       scrollToBottomRef.current = true;
     },
-    [inputDisabled, sendMessage]
+    [inputDisabled, sendMessage, pendingFile, pendingDocRef]
   );
 
   // Disabled because we can make sure this will trigger an update when local profile !== medplum.getProfile()
@@ -303,6 +335,18 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
               const showDelivered = !!c.received && c.id === myLastDeliveredId;
+              const payloads = c.payload ?? [];
+              const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
+              const contentAttachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
+              const hasAttachment = !!(contentRef || contentAttachment);
+              const isSender = c.sender?.reference === profileRefStr;
+              const menu = hasAttachment ? (
+                <ChatBubbleMenu
+                  contentRef={contentRef}
+                  contentAttachment={contentAttachment}
+                  onViewInDocuments={onViewInDocuments}
+                />
+              ) : null;
               return (
                 <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                   {(!prevCommTime || currCommTime !== prevCommTime) && (
@@ -310,8 +354,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                       {currCommTime}
                     </Text>
                   )}
-                  {c.sender?.reference === profileRefStr ? (
+                  {isSender ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+                      <div className={classes.chatBubbleMenu}>{menu}</div>
                       <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
                       <ResourceAvatar
                         radius="xl"
@@ -324,6 +369,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
                       <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
                       <ChatBubble alignment="left" communication={c} />
+                      <div className={classes.chatBubbleMenu}>{menu}</div>
                     </Group>
                   )}
                 </Stack>
@@ -333,14 +379,96 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         )}
       </div>
       <div className={classes.chatInputContainer}>
+        {(pendingFile || pendingDocRef) && (
+          <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
+            {pendingDocRef && <IconFileText size="0.75rem" />}
+            {!pendingDocRef && previewUrl && (
+              <img src={previewUrl} alt={pendingFile?.name} className={classes.chatPendingFileThumbnail} />
+            )}
+            {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
+            <Text fz="xs" c="dimmed" flex={1} truncate>
+              {pendingDocRef
+                ? (pendingDocRef.description ?? pendingDocRef.content?.[0]?.attachment?.title ?? 'Document')
+                : pendingFile?.name}
+            </Text>
+            <ActionIcon
+              size="xs"
+              variant="subtle"
+              color="red"
+              onClick={() => {
+                setPendingDocRef(undefined);
+                setPendingFile(undefined);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                }
+              }}
+              aria-label="Remove attachment"
+            >
+              <IconX size="0.75rem" />
+            </ActionIcon>
+          </Group>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          style={{ display: 'none' }}
+          disabled={inputDisabled}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              setPendingFile(file);
+              setPendingDocRef(undefined);
+            }
+          }}
+        />
         <Form onSubmit={sendMessageInternal}>
           <TextInput
             ref={inputRef}
             name="message"
             placeholder={!inputDisabled ? 'Type a message...' : 'Replies are disabled'}
             radius="xl"
+            leftSectionWidth={42}
             rightSectionWidth={42}
             disabled={inputDisabled}
+            leftSection={
+              !inputDisabled ? (
+                <Popover
+                  opened={pickerOpen}
+                  onChange={setPickerOpen}
+                  position="top-start"
+                  withArrow
+                  shadow="md"
+                  withinPortal
+                >
+                  <Popover.Target>
+                    <ActionIcon
+                      onClick={() => setPickerOpen((o) => !o)}
+                      size="1.5rem"
+                      radius="xl"
+                      color={pendingFile || pendingDocRef ? 'blue' : 'gray'}
+                      variant={pendingFile || pendingDocRef ? 'filled' : 'subtle'}
+                      aria-label="Attach file"
+                    >
+                      <IconPaperclip size="1rem" stroke={1.5} />
+                    </ActionIcon>
+                  </Popover.Target>
+                  <Popover.Dropdown p={0}>
+                    <DocumentPicker
+                      subjectRef={attachmentSubjectRef}
+                      onSelect={(doc) => {
+                        setPendingDocRef(doc);
+                        setPendingFile(undefined);
+                        setPickerOpen(false);
+                      }}
+                      onUpload={() => {
+                        setPickerOpen(false);
+                        fileInputRef.current?.click();
+                      }}
+                    />
+                  </Popover.Dropdown>
+                </Popover>
+              ) : undefined
+            }
             rightSection={
               !inputDisabled ? (
                 <ActionIcon
@@ -370,7 +498,10 @@ interface ChatBubbleProps {
 
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const { communication, alignment, showDelivered } = props;
-  const content = communication.payload?.[0]?.contentString || '';
+  const payloads = communication.payload ?? [];
+  const textContent = payloads.find((p) => p.contentString)?.contentString ?? '';
+  const contentRef = payloads.find((p) => p.contentReference)?.contentReference;
+  const attachment = payloads.find((p) => p.contentAttachment)?.contentAttachment;
   const sentTime = new Date(communication.sent ?? -1);
   const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
@@ -396,7 +527,11 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
         }
       >
-        <div className={classes.chatBubble}>{content}</div>
+        <div className={classes.chatBubble}>
+          {textContent && <span>{textContent}</span>}
+          {contentRef && <ChatBubbleDocumentReference reference={contentRef} hasText={!!textContent} />}
+          {attachment && <ChatBubbleAttachment attachment={attachment} hasText={!!textContent} />}
+        </div>
       </div>
       {showDelivered && (
         <div style={{ textAlign: 'right' }}>
@@ -405,6 +540,90 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
         </div>
       )}
     </div>
+  );
+}
+
+interface ChatBubbleAttachmentProps {
+  readonly attachment: Attachment;
+  readonly hasText: boolean;
+}
+
+function ChatBubbleAttachment({ attachment, hasText }: ChatBubbleAttachmentProps): JSX.Element {
+  const url = useCachedBinaryUrl(attachment.url);
+  const isImage = attachment.contentType?.startsWith('image/');
+  return (
+    <div className={hasText ? classes.chatBubbleAttachmentWithText : undefined}>
+      {isImage && url && (
+        <img src={url} alt={attachment.title ?? 'Image'} className={classes.chatBubbleAttachmentImage} />
+      )}
+      <Group gap={4} wrap="nowrap">
+        <span className={classes.chatBubbleAttachmentIcon}>
+          <IconPaperclip size="0.75rem" />
+        </span>
+        <Anchor href={url ?? attachment.url} target="_blank" rel="noopener noreferrer" fz="xs" truncate>
+          {attachment.title ?? 'Download'}
+        </Anchor>
+      </Group>
+    </div>
+  );
+}
+
+interface ChatBubbleDocumentReferenceProps {
+  readonly reference: Reference;
+  readonly hasText: boolean;
+}
+
+function ChatBubbleDocumentReference({ reference, hasText }: ChatBubbleDocumentReferenceProps): JSX.Element | null {
+  const docRef = useResource<DocumentReference>(reference as Reference<DocumentReference>);
+  const attachment = docRef?.content?.[0]?.attachment;
+  if (!attachment) {
+    return null;
+  }
+  return <ChatBubbleAttachment attachment={attachment} hasText={hasText} />;
+}
+
+interface ChatBubbleMenuProps {
+  readonly contentRef?: Reference;
+  readonly contentAttachment?: Attachment;
+  readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
+}
+
+function ChatBubbleMenu({ contentRef, contentAttachment, onViewInDocuments }: ChatBubbleMenuProps): JSX.Element {
+  const docRef = useResource<DocumentReference>(contentRef as Reference<DocumentReference> | undefined);
+  const attachment = contentRef ? docRef?.content?.[0]?.attachment : contentAttachment;
+  const cachedUrl = useCachedBinaryUrl(attachment?.url);
+
+  const handleDownload = (): void => {
+    // Navigation requests don't include an Origin header so CORS never applies.
+    // fetch() / medplum.download() both send Origin which CloudFront rejects.
+    const href = cachedUrl ?? attachment?.url;
+    if (!href) {
+      return;
+    }
+    window.open(href, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <Menu withinPortal position="bottom-start" shadow="md">
+      <Menu.Target>
+        <ActionIcon variant="outline" color="gray" radius="xl" size="sm" aria-label="Attachment options">
+          <IconDots size="0.75rem" />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        {contentRef && onViewInDocuments && (
+          <Menu.Item
+            leftSection={<IconFileExport size="0.9rem" />}
+            onClick={() => onViewInDocuments(contentRef as Reference<DocumentReference>)}
+          >
+            View in Documents
+          </Menu.Item>
+        )}
+        <Menu.Item leftSection={<IconDownload size="0.9rem" />} onClick={handleDownload}>
+          Download
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   );
 }
 

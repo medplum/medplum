@@ -183,7 +183,7 @@ describe('BaseChat', () => {
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /send message/i }));
     });
-    expect(sendMessage).toHaveBeenLastCalledWith("Doc, I can't feel my legs!");
+    expect(sendMessage).toHaveBeenLastCalledWith("Doc, I can't feel my legs!", undefined, undefined);
   });
 
   test('`onMessageReceived` called on incoming message', async () => {
