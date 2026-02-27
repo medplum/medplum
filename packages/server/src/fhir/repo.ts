@@ -1360,10 +1360,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const criteriaResourceType = resource.criteria?.split('?')[0];
         const cleanupPromises: Promise<number>[] = [];
         if (author) {
-          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(author, `Subscription/${id}`));
+          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(author, [`Subscription/${id}`]));
         }
         if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {
-          cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, `Subscription/${id}`));
+          cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, [`Subscription/${id}`]));
         }
         await Promise.all(cleanupPromises);
       }
