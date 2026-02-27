@@ -539,6 +539,16 @@ export async function markInMemorySubscriptionsInactive(
     refStrs.push(...refs);
   }
 
+  // Remove from project-level active hashes
+  for (const [resourceType, refs] of refsByResourceType) {
+    try {
+      await removeActiveSubscriptions(projectId, resourceType, refs);
+    } catch {
+      globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
+      return;
+    }
+  }
+
   // Read cache entries upfront to collect author refs for per-user set cleanup
   // (must happen before del so the data is still available)
   let authorToRefs: Map<string, string[]> | undefined;
@@ -564,18 +574,13 @@ export async function markInMemorySubscriptionsInactive(
       }
       authorRefs.push(refStrs[i]);
     }
-
+    // In the case where we could be deleting a lot of keys at once, we prefer
+    // `unlink` due to it essentially being the same command ad `del`, just the nonblocking version
+    // Keys are unlinked from keyspace but the actual memory is not reclaimed immediately, and is done separately
+    // in a background thread
+    // See: https://redis.io/docs/latest/commands/unlink/
+    // See: https://support.redislabs.com/hc/en-us/articles/32321430231186-Massive-Key-Deletion-in-Redis-Without-Impacting-Performance
     await cacheRedis.unlink(refStrs);
-  }
-
-  // Remove from project-level active hashes
-  for (const [resourceType, refs] of refsByResourceType) {
-    try {
-      await removeActiveSubscriptions(projectId, resourceType, refs);
-    } catch {
-      globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
-      return;
-    }
   }
 
   // Clean up per-user active sets
