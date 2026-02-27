@@ -48,6 +48,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubscriptionJobData } from './subscription';
 import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
 const mockBullmq = jest.mocked(bullmqModule);
@@ -1993,6 +1994,48 @@ describe('Subscription Worker', () => {
 
       globalLogger.level = LogLevel.NONE;
       console.log = originalConsoleLog;
+    }));
+
+  test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      // Create a fresh project with its own repo so subscriptions have a known, isolated author
+      const { project, repo: testRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+      });
+
+      // Create 3 subscriptions all owned by the same author (testRepo's client)
+      for (let i = 0; i < 3; i++) {
+        await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+        });
+      }
+
+      const patient = await testRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const spy = jest.spyOn(workerUtils, 'findProjectMembership');
+
+      await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
+
+      // All 3 subscriptions match and share the same author, so findProjectMembership
+      // should only be called once due to the per-author access policy cache.
+      expect(spy).toHaveBeenCalledTimes(1);
+      // All 3 subscriptions should still have been enqueued.
+      expect(queue.add).toHaveBeenCalledTimes(3);
+
+      spy.mockRestore();
     }));
 
   test('Rest Hook Subscription -- Attachments are Rewritten', () =>

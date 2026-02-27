@@ -298,6 +298,10 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsSubEvents = [] as [string, SubEventsOptions][];
+  // Cache access policy results per author for the duration of this evaluation.
+  // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
+  // so the boolean result is identical for all subscriptions sharing the same author.
+  const accessPolicyCache = new Map<string, boolean>();
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
@@ -323,7 +327,13 @@ export async function addSubscriptionJobs(
       continue;
     }
     if (matches) {
-      if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+      const authorRef = getReferenceString(subscription.meta?.author as Reference);
+      let satisfied = accessPolicyCache.get(authorRef ?? '');
+      if (satisfied === undefined) {
+        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        accessPolicyCache.set(authorRef ?? '', satisfied);
+      }
+      if (!satisfied) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
