@@ -127,7 +127,7 @@ As another example, you may want to search for any [`Patient`](/docs/api/fhir/re
   </Tabs>
 </details>
 
-In the above example `_has:Observation` filters for [`Patient`](/docs/api/fhir/resources/patient) resources that have an [`Observation`](/docs/api/fhir/resources/observation). The `:subject` filters for [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) in the subject field. This is based on our initial search for a [`Patient`](/docs/api/fhir/resources/patient). Finally, `:code=11557-6` filters for that specific code on the [`Observation`](/docs/api/fhir/resources/observation).
+In the above example `_has:Observation` filters for [`Patient`](/docs/api/fhir/resources/patient) resources that have an [`Observation`](/docs/api/fhir/resources/observation). The `:subject` filters for [`Observation`](/docs/api/fhir/resources/observation) resources that reference a [`Patient`](/docs/api/fhir/resources/patient) in the subject field. This is based on our initial search for a [`Patient`](/docs/api/fhir/resources/patient). Finally, `:code=8867-4` filters for that specific code on the [`Observation`](/docs/api/fhir/resources/observation).
 
 ### Nesting reverse chained searches
 

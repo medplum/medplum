@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
+import { CPT, EMPTY, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
 import type { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -397,31 +397,44 @@ export function mapCcdaCodeToCodeableConcept(ccdaCode: CcdaCode | undefined): Co
     return undefined;
   }
 
-  const result: CodeableConcept = {
-    coding: [
-      {
-        system: mapCcdaSystemToFhir(ccdaCode['@_codeSystem']),
-        code: ccdaCode['@_code'],
-        display: ccdaCode['@_displayName'],
-      },
-    ],
-    text: ccdaCode['@_displayName'],
-  };
+  const codings: Coding[] = [];
 
-  if (ccdaCode.translation) {
-    for (const translation of ccdaCode.translation) {
-      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
-      if (translationSystem) {
-        result.coding?.push({
-          system: translationSystem,
-          code: translation['@_code'],
-          display: translation['@_displayName'],
-        });
-      }
+  const system = mapCcdaSystemToFhir(ccdaCode['@_codeSystem']);
+  const code = ccdaCode['@_code'];
+  const display = ccdaCode['@_displayName'];
+
+  if (system || code || display) {
+    codings.push({
+      ...(system && { system }),
+      ...(code && { code }),
+      ...(display && { display }),
+    });
+  }
+
+  for (const translation of ccdaCode.translation ?? EMPTY) {
+    const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+    const translationCode = translation['@_code'];
+    const translationDisplay = translation['@_displayName'];
+
+    if (translationSystem || translationCode || translationDisplay) {
+      codings.push({
+        ...(translationSystem && { system: translationSystem }),
+        ...(translationCode && { code: translationCode }),
+        ...(translationDisplay && { display: translationDisplay }),
+      });
     }
   }
 
-  return result;
+  const text = ccdaCode['@_displayName'];
+
+  if (codings.length === 0) {
+    return text ? { text } : undefined;
+  }
+
+  return {
+    coding: codings,
+    ...(text && { text }),
+  };
 }
 
 /**

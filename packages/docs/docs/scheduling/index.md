@@ -1,10 +1,14 @@
 # Scheduling
 
-Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows.
+Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows. The scheduling process involves three key steps:
 
-## Demo and Example App
+1. [**Defining Availability**](/docs/scheduling/defining-availability) - Administering when each service can be performed in time
+2. **Matching Availability** - Ensuring patients are matched to the right scheduled actors based on state, credentials, preferences, etc.
+3. **Consuming Availability** - How users actually select and book a unit of availability
 
-For a brief overview of Scheduling at Medplum, see the video below. For an example scheduling application, see our [Medplum Scheduling Demo](https://github.com/medplum/medplum-scheduling-demo).
+## Demo
+
+For a brief overview of Scheduling at Medplum, see the video below.
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/6yAROc0KPos" title="YouTube video player" frameborder="0"

@@ -14,9 +14,34 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Setup TurboRepo
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: npm ci
@@ -25,7 +50,7 @@ jobs:
         run: npm run build -- --filter=@medplum/react
 
       - name: Publish @medplum/react Chromatic
-        uses: chromaui/action@4d8ebd13658d795114f8051e25c28d66f14886c6 # v13.1.2
+        uses: chromaui/action@bc2d84ad2b60813a67d995c5582d696104a19383 # v13.3.2
         with:
           projectToken: chpt_429b596edaecafb
           workingDir: packages/react

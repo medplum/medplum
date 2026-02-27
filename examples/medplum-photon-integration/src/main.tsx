@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+/// <reference lib="DOM" />
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
 import { Notifications } from '@mantine/notifications';

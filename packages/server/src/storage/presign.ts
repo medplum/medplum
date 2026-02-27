@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import { createSign } from 'crypto';
+import { createSign } from 'node:crypto';
 import { getConfig } from '../config/loader';
 
 /**

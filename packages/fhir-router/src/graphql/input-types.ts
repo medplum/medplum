@@ -11,6 +11,8 @@ const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
   ...typeCache,
 };
 
+let patchOperationInputType: GraphQLInputObjectType | undefined;
+
 export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
   let result = inputTypeCache[inputType];
   if (!result) {
@@ -62,7 +64,7 @@ function buildInputPropertyField(
   elementDefinitionType: ElementDefinitionType,
   nameSuffix: string
 ): void {
-  let typeName = elementDefinitionType.code as string;
+  let typeName = elementDefinitionType.code;
   if (typeName === 'Resource') {
     // GraphQL does not support union types on input, so bailing here
     // That means we do not support Resource.contained on GraphQL input
@@ -84,9 +86,25 @@ function buildInputPropertyField(
     fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 
-  const propertyName = (key.split('.').pop() as string).replace(
-    '[x]',
-    capitalize(elementDefinitionType.code as string)
-  );
+  const propertyName = (key.split('.').pop() as string).replace('[x]', capitalize(elementDefinitionType.code));
   fields[propertyName] = fieldConfig;
+}
+
+export function getPatchOperationInputType(): GraphQLInputObjectType {
+  if (!patchOperationInputType) {
+    patchOperationInputType = new GraphQLInputObjectType({
+      name: 'PatchOperationInput',
+      description: 'A JSON Patch operation as per RFC 6902',
+      fields: {
+        op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
+        path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
+        value: {
+          type: GraphQLString,
+          description:
+            'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)',
+        },
+      },
+    });
+  }
+  return patchOperationInputType;
 }

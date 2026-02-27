@@ -71,9 +71,12 @@ describe('EnumMapper', () => {
       ],
     });
 
-    expect(r2?.coding?.length).toBe(2);
+    expect(r2?.coding?.length).toBe(3);
     expect(r2?.coding?.[0]?.code).toBe('c1');
     expect(r2?.coding?.[0]?.system).toBe(SNOMED);
+    expect(r2?.coding?.[1]?.code).toBe('c3');
+    expect(r2?.coding?.[2]?.code).toBe('c4');
+    expect(r2?.coding?.[2]?.system).toBeUndefined();
     expect(r2?.text).toBe('d1');
   });
 
@@ -127,5 +130,64 @@ describe('EnumMapper', () => {
 
     const r4 = mapCodeableConceptToCcdaCode({ coding: [{ code: 'foo', system: 'urn:oid:9.9.9.9' }] });
     expect(r4).toMatchObject({ '@_code': 'foo', '@_codeSystem': '9.9.9.9' });
+  });
+
+  describe('mapCcdaCodeToCodeableConcept nullFlavor handling', () => {
+    test('returns undefined for code with only nullFlavor', () => {
+      const result = mapCcdaCodeToCodeableConcept({
+        '@_nullFlavor': 'NA',
+      });
+      expect(result).toBeUndefined();
+    });
+
+    test('returns coding with just system when codeSystem present but no code or displayName', () => {
+      const result = mapCcdaCodeToCodeableConcept({
+        '@_nullFlavor': 'OTH',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+      });
+      expect(result).toEqual({ coding: [{ system: SNOMED }] });
+    });
+
+    test('returns coding with display when displayName present', () => {
+      const result = mapCcdaCodeToCodeableConcept({
+        '@_nullFlavor': 'OTH',
+        '@_displayName': 'Some description',
+      });
+      expect(result).toEqual({ coding: [{ display: 'Some description' }], text: 'Some description' });
+    });
+
+    test('includes primary coding with just system when codeSystem present plus translations', () => {
+      const result = mapCcdaCodeToCodeableConcept({
+        '@_nullFlavor': 'OTH',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+        translation: [
+          { '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'trans1', '@_displayName': 'Translation 1' },
+        ],
+      });
+      expect(result).toBeDefined();
+      expect(result?.coding?.length).toBe(2);
+      expect(result?.coding?.[0]?.system).toBe(SNOMED);
+      expect(result?.coding?.[0]?.code).toBeUndefined();
+      expect(result?.coding?.[1]?.code).toBe('trans1');
+      expect(result?.coding?.[1]?.system).toBe(LOINC);
+    });
+
+    test('filters out translations with nullFlavor', () => {
+      const result = mapCcdaCodeToCodeableConcept({
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+        '@_code': 'primary',
+        '@_displayName': 'Primary',
+        translation: [
+          { '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'trans1', '@_displayName': 'Translation 1' },
+          { '@_nullFlavor': 'NA' },
+          { '@_codeSystem': '2.16.840.1.113883.6.1', '@_code': 'trans2', '@_displayName': 'Translation 2' },
+        ],
+      });
+      expect(result).toBeDefined();
+      expect(result?.coding?.length).toBe(3);
+      expect(result?.coding?.[0]?.code).toBe('primary');
+      expect(result?.coding?.[1]?.code).toBe('trans1');
+      expect(result?.coding?.[2]?.code).toBe('trans2');
+    });
   });
 });

@@ -10,10 +10,9 @@ import type { Pool, PoolClient } from 'pg';
 import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
-import { AuthenticatedRequestContext } from './context';
 import { DatabaseMode, getDatabasePool } from './database';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import type { SystemRepository } from './fhir/repo';
+import { getGlobalSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import type {
@@ -26,7 +25,6 @@ import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import type { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
-import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
@@ -105,15 +103,17 @@ function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
   config.database.disableRunPostDeployMigrations = !postDeploy;
 }
 
-async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<void> {
-  const jobs = (await repo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'))) as WithId<AsyncJob>[];
-  await repo.expungeResources(
+async function expungePostDeployMigrationAsyncJob(systemRepo: SystemRepository): Promise<void> {
+  const jobs = await systemRepo.searchResources(parseSearchRequest('AsyncJob?type=data-migration'));
+  await systemRepo.expungeResources(
     'AsyncJob',
     jobs.map((job) => job.id)
   );
 }
 
 describe('Database migrations', () => {
+  let systemRepo: SystemRepository;
+
   beforeAll(async () => {
     console.log = jest.fn();
 
@@ -123,11 +123,12 @@ describe('Database migrations', () => {
       .mockImplementation(mockMarkPostDeployMigrationCompleted);
     jest.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
 
+    systemRepo = getGlobalSystemRepo();
     await loadTestConfig();
     // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
     // to facilitate expunging all relevant AsyncJob
     await initAppServices(getConfig());
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
+    await expungePostDeployMigrationAsyncJob(systemRepo);
     await shutdownApp();
   });
 
@@ -149,7 +150,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -187,7 +188,7 @@ describe('Database migrations', () => {
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
           const jobData = queueAddSpy.mock.calls[0][1];
 
-          const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+          const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
 
           expect(jobData).toEqual(
             expect.objectContaining<CustomPostDeployMigrationJobData>({
@@ -217,7 +218,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -242,7 +243,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -281,7 +282,7 @@ describe('Database migrations', () => {
 
     test('Existing AsyncJob that gets requeued and completes', () =>
       withTestContext(async () => {
-        const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+        const asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -303,10 +304,10 @@ describe('Database migrations', () => {
 
     test('Existing data migration job in a project is ignored', () =>
       withTestContext(async () => {
-        const project = await getSystemRepo().createResource<Project>({ resourceType: 'Project' });
+        const project = await systemRepo.createResource<Project>({ resourceType: 'Project' });
 
         // Not using system repo to create the job so that AsyncJob is in a project
-        const projectAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+        const projectAsyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           meta: {
             project: project.id,
@@ -346,7 +347,6 @@ describe('Database migrations', () => {
 
     test('Multiple data migration jobs with accepted status', () =>
       withTestContext(async () => {
-        const systemRepo = getSystemRepo();
         await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -396,9 +396,7 @@ describe('Database migrations', () => {
         mockValues.postDeployVersion = 0;
 
         await expect(
-          getSystemRepo().searchOne<AsyncJob>(
-            parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' })
-          )
+          systemRepo.searchOne<AsyncJob>(parseSearchRequest('AsyncJob', { type: 'data-migration', status: 'accepted' }))
         ).resolves.toBeUndefined();
 
         expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
@@ -418,7 +416,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
       await shutdownApp();
     });
 
@@ -430,7 +428,6 @@ describe('Database migrations', () => {
         mockValues.serverVersion = '3.2.4';
         setMigrationsConfig(true, postDeploy);
 
-        const systemRepo = getSystemRepo();
         let asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -442,7 +439,7 @@ describe('Database migrations', () => {
         });
 
         const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob().execute(undefined, jobData);
+        const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -461,7 +458,6 @@ describe('Database migrations', () => {
         mockValues.serverVersion = serverVersion;
         setMigrationsConfig(true, postDeploy);
 
-        const systemRepo = getSystemRepo();
         let asyncJob = await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
@@ -475,7 +471,7 @@ describe('Database migrations', () => {
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
         const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob().execute(undefined, jobData);
+        await new ReindexJob(systemRepo).execute(undefined, jobData);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -507,7 +503,6 @@ describe('Database migrations', () => {
       [false, undefined],
     ])('Skips only if in firstBoot mode [%s] and has dataVersion [%s]', async (firstBootMode, dataVersion) => {
       mockValues.postDeployVersion = firstBootMode ? MigrationVersion.FIRST_BOOT : MigrationVersion.NONE;
-      const systemRepo = getSystemRepo();
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -563,12 +558,9 @@ describe('Database migrations', () => {
     beforeAll(async () => {
       const config = await loadTestConfig();
       await initApp(app, config);
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
 
-      requestContextStore.enterWith(AuthenticatedRequestContext.system());
       ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
-
-      const systemRepo = getSystemRepo();
 
       const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -610,7 +602,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
-      await expungePostDeployMigrationAsyncJob(getSystemRepo());
+      await expungePostDeployMigrationAsyncJob(systemRepo);
     });
 
     afterAll(async () => {
@@ -732,7 +724,7 @@ describe('Database migrations', () => {
       });
 
       test('Nothing to do', async () => {
-        generateMigrationActionsSpy.mockResolvedValueOnce([]);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: [], postDeploy: [] });
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
         const res1 = await request(app)
@@ -753,7 +745,7 @@ describe('Database migrations', () => {
             tableName: 'AsyncJob',
           },
         ];
-        generateMigrationActionsSpy.mockResolvedValueOnce(pendingActions);
+        generateMigrationActionsSpy.mockResolvedValueOnce({ preDeploy: pendingActions, postDeploy: [] });
 
         const queueAddSpy = getQueueAddSpy();
         expect(queueAddSpy).toHaveBeenCalledTimes(0);
@@ -767,7 +759,10 @@ describe('Database migrations', () => {
         const jobData = queueAddSpy.mock.calls[0][1];
         expect(jobData).toMatchObject({
           type: 'dynamic',
-          migrationActions: pendingActions,
+          migrationActions: {
+            preDeploy: pendingActions,
+            postDeploy: [],
+          },
         });
 
         expect(res1.status).toStrictEqual(202);

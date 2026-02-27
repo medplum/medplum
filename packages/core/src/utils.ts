@@ -9,6 +9,7 @@ import type {
   Extension,
   ExtensionValue,
   Identifier,
+  Meta,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -25,6 +26,16 @@ import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
 import { isReference, isResource } from './types';
+
+/**
+ * Sleep options.
+ */
+export interface SleepOptions {
+  /**
+   * Optional `AbortSignal` that can be used to cancel the scheduled sleep.
+   */
+  readonly signal?: AbortSignal | null;
+}
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -114,7 +125,7 @@ export function resolveId(input: Reference | Resource | undefined): string | und
  * Parses a reference and returns a tuple of [ResourceType, ID].
  * @param reference - A reference to a FHIR resource.
  * @returns A tuple containing the `ResourceType` and the ID of the resource.
- * @throws {OperationOutcomeError} If the reference cannot be parsed.
+ * @throws {@link OperationOutcomeError} If the reference cannot be parsed.
  */
 export function parseReference<T extends Resource>(reference: Reference<T> | undefined): [T['resourceType'], string] {
   if (reference?.reference === undefined) {
@@ -125,6 +136,26 @@ export function parseReference<T extends Resource>(reference: Reference<T> | und
     throw new OperationOutcomeError(validationError('Unable to parse reference string.'));
   }
   return [type, id];
+}
+
+/**
+ * Normalizes Medplum's `meta.account` and `meta.accounts` into a singular array of FHIR references.
+ * @param meta - The `meta` object of a FHIR resource.
+ * @returns An array of references, or `undefined` if none.
+ */
+export function extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
+  if (!meta) {
+    return undefined;
+  }
+  if (meta.accounts && meta.account) {
+    const accounts = meta.accounts;
+    if (accounts.some((a) => a.reference === meta.account?.reference)) {
+      return accounts;
+    }
+    return [meta.account, ...accounts];
+  } else {
+    return arrayify(meta.accounts ?? meta.account);
+  }
 }
 
 /**
@@ -334,13 +365,11 @@ function buildQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        result[item.linkId] = item.answer[0];
-      }
-      buildQuestionnaireAnswerItems(item.item, result);
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      result[item.linkId] = item.answer[0];
     }
+    buildQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -366,17 +395,15 @@ function buildAllQuestionnaireAnswerItems(
   items: QuestionnaireResponseItem[] | undefined,
   result: Record<string, QuestionnaireResponseItemAnswer[]>
 ): void {
-  if (items) {
-    for (const item of items) {
-      if (item.linkId && item.answer && item.answer.length > 0) {
-        if (result[item.linkId]) {
-          result[item.linkId] = [...result[item.linkId], ...item.answer];
-        } else {
-          result[item.linkId] = item.answer;
-        }
+  for (const item of items ?? EMPTY) {
+    if (item.linkId && item.answer && item.answer.length > 0) {
+      if (result[item.linkId]) {
+        result[item.linkId] = [...result[item.linkId], ...item.answer];
+      } else {
+        result[item.linkId] = item.answer;
       }
-      buildAllQuestionnaireAnswerItems(item.item, result);
     }
+    buildAllQuestionnaireAnswerItems(item.item, result);
   }
 }
 
@@ -404,6 +431,11 @@ export function getIdentifier(resource: Resource, system: string): string | unde
   return undefined;
 }
 
+export interface SetIdentifierOptions {
+  /** IdentifierUse code. See {@link https://build.fhir.org/valueset-identifier-use.html} */
+  use?: Identifier['use'];
+}
+
 /**
  * Sets a resource identifier for the given system.
  *
@@ -418,20 +450,31 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param resource - The resource to add the identifier to.
  * @param system - The identifier system.
  * @param value - The identifier value.
+ * @param options - Optional attributes to set
  */
-export function setIdentifier(resource: Resource & { identifier?: Identifier[] }, system: string, value: string): void {
+export function setIdentifier(
+  resource: Resource & { identifier?: Identifier[] },
+  system: string,
+  value: string,
+  options?: SetIdentifierOptions
+): void {
+  const identifier: Identifier = { system, value };
+  if (options?.use) {
+    identifier.use = options.use;
+  }
+
   const identifiers = resource.identifier;
   if (!identifiers) {
-    resource.identifier = [{ system, value }];
+    resource.identifier = [identifier];
     return;
   }
-  for (const identifier of identifiers) {
-    if (identifier.system === system) {
-      identifier.value = value;
+  for (const existingIdentifier of identifiers) {
+    if (existingIdentifier.system === system) {
+      Object.assign(existingIdentifier, identifier);
       return;
     }
   }
-  identifiers.push({ system, value });
+  identifiers.push(identifier);
 }
 
 /**
@@ -629,13 +672,15 @@ export function isEmpty(v: unknown): boolean {
   return false;
 }
 
-export type CanBePopulated = { length: number } | object;
+export type CanBePopulated = { length: number } | Record<string, any>;
 /**
  * Returns true if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  * @param arg - Any value
  * @returns True if the value is a non-empty string, an object with a length property greater than zero, or a non-empty object
  */
-export function isPopulated<T extends { length: number } | object>(arg: CanBePopulated | undefined | null): arg is T {
+export function isPopulated<T extends { length: number } | Record<string, any>>(
+  arg: CanBePopulated | undefined | null
+): arg is T {
   if (arg === null || arg === undefined) {
     return false;
   }
@@ -717,8 +762,12 @@ function deepEqualsObject(
   path: string | undefined
 ): boolean {
   const keySet = new Set<string>();
-  Object.keys(object1).forEach((k) => keySet.add(k));
-  Object.keys(object2).forEach((k) => keySet.add(k));
+  for (const k of Object.keys(object1)) {
+    keySet.add(k);
+  }
+  for (const k of Object.keys(object2)) {
+    keySet.add(k);
+  }
   if (path === 'meta') {
     keySet.delete('versionId');
     keySet.delete('lastUpdated');
@@ -852,14 +901,8 @@ export function isCodeableConcept(value: unknown): value is CodeableConcept & { 
  * @returns The code for the matching system, or undefined if not found.
  */
 export function findCodeBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
-  if (!categories) {
-    return undefined;
-  }
-  for (const category of categories) {
-    if (!category.coding) {
-      continue;
-    }
-    for (const coding of category.coding) {
+  for (const category of categories ?? EMPTY) {
+    for (const coding of category.coding ?? EMPTY) {
       if (coding.system === system) {
         return coding.code;
       }
@@ -911,7 +954,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
-    result[i] = String.fromCharCode(bytes[i]);
+    result[i] = String.fromCodePoint(bytes[i]);
   }
   return window.btoa(result.join(''));
 }
@@ -975,9 +1018,7 @@ export function getCodeBySystem(concept: CodeableConcept, system: string): strin
  * @param code - The code value.
  */
 export function setCodeBySystem(concept: CodeableConcept, system: string, code: string): void {
-  if (!concept.coding) {
-    concept.coding = [];
-  }
+  concept.coding ??= [];
   const coding = concept.coding.find((c) => c.system === system);
   if (coding) {
     coding.code = code;
@@ -1112,7 +1153,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return parseFloat(a.toFixed(precision));
+  return Number.parseFloat(a.toFixed(precision));
 }
 
 /**
@@ -1203,6 +1244,8 @@ export function findResourceByCode(
   );
 }
 
+export function arrayify<T>(value: NonNullable<T> | NonNullable<T>[]): T[];
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined;
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (value === undefined) {
     return undefined;
@@ -1223,12 +1266,24 @@ export function singularize<T>(value: T | T[] | undefined): T | undefined {
 
 /**
  * Sleeps for the specified number of milliseconds.
- * @param ms - Time delay in milliseconds
+ * @param ms - Time delay in milliseconds.
+ * @param options - Optional sleep options.
  * @returns A promise that resolves after the specified number of milliseconds.
  */
-export const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
+export const sleep = (ms: number, options?: SleepOptions): Promise<void> =>
+  new Promise((resolve, reject) => {
+    options?.signal?.throwIfAborted();
+
+    const timeout = setTimeout(resolve, ms);
+
+    options?.signal?.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timeout);
+        reject(options.signal?.reason);
+      },
+      { once: true }
+    );
   });
 
 /**
@@ -1457,13 +1512,31 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
  */
 export function escapeHtml(unsafe: string): string {
   return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/“/g, '&ldquo;')
-    .replace(/”/g, '&rdquo;')
-    .replace(/‘/g, '&lsquo;')
-    .replace(/’/g, '&rsquo;')
-    .replace(/…/g, '&hellip;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('“', '&ldquo;')
+    .replaceAll('”', '&rdquo;')
+    .replaceAll('‘', '&lsquo;')
+    .replaceAll('’', '&rsquo;')
+    .replaceAll('…', '&hellip;');
 }
+
+/**
+ * Helper function to narrow a type by excluding undefined/null values.
+ * @param value - The value to refine
+ * @returns boolean
+ *
+ * @example
+ * ```typescript
+ * const arr: Array<number | undefined> = [1,undefined];
+ * const refined: Array<number> = arr.filter(isDefined);
+ * ```
+ */
+export function isDefined<T>(value: T | undefined | null): value is T {
+  return value !== undefined && value !== null;
+}
+
+/** Constant empty array. */
+export const EMPTY: readonly [] = Object.freeze([]);

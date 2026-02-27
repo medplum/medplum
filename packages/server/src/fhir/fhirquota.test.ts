@@ -10,30 +10,30 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;
   let config: MedplumServerConfig;
-  let redisConfig: TestRedisConfig;
+  let rateLimitRedisConfig: TestRedisConfig;
   let accessToken: string;
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    redisConfig = config.redis as TestRedisConfig;
+    rateLimitRedisConfig = config.rateLimitRedis as TestRedisConfig;
+    expect(rateLimitRedisConfig).toBeDefined();
   });
 
   beforeEach(async () => {
     app = express();
     config.defaultRateLimit = -1;
-    redisConfig.db = 6; // Use different temp Redis instance for these tests
-    redisConfig.keyPrefix = 'fhir-quota:';
+    rateLimitRedisConfig.keyPrefix = 'fhir-quota:';
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 
@@ -42,13 +42,20 @@ describe('FHIR Rate Limits', () => {
     await initApp(app, config);
     ({ accessToken } = await createTestProject({ withAccessToken: true }));
 
+    // Allow first request
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
     expect(res.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
 
+    // Block next request
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res2.status).toBe(429);
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
+
+    // Block subsequent request
+    const res3 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
+    expect(res3.status).toBe(429);
+    expect(res3.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
   test('Blocks single too-expensive request', async () => {

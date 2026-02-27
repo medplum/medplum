@@ -1,0 +1,45 @@
+.conversationItem {
+  padding: var(--mantine-spacing-sm);
+  margin-bottom: 4px;
+  border-radius: var(--mantine-radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--mantine-color-gray-7);
+  border: 1px solid transparent;
+}
+
+.conversationItem:hover {
+  background-color: var(--mantine-color-gray-1);
+  color: var(--mantine-color-dark-9);
+}
+
+.conversationItemActive {
+  background-color: var(--mantine-color-blue-0);
+  color: var(--mantine-color-blue-9);
+  border: 1px solid var(--mantine-color-blue-2);
+  box-shadow: none;
+}
+
+.conversationItemActive:hover {
+  background-color: var(--mantine-color-blue-1);
+}
+
+/* Dark Mode Overrides */
+[data-mantine-color-scheme="dark"] .conversationItem {
+  color: var(--mantine-color-gray-5);
+}
+
+[data-mantine-color-scheme="dark"] .conversationItem:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--mantine-color-gray-3);
+}
+
+[data-mantine-color-scheme="dark"] .conversationItemActive {
+  background-color: var(--mantine-color-blue-9);
+  color: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-blue-7);
+}
+
+[data-mantine-color-scheme="dark"] .conversationItemActive:hover {
+  background-color: var(--mantine-color-blue-8);
+}

@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { heartbeat } from './heartbeat';
-import { getRedis } from './redis';
+import { getCacheRedis } from './redis';
 import { getServerVersion } from './util/version';
 
 const SERVER_REGISTRY_KEY_PREFIX = 'medplum:server-registry:';
@@ -23,7 +23,7 @@ export type ServerRegistryInfo = {
 };
 
 export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
-  const redis = getRedis();
+  const redis = getCacheRedis();
   await redis.setex(SERVER_REGISTRY_KEY_PREFIX + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
 }
 
@@ -84,7 +84,7 @@ export type ClusterStatus = {
  * @returns A list of registered servers.
  */
 export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerRegistryInfo[]> {
-  const redis = getRedis();
+  const redis = getCacheRedis();
   const servers: ServerRegistryInfo[] = [];
   const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + '*');
 
@@ -100,7 +100,7 @@ export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerR
 
   if (ensureSelf) {
     const self = getServerRegistryPayload();
-    if (!servers.find((s) => s.id === self.id)) {
+    if (!servers.some((s) => s.id === self.id)) {
       servers.push(self);
     }
   }
@@ -140,7 +140,7 @@ export async function getClusterStatus(servers: ServerRegistryInfo[]): Promise<C
     totalServers: servers.length,
     versions: versionCounts,
     oldestVersion: versions[0],
-    newestVersion: versions[versions.length - 1],
+    newestVersion: versions.at(-1),
     isHomogeneous: versions.length === 1,
     servers: servers.map((server) => addComputedFields(now, server)),
   };

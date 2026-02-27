@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, isString, isUUID, Operator } from '@medplum/core';
+import { badRequest, isString, isUUID, OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -78,7 +78,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: 'https://accounts.google.com',
-    algorithms: ['RS256'],
+    algorithms: [OAuthSigningAlgorithm.RS256],
     audience: googleClientId,
   };
 
@@ -109,7 +109,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getSystemRepo();
+    const systemRepo = getGlobalSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
@@ -134,6 +134,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.createUser || projectId === 'new',
+    pictureUrl: claims.picture,
   });
   await sendLoginResult(res, login);
 }
@@ -159,6 +160,6 @@ function getProjectsByGoogleClientId(googleClientId: string, projectId: string |
     });
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
 }

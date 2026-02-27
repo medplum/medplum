@@ -168,7 +168,7 @@ export async function fetchHealthiePatientIdsPage(
   }
 
   const hasNextPage = users.length === pageSize;
-  const nextCursor = users.length > 0 ? users[users.length - 1].cursor : undefined;
+  const nextCursor = users.at(-1)?.cursor;
 
   return {
     users: users.map((user) => ({ id: user.id, updated_at: user.updated_at })),

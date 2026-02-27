@@ -8,7 +8,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -17,8 +17,11 @@ const email = `multi${randomUUID()}@example.com`;
 const password = randomUUID();
 let profile1: ProfileResource;
 let profile2: ProfileResource;
+let membership1: ProjectMembership;
 
 describe('Profile', () => {
+  const systemRepo = getGlobalSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await withTestContext(async () => {
@@ -35,6 +38,7 @@ describe('Profile', () => {
       });
 
       profile1 = registerResult.profile;
+      membership1 = registerResult.membership;
 
       const registerResult2 = await registerNew({
         firstName: 'Multi12',
@@ -92,7 +96,6 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await withTestContext(() =>
       systemRepo.updateResource({
@@ -122,7 +125,6 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await withTestContext(() =>
       systemRepo.updateResource({
@@ -152,7 +154,6 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const systemRepo = getSystemRepo();
     const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await withTestContext(() =>
       systemRepo.updateResource({
@@ -200,7 +201,6 @@ describe('Profile', () => {
 
   test('Membership for different user', async () => {
     // Create a dummy ProjectMembership
-    const systemRepo = getSystemRepo();
     const membership = await withTestContext(() =>
       systemRepo.createResource<ProjectMembership>({
         resourceType: 'ProjectMembership',
@@ -250,5 +250,32 @@ describe('Profile', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
+  });
+
+  test('Memberships with identifiers can be differentiated in the login response', async () => {
+    //Update the membership1 to contain an identifier
+    await withTestContext(() =>
+      systemRepo.updateResource({
+        ...membership1,
+        identifier: [
+          {
+            system: 'https://medplum.com/identifier/label',
+            value: 'Label-1',
+          },
+        ],
+      })
+    );
+    const res2 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.memberships).toBeDefined();
+    const updatedMembership = res2.body.memberships.find((p: any) => p.id === membership1.id);
+    expect(updatedMembership).toBeDefined();
+    expect(updatedMembership.identifier).toBeDefined();
+    expect(updatedMembership.identifier[0].value).toBe('Label-1');
   });
 });

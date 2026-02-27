@@ -128,11 +128,11 @@ export function Vitals(props: VitalsProps): JSX.Element {
         createCompoundObservation(patient, encounter, BP, 'Blood pressure', [
           {
             code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
+            valueQuantity: createQuantity(Number.parseFloat(formData['systolic']), 'mm[Hg]'),
           },
           {
             code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
+            valueQuantity: createQuantity(Number.parseFloat(formData['diastolic']), 'mm[Hg]'),
           },
         ])
       );
@@ -147,7 +147,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
             encounter,
             meta.code,
             meta.title,
-            createQuantity(parseFloat(formData[meta.name]), meta.unit)
+            createQuantity(Number.parseFloat(formData[meta.name]), meta.unit)
           )
         );
       }

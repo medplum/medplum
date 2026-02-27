@@ -30,12 +30,15 @@ type CodeSystemSubsumesParameters = {
 
 export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
+  const repo = getAuthenticatedContext().repo;
 
   let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
-    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, { version: params.version });
+    codeSystem = await findTerminologyResource<CodeSystem>(repo, 'CodeSystem', params.system, {
+      version: params.version,
+    });
   } else {
     return [badRequest('No code system specified')];
   }

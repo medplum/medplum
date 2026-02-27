@@ -5,11 +5,12 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
-import type { IncomingMessage } from 'http';
+import type { IncomingMessage } from 'node:http';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { publish } from '../pubsub';
+import { getPubSubRedisSubscriber } from '../redis';
 import { getMcpServer } from './server';
 
 export const mcpRouter = Router().use(authenticateRequest);
@@ -33,7 +34,7 @@ mcpRouter.all('/stream', async (req: Request, res: Response) => {
 mcpRouter.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/mcp/sse', res);
 
-  const redisSubscriber = getRedisSubscriber();
+  const redisSubscriber = getPubSubRedisSubscriber();
   redisSubscriber.on('message', async (_channel: string, data: string) => {
     try {
       const dummyReq = { headers: { 'content-type': 'application/json' } } as IncomingMessage;
@@ -76,7 +77,7 @@ mcpRouter.post(
     }
     const sessionId = req.query?.sessionId as string;
     const body = req.body;
-    await getRedis().publish(getRedisChannelForSessionId(sessionId), JSON.stringify(body));
+    await publish(getRedisChannelForSessionId(sessionId), JSON.stringify(body));
     res.status(202).end('Accepted');
   }
 );

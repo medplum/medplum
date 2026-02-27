@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getIdentifier, getReferenceString, Hl7Context, Hl7Field, Hl7Message, Hl7Segment } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
+import { getIdentifier, getReferenceString, Hl7Context, Hl7Field, Hl7Message, Hl7Segment } from '@medplum/core';
 import type {
   HumanName,
   Patient,
@@ -229,7 +229,7 @@ function formatName(name: HumanName | undefined): string {
   return new Hl7Field([components]).toString();
 }
 
-function mapGender(gender: Patient['gender'] | undefined): string {
+function mapGender(gender: Patient['gender']): string {
   switch (gender?.toLowerCase().at(0)) {
     case 'm':
     case 'f':

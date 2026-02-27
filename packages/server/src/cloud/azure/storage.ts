@@ -4,8 +4,8 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
 import { isString, splitN } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import type { IncomingMessage } from 'http';
-import type { Readable } from 'stream';
+import type { IncomingMessage } from 'node:http';
+import type { Readable } from 'node:stream';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 
@@ -72,7 +72,7 @@ export class AzureBlobStorage extends BaseBinaryStorage {
     // we need to get this key to generate the SAS URL with the medplum managed identity
     const userDelegationKey = await this.client.getUserDelegationKey(
       new Date(),
-      new Date(new Date().valueOf() + 3600 * 1000) // 1 hour expiry
+      new Date(Date.now() + 3600 * 1000) // 1 hour expiry
     );
 
     const now = new Date();

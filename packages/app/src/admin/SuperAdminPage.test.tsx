@@ -74,16 +74,6 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  test('Start data migration', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Start Migration'));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
   test('Reindex resource type', async () => {
     setup();
 
@@ -96,6 +86,32 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Reindex form show/hide advanced options', async () => {
+    setup();
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Show Advanced Options'));
+    });
+
+    expect(screen.getByLabelText('Resources per batch')).toBeInTheDocument();
+    expect(screen.getByLabelText('Search query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Upsert query timeout (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Delay between batches (ms)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Log progress every N resources')).toBeInTheDocument();
+    expect(screen.getByLabelText('End timestamp buffer (minutes)')).toBeInTheDocument();
+    expect(screen.getByLabelText('Max iteration attempts')).toBeInTheDocument();
+
+    expect(screen.getByText('Hide Advanced Options')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Hide Advanced Options'));
+    });
+
+    expect(screen.queryByLabelText('Resources per batch')).not.toBeInTheDocument();
   });
 
   test('Purge resources', async () => {
@@ -363,6 +379,55 @@ describe('SuperAdminPage', () => {
       );
     });
 
+    test('Explain search with total count checkbox', async () => {
+      setup();
+
+      medplum.router.add('POST', '$explain', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              { name: 'query', valueString: 'SELECT * FROM observation' },
+              { name: 'parameters', valueString: '[]' },
+              { name: 'explain', valueString: 'Seq Scan on observation' },
+              { name: 'countEstimate', valueInteger: 12345 },
+              { name: 'countAccurate', valueInteger: 12300 },
+            ],
+          },
+        ];
+      });
+
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText('Search *'), {
+          target: { value: 'Observation?code=85354-9' },
+        });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Total count'));
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Explain Search' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith(
+        'fhir/R4/$explain',
+        expect.objectContaining({
+          count: true,
+          query: 'Observation?code=85354-9',
+          format: 'text',
+        }),
+        undefined,
+        expect.any(Object)
+      );
+
+      expect(await screen.findByText('Counts')).toBeInTheDocument();
+      expect(await screen.findByText('Estimate: 12,345')).toBeInTheDocument();
+      expect(await screen.findByText('Accurate: 12,300')).toBeInTheDocument();
+    });
+
     test('Explain search validation - missing query', async () => {
       setup();
 
@@ -407,7 +472,7 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const input = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const input = screen.getByPlaceholderText('ProjectMembership');
 
       await act(async () => {
         fireEvent.change(input, {
@@ -510,9 +575,9 @@ describe('SuperAdminPage', () => {
         });
       });
 
-      const projectInput = screen.getByPlaceholderText('Project') as HTMLInputElement;
-      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient') as HTMLInputElement;
-      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership') as HTMLInputElement;
+      const projectInput = screen.getByPlaceholderText('Project');
+      const practitionerInput = screen.getByPlaceholderText('Practitioner or Patient');
+      const projectMembershipInput = screen.getByPlaceholderText('ProjectMembership');
 
       // project input
       await act(async () => {

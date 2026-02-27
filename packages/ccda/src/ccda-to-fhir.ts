@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
+import { append, createReference, EMPTY, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
 import type {
   Address,
   AllergyIntolerance,
@@ -63,6 +63,7 @@ import {
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
 } from './oids';
+import { sanitizeNullFlavors } from './sanitize';
 import {
   ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
@@ -139,7 +140,7 @@ export interface CcdaToFhirOptions {
  * @returns The converted FHIR resources
  */
 export function convertCcdaToFhir(ccda: Ccda, options?: CcdaToFhirOptions): Bundle {
-  return new CcdaToFhirConverter(ccda, options).convert();
+  return new CcdaToFhirConverter(sanitizeNullFlavors(ccda), options).convert();
 }
 
 class CcdaToFhirConverter {
@@ -179,7 +180,7 @@ class CcdaToFhirConverter {
   private createPatient(patientRole: CcdaPatientRole): Patient {
     const patient = patientRole.patient;
     const extensions: Extension[] = [];
-    if (patient.raceCode && patient.raceCode.length > 0 && !patient.raceCode[0]['@_nullFlavor']) {
+    if (patient.raceCode && patient.raceCode.length > 0) {
       extensions.push({
         url: US_CORE_RACE_URL,
         extension: patient.raceCode.map((raceCode) => ({
@@ -189,7 +190,7 @@ class CcdaToFhirConverter {
       });
     }
 
-    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0 && !patient.ethnicGroupCode[0]['@_nullFlavor']) {
+    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0) {
       extensions.push({
         url: US_CORE_ETHNICITY_URL,
         extension: patient.ethnicGroupCode.map((ethnicGroupCode) => ({
@@ -214,11 +215,7 @@ class CcdaToFhirConverter {
 
   private createRelatedPersons(): void {
     const participants = this.ccda.participant;
-    if (!participants) {
-      return;
-    }
-
-    for (const participant of participants) {
+    for (const participant of participants ?? EMPTY) {
       const relatedPerson = this.mapParticipantToRelatedPerson(participant);
       if (relatedPerson) {
         this.resources.push(relatedPerson);
@@ -263,16 +260,13 @@ class CcdaToFhirConverter {
   }
 
   private mapIdentifiers(ids: CcdaId[] | undefined): Identifier[] | undefined {
-    if (!ids) {
-      return undefined;
-    }
-    const result: Identifier[] = [];
-    for (const id of ids) {
+    let result: Identifier[] | undefined;
+    for (const id of ids ?? EMPTY) {
       if (!id['@_extension'] && id['@_root'] && isUUID(id['@_root'])) {
         // By convention, we use id without a root as the FHIR resource ID
         continue;
       }
-      result.push({
+      result = append(result, {
         system: mapCcdaSystemToFhir(id['@_root']),
         value: id['@_extension'],
       });
@@ -316,7 +310,7 @@ class CcdaToFhirConverter {
   }
 
   private mapAddresses(addresses: CcdaAddr[] | undefined): Address[] | undefined {
-    if (!addresses || addresses.length === 0 || addresses.every((addr) => addr['@_nullFlavor'] === 'UNK')) {
+    if (!addresses || addresses.length === 0) {
       return undefined;
     }
     return addresses?.map((addr) => ({
@@ -330,7 +324,7 @@ class CcdaToFhirConverter {
   }
 
   private mapTelecom(telecoms: CcdaTelecom[] | undefined): ContactPoint[] | undefined {
-    if (!telecoms || telecoms.length === 0 || telecoms.every((tel) => tel['@_nullFlavor'] === 'UNK')) {
+    if (!telecoms || telecoms.length === 0) {
       return undefined;
     }
     return telecoms?.map((tel) => ({
@@ -387,43 +381,44 @@ class CcdaToFhirConverter {
   private processSection(section: CcdaSection): Resource[] {
     const resources: Resource[] = [];
 
-    if (section.entry) {
-      for (const entry of section.entry) {
-        this.processEntry(section, entry, resources);
-      }
+    for (const entry of section.entry ?? EMPTY) {
+      this.processEntry(section, entry, resources);
     }
 
     return resources;
   }
 
   private processEntry(section: CcdaSection, entry: CcdaEntry, resources: Resource[]): void {
-    for (const act of entry.act ?? []) {
+    for (const act of entry.act ?? EMPTY) {
       const resource = this.processAct(section, act);
       if (resource) {
         resources.push(resource);
       }
     }
 
-    for (const substanceAdmin of entry.substanceAdministration ?? []) {
+    for (const substanceAdmin of entry.substanceAdministration ?? EMPTY) {
       const resource = this.processSubstanceAdministration(section, substanceAdmin);
       if (resource) {
         resources.push(resource);
       }
     }
 
-    for (const organizer of entry.organizer ?? []) {
+    for (const organizer of entry.organizer ?? EMPTY) {
       resources.push(this.processOrganizer(section, organizer));
     }
 
-    for (const observation of entry.observation ?? []) {
-      resources.push(this.processObservation(section, observation));
+    for (const observation of entry.observation ?? EMPTY) {
+      const resource = this.processObservation(section, observation);
+      if (resource) {
+        resources.push(resource);
+      }
     }
 
-    for (const encounter of entry.encounter ?? []) {
+    for (const encounter of entry.encounter ?? EMPTY) {
       resources.push(this.processEncounter(section, encounter));
     }
 
-    for (const procedure of entry.procedure ?? []) {
+    for (const procedure of entry.procedure ?? EMPTY) {
       resources.push(this.processProcedure(section, procedure));
     }
   }
@@ -834,28 +829,44 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
-    const result = {
-      coding: [
-        {
-          system: mapCcdaSystemToFhir(code['@_codeSystem']),
-          code: code['@_code'],
-          display: code['@_displayName'],
-        },
-      ],
-      text: code['@_displayName'],
-    };
+    const codings: Coding[] = [];
 
-    if (code.translation) {
-      for (const translation of code.translation) {
-        result.coding.push({
-          system: mapCcdaSystemToFhir(translation['@_codeSystem']),
-          code: translation['@_code'],
-          display: translation['@_displayName'],
+    const system = mapCcdaSystemToFhir(code['@_codeSystem']);
+    const codeValue = code['@_code'];
+    const display = code['@_displayName'];
+
+    if (system || codeValue || display) {
+      codings.push({
+        ...(system && { system }),
+        ...(codeValue && { code: codeValue }),
+        ...(display && { display }),
+      });
+    }
+
+    for (const translation of code.translation ?? EMPTY) {
+      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+      const translationCode = translation['@_code'];
+      const translationDisplay = translation['@_displayName'];
+
+      if (translationSystem || translationCode || translationDisplay) {
+        codings.push({
+          ...(translationSystem && { system: translationSystem }),
+          ...(translationCode && { code: translationCode }),
+          ...(translationDisplay && { display: translationDisplay }),
         });
       }
     }
 
-    return result;
+    const text = code['@_displayName'] || code.originalText?.reference?.['@_value'] || nodeToString(code.originalText);
+
+    if (codings.length === 0) {
+      return text ? { text } : undefined;
+    }
+
+    return {
+      coding: codings,
+      ...(text && { text }),
+    };
   }
 
   private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
@@ -868,6 +879,14 @@ class CcdaToFhirConverter {
       code: code['@_code'],
       display: code['@_displayName'],
     };
+  }
+
+  private mapQualification(code: CcdaCode | undefined): PractitionerQualification[] | undefined {
+    const codeableConcept = this.mapCode(code);
+    if (!codeableConcept) {
+      return undefined;
+    }
+    return [{ code: codeableConcept }];
   }
 
   private createClinicalStatus(act: CcdaAct): CodeableConcept {
@@ -904,9 +923,7 @@ class CcdaToFhirConverter {
       name: this.mapCcdaNameArrayFhirHumanNameArray(author.assignedAuthor?.assignedPerson?.name),
       address: this.mapAddresses(author.assignedAuthor?.addr),
       telecom: this.mapTelecom(author.assignedAuthor?.telecom),
-      qualification: author.assignedAuthor?.code
-        ? [this.mapCode(author.assignedAuthor?.code) as PractitionerQualification]
-        : undefined,
+      qualification: this.mapQualification(author.assignedAuthor?.code),
     };
 
     this.resources.push(practitioner);
@@ -1027,12 +1044,10 @@ class CcdaToFhirConverter {
   private processCareTeamOrganizer(organizer: CcdaOrganizer): CareTeam {
     const participants: CareTeamParticipant[] = [];
 
-    if (organizer.component) {
-      for (const component of organizer.component) {
-        const participant = this.processCareTeamMember(component);
-        if (participant) {
-          participants.push(participant);
-        }
+    for (const component of organizer.component ?? EMPTY) {
+      const participant = this.processCareTeamMember(component);
+      if (participant) {
+        participants.push(participant);
       }
     }
 
@@ -1079,24 +1094,22 @@ class CcdaToFhirConverter {
       result.effectiveDateTime = mapCcdaToFhirDateTime(organizer.effectiveTime?.[0]?.['@_value']);
     }
 
-    if (organizer.component) {
-      const members: Reference<Observation>[] = [];
-      for (const component of organizer.component) {
-        members.push(...this.processVitalsComponent(component));
-      }
+    const members: Reference<Observation>[] = [];
+    for (const component of organizer.component ?? EMPTY) {
+      members.push(...this.processVitalsComponent(component));
+    }
 
-      if (members.length > 0) {
-        result.hasMember = members;
-      }
+    if (members.length > 0) {
+      result.hasMember = members;
     }
     return result;
   }
 
   private processVitalsComponent(component: CcdaOrganizerComponent): Reference<Observation>[] {
     const result: Reference<Observation>[] = [];
-    if (component.observation) {
-      for (const observation of component.observation) {
-        const child = this.processVitalsObservation(observation);
+    for (const observation of component.observation ?? EMPTY) {
+      const child = this.processVitalsObservation(observation);
+      if (child) {
         result.push(createReference(child));
         this.resources.push(child);
       }
@@ -1104,7 +1117,7 @@ class CcdaToFhirConverter {
     return result;
   }
 
-  private processObservation(section: CcdaSection, observation: CcdaObservation): Resource {
+  private processObservation(section: CcdaSection, observation: CcdaObservation): Resource | undefined {
     const observationTemplateId = observation.templateId[0]['@_root'];
     if (observationTemplateId === OID_GOALS_SECTION || observationTemplateId === OID_GOAL_OBSERVATION) {
       // Goal template
@@ -1141,14 +1154,12 @@ class CcdaToFhirConverter {
       }
     }
 
-    if (observation.entryRelationship) {
-      for (const entryRelationship of observation.entryRelationship) {
-        target.push({
-          measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-          detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
-          dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
-        });
-      }
+    for (const entryRelationship of observation.entryRelationship ?? EMPTY) {
+      target.push({
+        measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+        dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
+      });
     }
 
     const result: Goal = {
@@ -1184,14 +1195,20 @@ class CcdaToFhirConverter {
     return map[observation.statusCode['@_code'] ?? 'active'];
   }
 
-  private processVitalsObservation(observation: CcdaObservation): Observation {
+  private processVitalsObservation(observation: CcdaObservation): Observation | undefined {
+    // Skip observations without a valid code (e.g., nullFlavor="NA")
+    const code = this.mapCode(observation.code);
+    if (!code) {
+      return undefined;
+    }
+
     const result: Observation = {
       resourceType: 'Observation',
       id: this.mapId(observation.id),
       identifier: this.mapIdentifiers(observation.id),
       status: 'final',
       category: this.mapObservationTemplateIdToObservationCategory(observation.templateId),
-      code: this.mapCode(observation.code) as CodeableConcept,
+      code,
       subject: createReference(this.patient as Patient),
       referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
       performer: observation.author
@@ -1204,7 +1221,7 @@ class CcdaToFhirConverter {
         case 'PQ': // Physical Quantity
         case 'CO': // Count of individuals
           result.valueQuantity = {
-            value: observation.value['@_value'] ? parseFloat(observation.value['@_value']) : undefined,
+            value: observation.value['@_value'] ? Number.parseFloat(observation.value['@_value']) : undefined,
             unit: observation.value['@_unit'],
             system: UCUM,
             code: observation.value['@_unit'],
@@ -1221,7 +1238,9 @@ class CcdaToFhirConverter {
           break;
 
         case 'INT': // Integer
-          result.valueInteger = observation.value['@_value'] ? parseInt(observation.value['@_value'], 10) : undefined;
+          result.valueInteger = observation.value['@_value']
+            ? Number.parseInt(observation.value['@_value'], 10)
+            : undefined;
           break;
 
         default:
@@ -1237,18 +1256,16 @@ class CcdaToFhirConverter {
 
     // Look for child observations
     const relationships = observation.entryRelationship;
-    if (relationships) {
-      for (const relationship of relationships) {
-        const childObservation = relationship.observation;
-        if (childObservation) {
-          for (const child of childObservation) {
-            const childResource = this.processVitalsObservation(child);
-            this.resources.push(childResource);
-            if (!result.hasMember) {
-              result.hasMember = [];
-            }
-            result.hasMember.push(createReference(childResource));
+    for (const relationship of relationships ?? EMPTY) {
+      const childObservation = relationship.observation;
+      for (const child of childObservation ?? EMPTY) {
+        const childResource = this.processVitalsObservation(child);
+        if (childResource) {
+          this.resources.push(childResource);
+          if (!result.hasMember) {
+            result.hasMember = [];
           }
+          result.hasMember.push(createReference(childResource));
         }
       }
     }

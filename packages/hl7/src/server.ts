@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
 import net from 'node:net';
-import type { Hl7ConnectionOptions } from './connection';
+import type { EnhancedMode, Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
 /**
@@ -25,7 +25,7 @@ export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
   private encoding: string | undefined = undefined;
-  private enhancedMode = false;
+  private enhancedMode: EnhancedMode = undefined;
   private messagesPerMin: number | undefined = undefined;
   private readonly connections = new Set<Hl7Connection>();
 
@@ -33,7 +33,12 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode?: boolean, options?: Hl7ConnectionOptions): void {
+  async start(
+    port: number,
+    encoding?: string,
+    enhancedMode?: EnhancedMode,
+    options?: Hl7ConnectionOptions
+  ): Promise<void> {
     if (encoding) {
       this.setEncoding(encoding);
     }
@@ -55,22 +60,30 @@ export class Hl7Server {
       });
     });
 
-    // Node errors have a code
-    const errorListener = async (e: Error & { code?: string }): Promise<void> => {
-      if (e?.code === 'EADDRINUSE') {
-        await sleep(50);
-        server.close();
-        server.listen(port);
-      }
-    };
-    server.on('error', errorListener);
+    await new Promise<void>((resolve) => {
+      const listenOnPort = (port: number): void => {
+        server.listen(port, resolve);
+      };
 
-    server.once('listening', () => {
-      server.off('error', errorListener);
+      // Node errors have a code
+      const errorListener = async (e: Error & { code?: string }): Promise<void> => {
+        if (e?.code === 'EADDRINUSE') {
+          await sleep(50);
+          server.close();
+          listenOnPort(port);
+        }
+      };
+
+      server.on('error', errorListener);
+
+      server.once('listening', () => {
+        server.off('error', errorListener);
+      });
+
+      listenOnPort(port);
+
+      this.server = server;
     });
-
-    server.listen(port);
-    this.server = server;
   }
 
   /**
@@ -117,11 +130,11 @@ export class Hl7Server {
     });
   }
 
-  setEnhancedMode(enhancedMode: boolean): void {
+  setEnhancedMode(enhancedMode: EnhancedMode): void {
     this.enhancedMode = enhancedMode;
   }
 
-  getEnhancedMode(): boolean {
+  getEnhancedMode(): EnhancedMode {
     return this.enhancedMode;
   }
 

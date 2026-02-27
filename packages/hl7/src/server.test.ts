@@ -7,7 +7,7 @@ import { Hl7Server } from './server';
 describe('HL7 Server', () => {
   test('Start and stop', async () => {
     const server = new Hl7Server(() => undefined);
-    server.start(1234);
+    await server.start(1234);
     await server.stop();
   });
 
@@ -18,7 +18,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1234);
+    await server.start(1234);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -64,7 +64,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1235, encoding);
+    await server.start(1235, encoding);
 
     // First, connect with a client correctly configured for windows-1252
     // This should work correctly
@@ -119,7 +119,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1249);
+    await server.start(1249);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -165,7 +165,7 @@ describe('HL7 Server', () => {
       });
     });
 
-    server.start(1250);
+    await server.start(1250);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -204,18 +204,20 @@ describe('HL7 Server', () => {
   }, 10000);
 
   test('Default forceDrainTimeout is 10 seconds when no options passed', async () => {
-    let connectionCloseCalled = false;
+    const state = {
+      connectionCloseCalled: false,
+    };
 
     const server = new Hl7Server((connection) => {
       connection.addEventListener('message', ({ message }) => {
         connection.send(message.buildAck());
       });
       connection.addEventListener('close', () => {
-        connectionCloseCalled = true;
+        state.connectionCloseCalled = true;
       });
     });
 
-    server.start(1251);
+    await server.start(1251);
 
     const client = new Hl7Client({
       host: 'localhost',
@@ -241,7 +243,7 @@ describe('HL7 Server', () => {
     // Advance timers by 5 seconds - connection should still be open
     jest.advanceTimersByTime(5000);
     await Promise.resolve();
-    expect(connectionCloseCalled).toBe(false);
+    expect(state.connectionCloseCalled).toBe(false);
 
     // Advance timers by another 5 seconds (total 10 seconds) - connection should be force-closed
     jest.advanceTimersByTime(5000);
@@ -252,11 +254,13 @@ describe('HL7 Server', () => {
     // Wait for the server to finish stopping
     await stopPromise;
 
-    // Sleep for 0ms to allow the close event to be processed on next tick
-    await sleep(0);
+    // Sleep to allow the close event to be processed on next tick
+    for (let i = 0; i < 100 && !state.connectionCloseCalled; i++) {
+      await sleep(1);
+    }
 
     // The forceDrainTimeout should have triggered and closed the connection
-    expect(connectionCloseCalled).toBe(true);
+    expect(state.connectionCloseCalled).toBe(true);
 
     // Clean up
     await client.close().catch(() => {
@@ -288,19 +292,23 @@ describe('HL7 Server', () => {
       const server = new Hl7Server((_conn) => undefined);
 
       // Test initial state
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
 
-      // Test setting enhanced mode to true
-      server.setEnhancedMode(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      // Test setting enhanced mode to 'standard'
+      server.setEnhancedMode('standard');
+      expect(server.getEnhancedMode()).toBe('standard');
 
-      // Test setting enhanced mode to false
-      server.setEnhancedMode(false);
-      expect(server.getEnhancedMode()).toBe(false);
+      // Test setting enhanced mode to 'aaMode'
+      server.setEnhancedMode('aaMode');
+      expect(server.getEnhancedMode()).toBe('aaMode');
 
-      // Test setting enhanced mode to true again
-      server.setEnhancedMode(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      // Test setting enhanced mode to undefined
+      server.setEnhancedMode(undefined);
+      expect(server.getEnhancedMode()).toBeUndefined();
+
+      // Test setting enhanced mode to 'standard' again
+      server.setEnhancedMode('standard');
+      expect(server.getEnhancedMode()).toBe('standard');
     });
 
     test('setMessagesPerMin and getMessagesPerMin work correctly', () => {
@@ -335,7 +343,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      server.start(1236);
+      await server.start(1236);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -343,7 +351,7 @@ describe('HL7 Server', () => {
 
       // Test that default values are used
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -356,7 +364,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      server.start(1237, 'utf-8');
+      await server.start(1237, 'utf-8');
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -364,7 +372,7 @@ describe('HL7 Server', () => {
 
       // Test that encoding was set
       expect(server.getEncoding()).toBe('utf-8');
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -377,7 +385,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      server.start(1238, undefined, true);
+      await server.start(1238, undefined, 'standard');
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -385,7 +393,7 @@ describe('HL7 Server', () => {
 
       // Test that enhancedMode was set
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -398,7 +406,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      server.start(1239, undefined, undefined, { messagesPerMin: 150 });
+      await server.start(1239, undefined, undefined, { messagesPerMin: 150 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -406,7 +414,7 @@ describe('HL7 Server', () => {
 
       // Test that messagesPerMin was set
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBe(150);
 
       await server.stop();
@@ -419,7 +427,7 @@ describe('HL7 Server', () => {
         });
       });
 
-      server.start(1240, 'windows-1252', true, { messagesPerMin: 200 });
+      await server.start(1240, 'windows-1252', 'standard', { messagesPerMin: 200 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -427,7 +435,7 @@ describe('HL7 Server', () => {
 
       // Test that all parameters were set
       expect(server.getEncoding()).toBe('windows-1252');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(200);
 
       await server.stop();
@@ -442,7 +450,7 @@ describe('HL7 Server', () => {
 
       // Set encoding via setter before starting
       server.setEncoding('iso-8859-1');
-      server.start(1241);
+      await server.start(1241);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -450,7 +458,7 @@ describe('HL7 Server', () => {
 
       // Test that encoding was preserved
       expect(server.getEncoding()).toBe('iso-8859-1');
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -464,8 +472,8 @@ describe('HL7 Server', () => {
       });
 
       // Set enhancedMode via setter before starting
-      server.setEnhancedMode(true);
-      server.start(1242);
+      server.setEnhancedMode('standard');
+      await server.start(1242);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -473,7 +481,7 @@ describe('HL7 Server', () => {
 
       // Test that enhancedMode was preserved
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBeUndefined();
 
       await server.stop();
@@ -488,7 +496,7 @@ describe('HL7 Server', () => {
 
       // Set messagesPerMin via setter before starting
       server.setMessagesPerMin(300);
-      server.start(1243);
+      await server.start(1243);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -496,7 +504,7 @@ describe('HL7 Server', () => {
 
       // Test that messagesPerMin was preserved
       expect(server.getEncoding()).toBeUndefined();
-      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getEnhancedMode()).toBeUndefined();
       expect(server.getMessagesPerMin()).toBe(300);
 
       await server.stop();
@@ -511,9 +519,9 @@ describe('HL7 Server', () => {
 
       // Set all properties via setters before starting
       server.setEncoding('utf-8');
-      server.setEnhancedMode(true);
+      server.setEnhancedMode('standard');
       server.setMessagesPerMin(250);
-      server.start(1244);
+      await server.start(1244);
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -521,7 +529,7 @@ describe('HL7 Server', () => {
 
       // Test that all properties were preserved
       expect(server.getEncoding()).toBe('utf-8');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(250);
 
       await server.stop();
@@ -536,11 +544,11 @@ describe('HL7 Server', () => {
 
       // Set properties via setters
       server.setEncoding('utf-8');
-      server.setEnhancedMode(false);
+      server.setEnhancedMode(undefined);
       server.setMessagesPerMin(100);
 
       // Start with different parameters that should override setters
-      server.start(1245, 'windows-1252', true, { messagesPerMin: 500 });
+      await server.start(1245, 'windows-1252', 'standard', { messagesPerMin: 500 });
 
       // Verify server is running
       expect(server.server).toBeDefined();
@@ -548,7 +556,7 @@ describe('HL7 Server', () => {
 
       // Test that start parameters override setters
       expect(server.getEncoding()).toBe('windows-1252');
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(500);
 
       await server.stop();
@@ -566,12 +574,12 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      server.start(1246, undefined, true, { messagesPerMin });
+      await server.start(1246, undefined, 'standard', { messagesPerMin });
 
       // Verify server is running with correct settings
       expect(server.server).toBeDefined();
       expect(server.server?.listening).toBe(true);
-      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getEnhancedMode()).toBe('standard');
       expect(server.getMessagesPerMin()).toBe(messagesPerMin);
 
       const client = new Hl7Client({
@@ -630,7 +638,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode and rate limiting
-      server.start(1247, undefined, true, { messagesPerMin });
+      await server.start(1247, undefined, 'standard', { messagesPerMin });
 
       const client = new Hl7Client({
         host: 'localhost',
@@ -691,7 +699,7 @@ describe('HL7 Server', () => {
       });
 
       // Start server with enhanced mode but no rate limiting
-      server.start(1248, undefined, true);
+      await server.start(1248, undefined, 'standard');
 
       const client = new Hl7Client({
         host: 'localhost',

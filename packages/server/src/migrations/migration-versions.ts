@@ -55,9 +55,7 @@ let postDeployVersions: number[] | undefined;
  * @returns Sorted array of pre-deploy migration versions.
  */
 export function getPreDeployMigrationVersions(): number[] {
-  if (!preDeployVersions) {
-    preDeployVersions = getMigrationVersions(preDeployMigrations);
-  }
+  preDeployVersions ??= getMigrationVersions(preDeployMigrations);
   return preDeployVersions;
 }
 
@@ -67,13 +65,11 @@ export function getPreDeployMigrationVersions(): number[] {
  * @returns Sorted array of post-deploy migration versions.
  */
 export function getPostDeployMigrationVersions(): number[] {
-  if (!postDeployVersions) {
-    postDeployVersions = getMigrationVersions(postDeployMigrations);
-  }
+  postDeployVersions ??= getMigrationVersions(postDeployMigrations);
   return postDeployVersions;
 }
 
 export function getLatestPostDeployMigrationVersion(): number {
   const versions = getPostDeployMigrationVersions();
-  return versions[versions.length - 1];
+  return versions.at(-1) as number;
 }

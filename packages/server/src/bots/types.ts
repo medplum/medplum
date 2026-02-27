@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { WithId } from '@medplum/core';
+import type { BotResponseStream, WithId } from '@medplum/core';
 import type {
   Agent,
   Bot,
@@ -32,6 +32,8 @@ export interface BotExecutionRequest {
   readonly headers?: Record<string, string | string[] | undefined>;
   /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
+  /** Optional response stream when invoked with SSE (Server Side Events) */
+  readonly responseStream?: BotResponseStream;
 }
 
 export interface BotExecutionContext extends BotExecutionRequest {

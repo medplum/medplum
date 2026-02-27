@@ -124,7 +124,7 @@ function tryParseQuantity(value: string | undefined): Quantity | undefined {
     const [valueString, systemString, unitString] = value.split('|');
     if (valueString) {
       return {
-        value: parseFloat(valueString),
+        value: Number.parseFloat(valueString),
         system: systemString,
         unit: unitString,
       };

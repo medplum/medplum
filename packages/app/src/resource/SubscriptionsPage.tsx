@@ -3,7 +3,7 @@
 import type { SearchRequest } from '@medplum/core';
 import { Operator } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
-import { Document, MemoizedSearchControl } from '@medplum/react';
+import { Document, SearchControl } from '@medplum/react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -19,7 +19,7 @@ export function SubscriptionsPage(): JSX.Element | null {
 
   return (
     <Document>
-      <MemoizedSearchControl
+      <SearchControl
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onChange={(e) => setSearch(e.definition)}

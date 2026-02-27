@@ -11,7 +11,7 @@ import type {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
@@ -19,7 +19,8 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { getSystemRepo } from '../repo';
+import { getShardSystemRepo } from '../repo';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
@@ -90,20 +91,18 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
     ownerRef = params.owner;
   } else if (params.ownerEmail) {
     let user = await getUserByEmailWithoutProject(params.ownerEmail);
-    if (!user) {
-      user = await createUser({
-        email: params.ownerEmail,
-        password: randomUUID(),
-        firstName: params.name,
-        lastName: 'Admin',
-      });
-    }
+    user ??= await createUser({
+      email: params.ownerEmail,
+      password: randomUUID(),
+      firstName: params.name,
+      lastName: 'Admin',
+    });
     ownerRef = createReference(user);
   } else if (login.user.reference?.startsWith('User/')) {
     ownerRef = login.user as Reference;
   }
 
-  const owner = ownerRef ? await getSystemRepo().readReference(ownerRef) : undefined;
+  const owner = ownerRef ? await ctx.systemRepo.readReference(ownerRef) : undefined;
   if (owner) {
     if (owner.resourceType !== 'User') {
       return [badRequest('Only Users are permitted to be the owner of a new Project')];
@@ -131,7 +130,7 @@ export async function createProject(
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
 
   log.info('Project creation request received', { name: projectName });
@@ -156,10 +155,11 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
+      systemRepo,
       project,
       'Practitioner',
-      admin.firstName as string,
-      admin.lastName as string,
+      admin.firstName,
+      admin.lastName,
       admin.email as string
     );
     const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });

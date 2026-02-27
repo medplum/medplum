@@ -46,7 +46,11 @@ The `Criteria` of a subscription cannot be set to an [`AuditEvent`](/docs/api/fh
 
 You can find more instructions on setting up a subscription in the [Medplum Bots documentation](/docs/bots/bot-basics#executing-automatically-using-a-subscription).
 
-Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data. If you have set up your webhook correctly you should see events when you [create a new](https://app.medplum.com/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.medplum.com/ServiceRequest). You will also see [AuditEvents](https://app.medplum.com/AuditEvent) created for the Subscription.
+:::tip AuditEvent Storage
+For high-volume subscriptions, you can configure `AuditEvent` resources to be logged only (instead of saved to the database) using the [`subscription-audit-event-destination` extension](/docs/subscriptions/subscription-extensions#auditevent-destination). This can help reduce database load while still allowing you to monitor subscription activity through your server logs.
+:::
+
+Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data. If you have set up your webhook correctly you should see events when you [create a new](https://app.medplum.com/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.medplum.com/ServiceRequest). You will also see [AuditEvents](https://app.medplum.com/AuditEvent) created for the Subscription (unless configured for log-only destination).
 
 You can use any endpoint you like, and there are free services like [Pipedream](https://pipedream.com/) that you can use to set up an endpoint for testing purposes.
 

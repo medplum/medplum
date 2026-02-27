@@ -5,6 +5,7 @@ import { XSI_URL } from './systems';
 import type { Ccda } from './types';
 
 const ARRAY_PATHS = [
+  'ClinicalDocument.participant',
   'ClinicalDocument.recordTarget',
 
   // Always arrays
@@ -138,7 +139,7 @@ export function convertToCompactXml(obj: any): string {
     suppressBooleanAttributes: false,
     suppressEmptyNode: true,
   });
-  const xml = builder.build(obj) as string;
+  const xml = builder.build(obj);
   return xml
     .split('\n')
     .map((line: string) => line.trim())

@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
@@ -24,7 +23,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
   const [communications, setCommunications] = useState<Communication[]>([]);
 
-  const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
+  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
   const threadRef = useMemo(() => createReference(thread), [thread]);
 
   useEffect(() => {

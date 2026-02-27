@@ -106,9 +106,7 @@ export interface IWebSocket {
 }
 
 const Events = {
-  Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
-    | typeof globalThis.Event
-    | undefined,
+  Event: typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined,
   ErrorEvent: undefined as any,
   CloseEvent: undefined as any,
 };
@@ -366,7 +364,6 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
    * @param code - The code to close with. Default is 1000.
    * @param reason - An optional reason for closing the connection.
    */
-  // eslint-disable-next-line default-param-last
   public close(code = 1000, reason?: string): void {
     this._closeCalled = true;
     this._shouldReconnect = false;
@@ -405,7 +402,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
    * @param data - The data to enqueue.
    */
   public send(data: Message): void {
-    if (this._ws && this._ws.readyState === this.OPEN) {
+    if (this._ws?.readyState === this.OPEN) {
       this._debug('send', data);
       this._ws.send(data);
     } else {
@@ -497,7 +494,6 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this._handleError(new Events.ErrorEvent(Error('TIMEOUT'), this));
   }
 
-  // eslint-disable-next-line default-param-last
   private _disconnect(code = 1000, reason?: string): void {
     this._clearTimeouts();
     if (!this._ws) {

@@ -463,6 +463,66 @@ describe('GraphQL', () => {
     );
   });
 
+  test('Reverse lookup with Connection API and count', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        PatientList(_count: 2) {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+            edges {
+              resource {
+                id
+                status
+                code {
+                  text
+                }
+              }
+            }
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientList).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection).toBeDefined();
+    expect(data.PatientList[0].ObservationConnection.count).toBeDefined();
+    expect(typeof data.PatientList[0].ObservationConnection.count).toBe('number');
+    // Patient has 1 observation, patient2 has 2 observations
+    const patient1ObsCount = data.PatientList.find((p: Patient) => p.id === patient.id)?.ObservationConnection?.count;
+    const patient2ObsCount = data.PatientList.find((p: Patient) => p.id === patient2.id)?.ObservationConnection?.count;
+    expect(patient1ObsCount).toBe(1);
+    expect(patient2ObsCount).toBe(2);
+  });
+
+  test('Reverse lookup with Connection API count only (no edges)', async () => {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Patient(id: "${patient.id}") {
+          id
+          ObservationConnection(_reference: subject) {
+            count
+          }
+        }
+      }`,
+    });
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.ObservationConnection).toBeDefined();
+    expect(data.Patient.ObservationConnection.count).toBe(1);
+    expect(data.Patient.ObservationConnection.edges).toBeUndefined();
+  });
+
   test.skip('Max depth', async () => {
     // The definition of "depth" is a little abstract in GraphQL
     // We use field depth, where fragment expansion does not contribute to depth
@@ -1314,5 +1374,87 @@ describe('GraphQL', () => {
     const firstId = data1.EncounterConnection.edges[0].resource.id;
     expect([encounter1.id, encounter2.id]).toContain(firstId);
     expect(data1.EncounterConnection.next).toBeDefined();
+  });
+
+  test('Patch Patient Record', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+          patch: [
+            { op: "replace", path: "/name/0/family", value: "Smith" },
+            { op: "replace", path: "/gender", value: "male" }
+          ]
+        ) {
+          id
+          gender
+          name { family given }
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+    const data = (res[1] as any).data;
+    expect(data.PatientPatch).toBeDefined();
+    expect(data.PatientPatch.gender).toBe('male');
+    expect(data.PatientPatch.name[0].family).toBe('Smith');
+
+    // Confirm in repo
+    const updated = await repo.readResource<Patient>('Patient', testPatient.id ?? '');
+    expect(updated.gender).toBe('male');
+    expect(updated.name?.[0].family).toBe('Smith');
+  });
+
+  test('Invalid Patch Mutation', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+        ) {
+          id
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    // GraphQL validation happens before our resolver, so we get a validation error in the OperationOutcome
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+      /Field "PatientPatch" argument "patch" of type "\[PatchOperationInput!\]!" is required/
+    );
+  });
+
+  test('Invalid Patch Operations', async () => {
+    const testPatient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'], family: 'Original' }],
+    });
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
+        PatientPatch(
+          id: "${testPatient.id}"
+          patch: "not-an-array"
+        ) {
+          id
+        }
+      }`,
+    });
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    // GraphQL type validation catches this before our resolver
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(
+      /Expected value of type "\[PatchOperationInput!\]!", found "not-an-array"/
+    );
   });
 });

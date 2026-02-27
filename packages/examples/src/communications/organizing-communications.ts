@@ -56,7 +56,7 @@ await medplum.searchResources('Communication', {
 
 /*
 // start-block searchThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude:Communication:part-of'
+medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
 // end-block searchThreadsWithMessagesCli
 
 // start-block searchThreadsWithMessagesCurl

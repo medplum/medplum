@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumInfraConfig } from '@medplum/core';
+import { EMPTY } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -20,7 +21,9 @@ import {
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { Secret, SecretTargetAttachment } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
+import assert from 'node:assert';
 import { buildWaf } from './waf';
 
 /**
@@ -99,7 +102,7 @@ export class BackEnd extends Construct {
 
     // RDS
     this.rdsSecretsArn = config.rdsSecretsArn;
-    if (!this.rdsSecretsArn) {
+    if (!this.rdsSecretsArn || config.rdsForceRetain) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
         rds.AuroraPostgresEngineVersion.VER_16_9
@@ -205,6 +208,7 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
         removalPolicy: RemovalPolicy.RETAIN,
+        autoMinorVersionUpgrade: config.rdsAutoMinorVersionUpgrade,
       };
 
       const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
@@ -214,15 +218,29 @@ export class BackEnd extends Construct {
         writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy: config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
 
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+      const secretAttachment = this.rdsCluster.secret;
+      assert(secretAttachment !== undefined, 'rdsCluster.secret is undefined');
+
+      secretAttachment.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      // rdsCluster.secret is actually a SecretAttachment; not the secret itself
+      assert(secretAttachment instanceof SecretTargetAttachment, 'rdsCluster.secret is not a SecretTargetAttachment');
+
+      // there is no direct way to get from SecretTargetAttachment to Secret, so break glass by going through node.scope
+      const secret = secretAttachment.node.scope;
+      assert(secret instanceof Secret, 'rdsCluster.secretAttachment.node.scope is not a Secret');
+      secret.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+      if (!this.rdsSecretsArn) {
+        this.rdsSecretsArn = secretAttachment.secretArn;
+      }
 
       if (config.rdsProxyEnabled) {
         this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
           proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+          secrets: [secretAttachment],
           vpc: this.vpc,
         });
       }
@@ -235,64 +253,49 @@ export class BackEnd extends Construct {
       subnetIds: this.vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
-    if (config.cacheSecurityGroupId) {
-      this.redisSecurityGroup = ec2.SecurityGroup.fromSecurityGroupId(
-        this,
-        'RedisSecurityGroup',
-        config.cacheSecurityGroupId
-      );
-    } else {
-      this.redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
-        vpc: this.vpc,
-        description: 'Redis Security Group',
-        allowAllOutbound: false,
-      });
+    const defaultRedis = this.createRedisCluster('Redis', {
+      nodeType: config.cacheNodeType,
+      securityGroupId: config.cacheSecurityGroupId,
+      engine: config.cacheEngine,
+      engineVersion: config.cacheEngineVersion,
+    });
+    this.redisSecurityGroup = defaultRedis.securityGroup;
+    this.redisPassword = defaultRedis.password;
+    this.redisCluster = defaultRedis.cluster;
+    this.redisSecrets = defaultRedis.secrets;
+
+    // Purpose-specific Redis clusters
+    const purposeRedisConfigs = [
+      { key: 'cacheRedis' as const, id: 'CacheRedis' },
+      { key: 'rateLimitRedis' as const, id: 'RateLimitRedis' },
+      { key: 'pubSubRedis' as const, id: 'PubSubRedis' },
+      { key: 'backgroundJobsRedis' as const, id: 'BackgroundJobsRedis' },
+    ];
+
+    const purposeRedisClusters: {
+      id: string;
+      securityGroup: ec2.ISecurityGroup;
+      cluster: elasticache.CfnReplicationGroup;
+      secrets: secretsmanager.ISecret;
+      secretsParameter?: ssm.StringParameter;
+    }[] = [];
+    for (const { key, id } of purposeRedisConfigs) {
+      const redisConfig = config[key];
+      if (redisConfig) {
+        const redis = this.createRedisCluster(id, {
+          nodeType: redisConfig.nodeType,
+          securityGroupId: redisConfig.securityGroupId,
+          engine: redisConfig.engine,
+          engineVersion: redisConfig.engineVersion,
+        });
+        purposeRedisClusters.push({ id, ...redis });
+      }
     }
-
-    this.redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
-      generateSecretString: {
-        secretStringTemplate: '{}',
-        generateStringKey: 'password',
-        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
-      },
-    });
-
-    this.redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
-      engine: 'Redis',
-      engineVersion: '6.x',
-      cacheNodeType: config.cacheNodeType ?? 'cache.t2.medium',
-      replicationGroupDescription: 'RedisReplicationGroup',
-      authToken: this.redisPassword.secretValueFromJson('password').toString(),
-      transitEncryptionEnabled: true,
-      atRestEncryptionEnabled: true,
-      multiAzEnabled: true,
-      cacheSubnetGroupName: this.redisSubnetGroup.ref,
-      numNodeGroups: 1,
-      replicasPerNodeGroup: 1,
-      securityGroupIds: [this.redisSecurityGroup.securityGroupId],
-    });
-    this.redisCluster.node.addDependency(this.redisPassword);
-
-    this.redisSecrets = new secretsmanager.Secret(this, 'RedisSecrets', {
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({
-          host: this.redisCluster.attrPrimaryEndPointAddress,
-          port: this.redisCluster.attrPrimaryEndPointPort,
-          password: this.redisPassword.secretValueFromJson('password').toString(),
-          tls: {},
-        }),
-        generateStringKey: 'unused',
-      },
-    });
-    this.redisSecrets.node.addDependency(this.redisPassword);
-    this.redisSecrets.node.addDependency(this.redisCluster);
 
     // ECS Cluster
     let clusterProps: ecs.ClusterProps = { vpc: this.vpc };
     if (config.containerInsightsV2) {
       clusterProps = { ...clusterProps, containerInsightsV2: config.containerInsightsV2 as ecs.ContainerInsights };
-    } else {
-      clusterProps = { ...clusterProps, containerInsights: config.containerInsights };
     }
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', clusterProps);
 
@@ -489,17 +492,15 @@ export class BackEnd extends Construct {
       hostPort: config.apiPort,
     });
 
-    if (config.additionalContainers) {
-      for (const container of config.additionalContainers) {
-        this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
-          containerName: container.name,
-          image: this.getContainerImage(config, container.image, containerRegistryCredentials),
-          command: container.command,
-          environment: container.environment,
-          logging: this.logDriver,
-          essential: container.essential ?? false, // Default to false
-        });
-      }
+    for (const container of config.additionalContainers ?? EMPTY) {
+      this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
+        containerName: container.name,
+        image: this.getContainerImage(config, container.image, containerRegistryCredentials),
+        command: container.command,
+        environment: container.environment,
+        logging: this.logDriver,
+        essential: container.essential ?? false, // Default to false
+      });
     }
 
     if (config.fireLens?.enabled) {
@@ -553,6 +554,9 @@ export class BackEnd extends Construct {
       this.fargateService.node.addDependency(this.rdsProxy);
     }
     this.fargateService.node.addDependency(this.redisCluster);
+    for (const { cluster } of purposeRedisClusters) {
+      this.fargateService.node.addDependency(cluster);
+    }
 
     // Load Balancer Target Group
     this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
@@ -624,9 +628,19 @@ export class BackEnd extends Construct {
       webAclArn: this.waf.attrArn,
     });
 
-    // Grant RDS access to the fargate group
     if (this.rdsCluster) {
+      // Grant RDS access to the fargate group
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+
+      // Retain RDS cluster security groups and their rules
+      this.rdsCluster.connections.securityGroups.forEach((sg) => {
+        sg.applyRemovalPolicy(RemovalPolicy.RETAIN);
+        sg.node.children.forEach((child) => {
+          if (child instanceof ec2.CfnSecurityGroupIngress || child instanceof ec2.CfnSecurityGroupEgress) {
+            child.applyRemovalPolicy(RemovalPolicy.RETAIN);
+          }
+        });
+      });
     }
 
     // Grant RDS Proxy access to the fargate group
@@ -638,6 +652,17 @@ export class BackEnd extends Construct {
 
     // Grant Redis access to the fargate group
     this.redisSecurityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
+
+    // Grant purpose-specific Redis access to the fargate group and create SSM parameters
+    for (const purposeRedis of purposeRedisClusters) {
+      purposeRedis.securityGroup.addIngressRule(this.fargateSecurityGroup, ec2.Port.tcp(6379));
+      purposeRedis.secretsParameter = new ssm.StringParameter(this, `${purposeRedis.id}SecretsParameter`, {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/${purposeRedis.id}Secrets`,
+        description: `${purposeRedis.id} secrets ARN`,
+        stringValue: purposeRedis.secrets.secretArn,
+      });
+    }
 
     // DNS
     if (!config.skipDns) {
@@ -673,7 +698,7 @@ export class BackEnd extends Construct {
         tier: ssm.ParameterTier.STANDARD,
         parameterName: `/medplum/${name}/databaseProxyEndpoint`,
         description: 'Database proxy endpoint',
-        stringValue: this.rdsProxy?.endpoint as string,
+        stringValue: this.rdsProxy?.endpoint,
       });
     }
 
@@ -725,6 +750,71 @@ export class BackEnd extends Construct {
 
     // Otherwise, use the standard container image
     return ecs.ContainerImage.fromRegistry(imageName, { credentials });
+  }
+
+  private createRedisCluster(
+    id: string,
+    options: { nodeType?: string; securityGroupId?: string; engine?: string; engineVersion?: string }
+  ): {
+    securityGroup: ec2.ISecurityGroup;
+    password: secretsmanager.ISecret;
+    cluster: elasticache.CfnReplicationGroup;
+    secrets: secretsmanager.ISecret;
+  } {
+    let securityGroup: ec2.ISecurityGroup;
+    if (options.securityGroupId) {
+      securityGroup = ec2.SecurityGroup.fromSecurityGroupId(this, `${id}SecurityGroup`, options.securityGroupId);
+    } else {
+      securityGroup = new ec2.SecurityGroup(this, `${id}SecurityGroup`, {
+        vpc: this.vpc,
+        description: `${id} Security Group`,
+        allowAllOutbound: false,
+      });
+      securityGroup.applyRemovalPolicy(RemovalPolicy.RETAIN);
+    }
+
+    const password = new secretsmanager.Secret(this, `${id}Password`, {
+      generateSecretString: {
+        secretStringTemplate: '{}',
+        generateStringKey: 'password',
+        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
+      },
+    });
+    password.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    const cluster = new elasticache.CfnReplicationGroup(this, `${id}Cluster`, {
+      engine: options.engine ?? 'Redis',
+      engineVersion: options.engineVersion ?? '6.x',
+      cacheNodeType: options.nodeType ?? 'cache.t2.medium',
+      replicationGroupDescription: `${id}ReplicationGroup`,
+      authToken: password.secretValueFromJson('password').toString(),
+      transitEncryptionEnabled: true,
+      atRestEncryptionEnabled: true,
+      multiAzEnabled: true,
+      cacheSubnetGroupName: this.redisSubnetGroup.ref,
+      numNodeGroups: 1,
+      replicasPerNodeGroup: 1,
+      securityGroupIds: [securityGroup.securityGroupId],
+    });
+    cluster.node.addDependency(password);
+    cluster.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    const secrets = new secretsmanager.Secret(this, `${id}Secrets`, {
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          host: cluster.attrPrimaryEndPointAddress,
+          port: cluster.attrPrimaryEndPointPort,
+          password: password.secretValueFromJson('password').toString(),
+          tls: {},
+        }),
+        generateStringKey: 'unused',
+      },
+    });
+    secrets.node.addDependency(password);
+    secrets.node.addDependency(cluster);
+    secrets.applyRemovalPolicy(RemovalPolicy.RETAIN);
+
+    return { securityGroup, password, cluster, secrets };
   }
 }
 

@@ -125,7 +125,7 @@ export function InvitePage(): JSX.Element {
           {emailSent && <Text>Email sent</Text>}
           <List>
             <List.Item>
-              <MedplumLink to={result as ProjectMembership}>Go to new membership</MedplumLink>
+              <MedplumLink to={result}>Go to new membership</MedplumLink>
             </List.Item>
             <List.Item>
               <MedplumLink to={result.profile}>Go to new profile</MedplumLink>

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { append } from '@medplum/core';
+import { append, EMPTY } from '@medplum/core';
 import type {
   CodeSystem,
   CodeSystemConcept,
@@ -11,7 +11,7 @@ import type {
   ResourceType,
 } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
-import type { ImportedProperty } from '../operations/codesystemimport';
+import type { Designation, ImportedProperty } from '../operations/codesystemimport';
 import { importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
 import { Column, Condition, Conjunction } from '../sql';
@@ -57,7 +57,7 @@ export class CodingTable extends LookupTable {
         }
 
         const elements = this.getCodeSystemElements(resource);
-        await importCodeSystem(client, resource, elements.concepts, elements.properties);
+        await importCodeSystem(client, resource, elements.concepts, elements.properties, elements.designations);
       }
     }
   }
@@ -145,12 +145,14 @@ export class CodingTable extends LookupTable {
     });
   }
 
-  private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
-    const result = { concepts: [], properties: [] };
-    if (codeSystem.concept) {
-      for (const concept of codeSystem.concept) {
-        this.addCodeSystemConcepts(codeSystem, concept, result);
-      }
+  private getCodeSystemElements(codeSystem: CodeSystem): {
+    concepts: Coding[];
+    properties: ImportedProperty[];
+    designations: Designation[];
+  } {
+    const result = Object.create(null);
+    for (const concept of codeSystem.concept ?? EMPTY) {
+      this.addCodeSystemConcepts(codeSystem, concept, result);
     }
     return result;
   }
@@ -163,31 +165,36 @@ export class CodingTable extends LookupTable {
    * @param result - The results.
    * @param result.concepts - Concepts defined by the CodeSystem.
    * @param result.properties - Coding properties specified by the CodeSystem.
+   * @param result.designations - Coding synonyms specified by the CodeSystem.
    */
   private addCodeSystemConcepts(
     codeSystem: CodeSystem,
     concept: CodeSystemConcept,
-    result: { concepts: Coding[]; properties: ImportedProperty[] }
+    result: { concepts: Coding[]; properties: ImportedProperty[]; designations: Designation[] }
   ): void {
     const { code, display } = concept;
     result.concepts = append(result.concepts, { code, display });
 
-    if (concept.property) {
-      for (const prop of concept.property) {
-        result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
-      }
+    for (const prop of concept.property ?? EMPTY) {
+      result.properties = append(result.properties, { code, property: prop.code, value: getPropertyValue(prop) });
     }
 
-    if (concept.concept) {
-      for (const child of concept.concept) {
-        this.addCodeSystemConcepts(codeSystem, child, result);
-        result.properties = append(result.properties, {
-          code: child.code,
-          property:
-            codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
-          value: code,
-        });
-      }
+    for (const child of concept.concept ?? EMPTY) {
+      this.addCodeSystemConcepts(codeSystem, child, result);
+      result.properties = append(result.properties, {
+        code: child.code,
+        property:
+          codeSystem.property?.find((p) => p.uri === parentProperty)?.code ?? codeSystem.hierarchyMeaning ?? 'parent',
+        value: code,
+      });
+    }
+
+    for (const designation of concept.designation ?? EMPTY) {
+      result.designations = append(result.designations, {
+        code: concept.code,
+        language: designation.language,
+        value: designation.value,
+      });
     }
   }
 }

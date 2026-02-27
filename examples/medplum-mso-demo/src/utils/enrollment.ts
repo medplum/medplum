@@ -55,13 +55,13 @@ export async function enrollPractitioner(
       if (existingAccess.length > 0) {
         existingAccess.push({
           parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-          policy: { reference: getReferenceString(policy) },
+          policy: createReference(policy),
         });
       } else {
         membershipResource.access = [
           {
             parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-            policy: { reference: getReferenceString(policy) },
+            policy: createReference(policy),
           },
         ];
       }

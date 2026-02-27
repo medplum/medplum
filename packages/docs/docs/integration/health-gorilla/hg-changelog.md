@@ -8,6 +8,22 @@ sidebar_position: 99
 
 This page tracks updates, improvements, and changes to the HealthGorilla integration in Medplum.
 
+## [October 2025]
+
+- Atomic ServiceRequest Updates: Switched to batched PATCH operations to sync HealthGorilla order identifiers, preventing race conditions.
+- Syncing Order Identifiers: `send-to-health-gorilla` syncs all identifiers from Health Gorilla `RequestGroups`, including the lab accession id
+
+## [September 2025]
+
+- Enhanced Practitioner Name Matching: Improved logic to ignore middle names and handle name variations more flexibly.
+- Delayed DetectedIssue Creation: Separated `DetectedIssue` creation from main bundle processing to prevent race conditions in downstream workflows.
+
+## [Aug 2025]
+
+- Preserve ServiceRequest Identifiers: Switched from `PUT` to `PATCH` for `ServiceRequest` sync to prevent asynchronously-set identifiers from being overwritten.
+- Smarter Patient Matching for Lab Reports: `DiagnosticReport` resolution now handles multiplie `Patients` with the same Health Gorilla ID. Prioritizes `active` patients and follows `Patient.link` for inactive patients to reduce duplicates.
+- Enhanced Order Matching: On receiving lab reports, the integration now finds existing orders by Health Gorilla ID, Accession ID, Placer ID, or Filler ID to link to the correct patient.
+
 ## [June 2025]
 
 1. Added securityContext to Binary resources. Resources containing content are written before Binary resources are attached.

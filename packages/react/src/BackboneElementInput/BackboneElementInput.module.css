@@ -1,0 +1,5 @@
+.nested {
+  padding-left: var(--mantine-spacing-md);
+  padding-top: var(--mantine-spacing-md);
+  padding-bottom: var(--mantine-spacing-sm);
+}

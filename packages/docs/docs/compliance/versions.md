@@ -8,7 +8,42 @@ sidebar_position: 3
 
 Medplum follows semantic versioning (semver) for all components of our healthcare developer platform. This document outlines our version release strategy, support timeline, and upgrade requirements to help organizations plan their deployment and maintenance schedules effectively.
 
-![Medplum Versions](./medplum-versions.webp)
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 361">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="246" y="30" text-anchor="middle">Oct 2025</text>
+  <line x1="246" y1="40" x2="246" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="407" y="30" text-anchor="middle">Jan 2026</text>
+  <line x1="407" y1="40" x2="407" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="568" y="30" text-anchor="middle">Apr 2026</text>
+  <line x1="568" y1="40" x2="568" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="729" y="30" text-anchor="middle">Jul 2026</text>
+  <line x1="729" y1="40" x2="729" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="889" y="30" text-anchor="middle">Oct 2026</text>
+  <line x1="889" y1="40" x2="889" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="1050" y="30" text-anchor="middle">Jan 2027</text>
+  <line x1="1050" y1="40" x2="1050" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="1211" y="30" text-anchor="middle">Apr 2027</text>
+  <line x1="1211" y1="40" x2="1211" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="1372" y="30" text-anchor="middle">Jul 2027</text>
+  <line x1="1372" y1="40" x2="1372" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="1533" y="30" text-anchor="middle">Oct 2027</text>
+  <line x1="1533" y1="40" x2="1533" y2="346" stroke="#000" stroke-width="2"/>
+  <text x="20" y="94" text-anchor="start" font-size="22">Main</text>
+  <text x="20" y="162" text-anchor="start" font-size="22">Medplum 4</text>
+  <text x="20" y="233" text-anchor="start" font-size="22">Medplum 5</text>
+  <text x="20" y="303" text-anchor="start" font-size="22">Medplum 6</text>
+  <rect x="165" y="64" width="1406" height="47" fill="#1c7ed6"/>
+  <text x="177" y="95.5" text-anchor="start" font-size="22" font-weight="700" fill="#fff">UNSTABLE</text>
+  <rect x="165" y="134" width="724" height="47" fill="#adb5bd"/>
+  <text x="177" y="165.5" text-anchor="start" font-size="22" font-weight="700" fill="#fff">MAINTENANCE</text>
+  <rect x="165" y="205" width="724" height="47" fill="#9c36b5"/>
+  <text x="177" y="236.5" text-anchor="start" font-size="22" font-weight="700" fill="#fff">ACTIVE</text>
+  <rect x="889" y="205" width="684" height="47" fill="#adb5bd"/>
+  <text x="901" y="236.5" text-anchor="start" font-size="22" font-weight="700" fill="#fff">MAINTENANCE</text>
+  <rect x="889" y="275" width="684" height="47" fill="#9c36b5"/>
+  <text x="901" y="306.5" text-anchor="start" font-size="22" font-weight="700" fill="#fff">ACTIVE</text>
+</svg>
+
 
 ## Component Versioning
 
@@ -43,7 +78,7 @@ All Medplum components are released in lockstep with the same version number:
 - Require server maintenance including potential database migrations
 - Must be deployed sequentially (cannot skip minor versions)
 - Include backwards-compatible feature additions and improvements
-- _The `medplum upgrade` / `medplum aws upgrade` tool automatically chains sequential minors (e.g., 4.0 → 4.3) and supports transactional rollback._
+- _The `medplum upgrade` / `medplum aws upgrade` tool automatically chains sequential minors (e.g., 5.0 → 5.3) and supports transactional rollback._
 
 ### Patch Versions (X.Y.Z)
 
@@ -66,7 +101,7 @@ All Medplum components are released in lockstep with the same version number:
 
 - Supports current "Active" and "Maintenance" [LTS Node.js versions](https://nodejs.org/en/about/previous-releases)
 - All unit and integration tests are run against supported versions
-- Follows Node.js even-numbered LTS release schedule (16.x, 18.x, 20.x, etc.)
+- Follows Node.js even-numbered LTS release schedule (20.x, 22.x, 24.x, etc.)
 
 #### PostgreSQL
 

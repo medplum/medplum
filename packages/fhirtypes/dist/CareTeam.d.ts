@@ -5,24 +5,24 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { ContactPoint } from './ContactPoint';
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * The Care Team includes all the people and organizations who plan to

@@ -11,20 +11,22 @@ import type {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import type { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
+  systemRepo: SystemRepository,
   project: Project,
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
@@ -38,7 +40,6 @@ export async function createProfile(
     telecom = [{ system: 'email', use: 'work', value: email }];
   }
 
-  const systemRepo = getSystemRepo();
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
@@ -85,7 +86,7 @@ export async function createProjectMembership(
  * @param login - The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   if (user.mfaRequired && !user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
@@ -126,6 +127,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     id: m.id,
     project: m.project,
     profile: m.profile,
+    identifier: m.identifier,
   }));
   res.json(
     await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
@@ -204,7 +206,7 @@ export async function getProjectIdByClientId(
 export function getProjectByRecaptchaSiteKey(
   recaptchaSiteKey: string,
   projectId: string | undefined
-): Promise<Project | undefined> {
+): Promise<WithId<Project> | undefined> {
   const filters = [
     {
       code: 'recaptcha-site-key',
@@ -221,7 +223,7 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // not shard ready; would require searching all shards
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 

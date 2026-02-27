@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, EMPTY, OperationOutcomeError } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
@@ -8,7 +8,11 @@ import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { isValidTableName, replaceNullWithUndefinedInRows, SqlBuilder } from '../sql';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -21,34 +25,16 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'tableName',
-      type: 'string',
-      min: 0,
-      max: '*',
-    },
-    {
-      use: 'out',
-      name: 'defaultGinPendingListLimit',
-      type: 'integer',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'index',
-      min: 0,
-      max: '*',
-      part: [
-        { use: 'out', name: 'schemaName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'indexName', type: 'string', min: 1, max: '1' },
-        { use: 'out', name: 'indexOptions', type: 'string', min: 0, max: '1' },
-        { use: 'out', name: 'fastUpdate', type: 'boolean', min: 0, max: '1' },
-        { use: 'out', name: 'ginPendingListLimit', type: 'integer', min: 0, max: '1' },
-      ],
-    },
+    param('in', 'tableName', 'string', 0, '*'),
+    param('out', 'defaultGinPendingListLimit', 'integer', 1, '1'),
+    param('out', 'index', undefined, 0, '*', [
+      param('out', 'schemaName', 'string', 1, '1'),
+      param('out', 'tableName', 'string', 1, '1'),
+      param('out', 'indexName', 'string', 1, '1'),
+      param('out', 'indexOptions', 'string', 0, '1'),
+      param('out', 'fastUpdate', 'boolean', 0, '1'),
+      param('out', 'ginPendingListLimit', 'integer', 0, '1'),
+    ]),
   ],
 };
 
@@ -67,7 +53,7 @@ export async function dbIndexesHandler(req: FhirRequest): Promise<FhirResponse> 
   const params = parseInputParameters<{ tableName?: string }>(operation, req);
 
   const tableNames = [];
-  for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? []) {
+  for (const tableName of params.tableName?.split(',').map((name) => name.trim()) ?? EMPTY) {
     if (!isValidTableName(tableName)) {
       throw new OperationOutcomeError(badRequest('Invalid tableName'));
     }

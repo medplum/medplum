@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -xe
+
 PACKAGES=(
   "agent"
   "app"

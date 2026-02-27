@@ -5,14 +5,14 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Resource } from './Resource';
-import { Timing } from './Timing';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Timing } from './Timing.d.ts';
 
 /**
  * Bot account for automated actions.
@@ -162,6 +162,13 @@ export interface Bot {
   publicWebhook?: boolean;
 
   /**
+   * Optional flag to indicate that the bot should be deployed in a
+   * streaming-enabled context, allowing it to execute with streaming
+   * responses.
+   */
+  streamingEnabled?: boolean;
+
+  /**
    * Criteria for creating an AuditEvent as a result of the bot invocation.
    * Possible values are 'always', 'never', 'on-error', or 'on-output'.
    * Default value is 'always'.
@@ -186,6 +193,12 @@ export interface Bot {
   executableCode?: Attachment;
 
   /**
+   * CDS service definition if the bot is used as a CDS Hooks service. See
+   * https://cds-hooks.hl7.org/ for more details.
+   */
+  cdsService?: BotCdsService;
+
+  /**
    * @deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode
    * instead.
    */
@@ -196,3 +209,59 @@ export interface Bot {
  * A schedule for the bot to be executed.
  */
 export type BotCron = string | Timing;
+
+/**
+ * CDS service definition if the bot is used as a CDS Hooks service. See
+ * https://cds-hooks.hl7.org/ for more details.
+ */
+export interface BotCdsService {
+
+  /**
+   * The hook this service should be invoked on. See
+   * https://cds-hooks.hl7.org/#hooks for possible values.
+   */
+  hook: string;
+
+  /**
+   * The human-friendly name of this CDS service.
+   */
+  title: string;
+
+  /**
+   * The description of this CDS service.
+   */
+  description: string;
+
+  /**
+   * Optional human-friendly description of any preconditions for the use
+   * of this CDS Service.
+   */
+  usageRequirements?: string;
+
+  /**
+   * An object containing key/value pairs of FHIR queries that this service
+   * is requesting the CDS Client to perform and provide on each service
+   * call.
+   */
+  prefetch?: BotCdsServicePrefetch[];
+}
+
+/**
+ * An object containing key/value pairs of FHIR queries that this service
+ * is requesting the CDS Client to perform and provide on each service
+ * call.
+ */
+export interface BotCdsServicePrefetch {
+
+  /**
+   * The type of data being requested. See
+   * https://cds-hooks.hl7.org/#prefetch-template
+   */
+  key: string;
+
+  /**
+   * The FHIR query used to retrieve the requested data. See
+   * https://cds-hooks.hl7.org/#prefetch-template
+   */
+  query: string;
+}

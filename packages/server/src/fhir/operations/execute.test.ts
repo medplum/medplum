@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
+import {
+  ContentType,
+  Operator,
+  badRequest,
+  createReference,
+  getReferenceString,
+  notFound,
+  parseJWTPayload,
+} from '@medplum/core';
 import type {
   AsyncJob,
   AuditEvent,
@@ -22,7 +30,7 @@ import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
   [
@@ -85,14 +93,58 @@ exports.handler = async function (medplum, event) {
 };
 `,
   ],
+  [
+    `
+export async function handler(medplum, event) {
+  const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
+  return 'done';
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  const { responseStream } = event;
+  responseStream.startStreaming(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  responseStream.write('data: Hello \\n\\n');
+  responseStream.write('data: World!\\n\\n');
+  responseStream.end();
+  return 'done';
+};
+`,
+  ],
+  [
+    `
+export async function handler(medplum, event) {
+  throw new Error('Streaming error test');
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  throw new Error('Streaming error test');
+};
+`,
+  ],
 ] as [string, string][];
 
-type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot';
-const botDefinitions: { name: BotName; system: boolean; code: [string, string] }[] = [
+type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot' | 'streamingBot' | 'streamingErrorBot';
+const botDefinitions: { name: BotName; system: boolean; code: [string, string]; streaming?: boolean }[] = [
   { name: 'systemEchoBot', system: true, code: botCodes[0] },
   { name: 'echoBot', system: false, code: botCodes[0] },
   { name: 'booleanBot', system: false, code: botCodes[1] },
   { name: 'binaryBot', system: false, code: botCodes[2] },
+  { name: 'streamingBot', system: false, code: botCodes[3], streaming: true },
+  { name: 'streamingErrorBot', system: false, code: botCodes[4], streaming: true },
 ];
 
 describe('Execute', () => {
@@ -124,7 +176,13 @@ describe('Execute', () => {
     project1 = testSetup.project;
     accessToken1 = testSetup.accessToken;
 
-    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<WithId<Bot>> {
+    async function setupBot(
+      name: string,
+      system: boolean,
+      esmCode: string,
+      cjsCode: string,
+      streaming?: boolean
+    ): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
         .set('Content-Type', ContentType.FHIR_JSON)
@@ -136,6 +194,7 @@ describe('Execute', () => {
           runtimeVersion: 'vmcontext',
           code: esmCode,
           system,
+          ...(streaming && { streamingEnabled: true }),
         });
 
       expect(res1.status).toBe(201);
@@ -154,8 +213,8 @@ describe('Execute', () => {
       return bot;
     }
 
-    for (const { name, system, code } of botDefinitions) {
-      bots[name] = await setupBot(name, system, code[0], code[1]);
+    for (const { name, system, code, streaming } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1], streaming);
     }
   });
 
@@ -477,9 +536,22 @@ describe('Execute', () => {
     expect(res6.body).toStrictEqual(42);
   });
 
-  test('OperationOutcome response', async () => {
+  test.each(['$execute?identifier=invalid-identifier', 'invalid-id/$execute'])(
+    '404 response with Bot/%s',
+    async (urlEnding) => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${urlEnding}`)
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('');
+      expect(res.status).toBe(404);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+      expect(res.body).toMatchObject(notFound);
+    }
+  );
+
+  test('400 response with missing id/identifier', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/$execute?identifier=invalid-identifier`)
+      .post(`/fhir/R4/Bot/$execute`)
       .set('Authorization', 'Bearer ' + accessToken1)
       .send('');
     expect(res.status).toBe(400);
@@ -614,6 +686,7 @@ describe('Execute', () => {
       // Create a new project that links to the first project
       const testSetup2 = await createTestProject({
         withAccessToken: true,
+        withRepo: true,
         project: {
           name: 'Project 2',
           systemSecret: [
@@ -633,7 +706,7 @@ describe('Execute', () => {
       project2 = testSetup2.project;
       accessToken2 = testSetup2.accessToken;
 
-      const systemRepo = getSystemRepo();
+      const systemRepo = testSetup2.repo.getSystemRepo();
       for (const bot of [bots.echoBot, bots.systemEchoBot]) {
         await systemRepo.createResource<ProjectMembership>({
           resourceType: 'ProjectMembership',
@@ -713,11 +786,11 @@ describe('Execute', () => {
       ],
     ])('%s bot in %s project secrets', async (botName, whichProject, expectedSecrets) => {
       const bot = bots[botName];
-      const systemRepo = getSystemRepo();
 
       // execute the bot in the appropriate project context
       const project = whichProject === 'own' ? project1 : project2;
       const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+      const systemRepo = getProjectSystemRepo(project);
 
       const res = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$execute`)
@@ -880,6 +953,53 @@ describe('Execute', () => {
           ]),
         }),
       });
+    });
+  });
+
+  describe('Accept: text/event-stream (SSE streaming)', () => {
+    test('Streaming execution with chunks', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+
+      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
+    });
+
+    test('Streaming execution with JSON input', async () => {
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingBot.id}/$execute`)
+        .set('Content-Type', ContentType.JSON)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send({ message: 'hello' });
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/event-stream');
+
+      const events = res.text.split('\n\n').filter((e) => e.startsWith('data: '));
+      expect(events.length).toStrictEqual(2);
+      expect(events[0]).toStrictEqual('data: Hello ');
+      expect(events[1]).toStrictEqual('data: World!');
+    });
+
+    test('Streaming execution error handling', async () => {
+      // Errors thrown before writing to responseStream return HTTP 400
+      // because headers are not flushed until first write
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bots.streamingErrorBot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Accept', 'text/event-stream')
+        .set('Authorization', 'Bearer ' + accessToken1)
+        .send('input');
+      expect(res.status).toBe(400);
+      expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
     });
   });
 });

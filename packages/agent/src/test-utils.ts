@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-
+import type { ILogger } from '@medplum/core';
 import { LogLevel } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
@@ -34,6 +34,19 @@ export function createTestWinstonLogger(
   };
 
   return [new WinstonWrapperLogger(config, loggerType), cleanup];
+}
+
+export function createMockLogger(logLevel: LogLevel = LogLevel.INFO): ILogger & { log: jest.Mock; clone: jest.Mock } {
+  const logger: Record<string, any> = {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  };
+  logger.level = logLevel;
+  logger.clone = jest.fn(() => logger);
+  return logger as ILogger & { log: jest.Mock; clone: jest.Mock };
 }
 
 /**

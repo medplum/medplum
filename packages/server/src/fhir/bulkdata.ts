@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError } from '@medplum/core';
+import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError, singularize } from '@medplum/core';
 import type { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -33,7 +33,7 @@ async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport>
 
 bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
   const ctx = getAuthenticatedContext();
-  const { id } = req.params;
+  const id = singularize(req.params.id) ?? '';
   const bulkDataExport = await getExportResource(id);
 
   if (bulkDataExport.status === 'cancelled') {
@@ -56,7 +56,7 @@ bulkDataRouter.get('/export/:id', async (req: Request, res: Response) => {
 });
 
 bulkDataRouter.delete('/export/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const id = singularize(req.params.id) ?? '';
   const bulkDataExport = await getExportResource(id);
 
   if (bulkDataExport.status !== 'cancelled') {

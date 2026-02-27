@@ -34,7 +34,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
   const M = rev.length;
   const MAX = N + M + 1;
   const size = 1 + 2 * MAX;
-  const middle = (size / 2) | 0;
+  const middle = Math.trunc(size / 2);
   const diagonal: (PathNode | undefined)[] = new Array(size);
 
   diagonal[middle + 1] = {

@@ -15,8 +15,10 @@ export interface AsyncAutocompleteOption<T> extends ComboboxItem {
   readonly resource: T;
 }
 
-export interface AsyncAutocompleteProps<T>
-  extends Omit<ComboboxProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+export interface AsyncAutocompleteProps<T> extends Omit<
+  ComboboxProps,
+  'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'
+> {
   readonly name?: string;
   readonly label?: ReactNode;
   readonly description?: ReactNode;

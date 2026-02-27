@@ -9,8 +9,8 @@ import {
   linkPatientRecords,
   mergePatientRecords,
   patientsAlreadyMerged,
+  rewriteClinicalDataReferences,
   unlinkPatientRecords,
-  updateResourceReferences,
 } from './merge-matching-patients';
 
 function mockFetch(
@@ -181,10 +181,10 @@ describe('Deduplication', () => {
       name: [{ given: ['Lisa'], family: 'Simpson' }],
     } as WithId<Patient>;
     const fetch = mockFetch(200, (url: string) => {
-      if (url.includes('subject=')) {
+      if (url.includes('$everything')) {
         return {
           resourceType: 'Bundle',
-          entry: [{ resource: { ...clinicalResource } }],
+          entry: [{ resource: { resourceType: 'Patient', id: 'src' } }, { resource: { ...clinicalResource } }],
         };
       } else if (url.includes('ServiceRequest/123')) {
         return {
@@ -197,7 +197,7 @@ describe('Deduplication', () => {
     });
     const client = new MedplumClient({ fetch });
 
-    await updateResourceReferences(client, srcPatient, targetPatient, 'ServiceRequest');
+    await rewriteClinicalDataReferences(client, srcPatient, targetPatient);
     const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
     expect(clinicalResourceUpdated.subject).toStrictEqual({ reference: 'Patient/target' });
   });

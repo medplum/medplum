@@ -17,7 +17,6 @@ export function HomePage(): JSX.Element {
   // See the "Register" tutorial for more detail
   // https://www.medplum.com/docs/tutorials/register
   const profile = useMedplumProfile() as Practitioner;
-
   const navigate = useMedplumNavigate();
 
   return (
@@ -28,7 +27,7 @@ export function HomePage(): JSX.Element {
       <SearchControl
         search={{ resourceType: 'Patient', fields: ['name', 'birthdate', 'gender'] }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-        hideToolbar
+        onNew={() => navigate('/Patient/new')}
       />
       <Outlet />
     </Document>

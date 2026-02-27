@@ -2,6 +2,6 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  height: calc(100vh - 60px);
+  height: calc(100vh - var(--app-shell-header-height, 0));
   overflow: hidden;
 }

@@ -72,7 +72,7 @@ export function ExtensionDisplay(props: ExtensionDisplayProps): JSX.Element | nu
   return (
     <BackboneElementDisplay
       path={props.path}
-      value={{ type: typeSchema.type as string, value: props.value }}
+      value={{ type: typeSchema.type, value: props.value }}
       compact={props.compact}
       ignoreMissingValues={props.ignoreMissingValues}
       link={props.link}

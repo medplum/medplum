@@ -1,0 +1,3657 @@
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/resource-types",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "resource-types",
+        "url": "https://medplum.com/fhir/CodeSystem/resource-types",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/resource-types",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "AccessPolicy",
+            "display": "AccessPolicy",
+            "definition": "Access Policy for user or user group that defines how entities can or cannot access resources."
+          },
+          {
+            "code": "Agent",
+            "display": "Agent",
+            "definition": "Configuration details for an instance of the Medplum agent application."
+          },
+          {
+            "code": "AsyncJob",
+            "display": "AsyncJob",
+            "definition": "Contains details of long running asynchronous/background jobs."
+          },
+          {
+            "code": "Bot",
+            "display": "Bot",
+            "definition": "Bot account for automated actions."
+          },
+          {
+            "code": "BulkDataExport",
+            "display": "BulkDataExport",
+            "definition": "User specific configuration for the Medplum application."
+          },
+          {
+            "code": "ClientApplication",
+            "display": "ClientApplication",
+            "definition": "Medplum client application for automated access."
+          },
+          {
+            "code": "DomainConfiguration",
+            "display": "DomainConfiguration",
+            "definition": "Domain specific configuration for the Medplum application."
+          },
+          {
+            "code": "IdentityProvider",
+            "display": "IdentityProvider",
+            "definition": "External Identity Provider (IdP) configuration details."
+          },
+          {
+            "code": "JsonWebKey",
+            "display": "JsonWebKey",
+            "definition": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value."
+          },
+          {
+            "code": "Login",
+            "display": "Login",
+            "definition": "Login event and session details."
+          },
+          {
+            "code": "UserSecurityRequest",
+            "display": "UserSecurityRequest",
+            "definition": "User security request for the 'forgot password' flow or email verification."
+          },
+          {
+            "code": "Project",
+            "display": "Project",
+            "definition": "Encapsulation of resources for a specific project or organization."
+          },
+          {
+            "code": "ProjectMembership",
+            "display": "ProjectMembership",
+            "definition": "Medplum project membership. A project membership grants a user access to a project."
+          },
+          {
+            "code": "SmartAppLaunch",
+            "display": "SmartAppLaunch",
+            "definition": "This resource contains context details for a SMART App Launch."
+          },
+          {
+            "code": "User",
+            "display": "User",
+            "definition": "Representation of a human user of the system."
+          },
+          {
+            "code": "UserConfiguration",
+            "display": "UserConfiguration",
+            "definition": "User specific configuration for the Medplum application."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/resource-types",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "resource-types",
+        "url": "https://medplum.com/fhir/ValueSet/resource-types",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/resource-types"
+            },
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/resource-types"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/project-feature",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "project-feature",
+        "url": "https://medplum.com/fhir/CodeSystem/project-feature",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/project-feature",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "ai",
+            "display": "AI",
+            "definition": "AI"
+          },
+          {
+            "code": "aws-comprehend",
+            "display": "AWS Comprehend",
+            "definition": "AWS Comprehend"
+          },
+          {
+            "code": "aws-textract",
+            "display": "AWS Textract",
+            "definition": "AWS Textract"
+          },
+          {
+            "code": "bots",
+            "display": "Bots",
+            "definition": "Bots"
+          },
+          {
+            "code": "cron",
+            "display": "Cron",
+            "definition": "Cron"
+          },
+          {
+            "code": "email",
+            "display": "Email",
+            "definition": "Email"
+          },
+          {
+            "code": "google-auth-required",
+            "display": "Google Auth Required",
+            "definition": "Google Auth Required"
+          },
+          {
+            "code": "graphql-introspection",
+            "display": "GraphQL Introspection",
+            "definition": "GraphQL Introspection"
+          },
+          {
+            "code": "websocket-subscriptions",
+            "display": "WebSocket Subscriptions",
+            "definition": "WebSocket Subscriptions"
+          },
+          {
+            "code": "transaction-bundles",
+            "display": "Transaction Bundles",
+            "definition": "Use database transactions for transaction Bundles"
+          },
+          {
+            "code": "validate-terminology",
+            "display": "Validate Terminology Bindings",
+            "definition": "Validate that resource fields contain codes from the expected ValueSet"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/project-feature",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "project-feature",
+        "url": "https://medplum.com/fhir/ValueSet/project-feature",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/project-feature"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-runtime-version",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-runtime-version",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "awslambda",
+            "display": "AWS Lambda",
+            "definition": "AWS Lambda"
+          },
+          {
+            "code": "vmcontext",
+            "display": "VM Context",
+            "definition": "VM Context"
+          },
+          {
+            "code": "fission",
+            "display": "Fission",
+            "definition": "Fission"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-runtime-version",
+        "url": "https://medplum.com/fhir/ValueSet/bot-runtime-version",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-runtime-version"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-audit-event-trigger",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "always",
+            "display": "Always",
+            "definition": "Always"
+          },
+          {
+            "code": "never",
+            "display": "Never",
+            "definition": "Never"
+          },
+          {
+            "code": "on-error",
+            "display": "On error",
+            "definition": "On error"
+          },
+          {
+            "code": "on-output",
+            "display": "On output",
+            "definition": "On output"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-audit-event-trigger",
+        "url": "https://medplum.com/fhir/ValueSet/bot-audit-event-trigger",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-audit-event-trigger"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "bot-audit-event-destination",
+        "url": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "log",
+            "display": "Log",
+            "definition": "Log"
+          },
+          {
+            "code": "resource",
+            "display": "Resource",
+            "definition": "Resource"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "bot-audit-event-destination",
+        "url": "https://medplum.com/fhir/ValueSet/bot-audit-event-destination",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/bot-audit-event-destination"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/login-auth-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "login-auth-method",
+        "url": "https://medplum.com/fhir/CodeSystem/login-auth-method",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/login-auth-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "client",
+            "display": "Client",
+            "definition": "Client"
+          },
+          {
+            "code": "exchange",
+            "display": "Exchange",
+            "definition": "Exchange"
+          },
+          {
+            "code": "execute",
+            "display": "Execute",
+            "definition": "Execute"
+          },
+          {
+            "code": "external",
+            "display": "External",
+            "definition": "External"
+          },
+          {
+            "code": "google",
+            "display": "Google",
+            "definition": "Google"
+          },
+          {
+            "code": "password",
+            "display": "Password",
+            "definition": "Password"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/login-auth-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "login-auth-method",
+        "url": "https://medplum.com/fhir/ValueSet/login-auth-method",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/login-auth-method"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "login-code-challenge-method",
+        "url": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "plain",
+            "display": "Plain",
+            "definition": "Plain"
+          },
+          {
+            "code": "S256",
+            "display": "S256",
+            "definition": "S256"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "login-code-challenge-method",
+        "url": "https://medplum.com/fhir/ValueSet/login-code-challenge-method",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/login-code-challenge-method"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "ip-access-rule-action",
+        "url": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "allow",
+            "display": "Allow",
+            "definition": "Allow"
+          },
+          {
+            "code": "block",
+            "display": "Block",
+            "definition": "Block"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "ip-access-rule-action",
+        "url": "https://medplum.com/fhir/ValueSet/ip-access-rule-action",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/ip-access-rule-action"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/async-job-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "async-job-type",
+        "url": "https://medplum.com/fhir/CodeSystem/async-job-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/async-job-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "data-migration",
+            "display": "Data Migration",
+            "definition": "Data Migration"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/async-job-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "async-job-type",
+        "url": "https://medplum.com/fhir/ValueSet/async-job-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/async-job-type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/async-job-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "async-job-status",
+        "url": "https://medplum.com/fhir/CodeSystem/async-job-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/async-job-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "accepted",
+            "display": "Accepted",
+            "definition": "Accepted"
+          },
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "completed",
+            "display": "Completed",
+            "definition": "Completed"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          },
+          {
+            "code": "cancelled",
+            "display": "Cancelled",
+            "definition": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/async-job-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "async-job-status",
+        "url": "https://medplum.com/fhir/ValueSet/async-job-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/async-job-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/agent-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "agent-status",
+        "url": "https://medplum.com/fhir/CodeSystem/agent-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/agent-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "off",
+            "display": "Off",
+            "definition": "Off"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/agent-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "agent-status",
+        "url": "https://medplum.com/fhir/ValueSet/agent-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/agent-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "agent-channel-protocol",
+        "url": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "astm",
+            "display": "ASTM",
+            "definition": "ASTM"
+          },
+          {
+            "code": "dicom",
+            "display": "DICOM",
+            "definition": "DICOM"
+          },
+          {
+            "code": "hl7-mllp",
+            "display": "HL7 MLLP",
+            "definition": "HL7 MLLP"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "agent-channel-protocol",
+        "url": "https://medplum.com/fhir/ValueSet/agent-channel-protocol",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/agent-channel-protocol"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/password-change-request-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "password-change-request-type",
+        "url": "https://medplum.com/fhir/CodeSystem/password-change-request-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "invite",
+            "display": "Invite",
+            "definition": "Initial user invite"
+          },
+          {
+            "code": "reset",
+            "display": "Reset",
+            "definition": "User requested password reset"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "password-change-request-type",
+        "url": "https://medplum.com/fhir/ValueSet/password-change-request-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/password-change-request-type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/CodeSystem/user-security-request-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "invite",
+            "display": "Invite",
+            "definition": "Initial user invite"
+          },
+          {
+            "code": "verify-email",
+            "display": "Verify email",
+            "definition": "Email verification of a user"
+          },
+          {
+            "code": "reset",
+            "display": "Reset",
+            "definition": "User requested password reset"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "user-security-request-type",
+        "url": "https://medplum.com/fhir/ValueSet/user-security-request-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/user-security-request-type"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "token-endpoint-auth-methods-supported",
+        "url": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported",
+        "name": "OAuth2TokenEndpointAuthMethodsSupported",
+        "title": "OAuth 2.0 Token Endpoint Authentication Methods",
+        "status": "active",
+        "description": "Client Authentication methods that are used by Clients to authenticate to the Authorization Server when using the Token Endpoint. During Client Registration, the RP (Client) MAY register a Client Authentication method. If no method is registered, the default method is client_secret_basic.",
+        "valueSet": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "client_secret_basic",
+            "display": "client_secret_basic",
+            "definition": "Clients that have received a client_secret value from the Authorization Server authenticate with the Authorization Server in accordance with Section 2.3.1 of OAuth 2.0 RFC6749 using the HTTP Basic authentication scheme."
+          },
+          {
+            "code": "client_secret_post",
+            "display": "client_secret_post",
+            "definition": "Clients that have received a client_secret value from the Authorization Server, authenticate with the Authorization Server in accordance with Section 2.3.1 of OAuth 2.0 [RFC6749] by including the Client Credentials in the request body."
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "token-endpoint-auth-methods-supported",
+        "url": "https://medplum.com/fhir/ValueSet/token-endpoint-auth-methods-supported",
+        "name": "OAuth2TokenEndpointAuthMethodsSupported",
+        "title": "OAuth 2.0 Token Endpoint Authentication Methods",
+        "status": "active",
+        "description": "Client Authentication methods that are used by Clients to authenticate to the Authorization Server when using the Token Endpoint. During Client Registration, the RP (Client) MAY register a Client Authentication method. If no method is registered, the default method is client_secret_basic.",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/token-endpoint-auth-methods-supported"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/client-application-status",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "client-application-status",
+        "url": "https://medplum.com/fhir/CodeSystem/client-application-status",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/client-application-status",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "active",
+            "display": "Active",
+            "definition": "Active"
+          },
+          {
+            "code": "off",
+            "display": "Off",
+            "definition": "Off"
+          },
+          {
+            "code": "error",
+            "display": "Error",
+            "definition": "Error"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/client-application-status",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "client-application-status",
+        "url": "https://medplum.com/fhir/ValueSet/client-application-status",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/client-application-status"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/loinc-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://loinc.org",
+        "name": "LOINC_stub",
+        "version": "0.0.0",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "example",
+        "description": "Stub version of LOINC code system",
+        "concept": [
+          {
+            "code": "LA28865-6",
+            "display": "Longitudinal care-coordination focused care team"
+          },
+          {
+            "code": "86645-9",
+            "display": "Pregnancy intention in the next year - Reported"
+          },
+          {
+            "code": "82810-3",
+            "display": "Pregnancy status"
+          },
+          {
+            "code": "76690-7",
+            "display": "Sexual orientation"
+          },
+          {
+            "code": "77606-2",
+            "display": "Weight-for-length Per age and sex"
+          },
+          {
+            "code": "8480-6",
+            "display": "Systolic blood pressure"
+          },
+          {
+            "code": "8462-4",
+            "display": "Diastolic blood pressure"
+          },
+          {
+            "code": "8867-4",
+            "display": "Heart rate"
+          },
+          {
+            "code": "2708-6",
+            "display": "Oxygen saturation in Arterial blood"
+          },
+          {
+            "code": "3151-8",
+            "display": "Inhaled oxygen flow rate"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/cpt-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://www.ama-assn.org/go/cpt",
+        "name": "CPT_stub",
+        "version": "0000",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "example",
+        "description": "Stub version of CPT code system",
+        "concept": [
+          {
+            "code": "99213",
+            "display": "Office visit with established patient, low complexity"
+          },
+          {
+            "code": "93000",
+            "display": "Electrocardiogram, routine ECG with at least 12 leads; with interpretation and report"
+          },
+          {
+            "code": "36415",
+            "display": "Collection of venous blood by venipuncture"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/rxnorm-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "name": "RxNorm_stub",
+        "version": "00000000",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "not-present",
+        "description": "Stub version of RxNorm code system"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/ucum-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://unitsofmeasure.org",
+        "name": "UCUM",
+        "title": "Unified Code for Units of Measure (UCUM)",
+        "status": "active",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "m",
+            "display": "meter"
+          },
+          {
+            "code": "s",
+            "display": "second"
+          },
+          {
+            "code": "g",
+            "display": "gram"
+          },
+          {
+            "code": "rad",
+            "display": "radian"
+          },
+          {
+            "code": "K",
+            "display": "kelvin"
+          },
+          {
+            "code": "C",
+            "display": "coulomb"
+          },
+          {
+            "code": "cd",
+            "display": "candela"
+          },
+          {
+            "code": "10*",
+            "display": "the number ten for arbitrary powers"
+          },
+          {
+            "code": "10^",
+            "display": "the number ten for arbitrary powers"
+          },
+          {
+            "code": "[pi]",
+            "display": "the number pi"
+          },
+          {
+            "code": "%",
+            "display": "percent"
+          },
+          {
+            "code": "[ppth]",
+            "display": "parts per thousand"
+          },
+          {
+            "code": "[ppm]",
+            "display": "parts per million"
+          },
+          {
+            "code": "[ppb]",
+            "display": "parts per billion"
+          },
+          {
+            "code": "[pptr]",
+            "display": "parts per trillion"
+          },
+          {
+            "code": "mol",
+            "display": "mole"
+          },
+          {
+            "code": "sr",
+            "display": "steradian"
+          },
+          {
+            "code": "Hz",
+            "display": "hertz"
+          },
+          {
+            "code": "N",
+            "display": "newton"
+          },
+          {
+            "code": "Pa",
+            "display": "pascal"
+          },
+          {
+            "code": "J",
+            "display": "joule"
+          },
+          {
+            "code": "W",
+            "display": "watt"
+          },
+          {
+            "code": "A",
+            "display": "ampère"
+          },
+          {
+            "code": "V",
+            "display": "volt"
+          },
+          {
+            "code": "F",
+            "display": "farad"
+          },
+          {
+            "code": "Ohm",
+            "display": "ohm"
+          },
+          {
+            "code": "S",
+            "display": "siemens"
+          },
+          {
+            "code": "Wb",
+            "display": "weber"
+          },
+          {
+            "code": "Cel",
+            "display": "degree Celsius"
+          },
+          {
+            "code": "T",
+            "display": "tesla"
+          },
+          {
+            "code": "H",
+            "display": "henry"
+          },
+          {
+            "code": "lm",
+            "display": "lumen"
+          },
+          {
+            "code": "lx",
+            "display": "lux"
+          },
+          {
+            "code": "Bq",
+            "display": "becquerel"
+          },
+          {
+            "code": "Gy",
+            "display": "gray"
+          },
+          {
+            "code": "Sv",
+            "display": "sievert"
+          },
+          {
+            "code": "gon",
+            "display": "gon"
+          },
+          {
+            "code": "deg",
+            "display": "degree"
+          },
+          {
+            "code": "'",
+            "display": "minute"
+          },
+          {
+            "code": "''",
+            "display": "second"
+          },
+          {
+            "code": "l",
+            "display": "liter"
+          },
+          {
+            "code": "L",
+            "display": "liter"
+          },
+          {
+            "code": "ar",
+            "display": "are"
+          },
+          {
+            "code": "min",
+            "display": "minute"
+          },
+          {
+            "code": "h",
+            "display": "hour"
+          },
+          {
+            "code": "d",
+            "display": "day"
+          },
+          {
+            "code": "a_t",
+            "display": "tropical year"
+          },
+          {
+            "code": "a_j",
+            "display": "mean Julian year"
+          },
+          {
+            "code": "a_g",
+            "display": "mean Gregorian year"
+          },
+          {
+            "code": "a",
+            "display": "year"
+          },
+          {
+            "code": "wk",
+            "display": "week"
+          },
+          {
+            "code": "mo_s",
+            "display": "synodal month"
+          },
+          {
+            "code": "mo_j",
+            "display": "mean Julian month"
+          },
+          {
+            "code": "mo_g",
+            "display": "mean Gregorian month"
+          },
+          {
+            "code": "mo",
+            "display": "month"
+          },
+          {
+            "code": "t",
+            "display": "tonne"
+          },
+          {
+            "code": "bar",
+            "display": "bar"
+          },
+          {
+            "code": "u",
+            "display": "unified atomic mass unit"
+          },
+          {
+            "code": "eV",
+            "display": "electronvolt"
+          },
+          {
+            "code": "AU",
+            "display": "astronomic unit"
+          },
+          {
+            "code": "pc",
+            "display": "parsec"
+          },
+          {
+            "code": "[c]",
+            "display": "velocity of light"
+          },
+          {
+            "code": "[h]",
+            "display": "Planck constant"
+          },
+          {
+            "code": "[k]",
+            "display": "Boltzmann constant"
+          },
+          {
+            "code": "[eps_0]",
+            "display": "permittivity of vacuum"
+          },
+          {
+            "code": "[mu_0]",
+            "display": "permeability of vacuum"
+          },
+          {
+            "code": "[e]",
+            "display": "elementary charge"
+          },
+          {
+            "code": "[m_e]",
+            "display": "electron mass"
+          },
+          {
+            "code": "[m_p]",
+            "display": "proton mass"
+          },
+          {
+            "code": "[G]",
+            "display": "Newtonian constant of gravitation"
+          },
+          {
+            "code": "[g]",
+            "display": "standard acceleration of free fall"
+          },
+          {
+            "code": "atm",
+            "display": "standard atmosphere"
+          },
+          {
+            "code": "[ly]",
+            "display": "light-year"
+          },
+          {
+            "code": "gf",
+            "display": "gram-force"
+          },
+          {
+            "code": "[lbf_av]",
+            "display": "pound force"
+          },
+          {
+            "code": "Ky",
+            "display": "Kayser"
+          },
+          {
+            "code": "Gal",
+            "display": "Gal"
+          },
+          {
+            "code": "dyn",
+            "display": "dyne"
+          },
+          {
+            "code": "erg",
+            "display": "erg"
+          },
+          {
+            "code": "P",
+            "display": "Poise"
+          },
+          {
+            "code": "Bi",
+            "display": "Biot"
+          },
+          {
+            "code": "St",
+            "display": "Stokes"
+          },
+          {
+            "code": "Mx",
+            "display": "Maxwell"
+          },
+          {
+            "code": "G",
+            "display": "Gauss"
+          },
+          {
+            "code": "Oe",
+            "display": "Oersted"
+          },
+          {
+            "code": "Gb",
+            "display": "Gilbert"
+          },
+          {
+            "code": "sb",
+            "display": "stilb"
+          },
+          {
+            "code": "Lmb",
+            "display": "Lambert"
+          },
+          {
+            "code": "ph",
+            "display": "phot"
+          },
+          {
+            "code": "Ci",
+            "display": "Curie"
+          },
+          {
+            "code": "R",
+            "display": "Roentgen"
+          },
+          {
+            "code": "RAD",
+            "display": "radiation absorbed dose"
+          },
+          {
+            "code": "REM",
+            "display": "radiation equivalent man"
+          },
+          {
+            "code": "[in_i]",
+            "display": "inch"
+          },
+          {
+            "code": "[ft_i]",
+            "display": "foot"
+          },
+          {
+            "code": "[yd_i]",
+            "display": "yard"
+          },
+          {
+            "code": "[mi_i]",
+            "display": "mile"
+          },
+          {
+            "code": "[fth_i]",
+            "display": "fathom"
+          },
+          {
+            "code": "[nmi_i]",
+            "display": "nautical mile"
+          },
+          {
+            "code": "[kn_i]",
+            "display": "knot"
+          },
+          {
+            "code": "[sin_i]",
+            "display": "square inch"
+          },
+          {
+            "code": "[sft_i]",
+            "display": "square foot"
+          },
+          {
+            "code": "[syd_i]",
+            "display": "square yard"
+          },
+          {
+            "code": "[cin_i]",
+            "display": "cubic inch"
+          },
+          {
+            "code": "[cft_i]",
+            "display": "cubic foot"
+          },
+          {
+            "code": "[cyd_i]",
+            "display": "cubic yard"
+          },
+          {
+            "code": "[bf_i]",
+            "display": "board foot"
+          },
+          {
+            "code": "[cr_i]",
+            "display": "cord"
+          },
+          {
+            "code": "[mil_i]",
+            "display": "mil"
+          },
+          {
+            "code": "[cml_i]",
+            "display": "circular mil"
+          },
+          {
+            "code": "[hd_i]",
+            "display": "hand"
+          },
+          {
+            "code": "[ft_us]",
+            "display": "foot"
+          },
+          {
+            "code": "[yd_us]",
+            "display": "yard"
+          },
+          {
+            "code": "[in_us]",
+            "display": "inch"
+          },
+          {
+            "code": "[rd_us]",
+            "display": "rod"
+          },
+          {
+            "code": "[ch_us]",
+            "display": "Gunter's chain"
+          },
+          {
+            "code": "[lk_us]",
+            "display": "link for Gunter's chain"
+          },
+          {
+            "code": "[rch_us]",
+            "display": "Ramden's chain"
+          },
+          {
+            "code": "[rlk_us]",
+            "display": "link for Ramden's chain"
+          },
+          {
+            "code": "[fth_us]",
+            "display": "fathom"
+          },
+          {
+            "code": "[fur_us]",
+            "display": "furlong"
+          },
+          {
+            "code": "[mi_us]",
+            "display": "mile"
+          },
+          {
+            "code": "[acr_us]",
+            "display": "acre"
+          },
+          {
+            "code": "[srd_us]",
+            "display": "square rod"
+          },
+          {
+            "code": "[smi_us]",
+            "display": "square mile"
+          },
+          {
+            "code": "[sct]",
+            "display": "section"
+          },
+          {
+            "code": "[twp]",
+            "display": "township"
+          },
+          {
+            "code": "[mil_us]",
+            "display": "mil"
+          },
+          {
+            "code": "[in_br]",
+            "display": "inch"
+          },
+          {
+            "code": "[ft_br]",
+            "display": "foot"
+          },
+          {
+            "code": "[rd_br]",
+            "display": "rod"
+          },
+          {
+            "code": "[ch_br]",
+            "display": "Gunter's chain"
+          },
+          {
+            "code": "[lk_br]",
+            "display": "link for Gunter's chain"
+          },
+          {
+            "code": "[fth_br]",
+            "display": "fathom"
+          },
+          {
+            "code": "[pc_br]",
+            "display": "pace"
+          },
+          {
+            "code": "[yd_br]",
+            "display": "yard"
+          },
+          {
+            "code": "[mi_br]",
+            "display": "mile"
+          },
+          {
+            "code": "[nmi_br]",
+            "display": "nautical mile"
+          },
+          {
+            "code": "[kn_br]",
+            "display": "knot"
+          },
+          {
+            "code": "[acr_br]",
+            "display": "acre"
+          },
+          {
+            "code": "[gal_us]",
+            "display": "Queen Anne's wine gallon"
+          },
+          {
+            "code": "[bbl_us]",
+            "display": "barrel"
+          },
+          {
+            "code": "[qt_us]",
+            "display": "quart"
+          },
+          {
+            "code": "[pt_us]",
+            "display": "pint"
+          },
+          {
+            "code": "[gil_us]",
+            "display": "gill"
+          },
+          {
+            "code": "[foz_us]",
+            "display": "fluid ounce"
+          },
+          {
+            "code": "[fdr_us]",
+            "display": "fluid dram"
+          },
+          {
+            "code": "[min_us]",
+            "display": "minim"
+          },
+          {
+            "code": "[crd_us]",
+            "display": "cord"
+          },
+          {
+            "code": "[bu_us]",
+            "display": "bushel"
+          },
+          {
+            "code": "[gal_wi]",
+            "display": "historical winchester gallon"
+          },
+          {
+            "code": "[pk_us]",
+            "display": "peck"
+          },
+          {
+            "code": "[dqt_us]",
+            "display": "dry quart"
+          },
+          {
+            "code": "[dpt_us]",
+            "display": "dry pint"
+          },
+          {
+            "code": "[tbs_us]",
+            "display": "tablespoon"
+          },
+          {
+            "code": "[tsp_us]",
+            "display": "teaspoon"
+          },
+          {
+            "code": "[cup_us]",
+            "display": "cup"
+          },
+          {
+            "code": "[foz_m]",
+            "display": "metric fluid ounce"
+          },
+          {
+            "code": "[cup_m]",
+            "display": "metric cup"
+          },
+          {
+            "code": "[tsp_m]",
+            "display": "metric teaspoon"
+          },
+          {
+            "code": "[tbs_m]",
+            "display": "metric tablespoon"
+          },
+          {
+            "code": "[gal_br]",
+            "display": "gallon"
+          },
+          {
+            "code": "[pk_br]",
+            "display": "peck"
+          },
+          {
+            "code": "[bu_br]",
+            "display": "bushel"
+          },
+          {
+            "code": "[qt_br]",
+            "display": "quart"
+          },
+          {
+            "code": "[pt_br]",
+            "display": "pint"
+          },
+          {
+            "code": "[gil_br]",
+            "display": "gill"
+          },
+          {
+            "code": "[foz_br]",
+            "display": "fluid ounce"
+          },
+          {
+            "code": "[fdr_br]",
+            "display": "fluid dram"
+          },
+          {
+            "code": "[min_br]",
+            "display": "minim"
+          },
+          {
+            "code": "[gr]",
+            "display": "grain"
+          },
+          {
+            "code": "[lb_av]",
+            "display": "pound"
+          },
+          {
+            "code": "[oz_av]",
+            "display": "ounce"
+          },
+          {
+            "code": "[dr_av]",
+            "display": "dram"
+          },
+          {
+            "code": "[scwt_av]",
+            "display": "short hundredweight"
+          },
+          {
+            "code": "[lcwt_av]",
+            "display": "long hundredweight"
+          },
+          {
+            "code": "[ston_av]",
+            "display": "short ton"
+          },
+          {
+            "code": "[lton_av]",
+            "display": "long ton"
+          },
+          {
+            "code": "[stone_av]",
+            "display": "stone"
+          },
+          {
+            "code": "[pwt_tr]",
+            "display": "pennyweight"
+          },
+          {
+            "code": "[oz_tr]",
+            "display": "ounce"
+          },
+          {
+            "code": "[lb_tr]",
+            "display": "pound"
+          },
+          {
+            "code": "[sc_ap]",
+            "display": "scruple"
+          },
+          {
+            "code": "[dr_ap]",
+            "display": "dram"
+          },
+          {
+            "code": "[oz_ap]",
+            "display": "ounce"
+          },
+          {
+            "code": "[lb_ap]",
+            "display": "pound"
+          },
+          {
+            "code": "[oz_m]",
+            "display": "metric ounce"
+          },
+          {
+            "code": "[lne]",
+            "display": "line"
+          },
+          {
+            "code": "[pnt]",
+            "display": "point"
+          },
+          {
+            "code": "[pca]",
+            "display": "pica"
+          },
+          {
+            "code": "[pnt_pr]",
+            "display": "Printer's point"
+          },
+          {
+            "code": "[pca_pr]",
+            "display": "Printer's pica"
+          },
+          {
+            "code": "[pied]",
+            "display": "pied"
+          },
+          {
+            "code": "[pouce]",
+            "display": "pouce"
+          },
+          {
+            "code": "[ligne]",
+            "display": "ligne"
+          },
+          {
+            "code": "[didot]",
+            "display": "didot"
+          },
+          {
+            "code": "[cicero]",
+            "display": "cicero"
+          },
+          {
+            "code": "[degF]",
+            "display": "degree Fahrenheit"
+          },
+          {
+            "code": "[degR]",
+            "display": "degree Rankine"
+          },
+          {
+            "code": "[degRe]",
+            "display": "degree Réaumur"
+          },
+          {
+            "code": "cal_[15]",
+            "display": "calorie at 15 °C"
+          },
+          {
+            "code": "cal_[20]",
+            "display": "calorie at 20 °C"
+          },
+          {
+            "code": "cal_m",
+            "display": "mean calorie"
+          },
+          {
+            "code": "cal_IT",
+            "display": "international table calorie"
+          },
+          {
+            "code": "cal_th",
+            "display": "thermochemical calorie"
+          },
+          {
+            "code": "cal",
+            "display": "calorie"
+          },
+          {
+            "code": "[Cal]",
+            "display": "nutrition label Calories"
+          },
+          {
+            "code": "[Btu_39]",
+            "display": "British thermal unit at 39 °F"
+          },
+          {
+            "code": "[Btu_59]",
+            "display": "British thermal unit at 59 °F"
+          },
+          {
+            "code": "[Btu_60]",
+            "display": "British thermal unit at 60 °F"
+          },
+          {
+            "code": "[Btu_m]",
+            "display": "mean British thermal unit"
+          },
+          {
+            "code": "[Btu_IT]",
+            "display": "international table British thermal unit"
+          },
+          {
+            "code": "[Btu_th]",
+            "display": "thermochemical British thermal unit"
+          },
+          {
+            "code": "[Btu]",
+            "display": "British thermal unit"
+          },
+          {
+            "code": "[HP]",
+            "display": "horsepower"
+          },
+          {
+            "code": "tex",
+            "display": "tex"
+          },
+          {
+            "code": "[den]",
+            "display": "Denier"
+          },
+          {
+            "code": "m[H2O]",
+            "display": "meter of water column"
+          },
+          {
+            "code": "m[Hg]",
+            "display": "meter of mercury column"
+          },
+          {
+            "code": "[in_i'H2O]",
+            "display": "inch of water column"
+          },
+          {
+            "code": "[in_i'Hg]",
+            "display": "inch of mercury column"
+          },
+          {
+            "code": "[PRU]",
+            "display": "peripheral vascular resistance unit"
+          },
+          {
+            "code": "[wood'U]",
+            "display": "Wood unit"
+          },
+          {
+            "code": "[diop]",
+            "display": "diopter"
+          },
+          {
+            "code": "[p'diop]",
+            "display": "prism diopter"
+          },
+          {
+            "code": "%[slope]",
+            "display": "percent of slope"
+          },
+          {
+            "code": "[mesh_i]",
+            "display": "mesh"
+          },
+          {
+            "code": "[Ch]",
+            "display": "Charrière"
+          },
+          {
+            "code": "[drp]",
+            "display": "drop"
+          },
+          {
+            "code": "[hnsf'U]",
+            "display": "Hounsfield unit"
+          },
+          {
+            "code": "[MET]",
+            "display": "metabolic equivalent"
+          },
+          {
+            "code": "[hp'_X]",
+            "display": "homeopathic potency of decimal series (retired)"
+          },
+          {
+            "code": "[hp'_C]",
+            "display": "homeopathic potency of centesimal series (retired)"
+          },
+          {
+            "code": "[hp'_M]",
+            "display": "homeopathic potency of millesimal series (retired)"
+          },
+          {
+            "code": "[hp'_Q]",
+            "display": "homeopathic potency of quintamillesimal series (retired)"
+          },
+          {
+            "code": "[hp_X]",
+            "display": "homeopathic potency of decimal hahnemannian series"
+          },
+          {
+            "code": "[hp_C]",
+            "display": "homeopathic potency of centesimal hahnemannian series"
+          },
+          {
+            "code": "[hp_M]",
+            "display": "homeopathic potency of millesimal hahnemannian series"
+          },
+          {
+            "code": "[hp_Q]",
+            "display": "homeopathic potency of quintamillesimal hahnemannian series"
+          },
+          {
+            "code": "[kp_X]",
+            "display": "homeopathic potency of decimal korsakovian series"
+          },
+          {
+            "code": "[kp_C]",
+            "display": "homeopathic potency of centesimal korsakovian series"
+          },
+          {
+            "code": "[kp_M]",
+            "display": "homeopathic potency of millesimal korsakovian series"
+          },
+          {
+            "code": "[kp_Q]",
+            "display": "homeopathic potency of quintamillesimal korsakovian series"
+          },
+          {
+            "code": "eq",
+            "display": "equivalents"
+          },
+          {
+            "code": "osm",
+            "display": "osmole"
+          },
+          {
+            "code": "[pH]",
+            "display": "pH"
+          },
+          {
+            "code": "g%",
+            "display": "gram percent"
+          },
+          {
+            "code": "[S]",
+            "display": "Svedberg unit"
+          },
+          {
+            "code": "[HPF]",
+            "display": "high power field"
+          },
+          {
+            "code": "[LPF]",
+            "display": "low power field"
+          },
+          {
+            "code": "kat",
+            "display": "katal"
+          },
+          {
+            "code": "U",
+            "display": "Unit"
+          },
+          {
+            "code": "[iU]",
+            "display": "international unit"
+          },
+          {
+            "code": "[IU]",
+            "display": "international unit"
+          },
+          {
+            "code": "[arb'U]",
+            "display": "arbitrary unit"
+          },
+          {
+            "code": "[USP'U]",
+            "display": "United States Pharmacopeia unit"
+          },
+          {
+            "code": "[GPL'U]",
+            "display": "GPL unit"
+          },
+          {
+            "code": "[MPL'U]",
+            "display": "MPL unit"
+          },
+          {
+            "code": "[APL'U]",
+            "display": "APL unit"
+          },
+          {
+            "code": "[beth'U]",
+            "display": "Bethesda unit"
+          },
+          {
+            "code": "[anti'Xa'U]",
+            "display": "anti factor Xa unit"
+          },
+          {
+            "code": "[todd'U]",
+            "display": "Todd unit"
+          },
+          {
+            "code": "[dye'U]",
+            "display": "Dye unit"
+          },
+          {
+            "code": "[smgy'U]",
+            "display": "Somogyi unit"
+          },
+          {
+            "code": "[bdsk'U]",
+            "display": "Bodansky unit"
+          },
+          {
+            "code": "[ka'U]",
+            "display": "King-Armstrong unit"
+          },
+          {
+            "code": "[knk'U]",
+            "display": "Kunkel unit"
+          },
+          {
+            "code": "[mclg'U]",
+            "display": "Mac Lagan unit"
+          },
+          {
+            "code": "[tb'U]",
+            "display": "tuberculin unit"
+          },
+          {
+            "code": "[CCID_50]",
+            "display": "50% cell culture infectious dose"
+          },
+          {
+            "code": "[TCID_50]",
+            "display": "50% tissue culture infectious dose"
+          },
+          {
+            "code": "[EID_50]",
+            "display": "50% embryo infectious dose"
+          },
+          {
+            "code": "[PFU]",
+            "display": "plaque forming units"
+          },
+          {
+            "code": "[FFU]",
+            "display": "focus forming units"
+          },
+          {
+            "code": "[CFU]",
+            "display": "colony forming units"
+          },
+          {
+            "code": "[IR]",
+            "display": "index of reactivity"
+          },
+          {
+            "code": "[BAU]",
+            "display": "bioequivalent allergen unit"
+          },
+          {
+            "code": "[AU]",
+            "display": "allergen unit"
+          },
+          {
+            "code": "[Amb'a'1'U]",
+            "display": "allergen unit for Ambrosia artemisiifolia"
+          },
+          {
+            "code": "[PNU]",
+            "display": "protein nitrogen unit"
+          },
+          {
+            "code": "[Lf]",
+            "display": "Limit of flocculation"
+          },
+          {
+            "code": "[D'ag'U]",
+            "display": "D-antigen unit"
+          },
+          {
+            "code": "[FEU]",
+            "display": "fibrinogen equivalent unit"
+          },
+          {
+            "code": "[ELU]",
+            "display": "ELISA unit"
+          },
+          {
+            "code": "[EU]",
+            "display": "Ehrlich unit"
+          },
+          {
+            "code": "Np",
+            "display": "neper"
+          },
+          {
+            "code": "B",
+            "display": "bel"
+          },
+          {
+            "code": "B[SPL]",
+            "display": "bel sound pressure"
+          },
+          {
+            "code": "B[V]",
+            "display": "bel volt"
+          },
+          {
+            "code": "B[mV]",
+            "display": "bel millivolt"
+          },
+          {
+            "code": "B[uV]",
+            "display": "bel microvolt"
+          },
+          {
+            "code": "B[10.nV]",
+            "display": "bel 10 nanovolt"
+          },
+          {
+            "code": "B[W]",
+            "display": "bel watt"
+          },
+          {
+            "code": "B[kW]",
+            "display": "bel kilowatt"
+          },
+          {
+            "code": "st",
+            "display": "stere"
+          },
+          {
+            "code": "Ao",
+            "display": "Ångström"
+          },
+          {
+            "code": "b",
+            "display": "barn"
+          },
+          {
+            "code": "att",
+            "display": "technical atmosphere"
+          },
+          {
+            "code": "mho",
+            "display": "mho"
+          },
+          {
+            "code": "[psi]",
+            "display": "pound per square inch"
+          },
+          {
+            "code": "circ",
+            "display": "circle"
+          },
+          {
+            "code": "sph",
+            "display": "sphere"
+          },
+          {
+            "code": "[car_m]",
+            "display": "metric carat"
+          },
+          {
+            "code": "[car_Au]",
+            "display": "carat of gold alloys"
+          },
+          {
+            "code": "[smoot]",
+            "display": "Smoot"
+          },
+          {
+            "code": "[m/s2/Hz^(1/2)]",
+            "display": "meter per square seconds per square root of hertz"
+          },
+          {
+            "code": "[NTU]",
+            "display": "Nephelometric Turbidity Unit"
+          },
+          {
+            "code": "[FNU]",
+            "display": "Formazin Nephelometric Unit"
+          },
+          {
+            "code": "bit_s",
+            "display": "bit"
+          },
+          {
+            "code": "bit",
+            "display": "bit"
+          },
+          {
+            "code": "By",
+            "display": "byte"
+          },
+          {
+            "code": "Bd",
+            "display": "baud"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/icd10-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://hl7.org/fhir/sid/icd-10",
+        "name": "ICD10_stub",
+        "status": "active",
+        "content": "example",
+        "description": "Stub version of ICD10 code system",
+        "concept" : [{
+          "code" : "123456",
+          "display" : "DIAG-1"
+        },
+        {
+          "code" : "123457",
+          "display" : "DIAG-1a"
+        },
+        {
+          "code" : "987654",
+          "display" : "DIAG-2"
+        },
+        {
+          "code" : "123987",
+          "display" : "DIAG-3"
+        },
+        {
+          "code" : "112233",
+          "display" : "DIAG-4"
+        },
+        {
+          "code" : "997755",
+          "display" : "DIAG-5"
+        },
+        {
+          "code" : "321789",
+          "display" : "DIAG-6"
+        }]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/cvx-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://hl7.org/fhir/sid/cvx",
+        "name": "CVX_stub",
+        "version": "00000000",
+        "status": "active",
+        "content": "example",
+        "description": "Stub version of CVX code system",
+        "concept": [
+          { "code": "213", "display": "SARS-COV-2 (COVID-19) vaccine, UNSPECIFIED" }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/aus-imm-reg-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "urn:oid:1.2.36.1.2001.1005.17",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:1.2.36.1.2001.1005.17"
+          }
+        ],
+        "version": "20240207",
+        "name": "AustralianImmunisationRegisterVaccine",
+        "title": "Australian Immunisation Register Vaccine",
+        "status": "active",
+        "experimental": false,
+        "date": "2024-03-31",
+        "publisher": "Australian Digital Health Agency",
+        "contact": [
+          {
+            "telecom": [
+              {
+                "system": "email",
+                "value": "help@digitalhealth.gov.au"
+              }
+            ]
+          }
+        ],
+        "description": "The Australian Immunisation Register Vaccine code system defines the vaccine codes available for recording of vaccine administration on the Australian Immunisation Register, and may be used for online claiming and reimbursement for vaccine administration through Medicare.",
+        "copyright": "Copyright © 2022 Australian Digital Health Agency - All rights reserved. Except for the material identified below, this content is licensed under a Creative Commons Attribution 4.0 International License. See https://creativecommons.org/licenses/by/4.0/. \n\nThis resource also includes material from the 'Australian Immunisation Register Vaccine Code Formats' last updated: 7 February 2024 © Commonwealth of Australia, represented by Services Australia https://www.servicesaustralia.gov.au/organisations/health-professionals/services/medicare/australian-immunisation-register-health-professionals/resources/air-vaccine-code-formats. Licensed under https://creativecommons.org/licenses/by/3.0/au).\n\nAll copies of this resource must include this copyright statement and all information contained in this statement.",
+        "content": "not-present"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/formatcode",
+      "resource": {
+        "resourceType" : "CodeSystem",
+        "id" : "formatcode",
+        "url" : "http://ihe.net/fhir/ihe.formatcode.fhir/CodeSystem/formatcode",
+        "identifier" : [{
+          "system" : "urn:ietf:rfc:3986",
+          "value" : "urn:oid:1.3.6.1.4.1.19376.1.2.3"
+        }],
+        "version" : "1.3.0",
+        "name" : "IHE_FormatCode_codesystem",
+        "title" : "IHE Format Code set for use with Document Sharing",
+        "status" : "active",
+        "experimental" : false,
+        "date" : "2024-03-27",
+        "publisher" : "Integrating the Healthcare Enterprise (IHE)",
+        "contact" : [{
+          "name" : "IHE",
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://ihe.net"
+          }]
+        },
+        {
+          "name" : "IHE Secretary",
+          "telecom" : [{
+            "system" : "email",
+            "value" : "secretary@ihe.net"
+          }]
+        }],
+        "description" : "The [IHE](http://www.ihe.net) FormatCode code system with canonical URI of http://ihe.net/fhir/ihe.formatcode.fhir/CodeSystem/formatcode is defined to be the set of FormatCodes define by IHE, for use with [Document Sharing](https://profiles.ihe.net/ITI/HIE-Whitepaper/index.html). This code set additionally includes, as deprecated, format codes defined by [HL7 for some Implementation Guides](http://wiki.hl7.org/index.php?title=CDA_Format_Codes_for_IHE_XDS). The HL7 codes are now managed by HL7. The set of IHE FormatCode codes was listed in HITSP C80 Table 2-153 Format Code Value Set Definition, but since has been updated. The use of the FormatCode specifies the technical format of the document. The FormatCode tends to reference the IHE Content Profile (Implementation Guide) that defines the use-case and constraints. The FormatCode is a further specialization more detailed than the mime-type. The FormatCode provides sufficient metadata information to allow any potential document content consumer to know if it can process and/or display by identifying a document encoding, structure and template. The set of codes is intended to be preferred.",
+        "jurisdiction" : [{
+          "coding" : [{
+            "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+            "code" : "001"
+          }]
+        }],
+        "copyright" : "Some content from IHE® Copyright © 2015 [IHE International, Inc](http://www.ihe.net/Governance/#Intellectual_Property).",
+        "caseSensitive" : true,
+        "hierarchyMeaning" : "grouped-by",
+        "content" : "complete",
+        "property" : [{
+          "code" : "status",
+          "uri" : "http://hl7.org/fhir/concept-properties#status",
+          "description" : "A property that indicates the status of the concept. Used to indicate Deprecated and Retired terms.",
+          "type" : "code"
+        },
+        {
+          "code" : "notSelectable",
+          "uri" : "http://hl7.org/fhir/concept-properties#notSelectable",
+          "description" : "Indicates that the code is abstract - only intended to be used as a selector for other concepts",
+          "type" : "boolean"
+        },
+        {
+          "code" : "comment",
+          "uri" : "http://hl7.org/fhir/concept-properties#comment",
+          "description" : "Indicates the CDA-Template to use with the given formatCode, when CDA mime-type is used.",
+          "type" : "string"
+        }],
+        "concept" : [{
+          "code" : "urn:ihe:pcc",
+          "display" : "PCC Domain",
+          "definition" : "Ontology group for all PCC defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:pcc:xphr:2007",
+            "display" : "PCC XPHR",
+            "definition" : "Personal Health Records. Also known as HL7 CCD and HITSP C32",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.5"
+            },
+            {
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.6"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:aps:2007",
+            "display" : "PCC APS",
+            "definition" : "IHE Antepartum Summary",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.11.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:xds-ms:2007",
+            "display" : "PCC XDS-MS",
+            "definition" : "XDS Medical Summaries",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.3"
+            },
+            {
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.4"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:edr:2007",
+            "display" : "PCC EDR",
+            "definition" : "Emergency Department Referral (EDR)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.10"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:edes:2007",
+            "display" : "PCC EDES",
+            "definition" : "Emergency Department Encounter Summary (EDES)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.13.1.1"
+            },
+            {
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.13.1.2"
+            },
+            {
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.13.1.3"
+            },
+            {
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.13.1.4"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:apr:handp:2008",
+            "display" : "PCC APR HANDP",
+            "definition" : "Antepartum Record (APR) - History and Physical",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.16.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:apr:lab:2008",
+            "display" : "PCC APR LAB",
+            "definition" : "Antepartum Record (APR) - Laboratory",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.16.1.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:apr:edu:2008",
+            "display" : "PCC APR EDU",
+            "definition" : "Antepartum Record (APR) - Education",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.16.1.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:crc:2008",
+            "display" : "PCC CRC",
+            "definition" : "Cancer Registry Content (CRC)",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:cm:2008",
+            "display" : "Care Management (CM)",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ic:2008",
+            "display" : "Immunization Registry Content (IRC)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.18.1.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:tn:2007",
+            "display" : "PCC TN",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:nn:2007",
+            "display" : "PCC NN",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ctn:2007",
+            "display" : "PCC CTN",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:edpn:2007",
+            "display" : "PCC EDPN",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:hp:2008",
+            "display" : "PCC HP",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ldhp:2009",
+            "display" : "PCC LDHP",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:lds:2009",
+            "display" : "PCC LDS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:mds:2009",
+            "display" : "PCC MDS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:nds:2010",
+            "display" : "PCC NDS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ppvs:2010",
+            "display" : "PCC PPVS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:trs:2011",
+            "display" : "PCC TRS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ets:2011",
+            "display" : "PCC ETS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:its:2011",
+            "display" : "PCC ITS",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ript:2017",
+            "display" : "PCC RIPT",
+            "definition" : "Routine Interfacility Patient Transport (RIPT)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.28.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:pcs-cs:2018",
+            "display" : "PCC PCS-CS",
+            "definition" : "Paramedicine Care Summary - Clinical Subset (PCS-CS)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.29.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:pcs-cr:2018",
+            "display" : "PCC PCS-CR",
+            "definition" : "Paramedicine Care Summary - Complete Report (PCS-CR)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.30.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:ips:2020",
+            "display" : "PCC IPS",
+            "definition" : "International Patient Summary (IPS)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "2.16.840.1.113883.10.22.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:OMG:O19:2017",
+            "display" : "PCC 360X Referral Request",
+            "definition" : "HL7v2 OMG^O19 message used for 360X referral request",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:OSU:O51:2017",
+            "display" : "PCC 360X Referral Status Update",
+            "definition" : "HL7v2 OSU^O51 message used for 360X referral status",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:SIU:S12:2017",
+            "display" : "PCC 360X Appointment Notification",
+            "definition" : "HL7v2 SIU^S12 message used for 360X appointment notification",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:SIU:S13:2017",
+            "display" : "PCC 360X Appointment Reschedule Notification",
+            "definition" : "HL7v2 SIU^S13 message used for 360X appointment reschedule notification",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:SIU:S15:2017",
+            "display" : "PCC 360X Appointment Cancel Notification",
+            "definition" : "HL7v2 SIU^S15 message used for 360X appointment cancel notification",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pcc:360x:hl7:SIU:S26:2017",
+            "display" : "PCC 360X Appointment No-show Notification",
+            "definition" : "HL7v2 SIU^S26 message used for 360X appointment no-show notification",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:iti",
+          "display" : "IT-Infrastructure Domain",
+          "definition" : "Ontology group for all ITI defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:iti:bppc:2007",
+            "display" : "ITI BPPC",
+            "definition" : "Basic Patient Privacy Consents",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.7"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:bppc-sd:2007",
+            "display" : "ITI BPPC-SD",
+            "definition" : "Basic Patient Privacy Consents with Scanned Document",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.5.3.1.1.7.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:xds-sd:pdf:2008",
+            "display" : "ITI XDS-SD PDF",
+            "definition" : "PDF embedded in CDA per XDS-SD profile",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.2.20"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:xds-sd:text:2008",
+            "display" : "ITI XDS-SD TEXT",
+            "definition" : "Text embedded in CDA per XDS-SD profile",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.2.20"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:xdw:2011:workflowDoc",
+            "display" : "ITI XDW",
+            "definition" : "XDW Workflow Document",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:dsg:detached:2014",
+            "display" : "ITI DSG Detached",
+            "definition" : "DSG Detached Document",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:dsg:enveloping:2014",
+            "display" : "ITI DSG Enveloping",
+            "definition" : "DSG Enveloping Document",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:appc:2016:consent",
+            "display" : "ITI APPC",
+            "definition" : "Advanced Patient Privacy Consents",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:iti:xds:2017:mimeTypeSufficient",
+            "display" : "mimeType Sufficient",
+            "definition" : "Code to be used when the mimeType is sufficient to understanding the technical format. May be used when no more specific FormatCode is available and the mimeType is sufficient to identify the technical format",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:lab",
+          "display" : "Lab Domain",
+          "definition" : "Ontology group for all LAB defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:lab:xd-lab:2008",
+            "display" : "LAB XD-LAB",
+            "definition" : "CDA Laboratory Report",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.3.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:rad",
+          "display" : "Radiology Domain",
+          "definition" : "Ontology group for all Radiology defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:rad:TEXT",
+            "display" : "RAD TEXT",
+            "definition" : "Radiology XDS-I Text",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:rad:PDF",
+            "display" : "RAD PDF",
+            "definition" : "Radiology XDS-I PDF",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:rad:CDA:ImagingReportStructuredHeadings:2013",
+            "display" : "RAD CDA",
+            "definition" : "Radiology XDS-I Structured CDA",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:card",
+          "display" : "Cardiology Domain",
+          "definition" : "Ontology group for all Cardiology defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:card:imaging:2011",
+            "display" : "CARD Imaging",
+            "definition" : "Cardiac Imaging Report (CRC)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.4.1.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:card:CRC:2012",
+            "display" : "CARD CRC",
+            "definition" : "Cardiology Cardiology Cath Report Content (CRC)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.4.1.1.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:card:EPRC-IE:2014",
+            "display" : "CARD EPRC-IE",
+            "definition" : "Cardiology Electrophysiology Implant/Explant Report Content (EPRC-IE)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.4.1.1.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:card:CPN:2017",
+            "display" : "CARD CPN",
+            "definition" : "Cardiology Procedure Note (CPN)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.4.1.1.4"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:dent",
+          "display" : "Dental Domain",
+          "definition" : "Ontology group for all Dental defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:dent:TEXT",
+            "display" : "DENT TEXT",
+            "definition" : "Dental CDA Wrapped Text Report (DENT)",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:dent:PDF",
+            "display" : "DENT PDF",
+            "definition" : "Dental PDF (DENT)",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:dent:CDA:ImagingReportStructuredHeadings:2013",
+            "display" : "DENT CDA",
+            "definition" : "Dental Imaging Report with Structured Headings (DENT)",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe.palm",
+          "display" : "Pathology Domain",
+          "definition" : "Ontology group for all Pathology defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe.palm:apsr:2016",
+            "display" : "PALM APSR",
+            "definition" : "Anatomic Pathology Structured Report",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.8.1.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:pharm",
+          "display" : "Pharmacy Domain",
+          "definition" : "Ontology group for all Pharmacy defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:pharm:pre:2010",
+            "display" : "Pharmacy PRE",
+            "definition" : "Community Prescription (PRE)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pharm:padv:2010",
+            "display" : "Pharmacy PADV",
+            "definition" : "Community Pharmaceutical Advice (PADV)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pharm:dis:2010",
+            "display" : "Pharmacy DIS",
+            "definition" : "Community Dispense (DIS)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pharm:pml:2013",
+            "display" : "Pharmacy PML",
+            "definition" : "Community Medication List (PML)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.5"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pharm:mtp:2015",
+            "display" : "Pharmacy MTP",
+            "definition" : "Medication Treatment Plan (MTP)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.6"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:pharm:cma:2017",
+            "display" : "Pharmacy CMA",
+            "definition" : "Community Medication Administration (CMA)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.9.1.1.4"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:qrph",
+          "display" : "QRPH Domain",
+          "definition" : "Ontology group for all QRPH defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:qrph:crd:2008",
+            "display" : "QRPH CRD",
+            "definition" : "Clinical Research Document (CRD)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.10"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:dsc:2008",
+            "display" : "QRPH DSC",
+            "definition" : "Drug Safety Content (DSC)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.11"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:mch:2009",
+            "display" : "QRPH MCH",
+            "definition" : "Mother and Child Health (MCH)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.13"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:hbs:2009",
+            "display" : "QRPH HBS",
+            "definition" : "Health Birth Summary (HBS)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.13.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:prph:2009",
+            "display" : "QRPH PRPH-Ca",
+            "definition" : "Physician Reporting to a Public Health Repository - Cancer Registry (PRPH-Ca)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.14"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:ehcp:2010",
+            "display" : "QRPH EHCP",
+            "definition" : "Early Hearing Care Plan (EHCP)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.15"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:qmd-eh:2010",
+            "display" : "QRPH QMD-EH",
+            "definition" : "Quality Measure Definition - Early Hearing (QMD-EH)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.17"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:qme-eh:2010",
+            "display" : "QRPH QME-EH",
+            "definition" : "Quality Measure Execution - Early Hearing (QME-EH)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.18"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:bfdr:2011",
+            "display" : "QRPH BFDR",
+            "definition" : "Birth and Fetal Death Report (BFDR)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.19"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:LDS-VR:2013",
+            "display" : "QRPH LDS-VR",
+            "definition" : "Birth and Fetal Death Reporting - LDS-VR",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.19.1.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:BFDR-Birth:2014",
+            "display" : "QRPH BFDR Birth CDA document",
+            "definition" : "BFDR Birth CDA document",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.19.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:BFDR-FDeath:2014",
+            "display" : "QRPH BFDR Death CDA document",
+            "definition" : "BFDR Death CDA document",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.19.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:crpc:2012",
+            "display" : "QRPH CRPC",
+            "definition" : "Clinical Research Process Content (CRPC)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.21"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:vrdr:2013",
+            "display" : "QRPH VRDR",
+            "definition" : "Vital Records Death Reporting (VRDR)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.23.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:ms-vrdr:2013",
+            "display" : "QRPH MS-VRDR",
+            "definition" : "Medical Summary for VRDR Pre-pop (VRDR)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.23.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:hw:2013",
+            "display" : "QRPH HW",
+            "definition" : "Healthy Weight (HW)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.24.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:ehdi:2014",
+            "display" : "QRPH EHDI",
+            "definition" : "Early Hearing Detection Intervention (EHDI)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.26"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:NHS-Catl-UV:2015",
+            "display" : "QRPH EHDI NHS Cat I",
+            "definition" : "Early Hearing Detection Intervention (EHDI) NHS QRDA Category I Report UV",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.26"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:NHS-CatIII-UV:2015",
+            "display" : "QRPH EHDI NHS Cat III",
+            "definition" : "Early Hearing Detection Intervention (EHDI) NHS QRDA Category III Report UV",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.26"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:HPoCUS:2014",
+            "display" : "QRPH HPoC US",
+            "definition" : "Hearing Plan of Care (HPoC) - US Realm",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.26"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:HPoCUV:2014",
+            "display" : "QRPH HPoC UV",
+            "definition" : "Hearing Plan of Care (HPoC) - UV Realm",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.26"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:fp:2014",
+            "display" : "QRPH FP",
+            "definition" : "Family Planning (FP)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.27"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:fp:2017",
+            "display" : "QRPH FP V2",
+            "definition" : "Family Planning (FP V2)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.27.1"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:ehdiwd:2013",
+            "display" : "QRPH EHDI-WD",
+            "definition" : "Early Hearing Detection and Intervention – Workflow Document (EHDI-WD)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.28"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:qrph:prq:2019",
+            "display" : "QRPH PRQ",
+            "definition" : "Prescription Repository Query (PRQ)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.7.3.1.1.30"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:hl7",
+          "display" : "HL7 Organization",
+          "definition" : "Ontology group for all legacy HL7 defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          },
+          {
+            "code" : "status",
+            "valueCode" : "deprecated"
+          }],
+          "concept" : [{
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/codesystem-replacedby",
+              "valueCoding" : {
+                "system" : "http://terminology.hl7.org/CodeSystem/v3-HL7DocumentFormatCodes",
+                "code" : "urn:hl7-org:sdwg:ccda-structuredBody:1.1"
+              }
+            }],
+            "code" : "urn:hl7-org:sdwg:ccda-structuredBody:1.1",
+            "display" : "For documents following C-CDA 1.1 constraints using a structured body.",
+            "definition" : "Now available in HL7 CodeSystem v3-HL7DocumentFormatCodes.",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/codesystem-replacedby",
+              "valueCoding" : {
+                "system" : "http://terminology.hl7.org/CodeSystem/v3-HL7DocumentFormatCodes",
+                "code" : "urn:hl7-org:sdwg:ccda-nonXMLBody:1.1"
+              }
+            }],
+            "code" : "urn:hl7-org:sdwg:ccda-nonXMLBody:1.1",
+            "display" : "For documents following C-CDA 1.1 constraints using a non structured body.",
+            "definition" : "Now available in HL7 CodeSystem v3-HL7DocumentFormatCodes.",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/codesystem-replacedby",
+              "valueCoding" : {
+                "system" : "http://terminology.hl7.org/CodeSystem/v3-HL7DocumentFormatCodes",
+                "code" : "urn:hl7-org:sdwg:ccda-structuredBody:2.1"
+              }
+            }],
+            "code" : "urn:hl7-org:sdwg:ccda-structuredBody:2.1",
+            "display" : "For documents following C-CDA 2.1 constraints using a structured body.",
+            "definition" : "Now available in HL7 CodeSystem v3-HL7DocumentFormatCodes.",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          },
+          {
+            "extension" : [{
+              "url" : "http://hl7.org/fhir/StructureDefinition/codesystem-replacedby",
+              "valueCoding" : {
+                "system" : "http://terminology.hl7.org/CodeSystem/v3-HL7DocumentFormatCodes",
+                "code" : "urn:hl7-org:sdwg:ccda-nonXMLBody:2.1"
+              }
+            }],
+            "code" : "urn:hl7-org:sdwg:ccda-nonXMLBody:2.1",
+            "display" : "For documents following C-CDA 2.1 constraints using a non structured body.",
+            "definition" : "Now available in HL7 CodeSystem v3-HL7DocumentFormatCodes.",
+            "property" : [{
+              "code" : "status",
+              "valueCode" : "deprecated"
+            }]
+          }]
+        },
+        {
+          "code" : "urn:ihe:eyecare",
+          "display" : "Eye Care Domain",
+          "definition" : "Ontology group for all Eye Care defined FormatCodes",
+          "property" : [{
+            "code" : "notSelectable",
+            "valueBoolean" : true
+          }],
+          "concept" : [{
+            "code" : "urn:ihe:eyecare:geneyeevalpn:2014",
+            "display" : "EYECARE GEE",
+            "definition" : "General Eye Evaluation(GEE) C-CDA Progress Note",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.12.1.1.2"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:eyecare:geneyeevalcn:2014",
+            "display" : "EYECARE GEE",
+            "definition" : "General Eye Evaluation(GEE) C-CDA Consultation Note",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.12.1.1.3"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          },
+          {
+            "code" : "urn:ihe:eyecare:summary:2015",
+            "display" : "EYECARE EC-SUMMARY",
+            "definition" : "Eye Care Summary Record (EC-Summary)",
+            "property" : [{
+              "code" : "comment",
+              "valueString" : "1.3.6.1.4.1.19376.1.12.1.1.4"
+            },
+            {
+              "code" : "status",
+              "valueCode" : "active"
+            }]
+          }]
+        }]
+      }
+    },
+    {
+      "fullUrl": "https;//medplum.com/fhir/CodeSystem/provider-taxonomy",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "title": "NUCC Health Care Provider Taxonomy",
+        "name": "NUCCHealthCareProviderTaxonomy",
+        "url": "http://nucc.org/provider-taxonomy",
+        "status": "active",
+        "content": "example",
+        "concept": [
+          { "code": "122300000X", "display": "Dentist" },
+          { "code": "152W00000X", "display": "Optometrist" },
+          { "code": "163W00000X", "display": "Registered Nurse" },
+          { "code": "183500000X", "display": "Pharmacist" }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/rfc3986",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "title": "Uniform Resource Identifier (URI)",
+        "name": "URI",
+        "url": "urn:ietf:rfc:3986",
+        "status": "active",
+        "content": "not-present",
+        "description": "Stub CodeSystem for URIs; these are not really codes, but some ValueSets include URIs as values"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/xds-format-codes",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "urn:oid:1.3.6.1.4.1.19376.1.2.3",
+        "status": "active",
+        "content": "not-present"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/nci-thesaurus",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "title": "NCI Thesaurus",
+        "url": "urn:oid:2.16.840.1.113883.3.26.1.1",
+        "status": "active",
+        "content": "example",
+        "concept" : [{
+          "code" : "C106046",
+          "display" : "Magnetic Resonance Conditional"
+        },
+        {
+          "code" : "C106045",
+          "display" : "Magnetic Resonance Safe"
+        },
+        {
+          "code" : "C106047",
+          "display" : "Magnetic Resonance Unsafe"
+        },
+        {
+          "code" : "C113844",
+          "display" : "Labeling does not Contain MRI Safety Information"
+        },
+        {
+          "code" : "C101673",
+          "display" : "Labeled as Containing Natural Rubber Latex"
+        },
+        {
+          "code" : "C106038",
+          "display" : "Not Made with Natural Rubber Latex"
+        }]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/bcp13",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "title": "MIME Types",
+        "name": "MIMETypes",
+        "url": "urn:ietf:bcp:13",
+        "status": "active",
+        "content": "not-present"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/iso-3166-2",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "urn:iso:std:iso:3166:-2",
+        "status": "active",
+        "content": "not-present",
+        "description": "Stub CodeSystem for ISO 3166-2"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "access-policy-interactions",
+        "url": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/restful-interaction",
+              "concept": [
+                {
+                  "code": "read"
+                },
+                {
+                  "code": "vread"
+                },
+                {
+                  "code": "update"
+                },
+                {
+                  "code": "delete"
+                },
+                {
+                  "code": "history"
+                },
+                {
+                  "code": "create"
+                },
+                {
+                  "code": "search"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

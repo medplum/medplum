@@ -45,13 +45,13 @@ describe('RegisterPage', () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
     await setup(medplum);
-    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Register Account' })).toBeInTheDocument();
   });
 
   test('Redirect if signed in', async () => {
     const medplum = new MockClient();
     await setup(medplum);
-    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    expect(screen.getByText('Sign in again to create a new project')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {

@@ -1,0 +1,66 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:fe227f00-f5d8-43a2-9637-af10c3008c0c",
+      "request": {
+        "method": "PUT",
+        "url": "Questionnaire?name=sick-note-questionnaire"
+      },
+      "resource": {
+        "resourceType": "Questionnaire",
+        "status": "active",
+        "title": "Sick Note Questionnaire",
+        "url": "https://medplum.com/Questionnaire/sick-note-questionnaire",
+        "name": "sick-note-questionnaire",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "urn:iso-astm:E1762-95:2013",
+                  "code": "1.2.840.10065.1.12.1.1",
+                  "display": "Author's Signature"
+                }
+              ]
+            }
+          }
+        ],
+        "item": [
+          {
+            "linkId": "sick-note-needed",
+            "text": "Do you need a sick note?",
+            "type": "boolean"
+          },
+          {
+            "linkId": "days-of-sick-note",
+            "text": "How many days should the Patient be excused",
+            "type": "integer",
+            "required": true,
+            "enableWhen": [
+              {
+                "question": "sick-note-needed",
+                "operator": "=",
+                "answerBoolean": true
+              }
+            ]
+          },
+          {
+            "linkId": "other-information",
+            "text": "Other information",
+            "type": "string",
+            "enableWhen": [
+              {
+                "question": "sick-note-needed",
+                "operator": "=",
+                "answerBoolean": true
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

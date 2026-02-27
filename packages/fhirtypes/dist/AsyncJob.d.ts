@@ -5,11 +5,11 @@
  * Do not edit manually.
  */
 
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Parameters } from './Parameters';
-import { Resource } from './Resource';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Parameters } from './Parameters.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Contains details of long running asynchronous/background jobs.

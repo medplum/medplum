@@ -1,0 +1,359 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:a1b2c3d4-e5f6-7890-abcd-123456789abc",
+      "resource": {
+        "resourceType": "ActivityDefinition",
+        "url": "https://www.medplum.com/activitydefinition/comprehensive-laboratory-screening",
+        "name": "Comprehensive Laboratory Screening",
+        "status": "active",
+        "extension": [
+          {
+            "url": "http://medplum.com/fhir/StructureDefinition/applicable-charge-definition",
+            "valueCanonical": "https://www.medplum.com/chargeItemDefinition/simpleinitialvisit"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "26604007",
+              "display": "Complete blood count"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "108252007",
+              "display": "Laboratory procedure (procedure)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "371361000119107",
+              "display": "Comprehensive metabolic panel (procedure)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "16254007",
+              "display": "Lipid panel (procedure)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "27171005",
+              "display": "Urinalysis (procedure)"
+            },
+            {
+              "system": "http://snomed.info/sct",
+              "code": "35650009",
+              "display": "Thyroid panel (procedure)"
+            }
+          ]
+        },
+        "kind": "ServiceRequest",
+        "intent": "order"
+      },
+      "request": {
+        "method": "POST",
+        "url": "ActivityDefinition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b2c3d4e5-f6a7-8901-bcde-23456789abcd",
+      "resource": {
+        "resourceType": "ChargeItemDefinition",
+        "url": "https://www.medplum.com/chargeItemDefinition/simpleinitialvisit",
+        "title": "Simple Initial Visit",
+        "status": "active",
+        "propertyGroup": [
+          {
+            "priceComponent": [
+              {
+                "type": "base",
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://www.ama-assn.org/go/cpt",
+                      "code": "99203",
+                      "display": "New patient office visit"
+                    }
+                  ]
+                },
+                "factor": 1,
+                "amount": {
+                  "value": 180,
+                  "currency": "USD"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "ChargeItemDefinition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c3d4e5f6-a7b8-9012-cdef-3456789abcde",
+      "resource": {
+        "resourceType": "PlanDefinition",
+        "name": "Simple Initial Visit",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/plan-definition-type",
+              "code": "order-set",
+              "display": "Order Set"
+            }
+          ]
+        },
+        "status": "active",
+        "title": "Comprehensive Physical Exam for New Patient",
+        "action": [
+          {
+            "id": "id-1",
+            "title": "Vital Signs Assessment",
+            "definitionCanonical": "https://www.medplum.com/questionnaire/vital-signs-assessment",
+            "description": "Record vital signs via Patient Summary and copy here."
+          },
+          {
+            "id": "id-2",
+            "title": "Comprehensive Physical Examination",
+            "definitionCanonical": "https://www.medplum.com/questionnaire/comprehensive-physical-examination"
+          },
+          {
+            "id": "id-3",
+            "title": "Health Maintenance Screening",
+            "definitionCanonical": "https://www.medplum.com/questionnaire/health-maintenance-screening"
+          },
+          {
+            "id": "id-7",
+            "definitionCanonical": "https://www.medplum.com/activitydefinition/comprehensive-laboratory-screening",
+            "title": "Comprehensive Laboratory Screening"
+          },
+          {
+            "id": "charge-consultation",
+            "title": "Initial Patient E&M (99203)",
+            "code": [
+              {
+                "coding": [
+                  {
+                    "system": "http://www.ama-assn.org/go/cpt",
+                    "code": "99203",
+                    "display": "Office or other outpatient visit for the evaluation and management of a new patient"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "PlanDefinition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d4e5f6a7-b8c9-0123-defg-456789abcdef",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/questionnaire/comprehensive-physical-examination",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-5",
+            "linkId": "q5",
+            "type": "text",
+            "required": true,
+            "text": "General Appearance"
+          },
+          {
+            "id": "id-6",
+            "linkId": "q6",
+            "type": "text",
+            "text": "Head, Eyes, Ears, Nose & Throat ",
+            "repeats": false,
+            "extension": [
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/fhir-types",
+                      "display": "Patient",
+                      "code": "Patient"
+                    }
+                  ]
+                }
+              },
+              {
+                "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                "valueCodeableConcept": {
+                  "coding": [
+                    {
+                      "system": "http://hl7.org/fhir/fhir-types",
+                      "display": "Practitioner",
+                      "code": "Practitioner"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "id": "id-56",
+            "linkId": "q43",
+            "type": "text",
+            "text": "Cardiovascular"
+          },
+          {
+            "id": "id-84",
+            "linkId": "q44",
+            "type": "text",
+            "text": "Respiratory"
+          },
+          {
+            "id": "id-85",
+            "linkId": "q45",
+            "type": "text",
+            "text": "Abdomen"
+          },
+          {
+            "id": "id-86",
+            "linkId": "q46",
+            "type": "text",
+            "text": "Extremities"
+          },
+          {
+            "id": "id-87",
+            "linkId": "q47",
+            "type": "text",
+            "text": "Neurological"
+          },
+          {
+            "id": "id-88",
+            "linkId": "q48",
+            "type": "text",
+            "text": "Skin"
+          }
+        ],
+        "name": "Comprehensive Physical Examination",
+        "title": "Comprehensive Physical Examination",
+        "code": [
+          {
+            "code": "SNOMED 162673000",
+            "display": "SNOMED 162673000"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e5f6a7b8-c9d0-1234-efgh-56789abcdef0",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/questionnaire/health-maintenance-screening",
+        "name": "Health Maintenance Screening",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-1",
+            "linkId": "q1",
+            "type": "text",
+            "text": "Immunization Status Review"
+          },
+          {
+            "id": "id-2",
+            "linkId": "q2",
+            "type": "text",
+            "text": "Cancer Screening Recommendations"
+          },
+          {
+            "id": "id-3",
+            "linkId": "q3",
+            "type": "string",
+            "text": "Cardiovascular Risk Assessment"
+          },
+          {
+            "id": "id-4",
+            "linkId": "q4",
+            "type": "text",
+            "text": "Age-Appropriate Counseling"
+          }
+        ],
+        "title": "Health Maintenance Screening"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:f6a7b8c9-d0e1-2345-fghi-6789abcdef01",
+      "resource": {
+        "resourceType": "Questionnaire",
+        "url": "https://www.medplum.com/questionnaire/vital-signs-assessment",
+        "name": "Vital Signs Assessment",
+        "status": "active",
+        "item": [
+          {
+            "id": "id-8",
+            "linkId": "q8",
+            "type": "display",
+            "text": "Record vital signs in the \"Vitals\" section of the Patient Summary sidebar and copy here."
+          },
+          {
+            "id": "id-2",
+            "linkId": "q2",
+            "type": "text",
+            "text": "Blood Pressure (Systolic/Diastolic)"
+          },
+          {
+            "id": "id-3",
+            "linkId": "q3",
+            "type": "text",
+            "text": "Heart Rate"
+          },
+          {
+            "id": "id-4",
+            "linkId": "q4",
+            "type": "text",
+            "text": "Temperature"
+          },
+          {
+            "id": "id-1",
+            "linkId": "q1",
+            "type": "text",
+            "text": "Respiratory Rate"
+          },
+          {
+            "id": "id-5",
+            "linkId": "q5",
+            "type": "text",
+            "text": "Oxygen Saturation"
+          },
+          {
+            "id": "id-6",
+            "linkId": "q6",
+            "type": "text",
+            "text": "Weight"
+          },
+          {
+            "id": "id-7",
+            "linkId": "q7",
+            "type": "text",
+            "text": "Height"
+          }
+        ],
+        "title": "Vital Signs Assessment"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Questionnaire"
+      }
+    }
+  ]
+}

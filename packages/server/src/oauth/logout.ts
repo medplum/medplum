@@ -10,7 +10,7 @@ export const logoutHandler = async (_req: Request, res: Response): Promise<void>
   const ctx = getAuthenticatedContext();
 
   // Mark the login as revoked
-  await revokeLogin(ctx.login);
+  await revokeLogin(ctx.systemRepo, ctx.login);
 
   if (ctx.login.client) {
     const cookieName = 'medplum-' + resolveId(ctx.login.client);

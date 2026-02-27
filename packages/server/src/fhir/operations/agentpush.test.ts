@@ -18,7 +18,7 @@ import type { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getRedis } from '../../redis';
+import * as pubsub from '../../pubsub';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
@@ -279,8 +279,7 @@ describe('Agent Push', () => {
   });
 
   test('Ping -- Successful ping to IP', async () => {
-    const redis = getRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -316,11 +315,11 @@ describe('Agent Push', () => {
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -345,8 +344,7 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
   });
 
   test('Ping -- Successful ping to hostname', async () => {
-    const redis = getRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -382,11 +380,11 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -411,8 +409,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Ping -- Error', async () => {
-    const redis = getRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -448,11 +445,11 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -475,8 +472,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
   });
 
   test('Prefer: respond-async', async () => {
-    const redis = getRedis();
-    const publishSpy = jest.spyOn(redis, 'publish');
+    const publishSpy = jest.spyOn(pubsub, 'publish');
 
     let resolve!: (value: request.Response) => void | PromiseLike<void>;
     let reject!: (err: Error) => void;
@@ -513,11 +509,11 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString() as string;
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
-    await getRedis().publish(
+    await pubsub.publish(
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -613,6 +609,83 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     });
 
     cleanup();
+  });
+
+  test('Submit with returnAck parameter', async () => {
+    const publishSpy = jest.spyOn(pubsub, 'publish');
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: getReferenceString(device),
+        returnAck: 'application',
+      } satisfies AgentPushParameters);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(allOk);
+
+    // Verify the returnAck was included in the transmit request
+    expect(publishSpy).toHaveBeenCalled();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
+    expect(transmitRequest.returnAck).toBe('application');
+
+    publishSpy.mockRestore();
+  });
+
+  test('Submit with returnAck=first parameter', async () => {
+    const publishSpy = jest.spyOn(pubsub, 'publish');
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: getReferenceString(device),
+        returnAck: 'first',
+      } satisfies AgentPushParameters);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(allOk);
+
+    // Verify the returnAck was included in the transmit request
+    expect(publishSpy).toHaveBeenCalled();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
+    expect(transmitRequest.returnAck).toBe('first');
+
+    publishSpy.mockRestore();
+  });
+
+  test('Submit without returnAck parameter does not include it in request', async () => {
+    const publishSpy = jest.spyOn(pubsub, 'publish');
+
+    const res = await request(app)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        contentType: ContentType.TEXT,
+        body: 'input',
+        destination: getReferenceString(device),
+      });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject(allOk);
+
+    // Verify the returnAck was NOT included in the transmit request
+    expect(publishSpy).toHaveBeenCalled();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    expect(transmitRequestStr).toBeDefined();
+    const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
+    expect(transmitRequest.returnAck).toBeUndefined();
+
+    publishSpy.mockRestore();
   });
 
   test('Ping from agent when Agent.status off -- should succeed', async () => {

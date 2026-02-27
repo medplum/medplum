@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, getDisplayString, normalizeErrorString, RXNORM } from '@medplum/core';
+import { append, createReference, EMPTY, getDisplayString, normalizeErrorString, RXNORM } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type {
   Address,
@@ -285,11 +285,8 @@ export function createAllergies(
   patientReference: Reference<Patient>,
   photonAllergies?: PhotonPatientAllergy[]
 ): AllergyIntolerance[] | undefined {
-  if (!photonAllergies || photonAllergies.length === 0) {
-    return undefined;
-  }
-  const allergies: AllergyIntolerance[] = [];
-  for (const photonAllergy of photonAllergies) {
+  let allergies: AllergyIntolerance[] | undefined;
+  for (const photonAllergy of photonAllergies ?? EMPTY) {
     const { allergen, comment, onset } = photonAllergy;
     if (!allergen.rxcui) {
       continue;
@@ -308,7 +305,7 @@ export function createAllergies(
     if (comment) {
       allergy.note = [{ text: comment }];
     }
-    allergies.push(allergy);
+    allergies = append(allergies, allergy);
   }
 
   return allergies;
@@ -320,12 +317,9 @@ export async function createPrescriptions(
   photonPrescriptions?: PhotonPrescription[]
 ): Promise<MedicationRequest[] | undefined> {
   console.log(patientReference);
-  if (!photonPrescriptions || photonPrescriptions.length === 0) {
-    return undefined;
-  }
 
-  const prescriptions: MedicationRequest[] = [];
-  for (const photonPrescription of photonPrescriptions) {
+  let prescriptions: MedicationRequest[] | undefined;
+  for (const photonPrescription of photonPrescriptions ?? EMPTY) {
     console.log(photonPrescription);
     if ((await checkForExistingPrescription(medplum, photonPrescription)) || !photonPrescription) {
       continue;
@@ -371,7 +365,7 @@ export async function createPrescriptions(
       prescription.note = [{ text: photonPrescription.notes }];
     }
 
-    prescriptions.push(prescription);
+    prescriptions = append(prescriptions, prescription);
   }
   return prescriptions;
 }

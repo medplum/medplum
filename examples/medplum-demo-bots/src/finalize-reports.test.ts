@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  EMPTY,
   LOINC,
   UCUM,
   createReference,
@@ -92,11 +93,9 @@ describe('Finalize Report', async () => {
     expect(checkReport.status).toBe('final');
 
     // Read all the Observations referenced by the modified report
-    if (checkReport.result) {
-      for (const observationRef of checkReport.result) {
-        const checkObservation = await medplum.readReference(observationRef);
-        expect(checkObservation.status).toBe('final');
-      }
+    for (const observationRef of checkReport.result ?? EMPTY) {
+      const checkObservation = await medplum.readReference(observationRef);
+      expect(checkObservation.status).toBe('final');
     }
     // end-block query-results
   });

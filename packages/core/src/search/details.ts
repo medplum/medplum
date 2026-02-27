@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import type { SearchParameter } from '@medplum/fhirtypes';
 import type { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
@@ -15,7 +15,8 @@ import {
 import { parseFhirPath } from '../fhirpath/parse';
 import { getElementDefinition, globalSchema, PropertyType } from '../types';
 import type { InternalSchemaElement } from '../typeschema/types';
-import { lazy } from '../utils';
+import { EMPTY, lazy } from '../utils';
+import { getInnerDerivedIdentifierExpression, getParsedDerivedIdentifierExpression } from './derived';
 
 export const SearchParameterType = {
   BOOLEAN: 'BOOLEAN',
@@ -59,7 +60,7 @@ interface SearchParameterDetailsBuilder {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
@@ -79,8 +80,9 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 }
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
-  const code = searchParam.code as string;
-  const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
+  const code = searchParam.code;
+  const expression = searchParam.expression as string;
+  const expressions = getExpressionsForResourceType(resourceType, expression);
 
   const builder: SearchParameterDetailsBuilder = {
     elementDefinitions: [],
@@ -125,12 +127,27 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     }
   }
 
+  let parsedExpression: FhirPathAtom;
+  if (searchParam.code.endsWith(':identifier')) {
+    // Derived identifier search parameters define their expressions like "(Condition).identifier"
+    // This breaks the optimizations in `getExpressionsForResourceType` that filter out other unioned resource types,
+    // To keep the optimization, extract the inner expression and then manually add the ".identifier" wrapper.
+    const innerExpression = getInnerDerivedIdentifierExpression(expression);
+    if (innerExpression === undefined) {
+      throw new Error(`Unexpected expression for derived identifier search parameter: ${expression}`);
+    }
+    const parsedInnerExpression = getParsedExpressionForResourceType(resourceType, innerExpression);
+    parsedExpression = getParsedDerivedIdentifierExpression(expression, parsedInnerExpression);
+  } else {
+    parsedExpression = getParsedExpressionForResourceType(resourceType, expression);
+  }
+
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions
       .map((ed) => ({ ...ed, type: ed.type?.filter((t) => builder.propertyTypes.has(t.code)) }))
       .filter((ed) => ed.type && ed.type.length > 0),
-    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
+    parsedExpression,
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);
@@ -186,8 +203,8 @@ function crawlSearchParameterDetails(
     // This is the final atom in the expression
     // So we can collect the ElementDefinition and property types
     details.elementDefinitions.push(elementDefinition);
-    for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
-      details.propertyTypes.add(elementDefinitionType.code as string);
+    for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
+      details.propertyTypes.add(elementDefinitionType.code);
     }
     return;
   }
@@ -195,8 +212,8 @@ function crawlSearchParameterDetails(
   // This is in the middle of the expression, so we need to keep crawling.
   // "code" is only missing when using "contentReference"
   // "contentReference" is handled whe parsing StructureDefinition into InternalTypeSchema
-  for (const elementDefinitionType of elementDefinition.type as ElementDefinitionType[]) {
-    let propertyType = elementDefinitionType.code as string;
+  for (const elementDefinitionType of elementDefinition.type ?? EMPTY) {
+    let propertyType = elementDefinitionType.code;
     if (isBackboneElement(propertyType)) {
       propertyType = elementDefinition.type[0].code;
     }

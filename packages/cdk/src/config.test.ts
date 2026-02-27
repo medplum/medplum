@@ -316,7 +316,7 @@ describe('Config', () => {
       expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toStrictEqual('medplum');
     });
     // Test [string, number] => number
-    test('Provided string, expected number => parseInt(string)', () => {
+    test('Provided string, expected number => Number.parseInt(string)', () => {
       expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toStrictEqual(20);
     });
     // Test [number, number] => rawValue

@@ -5,17 +5,17 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { MedicinalProduct } from './MedicinalProduct';
-import { MedicinalProductPackaged } from './MedicinalProductPackaged';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { MedicinalProduct } from './MedicinalProduct.d.ts';
+import type { MedicinalProductPackaged } from './MedicinalProductPackaged.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * The regulatory authorization of a medicinal product.

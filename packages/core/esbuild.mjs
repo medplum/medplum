@@ -11,7 +11,7 @@ import packageJson from './package.json' with { type: 'json' };
 
 let gitHash;
 try {
-  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  gitHash = execSync('git rev-parse --short=7 HEAD').toString().trim();
 } catch (_error) {
   gitHash = 'unknown'; // Default value when not in a git repository
 }

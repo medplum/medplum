@@ -86,4 +86,58 @@ describe('useSearch hooks', () => {
     expect(result.current[1]).toEqual(false);
     expect(result.current[2]).toEqual(allOk);
   });
+
+  test('Slow queries returning out of order', async () => {
+    const medplum = new MockClient();
+
+    // Create deferred promises to control resolution order
+    let resolveFirst: (value: unknown) => void;
+    const firstPromise = new Promise((resolve) => {
+      resolveFirst = resolve;
+    });
+
+    let resolveSecond: (value: unknown) => void;
+    const secondPromise = new Promise((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    jest
+      .spyOn(medplum, 'search')
+      .mockReturnValueOnce(firstPromise as ReturnType<typeof medplum.search>)
+      .mockReturnValueOnce(secondPromise as ReturnType<typeof medplum.search>);
+
+    const { result, rerender } = renderHook((props) => useSearch('Patient', { name: props.name }, { debounceMs: 0 }), {
+      initialProps: { name: 'slow' },
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+    });
+
+    // Initial state should be loading
+    expect(result.current[1]).toBe(true);
+
+    // Trigger a second search before the first one resolves
+    rerender({ name: 'fast' });
+
+    // Resolve the second (fast) query first
+    await act(async () => {
+      resolveSecond({
+        resourceType: 'Bundle',
+        entry: [{ resource: { resourceType: 'Patient', id: 'fast-patient', name: [{ given: ['Fast'] }] } }],
+      });
+    });
+
+    // The result should now show the fast query result
+    expect(result.current[1]).toBe(false);
+    expect(result.current[0]?.entry?.[0]?.resource?.id).toBe('fast-patient');
+
+    // Now resolve the first (slow) query - this should be ignored since the effect was cleaned up
+    await act(async () => {
+      resolveFirst({
+        resourceType: 'Bundle',
+        entry: [{ resource: { resourceType: 'Patient', id: 'slow-patient', name: [{ given: ['Slow'] }] } }],
+      });
+    });
+
+    // The result should still show the fast query result, not the slow one
+    expect(result.current[0]?.entry?.[0]?.resource?.id).toBe('fast-patient');
+  });
 });

@@ -175,7 +175,7 @@ describe('BaseChat', () => {
       sendMessage,
     });
 
-    const chatInput = screen.getByPlaceholderText('Type a message...') as HTMLInputElement;
+    const chatInput = screen.getByPlaceholderText('Type a message...');
     expect(chatInput).toBeInTheDocument();
     act(() => {
       fireEvent.change(chatInput, { target: { value: "Doc, I can't feel my legs!" } });

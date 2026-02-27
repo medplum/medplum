@@ -30,6 +30,7 @@ import {
   serverTimeout,
   tooManyRequests,
   unauthorized,
+  unsupportedMediaType,
 } from './outcomes';
 
 describe('Outcomes', () => {
@@ -104,6 +105,7 @@ describe('Outcomes', () => {
     [gone, 410],
     [preconditionFailed, 412],
     [multipleMatches, 412],
+    [unsupportedMediaType, 415],
     [businessRule('rule-id', 'Message'), 422],
     [tooManyRequests, 429],
     [serverError(new Error('bad')), 500],

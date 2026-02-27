@@ -1,25 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, normalizeErrorString } from '@medplum/core';
+import { badRequest, createReference, EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
 import os from 'node:os';
-import type ws from 'ws';
+import type { RawData, WebSocket } from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { heartbeat } from '../heartbeat';
+import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -40,31 +41,51 @@ export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { ty
 
 export interface WebSocketSubMetadata {
   rawToken: string;
+  criteriaResourceType: string;
 }
 
-export type WebSocketSubToken = JWTPayload & MedplumBaseClaims & AdditionalWsBindingClaims;
+export type WebSocketSubToken = MedplumBaseClaims & AdditionalWsBindingClaims;
+
+export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
+export type V1SubEventPayload = V1SubEventEntry[];
+
+export type V2SubEventEntry = [string, SubEventsOptions];
+export type V2SubEventPayload = { resource: WithId<Resource>; events: V2SubEventEntry[] };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 
-const wsToSubLookup = new Map<ws.WebSocket, Map<string, WebSocketSubMetadata>>();
-const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
+const wsToSubLookup = new Map<WebSocket, Map<string, WebSocketSubMetadata>>();
+const subToWsLookup = new Map<string, Set<WebSocket>>();
 
 let redisSubscriber: Redis | undefined;
 let heartbeatHandler: (() => void) | undefined;
 
+let subscriptionEventsFired = 0;
+let subscriptionMessagesSent = 0;
+let subscriptionMessagesReceived = 0;
+
 async function setupSubscriptionHandler(): Promise<void> {
-  redisSubscriber = getRedisSubscriber();
+  redisSubscriber = getPubSubRedisSubscriber();
   redisSubscriber.on('message', async (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    const subEventArgsArr = JSON.parse(events) as [
-      WithId<Resource>,
-      subscriptionId: string,
-      options?: SubEventsOptions,
-    ][];
-    for (const [resource, subscriptionId, options] of subEventArgsArr) {
+    const subEventPayload = JSON.parse(events) as V1SubEventPayload | V2SubEventPayload;
+    let resource: WithId<Resource>;
+    let subEventArgsArr: [string, SubEventsOptions][];
+
+    // TODO: v5.2.0+ - Deprecate v1
+    if (isV1SubEventPayload(subEventPayload)) {
+      resource = subEventPayload[0][0];
+      subEventArgsArr = subEventPayload.map((entry) => [entry[1], entry[2]]);
+    } else {
+      resource = subEventPayload.resource;
+      subEventArgsArr = subEventPayload.events;
+    }
+
+    const deadSubscriptionIds: string[] = [];
+    for (const [subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
-      for (const socket of subToWsLookup.get(subscriptionId) ?? []) {
+      for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
         // Get the repo for this socket in the context of the subscription
         const subMetadataMap = wsToSubLookup.get(socket);
         if (!subMetadataMap) {
@@ -84,6 +105,7 @@ async function setupSubscriptionHandler(): Promise<void> {
           const authState = await getLoginForAccessToken(undefined, subMetadata.rawToken);
           if (!authState) {
             globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
+            deadSubscriptionIds.push(subscriptionId);
             continue;
           }
           const repo = await getRepoForLogin(authState);
@@ -94,10 +116,59 @@ async function setupSubscriptionHandler(): Promise<void> {
         }
 
         socket.send(JSON.stringify(rewrittenBundle), { binary: false });
+        subscriptionMessagesSent++;
+      }
+      subscriptionEventsFired++;
+    }
+
+    if (deadSubscriptionIds.length > 0) {
+      for (const subscriptionId of deadSubscriptionIds) {
+        purgeSubscriptionFromLookups(subscriptionId);
+      }
+      try {
+        const redis = getCacheRedis();
+        const redisKeys = deadSubscriptionIds.map((id) => `Subscription/${id}`);
+        const cacheEntries = await redis.mget(...redisKeys);
+        const projectToSubsByResourceType = new Map<string, Map<string, string[]>>();
+        for (let i = 0; i < deadSubscriptionIds.length; i++) {
+          const cacheEntryStr = cacheEntries[i];
+          if (!cacheEntryStr) {
+            continue;
+          }
+          const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+          const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+          let subsByResourceType = projectToSubsByResourceType.get(cacheEntry.projectId);
+          if (!subsByResourceType) {
+            subsByResourceType = new Map<string, string[]>();
+            projectToSubsByResourceType.set(cacheEntry.projectId, subsByResourceType);
+          }
+          let subIds = subsByResourceType.get(criteriaResourceType);
+          if (!subIds) {
+            subIds = [];
+            subsByResourceType.set(criteriaResourceType, subIds);
+          }
+          subIds.push(deadSubscriptionIds[i]);
+        }
+        for (const [projectId, subIdsByResourceType] of projectToSubsByResourceType) {
+          for (const [resourceType, subIds] of subIdsByResourceType) {
+            globalLogger.info('[WS] Cleaning up dead subscriptions with invalid token', {
+              count: subIds.length,
+              projectId,
+              resourceType,
+            });
+          }
+          await markInMemorySubscriptionsInactive(projectId, subIdsByResourceType);
+        }
+      } catch (err) {
+        globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
       }
     }
   });
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
+}
+
+function isV1SubEventPayload(candidate: unknown): candidate is V1SubEventPayload {
+  return Array.isArray(candidate) && candidate.length !== 0;
 }
 
 function ensureHeartbeatHandler(): void {
@@ -105,15 +176,32 @@ function ensureHeartbeatHandler(): void {
     heartbeatHandler = (): void => {
       for (const [ws, metadata] of wsToSubLookup.entries()) {
         ws.send(JSON.stringify(createSubHeartbeatEvent(metadata)));
+        subscriptionMessagesSent++;
       }
+      const heartbeatSeconds = DEFAULT_HEARTBEAT_MS / 1000;
       setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
       setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.eventsFiredPerSec', subscriptionEventsFired / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge('medplum.subscription.messagesSentPerSec', subscriptionMessagesSent / heartbeatSeconds, METRIC_OPTIONS);
+      setGauge(
+        'medplum.subscription.messagesReceivedPerSec',
+        subscriptionMessagesReceived / heartbeatSeconds,
+        METRIC_OPTIONS
+      );
+      subscriptionEventsFired = 0;
+      subscriptionMessagesSent = 0;
+      subscriptionMessagesReceived = 0;
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
 }
 
-function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, rawToken: string): void {
+function subscribeWsToSubscription(
+  ws: WebSocket,
+  subscriptionId: string,
+  rawToken: string,
+  criteriaResourceType: string
+): void {
   let wsSet = subToWsLookup.get(subscriptionId);
   let subEntryMap = wsToSubLookup.get(ws);
   if (!wsSet) {
@@ -125,10 +213,10 @@ function subscribeWsToSubscription(ws: ws.WebSocket, subscriptionId: string, raw
     wsToSubLookup.set(ws, subEntryMap);
   }
   wsSet.add(ws);
-  subEntryMap.set(subscriptionId, { rawToken });
+  subEntryMap.set(subscriptionId, { rawToken, criteriaResourceType });
 }
 
-function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string): void {
+function unsubscribeWsFromSubscription(ws: WebSocket, subscriptionId: string): void {
   // Check for WebSocket in map for this subscription ID
   const wsSet = subToWsLookup.get(subscriptionId);
   if (wsSet) {
@@ -150,7 +238,23 @@ function unsubscribeWsFromSubscription(ws: ws.WebSocket, subscriptionId: string)
   }
 }
 
-function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
+function purgeSubscriptionFromLookups(subscriptionId: string): void {
+  const wsSet = subToWsLookup.get(subscriptionId);
+  if (wsSet) {
+    for (const ws of wsSet) {
+      const subEntryMap = wsToSubLookup.get(ws);
+      if (subEntryMap) {
+        subEntryMap.delete(subscriptionId);
+        if (subEntryMap.size === 0) {
+          wsToSubLookup.delete(ws);
+        }
+      }
+    }
+    subToWsLookup.delete(subscriptionId);
+  }
+}
+
+function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
   const subEntries = wsToSubLookup.get(ws);
   if (!subEntries) {
     globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
@@ -161,7 +265,7 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
       globalLogger.error(`[WS] Subscription binding to subscription ${subscriptionId} for this WebSocket is missing`);
       continue;
     }
-    const wsSet = subToWsLookup.get(subscriptionId) as Set<ws.WebSocket>;
+    const wsSet = subToWsLookup.get(subscriptionId) as Set<WebSocket>;
     wsSet.delete(ws);
     if (wsSet.size === 0) {
       subToWsLookup.delete(subscriptionId);
@@ -178,8 +282,8 @@ function unsubscribeWsFromAllSubscriptions(ws: ws.WebSocket): void {
 // Each project entry becomes a map of subscriptions to their current ref count (how many subscribers each has)
 // This seems like it is potentially error prone without ensured atomicity of Redis operations between server instances but I'm sure there are existing solutions for this
 
-export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Promise<void> {
-  const redis = getRedis();
+export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
+  const redis = getCacheRedis();
   let onDisconnect: (() => Promise<void>) | undefined;
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
@@ -220,10 +324,20 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     if (!redisSubscriber) {
       await setupSubscriptionHandler();
     }
-    subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken);
+    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
+    if (!cacheEntryStr) {
+      globalLogger.warn('[WS] Failed to retrieve subscription cache entry when binding to token', {
+        subscriptionId: verifiedToken.subscription_id,
+      });
+      return;
+    }
+    const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+    const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+    subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
     ensureHeartbeatHandler();
     // Send a handshake to notify client that this subscription is active for this connection
     socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
+    subscriptionMessagesSent++;
 
     onDisconnect = async (): Promise<void> => {
       const subEntries = wsToSubLookup.get(socket);
@@ -231,14 +345,9 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
         globalLogger.warn('[WS] No entry for given WebSocket in subscription lookup');
         return;
       }
+      const subIdsByResourceType = getSubIdsByResourceType(subEntries);
       unsubscribeWsFromAllSubscriptions(socket);
-      const cacheEntryStr = (await redis.get(`Subscription/${verifiedToken.subscription_id}`)) as string | null;
-      if (!cacheEntryStr) {
-        globalLogger.warn('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect');
-        return;
-      }
-      const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-      await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set(subEntries.keys()));
+      await markInMemorySubscriptionsInactive(cacheEntry.projectId, subIdsByResourceType);
     };
   };
 
@@ -249,8 +358,10 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       return;
     }
 
+    // Read metadata before unsubscribing, since unsubscribe removes it from the map
+    const subMetadata = wsToSubLookup.get(socket)?.get(verifiedToken.subscription_id);
     unsubscribeWsFromSubscription(socket, verifiedToken.subscription_id);
-    const cacheEntryStr = (await redis.get(`Subscription/${verifiedToken.subscription_id}`)) as string | null;
+    const cacheEntryStr = await redis.get(`Subscription/${verifiedToken.subscription_id}`);
     if (!cacheEntryStr) {
       globalLogger.warn('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
         subscriptionId: verifiedToken.subscription_id,
@@ -258,15 +369,21 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-    await markInMemorySubscriptionsInactive(cacheEntry.projectId, new Set([verifiedToken.subscription_id]));
+    const subIdsByResourceType = new Map<string, string[]>();
+    if (subMetadata) {
+      subIdsByResourceType.set(subMetadata.criteriaResourceType, [verifiedToken.subscription_id]);
+    }
+    await markInMemorySubscriptionsInactive(cacheEntry.projectId, subIdsByResourceType);
   };
 
-  socket.on('message', async (data: ws.RawData) => {
+  socket.on('message', async (data: RawData) => {
+    subscriptionMessagesReceived++;
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
     if (msg.type === 'ping') {
       socket.send(JSON.stringify({ type: 'pong' }));
+      subscriptionMessagesSent++;
     } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
       if (!token) {
@@ -354,7 +471,7 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   const { status, includeResource } = {
     status: 'active',
     includeResource: false,
-    ...(options ?? {}),
+    ...options,
   } as { status: SubStatus; includeResource: boolean };
   const timestamp = new Date().toISOString();
   return {
@@ -385,20 +502,45 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
+export function getSubIdsByResourceType(subscriptionEntries: Map<string, WebSocketSubMetadata>): Map<string, string[]> {
+  const byResourceType = new Map<string, string[]>();
+  for (const [subscriptionId, metadata] of subscriptionEntries) {
+    let ids = byResourceType.get(metadata.criteriaResourceType);
+    if (!ids) {
+      ids = [];
+      byResourceType.set(metadata.criteriaResourceType, ids);
+    }
+    ids.push(subscriptionId);
+  }
+  return byResourceType;
+}
+
 export async function markInMemorySubscriptionsInactive(
   projectId: string,
-  subscriptionIds: Set<string>
+  subIdsByResourceType: Map<string, string[]>
 ): Promise<void> {
-  const refStrs = [];
-  for (const subscriptionId of subscriptionIds) {
-    refStrs.push(`Subscription/${subscriptionId}`);
-  }
-  let redis: Redis | undefined;
+  let cacheRedis: Redis | undefined;
   try {
-    redis = getRedis();
+    cacheRedis = getCacheRedis();
   } catch {
-    redis = undefined;
+    cacheRedis = undefined;
     globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
   }
-  await redis?.multi().srem(`medplum:subscriptions:r4:project:${projectId}:active`, refStrs).del(refStrs).exec();
+  if (!subIdsByResourceType.size) {
+    return;
+  }
+  const refStrs: string[] = [];
+  for (const [resourceType, ids] of subIdsByResourceType) {
+    const refs = ids.map((id) => `Subscription/${id}`);
+    refStrs.push(...refs);
+    try {
+      await removeActiveSubscriptions(projectId, resourceType, ...refs);
+    } catch {
+      globalLogger.debug('Attempted to mark subscriptions as inactive when Redis is closed');
+      return;
+    }
+  }
+  if (cacheRedis) {
+    await cacheRedis.del(refStrs);
+  }
 }

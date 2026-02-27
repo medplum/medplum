@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { MedplumClient } from '@medplum/core';
 import {
   addProfileToResource,
   createReference,
@@ -9,7 +10,6 @@ import {
   LOINC,
   SNOMED,
 } from '@medplum/core';
-import type { MedplumClient } from '@medplum/core';
 import type {
   Address,
   CodeableConcept,
@@ -641,7 +641,7 @@ export async function addConsent(
   scope: CodeableConcept,
   category: CodeableConcept,
   policyRule: CodeableConcept | undefined,
-  date: Consent['dateTime'] | undefined
+  date: Consent['dateTime']
 ): Promise<void> {
   await medplum.createResource({
     resourceType: 'Consent',

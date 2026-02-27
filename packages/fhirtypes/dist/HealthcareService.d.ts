@@ -5,19 +5,19 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactPoint } from './ContactPoint';
-import { Endpoint } from './Endpoint';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Endpoint } from './Endpoint.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * The details of a healthcare service available at a location.

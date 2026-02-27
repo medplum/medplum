@@ -52,8 +52,36 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsForceRetain?: ValueOrExternalSecret<boolean>;
+  rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
+  cacheEngine?: ValueOrExternalSecret<string>;
+  cacheEngineVersion?: ValueOrExternalSecret<string>;
+  cacheRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  rateLimitRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  pubSubRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
   serverMemory: ValueOrExternalSecret<number>;
@@ -80,8 +108,6 @@ export interface MedplumSourceInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: ValueOrExternalSecret<string>;
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: ValueOrExternalSecret<boolean>;
   containerInsightsV2?: ValueOrExternalSecret<'enabled' | 'disabled' | 'enhanced'>;
   cloudTrailAlarms?: {
     logGroupName: ValueOrExternalSecret<string>;
@@ -98,8 +124,8 @@ export interface MedplumSourceInfraConfig {
   };
   environment?: StringMap;
 
-  rdsIdsMajorVersionSuffix?: boolean;
-  rdsPersistentParameterGroups?: boolean;
+  rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
+  rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
 
   fireLens?: {
     enabled: true;
@@ -153,11 +179,39 @@ export interface MedplumInfraConfig {
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
   rdsClusterParameters?: StringMap;
+  rdsAutoMinorVersionUpgrade?: boolean;
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
+  rdsForceRetain?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
+  cacheEngine?: string;
+  cacheEngineVersion?: string;
+  cacheRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  rateLimitRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  pubSubRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
@@ -184,8 +238,6 @@ export interface MedplumInfraConfig {
     };
   }[];
   containerRegistryCredentialsSecretArn?: string;
-  /** @deprecated Use containerInsightsV2 instead */
-  containerInsights?: boolean;
   containerInsightsV2?: 'enabled' | 'disabled' | 'enhanced';
   cloudTrailAlarms?: {
     logGroupName: string;

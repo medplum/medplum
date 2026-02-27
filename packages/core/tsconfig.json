@@ -1,12 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "module": "es2020",
+    "composite": true,
+    "module": "esnext",
     "types": ["jest", "vite/client"],
     "lib": ["esnext", "dom"],
+    "rootDir": "src",
     "outDir": "dist/types",
     "noEmit": false,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*.ts"]
+  "references": [{ "path": "../definitions" }, { "path": "../fhirtypes" }],
+  "include": ["src/**/*.ts", "src/**/*.json"]
 }

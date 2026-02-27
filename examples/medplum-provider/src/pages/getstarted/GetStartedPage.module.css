@@ -1,0 +1,130 @@
+.page {
+  min-height: 100vh;
+  background-color: var(--mantine-color-body);
+  --text-secondary: var(--mantine-color-gray-7);
+  --text-label: var(--mantine-color-gray-6);
+  --icon-secondary: var(--mantine-color-gray-5);
+}
+
+[data-mantine-color-scheme="dark"] .page {
+  --text-secondary: var(--mantine-color-gray-5);
+  --text-label: var(--mantine-color-gray-5);
+  --icon-secondary: var(--mantine-color-gray-6);
+}
+
+.container {
+  max-width: 800px;
+}
+
+.textSecondary {
+  color: var(--text-secondary);
+}
+
+.textLabel {
+  color: var(--text-label);
+}
+
+.link {
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.sectionIcon {
+  background-color: var(--mantine-color-yellow-8);
+  border: none;
+}
+
+.flexOne {
+  flex: 1;
+}
+
+.sampleDataGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+  gap: var(--mantine-spacing-md);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+}
+
+.integrationsContainer {
+  position: relative;
+  min-height: 120px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.integrationsInner {
+  position: relative;
+  width: 100%;
+  height: 110px;
+}
+
+.integrationCard {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  box-shadow: var(--mantine-shadow-xs);
+  height: 64px;
+  padding: 4px;
+  background-color: var(--mantine-color-white);
+  border-radius: var(--mantine-radius-md);
+  border: 1px solid var(--mantine-color-gray-3);
+}
+
+.integrationImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.gridCell {
+  display: flex;
+}
+
+.gridCellContent {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.dividerRight {
+  position: absolute;
+  right: 0;
+  top: var(--mantine-spacing-md);
+  bottom: var(--mantine-spacing-md);
+  width: 1px;
+  background-color: var(--mantine-color-default-border);
+}
+
+.dividerBottom {
+  position: absolute;
+  left: var(--mantine-spacing-md);
+  right: var(--mantine-spacing-md);
+  bottom: 0;
+  height: 1px;
+  background-color: var(--mantine-color-default-border);
+}
+
+.sectionTitle {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.helpCard {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

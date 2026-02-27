@@ -5,22 +5,22 @@
  * Do not edit manually.
  */
 
-import { Address } from './Address';
-import { CodeableConcept } from './CodeableConcept';
-import { ContactPoint } from './ContactPoint';
-import { Endpoint } from './Endpoint';
-import { Extension } from './Extension';
-import { HumanName } from './HumanName';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { Quantity } from './Quantity';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Address } from './Address.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Endpoint } from './Endpoint.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { HumanName } from './HumanName.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Details of a Health Insurance product/plan provided by an

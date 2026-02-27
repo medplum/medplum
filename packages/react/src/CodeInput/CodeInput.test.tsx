@@ -51,7 +51,7 @@ describe('CodeInput', () => {
   test('Searches for results', async () => {
     await setup(<CodeInput {...defaultProps} />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter random text
     await act(async () => {
@@ -79,7 +79,7 @@ describe('CodeInput', () => {
   test('Searches for results with creatable set to false', async () => {
     await setup(<CodeInput {...defaultProps} creatable={false} clearable={false} />);
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('searchbox');
 
     // Enter random text
     await act(async () => {

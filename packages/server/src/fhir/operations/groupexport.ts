@@ -25,7 +25,7 @@ import { BulkExporter } from './utils/bulkexporter';
 export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const { id } = req.params;
+  const { id } = req.method === 'GET' ? req.params : req.body;
   const since = singularize(req.query._since);
   const types = singularize(req.query._type)?.split(',');
 
@@ -69,7 +69,7 @@ export async function groupExportResources(
           const resource = await repo.readResource(resourceType, memberId);
           await exporter.writeResource(resource);
         }
-      } catch (_err) {
+      } catch {
         getLogger().warn('Unable to read patient for group export', {
           reference: member.entity.reference,
         });

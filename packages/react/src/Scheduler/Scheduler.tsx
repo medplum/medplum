@@ -68,7 +68,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         } else {
           for (const schedule of props.schedule) {
             if (isReference(schedule)) {
-              scheduleArray.push(schedule.reference as string);
+              scheduleArray.push(schedule.reference);
             } else {
               const scheduleRef = getReferenceString(schedule as WithId<Schedule>);
               scheduleArray.push(scheduleRef);
@@ -114,17 +114,17 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
       // Filter slots to only include those that are within the date range
       .filter((slot) => {
         return (
-          new Date(slot.start as string).getTime() > date.getTime() &&
-          new Date(slot.start as string).getTime() < date.getTime() + 24 * 3600 * 1000
+          new Date(slot.start).getTime() > date.getTime() &&
+          new Date(slot.start).getTime() < date.getTime() + 24 * 3600 * 1000
         );
       })
       // Sort slots by start time
       .sort((a, b) => {
-        return new Date(a.start as string).getTime() - new Date(b.start as string).getTime();
+        return new Date(a.start).getTime() - new Date(b.start).getTime();
       });
     const startTimeToSlotMap = new Map<string, Slot>();
     for (const slot of sortedSlots) {
-      startTimeToSlotMap.set(formatTime(new Date(slot.start as string)), slot);
+      startTimeToSlotMap.set(formatTime(new Date(slot.start)), slot);
     }
     return startTimeToSlotMap;
   }, [slots, date]);
@@ -144,7 +144,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         )}
         <p>1 hour</p>
         {date && <p>{date.toLocaleDateString()}</p>}
-        {selectedSlot && <p>{formatTime(new Date(selectedSlot.start as string))}</p>}
+        {selectedSlot && <p>{formatTime(new Date(selectedSlot.start))}</p>}
       </div>
       <div className={classes.selection}>
         {!date && (

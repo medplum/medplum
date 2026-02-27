@@ -71,7 +71,7 @@ function upsertCommunications(
       if (!b.sent) {
         return 1;
       }
-      return (a.sent as string).localeCompare(b.sent as string);
+      return a.sent.localeCompare(b.sent);
     });
   }
 
@@ -386,7 +386,9 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
         {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
         &nbsp;&middot;&nbsp;
         <Text span c="dimmed" fz="xs">
-          {isNaN(sentTime.getTime()) ? '' : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+          {Number.isNaN(sentTime.getTime())
+            ? ''
+            : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
         </Text>
       </Text>
       <div

@@ -125,7 +125,7 @@ export async function getTransactionBundle(search: SearchRequest, medplum: Medpl
   };
   const transactionBundleSearchValues = addSearchValues(transactionBundleSearch, medplum.getUserConfiguration());
   const bundle = await medplum.search(
-    transactionBundleSearchValues.resourceType as ResourceType,
+    transactionBundleSearchValues.resourceType,
     formatSearchQuery({ ...transactionBundleSearchValues, total: 'accurate', fields: undefined })
   );
   return convertToTransactionBundle(bundle);

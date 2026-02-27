@@ -33,6 +33,8 @@ Creating a [`Patient`](/docs/api/fhir/resources/patient) if one does not exist u
   {ExampleCode}
 </MedplumCodeBlock>
 
+This example uses the [`MedplumClient`](/docs/sdk/core.medplumclient) from the Medplum SDK to interact with the FHIR API. The `createResourceIfNoneExists` method is a helper that performs a search before creating the resource.
+
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [`Identifiers`](/docs/fhir-basics#naming-data-identifiers) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
 
 We recommend that providers put documentation of their identifier system online for interoperability purposes.
@@ -95,6 +97,14 @@ You can then create a diagnostic report using the function below.
 </MedplumCodeBlock>
 
 This will create a [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) that is linked to the [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) and to the [`Patient`](/docs/api/fhir/resources/patient). If you are using hosted Medplum, you can view all [`DiagnosticReports`](/docs/api/fhir/resources/diagnosticreport) [here](https://app.medplum.com/DiagnosticReport).
+
+## Next Steps
+
+Now that you have created and linked your FHIR resources, you can:
+
+- **Search** for these resources using [FHIR Search](/docs/search/basic-search).
+- **Automate** workflows using [Bots](/docs/bots).
+- **Visualize** the data in a [React Application](/docs/react).
 
 ## Conclusion
 

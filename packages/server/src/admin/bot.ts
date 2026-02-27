@@ -5,11 +5,11 @@ import { ContentType, createReference, getReferenceString } from '@medplum/core'
 import type { AccessPolicy, Binary, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../storage/loader';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -67,7 +67,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     },
   });
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,

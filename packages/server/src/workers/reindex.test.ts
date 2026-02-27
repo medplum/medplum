@@ -22,7 +22,8 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -35,16 +36,25 @@ import {
   REINDEX_WORKER_VERSION,
   ReindexJob,
 } from './reindex';
+import * as workerUtils from './utils';
 import { queueRegistry } from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
+    systemRepo = repo.getSystemRepo();
+  });
+
+  beforeEach(() => {
+    jest.spyOn(process.stdout, 'write').mockImplementation(() => {
+      return true;
+    });
   });
 
   afterEach(() => {
@@ -77,7 +87,7 @@ describe('Reindex Worker', () => {
       );
 
       const jobData = queue.add.mock.calls[0][1] as ReindexJobData;
-      const reindexJob = new ReindexJob();
+      const reindexJob = new ReindexJob(systemRepo);
       const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
@@ -100,6 +110,28 @@ describe('Reindex Worker', () => {
     }));
 
   const idSystem = 'http://example.com/mrn';
+
+  test('prepare job', async () => {
+    // without request context
+    const jobData1 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+    expect(jobData1).toMatchObject<Partial<ReindexJobData>>({
+      resourceTypes: ['Patient'],
+      asyncJobId: 'asyncJobId1',
+      requestId: undefined,
+      traceId: undefined,
+    });
+
+    // with request context
+    await withTestContext(() => {
+      const jobData2 = prepareReindexJobData(['Patient'], 'asyncJobId1');
+      expect(jobData2).toMatchObject<Partial<ReindexJobData>>({
+        resourceTypes: ['Patient'],
+        asyncJobId: 'asyncJobId1',
+        requestId: expect.any(String),
+        traceId: expect.any(String),
+      });
+    });
+  });
 
   test('Multiple iterations when more than one batchSize exist', () =>
     withTestContext(async () => {
@@ -125,13 +157,11 @@ describe('Reindex Worker', () => {
         });
       }
 
-      const jobData = prepareReindexJobData(
-        ['ImmunizationEvaluation'],
-        asyncJob.id,
-        parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`)
-      );
-      const systemRepo = getSystemRepo();
-      const reindexJob = new ReindexJob(systemRepo, batchSize);
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+      });
+      const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
 
@@ -159,6 +189,96 @@ describe('Reindex Worker', () => {
       );
     }));
 
+  test('Applies delay between batches when configured', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const mrn = randomUUID();
+      const batchSize = 20;
+      const delayBetweenBatches = 1; // Use 1ms to keep test fast
+      // Create enough resources to require multiple iterations
+      for (let i = 0; i < batchSize + 1; i++) {
+        await repo.createResource<ImmunizationEvaluation>({
+          resourceType: 'ImmunizationEvaluation',
+          identifier: [{ system: idSystem, value: mrn }],
+          status: 'completed',
+          patient: { reference: 'Patient/123' },
+          targetDisease: { text: '1234567890' },
+          immunizationEvent: { reference: 'Immunization/123' },
+          doseStatus: { text: '1234567890' },
+        });
+      }
+
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+        delayBetweenBatches,
+      });
+      const reindexJob = new ReindexJob(systemRepo);
+      jest.spyOn(reindexJob, 'processIteration');
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      // Verify multiple iterations occurred (which triggers sleep between batches)
+      expect(reindexJob.processIteration).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Logs progress when threshold is crossed', () =>
+    withTestContext(async () => {
+      const loggerSpy = jest.spyOn(globalLogger, 'info');
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const mrn = randomUUID();
+      const batchSize = 20;
+      const progressLogThreshold = 20; // Low threshold so we cross it
+      // Create enough resources to cross the progress threshold
+      for (let i = 0; i < batchSize + 1; i++) {
+        await repo.createResource<ImmunizationEvaluation>({
+          resourceType: 'ImmunizationEvaluation',
+          identifier: [{ system: idSystem, value: mrn }],
+          status: 'completed',
+          patient: { reference: 'Patient/123' },
+          targetDisease: { text: '1234567890' },
+          immunizationEvent: { reference: 'Immunization/123' },
+          doseStatus: { text: '1234567890' },
+        });
+      }
+
+      const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`ImmunizationEvaluation?identifier=${idSystem}|${mrn}`),
+        batchSize,
+        progressLogThreshold,
+      });
+      const reindexJob = new ReindexJob(systemRepo);
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      // Verify progress was logged
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Reindex in progress',
+        expect.objectContaining({
+          resourceType: 'ImmunizationEvaluation',
+          currentCount: expect.any(Number),
+        })
+      );
+      loggerSpy.mockRestore();
+    }));
+
   test('Proceeds to next resource type after exhausting initial one', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({
@@ -171,7 +291,6 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['PaymentNotice', 'MedicinalProductManufactured'] as ResourceType[];
       const jobData = prepareReindexJobData(resourceTypes, asyncJob.id);
 
-      const systemRepo = getSystemRepo();
       const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(reindexJob, 'processIteration');
       await reindexJob.execute(undefined, jobData);
@@ -227,9 +346,8 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, { maxIterationAttempts: 1 });
 
-      const systemRepo = getSystemRepo();
       const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(systemRepo, 'search').mockRejectedValueOnce(new Error('Failed to search systemRepo'));
       const originalLevel = systemLogger.level;
@@ -258,6 +376,211 @@ describe('Reindex Worker', () => {
       ]);
     }));
 
+  test('Retries iteration on error when maxIterationAttempts > 1', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 3,
+      });
+
+      const reindexJob = new ReindexJob(systemRepo);
+      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      jest
+        .spyOn(systemRepo, 'search')
+        .mockRejectedValueOnce(new Error('Transient error 1'))
+        .mockRejectedValueOnce(new Error('Transient error 2'));
+
+      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await reindexJob.execute(undefined, jobData);
+      systemLogger.level = originalLevel;
+
+      // Should have attempted 3 times, with first 2 failing and 3rd succeeding
+      expect(processIterationSpy).toHaveBeenCalledTimes(3);
+
+      // Should have logged warnings for the first 2 attempts
+      expect(loggerWarnSpy).toHaveBeenCalledTimes(2);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 1,
+          maxIterationAttempts: 3,
+        })
+      );
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 2,
+          maxIterationAttempts: 3,
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      loggerWarnSpy.mockRestore();
+    }));
+
+  test('Fails after exhausting maxIterationAttempts', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['ValueSet'], asyncJob.id, {
+        maxIterationAttempts: 2,
+      });
+
+      const reindexJob = new ReindexJob(systemRepo);
+      const processIterationSpy = jest.spyOn(reindexJob, 'processIteration');
+      jest
+        .spyOn(systemRepo, 'search')
+        .mockRejectedValueOnce(new Error('Persistent error'))
+        .mockRejectedValueOnce(new Error('Persistent error'));
+
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await reindexJob.execute(undefined, jobData);
+      systemLogger.level = originalLevel;
+
+      // Should have attempted exactly maxIterationAttempts times
+      expect(processIterationSpy).toHaveBeenCalledTimes(2);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('error');
+      expect(asyncJob.output?.parameter).toEqual([
+        {
+          name: 'result',
+          part: expect.arrayContaining([
+            { name: 'resourceType', valueCode: 'ValueSet' },
+            { name: 'error', valueString: 'Persistent error' },
+          ]),
+        },
+      ]);
+    }));
+
+  test('Retries on thrown exceptions from processIteration', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 3,
+      });
+
+      const reindexJob = new ReindexJob(systemRepo);
+
+      // Mock processIteration to throw an exception directly (not return an error result)
+      const processIterationSpy = jest
+        .spyOn(reindexJob, 'processIteration')
+        .mockRejectedValueOnce(new Error('Thrown exception 1'))
+        .mockRejectedValueOnce(new Error('Thrown exception 2'))
+        .mockResolvedValueOnce({ count: 0, durationMs: 100 });
+
+      const loggerWarnSpy = jest.spyOn(globalLogger, 'warn');
+      await reindexJob.execute(undefined, jobData);
+
+      // Should have attempted 3 times, with first 2 throwing and 3rd succeeding
+      expect(processIterationSpy).toHaveBeenCalledTimes(3);
+
+      // Should have logged warnings for the first 2 attempts
+      expect(loggerWarnSpy).toHaveBeenCalledTimes(2);
+      expect(loggerWarnSpy).toHaveBeenCalledWith(
+        'Reindex iteration failed, retrying',
+        expect.objectContaining({
+          resourceType: 'PaymentNotice',
+          attempt: 1,
+          maxIterationAttempts: 3,
+          error: 'Thrown exception 1',
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+
+      loggerWarnSpy.mockRestore();
+    }));
+
+  test('Rethrows after exhausting maxIterationAttempts with thrown exceptions', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, {
+        maxIterationAttempts: 2,
+      });
+
+      const reindexJob = new ReindexJob(systemRepo);
+
+      // Mock processIteration to always throw
+      const processIterationSpy = jest
+        .spyOn(reindexJob, 'processIteration')
+        .mockRejectedValue(new Error('Persistent thrown exception'));
+
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Persistent thrown exception');
+      systemLogger.level = originalLevel;
+
+      // Should have attempted exactly maxIterationAttempts times
+      expect(processIterationSpy).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Throws error when maxIterationAttempts is less than 1', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['PaymentNotice'], asyncJob.id, { maxIterationAttempts: 0 });
+
+      const reindexJob = new ReindexJob(systemRepo);
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('maxIterationAttempts must be at least 1');
+    }));
+
+  test('Handles DEFAULT upsertStatementTimeout without failing', () =>
+    withTestContext(async () => {
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['MedicinalProductManufactured'], asyncJob.id);
+      // Simulate config.disableConnectionConfiguration being true by setting upsertStatementTimeout to 'DEFAULT'
+      (jobData as any).upsertStatementTimeout = 'DEFAULT';
+
+      const reindexJob = new ReindexJob(systemRepo);
+      await reindexJob.execute(undefined, jobData);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
+      expect(asyncJob.status).toStrictEqual('completed');
+    }));
+
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
       let asyncJob = await repo.createResource<AsyncJob>({
@@ -274,7 +597,7 @@ describe('Reindex Worker', () => {
       ];
 
       const jobData = prepareReindexJobData(resourceTypes, asyncJob.id);
-      await expect(new ReindexJob().execute(undefined, jobData)).resolves.toBe('finished');
+      await expect(new ReindexJob(systemRepo).execute(undefined, jobData)).resolves.toBe('finished');
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
@@ -337,9 +660,9 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['Patient', 'Practitioner'] as ResourceType[];
       const searchFilter = parseSearchRequest(`Person?identifier=${idSystem}|${mrn}&gender=unknown`);
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
 
-      await new ReindexJob().execute(undefined, jobData);
+      await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
@@ -365,8 +688,6 @@ describe('Reindex Worker', () => {
     withTestContext(async () => {
       const idSystem = 'http://example.com/mrn';
       const mrn = randomUUID();
-
-      const systemRepo = getSystemRepo();
 
       let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -401,8 +722,8 @@ describe('Reindex Worker', () => {
         `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=ge2000-01-01T00:00:00Z&_lastUpdated=lt2001-01-01T00:00:00Z`
       );
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
-      await new ReindexJob().execute(undefined, jobData);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
+      await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
@@ -429,8 +750,6 @@ describe('Reindex Worker', () => {
     [undefined, 2],
   ])('Reindex with maxResourceVersion %s', (maxResourceVersion, expectedCount) =>
     withTestContext(async () => {
-      const systemRepo = getSystemRepo();
-
       let asyncJob = await systemRepo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
@@ -463,14 +782,12 @@ describe('Reindex Worker', () => {
         ])
       );
 
-      const jobData = prepareReindexJobData(
-        ['Patient'],
-        asyncJob.id,
-        parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
-        maxResourceVersion
-      );
+      const jobData = prepareReindexJobData(['Patient'], asyncJob.id, {
+        searchFilter: parseSearchRequest(`Patient?identifier=${idSystem}|${mrn}`),
+        maxResourceVersion,
+      });
 
-      await new ReindexJob().execute(undefined, jobData);
+      await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       const afterResults = await getVersionQuery([outdatedPatient.id, currentPatient.id]).execute(client);
       expect(afterResults).toHaveLength(2);
@@ -512,7 +829,6 @@ describe('Reindex Worker', () => {
         requestTime: new Date().toISOString(),
         request: '/admin/super/reindex',
       });
-      const systemRepo = getSystemRepo();
       const project = repo.currentProject() as Project;
       let user = await systemRepo.createResource<User>({
         resourceType: 'User',
@@ -525,8 +841,8 @@ describe('Reindex Worker', () => {
       const resourceTypes = ['User'] as ResourceType[];
       const searchFilter = parseSearchRequest(`User?identifier=${idSystem}|${mrn}`);
 
-      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
-      await new ReindexJob().execute(undefined, jobData);
+      const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, { searchFilter });
+      await new ReindexJob(systemRepo).execute(undefined, jobData);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('completed');
@@ -556,13 +872,13 @@ describe('Reindex Worker', () => {
 
 describe('Job cancellation', () => {
   let repo: Repository;
-  const systemRepo = getSystemRepo();
-
+  let systemRepo: SystemRepository;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
     repo = (await createTestProject({ withRepo: true })).repo;
+    systemRepo = repo.getSystemRepo();
   });
 
   afterAll(async () => {
@@ -579,7 +895,7 @@ describe('Job cancellation', () => {
       });
 
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-      const result = await new ReindexJob().execute(undefined, jobData);
+      const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
       expect(result).toStrictEqual('interrupted');
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
@@ -605,7 +921,7 @@ describe('Job cancellation', () => {
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
 
       // Should be a no-op due to cancellation
-      const result = await new ReindexJob().execute(undefined, jobData);
+      const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
       expect(result).toStrictEqual('interrupted');
 
       const finalJob = await repo.readResource<AsyncJob>('AsyncJob', cancelledJob.id);
@@ -642,7 +958,7 @@ describe('Job cancellation', () => {
       let threw = undefined;
       let manuallyThrownError = undefined;
       try {
-        await new ReindexJob().execute(job, jobData);
+        await new ReindexJob(systemRepo).execute(job, jobData);
         manuallyThrownError = new Error(
           jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
         );
@@ -708,7 +1024,7 @@ describe('Job cancellation', () => {
 
       const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
 
-      const result = await new ReindexJob().execute(job, jobData);
+      const result = await new ReindexJob(systemRepo).execute(job, jobData);
       expect(result).toBe(isIneligible ? 'ineligible' : 'finished');
 
       // DelayedError is part of the mocked bullmq module. Something about that causes
@@ -779,11 +1095,30 @@ describe('Job cancellation', () => {
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
 
       // Should not override the cancellation status
-      const result = await new ReindexJob().execute(undefined, jobData);
+      const result = await new ReindexJob(systemRepo).execute(undefined, jobData);
       expect(result).toStrictEqual('interrupted');
 
       const finalJob = await repo.readResource<AsyncJob>('AsyncJob', originalJob.id);
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
+    }));
+
+  test('Throws error when updateAsyncJobOutput fails with non-412 error', () =>
+    withTestContext(async () => {
+      const asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
+
+      // Mock updateAsyncJobOutput to throw a non-412 error
+      const testError = new Error('Database connection failed');
+      jest.spyOn(workerUtils, 'updateAsyncJobOutput').mockRejectedValue(testError);
+
+      const reindexJob = new ReindexJob(systemRepo);
+      await expect(reindexJob.execute(undefined, jobData)).rejects.toThrow('Database connection failed');
     }));
 });

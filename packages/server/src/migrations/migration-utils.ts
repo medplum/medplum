@@ -3,19 +3,19 @@
 import type { WithId } from '@medplum/core';
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest } from '@medplum/core';
 import type { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
-import { DatabaseMode, getDatabasePool } from '../database';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
+import dataVersionManifest from './data/data-version-manifest.json' with { type: 'json' };
 import type { PostDeployMigration } from './data/types';
 import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
@@ -58,7 +58,7 @@ export function getPreDeployMigration(migrationNumber: number): PreDeployMigrati
     throw new Error(`run function not defined for pre-deploy migration v${migrationNumber}`);
   }
 
-  return migration as PreDeployMigration;
+  return migration;
 }
 
 export class MigrationDefinitionNotFoundError extends Error {
@@ -85,11 +85,9 @@ export function getPostDeployMigration(migrationNumber: number): PostDeployMigra
 
 export function getPostDeployManifestEntry(migrationNumber: number): {
   serverVersion: string;
-  requiredBefore: string | undefined;
+  requiredBefore?: string;
 } {
-  const manifest = JSON.parse(
-    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
-  ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+  const manifest = dataVersionManifest as Record<string, { serverVersion: string; requiredBefore?: string }>;
   return manifest['v' + migrationNumber];
 }
 
@@ -124,7 +122,7 @@ export function enforceStrictMigrationVersionChecks(): boolean {
 }
 
 export async function preparePostDeployMigrationAsyncJob(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   version: number
 ): Promise<WithId<AsyncJob>> {
   return systemRepo.withTransaction(
@@ -161,7 +159,10 @@ export async function preparePostDeployMigrationAsyncJob(
   );
 }
 
-export async function queuePostDeployMigration(systemRepo: Repository, version: number): Promise<WithId<AsyncJob>> {
+export async function queuePostDeployMigration(
+  systemRepo: SystemRepository,
+  version: number
+): Promise<WithId<AsyncJob>> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
 
@@ -185,14 +186,13 @@ export async function withLongRunningDatabaseClient<TResult>(
   callback: (client: PoolClient) => Promise<TResult>,
   databaseMode?: DatabaseMode
 ): Promise<TResult> {
-  const pool = getDatabasePool(databaseMode ?? DatabaseMode.WRITER);
-  const client = await pool.connect();
-  try {
-    await client.query(`SET statement_timeout TO 0`);
-    return await callback(client);
-  } finally {
-    client.release(true);
-  }
+  return withPoolClient(
+    async (client) => {
+      await client.query(`SET statement_timeout TO 0`);
+      return callback(client);
+    },
+    getDatabasePool(databaseMode ?? DatabaseMode.WRITER)
+  );
 }
 
 export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
@@ -218,7 +218,7 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
   globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
@@ -281,6 +281,6 @@ export async function maybeStartPostDeployMigration(
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }

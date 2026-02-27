@@ -1,0 +1,6 @@
+.container {
+  height: calc(100vh - var(--app-shell-header-height, 0));
+  background-color: var(--mantine-color-gray-0);
+  display: flex;
+  overflow: hidden;
+}

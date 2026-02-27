@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
+import { OAuthGrantType, OAuthSigningAlgorithm, OAuthTokenAuthMethod } from '@medplum/core';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { getConfig } from './config/loader';
@@ -23,7 +23,11 @@ function handleOAuthConfig(_req: Request, res: Response): void {
     jwks_uri: config.jwksUrl,
     introspection_endpoint: config.introspectUrl,
     registration_endpoint: config.registerUrl,
-    id_token_signing_alg_values_supported: ['RS256'],
+    id_token_signing_alg_values_supported: [
+      OAuthSigningAlgorithm.ES256,
+      OAuthSigningAlgorithm.HS256,
+      OAuthSigningAlgorithm.RS256,
+    ],
     grant_types_supported: [
       OAuthGrantType.ClientCredentials,
       OAuthGrantType.AuthorizationCode,

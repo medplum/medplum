@@ -5,9 +5,9 @@
  * Do not edit manually.
  */
 
-import { Meta } from './Meta';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Meta } from './Meta.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * A resource that represents the data of a single raw artifact as

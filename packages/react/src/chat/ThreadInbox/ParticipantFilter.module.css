@@ -1,0 +1,8 @@
+.participantItem {
+  padding: 4px 0;
+}
+
+.participantItem:hover {
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-9));
+  border-radius: var(--mantine-radius-sm);
+}

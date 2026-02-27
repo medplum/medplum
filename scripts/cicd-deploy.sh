@@ -19,10 +19,19 @@ for arg in "$@"; do
   fi
 done
 
-COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+COMMIT_MESSAGE=$(git log -1 --pretty=short)
 echo "$COMMIT_MESSAGE"
 
-FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
+# When multiple commits land in a single push (e.g. merge queue batching),
+# GITHUB_BEFORE is the SHA that HEAD pointed to before the push. Diffing
+# HEAD..GITHUB_BEFORE covers every commit in the batch, not just the last one.
+# Fall back to HEAD~1 when GITHUB_BEFORE is absent (workflow_dispatch)
+# cat-file -e checks that we have the commit locally in order to diff successfully
+if [[ -n "$GITHUB_BEFORE" ]] && git cat-file -e "$GITHUB_BEFORE" 2>/dev/null; then
+  FILES_CHANGED=$(git diff --name-only HEAD "$GITHUB_BEFORE")
+else
+  FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
+fi
 echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
@@ -138,7 +147,7 @@ if [[ "$DEPLOY_APP" = true ]]; then
     npm run build -- --force --filter=@medplum/app
   )
 
-  source ./scripts/build-docker-app.sh
+  source ./scripts/build-docker-app.sh --latest
   source ./scripts/deploy-app.sh
 fi
 
@@ -151,6 +160,6 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   npm run build -- --force --filter=@medplum/server
-  source ./scripts/build-docker-server.sh
+  source ./scripts/build-docker-server.sh --latest
   source ./scripts/deploy-server.sh
 fi

@@ -5,21 +5,21 @@
  * Do not edit manually.
  */
 
-import { AccessPolicy } from './AccessPolicy';
-import { Bot } from './Bot';
-import { ClientApplication } from './ClientApplication';
-import { Extension } from './Extension';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { Project } from './Project';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { User } from './User';
-import { UserConfiguration } from './UserConfiguration';
+import type { AccessPolicy } from './AccessPolicy.d.ts';
+import type { Bot } from './Bot.d.ts';
+import type { ClientApplication } from './ClientApplication.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { Project } from './Project.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { User } from './User.d.ts';
+import type { UserConfiguration } from './UserConfiguration.d.ts';
 
 /**
  * Medplum project membership. A project membership grants a user access

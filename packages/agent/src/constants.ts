@@ -5,3 +5,6 @@ export const DEFAULT_PING_TIMEOUT = 3_600;
 export const DEFAULT_LOG_LIMIT = 20;
 export const MAX_LOG_LIMIT = 1000;
 export const MAX_MISSED_HEARTBEATS = 1;
+export const DEFAULT_MAX_CLIENTS_PER_REMOTE = 5;
+export const CLIENT_RELEASE_COUNTDOWN_MS = 10_000;
+export const HEARTBEAT_PERIOD_MS = 10_000;

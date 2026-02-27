@@ -79,7 +79,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
 
   if (!config.disableConnectionConfiguration) {
     pool.on('connect', (client) => {
-      client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
+      client.query(`SET statement_timeout TO ${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT}`).catch((err) => {
         globalLogger.warn('Failed to set query timeout', err);
       });
       client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
@@ -91,11 +91,13 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   return pool;
 }
 
+const DEFAULT_STATEMENT_TIMEOUT = 60_000;
+
 export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): number | 'DEFAULT' {
   if (config.disableConnectionConfiguration) {
     return 'DEFAULT';
   }
-  return config.queryTimeout ?? 60000;
+  return config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT;
 }
 
 export async function closeDatabase(): Promise<void> {
@@ -111,23 +113,35 @@ export async function closeDatabase(): Promise<void> {
 }
 
 async function runMigrations(pool: Pool): Promise<void> {
+  return withPoolClient(async (client) => {
+    let hasLock = false;
+    try {
+      hasLock = await acquireAdvisoryLock(client, locks.migration);
+      if (!hasLock) {
+        throw new Error('Failed to acquire migration lock');
+      }
+      await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
+      await migrate(client);
+    } catch (err: any) {
+      globalLogger.error('Database schema migration error', err);
+      throw err;
+    } finally {
+      if (hasLock) {
+        await releaseAdvisoryLock(client, locks.migration);
+      }
+    }
+  }, pool);
+}
+
+export async function withPoolClient<TResult>(
+  callback: (client: PoolClient) => Promise<TResult>,
+  pool: Pool
+): Promise<TResult> {
   const client = await pool.connect();
-  let hasLock = false;
   try {
-    hasLock = await acquireAdvisoryLock(client, locks.migration);
-    if (!hasLock) {
-      throw new Error('Failed to acquire migration lock');
-    }
-    await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
-    await migrate(client);
-  } catch (err: any) {
-    globalLogger.error('Database schema migration error', err);
-    throw err;
+    return await callback(client);
   } finally {
-    if (hasLock) {
-      await releaseAdvisoryLock(client, locks.migration);
-    }
-    client.release(true); // Ensure migration connection is torn down and not re-used
+    client.release(true);
   }
 }
 

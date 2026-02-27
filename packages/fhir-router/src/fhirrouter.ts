@@ -170,6 +170,10 @@ export async function createResourceImpl<T extends Resource>(
   repo: FhirRepository,
   options?: CreateResourceOptions
 ): Promise<FhirResponse> {
+  // Indicates a custom system-level operation to be handled by implementation, not a resource
+  if (resourceType?.startsWith('$')) {
+    return [notFound];
+  }
   if (resource.resourceType !== resourceType) {
     return [
       badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
@@ -376,11 +380,11 @@ function parseIntegerQueryParam(query: Record<string, string | string[] | undefi
   const value = query[key];
   let strValue: string | undefined;
   if (Array.isArray(value)) {
-    strValue = value[value.length - 1];
+    strValue = value.at(-1);
   } else {
     strValue = value;
   }
-  return strValue ? parseInt(strValue, 10) : undefined;
+  return strValue ? Number.parseInt(strValue, 10) : undefined;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {

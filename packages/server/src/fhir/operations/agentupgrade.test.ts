@@ -47,7 +47,7 @@ describe('Agent/$upgrade', () => {
       });
     });
 
-    const promises = Array.from({ length: NUM_DEFAULT_AGENTS }) as Promise<Response>[];
+    const promises: Promise<Response>[] = Array.from({ length: NUM_DEFAULT_AGENTS });
     for (let i = 0; i < NUM_DEFAULT_AGENTS; i++) {
       promises[i] = request(app)
         .post('/fhir/R4/Agent')

@@ -5,32 +5,32 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { CodeableConcept } from './CodeableConcept';
-import { Condition } from './Condition';
-import { Device } from './Device';
-import { DiagnosticReport } from './DiagnosticReport';
-import { Encounter } from './Encounter';
-import { EpisodeOfCare } from './EpisodeOfCare';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Medication } from './Medication';
-import { MedicationRequest } from './MedicationRequest';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Provenance } from './Provenance';
-import { Quantity } from './Quantity';
-import { Ratio } from './Ratio';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
+import type { Annotation } from './Annotation.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { EpisodeOfCare } from './EpisodeOfCare.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Medication } from './Medication.d.ts';
+import type { MedicationRequest } from './MedicationRequest.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Provenance } from './Provenance.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Ratio } from './Ratio.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * Describes the event of a patient consuming or otherwise being

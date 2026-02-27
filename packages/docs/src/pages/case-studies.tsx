@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import Link from '@docusaurus/Link';
+import { IconCode, IconExchange, IconFlask, IconHeartRateMonitor } from '@tabler/icons-react';
 import Layout from '@theme/Layout';
-import { JSX } from 'react';
+import type { JSX } from 'react';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
 import { ProfileCard } from '../components/ProfileCard';
@@ -30,23 +31,23 @@ export default function CaseStudiesPage(): JSX.Element {
         </SectionHeader>
         <Section>
           <FeatureGrid columns={2}>
-            <Feature title="AI" imgSrc="/img/icons/code.svg">
+            <Feature title="AI" icon={<IconCode />}>
               Medplum is a best of breed EHR for integrating AI. Our customers build sophisticated, high-fidelity{' '}
               <Link href="/blog/tags/ai">AI driven applications</Link> on an open source platform with much attention to
               detail.
             </Feature>
-            <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
+            <Feature title="Specialty EHR" icon={<IconHeartRateMonitor />}>
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
               Implmentations include solutions across specialties: <Link href="/blog/tags/pediatrics">pediatrics</Link>,
               <Link href="/blog/tags/radiology">radiology</Link>, <Link href="/blog/ensage-case-study">geriatrics</Link>
               , cardiac care and more.
             </Feature>
-            <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
+            <Feature title="Diagnostics" icon={<IconFlask />}>
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
               provides solutions for <Link href="/blog/ro-case-study">laboratory</Link>, medical device, imaging,{' '}
               <Link href="/blog/codex-and-the-power-of-g10">remote patient monitoring</Link> and more.
             </Feature>
-            <Feature title="Interop" imgSrc="/img/icons/interoperability.svg">
+            <Feature title="Interop" icon={<IconExchange />}>
               Reliable and transparent <Link href="/docs/integration">integrations</Link> are built on Medplum.
               Integrate many systems on the same unified platform. Medplum's{' '}
               <Link href="/docs/bots">bot framework</Link> and{' '}

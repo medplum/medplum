@@ -22,7 +22,7 @@ export function QuickStatus(props: QuickStatusProps): JSX.Element | null {
 
   const valueSetCodes = valueSet.compose?.include?.[0]?.concept?.map((concept) => concept.code);
   if (valueSetCodes) {
-    options.push(...(valueSetCodes as string[]));
+    options.push(...valueSetCodes);
   }
 
   if (props.defaultValue && !options.includes(props.defaultValue)) {

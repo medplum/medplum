@@ -7,9 +7,14 @@ import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
-import { getSelectQueryForSearch } from '../search';
+import type { CountResult } from '../search';
+import { getCount, getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -22,48 +27,15 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
-    {
-      use: 'in',
-      name: 'query',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'analyze',
-      type: 'boolean',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'in',
-      name: 'format',
-      type: 'string',
-      min: 0,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'query',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'parameters',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
-    {
-      use: 'out',
-      name: 'explain',
-      type: 'string',
-      min: 1,
-      max: '1',
-    },
+    param('in', 'query', 'string', 1, '1'),
+    param('in', 'analyze', 'boolean', 0, '1'),
+    param('in', 'format', 'string', 0, '1'),
+    param('in', 'count', 'boolean', 0, '1'),
+    param('out', 'query', 'string', 1, '1'),
+    param('out', 'parameters', 'string', 1, '1'),
+    param('out', 'explain', 'string', 1, '1'),
+    param('out', 'countEstimate', 'integer', 0, '1'),
+    param('out', 'countAccurate', 'integer', 0, '1'),
   ],
 };
 
@@ -74,6 +46,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     project?: Reference<Project>;
     analyze?: boolean;
     format?: 'text' | 'json';
+    count?: boolean;
   }>(operation, req);
   const searchReq = parseSearchRequest(params.query);
   const selectQuery = getSelectQueryForSearch(repo, searchReq);
@@ -105,10 +78,20 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     explain = result.map((r) => r['QUERY PLAN']).join('\n');
   }
 
+  let countResult: CountResult | undefined;
+  if (params.count) {
+    countResult = await withLongRunningDatabaseClient((client) => {
+      const countRepo = repo.clone(client);
+      return getCount(countRepo, searchReq, { forceAccurate: true });
+    }, DatabaseMode.READER);
+  }
+
   const output = buildOutputParameters(operation, {
     query,
     parameters,
     explain,
+    countEstimate: countResult?.estimate,
+    countAccurate: countResult?.accurate,
   });
   return [allOk, output];
 }

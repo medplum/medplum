@@ -277,7 +277,7 @@ FHIR aims to provide a very broad and powerful search API, which places a signif
   - Parameters are ANDed together, and multiple values in one parameter are ORed
 - **Composite parameters**: used to incorporate [DNF][dnf] filters e.g. (paramA=x AND paramB=y) OR (paramA=u AND paramB=v)
 - **Sorting**: by search parameter, in forward or reverse order
-- **Pagination**: `_count` and `_offset` params, plus adding [paging links][page-links] to the response
+- **Pagination**: `_count` and `_offset` params, plus adding [paging links][paging-links] to the response
 - **Included resources**: `_include` and `_revinclude` params, include linked resources in the search response
 - **Subsetting**: `_summary` and `_elements` params, return only subsets of each resource for performance
 

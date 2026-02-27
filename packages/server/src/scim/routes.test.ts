@@ -8,20 +8,18 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { AuthenticatedRequestContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
-import { requestContextStore } from '../request-context-store';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   let accessToken: string;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
 
     // First, Alice creates a project
     const registration = await registerNew({
@@ -32,6 +30,7 @@ describe('SCIM Routes', () => {
       password: 'password!@#',
     });
     accessToken = registration.accessToken;
+    systemRepo = getProjectSystemRepo(registration.project);
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -166,7 +165,7 @@ describe('SCIM Routes', () => {
     expect(patchResponse.body.active).toBe(false);
   });
 
-  test.skip('Create missing medplum user type', async () => {
+  test('Create, missing medplum user type, creates a Practitioner', async () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -179,8 +178,8 @@ describe('SCIM Routes', () => {
         },
         emails: [{ value: randomUUID() + '@example.com' }],
       });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');
+    expect(res.status).toBe(201);
+    expect(res.body.userType).toBe('Practitioner');
   });
 
   test('Search users as super admin', async () => {
@@ -195,6 +194,7 @@ describe('SCIM Routes', () => {
       });
 
       // Make the project super admin
+      const systemRepo = getProjectSystemRepo(reg.project);
       await systemRepo.updateResource({
         ...reg.project,
         superAdmin: true,

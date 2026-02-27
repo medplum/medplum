@@ -1,20 +1,30 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { BackgroundJobContext, TypedValue, WithId } from '@medplum/core';
-import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue } from '@medplum/core';
-import type { Attachment, Binary, Meta, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { BackgroundJobContext, TypedValueWithPath, WithId } from '@medplum/core';
+import {
+  arrayify,
+  crawlTypedValue,
+  getReferenceString,
+  isGone,
+  normalizeOperationOutcome,
+  pathToJSONPointer,
+  toTypedValue,
+} from '@medplum/core';
+import type { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import type { Readable } from 'stream';
+import type { Readable } from 'node:stream';
+import { Pointer } from 'rfc6902';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import { getBullmqRedisConnectionOptions, queueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -40,7 +50,7 @@ const jobName = 'DownloadJobData';
 
 export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: config.redis,
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<DownloadJobData>(queueName, {
@@ -90,37 +100,49 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource, if available
  * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
+export async function addDownloadJobs(
+  resource: WithId<Resource>,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
   if (!getConfig().autoDownloadEnabled) {
     return;
   }
 
-  // Check if the project has a setting for "autoDownloadEnabled" and if it is set to false.
-  // Auto-download is enabled by default, but can be disabled per project.
   const project = context?.project;
-  if (project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+  if (!project) {
     return;
   }
 
-  const ignoredUrlPrefixes =
-    project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
-
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
-    if (!isExternalUrl(attachment.url)) {
+    // Only process allowed external URLs
+    const url = attachment.value.url;
+    if (!isExternalUrl(url) || !isUrlAllowedByProject(project, url)) {
       continue;
     }
 
-    if (ignoredUrlPrefixes.some((prefix) => attachment.url?.startsWith(prefix))) {
+    // Skip if this mutation didn't adjust the URL in question
+    // Note that there are some cases where we detect a change when an element
+    // _moved_ in the path tree without actually changing. For example, if you
+    // delete an element at array index 0, the remaining items in the array
+    // will shift their index down by 1.
+    //
+    // Given that this is a low frequency type of mutation, we prefer to pay
+    // the (low) cost of a double-enqueued download job instead of trying to
+    // detect path moves on every mutation.
+    const pointer = Pointer.fromJSON(`${pathToJSONPointer(attachment.path)}/url`);
+    if (pointer.get(resource) === pointer.get(previousVersion)) {
       continue;
     }
 
     await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id,
-      url: attachment.url,
+      url,
       requestId: ctx?.requestId,
       traceId: ctx?.traceId,
     });
@@ -140,10 +162,40 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
 function isExternalUrl(url: string | undefined): url is string {
   return !!(
     url &&
+    url.startsWith('https://') &&
     !url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/') &&
     !url.startsWith(getConfig().storageBaseUrl) &&
     !url.startsWith('Binary/')
   );
+}
+
+/**
+ * Determines if a URL is allowed for auto-download.
+ * @param project - The project settings.
+ * @param url - The URL to check.
+ * @returns True if the URL is allowed for auto-download.
+ */
+function isUrlAllowedByProject(project: Project, url: string): boolean {
+  if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+    // If the project has auto-download disabled, then ignore all URLs.
+    return false;
+  }
+
+  const allowedUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadAllowedUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (allowedUrlPrefixes.length > 0 && !allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If allowed URLs are specified and the URL does not match an allowed prefix, then ignore it.
+    return false;
+  }
+
+  const ignoredUrlPrefixes =
+    project.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
+  if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+    // If the URL matches an ignored prefix, then ignore it.
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -162,7 +214,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  * @param job - The download job details.
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
   const log = getLogger();
   const { resourceType, id, url } = job.data;
 
@@ -184,17 +236,13 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   }
 
   const projectId = resource.meta?.project;
-  if (projectId) {
-    const project = await systemRepo.readResource<Project>('Project', projectId);
-    if (project.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
-      // If the project has auto-download disabled, then stop processing it.
-      return;
-    }
-    const ignoredUrlPrefixes =
-      project?.setting?.find((s) => s.name === 'autoDownloadIgnoredUrlPrefixes')?.valueString?.split(',') ?? [];
-    if (ignoredUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-      return;
-    }
+  if (!projectId) {
+    return;
+  }
+
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  if (!isUrlAllowedByProject(project, url)) {
+    return;
   }
 
   const headers: HeadersInit = {};
@@ -205,6 +253,8 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
       headers['traceparent'] = traceId;
     }
   }
+
+  const reference = getReferenceString(resource);
 
   try {
     log.info('Requesting content at: ' + url);
@@ -226,7 +276,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
         project: resource.meta?.project,
       },
       securityContext: {
-        reference: `${resource.resourceType}/${resource.id}`,
+        reference,
       },
     });
     if (response.body === null) {
@@ -236,27 +286,55 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     // From node-fetch docs:
     // Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body as Readable);
+    log.info('Downloaded content successfully', { binaryId: binary.id });
 
-    const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
-    (updated.meta as Meta).author = { reference: 'system' };
-    await systemRepo.updateResource(updated);
-    log.info('Downloaded content successfully');
-  } catch (ex: any) {
-    log.info('Download exception: ' + ex, ex);
-    throw ex;
+    // re-fetch resource so we are mutating as recent a copy as possible
+    // (there may have been other mutations applied while we were writing the
+    // object into storage)
+    resource = await systemRepo.readResource<T>(resourceType, id);
+
+    const attachments = getAttachments(resource);
+    const patches = attachments
+      .filter((attachment) => attachment.value.url === url)
+      .map((value) => ({
+        op: 'replace' as const,
+        path: `${pathToJSONPointer(value.path)}/url`,
+        value: `Binary/${binary.id}`,
+      }));
+
+    if (patches.length === 0) {
+      // This can happen if we double enqueued autodownload jobs for the same
+      // URL, or if a user has amended a resource they wrote faster than this
+      // job ran.
+      log.info('Download succeeded but original URL no longer found in resource', {
+        resourceType,
+        id,
+        url,
+        binaryId: binary.id,
+      });
+      return;
+    }
+
+    await systemRepo.patchResource(
+      resourceType,
+      id,
+      [...patches, { op: 'replace', path: '/meta/author', value: { reference: 'system' } }],
+      { ifMatch: resource.meta?.versionId }
+    );
+  } catch (err) {
+    log.info('Download error', { projectId, reference, url, err });
+    throw err;
   }
 }
 
-function getAttachments(resource: Resource): Attachment[] {
-  const attachments: Attachment[] = [];
+export function getAttachments(resource: Resource): TypedValueWithPath[] {
+  const attachments: TypedValueWithPath[] = [];
   crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
-        if (propertyValue) {
-          for (const value of arrayify(propertyValue) as TypedValue[]) {
-            if (value.type === 'Attachment') {
-              attachments.push(value.value as Attachment);
-            }
+        for (const value of arrayify(propertyValue)) {
+          if (value.type === 'Attachment') {
+            attachments.push(value);
           }
         }
       }

@@ -1,0 +1,12 @@
+.container {
+  display: flex;
+  gap: var(--mantine-spacing-sm);
+}
+
+.calendar {
+  flex-grow: 1;
+}
+
+.findPane {
+  flex-basis: 25%;
+}

@@ -5,8 +5,8 @@ import { createReference, getReferenceString } from '@medplum/core';
 import type { Bundle, Communication, Parameters, Patient, Practitioner, Subscription } from '@medplum/fhirtypes';
 import { HomerSimpson, MargeSimpson } from '@medplum/mock';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { BundleDisplay } from '../components/BundleDisplay';
 
 /**
@@ -35,8 +35,8 @@ export function HomePage(): JSX.Element {
 
     setWorking(true);
 
-    const homer = await medplum.createResourceIfNoneExist(HomerSimpson, 'name="Homer Simpson"');
-    const marge = await medplum.createResourceIfNoneExist(MargeSimpson, 'name="Marge Simpson"');
+    const homer = await medplum.createResourceIfNoneExist({ ...HomerSimpson, id: undefined }, 'name="Homer Simpson"');
+    const marge = await medplum.createResourceIfNoneExist({ ...MargeSimpson, id: undefined }, 'name="Marge Simpson"');
 
     const meRefString = getReferenceString(profile);
     const homerRefString = getReferenceString(homer);
@@ -77,9 +77,9 @@ export function HomePage(): JSX.Element {
     let url: string | undefined;
 
     for (const subscription of subscriptions) {
-      const { parameter } = (await medplum.get(
+      const { parameter } = await medplum.get<Parameters>(
         `/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`
-      )) as Parameters;
+      );
       const token = parameter?.find((param) => param.name === 'token')?.valueString;
       if (!url) {
         url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;

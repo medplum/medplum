@@ -20,8 +20,9 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
-import { aiOperation } from './operations/ai';
+import { aiOperationHandler } from './operations/ai';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { appointmentBookHandler } from './operations/book';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
@@ -32,6 +33,8 @@ import { conceptMapImportHandler } from './operations/conceptmapimport';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
 import { tryCustomOperation } from './operations/custom';
+import { getColumnStatisticsHandler } from './operations/db-column-statistics';
+import { configureColumnStatisticsHandler } from './operations/db-configure-column-statistics';
 import { dbConfigureIndexesHandler } from './operations/db-configure-indexes';
 import { dbIndexesHandler } from './operations/dbindexes';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
@@ -45,7 +48,9 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
+import { scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
+import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -53,6 +58,7 @@ import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
+import { refreshReferenceDisplayHandler } from './operations/refresh-reference-display';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { setAccountsHandler } from './operations/set-accounts';
@@ -102,7 +108,7 @@ fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, n
         legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
           (s) => s.name === 'legacyFhirJsonResponseFormat'
         )?.valueBoolean;
-      } catch (_err) {
+      } catch {
         // Ignore errors since unauthenticated requests also use this middleware
       }
 
@@ -156,6 +162,9 @@ fhirRouter.use(protectedRoutes);
 
 // CSV Export (cannot use FhirRouter due to CSV output)
 protectedRoutes.get(['/:resourceType/$csv', '/:resourceType/%24csv'], csvHandler);
+
+// AI $ai operation - handled directly in Express routes to support streaming
+protectedRoutes.post(['/$ai', '/%24ai'], aiOperationHandler);
 
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post(['/Agent/$push', '/Agent/%24push'], agentPushHandler);
@@ -259,9 +268,6 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
   router.add('POST', '/ValueSet/:id/$validate-code', valueSetValidateOperation);
 
-  // AI $ai operation
-  router.add('POST', '/$ai', aiOperation);
-
   // Agent $status operation
   router.add('GET', '/Agent/$status', agentStatusHandler);
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
@@ -293,9 +299,11 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
+  router.add('POST', '/Group/:id/$export', groupExportHandler);
 
   // Patient $export operation
   router.add('GET', '/Patient/$export', patientExportHandler);
+  router.add('POST', '/Patient/$export', patientExportHandler);
 
   // Measure $evaluate-measure operation
   router.add('POST', '/Measure/:id/$evaluate-measure', evaluateMeasureHandler);
@@ -311,6 +319,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Resource $set-accounts operation
   router.add('POST', '/:resourceType/:id/$set-accounts', setAccountsHandler);
+
+  // Resource $refresh-reference-display operation
+  router.add('POST', '/:resourceType/:id/$refresh-reference-display', refreshReferenceDisplayHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
@@ -346,6 +357,12 @@ function initInternalFhirRouter(): FhirRouter {
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
+  // Schedule $find operation
+  router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
+
+  // Appointment $book operation
+  router.add('POST', '/Appointment/$book', appointmentBookHandler);
+
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
@@ -374,9 +391,12 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('POST', '/$get-ws-sub-stats', getWsSubStatsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
+  router.add('GET', '/$db-column-statistics', getColumnStatisticsHandler);
+  router.add('POST', '/$db-configure-column-statistics', configureColumnStatisticsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
@@ -412,7 +432,7 @@ protectedRoutes.use('{*splat}', async function routeFhirRequest(req: Request, re
     method: req.method as HttpMethod,
     url: stripPrefix(req.originalUrl, '/fhir/R4'),
     pathname: '',
-    params: req.params,
+    params: req.params as Record<string, string>,
     query: Object.create(null), // Defer query param parsing to router for consistency
     // Express v5 changed the default value of `req.body` from {} to undefined. A decent number of FHIR handlers
     // rely on the previous behavior, so we defer handling undefined for now

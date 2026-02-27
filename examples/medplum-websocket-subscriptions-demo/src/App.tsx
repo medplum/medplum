@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
-import type { ProfileResource } from '@medplum/core';
 import {
   AppShell,
   ErrorBoundary,
@@ -12,8 +11,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconClipboardCheck, IconHome, IconMail } from '@tabler/icons-react';
-import { Suspense } from 'react';
 import type { JSX } from 'react';
+import { Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
@@ -39,16 +38,16 @@ export function App(): JSX.Element | null {
             <NotificationIcon
               label="Mail"
               resourceType="Communication"
-              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
+              countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
               iconComponent={<IconMail />}
               onClick={() => console.log('foo')}
             />
             <NotificationIcon
               label="Tasks"
               resourceType="Task"
-              countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
+              countCriteria={`owner=${getReferenceString(profile)}&status:not=completed&_summary=count`}
+              subscriptionCriteria={`Task?owner=${getReferenceString(profile)}`}
               iconComponent={<IconClipboardCheck />}
               onClick={() => console.log('foo')}
             />

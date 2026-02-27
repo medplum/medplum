@@ -66,6 +66,21 @@ describe('EventTarget', () => {
     expect(myCallback2).not.toHaveBeenCalled();
     expect(myCallback3).not.toHaveBeenCalled();
   });
+
+  test('Listener count', () => {
+    const target = new EventTarget();
+    target.addEventListener('test1', jest.fn());
+
+    expect(target.listenerCount('test1')).toStrictEqual(1);
+    expect(target.listenerCount('test2')).toStrictEqual(0);
+
+    target.addEventListener('test1', jest.fn());
+    expect(target.listenerCount('test1')).toStrictEqual(2);
+
+    target.removeAllListeners();
+    expect(target.listenerCount('test1')).toStrictEqual(0);
+    expect(target.listenerCount('test2')).toStrictEqual(0);
+  });
 });
 
 describe('TypedEventTarget', () => {
@@ -130,5 +145,20 @@ describe('TypedEventTarget', () => {
     expect(myCallback1).not.toHaveBeenCalled();
     expect(myCallback2).not.toHaveBeenCalled();
     expect(myCallback3).not.toHaveBeenCalled();
+  });
+
+  test('Listener count', () => {
+    const target = new TypedEventTarget<{ test1: { type: 'test1' }; test2: { type: 'test2' } }>();
+    target.addEventListener('test1', jest.fn());
+
+    expect(target.listenerCount('test1')).toStrictEqual(1);
+    expect(target.listenerCount('test2')).toStrictEqual(0);
+
+    target.addEventListener('test1', jest.fn());
+    expect(target.listenerCount('test1')).toStrictEqual(2);
+
+    target.removeAllListeners();
+    expect(target.listenerCount('test1')).toStrictEqual(0);
+    expect(target.listenerCount('test2')).toStrictEqual(0);
   });
 });

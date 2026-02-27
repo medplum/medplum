@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { User } from '@medplum/fhirtypes';
+import type { Practitioner, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -32,9 +34,12 @@ jest.mock('jose', () => {
 const app = express();
 
 describe('Google Auth', () => {
+  let systemRepo: SystemRepository;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    systemRepo = await getShardSystemRepo(PLACEHOLDER_SHARD_ID); // eventually use default shardId from server config
   });
 
   beforeEach(() => {
@@ -176,7 +181,7 @@ describe('Google Auth', () => {
 
   test('Existing user for new project', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
-    await getSystemRepo().createResource<User>({
+    await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: 'Google',
       lastName: 'Google',
@@ -214,7 +219,6 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         features: ['google-auth-required'],
@@ -234,6 +238,49 @@ describe('Google Auth', () => {
     expect(res2.body.code).toBeDefined();
   });
 
+  test('Google auth profile picture', async () => {
+    const email = `google${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const state = {
+      profile: undefined as Practitioner | undefined,
+    };
+
+    // Register and create a project
+    await withTestContext(async () => {
+      const { project, profile } = await registerNew({
+        firstName: 'Google',
+        lastName: 'Google',
+        projectName: 'Profile Picture Test',
+        email,
+        password,
+      });
+      state.profile = profile as Practitioner;
+
+      // As a super admin, update the project to require Google auth
+      await systemRepo.updateResource({
+        ...project,
+        setting: [{ name: 'googleAuthProfilePictures', valueBoolean: true }],
+      });
+    });
+
+    // Then try to login with Google auth
+    // This should succeed
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email, 'https://example.com/picture.jpg'),
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+
+    // Now re-fetch the profile
+    const updatedProfile = await systemRepo.readResource<Practitioner>('Practitioner', state.profile?.id as string);
+    expect(updatedProfile.photo).toBeDefined();
+    expect(updatedProfile.photo?.[0].url).toBe('https://example.com/picture.jpg');
+  });
+
   test('Custom Google client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
@@ -250,7 +297,6 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
-      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -293,7 +339,6 @@ describe('Google Auth', () => {
         });
 
         // As a super admin, set the google client ID
-        const systemRepo = getSystemRepo();
         await systemRepo.updateResource({
           ...project,
           site: [
@@ -339,7 +384,6 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
-      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -382,7 +426,6 @@ describe('Google Auth', () => {
       });
 
       // As a super admin, set the google client ID
-      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -464,6 +507,6 @@ describe('Google Auth', () => {
   });
 });
 
-function createCredential(firstName: string, lastName: string, email: string): string {
-  return JSON.stringify({ given_name: firstName, family_name: lastName, email });
+function createCredential(firstName: string, lastName: string, email: string, picture?: string): string {
+  return JSON.stringify({ given_name: firstName, family_name: lastName, email, picture });
 }

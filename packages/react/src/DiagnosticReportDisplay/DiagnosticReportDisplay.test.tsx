@@ -87,6 +87,15 @@ describe('DiagnosticReportDisplay', () => {
     );
   }
 
+  beforeAll(async () => {
+    const obs = await medplum.createResource(CreatinineObservation);
+    const report = {
+      ...ExampleReport,
+      result: [createReference(obs)],
+    };
+    await medplum.updateResource(report);
+  });
+
   test('Renders by value', async () => {
     await act(async () => {
       setup({ value: HomerDiagnosticReport });
@@ -146,9 +155,6 @@ describe('DiagnosticReportDisplay', () => {
   });
 
   test('Renders performer', async () => {
-    const obs = await medplum.createResource(CreatinineObservation);
-    ExampleReport.result = [createReference(obs)];
-    await medplum.updateResource(ExampleReport);
     await act(async () => {
       setup({ value: ExampleReport });
     });
@@ -158,9 +164,6 @@ describe('DiagnosticReportDisplay', () => {
   });
 
   test('Renders observation category', async () => {
-    const obs = await medplum.createResource(CreatinineObservation);
-    ExampleReport.result = [createReference(obs)];
-    await medplum.updateResource(ExampleReport);
     await act(async () => {
       setup({ value: ExampleReport });
     });
@@ -169,9 +172,6 @@ describe('DiagnosticReportDisplay', () => {
   });
 
   test('Renders observation note', async () => {
-    const obs = await medplum.createResource(CreatinineObservation);
-    ExampleReport.result = [createReference(obs)];
-    await medplum.updateResource(ExampleReport);
     await act(async () => {
       setup({ value: ExampleReport });
     });
@@ -179,9 +179,6 @@ describe('DiagnosticReportDisplay', () => {
   });
 
   test('Hide observation note', async () => {
-    const obs = await medplum.createResource(CreatinineObservation);
-    ExampleReport.result = [createReference(obs)];
-    await medplum.updateResource(ExampleReport);
     await act(async () => {
       setup({ value: ExampleReport, hideObservationNotes: true });
     });

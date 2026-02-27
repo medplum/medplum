@@ -1,46 +1,54 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword } from './auth/utils';
+import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
-import type { Repository } from './fhir/repo';
-import { getSystemRepo } from './fhir/repo';
+import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
+import type { Repository, SystemRepository } from './fhir/repo';
+import { getShardSystemRepo } from './fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-export async function seedDatabase(): Promise<void> {
-  const systemRepo = getSystemRepo();
 
-  if (await isSeeded(systemRepo)) {
-    globalLogger.info('Already seeded');
-    return;
-  }
+export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
+  await withPoolClient(async (client) => {
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID, client); // client will eventually know its shard ID
 
-  await systemRepo.withTransaction(async () => {
-    await createSuperAdmin(systemRepo);
+    if (await isSeeded(systemRepo)) {
+      globalLogger.info('Already seeded');
+      return;
+    }
 
-    globalLogger.info('Building structure definitions...');
-    let startTime = Date.now();
-    await rebuildR4StructureDefinitions(systemRepo);
-    globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+    await systemRepo.withTransaction(async () => {
+      await createSuperAdmin(systemRepo, config);
 
-    globalLogger.info('Building value sets...');
-    startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
-    globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+      globalLogger.info('Building structure definitions...');
+      let startTime = Date.now();
+      await rebuildR4StructureDefinitions(systemRepo);
+      globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
 
-    globalLogger.info('Building search parameters...');
-    startTime = Date.now();
-    await rebuildR4SearchParameters(systemRepo);
-    globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
-  });
+      globalLogger.info('Building value sets...');
+      startTime = Date.now();
+      await rebuildR4ValueSets(systemRepo);
+      globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+
+      globalLogger.info('Building search parameters...');
+      startTime = Date.now();
+      await rebuildR4SearchParameters(systemRepo);
+      globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+    });
+  }, getDatabasePool(DatabaseMode.WRITER));
 }
 
-async function createSuperAdmin(systemRepo: Repository): Promise<void> {
-  const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
-  const passwordHash = await bcryptHashPassword('medplum_admin');
+async function createSuperAdmin(systemRepo: Repository, config: MedplumServerConfig): Promise<void> {
+  const email = config.defaultSuperAdminEmail ?? 'admin@example.com';
+  const password = config.defaultSuperAdminPassword ?? 'medplum_admin';
+  const [firstName, lastName] = ['Medplum', 'Admin'];
+  const passwordHash = await bcryptHashPassword(password);
   const superAdmin = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
@@ -90,6 +98,29 @@ async function createSuperAdmin(systemRepo: Repository): Promise<void> {
     profile: createReference(practitioner),
     admin: true,
   });
+
+  if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
+    // Use specified client ID and secret
+    const client = await systemRepo.updateResource<ClientApplication>({
+      meta: {
+        project: superAdminProject.id,
+      },
+      resourceType: 'ClientApplication',
+      id: config.defaultSuperAdminClientId,
+      name: 'Default Super Admin Client',
+      secret: config.defaultSuperAdminClientSecret,
+    });
+
+    await systemRepo.createResource<ProjectMembership>({
+      meta: {
+        project: superAdminProject.id,
+      },
+      resourceType: 'ProjectMembership',
+      project: createReference(superAdminProject),
+      user: createReference(client),
+      profile: createReference(client),
+    });
+  }
 }
 
 /**
@@ -97,6 +128,6 @@ async function createSuperAdmin(systemRepo: Repository): Promise<void> {
  * @param systemRepo - The system repository to use to check if the database is seeded.
  * @returns True if already seeded.
  */
-function isSeeded(systemRepo: Repository): Promise<User | undefined> {
+function isSeeded(systemRepo: SystemRepository): Promise<User | undefined> {
   return systemRepo.searchOne({ resourceType: 'User' });
 }

@@ -64,7 +64,7 @@ export function Measurement(): JSX.Element | null {
 
     if (chartDatasets.length === 1) {
       obs.valueQuantity = {
-        value: parseFloat(formData[chartDatasets[0].label]),
+        value: Number.parseFloat(formData[chartDatasets[0].label]),
         system: 'http://unitsofmeasure.org',
         unit: chartDatasets[0].unit,
         code: chartDatasets[0].unit,
@@ -82,7 +82,7 @@ export function Measurement(): JSX.Element | null {
           text: item.label,
         },
         valueQuantity: {
-          value: parseFloat(formData[item.label]),
+          value: Number.parseFloat(formData[item.label]),
           system: 'http://unitsofmeasure.org',
           unit: item.unit,
           code: item.unit,

@@ -3,7 +3,7 @@
 import { Storage } from '@google-cloud/storage';
 import { isString } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
-import type { Readable } from 'stream';
+import type { Readable } from 'node:stream';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 

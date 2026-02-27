@@ -187,7 +187,7 @@ export class Tokenizer {
         this.advance();
         this.advance();
         this.advance();
-        return String.fromCodePoint(parseInt(hex, 16));
+        return String.fromCodePoint(Number.parseInt(hex, 16));
       }
       // From the spec: https://build.fhir.org/ig/HL7/FHIRPath/#string
       // If a \ is used at the beginning of a non-escape sequence, it will be ignored and will not appear in the sequence.

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Flex, Paper, Stack, Text } from '@mantine/core';
 import type { PaperProps } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { Divider, Flex, Paper, Stack, Text } from '@mantine/core';
+import { createReference } from '@medplum/core';
 import type { Organization, Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -127,9 +127,10 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
             label="Patient"
             resourceType="Patient"
             name="patient"
+            placeholder="Search for patient"
             defaultValue={task?.for as Reference<Patient>}
             onChange={async (patient: Patient | undefined) => {
-              await handlePatientChange(patient ? { reference: getReferenceString(patient) } : undefined);
+              await handlePatientChange(patient ? createReference(patient) : undefined);
             }}
           />
 

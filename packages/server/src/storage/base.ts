@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Binary } from '@medplum/fhirtypes';
-import type { Readable } from 'stream';
+import type { Readable } from 'node:stream';
 import type { BinarySource, BinaryStorage } from './types';
 import { checkFileMetadata } from './utils';
 

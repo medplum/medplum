@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { splitN } from '@medplum/core';
-import { mkdtempSync, readFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join, resolve } from 'path';
+import { randomUUID } from 'node:crypto';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
@@ -83,10 +84,25 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   };
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  // leave cacheRedis on the default DB
+  config.rateLimitRedis = {
+    ...config.redis,
+    db: 8,
+  };
+  config.pubSubRedis = {
+    ...config.redis,
+    db: 9,
+  };
+  config.backgroundJobsRedis = {
+    ...config.redis,
+    db: 10,
+  };
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.defaultSuperAdminClientId = randomUUID();
+  config.defaultSuperAdminClientSecret = randomUUID();
   return config;
 }
 
@@ -106,31 +122,60 @@ function loadEnvConfig(): MedplumServerConfig {
 
     let key = name.substring('MEDPLUM_'.length);
     let currConfig = config;
+    let section = '';
 
     if (key.startsWith('DATABASE_')) {
       key = key.substring('DATABASE_'.length);
-      currConfig = config.database = config.database ?? {};
+      currConfig = config.database ??= {};
+      section = 'database';
+    } else if (key.startsWith('CACHE_REDIS_')) {
+      key = key.substring('CACHE_REDIS_'.length);
+      currConfig = config.cacheRedis ??= {};
+      section = 'cacheRedis';
+    } else if (key.startsWith('RATE_LIMIT_REDIS_')) {
+      key = key.substring('RATE_LIMIT_REDIS_'.length);
+      currConfig = config.rateLimitRedis ??= {};
+      section = 'rateLimitRedis';
+    } else if (key.startsWith('PUBSUB_REDIS_')) {
+      key = key.substring('PUBSUB_REDIS_'.length);
+      currConfig = config.pubSubRedis ??= {};
+      section = 'pubSubRedis';
+    } else if (key.startsWith('BACKGROUND_JOBS_REDIS_')) {
+      key = key.substring('BACKGROUND_JOBS_REDIS_'.length);
+      currConfig = config.backgroundJobsRedis ??= {};
+      section = 'backgroundJobsRedis';
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
-      currConfig = config.redis = config.redis ?? {};
+      currConfig = config.redis ??= {};
+      section = 'redis';
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
-      currConfig = config.smtp = config.smtp ?? {};
+      currConfig = config.smtp ??= {};
+      section = 'smtp';
+    } else if (key.startsWith('BULLMQ_')) {
+      key = key.substring('BULLMQ_'.length);
+      currConfig = config.bullmq ??= {};
+      section = 'bullmq';
     } else if (key.startsWith('FISSION_')) {
       key = key.substring('FISSION_'.length);
-      currConfig = config.fission = config.fission ?? {};
+      currConfig = config.fission ??= {};
+      section = 'fission';
     }
 
     // Convert key from CAPITAL_CASE to camelCase
-    key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    key = key.toLowerCase().replaceAll(/_([a-z])/g, (g) => g[1].toUpperCase());
 
-    if (isIntegerConfig(key)) {
-      currConfig[key] = parseInt(value ?? '', 10);
-    } else if (isFloatConfig(key)) {
-      currConfig[key] = parseFloat(value ?? '');
-    } else if (isBooleanConfig(key)) {
+    // Check both the dotted path (e.g. 'redis.db') and the leaf key (e.g. 'port')
+    // so that nested keys registered with dotted paths and leaf-only keys both work
+    const lookupKey = section ? `${section}.${key}` : key;
+
+    if (isIntegerConfig(lookupKey) || isIntegerConfig(key)) {
+      currConfig[key] = Number.parseInt(value ?? '', 10);
+    } else if (isFloatConfig(lookupKey) || isFloatConfig(key)) {
+      currConfig[key] = Number.parseFloat(value ?? '');
+    } else if (isBooleanConfig(lookupKey) || isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
-    } else if (isObjectConfig(key)) {
+    } else if (isObjectConfig(lookupKey) || isObjectConfig(key)) {
       currConfig[key] = JSON.parse(value ?? '');
     } else {
       currConfig[key] = value;
@@ -147,5 +192,5 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(resolve(__dirname, '../../', path), { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(path, { encoding: 'utf8' }));
 }
