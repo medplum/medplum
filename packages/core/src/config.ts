@@ -133,8 +133,10 @@ export interface MedplumSourceInfraConfig {
     serverMemory?: ValueOrExternalSecret<number>;
     serverCpu?: ValueOrExternalSecret<number>;
     desiredCount: ValueOrExternalSecret<number>;
-    environment?: {
-      [key: string]: ValueOrExternalSecret<string>;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
     };
     fargateAutoScaling?: {
       minCapacity: ValueOrExternalSecret<number>;
@@ -295,8 +297,10 @@ export interface MedplumInfraConfig {
     serverMemory?: number;
     serverCpu?: number;
     desiredCount: number;
-    environment?: {
-      [key: string]: string;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
     };
     fargateAutoScaling?: {
       minCapacity: number;

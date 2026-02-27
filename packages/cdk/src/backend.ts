@@ -61,6 +61,7 @@ export class BackEnd extends Construct {
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
+  workersParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
@@ -629,7 +630,7 @@ export class BackEnd extends Construct {
 
     // Additional Services (e.g., background workers)
     for (const service of config.workerServices ?? []) {
-      this.createAdditionalService(config, service, containerRegistryCredentials, purposeRedisClusters);
+      this.createWorkerService(config, service, containerRegistryCredentials, purposeRedisClusters);
     }
 
     // DNS
@@ -686,7 +687,7 @@ export class BackEnd extends Construct {
 
     // Workers configuration
     if (config.workers) {
-      new ssm.StringParameter(this, 'WorkersParameter', {
+      this.workersParameter = new ssm.StringParameter(this, 'WorkersParameter', {
         tier: ssm.ParameterTier.STANDARD,
         parameterName: `/medplum/${name}/workers`,
         description: 'Background workers configuration',
@@ -817,7 +818,8 @@ export class BackEnd extends Construct {
   }
 
   /**
-   * Creates an additional Fargate service (e.g., a background worker pool).
+   * Creates an additional Fargate service to run background jobs. If `workers` is not specified in the
+   * service's configuration, all background workers are run on this service.
    * The service shares the same cluster, VPC, security group, and dependencies as the primary service,
    * but is not added to the ALB and uses a `,env` config suffix for env var overrides.
    * @param config - The infra config.
@@ -825,7 +827,7 @@ export class BackEnd extends Construct {
    * @param containerRegistryCredentials - Optional registry credentials.
    * @param purposeRedisClusters - Purpose-specific Redis clusters to add as dependencies.
    */
-  private createAdditionalService(
+  private createWorkerService(
     config: MedplumInfraConfig,
     service: NonNullable<MedplumInfraConfig['workerServices']>[number],
     containerRegistryCredentials: secretsmanager.ISecret | undefined,
@@ -842,9 +844,13 @@ export class BackEnd extends Construct {
     });
 
     const serviceImage = service.serverImage ?? config.serverImage;
-    const serviceCommand =
-      region === 'us-east-1' ? `aws:/medplum/${name}/,env` : `aws:${region}:/medplum/${name}/,env`;
+    const serviceCommand = region === 'us-east-1' ? `aws:/medplum/${name}/,env` : `aws:${region}:/medplum/${name}/,env`;
     const serviceEnv = { ...config.environment, ...service.environment };
+
+    // enable all workers if no worker config specified for this service
+    if (!service.workers && !Object.keys(service.environment ?? {}).some((k) => k.startsWith('MEDPLUM_WORKERS'))) {
+      serviceEnv['MEDPLUM_WORKERS_ENABLED'] = JSON.stringify(['*']);
+    }
 
     serviceTaskDef.addContainer(`${serviceId}Container`, {
       image: this.getContainerImage(config, serviceImage, containerRegistryCredentials, serviceId),
@@ -862,7 +868,7 @@ export class BackEnd extends Construct {
     this.addSidecarContainers(
       serviceTaskDef,
       config,
-      service.additionalContainers,
+      service.additionalContainers ?? config.additionalContainers,
       containerRegistryCredentials,
       serviceId
     );
