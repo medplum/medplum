@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -27,10 +26,9 @@ describe('$get-ws-sub-project-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: false } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-project-stats')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ projectId: randomUUID() });
+      .get('/fhir/R4/$get-ws-sub-project-stats')
+      .query({ projectId: randomUUID() })
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(403);
   });
 
@@ -38,10 +36,8 @@ describe('$get-ws-sub-project-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-project-stats')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .get('/fhir/R4/$get-ws-sub-project-stats')
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
   });
 
@@ -49,10 +45,9 @@ describe('$get-ws-sub-project-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-project-stats')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ projectId: randomUUID() });
+      .get('/fhir/R4/$get-ws-sub-project-stats')
+      .query({ projectId: randomUUID() })
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
 
     const params = res.body as Parameters;
@@ -86,10 +81,9 @@ describe('$get-ws-sub-project-stats', () => {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
       const res = await request(app)
-        .post('/fhir/R4/$get-ws-sub-project-stats')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send({ projectId });
+        .get('/fhir/R4/$get-ws-sub-project-stats')
+        .query({ projectId })
+        .set('Authorization', 'Bearer ' + accessToken);
       expect(res.status).toBe(200);
 
       const params = res.body as Parameters;

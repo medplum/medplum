@@ -71,7 +71,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('empty state shows message when no subscriptions', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -89,7 +89,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('opens modal with project rows on success', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -109,7 +109,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('expands project row to show resource types', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -143,7 +143,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('collapses project row on second click', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -175,7 +175,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('expands resource type row to show criteria', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -202,7 +202,7 @@ describe('WsSubStatsWidget', () => {
       ],
     };
 
-    medplum.router.add('POST', '$get-ws-sub-project-stats', async () => [
+    medplum.router.add('GET', '$get-ws-sub-project-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -238,7 +238,7 @@ describe('WsSubStatsWidget', () => {
   });
 
   test('shows error notification on failure', async () => {
-    medplum.router.add('POST', '$get-ws-sub-stats', async () => [forbidden]);
+    medplum.router.add('GET', '$get-ws-sub-stats', async () => [forbidden]);
 
     setup();
 

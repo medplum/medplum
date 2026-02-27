@@ -47,34 +47,43 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
 
   const redis = getPubSubRedis();
   const pattern = `medplum:subscriptions:r4:project:${projectId}:active:*`;
-  const keys: string[] = [];
+  const resourceTypeMap = new Map<string, Map<string, number>>();
+
   let cursor = '0';
   do {
     const [nextCursor, foundKeys] = await redis.scan(cursor, 'MATCH', pattern, 'COUNT', '1000');
     cursor = nextCursor;
-    keys.push(...foundKeys);
+
+    if (foundKeys.length > 0) {
+      // Parse keys up front so we can correlate pipeline results back to resource types
+      const parsedKeys = foundKeys.map((key) => ({ key, parsed: parseActiveSubKey(key) }));
+
+      const pipeline = redis.pipeline();
+      for (const { key } of parsedKeys) {
+        pipeline.hvals(key);
+      }
+      const results = await pipeline.exec();
+
+      if (results) {
+        for (let i = 0; i < parsedKeys.length; i++) {
+          const { parsed } = parsedKeys[i];
+          const [err, hvals] = results[i] as [Error | null, string[]];
+          if (err || !parsed) {
+            continue;
+          }
+          const { resourceType } = parsed;
+          let criteriaMap = resourceTypeMap.get(resourceType);
+          if (!criteriaMap) {
+            criteriaMap = new Map();
+            resourceTypeMap.set(resourceType, criteriaMap);
+          }
+          for (const criteria of hvals) {
+            criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
+          }
+        }
+      }
+    }
   } while (cursor !== '0');
-
-  const resourceTypeMap = new Map<string, Map<string, number>>();
-
-  for (const key of keys) {
-    const parsed = parseActiveSubKey(key);
-    if (!parsed) {
-      continue;
-    }
-    const { resourceType } = parsed;
-
-    let criteriaMap = resourceTypeMap.get(resourceType);
-    if (!criteriaMap) {
-      criteriaMap = new Map();
-      resourceTypeMap.set(resourceType, criteriaMap);
-    }
-
-    const entries = await redis.hvals(key);
-    for (const criteria of entries) {
-      criteriaMap.set(criteria, (criteriaMap.get(criteria) ?? 0) + 1);
-    }
-  }
 
   const resourceTypes: WsSubResourceTypeDetailStats[] = [];
   for (const [resourceType, criteriaMap] of resourceTypeMap) {

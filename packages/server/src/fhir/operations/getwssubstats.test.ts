@@ -1,6 +1,5 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ContentType } from '@medplum/core';
 import type { Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -28,10 +27,8 @@ describe('$get-ws-sub-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: false } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-stats')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .get('/fhir/R4/$get-ws-sub-stats')
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(403);
   });
 
@@ -39,10 +36,8 @@ describe('$get-ws-sub-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-stats')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .get('/fhir/R4/$get-ws-sub-stats')
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
 
     const params = res.body as Parameters;
@@ -75,10 +70,8 @@ describe('$get-ws-sub-stats', () => {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
       const res = await request(app)
-        .post('/fhir/R4/$get-ws-sub-stats')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', ContentType.FHIR_JSON)
-        .send({});
+        .get('/fhir/R4/$get-ws-sub-stats')
+        .set('Authorization', 'Bearer ' + accessToken);
       expect(res.status).toBe(200);
 
       const params = res.body as Parameters;
@@ -96,7 +89,7 @@ describe('$get-ws-sub-stats', () => {
       expect(obType).toBeDefined();
       expect(obType?.count).toBe(3);
       // Criteria not included in summary response
-      expect((obType as any)?.criteria).toBeUndefined();
+      expect(obType).not.toHaveProperty('criteria');
 
       const patientType = project?.resourceTypes.find((rt) => rt.resourceType === 'Patient');
       expect(patientType).toBeDefined();

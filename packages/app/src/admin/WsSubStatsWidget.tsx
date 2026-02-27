@@ -41,12 +41,13 @@ export function WsSubStatsWidget(): JSX.Element {
   const [expandedResourceTypes, setExpandedResourceTypes] = useState<Set<string>>(new Set());
   // Cache of per-project detail stats (resource types + criteria), keyed by projectId
   const [projectDetails, setProjectDetails] = useState<Map<string, WsSubResourceTypeDetailStats[]>>(new Map());
-  const [loadingProjectId, setLoadingProjectId] = useState<string | undefined>();
+  // Per-project loading state, keyed by projectId
+  const [loadingProjectDetails, setLoadingProjectDetails] = useState<Map<string, boolean>>(new Map());
 
   function fetchStats(): void {
     setLoading(true);
     medplum
-      .post<Parameters>('fhir/R4/$get-ws-sub-stats')
+      .get<Parameters>('fhir/R4/$get-ws-sub-stats')
       .then((params) => {
         const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
         if (statsStr) {
@@ -75,9 +76,9 @@ export function WsSubStatsWidget(): JSX.Element {
     const key = `${projectId}:${resourceType}`;
     // Lazy-load criteria for this project if not already fetched
     if (!projectDetails.has(projectId)) {
-      setLoadingProjectId(projectId);
+      setLoadingProjectDetails((prev) => new Map(prev).set(projectId, true));
       medplum
-        .post<Parameters>('fhir/R4/$get-ws-sub-project-stats', { projectId })
+        .get<Parameters>(`fhir/R4/$get-ws-sub-project-stats?projectId=${encodeURIComponent(projectId)}`)
         .then((params) => {
           const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
           if (statsStr) {
@@ -86,7 +87,13 @@ export function WsSubStatsWidget(): JSX.Element {
           }
         })
         .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
-        .finally(() => setLoadingProjectId(undefined));
+        .finally(() =>
+          setLoadingProjectDetails((prev) => {
+            const next = new Map(prev);
+            next.delete(projectId);
+            return next;
+          })
+        );
     }
     setExpandedResourceTypes((prev) => {
       const next = new Set(prev);
@@ -133,7 +140,7 @@ export function WsSubStatsWidget(): JSX.Element {
                       const rtKey = `${project.projectId}:${rt.resourceType}`;
                       const detail = projectDetails.get(project.projectId);
                       const rtDetail = detail?.find((d) => d.resourceType === rt.resourceType);
-                      const isLoadingThis = loadingProjectId === project.projectId;
+                      const isLoadingThis = loadingProjectDetails.get(project.projectId) === true;
                       return (
                         <Fragment key={rtKey}>
                           <Table.Tr
