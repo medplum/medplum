@@ -93,6 +93,7 @@ export interface BaseChatProps extends PaperProps {
   readonly inputDisabled?: boolean;
   readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
+  readonly uploadEnabled?: boolean;
   readonly attachmentSubjectRef?: Reference;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
@@ -117,6 +118,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     inputDisabled,
     onError,
     excludeHeader = false,
+    uploadEnabled = false,
     attachmentSubjectRef,
     onViewInDocuments,
     ...paperProps
@@ -383,7 +385,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef && <IconFileText size="0.75rem" />}
             {!pendingDocRef && previewUrl && (
-              <img src={previewUrl} alt={pendingFile?.name} className={classes.chatPendingFileThumbnail} />
+              <img src={previewUrl} className={classes.chatPendingFileThumbnail} />
             )}
             {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
@@ -431,7 +433,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
             rightSectionWidth={42}
             disabled={inputDisabled}
             leftSection={
-              !inputDisabled ? (
+              !inputDisabled && uploadEnabled ? (
                 <Popover
                   opened={pickerOpen}
                   onChange={setPickerOpen}
