@@ -683,6 +683,16 @@ export class BackEnd extends Construct {
       description: 'Bot lambda execution role ARN',
       stringValue: this.botLambdaRole.roleArn,
     });
+
+    // Workers configuration
+    if (config.workers) {
+      new ssm.StringParameter(this, 'WorkersParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/workers`,
+        description: 'Background workers configuration',
+        stringValue: JSON.stringify(config.workers),
+      });
+    }
   }
 
   /**

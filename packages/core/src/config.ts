@@ -123,6 +123,10 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
   workerServices?: {
     id: ValueOrExternalSecret<string>;
     serverImage?: ValueOrExternalSecret<string>;
@@ -281,6 +285,10 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
   workerServices?: {
     id: string;
     serverImage?: string;

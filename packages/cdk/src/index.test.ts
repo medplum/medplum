@@ -425,6 +425,35 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('Workers config', async () => {
+    const filename = await writeConfig('./medplum.workers.config.json', {
+      ...baseConfig,
+      name: 'workers',
+      stackName: 'MedplumWorkersStack',
+      workers: {
+        enabled: ['subscription', 'cron'],
+        bullmq: { subscription: { concurrency: 50 } },
+      },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Workers config enabled only', async () => {
+    const filename = await writeConfig('./medplum.workersEnabledOnly.config.json', {
+      ...baseConfig,
+      name: 'workersEnabledOnly',
+      stackName: 'MedplumWorkersEnabledOnlyStack',
+      workers: {
+        enabled: ['subscription'],
+      },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
   test('Additional service - worker', async () => {
     const filename = await writeConfig('./medplum.additionalService.config.json', {
       ...baseConfig,
