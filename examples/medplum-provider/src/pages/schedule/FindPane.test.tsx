@@ -86,12 +86,18 @@ describe('FindPane', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
 
-    // Mock the $find operation
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: mockSlots.map((slot) => ({ resource: slot })),
-    } as Bundle<Slot>);
+    // Mock the $find operation; delegate all other calls to the MockClient
+    const originalGet = medplum.get.bind(medplum);
+    medplum.get = vi.fn().mockImplementation((url: string | URL, options?: object) => {
+      if (url.toString().includes('$find')) {
+        return Promise.resolve({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: mockSlots.map((slot) => ({ resource: slot })),
+        } as Bundle<Slot>);
+      }
+      return originalGet(url, options);
+    });
   });
 
   type SetupOptions = {
@@ -280,7 +286,7 @@ describe('FindPane', () => {
       expect(screen.queryByText('Schedule…')).not.toBeInTheDocument();
 
       // Should fetch slots automatically
-      expect(medplum.get).toHaveBeenCalled();
+      expect(medplum.get).toHaveBeenCalledWith(expect.stringContaining('$find'), expect.any(Object));
     });
 
     test('does not show dismiss button when auto-selected with single option', async () => {
@@ -336,7 +342,13 @@ describe('FindPane', () => {
   describe('Error Handling', () => {
     test('shows error notification when fetch fails', async () => {
       const user = userEvent.setup();
-      medplum.get = vi.fn().mockRejectedValue(new Error('Network error'));
+      const originalGet = medplum.get.bind(medplum);
+      medplum.get = vi.fn().mockImplementation((url: string | URL, options?: object) => {
+        if (url.toString().includes('$find')) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return originalGet(url, options);
+      });
 
       await act(async () => {
         setup();
@@ -364,9 +376,11 @@ describe('FindPane', () => {
 
       await user.click(screen.getByText('Annual Checkup'));
 
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0][0];
-      expect(callUrl).toContain('start=');
-      expect(callUrl).toContain('end=');
+      const findCall = (medplum.get as ReturnType<typeof vi.fn>).mock.calls.find(([url]) =>
+        url.toString().includes('$find')
+      );
+      expect(findCall?.[0].toString()).toContain('start=');
+      expect(findCall?.[0].toString()).toContain('end=');
     });
 
     test('fetches without service-type param when wildcard (undefined) is selected', async () => {
@@ -377,8 +391,10 @@ describe('FindPane', () => {
       });
 
       // With single undefined service type, it auto-selects
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] || '';
-      expect(callUrl).not.toContain('service-type=');
+      const findCall = (medplum.get as ReturnType<typeof vi.fn>).mock.calls.find(([url]) =>
+        url.toString().includes('$find')
+      );
+      expect(findCall?.[0].toString()).not.toContain('service-type=');
     });
   });
 

@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { EMPTY, isDefined } from '@medplum/core';
+import { EMPTY, getExtensionValue, isDefined } from '@medplum/core';
 import type { ActivityDefinition, CodeableConcept, Schedule } from '@medplum/fhirtypes';
+import { useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -55,6 +56,7 @@ export type SchedulingContextValue = {
   selectedSchedulingParameters: SchedulingParametersExtension | undefined;
   setSelectedSchedulingParameters: (parameters: SchedulingParametersExtension | undefined) => void;
   serviceTypes: ServiceTypeOption[];
+  timeZone: string | undefined;
 };
 
 export type ServiceTypeOption = {
@@ -109,14 +111,27 @@ export const SchedulingContextProvider = (props: SchedulingContextProviderProps)
     });
   }, [availableSchedulingParameters]);
 
+  // Use the first Schedule resource to try and choose a default time zone to display
+  // scheduling information in.
+  const exemplarSchedule = resources.find((resource) => resource?.resourceType === 'Schedule');
+  // Scheduling extensions currently only support schedules with exactly one actor.
+  const actor = useResource(exemplarSchedule?.actor?.at(0));
+  const actorTz = getExtensionValue(actor, 'http://hl7.org/fhir/StructureDefinition/timezone') as string | undefined;
+
+  // If viewing specific scheduling parameters, they may specify a timeZone
+  // that should be used instead.
+  const paramsTz = getExtensionValue(selectedSchedulingParameters, 'timezone') as string | undefined;
+  const timeZone = paramsTz ?? actorTz;
+
   const value: SchedulingContextValue = useMemo(
     () => ({
       availableSchedulingParameters,
       selectedSchedulingParameters,
       setSelectedSchedulingParameters,
       serviceTypes: serviceTypeOptions,
+      timeZone,
     }),
-    [availableSchedulingParameters, selectedSchedulingParameters, serviceTypeOptions]
+    [availableSchedulingParameters, selectedSchedulingParameters, serviceTypeOptions, timeZone]
   );
 
   return <SchedulingContext.Provider value={value}>{children}</SchedulingContext.Provider>;

@@ -1,9 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import type { ActivityDefinition, CodeableConcept, Extension, Schedule } from '@medplum/fhirtypes';
+import type { ActivityDefinition, CodeableConcept, Extension, Practitioner, Schedule } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
 import type { RenderHookResult } from '@testing-library/react';
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, test } from 'vitest';
 import { useScheduling } from '../hooks/useScheduling';
 import type { SchedulingContextValue, SchedulingParametersExtension } from './SchedulingContext';
@@ -38,9 +40,15 @@ const makeSchedule = (id: string, params: Extension[] | undefined): WithId<Sched
 
 type Resources = (ActivityDefinition | Schedule | undefined)[];
 
+const medplum = new MockClient();
+
 const setup = (resources: Resources): RenderHookResult<SchedulingContextValue, void> =>
   renderHook(() => useScheduling(), {
-    wrapper: ({ children }) => <SchedulingContextProvider resources={resources}>{children}</SchedulingContextProvider>,
+    wrapper: ({ children }) => (
+      <MedplumProvider medplum={medplum}>
+        <SchedulingContextProvider resources={resources}>{children}</SchedulingContextProvider>
+      </MedplumProvider>
+    ),
   });
 
 describe('SchedulingContextProvider', () => {
@@ -169,6 +177,78 @@ describe('SchedulingContextProvider', () => {
       });
 
       expect(result.current.selectedSchedulingParameters).toBeUndefined();
+    });
+  });
+
+  describe('timeZone', () => {
+    const TimezoneExtensionURI = 'http://hl7.org/fhir/StructureDefinition/timezone';
+
+    test('is undefined when no timezone information is available', () => {
+      const { result } = setup([makeSchedule('s1', [])]);
+      expect(result.current.timeZone).toBeUndefined();
+    });
+
+    test('comes from the timezone sub-extension on the selected scheduling parameters', () => {
+      const params: SchedulingParametersExtension = {
+        url: SchedulingParametersURI,
+        extension: [{ url: 'timezone', valueCode: 'America/Chicago' }],
+      };
+      const { result } = setup([makeSchedule('s1', [params])]);
+
+      act(() => {
+        result.current.setSelectedSchedulingParameters(params);
+      });
+
+      expect(result.current.timeZone).toBe('America/Chicago');
+    });
+
+    test('comes from the timezone extension on the schedule actor', async () => {
+      const practitioner: Practitioner = await medplum.createResource({
+        resourceType: 'Practitioner',
+        extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Denver' }],
+      });
+
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 's-actor-tz',
+        actor: [{ reference: `Practitioner/${practitioner.id}` }],
+      };
+
+      const { result } = setup([schedule]);
+
+      await waitFor(() => {
+        expect(result.current.timeZone).toBe('America/Denver');
+      });
+    });
+
+    test('params timezone takes precedence over the actor timezone', async () => {
+      const practitioner: Practitioner = await medplum.createResource({
+        resourceType: 'Practitioner',
+        extension: [{ url: TimezoneExtensionURI, valueCode: 'America/Denver' }],
+      });
+
+      const params: SchedulingParametersExtension = {
+        url: SchedulingParametersURI,
+        extension: [{ url: 'timezone', valueCode: 'Europe/London' }],
+      };
+
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 's-actor-tz',
+        actor: [{ reference: `Practitioner/${practitioner.id}` }],
+        extension: [params],
+      };
+
+      const { result } = setup([schedule]);
+
+      // Wait for actor to load so we can be sure the params timezone wins
+      await waitFor(() => expect(result.current.timeZone).toBeDefined());
+
+      act(() => {
+        result.current.setSelectedSchedulingParameters(params);
+      });
+
+      expect(result.current.timeZone).toBe('Europe/London');
     });
   });
 });
