@@ -9,10 +9,9 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
-import type { WsSubStats } from './getwssubstats';
-import { parseActiveSubKey } from './getwssubstats';
+import type { WsSubProjectDetailStats } from './getwssubstats';
 
-describe('$get-ws-sub-stats', () => {
+describe('$get-ws-sub-project-stats', () => {
   const app = express();
 
   beforeAll(async () => {
@@ -28,31 +27,43 @@ describe('$get-ws-sub-stats', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: false } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-stats')
+      .post('/fhir/R4/$get-ws-sub-project-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({});
+      .send({ projectId: randomUUID() });
     expect(res.status).toBe(403);
   });
 
-  test('Returns empty stats when no subscriptions exist for test key prefix', async () => {
+  test('Returns 400 when projectId is missing', async () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$get-ws-sub-stats')
+      .post('/fhir/R4/$get-ws-sub-project-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({});
+    expect(res.status).toBe(400);
+  });
+
+  test('Returns empty resource types for unknown project', async () => {
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+    const res = await request(app)
+      .post('/fhir/R4/$get-ws-sub-project-stats')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ projectId: randomUUID() });
     expect(res.status).toBe(200);
 
     const params = res.body as Parameters;
     const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
     expect(statsStr).toBeDefined();
-    const stats = JSON.parse(statsStr as string) as WsSubStats;
-    expect(Array.isArray(stats.projects)).toBe(true);
+    const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
+    expect(Array.isArray(stats.resourceTypes)).toBe(true);
+    expect(stats.resourceTypes).toHaveLength(0);
   });
 
-  test('Returns stats with subscriptions (no criteria)', async () => {
+  test('Returns resource types with criteria for a project', async () => {
     const redis = getPubSubRedis();
     const projectId = randomUUID();
 
@@ -75,54 +86,38 @@ describe('$get-ws-sub-stats', () => {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
       const res = await request(app)
-        .post('/fhir/R4/$get-ws-sub-stats')
+        .post('/fhir/R4/$get-ws-sub-project-stats')
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .send({});
+        .send({ projectId });
       expect(res.status).toBe(200);
 
       const params = res.body as Parameters;
       const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
       expect(statsStr).toBeDefined();
-      const stats = JSON.parse(statsStr as string) as WsSubStats;
+      const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
 
-      const project = stats.projects.find((p) => p.projectId === projectId);
-      expect(project).toBeDefined();
-      expect(project?.subscriptionCount).toBe(4);
+      expect(stats.projectId).toBe(projectId);
       // Resource types sorted descending by count
-      expect(project?.resourceTypes[0].resourceType).toBe('Observation');
+      expect(stats.resourceTypes[0].resourceType).toBe('Observation');
 
-      const obType = project?.resourceTypes.find((rt) => rt.resourceType === 'Observation');
+      const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
       expect(obType).toBeDefined();
       expect(obType?.count).toBe(3);
-      // Criteria not included in summary response
-      expect((obType as any)?.criteria).toBeUndefined();
+      expect(obType?.criteria).toHaveLength(2);
+      // Criteria sorted descending by count
+      expect(obType?.criteria[0]).toEqual({ criteria: 'Observation?code=85354-9', count: 2 });
+      expect(obType?.criteria[1]).toEqual({ criteria: 'Observation?status=final', count: 1 });
 
-      const patientType = project?.resourceTypes.find((rt) => rt.resourceType === 'Patient');
+      const patientType = stats.resourceTypes.find((rt) => rt.resourceType === 'Patient');
       expect(patientType).toBeDefined();
       expect(patientType?.count).toBe(1);
+      expect(patientType?.criteria).toEqual([{ criteria: 'Patient?name=Alice', count: 1 }]);
     } finally {
       await redis.del(
         `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
         `medplum:subscriptions:r4:project:${projectId}:active:Patient`
       );
     }
-  });
-
-  test('parseActiveSubKey', () => {
-    const projectId = randomUUID();
-
-    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:Observation`)).toEqual({
-      projectId,
-      resourceType: 'Observation',
-    });
-
-    expect(parseActiveSubKey(`medplum:subscriptions:r4:project:${projectId}:active:DocumentReference`)).toEqual({
-      projectId,
-      resourceType: 'DocumentReference',
-    });
-
-    expect(parseActiveSubKey('invalid:key')).toBeUndefined();
-    expect(parseActiveSubKey('medplum:subscriptions:r4:project:no-active-part')).toBeUndefined();
   });
 });
