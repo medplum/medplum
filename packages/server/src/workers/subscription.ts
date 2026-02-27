@@ -478,7 +478,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await removeActiveSubscriptions(projectId, resource.resourceType, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
