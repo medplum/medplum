@@ -17,6 +17,11 @@ interface WsSubCriteriaStats {
 interface WsSubResourceTypeStats {
   resourceType: string;
   count: number;
+}
+
+interface WsSubResourceTypeDetailStats {
+  resourceType: string;
+  count: number;
   criteria: WsSubCriteriaStats[];
 }
 
@@ -34,11 +39,15 @@ export function WsSubStatsWidget(): JSX.Element {
   const [opened, { open, close }] = useDisclosure(false);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [expandedResourceTypes, setExpandedResourceTypes] = useState<Set<string>>(new Set());
+  // Cache of per-project detail stats (resource types + criteria), keyed by projectId
+  const [projectDetails, setProjectDetails] = useState<Map<string, WsSubResourceTypeDetailStats[]>>(new Map());
+  // Per-project loading state, keyed by projectId
+  const [loadingProjectDetails, setLoadingProjectDetails] = useState<Map<string, boolean>>(new Map());
 
   function fetchStats(): void {
     setLoading(true);
     medplum
-      .post<Parameters>('fhir/R4/$get-ws-sub-stats')
+      .get<Parameters>('fhir/R4/$get-ws-sub-stats')
       .then((params) => {
         const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
         if (statsStr) {
@@ -65,6 +74,27 @@ export function WsSubStatsWidget(): JSX.Element {
 
   function toggleResourceType(projectId: string, resourceType: string): void {
     const key = `${projectId}:${resourceType}`;
+    // Lazy-load criteria for this project if not already fetched
+    if (!projectDetails.has(projectId)) {
+      setLoadingProjectDetails((prev) => new Map(prev).set(projectId, true));
+      medplum
+        .get<Parameters>(`fhir/R4/$get-ws-sub-project-stats?projectId=${encodeURIComponent(projectId)}`)
+        .then((params) => {
+          const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
+          if (statsStr) {
+            const parsed = JSON.parse(statsStr) as { projectId: string; resourceTypes: WsSubResourceTypeDetailStats[] };
+            setProjectDetails((prev) => new Map(prev).set(projectId, parsed.resourceTypes));
+          }
+        })
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
+        .finally(() =>
+          setLoadingProjectDetails((prev) => {
+            const next = new Map(prev);
+            next.delete(projectId);
+            return next;
+          })
+        );
+    }
     setExpandedResourceTypes((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -108,6 +138,9 @@ export function WsSubStatsWidget(): JSX.Element {
                   {expandedProjects.has(project.projectId) &&
                     project.resourceTypes.map((rt) => {
                       const rtKey = `${project.projectId}:${rt.resourceType}`;
+                      const detail = projectDetails.get(project.projectId);
+                      const rtDetail = detail?.find((d) => d.resourceType === rt.resourceType);
+                      const isLoadingThis = loadingProjectDetails.get(project.projectId) === true;
                       return (
                         <Fragment key={rtKey}>
                           <Table.Tr
@@ -122,17 +155,29 @@ export function WsSubStatsWidget(): JSX.Element {
                             </Table.Td>
                             <Table.Td>{rt.count}</Table.Td>
                           </Table.Tr>
-                          {expandedResourceTypes.has(rtKey) &&
-                            rt.criteria.map((c) => (
-                              <Table.Tr key={`${rtKey}:${c.criteria}`}>
-                                <Table.Td>
-                                  <Text pl="xl" size="sm" c="dimmed">
-                                    {c.criteria}
-                                  </Text>
-                                </Table.Td>
-                                <Table.Td>{c.count}</Table.Td>
-                              </Table.Tr>
-                            ))}
+                          {expandedResourceTypes.has(rtKey) && (
+                            <>
+                              {isLoadingThis && !rtDetail && (
+                                <Table.Tr>
+                                  <Table.Td colSpan={2}>
+                                    <Text pl="xl" size="sm" c="dimmed">
+                                      Loading...
+                                    </Text>
+                                  </Table.Td>
+                                </Table.Tr>
+                              )}
+                              {rtDetail?.criteria.map((c) => (
+                                <Table.Tr key={`${rtKey}:${c.criteria}`}>
+                                  <Table.Td>
+                                    <Text pl="xl" size="sm" c="dimmed">
+                                      {c.criteria}
+                                    </Text>
+                                  </Table.Td>
+                                  <Table.Td>{c.count}</Table.Td>
+                                </Table.Tr>
+                              ))}
+                            </>
+                          )}
                         </Fragment>
                       );
                     })}
