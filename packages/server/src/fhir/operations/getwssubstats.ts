@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk } from '@medplum/core';
+import { allOk, isResourceType } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Project } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
@@ -75,6 +75,10 @@ export function parseActiveSubKey(key: string): { projectId: string; resourceTyp
   }
   const projectId = withoutPrefix.slice(0, activeIdx);
   const resourceType = withoutPrefix.slice(activeIdx + ACTIVE_PART.length);
+  // Filter out legacy pre-release keys that used 'v2' instead of a resource type
+  if (!isResourceType(resourceType)) {
+    return undefined;
+  }
   return { projectId, resourceType };
 }
 
