@@ -301,6 +301,86 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
 
+  describe('Clear All WebSocket Subscriptions', () => {
+    test('Cancel closes the dialog without calling API', async () => {
+      setup();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      });
+
+      expect(postSpy).not.toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', expect.anything());
+    });
+
+    test('Clears all projects when no project selected', async () => {
+      setup();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', undefined);
+      expect(screen.getByText('Done')).toBeInTheDocument();
+    });
+
+    test('Clears specific project when a project is selected', async () => {
+      const projectId = '11111111-1111-1111-1111-111111111111';
+      medplum.router.add('GET', 'Project', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'searchset',
+            entry: [{ resource: { resourceType: 'Project', id: projectId, name: 'Test Project' } }],
+          } as any,
+        ];
+      });
+      setup();
+
+      // Select a project via the ReferenceInput
+      const input = screen.getByPlaceholderText('All projects');
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'Test' } });
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(1000);
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
+      });
+
+      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
+      });
+
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'projectId', valueString: projectId }],
+      });
+    });
+  });
+
   describe('ExplainSearchForm', () => {
     test('Explain search with valid data', async () => {
       setup();
