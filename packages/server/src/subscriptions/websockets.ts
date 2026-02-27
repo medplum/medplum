@@ -82,6 +82,7 @@ async function setupSubscriptionHandler(): Promise<void> {
       subEventArgsArr = subEventPayload.events;
     }
 
+    const deadSubscriptionIds: string[] = [];
     for (const [subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
       for (const socket of subToWsLookup.get(subscriptionId) ?? EMPTY) {
@@ -104,6 +105,7 @@ async function setupSubscriptionHandler(): Promise<void> {
           const authState = await getLoginForAccessToken(undefined, subMetadata.rawToken);
           if (!authState) {
             globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
+            deadSubscriptionIds.push(subscriptionId);
             continue;
           }
           const repo = await getRepoForLogin(authState);
@@ -117,6 +119,49 @@ async function setupSubscriptionHandler(): Promise<void> {
         subscriptionMessagesSent++;
       }
       subscriptionEventsFired++;
+    }
+
+    if (deadSubscriptionIds.length > 0) {
+      for (const subscriptionId of deadSubscriptionIds) {
+        purgeSubscriptionFromLookups(subscriptionId);
+      }
+      try {
+        const redis = getCacheRedis();
+        const redisKeys = deadSubscriptionIds.map((id) => `Subscription/${id}`);
+        const cacheEntries = await redis.mget(...redisKeys);
+        const projectToSubsByResourceType = new Map<string, Map<string, string[]>>();
+        for (let i = 0; i < deadSubscriptionIds.length; i++) {
+          const cacheEntryStr = cacheEntries[i];
+          if (!cacheEntryStr) {
+            continue;
+          }
+          const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
+          const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+          let subsByResourceType = projectToSubsByResourceType.get(cacheEntry.projectId);
+          if (!subsByResourceType) {
+            subsByResourceType = new Map<string, string[]>();
+            projectToSubsByResourceType.set(cacheEntry.projectId, subsByResourceType);
+          }
+          let subIds = subsByResourceType.get(criteriaResourceType);
+          if (!subIds) {
+            subIds = [];
+            subsByResourceType.set(criteriaResourceType, subIds);
+          }
+          subIds.push(deadSubscriptionIds[i]);
+        }
+        for (const [projectId, subIdsByResourceType] of projectToSubsByResourceType) {
+          for (const [resourceType, subIds] of subIdsByResourceType) {
+            globalLogger.info('[WS] Cleaning up dead subscriptions with invalid token', {
+              count: subIds.length,
+              projectId,
+              resourceType,
+            });
+          }
+          await markInMemorySubscriptionsInactive(projectId, subIdsByResourceType);
+        }
+      } catch (err) {
+        globalLogger.error('[WS] Error marking dead subscriptions inactive', { err });
+      }
     }
   });
   await redisSubscriber.subscribe('medplum:subscriptions:r4:websockets');
@@ -190,6 +235,22 @@ function unsubscribeWsFromSubscription(ws: WebSocket, subscriptionId: string): v
     if (subIdSet.size === 0) {
       wsToSubLookup.delete(ws);
     }
+  }
+}
+
+function purgeSubscriptionFromLookups(subscriptionId: string): void {
+  const wsSet = subToWsLookup.get(subscriptionId);
+  if (wsSet) {
+    for (const ws of wsSet) {
+      const subEntryMap = wsToSubLookup.get(ws);
+      if (subEntryMap) {
+        subEntryMap.delete(subscriptionId);
+        if (subEntryMap.size === 0) {
+          wsToSubLookup.delete(ws);
+        }
+      }
+    }
+    subToWsLookup.delete(subscriptionId);
   }
 }
 
