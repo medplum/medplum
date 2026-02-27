@@ -47,7 +47,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
   config.defaultFhirQuota ??= 50_000;
-  config.defaultMaxUserWebSocketSubscriptions ??= 100;
+  config.defaultMaxUserWebSocketSubscriptions ??= 20;
 
   // Automatically generate a signing key if using built-in storage and no signing key is provided
   if (config.storageBaseUrl.startsWith(config.baseUrl) && !config.signingKey) {
