@@ -97,7 +97,13 @@ import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
-import { setActiveSubscription } from '../pubsub';
+import {
+  addUserActiveWebSocketSubscription,
+  getUserActiveWebSocketSubscriptionCount,
+  removeActiveSubscriptions,
+  removeUserActiveWebSocketSubscriptions,
+  setActiveSubscription,
+} from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
 import type { AuditEventSubtype } from '../util/auditevent';
@@ -940,7 +946,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (!(project && author)) {
         throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
       }
-      await redis.sadd(`medplum:subscriptions:r4:user:${author}:active`, `Subscription/${resource.id}`);
+      await addUserActiveWebSocketSubscription(author, `Subscription/${resource.id}`);
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       // The active list is sharded by resource type so that lookups only scan relevant subscriptions
       const criteriaResourceType = resource.criteria.split('?')[0];
@@ -959,13 +965,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async checkWebSocketSubscriptionLimit(resource: WithId<Resource>): Promise<void> {
-    const redis = getRedis();
-    const projectRefStr = resource?.meta?.project;
+    const projectId = resource?.meta?.project;
     const author = resource?.meta?.author?.reference;
-    if (!(projectRefStr && author)) {
+    if (!(projectId && author)) {
       throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
     }
-    const project = await this.readReference<Project>({ reference: projectRefStr });
+    const project = await this.getProjectById(projectId);
     if (!project) {
       throw new OperationOutcomeError(badRequest('No valid project connected to the specified Subscription.'));
     }
@@ -973,7 +978,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
       // We know this is defined in defaults so this is safe to cast
       (getConfig().defaultMaxUserWebSocketSubscriptions as number);
-    const userSubCount = await redis.scard(`medplum:subscriptions:r4:user:${author}:active`);
+    const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
     if (userSubCount >= maxUserWsSubs) {
       throw new OperationOutcomeError(
         badRequest(`User has exceeded allotted maximum number of concurrent WebSocket subscriptions: ${maxUserWsSubs}`)
@@ -1347,6 +1352,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await preCommitValidation(this, resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
+
+      // Clean up per-user and project active sets for deleted WebSocket subscriptions
+      if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
+        const author = resource.meta?.author?.reference;
+        const projectId = resource.meta?.project;
+        const criteriaResourceType = resource.criteria?.split('?')[0];
+        const cleanupPromises: Promise<number>[] = [];
+        if (author) {
+          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(author, `Subscription/${id}`));
+        }
+        if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {
+          cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, `Subscription/${id}`));
+        }
+        await Promise.all(cleanupPromises);
+      }
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (conn) => {
