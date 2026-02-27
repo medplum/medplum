@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
-import type { Appointment, Coding, Encounter, Patient, PlanDefinition, Practitioner, Task } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Coding,
+  Encounter,
+  Patient,
+  PlanDefinition,
+  Practitioner,
+  Schedule,
+  Task,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createEncounter, updateEncounterStatus } from './encounter';
@@ -103,6 +112,64 @@ describe('encounter utils', () => {
       expect(
         createResourceSpy.mock.calls.some(([resource]) => resource.resourceType === 'ChargeItem' && resource.code)
       ).toBe(true);
+    });
+
+    test('creates a busy Slot when schedule is provided', async () => {
+      const createdResources: any[] = [];
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        const result = { ...resource, id: `${resource.resourceType}-1` };
+        createdResources.push(result);
+        return result;
+      });
+      vi.spyOn(medplum, 'post').mockResolvedValue({});
+      vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
+
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 'sched-1',
+        actor: [{ reference: 'Practitioner/prac-1' }],
+      };
+      const planDefinition: PlanDefinition = { resourceType: 'PlanDefinition', id: 'plan-1', status: 'active' };
+      const start = new Date('2025-01-01T10:00:00Z');
+      const end = new Date('2025-01-01T10:30:00Z');
+
+      await createEncounter(medplum, start, end, classification, patient, planDefinition, schedule);
+
+      const slotCreations = createdResources.filter((r) => r.resourceType === 'Slot');
+      expect(slotCreations).toHaveLength(1);
+      expect(slotCreations[0]).toMatchObject({
+        resourceType: 'Slot',
+        status: 'busy',
+        start: start.toISOString(),
+        end: end.toISOString(),
+        schedule: { reference: 'Schedule/sched-1' },
+      });
+    });
+
+    test('does not create a Slot when schedule is not provided', async () => {
+      const createdResources: any[] = [];
+      vi.spyOn(medplum, 'createResource').mockImplementation(async (resource: any) => {
+        const result = { ...resource, id: `${resource.resourceType}-1` };
+        createdResources.push(result);
+        return result;
+      });
+      vi.spyOn(medplum, 'post').mockResolvedValue({});
+      vi.spyOn(medplum, 'search').mockResolvedValue({ entry: [] } as any);
+
+      const planDefinition: PlanDefinition = { resourceType: 'PlanDefinition', id: 'plan-1', status: 'active' };
+
+      await createEncounter(
+        medplum,
+        new Date('2025-01-01T10:00:00Z'),
+        new Date('2025-01-01T10:30:00Z'),
+        classification,
+        patient,
+        planDefinition
+        // no schedule
+      );
+
+      const slotCreations = createdResources.filter((r) => r.resourceType === 'Slot');
+      expect(slotCreations).toHaveLength(0);
     });
   });
 

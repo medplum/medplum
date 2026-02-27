@@ -11,6 +11,7 @@ import type {
   Patient,
   PlanDefinition,
   Practitioner,
+  Schedule,
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
@@ -21,7 +22,8 @@ export async function createEncounter(
   end: Date,
   classification: Coding,
   patient: Patient,
-  planDefinition: PlanDefinition
+  planDefinition: PlanDefinition,
+  schedule?: Schedule
 ): Promise<Encounter> {
   const appointment = await medplum.createResource({
     resourceType: 'Appointment',
@@ -54,6 +56,19 @@ export async function createEncounter(
       },
     ],
   });
+
+  // If we have a schedule reference, add a busy slot to prevent future
+  // scheduling operations (such as $find or $book) from thinking this
+  // time is free.
+  if (schedule) {
+    await medplum.createResource({
+      resourceType: 'Slot',
+      start: start.toISOString(),
+      end: end.toISOString(),
+      schedule: createReference(schedule),
+      status: 'busy',
+    });
+  }
 
   const clinicalImpressionData: ClinicalImpression = {
     resourceType: 'ClinicalImpression',

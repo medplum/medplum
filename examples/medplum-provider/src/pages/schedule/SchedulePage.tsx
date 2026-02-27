@@ -214,7 +214,7 @@ export function SchedulePage(): JSX.Element | null {
         position="right"
         h="100%"
       >
-        <CreateVisit appointmentSlot={appointmentSlot} />
+        <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
       </Drawer>
       <Drawer
         opened={appointmentDetailsOpened}

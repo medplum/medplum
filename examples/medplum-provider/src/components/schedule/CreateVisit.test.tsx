@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { Patient } from '@medplum/fhirtypes';
+import type { Patient, Schedule } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -44,13 +44,13 @@ describe('CreateVisit', () => {
     });
   });
 
-  const setup = (appointmentSlot?: SlotInfo): ReturnType<typeof render> => {
+  const setup = (appointmentSlot?: SlotInfo, schedule?: Schedule): ReturnType<typeof render> => {
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <CreateVisit appointmentSlot={appointmentSlot} />
+            <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -80,6 +80,22 @@ describe('CreateVisit', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
+      });
+    });
+
+    test('renders correctly when schedule prop is provided', async () => {
+      const schedule: Schedule = {
+        resourceType: 'Schedule',
+        id: 'sched-1',
+        actor: [{ reference: 'Practitioner/practitioner-1' }],
+      };
+      await act(async () => {
+        setup(mockSlotInfo, schedule);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Create Visit/i })).toBeInTheDocument();
+        expect(screen.getByLabelText(/Patient/i)).toBeInTheDocument();
       });
     });
   });
