@@ -25,7 +25,7 @@ export function getActiveSubscriptions(projectId: string, resourceType: string):
   return getPubSubRedis().hgetall(getActiveSubsKey(projectId, resourceType));
 }
 
-export function removeActiveSubscriptions(projectId: string, resourceType: string, ...refs: string[]): Promise<number> {
+export function removeActiveSubscriptions(projectId: string, resourceType: string, refs: string[]): Promise<number> {
   return getPubSubRedis().hdel(getActiveSubsKey(projectId, resourceType), ...refs);
 }
 
