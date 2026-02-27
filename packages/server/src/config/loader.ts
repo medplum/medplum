@@ -26,34 +26,34 @@ export function getConfig(): ServerConfig {
 }
 
 /**
- * Loads configuration settings from a config identifier.
- * The identifier must start with one of the following prefixes:
+ * Loads configuration settings from one or more config identifiers.
+ * Multiple sources can be combined by separating them with commas.
+ * Sources are loaded left-to-right and deep-merged, so later sources override earlier ones.
+ *
+ * Each identifier must start with one of the following prefixes:
  *   1) "file:" string followed by relative path.
  *   2) "aws:" followed by AWS SSM path prefix.
- * @param configName - The medplum config identifier.
+ *   3) "gcp:" followed by GCP project.
+ *   4) "azure:" followed by Azure vault.
+ *   5) "env" to load from environment variables.
+ *
+ * Examples:
+ *   - "file:medplum.config.json" — single file source
+ *   - "aws:/medplum/prod/,env" — AWS SSM config with env var overrides
+ *
+ * @param configName - The medplum config identifier (comma-separated for multiple sources).
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
-  const [configType, configPath] = splitN(configName, ':', 2);
-  let config: MedplumServerConfig;
-  switch (configType) {
-    case 'env':
-      config = loadEnvConfig();
-      break;
-    case 'file':
-      config = await loadFileConfig(configPath);
-      break;
-    case 'aws':
-      config = await loadAwsConfig(configPath);
-      break;
-    case 'gcp':
-      config = await loadGcpConfig(configPath);
-      break;
-    case 'azure':
-      config = await loadAzureConfig(configPath);
-      break;
-    default:
-      throw new Error('Unrecognized config type: ' + configType);
+  const segments = configName.split(',').filter((s) => s.length > 0);
+  if (segments.length === 0) {
+    throw new Error('Empty config name');
+  }
+
+  let config = await loadSingleConfig(segments[0]);
+  for (let i = 1; i < segments.length; i++) {
+    const overlay = await loadSingleConfig(segments[i]);
+    config = deepMerge(config as unknown as Record<string, unknown>, overlay as unknown as Record<string, unknown>) as unknown as MedplumServerConfig;
   }
 
   if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
@@ -62,6 +62,56 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
 
   cachedConfig = addDefaults(config);
   return cachedConfig;
+}
+
+/**
+ * Loads configuration settings from a single config identifier.
+ * @param configName - The config identifier (e.g. "file:path", "aws:path", "env").
+ * @returns The loaded configuration.
+ */
+async function loadSingleConfig(configName: string): Promise<MedplumServerConfig> {
+  const [configType, configPath] = splitN(configName, ':', 2);
+  switch (configType) {
+    case 'env':
+      return loadEnvConfig();
+    case 'file':
+      return loadFileConfig(configPath);
+    case 'aws':
+      return loadAwsConfig(configPath);
+    case 'gcp':
+      return loadGcpConfig(configPath);
+    case 'azure':
+      return loadAzureConfig(configPath);
+    default:
+      throw new Error('Unrecognized config type: ' + configType);
+  }
+}
+
+/**
+ * Deep-merges two objects. Objects merge recursively, arrays replace wholesale, primitives overwrite.
+ * @param base - The base object.
+ * @param overlay - The overlay object whose values take precedence.
+ * @returns A new merged object.
+ */
+function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...base };
+  for (const key of Object.keys(overlay)) {
+    const baseVal = base[key];
+    const overlayVal = overlay[key];
+    if (
+      overlayVal !== null &&
+      typeof overlayVal === 'object' &&
+      !Array.isArray(overlayVal) &&
+      baseVal !== null &&
+      typeof baseVal === 'object' &&
+      !Array.isArray(baseVal)
+    ) {
+      result[key] = deepMerge(baseVal as Record<string, unknown>, overlayVal as Record<string, unknown>);
+    } else {
+      result[key] = overlayVal;
+    }
+  }
+  return result;
 }
 
 /**

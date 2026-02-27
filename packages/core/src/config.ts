@@ -123,6 +123,34 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+  additionalServices?: {
+    id: ValueOrExternalSecret<string>;
+    serverImage?: ValueOrExternalSecret<string>;
+    serverMemory?: ValueOrExternalSecret<number>;
+    serverCpu?: ValueOrExternalSecret<number>;
+    desiredCount: ValueOrExternalSecret<number>;
+    environment?: {
+      [key: string]: ValueOrExternalSecret<string>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: ValueOrExternalSecret<number>;
+      maxCapacity: ValueOrExternalSecret<number>;
+      targetUtilizationPercent: ValueOrExternalSecret<number>;
+      scaleInCooldown: ValueOrExternalSecret<number>;
+      scaleOutCooldown: ValueOrExternalSecret<number>;
+    };
+    additionalContainers?: {
+      name: ValueOrExternalSecret<string>;
+      image: ValueOrExternalSecret<string>;
+      cpu?: ValueOrExternalSecret<number>;
+      memory?: ValueOrExternalSecret<number>;
+      essential?: ValueOrExternalSecret<boolean>;
+      command?: ValueOrExternalSecret<string>[];
+      environment?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
   rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
@@ -253,6 +281,34 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+  additionalServices?: {
+    id: string;
+    serverImage?: string;
+    serverMemory?: number;
+    serverCpu?: number;
+    desiredCount: number;
+    environment?: {
+      [key: string]: string;
+    };
+    fargateAutoScaling?: {
+      minCapacity: number;
+      maxCapacity: number;
+      targetUtilizationPercent: number;
+      scaleInCooldown: number;
+      scaleOutCooldown: number;
+    };
+    additionalContainers?: {
+      name: string;
+      image: string;
+      cpu?: number;
+      memory?: number;
+      essential?: boolean;
+      command?: string[];
+      environment?: {
+        [key: string]: string;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
