@@ -161,6 +161,12 @@ export interface MedplumServerConfig {
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
   mfaAuthenticatorWindow?: number;
+
+  /**
+   * Optional configuration for background worker pools.
+   * Allows running separate server pools for HTTP request serving vs. background job processing.
+   */
+  workers?: MedplumWorkersConfig;
 }
 
 export interface ArrayColumnPaddingConfig {
@@ -238,6 +244,30 @@ export interface MedplumBullmqConfig {
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
   readonly userInfoUrl: string;
+}
+
+export type WorkerName =
+  | 'subscription'
+  | 'download'
+  | 'cron'
+  | 'reindex'
+  | 'batch'
+  | 'post-deploy-migration'
+  | 'set-accounts';
+
+export interface MedplumWorkersConfig {
+  /**
+   * Which workers to run on this server instance.
+   * - undefined/omitted: all workers run (backwards compatible default)
+   * - WorkerName[]: only listed workers run. Empty array = no workers (HTTP-only pool).
+   */
+  enabled?: WorkerName[];
+
+  /**
+   * Per-worker BullMQ overrides, merged on top of global `bullmq` config.
+   * Only takes effect for workers that are enabled.
+   */
+  bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
 }
 
 export interface MedplumFissionConfig {

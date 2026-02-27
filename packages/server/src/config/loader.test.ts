@@ -314,6 +314,24 @@ describe('Config', () => {
     });
   });
 
+  test('Env config workers prefix', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_WORKERS_ENABLED', '["subscription","cron"]');
+
+    const config = await loadConfig('env');
+    expect(config.workers).toBeDefined();
+    expect(config.workers?.enabled).toStrictEqual(['subscription', 'cron']);
+  });
+
+  test('Env config workers bullmq prefix', async () => {
+    setEnv('MEDPLUM_BASE_URL', 'http://localhost:3000');
+    setEnv('MEDPLUM_WORKERS_BULLMQ', '{"subscription":{"concurrency":50}}');
+
+    const config = await loadConfig('env');
+    expect(config.workers).toBeDefined();
+    expect(config.workers?.bullmq).toStrictEqual({ subscription: { concurrency: 50 } });
+  });
+
   test('loadTestConfig', async () => {
     const config = await loadTestConfig();
     expect(config).toBeDefined();

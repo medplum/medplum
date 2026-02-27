@@ -30,10 +30,11 @@ import {
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
 import { getRegisteredServers } from '../server-registry';
-import type { WorkerInitializer } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
   getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
   isJobActive,
   isJobCompatible,
   moveToDelayedAndThrow,
@@ -49,7 +50,7 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
   };
 }
 
-export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
+export const initPostDeployMigrationWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -61,15 +62,19 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<PostDeployJobData>(
-    PostDeployMigrationQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-    {
-      ...config.bullmq,
-      ...defaultOptions,
-    }
-  );
-  addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  let worker: Worker<PostDeployJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration');
+    worker = new Worker<PostDeployJobData>(
+      PostDeployMigrationQueueName,
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      {
+        ...workerBullmq,
+        ...defaultOptions,
+      }
+    );
+    addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  }
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 

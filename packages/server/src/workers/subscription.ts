@@ -54,11 +54,12 @@ import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import type { WorkerInitializer } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
   findProjectMembership,
   getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
   isJobSuccessful,
   queueRegistry,
 } from './utils';
@@ -126,7 +127,7 @@ function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
-export const initSubscriptionWorker: WorkerInitializer = (config) => {
+export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -142,39 +143,43 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<SubscriptionJobData>(
-    queueName,
-    (job) =>
-      job.data.authState
-        ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
-        : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
-  worker.on('active', (job) => {
-    // Only record queuedDuration on the first attempt
-    if (job.attemptsMade === 0) {
-      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
-    }
-  });
-  worker.on('completed', (job) => {
-    recordHistogramValue(
-      'medplum.subscription.executionDuration',
-      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+  let worker: Worker<SubscriptionJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'subscription');
+    worker = new Worker<SubscriptionJobData>(
+      queueName,
+      (job) =>
+        job.data.authState
+          ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
     );
-    recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
-  });
-  worker.on('failed', (job) => {
-    if (job) {
+    addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
+    worker.on('active', (job) => {
+      // Only record queuedDuration on the first attempt
+      if (job.attemptsMade === 0) {
+        recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
+      }
+    });
+    worker.on('completed', (job) => {
       recordHistogramValue(
-        'medplum.subscription.failedExecutionDuration',
+        'medplum.subscription.executionDuration',
         ((job.finishedOn as number) - (job.processedOn as number)) / 1000
       );
-    }
-  });
+      recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
+    });
+    worker.on('failed', (job) => {
+      if (job) {
+        recordHistogramValue(
+          'medplum.subscription.failedExecutionDuration',
+          ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+        );
+      }
+    });
+  }
 
   return { queue, worker, name: queueName };
 };
