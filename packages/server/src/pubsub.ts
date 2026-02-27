@@ -32,3 +32,21 @@ export function removeActiveSubscriptions(projectId: string, resourceType: strin
 export function isSubscriptionActive(projectId: string, resourceType: string, subRef: string): Promise<number> {
   return getPubSubRedis().hexists(getActiveSubsKey(projectId, resourceType), subRef);
 }
+
+// --- Per-user active WebSocket subscription set helpers ---
+
+function getUserActiveSubsKey(authorRef: string): string {
+  return `medplum:subscriptions:r4:user:${authorRef}:active`;
+}
+
+export function addUserActiveWebSocketSubscription(authorRef: string, subRef: string): Promise<number> {
+  return getPubSubRedis().sadd(getUserActiveSubsKey(authorRef), subRef);
+}
+
+export function removeUserActiveWebSocketSubscriptions(authorRef: string, refs: string[]): Promise<number> {
+  return getPubSubRedis().srem(getUserActiveSubsKey(authorRef), ...refs);
+}
+
+export function getUserActiveWebSocketSubscriptionCount(authorRef: string): Promise<number> {
+  return getPubSubRedis().scard(getUserActiveSubsKey(authorRef));
+}
