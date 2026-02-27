@@ -92,12 +92,7 @@ export function DocumentPicker({ subjectRef, onSelect, onUpload }: DocumentPicke
         </Stack>
       )}
       <Divider />
-      <UnstyledButton
-        px="sm"
-        py="xs"
-        onClick={onUpload}
-        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-      >
+      <UnstyledButton px="sm" py="xs" onClick={onUpload} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <IconPaperclip size="1rem" style={{ flexShrink: 0, color: 'var(--mantine-color-gray-6)' }} />
         <Text fz="sm" c="dimmed">
           Upload an image, pdf, etc.
