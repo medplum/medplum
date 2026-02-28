@@ -42,7 +42,6 @@ export function SuperAdminPage(): JSX.Element {
   const [opened, { open, close }] = useDisclosure(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<ReactNode | undefined>();
-  const [clearWsSubsOpened, { open: openClearWsSubsConfirm, close: closeClearWsSubsConfirm }] = useDisclosure(false);
   const [clearWsSubsProject, setClearWsSubsProject] = useState<Reference<Project> | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
@@ -70,7 +69,7 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function executeClearAllWsSubs(): void {
-    closeClearWsSubsConfirm();
+    close();
     const projectId = clearWsSubsProject?.reference?.split('/')[1];
     medplum
       .post(
@@ -305,35 +304,34 @@ export function SuperAdminPage(): JSX.Element {
           />
         </FormSection>
         <div>
-          <Button onClick={openClearWsSubsConfirm}>Clear All WebSocket Subscriptions</Button>
+          <Button
+            onClick={() => {
+              setModalTitle('Clear All WebSocket Subscriptions');
+              setModalContent(
+                <Stack>
+                  <Text>
+                    Are you sure you want to completely clear{' '}
+                    <strong>
+                      {clearWsSubsProject
+                        ? `WebSocket subscriptions for "${clearWsSubsProject.display ?? clearWsSubsProject.reference}"`
+                        : 'ALL WebSocket subscriptions'}
+                    </strong>
+                    ? Connected clients will need to re-bind their subscriptions.
+                  </Text>
+                  <Group align="center">
+                    <Button color="red" onClick={executeClearAllWsSubs}>
+                      Clear
+                    </Button>
+                  </Group>
+                </Stack>
+              );
+              open();
+            }}
+          >
+            Clear All WebSocket Subscriptions
+          </Button>
         </div>
       </Stack>
-      <Modal
-        opened={clearWsSubsOpened}
-        onClose={closeClearWsSubsConfirm}
-        title="Clear All WebSocket Subscriptions"
-        centered
-      >
-        <Stack>
-          <Text>
-            Are you sure you want to completely clear{' '}
-            <strong>
-              {clearWsSubsProject
-                ? `WebSocket subscriptions for "${clearWsSubsProject.display ?? clearWsSubsProject.reference}"`
-                : 'ALL WebSocket subscriptions'}
-            </strong>
-            ? Connected clients will need to re-bind their subscriptions.
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={closeClearWsSubsConfirm}>
-              Cancel
-            </Button>
-            <Button color="red" onClick={executeClearAllWsSubs}>
-              Clear
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>

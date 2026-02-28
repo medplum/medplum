@@ -302,37 +302,39 @@ describe('SuperAdminPage', () => {
   });
 
   describe('Clear All WebSocket Subscriptions', () => {
-    test('Cancel closes the dialog without calling API', async () => {
-      setup();
-
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
-      });
-
-      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
-
-      await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-      });
-
-      expect(postSpy).not.toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', expect.anything());
-    });
-
     test('Clears all projects when no project selected', async () => {
+      medplum.router.add('POST', '$clear-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
       setup();
 
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
       });
 
-      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
 
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
       });
 
       expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', undefined);
-      expect(screen.getByText('Done')).toBeInTheDocument();
+      expect(await screen.findByText('Done')).toBeInTheDocument();
     });
 
     test('Clears specific project when a project is selected', async () => {
@@ -347,6 +349,24 @@ describe('SuperAdminPage', () => {
           } as any,
         ];
       });
+      medplum.router.add('POST', '$clear-ws-subs', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'pubSubKeysDeleted',
+                valueInteger: 1,
+              },
+              {
+                name: 'cacheKeysDeleted',
+                valueInteger: 1,
+              },
+            ],
+          },
+        ];
+      });
       setup();
 
       // Select a project via the ReferenceInput
@@ -354,6 +374,7 @@ describe('SuperAdminPage', () => {
       await act(async () => {
         fireEvent.change(input, { target: { value: 'Test' } });
       });
+      // Advance the debounce timer so the dropdown populates
       await act(async () => {
         jest.advanceTimersByTime(1000);
       });
@@ -368,7 +389,7 @@ describe('SuperAdminPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear All WebSocket Subscriptions' }));
       });
 
-      expect(screen.getByText('Are you sure you want to completely clear')).toBeInTheDocument();
+      expect(screen.getByText(/Are you sure you want to completely clear/)).toBeInTheDocument();
 
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
