@@ -497,7 +497,9 @@ describe('ThreadChat', () => {
     await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
 
     // Wait for debounced fetch and document to appear
-    await act(async () => { jest.advanceTimersByTime(300); });
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
 
     const docButton = await screen.findByText('Attached report');
     await act(() => fireEvent.click(docButton));
@@ -518,9 +520,7 @@ describe('ThreadChat', () => {
     const comms = await defaultMedplum.searchResources('Communication', `part-of=Communication/${thread.id}`);
     const sent = comms.find((c) => c.payload?.some((p) => p.contentReference));
     expect(sent).toBeDefined();
-    expect(sent?.payload).toContainEqual(
-      expect.objectContaining({ contentReference: createReference(docRef) })
-    );
+    expect(sent?.payload).toContainEqual(expect.objectContaining({ contentReference: createReference(docRef) }));
   });
 
   test('Sending message with a file calls createDocumentReference with subject', async () => {
@@ -536,9 +536,7 @@ describe('ThreadChat', () => {
       status: 'current',
       content: [{ attachment: { title: 'scan.pdf', url: 'https://example.com/scan.pdf' } }],
     };
-    const createDocRefSpy = jest
-      .spyOn(defaultMedplum, 'createDocumentReference')
-      .mockResolvedValue(createdDocRef);
+    const createDocRefSpy = jest.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
 
     await setup({ thread, uploadEnabled: true });
 
@@ -566,9 +564,7 @@ describe('ThreadChat', () => {
     const comms = await defaultMedplum.searchResources('Communication', `part-of=Communication/${thread.id}`);
     const sent = comms.find((c) => c.payload?.some((p) => p.contentReference));
     expect(sent).toBeDefined();
-    expect(sent?.payload).toContainEqual(
-      expect.objectContaining({ contentReference: createReference(createdDocRef) })
-    );
+    expect(sent?.payload).toContainEqual(expect.objectContaining({ contentReference: createReference(createdDocRef) }));
 
     createDocRefSpy.mockRestore();
   });
@@ -584,9 +580,7 @@ describe('ThreadChat', () => {
       status: 'current',
       content: [{ attachment: { title: 'doc.pdf', url: 'https://example.com/doc.pdf' } }],
     };
-    const createDocRefSpy = jest
-      .spyOn(defaultMedplum, 'createDocumentReference')
-      .mockResolvedValue(createdDocRef);
+    const createDocRefSpy = jest.spyOn(defaultMedplum, 'createDocumentReference').mockResolvedValue(createdDocRef);
 
     await setup({ thread, uploadEnabled: true });
 
@@ -600,9 +594,7 @@ describe('ThreadChat', () => {
     await act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
 
     await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
-    expect(createDocRefSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ additionalFields: undefined })
-    );
+    expect(createDocRefSpy).toHaveBeenCalledWith(expect.objectContaining({ additionalFields: undefined }));
 
     createDocRefSpy.mockRestore();
   });
