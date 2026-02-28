@@ -26,6 +26,7 @@ import { appointmentBookHandler } from './operations/book';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
+import { clearAllWsSubsHandler } from './operations/clearallwssubs';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -394,6 +395,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('GET', '/$get-ws-sub-stats', getWsSubStatsHandler);
   router.add('GET', '/$get-ws-sub-project-stats', getWsSubProjectStatsHandler);
+  router.add('POST', '/$clear-all-ws-subs', clearAllWsSubsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);
