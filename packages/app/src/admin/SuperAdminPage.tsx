@@ -73,7 +73,7 @@ export function SuperAdminPage(): JSX.Element {
     const projectId = clearWsSubsProject?.reference?.split('/')[1];
     medplum
       .post(
-        'fhir/R4/$clear-ws-subs',
+        'fhir/R4/$clear-all-ws-subs',
         projectId
           ? { resourceType: 'Parameters', parameter: [{ name: 'projectId', valueString: projectId }] }
           : undefined

@@ -395,7 +395,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
   router.add('GET', '/$get-ws-sub-stats', getWsSubStatsHandler);
   router.add('GET', '/$get-ws-sub-project-stats', getWsSubProjectStatsHandler);
-  router.add('POST', '/$clear-ws-subs', clearAllWsSubsHandler);
+  router.add('POST', '/$clear-all-ws-subs', clearAllWsSubsHandler);
   router.add('POST', '/$explain', dbExplainHandler);
   router.add('GET', '/$db-indexes', dbIndexesHandler);
   router.add('POST', '/$db-configure-indexes', dbConfigureIndexesHandler);

@@ -303,7 +303,7 @@ describe('SuperAdminPage', () => {
 
   describe('Clear All WebSocket Subscriptions', () => {
     test('Clears all projects when no project selected', async () => {
-      medplum.router.add('POST', '$clear-ws-subs', async () => {
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
         return [
           allOk,
           {
@@ -333,7 +333,7 @@ describe('SuperAdminPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
       });
 
-      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', undefined);
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', undefined);
       expect(await screen.findByText('Done')).toBeInTheDocument();
     });
 
@@ -349,7 +349,7 @@ describe('SuperAdminPage', () => {
           } as any,
         ];
       });
-      medplum.router.add('POST', '$clear-ws-subs', async () => {
+      medplum.router.add('POST', '$clear-all-ws-subs', async () => {
         return [
           allOk,
           {
@@ -395,7 +395,7 @@ describe('SuperAdminPage', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
       });
 
-      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-ws-subs', {
+      expect(postSpy).toHaveBeenCalledWith('fhir/R4/$clear-all-ws-subs', {
         resourceType: 'Parameters',
         parameter: [{ name: 'projectId', valueString: projectId }],
       });

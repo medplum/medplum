@@ -8,7 +8,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
-describe('$clear-ws-subs', () => {
+describe('$clear-all-ws-subs', () => {
   const app = express();
 
   beforeAll(async () => {
@@ -24,7 +24,7 @@ describe('$clear-ws-subs', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: false } });
 
     const res = await request(app)
-      .post('/fhir/R4/$clear-ws-subs')
+      .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({});
@@ -36,7 +36,7 @@ describe('$clear-ws-subs', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$clear-ws-subs')
+      .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({
@@ -79,7 +79,7 @@ describe('$clear-ws-subs', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$clear-ws-subs')
+      .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({});
@@ -130,7 +130,7 @@ describe('$clear-ws-subs', () => {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
       const res = await request(app)
-        .post('/fhir/R4/$clear-ws-subs')
+        .post('/fhir/R4/$clear-all-ws-subs')
         .set('Authorization', 'Bearer ' + accessToken)
         .type('json')
         .send({
