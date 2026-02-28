@@ -19,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, forbidden, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -70,7 +70,7 @@ export function SuperAdminPage(): JSX.Element {
 
   function executeClearAllWsSubs(): void {
     close();
-    const projectId = clearWsSubsProject?.reference?.split('/')[1];
+    const projectId = resolveId(clearWsSubsProject);
     medplum
       .post(
         'fhir/R4/$clear-all-ws-subs',
