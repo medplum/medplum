@@ -964,7 +964,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           subscriptionId: resource.id,
           criteria: resource.criteria,
           user: author,
-          totalSubscriptions: userSubCount,
+          userSubscriptions: userSubCount,
         });
       }
     }
@@ -1380,7 +1380,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           getLogger().info('[WS] Subscription deleted', {
             subscriptionId: resource.id,
             user: author,
-            totalSubscriptions: userSubCount,
+            userSubscriptions: userSubCount,
           });
         }
       }
