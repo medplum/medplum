@@ -962,6 +962,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
         getLogger().info('[WS] Subscription created', {
           subscriptionId: resource.id,
+          subscriptionCriteria: resource.criteria,
           user: author,
           subscriptionCount: userSubCount,
         });
