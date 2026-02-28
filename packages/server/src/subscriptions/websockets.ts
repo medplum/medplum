@@ -19,7 +19,7 @@ import type { MedplumBaseClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { removeActiveSubscriptions } from '../pubsub';
+import { removeActiveSubscriptions, removeUserActiveWebSocketSubscriptions } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
@@ -529,10 +529,18 @@ export async function markInMemorySubscriptionsInactive(
   if (!subIdsByResourceType.size) {
     return;
   }
+
+  // Collect all subscription refs and build a per-resource-type map for later cleanup
   const refStrs: string[] = [];
+  const refsByResourceType = new Map<string, string[]>();
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
+    refsByResourceType.set(resourceType, refs);
     refStrs.push(...refs);
+  }
+
+  // Remove from project-level active hashes
+  for (const [resourceType, refs] of refsByResourceType) {
     try {
       await removeActiveSubscriptions(projectId, resourceType, refs);
     } catch {
@@ -540,7 +548,32 @@ export async function markInMemorySubscriptionsInactive(
       return;
     }
   }
+
+  // Read cache entries upfront to collect author refs for per-user set cleanup
+  // (must happen before del so the data is still available)
+  let authorToRefs: Map<string, string[]> | undefined;
+
+  // Delete individual cache entries first so any concurrent unbind sees them as gone
   if (cacheRedis) {
+    const cacheEntries = await cacheRedis.mget(...refStrs);
+    authorToRefs = new Map();
+    for (let i = 0; i < refStrs.length; i++) {
+      const entryStr = cacheEntries[i];
+      if (!entryStr) {
+        continue;
+      }
+      const entry = JSON.parse(entryStr) as CacheEntry<Subscription>;
+      const author = entry.resource.meta?.author?.reference;
+      if (!author) {
+        continue;
+      }
+      let authorRefs = authorToRefs.get(author);
+      if (!authorRefs) {
+        authorRefs = [];
+        authorToRefs.set(author, authorRefs);
+      }
+      authorRefs.push(refStrs[i]);
+    }
     // In the case where we could be deleting a lot of keys at once, we prefer
     // `unlink` due to it essentially being the same command ad `del`, just the nonblocking version
     // Keys are unlinked from keyspace but the actual memory is not reclaimed immediately, and is done separately
@@ -548,5 +581,16 @@ export async function markInMemorySubscriptionsInactive(
     // See: https://redis.io/docs/latest/commands/unlink/
     // See: https://support.redislabs.com/hc/en-us/articles/32321430231186-Massive-Key-Deletion-in-Redis-Without-Impacting-Performance
     await cacheRedis.unlink(refStrs);
+  }
+
+  // Clean up per-user active sets
+  if (authorToRefs) {
+    for (const [author, authorRefs] of authorToRefs) {
+      try {
+        await removeUserActiveWebSocketSubscriptions(author, authorRefs);
+      } catch {
+        globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
+      }
+    }
   }
 }
