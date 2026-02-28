@@ -22,7 +22,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { SearchRequest } from '@medplum/core';
 import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest } from '@medplum/core';
-import type { Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import cx from 'clsx';
@@ -61,6 +61,8 @@ export interface ThreadInboxProps {
   readonly onChange: (search: SearchRequest) => void;
   readonly inProgressUri: string;
   readonly completedUri: string;
+  readonly uploadEnabled?: boolean;
+  readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -72,6 +74,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     pharmacyDialogComponent,
     onNew,
     getThreadUri,
+    uploadEnabled,
+    onViewInDocuments,
     onChange,
     inProgressUri,
     completedUri,
@@ -299,6 +303,8 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         title={'Messages'}
                         thread={selectedThread}
                         excludeHeader={true}
+                        uploadEnabled={uploadEnabled}
+                        onViewInDocuments={onViewInDocuments}
                       />
                     </Flex>
                   </Stack>
