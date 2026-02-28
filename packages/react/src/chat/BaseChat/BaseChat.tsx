@@ -49,7 +49,7 @@ function toSafeUrl(url: string | undefined): string | undefined {
   }
   try {
     const { protocol } = new URL(url);
-    return protocol === 'https:' || protocol === 'http:' ? url : undefined;
+    return protocol === 'https:' || protocol === 'http:' || protocol === 'blob:' ? url : undefined;
   } catch {
     return undefined;
   }
@@ -170,8 +170,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       return undefined;
     }
     const url = URL.createObjectURL(pendingFile);
-    // Only store blob: URLs — guards against unexpected non-blob URLs reaching the DOM.
-    setPreviewUrl(url.startsWith('blob:') ? url : undefined);
+    setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [pendingFile]);
 
@@ -410,8 +409,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef && <IconFileText size="0.75rem" />}
-            {!pendingDocRef && previewUrl && (
-              <img src={previewUrl} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
+            {!pendingDocRef && toSafeUrl(previewUrl) && (
+              <img src={toSafeUrl(previewUrl)} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
             )}
             {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
