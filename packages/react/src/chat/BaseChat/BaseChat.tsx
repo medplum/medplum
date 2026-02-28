@@ -215,13 +215,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           showNotification({ color: 'green', message: 'Live chat reconnected.' });
         }
       }, [reconnecting]),
-      onSubscriptionConnect: useCallback(async () => {
+      onSubscriptionConnect: useCallback(() => {
         if (reconnecting) {
-          try {
-            await searchMessages();
-          } catch (err) {
-            showNotification({ color: 'red', message: normalizeErrorString(err) });
-          }
+          searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
           setReconnecting(false);
         }
       }, [reconnecting, searchMessages]),
