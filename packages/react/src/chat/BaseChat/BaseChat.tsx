@@ -3,7 +3,6 @@
 import type { PaperProps } from '@mantine/core';
 import {
   ActionIcon,
-  Anchor,
   Group,
   LoadingOverlay,
   Menu,
@@ -159,20 +158,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const [reconnecting, setReconnecting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!pendingFile?.type.startsWith('image/')) {
-      setPreviewUrl(undefined);
-      return undefined;
-    }
-    const url = URL.createObjectURL(pendingFile);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [pendingFile]);
 
   if (!loading) {
     initialLoadRef.current = false;
@@ -408,11 +396,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       <div className={classes.chatInputContainer}>
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
-            {pendingDocRef && <IconFileText size="0.75rem" />}
-            {!pendingDocRef && toSafeUrl(previewUrl) && (
-              <img src={toSafeUrl(previewUrl)} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
-            )}
-            {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
+            {pendingDocRef ? <IconFileText size="0.75rem" /> : <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
               {pendingDocRef
                 ? (pendingDocRef.description ?? pendingDocRef.content?.[0]?.attachment?.title ?? 'Document')
@@ -576,20 +560,15 @@ interface ChatBubbleAttachmentProps {
 }
 
 function ChatBubbleAttachment({ attachment, hasText }: ChatBubbleAttachmentProps): JSX.Element {
-  const url = toSafeUrl(useCachedBinaryUrl(attachment.url));
-  const isImage = attachment.contentType?.startsWith('image/');
   return (
     <div className={hasText ? classes.chatBubbleAttachmentWithText : undefined}>
-      {isImage && url && (
-        <img src={url} alt={attachment.title ?? 'Image'} className={classes.chatBubbleAttachmentImage} />
-      )}
       <Group gap={4} wrap="nowrap">
         <span className={classes.chatBubbleAttachmentIcon}>
           <IconPaperclip size="0.75rem" />
         </span>
-        <Anchor href={url ?? toSafeUrl(attachment.url)} target="_blank" rel="noopener noreferrer" fz="xs" truncate>
-          {attachment.title ?? 'Download'}
-        </Anchor>
+        <Text fz="xs" truncate>
+          {attachment.title ?? 'File attached'}
+        </Text>
       </Group>
     </div>
   );

@@ -89,24 +89,8 @@
   padding: 4px 8px;
 }
 
-.chatPendingFileThumbnail {
-  height: 36px;
-  width: 36px;
-  object-fit: cover;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
 .chatBubbleAttachmentWithText {
   margin-top: 6px;
-}
-
-.chatBubbleAttachmentImage {
-  display: block;
-  max-width: 240px;
-  max-height: 240px;
-  border-radius: 6px;
-  margin-bottom: 4px;
 }
 
 .chatBubbleAttachmentIcon {
