@@ -787,10 +787,10 @@ describe('BaseChat', () => {
     );
 
     const menuButton = await screen.findByRole('button', { name: /attachment options/i });
-    act(() => fireEvent.click(menuButton));
+    await act(() => fireEvent.click(menuButton));
 
     const viewItem = await screen.findByRole('menuitem', { name: /view in documents/i });
-    act(() => fireEvent.click(viewItem));
+    await act(() => fireEvent.click(viewItem));
 
     expect(onViewInDocuments).toHaveBeenCalledWith(createReference(docRef));
   });
@@ -809,10 +809,10 @@ describe('BaseChat', () => {
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
 
     const menuButton = await screen.findByRole('button', { name: /attachment options/i });
-    act(() => fireEvent.click(menuButton));
+    await act(() => fireEvent.click(menuButton));
 
     const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
-    act(() => fireEvent.click(downloadItem));
+    await act(() => fireEvent.click(downloadItem));
 
     expect(mockOpen).toHaveBeenCalledWith('https://example.com/file.pdf', '_blank', 'noopener,noreferrer');
     mockOpen.mockRestore();
@@ -832,10 +832,10 @@ describe('BaseChat', () => {
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
 
     const menuButton = await screen.findByRole('button', { name: /attachment options/i });
-    act(() => fireEvent.click(menuButton));
+    await act(() => fireEvent.click(menuButton));
 
     const downloadItem = await screen.findByRole('menuitem', { name: /download/i });
-    act(() => fireEvent.click(downloadItem));
+    await act(() => fireEvent.click(downloadItem));
 
     expect(mockOpen).not.toHaveBeenCalled();
     mockOpen.mockRestore();

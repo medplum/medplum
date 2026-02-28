@@ -494,13 +494,13 @@ describe('ThreadChat', () => {
     await setup({ thread, uploadEnabled: true });
 
     // Open document picker
-    act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
 
     // Wait for debounced fetch and document to appear
     await act(async () => { jest.advanceTimersByTime(300); });
 
     const docButton = await screen.findByText('Attached report');
-    act(() => fireEvent.click(docButton));
+    await act(() => fireEvent.click(docButton));
 
     jest.useRealTimers();
 
@@ -510,7 +510,7 @@ describe('ThreadChat', () => {
         target: { value: 'See attached' },
       });
     });
-    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
 
     expect(await screen.findByText('See attached')).toBeInTheDocument();
 
@@ -551,7 +551,7 @@ describe('ThreadChat', () => {
     });
 
     // Send message
-    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
 
     await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
     expect(createDocRefSpy).toHaveBeenCalledWith(
@@ -597,7 +597,7 @@ describe('ThreadChat', () => {
       fireEvent.change(fileInput);
     });
 
-    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+    await act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
 
     await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
     expect(createDocRefSpy).toHaveBeenCalledWith(
