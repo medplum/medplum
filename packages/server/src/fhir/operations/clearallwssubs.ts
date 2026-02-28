@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, isUUID } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import type { CacheEntry } from '../repo';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
+import type { CacheEntry } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -54,7 +54,7 @@ export async function clearAllWsSubsHandler(req: FhirRequest): Promise<FhirRespo
   requireSuperAdmin();
 
   const { projectId } = parseInputParameters<{ projectId?: string }>(operation, req);
-  if (projectId !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
+  if (projectId && !isUUID(projectId)) {
     return [badRequest('projectId must be a valid UUID')];
   }
   const { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted } = await clearAllWsSubs(projectId);
