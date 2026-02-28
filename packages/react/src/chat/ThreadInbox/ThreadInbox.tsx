@@ -61,6 +61,7 @@ export interface ThreadInboxProps {
   readonly onChange: (search: SearchRequest) => void;
   readonly inProgressUri: string;
   readonly completedUri: string;
+  readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
 
@@ -73,6 +74,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     pharmacyDialogComponent,
     onNew,
     getThreadUri,
+    uploadEnabled,
     onViewInDocuments,
     onChange,
     inProgressUri,
@@ -301,6 +303,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                         title={'Messages'}
                         thread={selectedThread}
                         excludeHeader={true}
+                        uploadEnabled={uploadEnabled}
                         onViewInDocuments={onViewInDocuments}
                       />
                     </Flex>
