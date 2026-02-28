@@ -38,6 +38,23 @@ import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 import { DocumentPicker } from './DocumentPicker';
 
+/**
+ * Returns the URL only when its scheme is http or https, blocking javascript: / data: XSS vectors.
+ * @param url - The URL to validate.
+ * @returns The URL if safe, otherwise undefined.
+ */
+function toSafeUrl(url: string | undefined): string | undefined {
+  if (!url) {
+    return undefined;
+  }
+  try {
+    const { protocol } = new URL(url);
+    return protocol === 'https:' || protocol === 'http:' ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function showError(message: string): void {
   showNotification({
     color: 'red',
@@ -143,7 +160,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
-  const safeBlobPreviewUrl = previewUrl?.startsWith('blob:') ? previewUrl : undefined;
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -154,7 +170,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       return undefined;
     }
     const url = URL.createObjectURL(pendingFile);
-    setPreviewUrl(url);
+    // Only store blob: URLs — guards against unexpected non-blob URLs reaching the DOM.
+    setPreviewUrl(url.startsWith('blob:') ? url : undefined);
     return () => URL.revokeObjectURL(url);
   }, [pendingFile]);
 
@@ -393,8 +410,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef && <IconFileText size="0.75rem" />}
-            {!pendingDocRef && safeBlobPreviewUrl && (
-              <img src={safeBlobPreviewUrl} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
+            {!pendingDocRef && previewUrl && (
+              <img src={previewUrl} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
             )}
             {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
@@ -560,7 +577,7 @@ interface ChatBubbleAttachmentProps {
 }
 
 function ChatBubbleAttachment({ attachment, hasText }: ChatBubbleAttachmentProps): JSX.Element {
-  const url = useCachedBinaryUrl(attachment.url);
+  const url = toSafeUrl(useCachedBinaryUrl(attachment.url));
   const isImage = attachment.contentType?.startsWith('image/');
   return (
     <div className={hasText ? classes.chatBubbleAttachmentWithText : undefined}>
@@ -571,7 +588,7 @@ function ChatBubbleAttachment({ attachment, hasText }: ChatBubbleAttachmentProps
         <span className={classes.chatBubbleAttachmentIcon}>
           <IconPaperclip size="0.75rem" />
         </span>
-        <Anchor href={url ?? attachment.url} target="_blank" rel="noopener noreferrer" fz="xs" truncate>
+        <Anchor href={url ?? toSafeUrl(attachment.url)} target="_blank" rel="noopener noreferrer" fz="xs" truncate>
           {attachment.title ?? 'Download'}
         </Anchor>
       </Group>
@@ -607,9 +624,8 @@ function ChatBubbleMenu({ contentRef, contentAttachment, onViewInDocuments }: Ch
   const handleDownload = (): void => {
     // Navigation requests don't include an Origin header so CORS never applies.
     // fetch() / medplum.download() both send Origin which CloudFront rejects.
-    const href = cachedUrl ?? attachment?.url;
-    // Guard against javascript: or data: URLs to prevent XSS.
-    if (!href || !['https:', 'http:'].includes(new URL(href).protocol)) {
+    const href = toSafeUrl(cachedUrl ?? attachment?.url);
+    if (!href) {
       return;
     }
     window.open(href, '_blank', 'noopener,noreferrer');
