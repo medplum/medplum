@@ -34,7 +34,7 @@ export function DocumentPicker({ subjectRef, onSelect, onUpload }: DocumentPicke
       }
       params.set('_sort', '-date');
       params.set('_count', '5');
-      const results = await medplum.searchResources('DocumentReference', params, { cache: 'no-cache' });
+      const results = await medplum.searchResources('DocumentReference', params);
       setDocs([...results]);
     } catch (err) {
       console.error(err);
