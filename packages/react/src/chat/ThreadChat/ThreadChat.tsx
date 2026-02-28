@@ -19,7 +19,8 @@ export interface ThreadChatProps {
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } = props;
+  const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } =
+    props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
