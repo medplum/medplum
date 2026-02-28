@@ -213,3 +213,14 @@ Medplum tracks and reports status on the [Medplum Status Page](https://status.me
 Found a potential issue? Please help us by reporting it so we can fix it quickly.
 
 Contact us at security@medplum.com
+
+For encrypted vulnerability reports, you may use our PGP key:
+
+```
+pub   ed25519 2026-02-28 [SC] [expires: 2027-02-28]
+      85A1 FB97 A38F 277C 43C8  AD5C 5D93 6917 2E41 F38D
+uid           [ultimate] Medplum Security <security@medplum.com>
+sub   cv25519 2026-02-28 [E] [expires: 2027-02-28]
+```
+
+[Download Public Key](/medplum-security-public.asc)
