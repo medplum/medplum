@@ -69,9 +69,7 @@ export function MessagesPage(): JSX.Element {
       .readReference(reference)
       .then((docRef) => {
         const subject = docRef.subject?.reference;
-        const path = subject
-          ? `/${subject}/${getReferenceString(reference)}`
-          : `/${getReferenceString(reference)}`;
+        const path = subject ? `/${subject}/${getReferenceString(reference)}` : `/${getReferenceString(reference)}`;
         navigate(path)?.catch(console.error);
       })
       .catch(console.error);
