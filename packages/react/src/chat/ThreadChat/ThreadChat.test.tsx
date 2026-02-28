@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { ProfileResource, TypedEventTarget } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type { Bundle, Communication, Reference } from '@medplum/fhirtypes';
+import type { Bundle, Communication, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 // @ts-expect-error _subscriptionController is not exported from module normally
 // eslint-disable-next-line import/named
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen } from '../../test-utils/render';
+import { act, fireEvent, render, screen, waitFor } from '../../test-utils/render';
 import type { ThreadChatProps } from './ThreadChat';
 import { ThreadChat } from './ThreadChat';
 
@@ -465,5 +465,145 @@ describe('ThreadChat', () => {
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
     await rerender({ ...threadProps, inputDisabled: true });
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
+
+  test('uploadEnabled defaults to false - no attach button shown', async () => {
+    await setup({ thread: defaultThread });
+    expect(screen.queryByRole('button', { name: /attach file/i })).not.toBeInTheDocument();
+  });
+
+  test('uploadEnabled shows attach button', async () => {
+    await setup({ thread: defaultThread, uploadEnabled: true });
+    expect(screen.getByRole('button', { name: /attach file/i })).toBeInTheDocument();
+  });
+
+  test('Sending message with existingDocRef creates Communication with contentReference', async () => {
+    const thread = await createThreadHeader(defaultMedplum, {
+      recipient: [drAliceReference, homerReference],
+    });
+
+    const docRef = await defaultMedplum.createResource<DocumentReference>({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      description: 'Attached report',
+      content: [{ attachment: { title: 'report.pdf', url: 'https://example.com/report.pdf' } }],
+    });
+
+    jest.useFakeTimers();
+
+    await setup({ thread, uploadEnabled: true });
+
+    // Open document picker
+    act(() => fireEvent.click(screen.getByRole('button', { name: /attach file/i })));
+
+    // Wait for debounced fetch and document to appear
+    await act(async () => { jest.advanceTimersByTime(300); });
+
+    const docButton = await screen.findByText('Attached report');
+    act(() => fireEvent.click(docButton));
+
+    jest.useRealTimers();
+
+    // Send message
+    act(() => {
+      fireEvent.change(screen.getByPlaceholderText('Type a message...'), {
+        target: { value: 'See attached' },
+      });
+    });
+    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+
+    expect(await screen.findByText('See attached')).toBeInTheDocument();
+
+    // Verify the Communication was created with contentReference (not a new upload)
+    const comms = await defaultMedplum.searchResources('Communication', `part-of=Communication/${thread.id}`);
+    const sent = comms.find((c) => c.payload?.some((p) => p.contentReference));
+    expect(sent).toBeDefined();
+    expect(sent?.payload).toContainEqual(
+      expect.objectContaining({ contentReference: createReference(docRef) })
+    );
+  });
+
+  test('Sending message with a file calls createDocumentReference with subject', async () => {
+    const subject = createReference(HomerSimpson);
+    const thread = await createThreadHeader(defaultMedplum, {
+      recipient: [drAliceReference, homerReference],
+      subject,
+    });
+
+    const createdDocRef: DocumentReference = {
+      resourceType: 'DocumentReference',
+      id: 'new-doc-ref',
+      status: 'current',
+      content: [{ attachment: { title: 'scan.pdf', url: 'https://example.com/scan.pdf' } }],
+    };
+    const createDocRefSpy = jest
+      .spyOn(defaultMedplum, 'createDocumentReference')
+      .mockResolvedValue(createdDocRef);
+
+    await setup({ thread, uploadEnabled: true });
+
+    // Simulate file selection via the hidden file input
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['content'], 'scan.pdf', { type: 'application/pdf' });
+    await act(async () => {
+      Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+      fireEvent.change(fileInput);
+    });
+
+    // Send message
+    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+
+    await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
+    expect(createDocRefSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filename: 'scan.pdf',
+        contentType: 'application/pdf',
+        additionalFields: { subject },
+      })
+    );
+
+    // Verify Communication created with contentReference
+    const comms = await defaultMedplum.searchResources('Communication', `part-of=Communication/${thread.id}`);
+    const sent = comms.find((c) => c.payload?.some((p) => p.contentReference));
+    expect(sent).toBeDefined();
+    expect(sent?.payload).toContainEqual(
+      expect.objectContaining({ contentReference: createReference(createdDocRef) })
+    );
+
+    createDocRefSpy.mockRestore();
+  });
+
+  test('File upload does not include subject when thread has no subject', async () => {
+    const thread = await createThreadHeader(defaultMedplum, {
+      recipient: [drAliceReference, homerReference],
+    });
+
+    const createdDocRef: DocumentReference = {
+      resourceType: 'DocumentReference',
+      id: 'no-subject-doc',
+      status: 'current',
+      content: [{ attachment: { title: 'doc.pdf', url: 'https://example.com/doc.pdf' } }],
+    };
+    const createDocRefSpy = jest
+      .spyOn(defaultMedplum, 'createDocumentReference')
+      .mockResolvedValue(createdDocRef);
+
+    await setup({ thread, uploadEnabled: true });
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['content'], 'doc.pdf', { type: 'application/pdf' });
+    await act(async () => {
+      Object.defineProperty(fileInput, 'files', { value: [file], configurable: true });
+      fireEvent.change(fileInput);
+    });
+
+    act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
+
+    await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
+    expect(createDocRefSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ additionalFields: undefined })
+    );
+
+    createDocRefSpy.mockRestore();
   });
 });
