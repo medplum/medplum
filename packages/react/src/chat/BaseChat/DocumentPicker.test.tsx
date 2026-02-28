@@ -156,5 +156,4 @@ describe('DocumentPicker', () => {
 
     searchSpy.mockRestore();
   });
-
 });

@@ -704,7 +704,15 @@ describe('BaseChat', () => {
     await createCommunication(medplum, {
       sender: homerReference,
       recipient: [drAliceReference],
-      payload: [{ contentAttachment: { title: 'report.pdf', url: 'https://example.com/report.pdf', contentType: 'application/pdf' } }],
+      payload: [
+        {
+          contentAttachment: {
+            title: 'report.pdf',
+            url: 'https://example.com/report.pdf',
+            contentType: 'application/pdf',
+          },
+        },
+      ],
     });
 
     await setup({ title: 'Test Chat', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined }, medplum);
@@ -720,7 +728,11 @@ describe('BaseChat', () => {
     const docRef = await medplum.createResource<DocumentReference>({
       resourceType: 'DocumentReference',
       status: 'current',
-      content: [{ attachment: { title: 'summary.pdf', url: 'https://example.com/summary.pdf', contentType: 'application/pdf' } }],
+      content: [
+        {
+          attachment: { title: 'summary.pdf', url: 'https://example.com/summary.pdf', contentType: 'application/pdf' },
+        },
+      ],
     });
 
     await createCommunication(medplum, {
