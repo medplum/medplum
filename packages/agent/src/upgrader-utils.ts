@@ -22,12 +22,15 @@ export async function downloadRelease(version: string, path: string): Promise<vo
   const downloadUrl = parseDownloadUrl(release, platform());
 
   // Write file to RELEASE_INSTALLER_FOLDER
-  const { body } = await fetch(downloadUrl);
-  if (!body) {
+  const result = await fetch(downloadUrl);
+  if (!result.ok) {
+    throw new Error(`Failed to download installer with status code: ${result.status}`);
+  }
+  if (!result.body) {
     throw new Error('Body not present on Response');
   }
 
-  const readable = Readable.fromWeb(body as streamWeb.ReadableStream);
+  const readable = Readable.fromWeb(result.body as streamWeb.ReadableStream);
   const writeStream = readable.pipe(createWriteStream(path));
 
   return new Promise<void>((resolve) => {
