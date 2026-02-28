@@ -143,6 +143,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const [loading, setLoading] = useState(true);
   const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
   const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
+  const safeBlobPreviewUrl = previewUrl?.startsWith('blob:') ? previewUrl : undefined;
   const [pendingDocRef, setPendingDocRef] = useState<DocumentReference | undefined>(undefined);
   const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -392,8 +393,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         {(pendingFile || pendingDocRef) && (
           <Group className={classes.chatPendingFile} gap={4} align="center" wrap="nowrap">
             {pendingDocRef && <IconFileText size="0.75rem" />}
-            {!pendingDocRef && previewUrl?.startsWith('blob:') && (
-              <img src={previewUrl} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
+            {!pendingDocRef && safeBlobPreviewUrl && (
+              <img src={safeBlobPreviewUrl} alt="Attachment preview" className={classes.chatPendingFileThumbnail} />
             )}
             {!pendingDocRef && !previewUrl && <IconPaperclip size="0.75rem" />}
             <Text fz="xs" c="dimmed" flex={1} truncate>
@@ -607,7 +608,8 @@ function ChatBubbleMenu({ contentRef, contentAttachment, onViewInDocuments }: Ch
     // Navigation requests don't include an Origin header so CORS never applies.
     // fetch() / medplum.download() both send Origin which CloudFront rejects.
     const href = cachedUrl ?? attachment?.url;
-    if (!href) {
+    // Guard against javascript: or data: URLs to prevent XSS.
+    if (!href || !['https:', 'http:'].includes(new URL(href).protocol)) {
       return;
     }
     window.open(href, '_blank', 'noopener,noreferrer');
