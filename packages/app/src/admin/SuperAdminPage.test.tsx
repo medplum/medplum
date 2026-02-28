@@ -19,7 +19,7 @@ describe('SuperAdminPage', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-          <MantineProvider>
+          <MantineProvider env="test">
             <Notifications />
             <AppRoutes />
           </MantineProvider>
