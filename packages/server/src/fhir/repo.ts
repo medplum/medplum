@@ -958,6 +958,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         return;
       }
       await setActiveSubscription(project, criteriaResourceType, `Subscription/${resource.id}`, resource.criteria);
+      if (create) {
+        const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+        getLogger().info('[WS] Subscription created', {
+          subscriptionId: resource.id,
+          criteria: resource.criteria,
+          user: author,
+          userSubscriptions: userSubCount,
+        });
+      }
     }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
@@ -1366,6 +1375,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, [`Subscription/${id}`]));
         }
         await Promise.all(cleanupPromises);
+        if (author) {
+          const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+          getLogger().info('[WS] Subscription deleted', {
+            subscriptionId: resource.id,
+            user: author,
+            userSubscriptions: userSubCount,
+          });
+        }
       }
 
       if (!this.isCacheOnly(resource)) {
