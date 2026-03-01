@@ -96,7 +96,7 @@ Developers can now define [custom FHIR operations](/docs/bots/custom-fhir-operat
 - **Membership label filtering in profile chooser** — The profile selection form can now filter memberships by label, contributed by [jeffrey-peterson-vanna](https://github.com/jeffrey-peterson-vanna)
 - **Operation to refresh reference display strings** — A new operation allows refreshing cached display strings on resource references, keeping display data current after resource updates ([Matt Willer](https://github.com/mattwiller))
 - **Native bcrypt for improved authentication performance** — Switched from the pure-JavaScript `bcryptjs` library to native bcrypt bindings, significantly improving password hashing throughput ([Cody Ebberson](https://github.com/codyebberson))
-- **Configurable CDS services URL** — The [Clinical Decision Support Hooks](/docs/cds-hooks) service URL is now configurable, enabling integration with custom CDS endpoints. CDS Hooks support is part of Medplum's [HTI-4 compliance initiative](/docs/compliance/hti-4), which covers payer interoperability requirements ahead of the January 2027 enforcement date. ([Cody Ebberson](https://github.com/codyebberson))
+- **Configurable CDS services URL** — The Clinical Decision Support (CDS) Hooks service URL is now configurable, enabling integration with custom CDS endpoints. CDS Hooks support is part of Medplum's [HTI-4 compliance initiative](/docs/compliance/hti-4), which covers payer interoperability requirements ahead of the January 2027 enforcement date. ([Cody Ebberson](https://github.com/codyebberson))
 
 ## Documentation
 
@@ -110,29 +110,29 @@ February's documentation work was substantial, with a major restoration of SDK d
 - **New documentation for custom and bot operations** — Full coverage of [custom FHIR operations](/docs/bots/custom-fhir-operations), including instance-level and system-level patterns
 - **Project and system administration operations** — New reference pages for [admin operations](/docs/self-hosting/super-admin-guide)
 - **Data export and import operations** — Documented the [Bulk Data Export](/docs/api/fhir/operations/bulk-fhir), [C-CDA Export](/docs/api/fhir/operations/ccda-export), [Claim Export](/docs/api/fhir/operations/claim-export), and [CSV export](/docs/api/fhir/operations/csv) API operations
-- **Clinical decision support operations** — New reference for [CDS Hooks](/docs/cds-hooks) operations
+- **Clinical decision support operations** — New reference for CDS Hooks operations, part of Medplum's [HTI-4 compliance initiative](/docs/compliance/hti-4)
 
 **Subscriptions**
 
 - **Subscription extension docs** — Clarified the [subscription extension](/docs/subscriptions/subscription-extensions) format for interaction filters and retry policy ([Ian Plunkett](https://github.com/ianplunkett))
-- **`useSubscription` lifecycle hooks** — Added documentation for lifecycle hook callbacks in the [`useSubscription`](/docs/subscriptions/subscription-internals) React hook ([Rahul Agarwal](https://github.com/rahul1))
+- **`useSubscription` lifecycle hooks** — Added documentation for lifecycle hook callbacks in the [`useSubscription`](/docs/react/use-subscription) React hook ([Rahul Agarwal](https://github.com/rahul1))
 
 **Provider and Clinical**
 
 - **DoseSpot notifications** — Updated documentation for [DoseSpot](/docs/medications/e-prescibe) notification handling ([David Yanez](https://github.com/techdavidy))
 - **Patient login and launch URI clarification** — Improved docs for patient-facing login flows and SMART launch URIs, contributed by [Mallikharjuna Mulpuri](https://github.com/mallikharjunamulpuri)
-- **Allergy representation** — Clarified allergy status and AllergyIntolerance formatting in the [representing allergies guide](/docs/charting/allergies), contributed by [Aaron Hong](https://github.com/aaronhong)
+- **Allergy representation** — Clarified allergy status and AllergyIntolerance formatting in the [representing allergies guide](/docs/charting/allergy-intolerances), contributed by [Aaron Hong](https://github.com/aaronhong)
 - **CareTeam tenancy patterns** — Clarified per-patient CareTeam cardinality and multi-tenancy patterns ([Rahul Agarwal](https://github.com/rahul1))
 
 **Infrastructure and Security**
 
 - **Docker Hardened Images** — Added Docker Hardened Images to the [security page](/docs/compliance) ([Cody Ebberson](https://github.com/codyebberson))
-- **Medplum Agent solutions page** — Created a dedicated [Medplum Agent solutions page](/products/agent). The [Medplum Agent](/docs/agent) is an application that runs inside your firewall and bridges on-premise devices (HL7/MLLP, ASTM, DICOM) to the cloud via secure WebSocket channels ([Maddy Li](https://github.com/maddyli))
+- **Medplum Agent solutions page** — Created a dedicated [Medplum Agent solutions page](/docs/agent). The [Medplum Agent](/docs/agent) is an application that runs inside your firewall and bridges on-premise devices (HL7/MLLP, ASTM, DICOM) to the cloud via secure WebSocket channels ([Maddy Li](https://github.com/maddyli))
 - **Branding guide** — New [branding documentation](/docs/self-hosting/branding) explaining how to customize the Medplum logo and application name ([Aditya Suri](https://github.com/adityasuri))
 
 **Blog**
 
-- **Identity Management: A Practical Guide** — New blog post by [Everett Williams](https://github.com/everett-williams) on managing digital identities in healthcare applications ([read the post](/blog/identity-management-a-practical-guide))
+- **Identity Management: A Practical Guide** — New blog post by [Everett Williams](https://github.com/everett-williams) on managing digital identities in healthcare applications ([read the post](/blog/identity-management))
 - **Medplum Secures Healthcare Platform on Docker Hardened Images** — Published on the Docker blog, this post by Cody Ebberson and Docker's Ajeet Singh Raina covers how Medplum uses [Docker Hardened Images](https://www.docker.com/blog/medplum-healthcare-docker-hardened-images/) to reduce CVE noise, meet HIPAA and SOC 2 requirements, and minimize container security configuration burden
 
 ## Bug Fixes
