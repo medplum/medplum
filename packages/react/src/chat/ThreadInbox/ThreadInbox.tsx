@@ -63,6 +63,7 @@ export interface ThreadInboxProps {
   readonly completedUri: string;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
+  readonly allowPatientSelection?: boolean;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -79,6 +80,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onChange,
     inProgressUri,
     completedUri,
+    allowPatientSelection = false,
   } = props;
 
   const navigate = useMedplumNavigate();
@@ -331,7 +333,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog subject={subject} opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} />
+      <NewTopicDialog subject={subject} opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} allowPatientSelection={allowPatientSelection} />
     </>
   );
 }
