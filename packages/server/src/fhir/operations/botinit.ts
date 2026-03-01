@@ -146,7 +146,9 @@ export async function createBot(
   });
 
   if (executableCode) {
-    await deployBot(repo, bot);
+    // Need to read bot as system repo to get the full bot resource with meta.project for deployBot
+    const fullBot = await systemRepo.readResource<Bot>('Bot', bot.id);
+    await deployBot(repo, fullBot);
   }
 
   return bot;
