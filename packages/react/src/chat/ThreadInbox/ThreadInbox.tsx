@@ -333,7 +333,13 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog subject={subject} opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} allowPatientSelection={allowPatientSelection} />
+      <NewTopicDialog
+        subject={subject}
+        opened={modalOpened}
+        onClose={closeModal}
+        onSubmit={handleNewTopicCompletion}
+        allowPatientSelection={allowPatientSelection}
+      />
     </>
   );
 }
