@@ -27,6 +27,7 @@ import { getAuthenticatedContext } from '../../context';
 import type { Repository } from '../../fhir/repo';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import { getBinaryStorage } from '../../storage/loader';
+import { deployBot } from './deploy';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const botInitOperation: OperationDefinition = {
@@ -143,6 +144,10 @@ export async function createBot(
     profile: createReference(bot),
     accessPolicy: params.accessPolicy,
   });
+
+  if (executableCode) {
+    await deployBot(repo, bot);
+  }
 
   return bot;
 }
