@@ -108,7 +108,7 @@ import {
  */
 export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
-export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env?.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -264,6 +264,17 @@ export interface MedplumClientOptions {
    * Default value is `0`, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The maximum time in milliseconds to wait between retries for failed requests.
+   *
+   * When the client encounters a rate-limited response (HTTP 429) or a server error (HTTP 5xx), it will automatically retry the request after a delay. The delay is calculated using an exponential backoff strategy, and this setting defines the maximum delay time.
+   *
+   * If the retry delay exceeds this maximum time, the client will not retry the request and will return the error response to the caller immediately. Setting this value to zero disables retries for failed requests.
+   *
+   * Default value is `2000` (2 seconds).
+   */
+  maxRetryTime?: number;
 
   /**
    * The refresh grace period in milliseconds.
@@ -956,6 +967,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly maxRetryTime: number;
   private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
@@ -1003,6 +1015,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
+    this.maxRetryTime = options?.maxRetryTime ?? 2000;
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -3621,7 +3634,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
-        const maxRetryTime = options.maxRetryTime ?? 2_000;
+        const maxRetryTime = options.maxRetryTime ?? this.maxRetryTime;
         // Return to user immediately if delay would be very long
         if (delayMs > maxRetryTime) {
           return response;
