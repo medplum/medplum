@@ -3,7 +3,7 @@
 import type { CurrentContext, FhircastAnchorResourceType } from '@medplum/core';
 import { OperationOutcomeError, badRequest, generateId, serverError } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 
 const RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE = {
   patient: 'Patient',
@@ -34,7 +34,7 @@ export async function getCurrentContext<ResourceType extends FhircastAnchorResou
   topic: string
 ): Promise<CurrentContext<ResourceType> | undefined> {
   const topicCurrentContextKey = getTopicCurrentContextKey(projectId, topic);
-  const currentContextStr = await getRedis().get(topicCurrentContextKey);
+  const currentContextStr = await getCacheRedis().get(topicCurrentContextKey);
   if (!currentContextStr) {
     return undefined;
   }
@@ -45,7 +45,7 @@ export async function setTopicCurrentContext<
   ResourceType extends FhircastAnchorResourceType = FhircastAnchorResourceType,
 >(projectId: string, topic: string, currentContext: CurrentContext<ResourceType>): Promise<void> {
   const topicCurrentContextKey = `medplum:fhircast:project:${projectId}:topic:${topic}:latest`;
-  await getRedis().set(topicCurrentContextKey, JSON.stringify(currentContext));
+  await getCacheRedis().set(topicCurrentContextKey, JSON.stringify(currentContext));
 }
 
 export async function cleanupContextForResource(
@@ -54,12 +54,12 @@ export async function cleanupContextForResource(
   anchorResource: Resource
 ): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  await getRedis().hdel(topicContextsStorageKey, anchorResource.id as string);
+  await getCacheRedis().hdel(topicContextsStorageKey, anchorResource.id as string);
 }
 
 export async function cleanupAllContextsForTopic(projectId: string, topic: string): Promise<void> {
   const topicContextsStorageKey = getTopicContextStorageKey(projectId, topic);
-  await getRedis().del(topicContextsStorageKey);
+  await getCacheRedis().del(topicContextsStorageKey);
 }
 
 export async function getTopicForUser(userId: string): Promise<string> {
@@ -71,7 +71,7 @@ export async function getTopicForUser(userId: string): Promise<string> {
   // Per the spec, the lease time of a subscription should not exceed the token expiry time
   // Source: https://fhircast.org/specification/STU2/#session-discovery:~:text=.%20If%20using%20OAuth%202.0%2C%20the%20Hub%20SHALL%20limit%20the%20subscription%20lease%20seconds%20to%20be%20less%20than%20or%20equal%20to%20the%20access%20token%27s%20expiration.
 
-  const results = await getRedis().multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
+  const results = await getCacheRedis().multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
   if (!results) {
     throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${topicKey} from Redis`)));
   }

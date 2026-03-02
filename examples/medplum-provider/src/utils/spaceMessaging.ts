@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { useMedplum } from '@medplum/react';
-import type { Identifier, Communication, Resource, Bundle, ResourceType } from '@medplum/fhirtypes';
-import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { MedplumClient } from '@medplum/core';
+import { getReferenceString, isNotFound, OperationOutcomeError } from '@medplum/core';
+import type { Bundle, Communication, Identifier, Resource, ResourceType } from '@medplum/fhirtypes';
+import type { useMedplum } from '@medplum/react';
 import type { Message } from '../types/spaces';
 import { createConversationTopic, saveMessage } from './spacePersistence';
 

@@ -401,7 +401,7 @@ export class FhirToCcdaConverter {
 
     let code: CodeableConcept | undefined = undefined;
     if ('qualification' in mainResource) {
-      code = mainResource.qualification?.[0];
+      code = mainResource.qualification?.[0]?.code;
     }
 
     let humanName: HumanName[] | undefined = undefined;

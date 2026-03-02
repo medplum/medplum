@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { Communication } from '@medplum/fhirtypes';
 import type { WithId } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { MessagesPage } from './MessagesPage';
 
 vi.mock('@medplum/react-hooks', async () => {

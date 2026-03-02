@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text, Anchor } from '@mantine/core';
+import { Anchor, Text } from '@mantine/core';
 import type { JSX } from 'react';
 
 interface MessageWithLinksProps {

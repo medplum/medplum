@@ -1,33 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
+  ActionIcon,
+  Box,
   Button,
   Divider,
-  ActionIcon,
-  ScrollArea,
-  Stack,
-  Skeleton,
-  Text,
-  Box,
+  Flex,
+  Group,
   Modal,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  Text,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { JSX } from 'react';
-import type { ServiceRequest } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { useNavigate, useParams } from 'react-router';
+import type { ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
 import { IconPlus } from '@tabler/icons-react';
-import { LabListItem } from '../../components/labs/LabListItem';
-import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
-import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
-import { usePatient } from '../../hooks/usePatient';
 import cx from 'clsx';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { LabListItem } from '../../components/labs/LabListItem';
+import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
+import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
+import { usePatient } from '../../hooks/usePatient';
+import { showErrorNotification } from '../../utils/notifications';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';

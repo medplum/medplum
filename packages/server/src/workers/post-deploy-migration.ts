@@ -9,8 +9,9 @@ import type { PoolClient } from 'pg';
 import * as semver from 'semver';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import type {
   CustomPostDeployMigrationJobData,
@@ -28,10 +29,17 @@ import {
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
 import type { MigrationActionResult, PhasalMigration } from '../migrations/types';
-import { reconnectOnError } from '../redis';
 import { getRegisteredServers } from '../server-registry';
-import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, isJobActive, isJobCompatible, moveToDelayedAndThrow, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import {
+  addVerboseQueueLogging,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
+  isJobActive,
+  isJobCompatible,
+  moveToDelayedAndThrow,
+  queueRegistry,
+} from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -42,9 +50,9 @@ function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, st
   };
 }
 
-export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
+export const initPostDeployMigrationWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {
@@ -54,15 +62,19 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<PostDeployJobData>(
-    PostDeployMigrationQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-    {
-      ...config.bullmq,
-      ...defaultOptions,
-    }
-  );
-  addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  let worker: Worker<PostDeployJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'post-deploy-migration');
+    worker = new Worker<PostDeployJobData>(
+      PostDeployMigrationQueueName,
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      {
+        ...workerBullmq,
+        ...defaultOptions,
+      }
+    );
+    addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
+  }
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 
@@ -78,7 +90,8 @@ export async function isClusterCompatible(migrationNumber: number): Promise<bool
 }
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
-  const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
   if (!isJobCompatible(asyncJob)) {
     await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since this worker is not compatible');
@@ -94,7 +107,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   }
 
   if (job.data.type === 'dynamic') {
-    await runDynamicMigration(getSystemRepo(), job as Job<DynamicPostDeployJobData>);
+    await runDynamicMigration(systemRepo, job as Job<DynamicPostDeployJobData>);
     return;
   }
 
@@ -127,7 +140,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     );
   }
 
-  const result: PostDeployJobRunResult = await migration.run(getSystemRepo(), job, job.data);
+  const result: PostDeployJobRunResult = await migration.run(systemRepo, job, job.data);
 
   switch (result) {
     case 'ineligible': {
@@ -144,11 +157,11 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 }
 
 async function runDynamicMigration(
-  repo: Repository,
+  systemRepo: SystemRepository,
   job: Job<DynamicPostDeployJobData>
 ): Promise<PostDeployJobRunResult> {
-  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-  const exec = new AsyncJobExecutor(repo, asyncJob);
+  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {
@@ -160,7 +173,7 @@ async function runDynamicMigration(
       }
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(repo, output);
+    await exec.completeJob(output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {
@@ -169,13 +182,13 @@ async function runDynamicMigration(
       type: job.data.type,
       dataVersion: asyncJob.dataVersion,
     });
-    await exec.failJob(repo, err);
+    await exec.failJob(err);
   }
   return 'finished';
 }
 
 export async function runCustomMigration(
-  repo: Repository,
+  systemRepo: SystemRepository,
   job: Job<CustomPostDeployMigrationJobData> | undefined,
   jobData: CustomPostDeployMigrationJobData,
   callback: (
@@ -185,15 +198,15 @@ export async function runCustomMigration(
     jobData: CustomPostDeployMigrationJobData
   ) => Promise<void>
 ): Promise<PostDeployJobRunResult> {
-  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-  const exec = new AsyncJobExecutor(repo, asyncJob);
+  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
   const results: MigrationActionResult[] = [];
   try {
     await withLongRunningDatabaseClient(async (client) => {
       await callback(client, results, job, jobData);
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.completeJob(repo, output);
+    await exec.completeJob(output);
   } catch (err: any) {
     const errorMsg = normalizeErrorString(err);
     globalLogger.error('Post-deploy migration threw an error', {
@@ -203,7 +216,7 @@ export async function runCustomMigration(
       dataVersion: asyncJob.dataVersion,
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
-    await exec.failJob(repo, err, output);
+    await exec.failJob(err, output);
   }
   return 'finished';
 }
@@ -273,7 +286,8 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
   jobData: T,
   options?: JobsOptions
 ): Promise<Job<T> | undefined> {
-  const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be in jobData in the future
+  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const deduplicationId = `v${asyncJob.dataVersion}`;
 
   const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);

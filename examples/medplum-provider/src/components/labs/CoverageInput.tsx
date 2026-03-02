@@ -5,8 +5,8 @@ import type { Coverage, Patient } from '@medplum/fhirtypes';
 import type { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 
 const INITIAL_COVERAGES: { coverage: Coverage; selected: boolean }[] = [];
 const MAX_COVERAGES = 3;

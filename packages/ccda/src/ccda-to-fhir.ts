@@ -63,6 +63,7 @@ import {
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
 } from './oids';
+import { sanitizeNullFlavors } from './sanitize';
 import {
   ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
@@ -139,7 +140,7 @@ export interface CcdaToFhirOptions {
  * @returns The converted FHIR resources
  */
 export function convertCcdaToFhir(ccda: Ccda, options?: CcdaToFhirOptions): Bundle {
-  return new CcdaToFhirConverter(ccda, options).convert();
+  return new CcdaToFhirConverter(sanitizeNullFlavors(ccda), options).convert();
 }
 
 class CcdaToFhirConverter {
@@ -179,7 +180,7 @@ class CcdaToFhirConverter {
   private createPatient(patientRole: CcdaPatientRole): Patient {
     const patient = patientRole.patient;
     const extensions: Extension[] = [];
-    if (patient.raceCode && patient.raceCode.length > 0 && !patient.raceCode[0]['@_nullFlavor']) {
+    if (patient.raceCode && patient.raceCode.length > 0) {
       extensions.push({
         url: US_CORE_RACE_URL,
         extension: patient.raceCode.map((raceCode) => ({
@@ -189,7 +190,7 @@ class CcdaToFhirConverter {
       });
     }
 
-    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0 && !patient.ethnicGroupCode[0]['@_nullFlavor']) {
+    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0) {
       extensions.push({
         url: US_CORE_ETHNICITY_URL,
         extension: patient.ethnicGroupCode.map((ethnicGroupCode) => ({
@@ -309,7 +310,7 @@ class CcdaToFhirConverter {
   }
 
   private mapAddresses(addresses: CcdaAddr[] | undefined): Address[] | undefined {
-    if (!addresses || addresses.length === 0 || addresses.every((addr) => addr['@_nullFlavor'] === 'UNK')) {
+    if (!addresses || addresses.length === 0) {
       return undefined;
     }
     return addresses?.map((addr) => ({
@@ -323,7 +324,7 @@ class CcdaToFhirConverter {
   }
 
   private mapTelecom(telecoms: CcdaTelecom[] | undefined): ContactPoint[] | undefined {
-    if (!telecoms || telecoms.length === 0 || telecoms.every((tel) => tel['@_nullFlavor'] === 'UNK')) {
+    if (!telecoms || telecoms.length === 0) {
       return undefined;
     }
     return telecoms?.map((tel) => ({
@@ -407,7 +408,10 @@ class CcdaToFhirConverter {
     }
 
     for (const observation of entry.observation ?? EMPTY) {
-      resources.push(this.processObservation(section, observation));
+      const resource = this.processObservation(section, observation);
+      if (resource) {
+        resources.push(resource);
+      }
     }
 
     for (const encounter of entry.encounter ?? EMPTY) {
@@ -825,26 +829,44 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
-    const result = {
-      coding: [
-        {
-          system: mapCcdaSystemToFhir(code['@_codeSystem']),
-          code: code['@_code'],
-          display: code['@_displayName'],
-        },
-      ],
-      text: code['@_displayName'],
-    };
+    const codings: Coding[] = [];
 
-    for (const translation of code.translation ?? EMPTY) {
-      result.coding.push({
-        system: mapCcdaSystemToFhir(translation['@_codeSystem']),
-        code: translation['@_code'],
-        display: translation['@_displayName'],
+    const system = mapCcdaSystemToFhir(code['@_codeSystem']);
+    const codeValue = code['@_code'];
+    const display = code['@_displayName'];
+
+    if (system || codeValue || display) {
+      codings.push({
+        ...(system && { system }),
+        ...(codeValue && { code: codeValue }),
+        ...(display && { display }),
       });
     }
 
-    return result;
+    for (const translation of code.translation ?? EMPTY) {
+      const translationSystem = mapCcdaSystemToFhir(translation['@_codeSystem']);
+      const translationCode = translation['@_code'];
+      const translationDisplay = translation['@_displayName'];
+
+      if (translationSystem || translationCode || translationDisplay) {
+        codings.push({
+          ...(translationSystem && { system: translationSystem }),
+          ...(translationCode && { code: translationCode }),
+          ...(translationDisplay && { display: translationDisplay }),
+        });
+      }
+    }
+
+    const text = code['@_displayName'] || code.originalText?.reference?.['@_value'] || nodeToString(code.originalText);
+
+    if (codings.length === 0) {
+      return text ? { text } : undefined;
+    }
+
+    return {
+      coding: codings,
+      ...(text && { text }),
+    };
   }
 
   private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
@@ -857,6 +879,14 @@ class CcdaToFhirConverter {
       code: code['@_code'],
       display: code['@_displayName'],
     };
+  }
+
+  private mapQualification(code: CcdaCode | undefined): PractitionerQualification[] | undefined {
+    const codeableConcept = this.mapCode(code);
+    if (!codeableConcept) {
+      return undefined;
+    }
+    return [{ code: codeableConcept }];
   }
 
   private createClinicalStatus(act: CcdaAct): CodeableConcept {
@@ -893,9 +923,7 @@ class CcdaToFhirConverter {
       name: this.mapCcdaNameArrayFhirHumanNameArray(author.assignedAuthor?.assignedPerson?.name),
       address: this.mapAddresses(author.assignedAuthor?.addr),
       telecom: this.mapTelecom(author.assignedAuthor?.telecom),
-      qualification: author.assignedAuthor?.code
-        ? [this.mapCode(author.assignedAuthor?.code) as PractitionerQualification]
-        : undefined,
+      qualification: this.mapQualification(author.assignedAuthor?.code),
     };
 
     this.resources.push(practitioner);
@@ -1081,13 +1109,15 @@ class CcdaToFhirConverter {
     const result: Reference<Observation>[] = [];
     for (const observation of component.observation ?? EMPTY) {
       const child = this.processVitalsObservation(observation);
-      result.push(createReference(child));
-      this.resources.push(child);
+      if (child) {
+        result.push(createReference(child));
+        this.resources.push(child);
+      }
     }
     return result;
   }
 
-  private processObservation(section: CcdaSection, observation: CcdaObservation): Resource {
+  private processObservation(section: CcdaSection, observation: CcdaObservation): Resource | undefined {
     const observationTemplateId = observation.templateId[0]['@_root'];
     if (observationTemplateId === OID_GOALS_SECTION || observationTemplateId === OID_GOAL_OBSERVATION) {
       // Goal template
@@ -1165,14 +1195,20 @@ class CcdaToFhirConverter {
     return map[observation.statusCode['@_code'] ?? 'active'];
   }
 
-  private processVitalsObservation(observation: CcdaObservation): Observation {
+  private processVitalsObservation(observation: CcdaObservation): Observation | undefined {
+    // Skip observations without a valid code (e.g., nullFlavor="NA")
+    const code = this.mapCode(observation.code);
+    if (!code) {
+      return undefined;
+    }
+
     const result: Observation = {
       resourceType: 'Observation',
       id: this.mapId(observation.id),
       identifier: this.mapIdentifiers(observation.id),
       status: 'final',
       category: this.mapObservationTemplateIdToObservationCategory(observation.templateId),
-      code: this.mapCode(observation.code) as CodeableConcept,
+      code,
       subject: createReference(this.patient as Patient),
       referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
       performer: observation.author
@@ -1224,11 +1260,13 @@ class CcdaToFhirConverter {
       const childObservation = relationship.observation;
       for (const child of childObservation ?? EMPTY) {
         const childResource = this.processVitalsObservation(child);
-        this.resources.push(childResource);
-        if (!result.hasMember) {
-          result.hasMember = [];
+        if (childResource) {
+          this.resources.push(childResource);
+          if (!result.hasMember) {
+            result.hasMember = [];
+          }
+          result.hasMember.push(createReference(childResource));
         }
-        result.hasMember.push(createReference(childResource));
       }
     }
 

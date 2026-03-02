@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stack, Text } from '@mantine/core';
-import { Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
-import { useResource } from '@medplum/react-hooks';
 import { createReference, formatHumanName, formatPeriod } from '@medplum/core';
 import type { Appointment, Patient, Reference } from '@medplum/fhirtypes';
+import { Form, MedplumLink, ResourceAvatar, ResourceInput, useMedplum } from '@medplum/react';
+import { useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';

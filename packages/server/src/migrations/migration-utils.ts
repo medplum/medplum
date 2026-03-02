@@ -6,8 +6,9 @@ import type { AsyncJob } from '@medplum/fhirtypes';
 import type { Pool, PoolClient } from 'pg';
 import { getConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
-import type { Repository } from '../fhir/repo';
-import { getSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
+import { getShardSystemRepo } from '../fhir/repo';
+import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
@@ -121,7 +122,7 @@ export function enforceStrictMigrationVersionChecks(): boolean {
 }
 
 export async function preparePostDeployMigrationAsyncJob(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   version: number
 ): Promise<WithId<AsyncJob>> {
   return systemRepo.withTransaction(
@@ -158,7 +159,10 @@ export async function preparePostDeployMigrationAsyncJob(
   );
 }
 
-export async function queuePostDeployMigration(systemRepo: Repository, version: number): Promise<WithId<AsyncJob>> {
+export async function queuePostDeployMigration(
+  systemRepo: SystemRepository,
+  version: number
+): Promise<WithId<AsyncJob>> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
 
@@ -214,7 +218,7 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
   globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
@@ -277,6 +281,6 @@ export async function maybeStartPostDeployMigration(
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will eventually be a parameter to this function
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }

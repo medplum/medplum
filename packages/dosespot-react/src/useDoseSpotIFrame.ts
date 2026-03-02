@@ -26,6 +26,11 @@ export function useDoseSpotIFrame(options: DoseSpotIFrameOptions): string | unde
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
 
+  // Reset when inputs change so we re-fetch the iframe URL
+  useEffect(() => {
+    initializingRef.current = false;
+  }, [patientId]);
+
   const initPage = useCallback(async () => {
     if (initializingRef.current) {
       return;

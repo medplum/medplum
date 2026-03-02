@@ -27,7 +27,7 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { getRedis } from '../redis';
+import { getUserActiveWebSocketSubscriptionCount, isSubscriptionActive, publish } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -146,8 +146,9 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -176,14 +177,21 @@ describe('WebSocket Subscription', () => {
 
   test('Subscription removed from active and deleted after WebSocket closed', () =>
     withTestContext(async () => {
+      // Wait for both the project-level hash and cache entry to be cleaned up.
+      // These are on different Redis connections so we poll both conditions together.
       let subActive = true;
-      while (subActive) {
+      let inCache = true;
+      while (subActive || inCache) {
         await sleep(0);
         subActive =
-          (await getRedis().hexists(
-            `medplum:subscriptions:r4:project:${project.id}:active:v2`,
-            `Subscription/${patientSubscription?.id}`
-          )) === 1;
+          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
+          1;
+        try {
+          await repo.readResource<Subscription>('Subscription', patientSubscription?.id);
+          inCache = true;
+        } catch {
+          inCache = false;
+        }
       }
       expect(subActive).toStrictEqual(false);
 
@@ -269,8 +277,9 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -299,8 +308,9 @@ describe('WebSocket Subscription', () => {
           while (subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
                 `Subscription/${patientSubscription?.id}`
               )) === 1;
           }
@@ -316,6 +326,92 @@ describe('WebSocket Subscription', () => {
         })
         .close()
         .expectClosed();
+    }));
+
+  test('Subscriptions with different resource types removed from correct hashes on disconnect', () =>
+    withTestContext(async () => {
+      // Create a Patient subscription
+      const patientSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      expect(patientSub).toBeDefined();
+
+      // Create an Observation subscription
+      const observationSub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+      expect(observationSub).toBeDefined();
+
+      // Get binding tokens for both subscriptions
+      const patientTokenRes = await request(server)
+        .get(`/fhir/R4/Subscription/${patientSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const patientToken = (patientTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const observationTokenRes = await request(server)
+        .get(`/fhir/R4/Subscription/${observationSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const observationToken = (observationTokenRes.body as Parameters).parameter?.[0]?.valueString as string;
+
+      // Bind both subscriptions on the same WebSocket, then close
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token: patientToken } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .sendJson({ type: 'bind-with-token', payload: { token: observationToken } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Verify both are in their respective resource-type hashes
+          let patientActive = false;
+          let observationActive = false;
+          while (!patientActive || !observationActive) {
+            await sleep(0);
+            patientActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+            observationActive =
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
+              1;
+          }
+          expect(patientActive).toStrictEqual(true);
+          expect(observationActive).toStrictEqual(true);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          // After disconnect, both should be removed from their respective hashes
+          let patientActive = true;
+          let observationActive = true;
+          while (patientActive || observationActive) {
+            await sleep(0);
+            patientActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+            observationActive =
+              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
+              1;
+          }
+          expect(patientActive).toStrictEqual(false);
+          expect(observationActive).toStrictEqual(false);
+        });
     }));
 
   test('Should reject if given an invalid binding token', () =>
@@ -388,6 +484,263 @@ describe('WebSocket Subscription', () => {
         .expectJson({ type: 'pong' })
         .close()
         .expectClosed();
+    }));
+
+  test('Receives v1 sub event payload', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['V1'], family: 'Test' }],
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+          }
+          // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
+          const v1Payload = [[patient, subscription.id, { includeResource: true }]];
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v1Payload));
+        })
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          if (status.subscription?.reference !== `Subscription/${subscription.id}`) {
+            return false;
+          }
+          const focus = status.notificationEvent?.[0]?.focus;
+          if (focus?.reference !== getReferenceString(patient)) {
+            return false;
+          }
+          // v1 payload with includeResource should include the resource entry
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        .close()
+        .expectClosed();
+    }));
+
+  test('Receives v2 sub event payload', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['V2'], family: 'Test' }],
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+          }
+          // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
+          const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+        })
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          if (status.subscription?.reference !== `Subscription/${subscription.id}`) {
+            return false;
+          }
+          const focus = status.notificationEvent?.[0]?.focus;
+          if (focus?.reference !== getReferenceString(patient)) {
+            return false;
+          }
+          // v2 payload with includeResource should include the resource entry
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        .close()
+        .expectClosed();
+    }));
+
+  test('V2 payload with multiple subscriptions fires all events', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Multi'], family: 'Sub' }],
+      });
+
+      // Create two subscriptions both watching Patient
+      const subscription1 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const subscription2 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      // Get binding tokens for both subscriptions
+      const res1 = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription1.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token1 = (res1.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const res2 = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription2.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token2 = (res2.body as Parameters).parameter?.[0]?.valueString as string;
+
+      const receivedSubRefs: string[] = [];
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        // Bind first subscription
+        .sendJson({ type: 'bind-with-token', payload: { token: token1 } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        // Bind second subscription
+        .sendJson({ type: 'bind-with-token', payload: { token: token2 } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Wait for both subscriptions to be active
+          let sub1Active = false;
+          let sub2Active = false;
+          while (!sub1Active || !sub2Active) {
+            await sleep(0);
+            sub1Active =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription1.id}`)) === 1;
+            sub2Active =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription2.id}`)) === 1;
+          }
+          // Publish a single v2 payload with both subscriptions in the events array
+          const v2Payload = {
+            resource: patient,
+            events: [
+              [subscription1.id, { includeResource: true }],
+              [subscription2.id, { includeResource: true }],
+            ],
+          };
+          await publish('medplum:subscriptions:r4:websockets', JSON.stringify(v2Payload));
+        })
+        // Expect first event-notification
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          receivedSubRefs.push(status.subscription?.reference ?? '');
+          // Verify the resource is included
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        // Expect second event-notification
+        .expectJson((msg: Bundle): boolean => {
+          if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
+            return false;
+          }
+          const status = msg.entry[0].resource;
+          if (status.type !== 'event-notification') {
+            return false;
+          }
+          receivedSubRefs.push(status.subscription?.reference ?? '');
+          // Verify the resource is included
+          const patientEntry = msg.entry?.[1] as BundleEntry<Patient> | undefined;
+          if (patientEntry?.resource?.id !== patient.id) {
+            return false;
+          }
+          return true;
+        })
+        .close()
+        .expectClosed();
+
+      // Verify both subscriptions received notifications
+      expect(receivedSubRefs.sort()).toEqual(
+        [`Subscription/${subscription1.id}`, `Subscription/${subscription2.id}`].sort()
+      );
     }));
 
   test('Attachments are rewritten', () =>
@@ -464,8 +817,9 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+              (await isSubscriptionActive(
+                project.id as string,
+                'DocumentReference',
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -668,8 +1022,9 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
+              (await isSubscriptionActive(
+                project.id as string,
+                'DocumentReference',
                 `Subscription/${subscription.id}`
               )) === 1;
           }
@@ -791,16 +1146,16 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
-          let subActive = false;
-          while (!subActive) {
+          // Wait for the dead subscription handler to process the event.
+          // The subscription was already active from creation, but the handler may
+          // remove it before we can poll the active hash, so wait for the log instead.
+          while (
+            !globalLoggerInfoSpy.mock.calls.some(
+              (call) => call[0] === '[WS] Unable to get login for the given access token'
+            )
+          ) {
             await sleep(0);
-            subActive =
-              (await getRedis().hexists(
-                `medplum:subscriptions:r4:project:${project.id}:active:v2`,
-                `Subscription/${subscription.id}`
-              )) === 1;
           }
-          expect(subActive).toStrictEqual(true);
         })
         .close()
         .expectClosed()
@@ -817,6 +1172,307 @@ describe('WebSocket Subscription', () => {
       // Restore original implementations
       getLoginForAccessTokenSpy.mockRestore();
       globalLoggerInfoSpy.mockRestore();
+    }));
+
+  test('Dead subscription removed from active set when token fails to validate', () =>
+    withTestContext(async () => {
+      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      let mockGetLoginForAccessToken = false;
+      const getLoginForAccessTokenSpy = jest
+        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
+        .mockImplementation(async (...args) => {
+          if (mockGetLoginForAccessToken) {
+            return undefined;
+          }
+          return originalGetLoginForAccessToken(...args);
+        });
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const body = res.body as Parameters;
+      const token = body.parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .exec(async () => {
+          mockGetLoginForAccessToken = true;
+
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // The subscription was already active from creation. The dead subscription cleanup
+          // (triggered by the failed token validation in the pub/sub handler) may remove it
+          // before or after we start polling. Just wait for it to become inactive.
+          let subActive = true;
+          while (subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
+          }
+          expect(subActive).toStrictEqual(false);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      getLoginForAccessTokenSpy.mockRestore();
+    }));
+
+  test('Dead subscription not notified on subsequent events after purge', () =>
+    withTestContext(async () => {
+      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      let mockGetLoginForAccessToken = false;
+      const getLoginForAccessTokenSpy = jest
+        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
+        .mockImplementation(async (...args) => {
+          if (mockGetLoginForAccessToken) {
+            return undefined;
+          }
+          return originalGetLoginForAccessToken(...args);
+        });
+      const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      const body = res.body as Parameters;
+      const token = body.parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        .exec(async () => {
+          mockGetLoginForAccessToken = true;
+
+          // First event: triggers the dead subscription path
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // Wait for subscription to be cleaned up (removed from active set by dead subscription handler)
+          let subActive = true;
+          while (subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSubscription?.id}`
+              )) === 1;
+          }
+
+          // Reset the spy call count
+          globalLoggerInfoSpy.mockClear();
+
+          // Second event: subscription should be purged from lookups, so no login attempt
+          await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [{ attachment: { url: `Binary/${binary.id}` } }],
+          });
+
+          // Give time for any potential event processing
+          await sleep(100);
+
+          // Should NOT see another "Unable to get login" log since the subscription was purged from lookups
+          expect(globalLoggerInfoSpy).not.toHaveBeenCalledWith('[WS] Unable to get login for the given access token', {
+            subscriptionId: subscription.id,
+          });
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      getLoginForAccessTokenSpy.mockRestore();
+      globalLoggerInfoSpy.mockRestore();
+    }));
+
+  test('User active set decremented when WebSocket closes', () =>
+    withTestContext(async () => {
+      const sub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      expect(sub).toBeDefined();
+
+      const authorRef = sub.meta?.author?.reference as string;
+      expect(authorRef).toBeDefined();
+
+      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${sub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          // After disconnect, user active set should be decremented
+          while ((await getUserActiveWebSocketSubscriptionCount(authorRef)) >= countAfterCreate) {
+            await sleep(0);
+          }
+          expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+        });
+    }));
+
+  test('User active set decremented when subscription is deleted', () =>
+    withTestContext(async () => {
+      const sub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+      expect(sub).toBeDefined();
+
+      const authorRef = sub.meta?.author?.reference as string;
+      expect(authorRef).toBeDefined();
+
+      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
+
+      await repo.deleteResource('Subscription', sub.id);
+
+      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+    }));
+
+  test('Error when user exceeds max concurrent WebSocket subscriptions', () =>
+    withTestContext(async () => {
+      const { repo: limitRepo } = await createTestProject({
+        project: {
+          features: ['websocket-subscriptions'],
+          systemSetting: [{ name: 'maxUserWebSocketSubscriptions', valueInteger: 2 }],
+        },
+        withRepo: true,
+      });
+
+      // First two should succeed
+      await limitRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      await limitRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+
+      // Third should fail
+      await expect(
+        limitRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'DiagnosticReport',
+          channel: { type: 'websocket' },
+        })
+      ).rejects.toThrow(OperationOutcomeError);
     }));
 });
 

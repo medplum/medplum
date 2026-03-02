@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -21,7 +21,7 @@ jest.mock('node-fetch');
 
 describe('Reset Password', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const testRecaptchaSecretKey = 'testrecaptchasecretkey';
 
   beforeAll(async () => {

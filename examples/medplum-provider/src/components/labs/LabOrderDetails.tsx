@@ -1,37 +1,37 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  Badge,
+  Button,
+  Divider,
+  Group,
+  Loader,
   Paper,
+  ScrollArea,
   Stack,
   Text,
-  Group,
-  Badge,
-  Divider,
-  Loader,
-  Button,
-  Timeline,
   ThemeIcon,
-  ScrollArea,
+  Timeline,
 } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type {
-  ServiceRequest,
-  HumanName,
-  DocumentReference,
-  DiagnosticReport,
-  QuestionnaireResponse,
-  MedicationRequest,
-  Reference,
   CarePlan,
+  DiagnosticReport,
+  DocumentReference,
+  HumanName,
+  MedicationRequest,
+  QuestionnaireResponse,
+  Reference,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
-import { useResource, useMedplum, AttachmentDisplay, ObservationTable } from '@medplum/react';
-import { IconSend, IconCheck, IconFlask, IconClipboardCheck } from '@tabler/icons-react';
-import { useState, useEffect, useMemo } from 'react';
-import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
-import classes from './LabOrderDetails.module.css';
+import { AttachmentDisplay, ObservationTable, useMedplum, useResource } from '@medplum/react';
+import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
 import cx from 'clsx';
+import type { JSX } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
+import classes from './LabOrderDetails.module.css';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;

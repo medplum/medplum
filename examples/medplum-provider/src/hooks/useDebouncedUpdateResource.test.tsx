@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { renderHook, waitFor } from '@testing-library/react';
 import type { Patient } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { useDebouncedUpdateResource, DEFAULT_SAVE_TIMEOUT_MS } from './useDebouncedUpdateResource';
+import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { DEFAULT_SAVE_TIMEOUT_MS, useDebouncedUpdateResource } from './useDebouncedUpdateResource';
 
 describe('useDebouncedUpdateResource', () => {
   let medplum: MockClient;

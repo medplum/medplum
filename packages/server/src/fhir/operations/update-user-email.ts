@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ProfileResource } from '@medplum/core';
+import type { ProfileResource, WithId } from '@medplum/core';
 import {
   allOk,
   append,
@@ -17,7 +17,7 @@ import { verifyEmail } from '../../auth/verifyemail';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
-import { getSystemRepo } from '../repo';
+import { getProjectSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
 const op: OperationDefinition = {
@@ -88,11 +88,11 @@ export async function updateUserEmailOperation(req: FhirRequest): Promise<FhirRe
   return [allOk, user];
 }
 
-async function updateUser(userId: string, params: InputParams, project: Project): Promise<User> {
-  const systemRepo = getSystemRepo();
+async function updateUser(userId: string, params: InputParams, project: WithId<Project>): Promise<User> {
+  const systemRepo = getProjectSystemRepo(project);
   return systemRepo.withTransaction(async () => {
     let user = await systemRepo.readResource<User>('User', userId);
-    if (!project.superAdmin && (!user.project || user.project.reference !== getReferenceString(project))) {
+    if (!project.superAdmin && user.project?.reference !== getReferenceString(project)) {
       throw new OperationOutcomeError(forbidden);
     }
     if (params.updateProfileTelecom && !user.project) {

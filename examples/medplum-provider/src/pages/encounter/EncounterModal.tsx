@@ -6,12 +6,12 @@ import { normalizeErrorString } from '@medplum/core';
 import type { Coding, Encounter, PlanDefinition } from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
-import classes from './EncounterModal.module.css';
 import { createEncounter } from '../../utils/encounter';
+import classes from './EncounterModal.module.css';
 
 export const EncounterModal = (): JSX.Element => {
   const navigate = useNavigate();
