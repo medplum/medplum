@@ -186,6 +186,8 @@ const objectKeys = new Set([
   'defaultOAuthClients',
   'smtp',
   'arrayColumnPadding',
+  'workers.enabled',
+  'workers.bullmq',
 ]);
 
 export function isObjectConfig(key: string): boolean {

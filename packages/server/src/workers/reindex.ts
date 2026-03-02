@@ -25,10 +25,11 @@ import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
-import type { WorkerInitializer } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
   getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
   isJobActive,
   isJobCompatible,
   moveToDelayedAndThrow,
@@ -94,7 +95,7 @@ const defaultSettings: ReindexJobSettings = {
 // to prevent workers running older versions of the reindex worker from processing jobs
 export const REINDEX_WORKER_VERSION = 2;
 
-export const initReindexWorker: WorkerInitializer = (config) => {
+export const initReindexWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
     connection: getBullmqRedisConnectionOptions(config),
   };
@@ -110,18 +111,22 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<ReindexJobData>(
-    ReindexQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
-    asyncJob: 'AsyncJob/' + job.data.asyncJobId,
-    jobType: job.data.type,
-  }));
+  let worker: Worker<ReindexJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'reindex');
+    worker = new Worker<ReindexJobData>(
+      ReindexQueueName,
+      async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
+    );
+    addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
+      asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+      jobType: job.data.type,
+    }));
+  }
 
   return { queue, worker, name: ReindexQueueName };
 };
