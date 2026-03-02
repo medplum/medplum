@@ -13,6 +13,7 @@ PACKAGES=(
   "core"
   "create-medplum"
   "definitions"
+  "dosespot-core"                                                     
   "dosespot-react"
   "eslint-config"
   "fhir-router"
