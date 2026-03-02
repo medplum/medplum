@@ -259,11 +259,11 @@ export type WorkerName =
 
 export interface MedplumWorkersConfig {
   /**
-   * Which workers to run on this server instance.
-   * - undefined/omitted: all workers run (backwards compatible default)
-   * - WorkerName[]: only listed workers run. Empty array = no workers (HTTP-only pool).
+   * Which workers to run on this server instance. Include '*' to enable all workers.
+   * If undefined/omitted: all workers run (backwards compatible default)
+   * Specify an empty array to run no workers e.g. for an HTTP-only pool.
    */
-  enabled?: WorkerName[];
+  enabled?: (WorkerName | '*')[];
 
   /**
    * Per-worker BullMQ overrides, merged on top of global `bullmq` config.

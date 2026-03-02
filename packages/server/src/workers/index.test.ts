@@ -4,6 +4,7 @@ import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
+import type { WorkerName } from '../config/types';
 import { closeDatabase, initDatabase } from '../database';
 import { loadStructureDefinitions } from '../fhir/structure';
 import { getLogger } from '../logger';
@@ -49,23 +50,26 @@ describe('Workers', () => {
     await closeRedis();
   });
 
-  test('Init with workers.enabled subset', async () => {
-    const config = await loadTestConfig();
-    config.workers = { enabled: ['subscription'] };
-    initRedis(config);
-    await initDatabase(config);
-    await seedDatabase(config);
-    initBinaryStorage('file:binary');
-    initWorkers(config);
+  test.each([[[]], [['subscription']], [['subscription', '*']]] as [(WorkerName | '*')[]][])(
+    'Init with workers.enabled %s',
+    async (enabledWorkers) => {
+      const config = await loadTestConfig();
+      config.workers = { enabled: enabledWorkers };
+      initRedis(config);
+      await initDatabase(config);
+      await seedDatabase(config);
+      initBinaryStorage('file:binary');
+      initWorkers(config);
 
-    // Queues should still be available regardless of which workers are enabled
-    expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
-    expect(queueRegistry.get('DownloadQueue')).toBeDefined();
+      // Queues should still be available regardless of which workers are enabled
+      expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
+      expect(queueRegistry.get('DownloadQueue')).toBeDefined();
 
-    await closeWorkers();
-    await closeDatabase();
-    await closeRedis();
-  });
+      await closeWorkers();
+      await closeDatabase();
+      await closeRedis();
+    }
+  );
 
   describe('addBackgroundJobs', () => {
     afterEach(() => {
