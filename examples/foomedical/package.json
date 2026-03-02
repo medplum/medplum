@@ -32,7 +32,7 @@
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/jest": "30.0.0",
-    "@types/node": "22.19.11",
+    "@types/node": "22.19.13",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
@@ -48,7 +48,7 @@
     "react": "19.2.4",
     "react-chartjs-2": "5.3.1",
     "react-dom": "19.2.4",
-    "react-router": "7.13.0",
+    "react-router": "7.13.1",
     "typescript": "5.9.3",
     "vite": "7.3.1"
   },
