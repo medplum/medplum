@@ -1074,6 +1074,83 @@ describe('BillingTab', () => {
     });
   });
 
+  describe('Candid Health integration', () => {
+    const mockCandidClaim: WithId<Claim> = {
+      ...mockClaim,
+      identifier: [{ system: 'https://candidhealth.com/encounter-id', value: 'candid-encounter-123' }],
+    };
+
+    const mockGetEncounterBot = { resourceType: 'Bot', id: 'get-encounter-bot-123' };
+
+    test('shows Candid claim card when claim has a Candid encounter ID', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({ fullEncounter: { claims: [] } });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
+      });
+    });
+
+    test('displays formatted status badge and submission date from bot response', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        fullEncounter: {
+          claims: [{ status: 'waiting_for_provider' }],
+          createdAt: '2026-03-02T21:32:57.748Z',
+        },
+      });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
+        expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
+      });
+    });
+
+    test('hides status badge and submission date when bot response has no status or createdAt', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        fullEncounter: { claims: [] },
+      });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Waiting For Provider')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
+    });
+
+    test('View Claim on Candid button opens the correct Candid URL', async () => {
+      const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const user = userEvent.setup();
+
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({ fullEncounter: { claims: [] } });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('View Claim on Candid'));
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        'https://app-staging.joincandidhealth.com/claims/candid-encounter-123',
+        '_blank'
+      );
+
+      windowOpenSpy.mockRestore();
+    });
+  });
+
   test('exports claim with conditions that have ICD-10 coding', async () => {
     const user = userEvent.setup();
 

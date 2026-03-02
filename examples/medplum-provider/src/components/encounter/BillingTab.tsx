@@ -33,7 +33,7 @@ import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
-const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/';
+const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
 const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
 
 export interface BillingTabProps {
@@ -63,13 +63,14 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     chartNoteStatus,
   } = props;
   const medplum = useMedplum();
-  const candidClaimId = claim ? getIdentifier(claim, CANDID_IDENTIFIER_SYSTEM) : undefined;
+  const candidEncounterId = claim ? getIdentifier(claim, CANDID_IDENTIFIER_SYSTEM) : undefined;
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [billingBot, setBillingBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
+  const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef<WithId<Claim> | undefined>(claim);
@@ -84,8 +85,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       }
       const coverageResults = await medplum.searchResources(
         'Coverage',
-        `patient=${getReferenceString(patient)}&status=active`
+        `patient=${getReferenceString(patient)}&status=active&_sort=-_lastUpdated`
       );
+      console.log('coverageResults', coverageResults);
       if (coverageResults.length > 0) {
         setCoverage(coverageResults[0]);
       } else {
@@ -112,19 +114,23 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   }, [medplum]);
 
   useEffect(() => {
-    if (!candidClaimId || !getEncounterBot || !claim?.id) {
+    if (!candidEncounterId || !getEncounterBot) {
       return;
     }
     medplum
-      .executeBot(getEncounterBot.id, { externalId: claim.id }, 'application/json')
+      .executeBot(getEncounterBot.id, { encounterId: candidEncounterId }, 'application/json')
       .then((result) => {
-        const state = result?.fullEncounter?.encounterState ?? result?.fullEncounter?.state;
-        if (state) {
-          setCandidStatus(state);
+        const status = result?.fullEncounter?.claims?.[0]?.status;
+        if (status) {
+          setCandidStatus(status);
+        }
+        const createdAt = result?.fullEncounter?.createdAt;
+        if (createdAt) {
+          setCandidCreatedAt(createdAt);
         }
       })
       .catch(() => undefined);
-  }, [candidClaimId, getEncounterBot, medplum, claim?.id]);
+  }, [candidEncounterId, getEncounterBot, medplum]);
 
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
@@ -314,7 +320,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   return (
     <Stack gap="md">
       {claim &&
-        (candidClaimId ? (
+        (candidEncounterId ? (
           <Card withBorder shadow="sm" p={0}>
             <Stack p="md" gap="md">
               <Flex align="center" justify="space-between" gap="md">
@@ -322,9 +328,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                   <Text size="xs" c="dimmed">
                     Claim Status:
                   </Text>
-                  <Badge color="violet" radius="xl" variant="filled">
-                    {candidStatus ? formatCandidStatus(candidStatus) : 'Submitted'}
-                  </Badge>
+                  {candidStatus && (
+                    <Badge color="violet" radius="xl" variant="filled">
+                      {formatCandidStatus(candidStatus)}
+                    </Badge>
+                  )}
                 </Stack>
                 <Box style={{ flex: 1 }}>
                   <Text size="sm">
@@ -338,14 +346,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                     </Text>
                     .
                   </Text>
+                  {candidCreatedAt && (
                   <Text size="sm" c="dimmed">
-                    {formatSubmissionDate(claim.created)}
+                    Submitted on {formatSubmissionDate(candidCreatedAt)}
                   </Text>
+                  )}
                 </Box>
                 <Button
                   variant="outline"
                   rightSection={<IconExternalLink size={14} />}
-                  onClick={() => window.open(`${CANDID_CLAIM_BASE_URL}${candidClaimId}`, '_blank')}
+                  onClick={() => window.open(`${CANDID_CLAIM_BASE_URL}${candidEncounterId}`, '_blank')}
                 >
                   View Claim on Candid
                 </Button>
