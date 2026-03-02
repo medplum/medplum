@@ -67,6 +67,7 @@ export class GoogleCloudStorage extends BaseBinaryStorage {
     const file = this.bucket.file(this.getKey(binary));
     const options: GetSignedUrlConfig = {
       version: 'v4',
+      virtualHostedStyle: true,
       action: opts?.upload ? 'write' : 'read',
       expires: Date.now() + 3600 * 1000,
     };
