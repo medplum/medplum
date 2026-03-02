@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
+import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
 import type { Logger } from '../logger';
@@ -579,6 +581,8 @@ export type ResourceMatchesSubscriptionCriteria = {
   getPreviousResource: (currentResource: Resource) => Promise<Resource | undefined>;
 };
 
+const subscriptionExprCache = new LRUCache<FhirPathAtom>(1000);
+
 export async function resourceMatchesSubscriptionCriteria({
   resource,
   subscription,
@@ -690,6 +694,11 @@ export async function isFhirCriteriaMet(
     '%current': toTypedValue(currentResource),
     '%previous': toTypedValue(previous ?? {}),
   };
-  const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
+  const evalValue = evalFhirPathTyped(
+    criteria.valueString,
+    [toTypedValue(currentResource)],
+    evalInput,
+    subscriptionExprCache
+  );
   return evalValue?.[0]?.value === true;
 }
