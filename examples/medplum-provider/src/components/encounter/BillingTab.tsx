@@ -300,7 +300,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Menu.Item
           leftSection={<IconFileText size={14} />}
           onClick={() => {
-            showNotification({ title: 'EDI X12', message: 'Please contact sales to enable EDI X12 export', color: 'blue' });
+            showNotification({
+              title: 'EDI X12',
+              message: 'Please contact sales to enable EDI X12 export',
+              color: 'blue',
+            });
           }}
         >
           EDI X12
@@ -308,7 +312,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <Menu.Item
           leftSection={<IconFileText size={14} />}
           onClick={() => {
-            showNotification({ title: 'NUCC Crosswalk', message: 'Please contact sales to enable NUCC Crosswalk export', color: 'blue' });
+            showNotification({
+              title: 'NUCC Crosswalk',
+              message: 'Please contact sales to enable NUCC Crosswalk export',
+              color: 'blue',
+            });
           }}
         >
           NUCC Crosswalk CSV
