@@ -31,9 +31,10 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
   const enabledWorkers = config.workers?.enabled;
+  const enableAll = config.workers?.enabled?.includes('*');
 
   for (const { name, init } of workerDefs) {
-    const workerEnabled = !enabledWorkers || enabledWorkers.includes(name);
+    const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
     const { name: queueName, queue, worker } = init(config, { workerEnabled });
     queueRegistry.add(queueName, queue, worker);
   }
