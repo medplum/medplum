@@ -51,6 +51,7 @@ import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../config/ty
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
+import { getCacheRedis } from '../redis';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
@@ -630,6 +631,27 @@ describe('FHIR Repo', () => {
           { ifMatch: 'bad-id' }
         )
       ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+    }));
+
+  test('Patch resource sets cache entry exactly once', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const cacheKey = `Patient/${patient.id}`;
+      const redis = getCacheRedis();
+      const setSpy = jest.spyOn(redis, 'set');
+
+      await systemRepo.patchResource<Patient>('Patient', patient.id, [
+        { op: 'replace', path: '/name/0/family', value: 'Patched' },
+      ]);
+
+      const cacheSetCalls = setSpy.mock.calls.filter((call) => call[0] === cacheKey);
+      expect(cacheSetCalls).toHaveLength(1);
+
+      setSpy.mockRestore();
     }));
 
   test('Compartment permissions', () =>

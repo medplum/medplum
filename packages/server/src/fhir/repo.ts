@@ -311,7 +311,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   static readonly VERSION: number = 13;
 
-  constructor(context: RepositoryContext, conn?: PoolClient) {
+  constructor(context: RepositoryContext, conn?: PoolClient, transactionDepth?: number) {
     super();
     this.context = context;
     this.context.projects?.push(syntheticR4Project);
@@ -322,6 +322,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (conn) {
       this.conn = conn;
       this.disposable = false;
+    }
+    if (transactionDepth !== undefined) {
+      this.transactionDepth = transactionDepth;
     }
 
     // Default to writer mode
@@ -340,11 +343,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Use this when you need elevated privileges within request handling.
-   * @param conn - Optional database client.
+   * When passing a connection (e.g. this.conn), the returned repo inherits the current
+   * transaction state so cache writes are deferred until after commit.
+   * @param conn - Optional database client. When provided, transaction state is preserved.
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(conn?: PoolClient): SystemRepository {
-    return createSystemRepository(this.shardId, conn);
+    return createSystemRepository(this.shardId, conn, conn ? this.transactionDepth : undefined);
   }
 
   setMode(mode: RepositoryMode): void {
@@ -2723,7 +2728,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const issue = err.outcome.issue[0];
     return Boolean(
       issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
     );
   }
 
@@ -2937,9 +2942,10 @@ export class SystemRepository extends Repository {}
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
  * @param conn - Optional database connection for transaction support.
+ * @param transactionDepth - When provided with conn, preserves transaction state so cache reads/writes are deferred.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepository {
+function createSystemRepository(shardId: string, conn?: PoolClient, transactionDepth?: number): SystemRepository {
   return new SystemRepository(
     {
       shardId,
@@ -2951,7 +2957,8 @@ function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepos
       },
       // System repo does not have an associated Project; it can write to any
     },
-    conn
+    conn,
+    transactionDepth
   );
 }
 

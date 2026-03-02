@@ -25,6 +25,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { runInAsyncContext } from '../context';
+import { getCacheRedis } from '../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import type { BatchJobData } from '../workers/batch';
 import { execBatchJob, getBatchQueue } from '../workers/batch';
@@ -267,11 +268,18 @@ describe('Batch and Transaction processing', () => {
         },
       ],
     };
+    const redis = getCacheRedis();
+    const setSpy = jest.spyOn(redis, 'set');
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
+
+    // 4 cache sets: Patient (x2 from creates), Practitioner (update), RelatedPerson (update)
+    // No mid-transaction cache write from getAccounts->readReferences
+    expect(setSpy).toHaveBeenCalledTimes(4);
+
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
