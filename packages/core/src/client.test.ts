@@ -274,11 +274,13 @@ describe('Client', () => {
       authorizeUrl: 'my-authorize-url',
       tokenUrl: 'my-token-url',
       logoutUrl: 'my-logout-url',
+      cdsServicesUrl: 'my-cds-services-url',
     });
     expect(client.getBaseUrl()).toBe('https://example.com/');
     expect(client.getAuthorizeUrl()).toBe('https://example.com/my-authorize-url');
     expect(client.getTokenUrl()).toBe('https://example.com/my-token-url');
     expect(client.getLogoutUrl()).toBe('https://example.com/my-logout-url');
+    expect(client.getCdsServicesUrl()).toBe('https://example.com/my-cds-services-url');
   });
 
   test('Absolute URLs', () => {
@@ -289,12 +291,14 @@ describe('Client', () => {
       tokenUrl: 'https://token.example.com',
       logoutUrl: 'https://logout.example.com',
       fhircastHubUrl: 'https://hub.example.com',
+      cdsServicesUrl: 'https://cds.example.com',
     });
     expect(client.getBaseUrl()).toBe('https://example.com/');
     expect(client.getAuthorizeUrl()).toBe('https://authorize.example.com/');
     expect(client.getTokenUrl()).toBe('https://token.example.com/');
     expect(client.getLogoutUrl()).toBe('https://logout.example.com/');
     expect(client.getFhircastHubUrl()).toBe('https://hub.example.com/');
+    expect(client.getCdsServicesUrl()).toBe('https://cds.example.com/');
   });
 
   test('getAuthorizeUrl', () => {

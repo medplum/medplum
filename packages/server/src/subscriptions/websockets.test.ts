@@ -27,7 +27,7 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { isSubscriptionActive, publish } from '../pubsub';
+import { getUserActiveWebSocketSubscriptionCount, isSubscriptionActive, publish } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -177,12 +177,21 @@ describe('WebSocket Subscription', () => {
 
   test('Subscription removed from active and deleted after WebSocket closed', () =>
     withTestContext(async () => {
+      // Wait for both the project-level hash and cache entry to be cleaned up.
+      // These are on different Redis connections so we poll both conditions together.
       let subActive = true;
-      while (subActive) {
+      let inCache = true;
+      while (subActive || inCache) {
         await sleep(0);
         subActive =
           (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
           1;
+        try {
+          await repo.readResource<Subscription>('Subscription', patientSubscription?.id);
+          inCache = true;
+        } catch {
+          inCache = false;
+        }
       }
       expect(subActive).toStrictEqual(false);
 
@@ -1361,6 +1370,109 @@ describe('WebSocket Subscription', () => {
 
       getLoginForAccessTokenSpy.mockRestore();
       globalLoggerInfoSpy.mockRestore();
+    }));
+
+  test('User active set decremented when WebSocket closes', () =>
+    withTestContext(async () => {
+      const sub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      expect(sub).toBeDefined();
+
+      const authorRef = sub.meta?.author?.reference as string;
+      expect(authorRef).toBeDefined();
+
+      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${sub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          // After disconnect, user active set should be decremented
+          while ((await getUserActiveWebSocketSubscriptionCount(authorRef)) >= countAfterCreate) {
+            await sleep(0);
+          }
+          expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+        });
+    }));
+
+  test('User active set decremented when subscription is deleted', () =>
+    withTestContext(async () => {
+      const sub = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+      expect(sub).toBeDefined();
+
+      const authorRef = sub.meta?.author?.reference as string;
+      expect(authorRef).toBeDefined();
+
+      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
+
+      await repo.deleteResource('Subscription', sub.id);
+
+      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+    }));
+
+  test('Error when user exceeds max concurrent WebSocket subscriptions', () =>
+    withTestContext(async () => {
+      const { repo: limitRepo } = await createTestProject({
+        project: {
+          features: ['websocket-subscriptions'],
+          systemSetting: [{ name: 'maxUserWebSocketSubscriptions', valueInteger: 2 }],
+        },
+        withRepo: true,
+      });
+
+      // First two should succeed
+      await limitRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+      await limitRepo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Observation',
+        channel: { type: 'websocket' },
+      });
+
+      // Third should fail
+      await expect(
+        limitRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'DiagnosticReport',
+          channel: { type: 'websocket' },
+        })
+      ).rejects.toThrow(OperationOutcomeError);
     }));
 });
 

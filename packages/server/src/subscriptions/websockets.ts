@@ -5,7 +5,7 @@ import { badRequest, createReference, EMPTY, normalizeErrorString } from '@medpl
 import type { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
-import crypto from 'node:crypto';
+import crypto, { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getRepoForLogin } from '../fhir/accesspolicy';
@@ -15,11 +15,11 @@ import { getFullUrl } from '../fhir/response';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
-import type { MedplumBaseClaims } from '../oauth/keys';
+import type { MedplumAccessTokenClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { removeActiveSubscriptions } from '../pubsub';
+import { removeActiveSubscriptions, removeUserActiveWebSocketSubscriptions } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
@@ -44,7 +44,7 @@ export interface WebSocketSubMetadata {
   criteriaResourceType: string;
 }
 
-export type WebSocketSubToken = MedplumBaseClaims & AdditionalWsBindingClaims;
+export type WebSocketSubToken = MedplumAccessTokenClaims & AdditionalWsBindingClaims;
 
 export type V1SubEventEntry = [WithId<Resource>, string, SubEventsOptions];
 export type V1SubEventPayload = V1SubEventEntry[];
@@ -284,7 +284,12 @@ function unsubscribeWsFromAllSubscriptions(ws: WebSocket): void {
 
 export async function handleR4SubscriptionConnection(socket: WebSocket): Promise<void> {
   const redis = getCacheRedis();
+  const socketId = randomUUID();
   let onDisconnect: (() => Promise<void>) | undefined;
+  let userRef: string | undefined;
+  let socketProjectId: string | undefined;
+
+  globalLogger.info('[WS] FHIR subscription socket connected', { socketId });
 
   const verifyWsToken = async (token: string): Promise<WebSocketSubToken | undefined> => {
     let tokenPayload: JWTPayload;
@@ -335,6 +340,18 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
     ensureHeartbeatHandler();
+    if (!userRef) {
+      userRef = verifiedToken.profile;
+    }
+    if (!socketProjectId) {
+      socketProjectId = cacheEntry.projectId;
+    }
+    globalLogger.info('[WS] Bound to subscription', {
+      socketId,
+      subscriptionId: verifiedToken.subscription_id,
+      user: verifiedToken.profile,
+      projectId: socketProjectId,
+    });
     // Send a handshake to notify client that this subscription is active for this connection
     socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
     subscriptionMessagesSent++;
@@ -344,6 +361,14 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       if (!subEntries) {
         globalLogger.warn('[WS] No entry for given WebSocket in subscription lookup');
         return;
+      }
+      for (const [subscriptionId] of subEntries) {
+        globalLogger.info('[WS] Unbound from subscription', {
+          socketId,
+          subscriptionId,
+          user: userRef,
+          projectId: socketProjectId,
+        });
       }
       const subIdsByResourceType = getSubIdsByResourceType(subEntries);
       unsubscribeWsFromAllSubscriptions(socket);
@@ -358,6 +383,12 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
 
+    globalLogger.info('[WS] Unbound from subscription', {
+      socketId,
+      subscriptionId: verifiedToken.subscription_id,
+      user: verifiedToken.profile,
+      projectId: socketProjectId,
+    });
     // Read metadata before unsubscribing, since unsubscribe removes it from the map
     const subMetadata = wsToSubLookup.get(socket)?.get(verifiedToken.subscription_id);
     unsubscribeWsFromSubscription(socket, verifiedToken.subscription_id);
@@ -416,6 +447,11 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
   });
 
   socket.on('close', () => {
+    globalLogger.info('[WS] FHIR subscription socket disconnected', {
+      socketId,
+      user: userRef,
+      projectId: socketProjectId,
+    });
     onDisconnect?.().catch(console.error);
   });
 }
@@ -529,10 +565,18 @@ export async function markInMemorySubscriptionsInactive(
   if (!subIdsByResourceType.size) {
     return;
   }
+
+  // Collect all subscription refs and build a per-resource-type map for later cleanup
   const refStrs: string[] = [];
+  const refsByResourceType = new Map<string, string[]>();
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
+    refsByResourceType.set(resourceType, refs);
     refStrs.push(...refs);
+  }
+
+  // Remove from project-level active hashes
+  for (const [resourceType, refs] of refsByResourceType) {
     try {
       await removeActiveSubscriptions(projectId, resourceType, refs);
     } catch {
@@ -540,7 +584,32 @@ export async function markInMemorySubscriptionsInactive(
       return;
     }
   }
+
+  // Read cache entries upfront to collect author refs for per-user set cleanup
+  // (must happen before del so the data is still available)
+  let authorToRefs: Map<string, string[]> | undefined;
+
+  // Delete individual cache entries first so any concurrent unbind sees them as gone
   if (cacheRedis) {
+    const cacheEntries = await cacheRedis.mget(...refStrs);
+    authorToRefs = new Map();
+    for (let i = 0; i < refStrs.length; i++) {
+      const entryStr = cacheEntries[i];
+      if (!entryStr) {
+        continue;
+      }
+      const entry = JSON.parse(entryStr) as CacheEntry<Subscription>;
+      const author = entry.resource.meta?.author?.reference;
+      if (!author) {
+        continue;
+      }
+      let authorRefs = authorToRefs.get(author);
+      if (!authorRefs) {
+        authorRefs = [];
+        authorToRefs.set(author, authorRefs);
+      }
+      authorRefs.push(refStrs[i]);
+    }
     // In the case where we could be deleting a lot of keys at once, we prefer
     // `unlink` due to it essentially being the same command ad `del`, just the nonblocking version
     // Keys are unlinked from keyspace but the actual memory is not reclaimed immediately, and is done separately
@@ -548,5 +617,16 @@ export async function markInMemorySubscriptionsInactive(
     // See: https://redis.io/docs/latest/commands/unlink/
     // See: https://support.redislabs.com/hc/en-us/articles/32321430231186-Massive-Key-Deletion-in-Redis-Without-Impacting-Performance
     await cacheRedis.unlink(refStrs);
+  }
+
+  // Clean up per-user active sets
+  if (authorToRefs) {
+    for (const [author, authorRefs] of authorToRefs) {
+      try {
+        await removeUserActiveWebSocketSubscriptions(author, authorRefs);
+      } catch {
+        globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
+      }
+    }
   }
 }
