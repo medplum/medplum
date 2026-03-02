@@ -21,6 +21,7 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
+import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import * as claimsUtils from '../../utils/claims';
 import { BillingTab } from './BillingTab';
@@ -131,6 +132,7 @@ describe('BillingTab', () => {
                 setChargeItems={vi.fn()}
                 claim={undefined}
                 setClaim={vi.fn()}
+                chartNoteStatus={ChartNoteStatus.SignedAndLocked}
                 {...props}
               />
             </MantineProvider>
