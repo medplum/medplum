@@ -31,7 +31,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
   const enabledWorkers = config.workers?.enabled;
-  const enableAll = (config.workers?.enabled as string[])?.includes('*');
+  const enableAll = config.workers?.enabled?.includes('*');
 
   for (const { name, init } of workerDefs) {
     const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);

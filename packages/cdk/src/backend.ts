@@ -482,7 +482,7 @@ export class BackEnd extends Construct {
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials, 'Server'),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -710,7 +710,7 @@ export class BackEnd extends Construct {
     config: MedplumInfraConfig,
     imageName: string,
     credentials: secretsmanager.ISecret | undefined,
-    constructIdPrefix = 'Server'
+    constructIdPrefix: string
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
@@ -819,7 +819,9 @@ export class BackEnd extends Construct {
 
   /**
    * Creates an additional Fargate service to run background jobs. If `workers` is not specified in the
-   * service's configuration, all background workers are run on this service.
+   * service's configuration AND no MEDPLUM_WORKERS* environment variables are present, all background
+   * workers are run on this service.
+   *
    * The service shares the same cluster, VPC, security group, and dependencies as the primary service,
    * but is not added to the ALB and uses a `,env` config suffix for env var overrides.
    * @param config - The infra config.
@@ -835,7 +837,7 @@ export class BackEnd extends Construct {
   ): void {
     const name = config.name;
     const region = config.region;
-    const serviceId = service.id;
+    const serviceId = 'Worker' + service.id;
 
     const serviceTaskDef = new ecs.FargateTaskDefinition(this, `${serviceId}TaskDefinition`, {
       memoryLimitMiB: service.serverMemory ?? config.serverMemory,
@@ -882,6 +884,7 @@ export class BackEnd extends Construct {
       },
       desiredCount: service.desiredCount,
       securityGroups: [this.fargateSecurityGroup],
+      healthCheckGracePeriod: Duration.minutes(5),
       minHealthyPercent: 50,
     });
 
