@@ -160,6 +160,10 @@ function loadEnvConfig(): MedplumServerConfig {
       key = key.substring('FISSION_'.length);
       currConfig = config.fission ??= {};
       section = 'fission';
+    } else if (key.startsWith('WORKERS_')) {
+      key = key.substring('WORKERS_'.length);
+      currConfig = config.workers ??= {};
+      section = 'workers';
     }
 
     // Convert key from CAPITAL_CASE to camelCase
