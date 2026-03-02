@@ -7,11 +7,19 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  Bundle,
+  CodeableConcept,
+  OperationDefinition,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
@@ -47,23 +55,55 @@ type FindParameters = {
 };
 
 // Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
+// [SchedulingParameters, serviceType] pairs. Each schedulingParameters
+// description is returned at most once
 //
-// - Each schedulingParameters description is returned at most once
-function filterByServiceTypes(
-  schedulingParameters: SchedulingParameters[],
+// Design decision: if we find any matches at a given priority level, we do not
+// return matches with less priority. There's an argument that when processing
+// multiple service-type inputs, we should process each independently, finding
+// the best match. For this initial implementation, we've decided that it is
+// better to avoid returning results that mix sources, to make the outcomes
+// easier to understand.
+function chooseSchedulingParameters(
+  schedule: Schedule,
+  activityDefinitions: ActivityDefinition[],
   serviceTypeTokens: string[]
-): [SchedulingParameters, CodeableConcept][] {
-  const results: [SchedulingParameters, CodeableConcept][] = [];
-  for (const params of schedulingParameters) {
-    const serviceType = params.serviceType.find((codeableConcept) =>
-      serviceTypeTokens.some((token) => codeableConceptMatchesToken(codeableConcept, token))
-    );
-    if (serviceType) {
-      results.push([params, serviceType]);
-    }
+): (readonly [SchedulingParameters, CodeableConcept])[] {
+  const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
+
+  // Top priority: entries on an individual schedule matching a service type
+  const specificMatches = scheduleSchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
+
+  if (specificMatches.length) {
+    return specificMatches;
   }
-  return results;
+
+  // Next: entries on ActivityDefinition matching a service type
+  const activitySchedulingParameters = activityDefinitions.flatMap((activityDefinition) =>
+    parseSchedulingParametersExtensions(activityDefinition)
+  );
+  const sharedMatches = activitySchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
+
+  if (sharedMatches.length) {
+    return sharedMatches;
+  }
+
+  return [];
 }
 
 /**
@@ -103,7 +143,18 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, slots] = await Promise.all([
+  const activityDefinitionSearch: Promise<ActivityDefinition[]> = ctx.repo.searchResources<ActivityDefinition>({
+    resourceType: 'ActivityDefinition',
+    filters: [
+      {
+        code: 'code',
+        operator: Operator.EQUALS,
+        value: serviceTypeTokens.join(','),
+      },
+    ],
+  });
+
+  const [schedule, slots, activityDefinitions] = await Promise.all([
     ctx.repo.readResource<Schedule>('Schedule', req.params.id),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
@@ -133,6 +184,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
+    activityDefinitionSearch,
   ]);
 
   // If we filled a full search page of slots, then there may be slots we
@@ -152,15 +204,13 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypeTokens);
-
-  if (matchingSchedulingParameters.length === 0) {
+  const schedulingParameters = chooseSchedulingParameters(schedule, activityDefinitions, serviceTypeTokens);
+  if (schedulingParameters.length === 0) {
     throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
   }
 
   const resultSlots: Slot[] = flatMapMax(
-    matchingSchedulingParameters,
+    schedulingParameters,
     ([schedulingParameters, serviceType], _idx, maxCount) => {
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
