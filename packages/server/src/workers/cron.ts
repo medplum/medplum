@@ -10,9 +10,8 @@ import { executeBot } from '../bots/execute';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
-import { reconnectOnError } from '../redis';
-import type { WorkerInitializer } from './utils';
-import { findProjectMembership, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { findProjectMembership, getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -30,9 +29,9 @@ export interface CronJobData {
 
 const queueName = 'CronQueue';
 
-export const initCronWorker: WorkerInitializer = (config) => {
+export const initCronWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<CronJobData>(queueName, {
@@ -46,12 +45,16 @@ export const initCronWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<CronJobData>(queueName, execBot, {
-    ...defaultOptions,
-    ...config.bullmq,
-  });
-  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  let worker: Worker<CronJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'cron');
+    worker = new Worker<CronJobData>(queueName, execBot, {
+      ...defaultOptions,
+      ...workerBullmq,
+    });
+    worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
+    worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  }
 
   return { queue, worker, name: queueName };
 };

@@ -3,11 +3,11 @@
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTable, useResource } from '@medplum/react';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { LabResultDetails } from '../labs/LabResultDetails';
+import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
 
 interface ResourcePanelProps<T extends Resource = Resource> {

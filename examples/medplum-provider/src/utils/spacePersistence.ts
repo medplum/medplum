@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
 import type { MedplumClient, ProfileResource } from '@medplum/core';
-import type { Message } from '../types/spaces';
 import { createReference, getReferenceString } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import type { Message } from '../types/spaces';
 
 /**
  * Creates a new conversation topic (main Communication resource)

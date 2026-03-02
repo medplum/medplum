@@ -3,8 +3,8 @@
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import type { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import classes from './SpacesPage.module.css';
 import { SpacesInbox } from '../../components/spaces/SpacesInbox';
+import classes from './SpacesPage.module.css';
 
 /**
  * SpacesPage component that handles routing for AI conversation spaces.

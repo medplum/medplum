@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Bundle, Practitioner, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, Patient, Practitioner, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -27,6 +27,7 @@ describe('Appointment/$book', () => {
   let project: TestProjectResult<{ withAccessToken: true }>;
   let practitioner1: Practitioner;
   let practitioner2: Practitioner;
+  let patient: Patient;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -34,6 +35,7 @@ describe('Appointment/$book', () => {
     project = await createTestProject({ withAccessToken: true });
     practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     practitioner2 = await makePractitioner({ timezone: 'America/New_York' });
+    patient = await makePatient();
   });
 
   afterAll(async () => {
@@ -82,6 +84,13 @@ describe('Appointment/$book', () => {
       resourceType: 'Practitioner',
       meta: { project: project.project.id },
       extension,
+    });
+  }
+
+  async function makePatient(): Promise<WithId<Patient>> {
+    return systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.project.id },
     });
   }
 
@@ -889,6 +898,98 @@ describe('Appointment/$book', () => {
         ],
       });
     expect(response3.status).toEqual(400);
+  });
+
+  test('with a patient reference', async () => {
+    const schedule = await makeSchedule(practitioner1);
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+          {
+            name: 'patient-reference',
+            valueReference: createReference(patient),
+          },
+        ],
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toEqual(201);
+
+    const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+
+    const appointments = entries.filter(isAppointment);
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0]).toHaveProperty('id');
+    expect(appointments[0]).toHaveProperty('status', 'booked');
+    expect(appointments[0]).toHaveProperty('start', start);
+    expect(appointments[0]).toHaveProperty('end', end);
+    expect(appointments[0]).toHaveProperty('participant');
+    expect(appointments[0].participant).toEqual([
+      {
+        actor: createReference(practitioner1),
+        status: 'tentative',
+      },
+      {
+        actor: createReference(patient),
+        status: 'accepted',
+      },
+    ]);
+  });
+
+  test('with an invalid patient reference', async () => {
+    const schedule = await makeSchedule(practitioner1);
+    const start = '2026-01-15T14:00:00Z';
+    const end = '2026-01-15T15:00:00Z';
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+            } satisfies Slot,
+          },
+          {
+            name: 'patient-reference',
+            valueReference: { reference: 'Patient/404' },
+          },
+        ],
+      });
+
+    expect(response.status).toEqual(400);
+    expect(response.body).toHaveProperty('issue', [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'Invalid patient-reference',
+        },
+      },
+    ]);
   });
 });
 

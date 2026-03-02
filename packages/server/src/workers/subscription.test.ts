@@ -41,12 +41,14 @@ import { Repository } from '../fhir/repo';
 import * as loggerModule from '../logger';
 import { globalLogger } from '../logger';
 import * as otelModule from '../otel/otel';
-import { getRedis, getRedisSubscriber } from '../redis';
+import { getActiveSubscriptions } from '../pubsub';
+import { getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
 import type { SubscriptionJobData } from './subscription';
-import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import * as workerUtils from './utils';
 
 jest.mock('node-fetch');
 const mockBullmq = jest.mocked(bullmqModule);
@@ -1994,6 +1996,48 @@ describe('Subscription Worker', () => {
       console.log = originalConsoleLog;
     }));
 
+  test('Subscription -- Access policy is evaluated once per author across multiple matching subscriptions', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      // Create a fresh project with its own repo so subscriptions have a known, isolated author
+      const { project, repo: testRepo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+      });
+
+      // Create 3 subscriptions all owned by the same author (testRepo's client)
+      for (let i = 0; i < 3; i++) {
+        await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+        });
+      }
+
+      const patient = await testRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const spy = jest.spyOn(workerUtils, 'findProjectMembership');
+
+      await addSubscriptionJobs(patient, undefined, { project, interaction: 'create' });
+
+      // All 3 subscriptions match and share the same author, so findProjectMembership
+      // should only be called once due to the per-author access policy cache.
+      expect(spy).toHaveBeenCalledTimes(1);
+      // All 3 subscriptions should still have been enqueued.
+      expect(queue.add).toHaveBeenCalledTimes(3);
+
+      spy.mockRestore();
+    }));
+
   test('Rest Hook Subscription -- Attachments are Rewritten', () =>
     withTestContext(async () => {
       const url = 'https://example.com/subscription';
@@ -2051,15 +2095,22 @@ describe('Subscription Worker', () => {
 
   describe('WebSocket Subscriptions', () => {
     type EventNotificationArgs<T extends Resource> = [T, string, SubEventsOptions];
+    type WsSubMessage = { resource: Resource; events: [string, SubEventsOptions][] };
 
     let subscriber: Redis;
     let resolveExpected: ((args: EventNotificationArgs<Resource>) => void) | undefined;
     let rejectNotExpected: ((err: Error) => void) | undefined;
+    let resolveExpectedFullMessage: ((message: WsSubMessage) => void) | undefined;
 
     beforeAll(async () => {
-      subscriber = getRedisSubscriber();
+      subscriber = getPubSubRedisSubscriber();
       subscriber.on('message', (_channel, payload) => {
-        const parsed = JSON.parse(payload) as { resource: Resource; events: [string, SubEventsOptions][] };
+        const parsed = JSON.parse(payload) as WsSubMessage;
+        if (resolveExpectedFullMessage) {
+          resolveExpectedFullMessage(parsed);
+          resolveExpectedFullMessage = undefined;
+          return;
+        }
         const args: EventNotificationArgs<Resource> = [parsed.resource, parsed.events[0][0], parsed.events[0][1]];
         if (resolveExpected) {
           resolveExpected(args);
@@ -2113,6 +2164,26 @@ describe('Subscription Worker', () => {
       const args = await deferredPromise;
       clearTimeout(notificationTimeout);
       return args;
+    }
+
+    async function waitForNextSubMessage(timeoutMs?: number): Promise<WsSubMessage> {
+      let resolve!: (message: WsSubMessage) => void;
+      let reject!: (err: Error) => void;
+      const deferredPromise = new Promise<WsSubMessage>((_resolve, _reject) => {
+        resolve = _resolve;
+        reject = _reject;
+      });
+
+      const notificationTimeout = setTimeout(
+        () => reject(new Error('Timeout while waiting for sub message')),
+        timeoutMs ?? 1000
+      );
+
+      resolveExpectedFullMessage = resolve;
+
+      const message = await deferredPromise;
+      clearTimeout(notificationTimeout);
+      return message;
     }
 
     test('Enabled', () =>
@@ -2386,6 +2457,75 @@ describe('Subscription Worker', () => {
         globalLogger.level = LogLevel.NONE;
       }));
 
+    test('Access policy cache is keyed by channel type -- rest-hook result does not bleed into websocket eval', () =>
+      withTestContext(async () => {
+        // satisfiesAccessPolicy() is hardcoded to return `true` for non-websocket channel types
+        // (rest-hook enforcement is not yet implemented).  If the per-author cache were shared
+        // across channel types, the cached `true` from the rest-hook subscription would incorrectly
+        // allow the websocket subscription to bypass the access-policy check.
+        const url = 'https://example.com/subscription';
+
+        // An access policy that restricts Patient to a specific ID that will never match our patient.
+        const accessPolicy = await repo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [{ resourceType: 'Patient', criteria: `Patient?_id=${generateId()}` }],
+        });
+
+        // Create a project whose membership carries the denying access policy.
+        // The project must have 'websocket-subscriptions' enabled so that the websocket
+        // subscription is fetched and evaluated.
+        const { repo: testRepo } = await createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: {
+            name: 'Access Policy Cache Channel Type Isolation Project',
+            features: ['websocket-subscriptions'],
+          },
+          membership: {
+            accessPolicy: createReference(accessPolicy),
+          },
+        });
+
+        // Both subscriptions share the same author (the project client).
+        const restHookSub = await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+        });
+        expect(restHookSub.id).toBeDefined();
+
+        const wsSub = await testRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+        expect(wsSub.id).toBeDefined();
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        // Register the no-notification assertion before creating the patient so that
+        // any spurious WebSocket publish is caught immediately.
+        const assertPromise = assertNoWsNotifications();
+
+        await testRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        // The websocket subscription must NOT have fired -- the access policy denied access
+        // and the rest-hook's cached `true` must not have been reused for the websocket check.
+        await assertPromise;
+
+        // The rest-hook subscription MUST still be enqueued -- satisfiesAccessPolicy()
+        // unconditionally returns `true` for non-websocket channel types.
+        expect(queue.add).toHaveBeenCalledTimes(1);
+      }));
+
     test('Subscription Author Has No Membership', () =>
       withTestContext(async () => {
         globalLogger.level = LogLevel.WARN;
@@ -2520,12 +2660,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getRedis();
-        const criteria = await redis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:Patient`,
-          `Subscription/${subscription.id}`
-        );
-        expect(criteria).toStrictEqual('Patient?name=Alice');
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'Patient');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toStrictEqual('Patient?name=Alice');
       }));
 
     test('Invalid criteria resource type is not added to Redis hash', () =>
@@ -2546,12 +2682,8 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
 
-        const redis = getRedis();
-        const criteria = await redis.hget(
-          `medplum:subscriptions:r4:project:${wsProject.id}:active:FakeResourceType`,
-          `Subscription/${subscription.id}`
-        );
-        expect(criteria).toBeNull();
+        const activeSubs = await getActiveSubscriptions(wsProject.id, 'FakeResourceType');
+        expect(activeSubs[`Subscription/${subscription.id}`]).toBeUndefined();
       }));
 
     test('Resource type filtering - only matching subscriptions fetched from Redis', () =>
@@ -2688,6 +2820,194 @@ describe('Subscription Worker', () => {
         expect(updatedPatient).toBeDefined();
 
         await assertPromise;
+      }));
+
+    test('Cached criteria - multiple subscriptions with same matching criteria all receive notification', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria Match Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const criteria = 'Patient?name=Alice';
+
+        const sub1 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const sub2 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const sub3 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const nextMessagePromise = waitForNextSubMessage();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        const message = await nextMessagePromise;
+        const subIds = message.events.map(([subId]) => subId);
+        expect(subIds).toHaveLength(3);
+        expect(subIds).toContain(sub1.id);
+        expect(subIds).toContain(sub2.id);
+        expect(subIds).toContain(sub3.id);
+      }));
+
+    test('Cached criteria - multiple subscriptions with same non-matching criteria do not fire', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria No Match Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        const criteria = 'Patient?name=Alice';
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria,
+          channel: { type: 'websocket' },
+        });
+
+        const assertPromise = assertNoWsNotifications();
+        await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Jones' }],
+        });
+        await assertPromise;
+      }));
+
+    test('Cached criteria - subscriptions with different criteria are evaluated independently', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          project: { name: 'WS Cached Criteria Mixed Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        // Two subscriptions with criteria that will match
+        const aliceSub1 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: { type: 'websocket' },
+        });
+
+        const aliceSub2 = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Alice',
+          channel: { type: 'websocket' },
+        });
+
+        // Two subscriptions with criteria that will NOT match
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Bob',
+          channel: { type: 'websocket' },
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient?name=Bob',
+          channel: { type: 'websocket' },
+        });
+
+        const nextMessagePromise = waitForNextSubMessage();
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+        expect(patient).toBeDefined();
+
+        // Only the Alice subscriptions should fire; Bob subscriptions should be skipped via cached result
+        const message = await nextMessagePromise;
+        const subIds = message.events.map(([subId]) => subId);
+        expect(subIds).toHaveLength(2);
+        expect(subIds).toContain(aliceSub1.id);
+        expect(subIds).toContain(aliceSub2.id);
+      }));
+
+    test('Logs WS subscription eval info after evaluating criteria', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo, project: wsProject } = await createTestProject({
+          project: { name: 'WS Sub Eval Log Project', features: ['websocket-subscriptions'] },
+          withRepo: true,
+        });
+
+        await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'websocket' },
+        });
+
+        const mockInfo = jest.fn();
+        const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
+          info: mockInfo,
+          warn: jest.fn(),
+          debug: jest.fn(),
+          error: jest.fn(),
+        } as any);
+
+        const patient = await wsSubRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        });
+
+        await addSubscriptionJobs(patient, undefined, { project: wsProject, interaction: 'create' });
+
+        expect(mockInfo).toHaveBeenCalledWith(
+          '[WS] Evaluated active subscription criteria',
+          expect.objectContaining({
+            projectId: wsProject.id,
+            resourceType: 'Patient',
+            numSubscriptions: expect.any(Number),
+            evalDurationMs: expect.any(Number),
+          })
+        );
+
+        getLoggerSpy.mockRestore();
       }));
   });
 });

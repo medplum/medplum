@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Grid, Modal, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { Box, Button, Divider, Grid, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import type { CodeableConcept, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
@@ -14,8 +14,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 
 export interface NewTaskModalProps {
   opened: boolean;

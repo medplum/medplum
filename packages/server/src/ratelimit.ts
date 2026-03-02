@@ -7,7 +7,7 @@ import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
-import { getRedis } from './redis';
+import { getRateLimitRedis } from './redis';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -49,7 +49,7 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
 }
 
 export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
-  const client = getRedis();
+  const client = getRateLimitRedis();
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
     storeClient: client,

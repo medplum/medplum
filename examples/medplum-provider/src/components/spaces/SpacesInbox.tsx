@@ -1,28 +1,28 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Stack, Text, Box, ScrollArea, Group, ActionIcon, CloseButton, Avatar, ThemeIcon, Button } from '@mantine/core';
-import type { JSX } from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { ActionIcon, Avatar, Box, Button, CloseButton, Group, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core';
+import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
-  IconRobot,
+  IconCode,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconPlus,
-  IconCode,
+  IconRobot,
 } from '@tabler/icons-react';
+import cx from 'clsx';
+import type { JSX } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
+import type { Message } from '../../types/spaces';
 import { showErrorNotification } from '../../utils/notifications';
+import { processMessage } from '../../utils/spaceMessaging';
+import { loadConversationMessages } from '../../utils/spacePersistence';
+import { ComponentPreview } from './ComponentPreview';
+import { HistoryList } from './HistoryList';
 import { ResourceBox } from './ResourceBox';
 import { ResourcePanel } from './ResourcePanel';
-import { ComponentPreview } from './ComponentPreview';
-import type { Message } from '../../types/spaces';
-import { loadConversationMessages } from '../../utils/spacePersistence';
-import { processMessage } from '../../utils/spaceMessaging';
-import { HistoryList } from './HistoryList';
-import { ChatInput, DEFAULT_MODEL } from '../../pages/spaces/ChatInput';
-import type { Communication, Reference } from '@medplum/fhirtypes';
 import classes from './SpacesInbox.module.css';
-import cx from 'clsx';
 
 interface SpaceInboxProps {
   topic: Communication | Reference<Communication> | undefined;

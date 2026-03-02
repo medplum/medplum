@@ -58,7 +58,6 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   SearchParameterType,
-  serverError,
   sleep,
   stringify,
   toPeriod,
@@ -87,7 +86,6 @@ import type {
   StructureDefinition,
   ValueSet,
 } from '@medplum/fhirtypes';
-import type { Redis } from 'ioredis';
 import { Readable } from 'node:stream';
 import type { Pool, PoolClient } from 'pg';
 import type { Operation } from 'rfc6902';
@@ -99,9 +97,15 @@ import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
-import { getRedis } from '../redis';
+import {
+  addUserActiveWebSocketSubscription,
+  getUserActiveWebSocketSubscriptionCount,
+  removeActiveSubscriptions,
+  removeUserActiveWebSocketSubscriptions,
+  setActiveSubscription,
+} from '../pubsub';
+import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
-import { getActiveSubsKey } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -334,10 +338,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.shardId ?? GLOBAL_SHARD_ID;
   }
 
-  getRedis(): Redis {
-    return getRedis();
-  }
-
   /**
    * Use this when you need elevated privileges within request handling.
    * @param conn - Optional database client.
@@ -509,7 +509,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
-    await this.setCacheEntry(resource);
+
+    if (!this.transactionDepth) {
+      // Only set cache entry if not in a transaction
+      await this.setCacheEntry(resource);
+    }
+
     return resource;
   }
 
@@ -844,6 +849,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Validate resource after all modifications and touchups above are done
     await this.validateResource(result);
+    // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
+    if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
+      await this.checkWebSocketSubscriptionLimit(result);
+    }
+
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
         await validateResourceReferences(this, result);
@@ -940,11 +950,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // Handle special cases for resource caching
     if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const redis = getRedis();
       const project = resource?.meta?.project;
-      if (!project) {
-        throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
+      const author = resource?.meta?.author?.reference;
+      if (!(project && author)) {
+        throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
       }
+      await addUserActiveWebSocketSubscription(author, `Subscription/${resource.id}`);
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
       // The active list is sharded by resource type so that lookups only scan relevant subscriptions
       const criteriaResourceType = resource.criteria.split('?')[0];
@@ -955,14 +966,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
         return;
       }
-      await redis.hset(
-        getActiveSubsKey(project, criteriaResourceType),
-        `Subscription/${resource.id}`,
-        resource.criteria
-      );
+      await setActiveSubscription(project, criteriaResourceType, `Subscription/${resource.id}`, resource.criteria);
+      if (create) {
+        const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+        getLogger().info('[WS] Subscription created', {
+          subscriptionId: resource.id,
+          criteria: resource.criteria,
+          user: author,
+          userSubscriptions: userSubCount,
+        });
+      }
     }
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
+    }
+  }
+
+  private async checkWebSocketSubscriptionLimit(resource: WithId<Resource>): Promise<void> {
+    const projectId = resource?.meta?.project;
+    const author = resource?.meta?.author?.reference;
+    if (!(projectId && author)) {
+      throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
+    }
+    const project = await this.getProjectById(projectId);
+    if (!project) {
+      throw new OperationOutcomeError(badRequest('No valid project connected to the specified Subscription.'));
+    }
+    const maxUserWsSubs =
+      project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
+      // We know this is defined in defaults so this is safe to cast
+      (getConfig().defaultMaxUserWebSocketSubscriptions as number);
+    const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+    if (userSubCount >= maxUserWsSubs) {
+      throw new OperationOutcomeError(
+        badRequest(`User has exceeded allotted maximum number of concurrent WebSocket subscriptions: ${maxUserWsSubs}`)
+      );
     }
   }
 
@@ -1118,7 +1156,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.context.projects?.length) {
       // Try loading from cache, using all available Project IDs
       const cacheKeys = this.context.projects.map((p) => getProfileCacheKey(p.id, url));
-      const results = await getRedis().mget(...cacheKeys);
+      const results = await getCacheRedis().mget(...cacheKeys);
       const cachedProfile = results.find(Boolean) as string | undefined;
       if (cachedProfile) {
         return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
@@ -1332,6 +1370,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await preCommitValidation(this, resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
+
+      // Clean up per-user and project active sets for deleted WebSocket subscriptions
+      if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
+        const author = resource.meta?.author?.reference;
+        const projectId = resource.meta?.project;
+        const criteriaResourceType = resource.criteria?.split('?')[0];
+        const cleanupPromises: Promise<number>[] = [];
+        if (author) {
+          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(author, [`Subscription/${id}`]));
+        }
+        if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {
+          cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, [`Subscription/${id}`]));
+        }
+        await Promise.all(cleanupPromises);
+        if (author) {
+          const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+          getLogger().info('[WS] Subscription deleted', {
+            subscriptionId: resource.id,
+            user: author,
+            userSubscriptions: userSubCount,
+          });
+        }
+      }
 
       if (!this.isCacheOnly(resource)) {
         await this.ensureInTransaction(async (conn) => {
@@ -2684,7 +2745,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return undefined;
     }
-    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+    const cachedValue = await getCacheRedis().get(getCacheKey(resourceType, id));
     return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
   }
 
@@ -2718,7 +2779,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return new Array(references.length);
     }
 
-    const cachedValues = await getRedis().mget(referenceKeys);
+    const cachedValues = await getCacheRedis().mget(referenceKeys);
 
     const result = new Array<CacheEntry | undefined>(references.length);
     for (let i = 0; i < references.length; i++) {
@@ -2747,7 +2808,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const projectId = resource.meta?.project;
-    await getRedis().set(
+    await getCacheRedis().set(
       getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
@@ -2767,7 +2828,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    await getRedis().del(getCacheKey(resourceType, id));
+    await getCacheRedis().del(getCacheKey(resourceType, id));
   }
 
   /**
@@ -2786,7 +2847,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return getCacheKey(resourceType, id);
     });
 
-    await getRedis().del(cacheKeys);
+    await getCacheRedis().del(cacheKeys);
   }
 
   async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
@@ -2845,7 +2906,7 @@ async function cacheProfile(systemRepo: SystemRepository, profile: StructureDefi
     return;
   }
   profile = await systemRepo.readReference(createReference(profile));
-  await getRedis().set(
+  await getCacheRedis().set(
     getProfileCacheKey(profile.meta?.project as string, profile.url),
     JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
     'EX',
@@ -2861,7 +2922,7 @@ async function removeCachedProfile(profile: StructureDefinition): Promise<void> 
   if (!profile.url || !profile.meta?.project) {
     return;
   }
-  await getRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
+  await getCacheRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
 }
 
 /**

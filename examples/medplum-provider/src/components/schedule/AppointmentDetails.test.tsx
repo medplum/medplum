@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { Appointment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
-import type { Appointment } from '@medplum/fhirtypes';
-import { AppointmentDetails } from './AppointmentDetails';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { showErrorNotification } from '../../utils/notifications';
+import { AppointmentDetails } from './AppointmentDetails';
 
 vi.mock('../../utils/notifications');
 

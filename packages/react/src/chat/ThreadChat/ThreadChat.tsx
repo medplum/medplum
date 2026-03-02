@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Communication, CommunicationPayload, DocumentReference, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,11 +13,14 @@ export interface ThreadChatProps {
   readonly onMessageSent?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
   readonly excludeHeader?: boolean;
+  readonly uploadEnabled?: boolean;
   readonly onError?: (err: Error) => void;
+  readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent, inputDisabled, excludeHeader, onError } = props;
+  const { thread, title, onMessageSent, inputDisabled, excludeHeader, uploadEnabled, onError, onViewInDocuments } =
+    props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -33,26 +36,42 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   }, [thread?.id, prevThreadId]);
 
   const sendMessage = useCallback(
-    (message: string) => {
+    (message: string, file?: File, existingDocRef?: DocumentReference) => {
       const profileRefStr = profileRef ? getReferenceString(profileRef) : undefined;
       if (!profileRefStr) {
         return;
       }
-      medplum
-        .createResource<Communication>({
+
+      const buildAndSend = async (): Promise<void> => {
+        const payload: CommunicationPayload[] = [];
+        if (message) {
+          payload.push({ contentString: message });
+        }
+        if (existingDocRef) {
+          payload.push({ contentReference: createReference(existingDocRef) });
+        } else if (file) {
+          const docRef = await medplum.createDocumentReference({
+            data: file,
+            contentType: file.type || 'application/octet-stream',
+            filename: file.name,
+            additionalFields: thread.subject ? { subject: thread.subject } : undefined,
+          });
+          payload.push({ contentReference: createReference(docRef) });
+        }
+        const communication = await medplum.createResource<Communication>({
           resourceType: 'Communication',
           status: 'in-progress',
           sender: profileRef,
           recipient: thread.recipient?.filter((ref) => getReferenceString(ref) !== profileRefStr) ?? [],
           sent: new Date().toISOString(),
-          payload: [{ contentString: message }],
+          payload,
           partOf: [threadRef],
-        })
-        .then((communication) => {
-          setCommunications([...communications, communication]);
-          onMessageSent?.(communication);
-        })
-        .catch(console.error);
+        });
+        setCommunications([...communications, communication]);
+        onMessageSent?.(communication);
+      };
+
+      buildAndSend().catch(console.error);
     },
     [medplum, profileRef, thread, threadRef, communications, onMessageSent]
   );
@@ -95,7 +114,10 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       onMessageReceived={onMessageReceived}
       inputDisabled={inputDisabled}
       excludeHeader={excludeHeader}
+      uploadEnabled={uploadEnabled}
       onError={onError}
+      attachmentSubjectRef={thread.subject}
+      onViewInDocuments={onViewInDocuments}
     />
   );
 }

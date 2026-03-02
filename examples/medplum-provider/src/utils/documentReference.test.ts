@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { DocumentReference, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from './documentReference';
 
 describe('documentReference utils', () => {

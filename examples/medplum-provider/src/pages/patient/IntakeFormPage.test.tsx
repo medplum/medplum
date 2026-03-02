@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
+import type { Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import type { Questionnaire } from '@medplum/fhirtypes';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router';
 import * as reactRouter from 'react-router';
-import { describe, expect, test, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { IntakeFormPage } from './IntakeFormPage';
 
 const simpleQuestionnaire: Questionnaire = {

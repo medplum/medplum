@@ -10,8 +10,8 @@ import {
   useMedplum,
   useMedplumProfile,
 } from '@medplum/react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {

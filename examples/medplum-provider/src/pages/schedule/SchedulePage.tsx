@@ -1,169 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Center, Drawer, Group, Loader, Stack, Text, Title } from '@mantine/core';
+import { Box, Drawer, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  createReference,
-  EMPTY,
-  isDefined,
-  formatDateTime,
-  getExtensionValue,
-  getReferenceString,
-} from '@medplum/core';
 import type { WithId } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createReference, EMPTY, getReferenceString } from '@medplum/core';
+import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
-import { v4 as uuidv4 } from 'uuid';
+import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
-import { showErrorNotification } from '../../utils/notifications';
-import { Calendar } from '../../components/Calendar';
-import { mergeOverlappingSlots } from '../../utils/slots';
 import type { Range } from '../../types/scheduling';
-import { IconChevronRight, IconX } from '@tabler/icons-react';
+import { showErrorNotification } from '../../utils/notifications';
+import { serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
+import { mergeOverlappingSlots } from '../../utils/slots';
+import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
-import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
-import { SchedulingTransientIdentifier } from '../../utils/scheduling';
-
-type ScheduleFindPaneProps = {
-  schedule: WithId<Schedule>;
-  range: Range;
-  onSelectSlot: (slot: Slot) => void;
-};
-
-const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
-
-function parseSchedulingParameters(schedule: Schedule): (CodeableConcept | undefined)[] {
-  const extensions = schedule?.extension?.filter((ext) => ext.url === SchedulingParametersURI) ?? [];
-  const serviceTypes = extensions.map((ext) => getExtensionValue(ext, 'serviceType') as CodeableConcept | undefined);
-  return serviceTypes;
-}
-
-// Allows selection of a ServiceType found in the schedule's
-// SchedulingParameters extensions, and runs a `$find` operation to look for
-// upcoming slots that can be used to book an Appointment of that type.
-//
-// See https://www.medplum.com/docs/scheduling/defining-availability for details.
-export function ScheduleFindPane(props: ScheduleFindPaneProps): JSX.Element {
-  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const { schedule, range } = props;
-  const serviceTypes = useMemo(
-    () =>
-      parseSchedulingParameters(schedule).map((codeableConcept) => ({
-        codeableConcept,
-        id: uuidv4(),
-      })),
-    [schedule]
-  );
-
-  const medplum = useMedplum();
-
-  // null: no selection made
-  // undefined: "wildcard" availability selected
-  // Coding: a specific service type was selected
-  const [serviceType, setServiceType] = useState<CodeableConcept | undefined | null>(
-    // If there is exactly one option, select it immediately instead of forcing user
-    // to select it
-    serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : null
-  );
-
-  // Ensure that we are searching for slots in the future by at least 30 minutes.
-  const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
-  const searchStart = range.start < earliestSchedulable ? earliestSchedulable : range.start;
-  const searchEnd = searchStart < range.end ? range.end : new Date(searchStart.getTime() + 1000 * 60 * 60 * 24 * 7);
-
-  const start = searchStart.toISOString();
-  const end = searchEnd.toISOString();
-
-  useEffect(() => {
-    if (!schedule || serviceType === null) {
-      return () => {};
-    }
-    const controller = new AbortController();
-    const signal = controller.signal;
-    const params = new URLSearchParams({ start, end });
-    if (serviceType) {
-      serviceType.coding?.forEach((coding) => {
-        params.append('service-type', `${coding.system}|${coding.code}`);
-      });
-    }
-    medplum
-      .get<Bundle<Slot>>(`fhir/R4/Schedule/${schedule.id}/$find?${params}`, { signal })
-      .then((bundle) => {
-        if (!signal.aborted) {
-          if (bundle.entry) {
-            bundle.entry.forEach((entry) => entry.resource && SchedulingTransientIdentifier.set(entry.resource));
-            setSlots(bundle.entry.map((entry) => entry.resource).filter(isDefined));
-          } else {
-            setSlots([]);
-          }
-        }
-      })
-      .catch((error) => {
-        if (!signal.aborted) {
-          showErrorNotification(error);
-        }
-      });
-    return () => {
-      controller.abort();
-    };
-  }, [medplum, schedule, serviceType, start, end]);
-
-  const handleDismiss = useCallback(() => {
-    setServiceType(null);
-    setSlots([]);
-  }, []);
-
-  if (serviceType !== null) {
-    return (
-      <Stack gap="sm" justify="flex-start">
-        <Title order={4}>
-          <Group justify="space-between">
-            <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
-            {serviceTypes.length > 1 && (
-              <Button variant="subtle" onClick={handleDismiss} aria-label="Clear selection">
-                <IconX size={20} />
-              </Button>
-            )}
-          </Group>
-        </Title>
-        {(slots ?? EMPTY).map((slot) => (
-          <Button
-            key={SchedulingTransientIdentifier.get(slot)}
-            variant="outline"
-            color="gray.3"
-            styles={(theme) => ({ label: { fontWeight: 'normal', color: theme.colors.gray[9] } })}
-            onClick={() => props.onSelectSlot(slot)}
-          >
-            {formatDateTime(slot.start)}
-          </Button>
-        ))}
-      </Stack>
-    );
-  }
-
-  return (
-    <Stack gap="sm" justify="flex-start">
-      <Title order={4}>Schedule&hellip;</Title>
-      {serviceTypes.map((st) => (
-        <Button
-          key={st.id}
-          fullWidth
-          variant="outline"
-          rightSection={<IconChevronRight size={12} />}
-          justify="space-between"
-          onClick={() => setServiceType(st.codeableConcept)}
-        >
-          {st.codeableConcept ? <CodeableConceptDisplay value={st.codeableConcept} /> : 'Other'}
-        </Button>
-      ))}
-    </Stack>
-  );
-}
 
 /**
  * Schedule page that displays the practitioner's schedule.
@@ -265,58 +120,29 @@ export function SchedulePage(): JSX.Element | null {
     [createAppointmentHandlers]
   );
 
-  const bookSlot = useCallback(
-    async (slot: Slot) => {
-      const data = await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
-        resourceType: 'Parameters',
-        parameter: [{ name: 'slot', resource: slot }],
-      });
-      medplum.invalidateSearches('Appointment');
-      medplum.invalidateSearches('Slot');
-
-      // Add the $book response to our state
-      const resources = data.entry?.map((entry) => entry.resource).filter(isDefined) ?? EMPTY;
-      const slots = resources
-        .filter((obj: Slot | Appointment): obj is Slot => obj.resourceType === 'Slot')
-        .filter((slot) => slot.status !== 'busy');
-      const appointments = resources.filter(
-        (obj: Slot | Appointment): obj is Appointment => obj.resourceType === 'Appointment'
-      );
-      setAppointments((state) => appointments.concat(state ?? EMPTY));
-      setSlots((state) => slots.concat(state ?? EMPTY));
-
-      // Open the appointment details drawer for the resource we just created
-      const firstAppointment = appointments[0];
-      if (firstAppointment) {
-        setAppointmentDetails(firstAppointment);
-        appointmentDetailsHandlers.open();
-      }
-    },
-    [medplum, appointmentDetailsHandlers]
-  );
-
-  const [bookLoading, setBookLoading] = useState(false);
-
   const handleSelectSlot = useCallback(
     (slot: Slot) => {
-      // If selecting a slot from "$find", run it through "$book" to create an
-      // appointment and slots
-      if (SchedulingTransientIdentifier.get(slot)) {
-        setBookLoading(true);
-        bookSlot(slot)
-          .catch(showErrorNotification)
-          .finally(() => setBookLoading(false));
-        return;
-      }
-
       // When a "free" slot is selected, open the create appointment modal
       if (slot.status === 'free') {
         createAppointmentHandlers.open();
         setAppointmentSlot({ start: new Date(slot.start), end: new Date(slot.end) });
       }
     },
-    [createAppointmentHandlers, bookSlot]
+    [createAppointmentHandlers]
   );
+
+  const handleBookSuccess = useCallback((results: { appointments: Appointment[]; slots: Slot[] }) => {
+    setAppointments((state) => results.appointments.concat(state ?? EMPTY));
+    setSlots((state) =>
+      results.slots
+        .filter(
+          // We don't show "busy" slots, assuming that they are duplicative of
+          // more descriptive Appointment resources.
+          (slot) => slot.status !== 'busy'
+        )
+        .concat(state ?? EMPTY)
+    );
+  }, []);
 
   // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
@@ -351,7 +177,7 @@ export function SchedulePage(): JSX.Element | null {
   );
 
   const height = window.innerHeight - 60;
-  const serviceTypes = useMemo(() => schedule && parseSchedulingParameters(schedule), [schedule]);
+  const serviceTypes = useMemo(() => schedule && serviceTypesFromSchedulingParameters(schedule), [schedule]);
 
   const handleAppointmentUpdate = useCallback((updated: Appointment) => {
     setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
@@ -375,17 +201,7 @@ export function SchedulePage(): JSX.Element | null {
 
         {Boolean(serviceTypes?.length) && schedule && range && (
           <Stack gap="md" justify="space-between" className={classes.findPane}>
-            <ScheduleFindPane
-              key={schedule.id}
-              schedule={schedule}
-              range={range}
-              onSelectSlot={(slot) => handleSelectSlot(slot)}
-            />
-            {bookLoading && (
-              <Center>
-                <Loader />
-              </Center>
-            )}
+            <FindPane key={schedule.id} schedule={schedule} range={range} onSuccess={handleBookSuccess} />
           </Stack>
         )}
       </div>
@@ -398,7 +214,7 @@ export function SchedulePage(): JSX.Element | null {
         position="right"
         h="100%"
       >
-        <CreateVisit appointmentSlot={appointmentSlot} />
+        <CreateVisit appointmentSlot={appointmentSlot} schedule={schedule} />
       </Drawer>
       <Drawer
         opened={appointmentDetailsOpened}

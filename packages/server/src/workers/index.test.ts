@@ -13,6 +13,7 @@ import { initBinaryStorage } from '../storage/loader';
 import * as cronModule from './cron';
 import * as downloadModule from './download';
 import * as subscriptionModule from './subscription';
+import { queueRegistry } from './utils';
 
 describe('Workers', () => {
   beforeAll(() => {
@@ -21,11 +22,46 @@ describe('Workers', () => {
 
   test('Init and close', async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');
     initWorkers(config);
+    await closeWorkers();
+    await closeDatabase();
+    await closeRedis();
+  });
+
+  test('Init with workers.enabled = [] (HTTP-only pool)', async () => {
+    const config = await loadTestConfig();
+    config.workers = { enabled: [] };
+    initRedis(config);
+    await initDatabase(config);
+    await seedDatabase(config);
+    initBinaryStorage('file:binary');
+    initWorkers(config);
+
+    // Queues should still be available for enqueuing even with no workers enabled
+    expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
+
+    await closeWorkers();
+    await closeDatabase();
+    await closeRedis();
+  });
+
+  test('Init with workers.enabled subset', async () => {
+    const config = await loadTestConfig();
+    config.workers = { enabled: ['subscription'] };
+    initRedis(config);
+    await initDatabase(config);
+    await seedDatabase(config);
+    initBinaryStorage('file:binary');
+    initWorkers(config);
+
+    // Queues should still be available regardless of which workers are enabled
+    expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
+    expect(queueRegistry.get('DownloadQueue')).toBeDefined();
+
     await closeWorkers();
     await closeDatabase();
     await closeRedis();
