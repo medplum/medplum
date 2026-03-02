@@ -505,7 +505,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
-    await this.setCacheEntry(resource);
+
+    if (!this.transactionDepth) {
+      // Only set cache entry if not in a transaction
+      await this.setCacheEntry(resource);
+    }
+
     return resource;
   }
 
