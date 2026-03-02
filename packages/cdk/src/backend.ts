@@ -837,7 +837,7 @@ export class BackEnd extends Construct {
   ): void {
     const name = config.name;
     const region = config.region;
-    const serviceId = 'Worker' + service.id;
+    const serviceId = service.id + 'Worker';
 
     const serviceTaskDef = new ecs.FargateTaskDefinition(this, `${serviceId}TaskDefinition`, {
       memoryLimitMiB: service.serverMemory ?? config.serverMemory,
