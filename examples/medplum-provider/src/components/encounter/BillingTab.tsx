@@ -355,9 +355,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                     .
                   </Text>
                   {candidCreatedAt && (
-                  <Text size="sm" c="dimmed">
-                    Submitted on {formatSubmissionDate(candidCreatedAt)}
-                  </Text>
+                    <Text size="sm" c="dimmed">
+                      Submitted on {formatSubmissionDate(candidCreatedAt)}
+                    </Text>
                   )}
                 </Box>
                 <Button
