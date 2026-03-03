@@ -2432,7 +2432,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       durationMs?: number;
     }
   ): void {
-    if (this.context.author.reference === 'system') {
+    const resource = options?.resource;
+    const isSystem = this.context.author.reference === 'system';
+
+    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
+      const duration = options.durationMs / 1000; // Report duration in whole seconds
+      recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
+        attributes: {
+          system: isSystem,
+          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        },
+      });
+    }
+    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
+      attributes: {
+        system: isSystem,
+        resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+      },
+    });
+
+    if (isSystem) {
       // Don't log system events.
       return;
     }
@@ -2444,7 +2464,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (options?.searchRequest) {
       query = options.searchRequest.resourceType + formatSearchQuery(options.searchRequest);
     }
-    const resource = options?.resource;
 
     const auditEvent = createAuditEvent(
       RestfulOperationType,
@@ -2461,21 +2480,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     );
     logAuditEvent(auditEvent);
-
-    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
-      const duration = options.durationMs / 1000; // Report duration in whole seconds
-      recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
-        attributes: {
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
-        },
-      });
-    }
-    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
-      attributes: {
-        resourceType: isResource(resource) ? resource?.resourceType : undefined,
-        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
-      },
-    });
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
