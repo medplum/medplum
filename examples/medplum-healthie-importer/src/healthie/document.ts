@@ -4,6 +4,7 @@ import type { MedplumClient } from '@medplum/core';
 import type { Binary, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import type { HealthieClient } from './client';
 import { HEALTHIE_DOCUMENT_ID_SYSTEM } from './constants';
+import { convertHealthieTimestampToIso } from './questionnaire-response';
 
 export interface HealthieDocument {
   id: string;
@@ -155,7 +156,7 @@ export function convertHealthieDocumentToFhir(
     identifier: [{ system: HEALTHIE_DOCUMENT_ID_SYSTEM, value: doc.id }],
     status: 'current',
     subject: patientReference,
-    date: doc.created_at,
+    date: convertHealthieTimestampToIso(doc.created_at),
     description: doc.description || doc.internal_notes || undefined,
     content: [
       {

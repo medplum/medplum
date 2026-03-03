@@ -127,9 +127,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         },
       });
 
-      // Fetch and add all medications for this patient
-      const medications = await fetchMedications(healthie, healthiePatient.id);
-      console.log(`Found ${medications.length} medications for patient ${healthiePatient.id}`);
+      // Fetch all clinical data for this patient in parallel
+      const [medications, allergies, questionnaireResponses, documents] = await Promise.all([
+        fetchMedications(healthie, healthiePatient.id),
+        fetchAllergySensitivities(healthie, healthiePatient.id),
+        fetchHealthieFormAnswerGroups(healthiePatient.id, healthie),
+        fetchDocuments(healthie, healthiePatient.id),
+      ]);
+      console.log(
+        `Patient ${healthiePatient.id}: ${medications.length} meds, ${allergies.length} allergies, ` +
+          `${questionnaireResponses.length} forms, ${documents.length} docs`
+      );
 
       for (const medication of medications) {
         patientBundle.entry?.push({
@@ -141,10 +149,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         });
       }
 
-      // Fetch and add all allergies for this patient
-      const allergies = await fetchAllergySensitivities(healthie, healthiePatient.id);
-      console.log(`Found ${allergies.length} allergies for patient ${healthiePatient.id}`);
-
       for (const allergy of allergies) {
         patientBundle.entry?.push({
           resource: convertHealthieAllergyToFhir(allergy, patientReference),
@@ -154,10 +158,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           },
         });
       }
-
-      // Fetch and add all questionnaire responses for this patient
-      const questionnaireResponses = await fetchHealthieFormAnswerGroups(healthiePatient.id, healthie);
-      console.log(`Found ${questionnaireResponses.length} questionnaire responses for patient ${healthiePatient.id}`);
 
       for (const questionnaireResponse of questionnaireResponses) {
         patientBundle.entry?.push({
@@ -173,10 +173,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         });
       }
 
-      // Fetch and add all documents for this patient
-      const documents = await fetchDocuments(healthie, healthiePatient.id);
-      console.log(`Found ${documents.length} documents for patient ${healthiePatient.id}`);
-
       for (const doc of documents) {
         const needsDownload = await shouldDownloadDocument(doc, medplum);
         if (!needsDownload) {
@@ -188,23 +184,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           binaryData = await downloadDocumentContent(doc.expiring_url);
         }
 
-        const { documentReference, binary } = convertHealthieDocumentToFhir(
+        const { documentReference } = convertHealthieDocumentToFhir(
           doc,
           binaryData?.data,
           patientReference
         );
 
-        if (binary) {
-          const binaryFullUrl = `urn:uuid:${generateId()}`;
-          patientBundle.entry?.push({
-            resource: binary,
-            fullUrl: binaryFullUrl,
-            request: {
-              method: 'PUT',
-              url: `Binary?_tag=${HEALTHIE_DOCUMENT_ID_SYSTEM}|binary-${doc.id}`,
-            },
-          });
-          documentReference.content[0].attachment.url = binaryFullUrl;
+        if (binaryData) {
+          try {
+            const contentType = doc.file_content_type || binaryData.contentType;
+            const rawBytes = Uint8Array.from(atob(binaryData.data), (c) => c.charCodeAt(0));
+            const createdBinary = await medplum.createBinary({
+              data: rawBytes,
+              contentType,
+              filename: doc.display_name || `document-${doc.id}`,
+            });
+            documentReference.content[0].attachment.url = `Binary/${createdBinary.id}`;
+          } catch (error) {
+            console.log(`Failed to upload binary for document ${doc.id}:`, error);
+          }
         }
 
         patientBundle.entry?.push({
