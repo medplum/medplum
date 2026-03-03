@@ -202,11 +202,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           binaryData = await downloadDocumentContent(doc.expiring_url);
         }
 
-        const { documentReference } = convertHealthieDocumentToFhir(
-          doc,
-          binaryData?.data,
-          patientReference
-        );
+        const { documentReference } = convertHealthieDocumentToFhir(doc, binaryData?.data, patientReference);
 
         if (binaryData) {
           try {
