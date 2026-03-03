@@ -1127,14 +1127,14 @@ describe('BillingTab', () => {
       expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
     });
 
-    test('shows error message when get-encounter bot call fails', async () => {
+    test('shows error notification when get-encounter bot call fails', async () => {
       vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
       vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Network error'));
 
       await setup({ claim: mockCandidClaim });
 
       await waitFor(() => {
-        expect(screen.getByText('Unable to fetch Candid Health claim')).toBeInTheDocument();
+        expect(screen.getByText(/Unable to fetch Candid Health claim/)).toBeInTheDocument();
       });
     });
 
