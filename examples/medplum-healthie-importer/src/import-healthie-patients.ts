@@ -15,6 +15,12 @@ import {
   HEALTHIE_USER_ID_SYSTEM,
 } from './healthie/constants';
 import { convertHealthieDocumentToFhir, downloadDocumentContent, fetchDocuments, shouldDownloadDocument } from './healthie/document';
+import {
+  convertHealthieDocumentToFhir,
+  downloadDocumentContent,
+  fetchDocuments,
+  shouldDownloadDocument,
+} from './healthie/document';
 import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/medication';
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
 import {
@@ -189,6 +195,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           binaryData?.data,
           patientReference
         );
+        const { documentReference, binary } = convertHealthieDocumentToFhir(doc, binaryData?.data, patientReference);
 
         if (binaryData) {
           try {
