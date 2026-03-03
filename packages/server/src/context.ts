@@ -142,7 +142,7 @@ export function getAuthenticatedContext(): AuthenticatedRequestContext {
 
 export async function attachRequestContext(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { requestId, traceId } = requestIds(req);
-  let ctx = new RequestContext(requestId, traceId);
+  let ctx: RequestContext | undefined;
   try {
     const authState = await authenticateTokenImpl(req);
     if (authState) {
@@ -151,6 +151,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     }
   } catch (err: any) {
     // Ensure next() is called in a request context, so later middleware (e.g. logging) can run correctly
+    ctx ??= new RequestContext(requestId, traceId);
     requestContextStore.run(ctx, () => {
       getLogger().error('Authentication error', { err: err.toString(), stack: err.stack });
       const outcome = badRequest('Authentication error');
@@ -161,6 +162,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     return;
   }
 
+  ctx ??= new RequestContext(requestId, traceId);
   requestContextStore.run(ctx, () => next());
 }
 
