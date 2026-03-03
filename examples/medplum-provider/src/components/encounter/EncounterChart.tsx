@@ -62,6 +62,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     setClaim,
     setPractitioner,
     setTasks,
+    setClinicalImpression,
     setChargeItems,
   } = useEncounterChart(encounterProp, patientReference);
 
@@ -164,6 +165,12 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
           return updated || task;
         })
       );
+
+      // Mark clinical impression as completed
+      if (clinicalImpression) {
+        const updatedImpression = await medplum.updateResource({ ...clinicalImpression, status: 'completed' });
+        setClinicalImpression(updatedImpression);
+      }
     }
 
     // Create provenance record with signature
@@ -274,6 +281,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               chargeItems={chargeItems}
               setChargeItems={setChargeItems}
               setClaim={setClaim}
+              chartNoteStatus={chartNoteStatus}
             />
           )}
         </Box>
