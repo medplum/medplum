@@ -14,7 +14,6 @@ import {
   HEALTHIE_PROVIDER_ROLE_ID_SYSTEM,
   HEALTHIE_USER_ID_SYSTEM,
 } from './healthie/constants';
-import { convertHealthieDocumentToFhir, downloadDocumentContent, fetchDocuments, shouldDownloadDocument } from './healthie/document';
 import {
   convertHealthieDocumentToFhir,
   downloadDocumentContent,
@@ -190,12 +189,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           binaryData = await downloadDocumentContent(doc.expiring_url);
         }
 
-        const { documentReference } = convertHealthieDocumentToFhir(
-          doc,
-          binaryData?.data,
-          patientReference
-        );
-        const { documentReference, binary } = convertHealthieDocumentToFhir(doc, binaryData?.data, patientReference);
+        const { documentReference } = convertHealthieDocumentToFhir(doc, binaryData?.data, patientReference);
 
         if (binaryData) {
           try {
