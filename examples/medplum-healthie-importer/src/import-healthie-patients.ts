@@ -197,25 +197,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           continue;
         }
 
-        let binaryData: { data: string; contentType: string } | undefined;
+        const documentReference = convertHealthieDocumentToFhir(doc, patientReference);
+
         if (doc.expiring_url) {
-          binaryData = await downloadDocumentContent(doc.expiring_url);
-        }
-
-        const { documentReference } = convertHealthieDocumentToFhir(doc, binaryData?.data, patientReference);
-
-        if (binaryData) {
-          try {
-            const contentType = doc.file_content_type || binaryData.contentType;
-            const rawBytes = Uint8Array.from(atob(binaryData.data), (c) => c.charCodeAt(0));
-            const createdBinary = await medplum.createBinary({
-              data: rawBytes,
-              contentType,
-              filename: doc.display_name || `document-${doc.id}`,
-            });
-            documentReference.content[0].attachment.url = `Binary/${createdBinary.id}`;
-          } catch (error) {
-            console.log(`Failed to upload binary for document ${doc.id}:`, error);
+          const downloaded = await downloadDocumentContent(doc.expiring_url);
+          if (downloaded) {
+            try {
+              const createdBinary = await medplum.createBinary({
+                data: downloaded.data,
+                contentType: doc.file_content_type || downloaded.contentType,
+                filename: doc.display_name || `document-${doc.id}`,
+              });
+              documentReference.content[0].attachment.url = `Binary/${createdBinary.id}`;
+            } catch (error) {
+              console.log(`Failed to upload binary for document ${doc.id}:`, error);
+            }
           }
         }
 

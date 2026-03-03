@@ -108,7 +108,7 @@ describe('fetchDocuments', () => {
 });
 
 describe('downloadDocumentContent', () => {
-  test('downloads and returns base64 content', async () => {
+  test('downloads and returns raw bytes', async () => {
     const mockArrayBuffer = new TextEncoder().encode('hello world').buffer;
     const mockResponse = {
       ok: true,
@@ -121,9 +121,8 @@ describe('downloadDocumentContent', () => {
 
     expect(result).toBeDefined();
     expect(result?.contentType).toBe('application/pdf');
-    expect(typeof result?.data).toBe('string');
-    const decoded = atob(result?.data ?? '');
-    expect(decoded).toBe('hello world');
+    expect(result?.data).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(result?.data)).toBe('hello world');
   });
 
   test('returns undefined on HTTP error', async () => {
@@ -240,45 +239,31 @@ describe('shouldDownloadDocument', () => {
 describe('convertHealthieDocumentToFhir', () => {
   const patientRef = { reference: 'urn:uuid:patient-1' } as any;
 
-  test('converts document with binary data', () => {
-    const { documentReference, binary } = convertHealthieDocumentToFhir(FULL_DOC, 'base64data==', patientRef);
+  test('converts full document to DocumentReference', () => {
+    const result = convertHealthieDocumentToFhir(FULL_DOC, patientRef);
 
-    expect(documentReference.resourceType).toBe('DocumentReference');
-    expect(documentReference.identifier?.[0]).toEqual({ system: HEALTHIE_DOCUMENT_ID_SYSTEM, value: 'doc-1' });
-    expect(documentReference.status).toBe('current');
-    expect(documentReference.subject).toBe(patientRef);
-    expect(documentReference.date).toBe('2025-01-15T10:00:00Z');
-    expect(documentReference.description).toBe('Blood work results');
-    expect(documentReference.content[0].attachment.contentType).toBe('application/pdf');
-    expect(documentReference.content[0].attachment.title).toBe('Lab Results.pdf');
-
-    expect(binary).toBeDefined();
-    expect(binary?.resourceType).toBe('Binary');
-    expect(binary?.contentType).toBe('application/pdf');
-    expect(binary?.data).toBe('base64data==');
-    expect(binary?.meta?.tag?.[0]).toEqual({ system: HEALTHIE_DOCUMENT_ID_SYSTEM, code: 'binary-doc-1' });
-  });
-
-  test('converts document without binary data', () => {
-    const { documentReference, binary } = convertHealthieDocumentToFhir(FULL_DOC, undefined, patientRef);
-
-    expect(documentReference.resourceType).toBe('DocumentReference');
-    expect(binary).toBeUndefined();
+    expect(result.resourceType).toBe('DocumentReference');
+    expect(result.identifier?.[0]).toEqual({ system: HEALTHIE_DOCUMENT_ID_SYSTEM, value: 'doc-1' });
+    expect(result.status).toBe('current');
+    expect(result.subject).toBe(patientRef);
+    expect(result.date).toBe('2025-01-15T10:00:00Z');
+    expect(result.description).toBe('Blood work results');
+    expect(result.content[0].attachment.contentType).toBe('application/pdf');
+    expect(result.content[0].attachment.title).toBe('Lab Results.pdf');
   });
 
   test('defaults content type to application/octet-stream', () => {
     const doc: HealthieDocument = { ...FULL_DOC, file_content_type: undefined };
-    const { documentReference, binary } = convertHealthieDocumentToFhir(doc, 'data', patientRef);
+    const result = convertHealthieDocumentToFhir(doc, patientRef);
 
-    expect(documentReference.content[0].attachment.contentType).toBe('application/octet-stream');
-    expect(binary?.contentType).toBe('application/octet-stream');
+    expect(result.content[0].attachment.contentType).toBe('application/octet-stream');
   });
 
   test('uses fallback title when display_name is missing', () => {
     const doc: HealthieDocument = { ...FULL_DOC, display_name: undefined };
-    const { documentReference } = convertHealthieDocumentToFhir(doc, undefined, patientRef);
+    const result = convertHealthieDocumentToFhir(doc, patientRef);
 
-    expect(documentReference.content[0].attachment.title).toBe('document-doc-1');
+    expect(result.content[0].attachment.title).toBe('document-doc-1');
   });
 
   test('prefers description over internal_notes', () => {
@@ -287,9 +272,9 @@ describe('convertHealthieDocumentToFhir', () => {
       description: 'Main description',
       internal_notes: 'Internal note',
     };
-    const { documentReference } = convertHealthieDocumentToFhir(doc, undefined, patientRef);
+    const result = convertHealthieDocumentToFhir(doc, patientRef);
 
-    expect(documentReference.description).toBe('Main description');
+    expect(result.description).toBe('Main description');
   });
 
   test('falls back to internal_notes when no description', () => {
@@ -298,9 +283,9 @@ describe('convertHealthieDocumentToFhir', () => {
       description: undefined,
       internal_notes: 'Internal note',
     };
-    const { documentReference } = convertHealthieDocumentToFhir(doc, undefined, patientRef);
+    const result = convertHealthieDocumentToFhir(doc, patientRef);
 
-    expect(documentReference.description).toBe('Internal note');
+    expect(result.description).toBe('Internal note');
   });
 
   test('omits description when both are missing', () => {
@@ -309,15 +294,8 @@ describe('convertHealthieDocumentToFhir', () => {
       description: undefined,
       internal_notes: undefined,
     };
-    const { documentReference } = convertHealthieDocumentToFhir(doc, undefined, patientRef);
+    const result = convertHealthieDocumentToFhir(doc, patientRef);
 
-    expect(documentReference.description).toBeUndefined();
-  });
-
-  test('meta tag on binary uses correct system and code format', () => {
-    const doc: HealthieDocument = { ...FULL_DOC, id: 'doc-42' };
-    const { binary } = convertHealthieDocumentToFhir(doc, 'data', patientRef);
-
-    expect(binary?.meta?.tag).toEqual([{ system: HEALTHIE_DOCUMENT_ID_SYSTEM, code: 'binary-doc-42' }]);
+    expect(result.description).toBeUndefined();
   });
 });
