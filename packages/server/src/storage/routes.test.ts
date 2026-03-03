@@ -126,4 +126,40 @@ describe('Storage Routes', () => {
     const res = await req.send('foo bar baz quux');
     expect(res.status).toBe(200);
   });
+
+  test('Write mismatched content type', async () => {
+    // For signature verification, we need to use the same URL as the client would use
+    // So we need to start the request without executing it yet
+    const req = request(app).put('/').set('Content-Type', 'text/plain');
+
+    // Get the base URL from the request (i.e., "http://127.0.0.1:57516/")
+    const baseUrl = req.url;
+
+    // Now we need to update our server config to use that as the storage base URL
+    config.storageBaseUrl = baseUrl + 'storage/';
+
+    // Now we can generate the presigned upload URL with a proper signature
+    req.url = await getBinaryStorage().getPresignedUrl(binary, { upload: true });
+
+    // And finally, we can execute the request
+    const res = await req.set('content-type', 'application/json').send('{}');
+    expect(res.status).toBe(400);
+  });
+
+  test('Write missing signature', async () => {
+    const res = await request(app).put(`/storage/${binary.id}?Expires=123`);
+    expect(res.status).toBe(401);
+  });
+
+  test('Write missing expires', async () => {
+    const res = await request(app).put(`/storage/${binary.id}?Signature=xyz`);
+    expect(res.status).toBe(410);
+  });
+
+  test('Write invalid signature', async () => {
+    const dateLessThan = new Date();
+    dateLessThan.setHours(dateLessThan.getHours() + 1);
+    const res = await request(app).put(`/storage/${binary.id}?Signature=xyz&Expires=${dateLessThan.getTime()}`);
+    expect(res.status).toBe(401);
+  });
 });

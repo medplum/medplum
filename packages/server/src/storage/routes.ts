@@ -96,8 +96,14 @@ storageRouter.put('/:id{/:versionId}', async (req: Request, res: Response) => {
   const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // unauthenticated; how to know which shard to query for the Binary?
   const binary = await systemRepo.readResource<Binary>('Binary', id);
 
+  const contentType = req.headers['content-type'];
+  if (contentType && contentType !== binary.contentType) {
+    res.status(400).send('Content-Type mismatch');
+    return;
+  }
+
   try {
-    await getBinaryStorage().writeBinary(binary, undefined, req.headers['content-type'], req);
+    await getBinaryStorage().writeBinary(binary, undefined, contentType, req);
     res.sendStatus(200);
   } catch {
     res.sendStatus(400);
