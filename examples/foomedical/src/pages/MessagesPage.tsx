@@ -8,6 +8,7 @@ import classes from './MessagesPage.module.css';
 import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
 import { useEffect, useMemo } from 'react';
+import { useMedplumProfile } from '@medplum/react-hooks';
 import { normalizeCommunicationSearch } from '../utils/communication-search';
 
 /**
@@ -16,6 +17,7 @@ import { normalizeCommunicationSearch } from '../utils/communication-search';
  */
 export function MessagesPage(): JSX.Element {
   const { messageId } = useParams();
+  const profile = useMedplumProfile();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -67,6 +69,7 @@ export function MessagesPage(): JSX.Element {
       <ThreadInbox
         threadId={messageId}
         query={formatSearchQuery(parsedSearch).substring(1)}
+        subject={profile?.resourceType === 'Patient' ? profile : undefined}
         onNew={onNew}
         getThreadUri={getThreadUri}
         onChange={onChange}
