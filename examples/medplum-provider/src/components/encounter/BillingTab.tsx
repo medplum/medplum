@@ -341,7 +341,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                   {candidLoading || getEncounterBot === undefined ? (
                     <Skeleton height={22} width={100} radius="xl" />
                   ) : candidStatus ? (
-                    <Badge color="violet" radius="xl" variant="filled">
+                    <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
                       {formatCandidStatus(candidStatus)}
                     </Badge>
                   ) : null}
@@ -437,6 +437,16 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       )}
     </Stack>
   );
+};
+
+const getStatusColor = (status: string): string => {
+  if (['rejected', 'denied'].includes(status)) {
+    return 'red';
+  }
+  if (['paid', 'finalized_paid'].includes(status)) {
+    return 'green';
+  }
+  return 'violet';
 };
 
 const formatCandidStatus = (status: string): string =>
