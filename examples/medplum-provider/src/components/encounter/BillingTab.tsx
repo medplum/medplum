@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Menu, Stack, Text } from '@mantine/core';
+import { Badge, Box, Button, Card, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { formatHumanName, getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { formatDateTime, formatHumanName, getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
@@ -71,7 +71,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
-  const [candidFetchError, setCandidFetchError] = useState(false);
+  const [candidLoading, setCandidLoading] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef<WithId<Claim> | undefined>(claim);
@@ -117,8 +117,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (!candidEncounterId || !getEncounterBot) {
       return;
     }
+    setCandidLoading(true);
     medplum
-      .executeBot(getEncounterBot.id, { encounterId: candidEncounterId }, 'application/json')
+      .executeBot("getEncounterBot.id", { encounterId: candidEncounterId }, 'application/json')
       .then((result) => {
         const status = result?.fullEncounter?.claims?.[0]?.status;
         if (status) {
@@ -129,7 +130,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           setCandidCreatedAt(createdAt);
         }
       })
-      .catch(() => setCandidFetchError(true));
+      .catch((err) => showErrorNotification("Unable to fetch Candid Health claim: " + err))
+      .finally(() => setCandidLoading(false));
   }, [candidEncounterId, getEncounterBot, medplum]);
 
   const handleDiagnosisChange = useCallback(
@@ -336,16 +338,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                   <Text size="xs" c="dimmed">
                     Claim Status:
                   </Text>
-                  {candidStatus && (
+                  {candidLoading || getEncounterBot === undefined ? (
+                    <Skeleton height={22} width={100} radius="xl" />
+                  ) : candidStatus ? (
                     <Badge color="violet" radius="xl" variant="filled">
                       {formatCandidStatus(candidStatus)}
                     </Badge>
-                  )}
-                  {candidFetchError && (
-                    <Text size="xs" c="red">
-                      Unable to fetch Candid Health claim
-                    </Text>
-                  )}
+                  ) : null}
                 </Stack>
                 <Box style={{ flex: 1 }}>
                   <Text size="sm">
@@ -359,11 +358,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                     </Text>
                     .
                   </Text>
-                  {candidCreatedAt && (
+                  {candidLoading || getEncounterBot === undefined ? (
+                    <Skeleton height={14} width={200} mt={4} />
+                  ) : candidCreatedAt ? (
                     <Text size="sm" c="dimmed">
-                      Submitted on {formatSubmissionDate(candidCreatedAt)}
+                      Submitted on {formatDateTime(candidCreatedAt)}
                     </Text>
-                  )}
+                  ) : null}
                 </Box>
                 <Button
                   variant="outline"
@@ -443,16 +444,6 @@ const formatCandidStatus = (status: string): string =>
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
-
-const formatSubmissionDate = (isoDate: string | undefined): string => {
-  if (!isoDate) {
-    return '';
-  }
-  const d = new Date(isoDate);
-  const datePart = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
-  return `${datePart} at ${timePart}`;
-};
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {
