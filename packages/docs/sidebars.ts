@@ -439,6 +439,7 @@ const sidebars: SidebarsConfig = {
                 { type: 'doc', id: 'api/fhir/operations/bulk-fhir' },
                 { type: 'doc', id: 'api/fhir/operations/ccda-export' },
                 { type: 'doc', id: 'api/fhir/operations/claim-export' },
+                { type: 'doc', id: 'api/fhir/operations/binary-presigned-url' },
 
                 { type: 'html', value: '<strong class="menu__link">Clinical Decision Support</strong>' },
                 { type: 'doc', id: 'api/fhir/operations/ai' },
