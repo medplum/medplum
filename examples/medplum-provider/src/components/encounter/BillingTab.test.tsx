@@ -1127,6 +1127,17 @@ describe('BillingTab', () => {
       expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
     });
 
+    test('shows error message when get-encounter bot call fails', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Network error'));
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Unable to fetch Candid Health claim')).toBeInTheDocument();
+      });
+    });
+
     test('View Claim on Candid button opens the correct Candid URL', async () => {
       const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
       const user = userEvent.setup();

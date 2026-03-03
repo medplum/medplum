@@ -71,6 +71,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
+  const [candidFetchError, setCandidFetchError] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef<WithId<Claim> | undefined>(claim);
@@ -129,7 +130,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           setCandidCreatedAt(createdAt);
         }
       })
-      .catch(() => undefined);
+      .catch(() => setCandidFetchError(true));
   }, [candidEncounterId, getEncounterBot, medplum]);
 
   const handleDiagnosisChange = useCallback(
@@ -340,6 +341,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                     <Badge color="violet" radius="xl" variant="filled">
                       {formatCandidStatus(candidStatus)}
                     </Badge>
+                  )}
+                  {candidFetchError && (
+                    <Text size="xs" c="red">
+                      Unable to fetch Candid Health claim
+                    </Text>
                   )}
                 </Stack>
                 <Box style={{ flex: 1 }}>
