@@ -119,7 +119,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     setCandidLoading(true);
     medplum
-      .executeBot("getEncounterBot.id", { encounterId: candidEncounterId }, 'application/json')
+      .executeBot(getEncounterBot.id, { encounterId: candidEncounterId }, 'application/json')
       .then((result) => {
         const status = result?.fullEncounter?.claims?.[0]?.status;
         if (status) {
