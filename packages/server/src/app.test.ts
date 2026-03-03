@@ -8,7 +8,7 @@ import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
-import { getSystemRepo } from './fhir/repo';
+import { getProjectSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
@@ -212,10 +212,10 @@ describe('App', () => {
     });
 
     test('Logs authentication error', async () => {
-      const { accessToken, membership } = await createTestProject({ withAccessToken: true, withClient: true });
+      const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
 
       // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
-      await getSystemRepo().deleteResource(membership.resourceType, membership.id);
+      await getProjectSystemRepo(project).deleteResource(membership.resourceType, membership.id);
 
       const res1 = await request(app)
         .get(`/fhir/R4/Patient`)
