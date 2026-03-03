@@ -3,31 +3,21 @@
 import {
   allOk,
   badRequest,
-  codeableConceptMatchesToken,
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
   EMPTY,
-  isDefined,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type {
-  ActivityDefinition,
-  Bundle,
-  CodeableConcept,
-  OperationDefinition,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
+import type { ActivityDefinition, Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const findOperation = {
   resourceType: 'OperationDefinition',
@@ -54,58 +44,6 @@ type FindParameters = {
   'service-type': string;
   _count?: number;
 };
-
-// Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
-//
-// - Each schedulingParameters description is returned at most once
-// Design decision: if we find any matches at a given priority level, we do not
-// return matches with less priority. There's an argument that when processing
-// multiple service-type inputs, we should process each independently, finding
-// the best match. For this initial implementation, we've decided that it is
-// better to avoid returning results that mix sources, to make the outcomes
-// easier to understand.
-function chooseSchedulingParameters(
-  schedule: Schedule,
-  activityDefinitions: ActivityDefinition[],
-  serviceTypeTokens: string[]
-): (readonly [SchedulingParameters, CodeableConcept])[] {
-  const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-
-  // Top priority: entries on an individual schedule matching a service type
-  const specificMatches = scheduleSchedulingParameters
-    .map((schedulingParameters) => {
-      const serviceType = schedulingParameters.serviceType.find((st) =>
-        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-      );
-
-      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
-    })
-    .filter(isDefined);
-
-  if (specificMatches.length) {
-    return specificMatches;
-  }
-
-  // Next: entries on ActivityDefinition matching a service type
-  const activitySchedulingParameters = activityDefinitions.flatMap((activityDefinition) =>
-    parseSchedulingParametersExtensions(activityDefinition)
-  );
-  const sharedMatches = activitySchedulingParameters
-    .map((schedulingParameters) => {
-      const serviceType = schedulingParameters.serviceType.find((st) =>
-        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-      );
-      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
-    })
-    .filter(isDefined);
-
-  if (sharedMatches.length) {
-    return sharedMatches;
-  }
-
-  return [];
-}
 
 /**
  * Handles HTTP requests for the Schedule $find operation.

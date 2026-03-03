@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ActivityDefinition, CodeableConcept, Duration, Schedule } from '@medplum/fhirtypes';
+import { codeableConceptMatchesToken, isDefined } from '@medplum/core';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -19,7 +20,7 @@ type HardDuration = {
 };
 
 // The allowed nested extensions
-type SchedulingParametersExtensionExtension =
+export type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
   | { url: 'bufferAfter'; valueDuration: HardDuration }
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
@@ -39,7 +40,7 @@ type SchedulingParametersExtensionExtension =
       };
     };
 
-type SchedulingParametersExtension = {
+export type SchedulingParametersExtension = {
   url: typeof SchedulingParametersURI;
   extension: SchedulingParametersExtensionExtension[];
 };
@@ -104,6 +105,60 @@ function exactlyOne<T>(arr: T[], attribute: string): T {
     throw new Error(`Scheduling parameter attribute '${attribute}' has too many values`);
   }
   return arr[0];
+}
+
+/**
+ * Given scheduling parameter descriptions from a Schedule and ActivityDefinitions, and an
+ * array of input service types, return [SchedulingParameters, serviceType] pairs that satisfy
+ * the requested service types.
+ *
+ * Priority order (highest to lowest):
+ *  1. Entries from the Schedule matching a requested service-type
+ *  2. Entries from ActivityDefinitions matching a requested service-type
+ *
+ * Each SchedulingParameters description is returned at most once. If matches are found at a given
+ * priority level, lower-priority levels are not returned.
+ *
+ * @param schedule - The schedule resource to consider
+ * @param activityDefinitions - ActivityDefinitions to consider
+ * @param serviceTypeTokens - Service type tokens to restrict scheduling parameters to
+ * @returns pairs of [SchedulingParameters, CodeableConcept]
+ */
+export function chooseSchedulingParameters(
+  schedule: Schedule,
+  activityDefinitions: ActivityDefinition[],
+  serviceTypeTokens: string[]
+): (readonly [SchedulingParameters, CodeableConcept])[] {
+  const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
+
+  // Top priority: entries on an individual schedule matching a service type
+  const specificMatches = scheduleSchedulingParameters.map((schedulingParameters) => {
+    const serviceType = schedulingParameters.serviceType.find((st) =>
+      serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+    );
+    return serviceType ? [schedulingParameters, serviceType] as const : undefined
+  }).filter(isDefined);
+
+  if (specificMatches.length) {
+    return specificMatches;
+  }
+
+  // Next: entries on ActivityDefinition matching a service type
+  const activitySchedulingParameters = activityDefinitions.flatMap((activityDefinition) =>
+    parseSchedulingParametersExtensions(activityDefinition)
+  );
+  const sharedMatches = activitySchedulingParameters.map((schedulingParameters) => {
+    const serviceType = schedulingParameters.serviceType.find((st) =>
+      serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+    );
+    return serviceType ? [schedulingParameters, serviceType] as const : undefined
+  }).filter(isDefined);
+
+  if (sharedMatches.length) {
+    return sharedMatches;
+  }
+
+  return [];
 }
 
 /**

@@ -12,14 +12,22 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Appointment, Bundle, OperationDefinition, Patient, Reference, Slot } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  Appointment,
+  Bundle,
+  OperationDefinition,
+  Patient,
+  Reference,
+  Slot,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { addMinutes, areIntervalsOverlapping } from '../../util/date';
 import { invariant } from '../../util/invariant';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const bookOperation = {
   resourceType: 'OperationDefinition',
@@ -43,8 +51,6 @@ type BookParameters = {
   'patient-reference'?: Reference<Patient>;
 };
 
-type Matcher = (params: SchedulingParameters) => boolean;
-
 function assertAllOk<T>(objects: (Error | T)[], msg: string, path?: string): asserts objects is T[] {
   objects.forEach((obj, idx) => {
     if (obj instanceof Error) {
@@ -59,31 +65,6 @@ function assertAllMatch<T>(objects: T[], msg: string): T {
     throw new OperationOutcomeError(badRequest(msg));
   }
   return first;
-}
-
-function makeMatcher(slot: Slot): Matcher {
-  const codes = (slot.serviceType ?? EMPTY).flatMap((concept) =>
-    (concept.coding ?? EMPTY).map((coding) => `${coding.system}|${coding.code}`)
-  );
-  const codeSet = new Set(codes);
-  return (schedulingParams: SchedulingParameters) => {
-    return schedulingParams.serviceType.some((codeableConcept) => {
-      return codeableConcept.coding?.some((coding) => codeSet.has(`${coding.system}|${coding.code}`));
-    });
-  };
-}
-
-function findMatchingSchedulingParameters(extensions: SchedulingParameters[], slot: Slot): SchedulingParameters[] {
-  const matcher = makeMatcher(slot);
-  const parameters = extensions.filter((ext) => matcher(ext));
-
-  const startDate = new Date(slot.start);
-  const endDate = new Date(slot.end);
-
-  const durationMs = endDate.getTime() - startDate.getTime();
-  const durationMinutes = durationMs / 1000 / 60;
-
-  return parameters.filter((ext) => ext.duration === durationMinutes);
 }
 
 function chooseActiveParameters(
@@ -165,6 +146,24 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   const actors = await ctx.repo.readReferences(schedules.flatMap((schedule) => schedule.actor));
   assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
 
+  // Collect all unique service type codes across all proposed slots, then fetch
+  // matching ActivityDefinition resources in a single query.
+  const allServiceTypes = [
+    ...new Set(
+      proposedSlots
+        .flatMap((slot) => slot.serviceType ?? EMPTY)
+        .flatMap((concept) => concept.coding ?? EMPTY)
+        .map((coding) => `${coding.system}|${coding.code}`)
+    ),
+  ];
+  const activityDefinitions: ActivityDefinition[] =
+    allServiceTypes.length > 0
+      ? await ctx.repo.searchResources<ActivityDefinition>({
+          resourceType: 'ActivityDefinition',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
+        })
+      : [];
+
   const bufferSlots: Slot[] = [];
 
   const createdResources = await ctx.repo.withTransaction(
@@ -183,8 +182,16 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
             );
           }
 
-          const extensions = parseSchedulingParametersExtensions(schedule);
-          const parameters = findMatchingSchedulingParameters(extensions, proposedSlot);
+          const slotServiceTypes = (proposedSlot.serviceType ?? EMPTY)
+            .flatMap((concept) => concept.coding ?? EMPTY)
+            .map((coding) => `${coding.system}|${coding.code}`);
+
+          const durationMinutes =
+            (new Date(proposedSlot.end).getTime() - new Date(proposedSlot.start).getTime()) / 60000;
+
+          const parameters = chooseSchedulingParameters(schedule, activityDefinitions, slotServiceTypes)
+            .map(([params]) => params)
+            .filter((params) => params.duration === durationMinutes);
 
           if (parameters.length === 0) {
             throw new OperationOutcomeError(badRequest('No matching scheduling parameters found'));
