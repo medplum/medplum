@@ -169,7 +169,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
     async () => {
       await Promise.all(
         proposedSlots.map(async (proposedSlot, index) => {
-          const schedule = schedules.find((s) => `Schedule/${s.id}` === proposedSlot.schedule.reference);
+          const schedule = schedules.find((s) => `Schedule/${s.id}` === getReferenceString(proposedSlot.schedule));
           invariant(schedule, 'Slot.schedule not loaded');
 
           const actor = actors.find((a) => `${a.resourceType}/${a.id}` === schedule.actor[0].reference);
