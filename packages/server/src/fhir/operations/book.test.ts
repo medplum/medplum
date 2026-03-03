@@ -2,7 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Bundle, Patient, Practitioner, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  ActivityDefinition,
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  Extension,
+  Patient,
+  Practitioner,
+  Resource,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -10,6 +21,10 @@ import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
 import { createTestProject } from '../../test.setup';
+import type {
+  SchedulingParametersExtension,
+  SchedulingParametersExtensionExtension,
+} from './utils/scheduling-parameters';
 
 const systemRepo = getGlobalSystemRepo();
 const app = express();
@@ -42,33 +57,50 @@ describe('Appointment/$book', () => {
     await shutdownApp();
   });
 
-  async function makeSchedule(actor: Practitioner): Promise<WithId<Schedule>> {
+  const threeDayAvailability: SchedulingParametersExtensionExtension = {
+    url: 'availability',
+    valueTiming: {
+      repeat: {
+        dayOfWeek: ['tue', 'wed', 'thu'],
+        timeOfDay: ['09:00:00'],
+        duration: 8,
+        durationUnit: 'h',
+      },
+    },
+  };
+
+  function makeSchedulingExtension(opts?: {
+    serviceType?: CodeableConcept;
+    duration?: number;
+  }): SchedulingParametersExtension {
+    const duration = opts?.duration ?? 60;
+    const extension: SchedulingParametersExtension = {
+      url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+      extension: [
+        threeDayAvailability,
+        {
+          url: 'duration',
+          valueDuration: { value: duration, unit: 'min' },
+        },
+      ],
+    };
+
+    if (opts?.serviceType) {
+      extension.extension.push({
+        url: 'serviceType',
+        valueCodeableConcept: opts.serviceType,
+      });
+    }
+
+    return extension;
+  }
+
+  async function makeSchedule(opts: { actor: Practitioner; extension?: Extension[] }): Promise<WithId<Schedule>> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.project.id },
-      actor: [createReference(actor)],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed', 'thu'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
-            {
-              url: 'duration',
-              valueDuration: { value: 60, unit: 'min' },
-            },
-          ],
-        },
-      ],
+      actor: [createReference(opts.actor)],
+      extension: opts.extension ?? [makeSchedulingExtension()],
     });
   }
 
@@ -95,7 +127,7 @@ describe('Appointment/$book', () => {
   }
 
   test('Succeeds with 201 Created', async () => {
-    const schedule = await makeSchedule(practitioner1);
+    const schedule = await makeSchedule({ actor: practitioner1 });
     const response = await request
       .post('/fhir/R4/Appointment/$book')
       .set('Authorization', `Bearer ${project.accessToken}`)
@@ -142,7 +174,7 @@ describe('Appointment/$book', () => {
   });
 
   test('creates an Appointment', async () => {
-    const schedule = await makeSchedule(practitioner1);
+    const schedule = await makeSchedule({ actor: practitioner1 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
@@ -179,8 +211,8 @@ describe('Appointment/$book', () => {
   });
 
   test('creates slots with status: "busy"', async () => {
-    const schedule1 = await makeSchedule(practitioner1);
-    const schedule2 = await makeSchedule(practitioner2);
+    const schedule1 = await makeSchedule({ actor: practitioner1 });
+    const schedule2 = await makeSchedule({ actor: practitioner2 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
@@ -229,8 +261,8 @@ describe('Appointment/$book', () => {
   });
 
   test('with mismatched slot starts', async () => {
-    const schedule1 = await makeSchedule(practitioner1);
-    const schedule2 = await makeSchedule(practitioner2);
+    const schedule1 = await makeSchedule({ actor: practitioner1 });
+    const schedule2 = await makeSchedule({ actor: practitioner2 });
 
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -273,8 +305,8 @@ describe('Appointment/$book', () => {
   });
 
   test('with mismatched slot ends', async () => {
-    const schedule1 = await makeSchedule(practitioner1);
-    const schedule2 = await makeSchedule(practitioner2);
+    const schedule1 = await makeSchedule({ actor: practitioner1 });
+    const schedule2 = await makeSchedule({ actor: practitioner2 });
 
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -318,7 +350,7 @@ describe('Appointment/$book', () => {
 
   test('fails with Conflict when there is an overlapping busy slot booked', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
-    const schedule = await makeSchedule(practitioner);
+    const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
@@ -366,7 +398,7 @@ describe('Appointment/$book', () => {
 
   test('succeeds when there is an explicit "free" slot at the same time', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
-    const schedule = await makeSchedule(practitioner);
+    const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
@@ -404,7 +436,7 @@ describe('Appointment/$book', () => {
 
   test('it fails when trying to book outside of availability windows', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/New_York' });
-    const schedule = await makeSchedule(practitioner);
+    const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T07:00:00-04:00';
     const end = '2026-01-15T08:00:00-04:00';
 
@@ -449,8 +481,8 @@ describe('Appointment/$book', () => {
   ])('with practitioners in different timezones', async ({ start, end, succeeds }) => {
     const practitioner1 = await makePractitioner({ timezone: 'America/New_York' });
     const practitioner2 = await makePractitioner({ timezone: 'America/Los_Angeles' });
-    const schedule1 = await makeSchedule(practitioner1);
-    const schedule2 = await makeSchedule(practitioner2);
+    const schedule1 = await makeSchedule({ actor: practitioner1 });
+    const schedule2 = await makeSchedule({ actor: practitioner2 });
 
     const response = await request
       .post('/fhir/R4/Appointment/$book')
@@ -490,7 +522,7 @@ describe('Appointment/$book', () => {
 
   test('succeeds against an explicit "free" slot outside of regular availability', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/Phoenix' });
-    const schedule = await makeSchedule(practitioner);
+    const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T08:00:00-07:00';
     const end = '2026-01-15T09:00:00-07:00';
 
@@ -528,7 +560,7 @@ describe('Appointment/$book', () => {
 
   test('succeeds over adjacent explicit "free" slots', async () => {
     const practitioner = await makePractitioner({ timezone: 'America/Phoenix' });
-    const schedule = await makeSchedule(practitioner);
+    const schedule = await makeSchedule({ actor: practitioner });
     const start = '2026-01-15T08:00:00-07:00';
     const middle = '2026-01-15T08:30:00-07:00';
     const end = '2026-01-15T09:00:00-07:00';
@@ -578,7 +610,7 @@ describe('Appointment/$book', () => {
   });
 
   test('booking a slot with a different duration than scheduling parameters fails', async () => {
-    const schedule = await makeSchedule(practitioner1);
+    const schedule = await makeSchedule({ actor: practitioner1 });
     const response = await request
       .post('/fhir/R4/Appointment/$book')
       .set('Authorization', `Bearer ${project.accessToken}`)
@@ -901,7 +933,7 @@ describe('Appointment/$book', () => {
   });
 
   test('with a patient reference', async () => {
-    const schedule = await makeSchedule(practitioner1);
+    const schedule = await makeSchedule({ actor: practitioner1 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
@@ -952,8 +984,279 @@ describe('Appointment/$book', () => {
     ]);
   });
 
+  describe('Loading schedulingParameters from ActivityDefinitions', () => {
+    const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
+
+    async function makeActivityDefinition(duration: number): Promise<void> {
+      await systemRepo.createResource<ActivityDefinition>({
+        resourceType: 'ActivityDefinition',
+        meta: { project: project.project.id },
+        status: 'active',
+        code: serviceType,
+        extension: [makeSchedulingExtension({ serviceType, duration })],
+      });
+    }
+
+    async function makeScheduleNoParams(actor: Practitioner): Promise<WithId<Schedule>> {
+      return systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.project.id },
+        actor: [createReference(actor)],
+      });
+    }
+
+    test('succeeds when scheduling parameters are only on an ActivityDefinition', async () => {
+      await makeActivityDefinition(60);
+      const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T15:00:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toEqual(201);
+    });
+
+    test('fails when booking outside ActivityDefinition availability', async () => {
+      await makeActivityDefinition(60);
+      const schedule = await makeScheduleNoParams(practitioner1);
+
+      // 07:00-08:00 ET is outside the 09:00-17:00 ET window
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T07:00:00-05:00',
+                end: '2026-01-15T08:00:00-05:00',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+
+      expect(response.status).toEqual(400);
+    });
+
+    test('Schedule-specific parameters override ActivityDefinition parameters', async () => {
+      // ActivityDefinition says 30-min slots; Schedule says 60-min slots for
+      // the same service type.  A 60-min slot should succeed (Schedule wins),
+      // a 30-min slot should fail (ActivityDefinition parameters are
+      // overridden).
+      const serviceType = { coding: [{ system: 'http://example.com', code: 'dentistry' }] };
+
+      await systemRepo.createResource<ActivityDefinition>({
+        resourceType: 'ActivityDefinition',
+        meta: { project: project.project.id },
+        status: 'active',
+        code: serviceType,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'availability',
+                valueTiming: {
+                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
+                },
+              },
+              { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+              { url: 'serviceType', valueCodeableConcept: serviceType },
+            ],
+          },
+        ],
+      });
+
+      // Schedule overrides with 60-min slots for the same service type
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.project.id },
+        actor: [createReference(practitioner1)],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'availability',
+                valueTiming: {
+                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
+                },
+              },
+              { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+              { url: 'serviceType', valueCodeableConcept: serviceType },
+            ],
+          },
+        ],
+      });
+
+      // 60-min slot succeeds (Schedule's configuration wins)
+      const response60 = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T15:00:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+      expect(response60.body).not.toHaveProperty('issue');
+      expect(response60.status).toEqual(201);
+
+      // 30-min slot fails (ActivityDefinition duration was overridden by Schedule)
+      const response30 = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T14:30:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+      expect(response30.status).toEqual(400);
+    });
+
+    test('ActivityDefinition service-type match overrides Schedule wildcard parameters', async () => {
+      // Schedule has wildcard (no serviceType) params with 60-min slots.
+      // ActivityDefinition has service-type-specific params with 30-min slots.
+      // A slot with the matching serviceType and 30-min duration should use the ActivityDefinition.
+      const serviceType = { coding: [{ system: 'http://example.com', code: 'fitness' }] };
+
+      await systemRepo.createResource<ActivityDefinition>({
+        resourceType: 'ActivityDefinition',
+        meta: { project: project.project.id },
+        status: 'active',
+        code: serviceType,
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'availability',
+                valueTiming: {
+                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
+                },
+              },
+              { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+              { url: 'serviceType', valueCodeableConcept: serviceType },
+            ],
+          },
+        ],
+      });
+
+      // Schedule has wildcard params (no serviceType) with 60-min slots
+      const schedule = await systemRepo.createResource<Schedule>({
+        resourceType: 'Schedule',
+        meta: { project: project.project.id },
+        actor: [createReference(practitioner1)],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'availability',
+                valueTiming: {
+                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
+                },
+              },
+              { url: 'duration', valueDuration: { value: 60, unit: 'min' } },
+              // no serviceType = wildcard
+            ],
+          },
+        ],
+      });
+
+      // 30-min slot with the matching serviceType succeeds (ActivityDefinition wins over Schedule wildcard)
+      const response30 = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T14:30:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+      expect(response30.body).not.toHaveProperty('issue');
+      expect(response30.status).toEqual(201);
+
+      // 60-min slot with the matching serviceType fails (Schedule wildcard was overridden by ActivityDefinition)
+      const response60 = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T15:00:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+      expect(response60.status).toEqual(400);
+    });
+  });
+
   test('with an invalid patient reference', async () => {
-    const schedule = await makeSchedule(practitioner1);
+    const schedule = await makeSchedule({ actor: practitioner1 });
     const start = '2026-01-15T14:00:00Z';
     const end = '2026-01-15T15:00:00Z';
 
