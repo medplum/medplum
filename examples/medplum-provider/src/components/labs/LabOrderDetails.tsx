@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Badge,
-  Button,
   Divider,
   Group,
   Loader,
-  Timeline,
-  ThemeIcon,
+  Paper,
   ScrollArea,
+  Stack,
   Tabs,
+  Text,
+  ThemeIcon,
+  Timeline,
 } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import type {
@@ -24,13 +26,10 @@ import type {
 } from '@medplum/fhirtypes';
 import { AttachmentDisplay, ObservationTable, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
-
 import { showErrorNotification } from '../../utils/notifications';
-import classes from './LabOrderDetails.module.css';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;

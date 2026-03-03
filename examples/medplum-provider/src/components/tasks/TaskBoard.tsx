@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
+  ActionIcon,
+  Box,
+  Center,
   Divider,
   Flex,
   Group,
@@ -12,26 +12,18 @@ import {
   ScrollArea,
   Skeleton,
   Stack,
-  Text,
-  Box,
-  Pagination,
-  Center,
   Tabs,
+  Text,
   Tooltip,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { JSX } from 'react';
-import classes from './TaskBoard.module.css';
-import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
-import { useNavigate } from 'react-router';
+import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import { NewTaskModal } from './NewTaskModal';
 import classes from './TaskBoard.module.css';

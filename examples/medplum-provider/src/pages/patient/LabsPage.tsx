@@ -1,9 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
+  ActionIcon,
+  Box,
   Divider,
   Flex,
   Group,
@@ -12,17 +11,14 @@ import {
   ScrollArea,
   Skeleton,
   Stack,
-  Text,
-  Box,
-  Modal,
   Tabs,
+  Text,
   Tooltip,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import type { ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { JSX } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -30,6 +26,8 @@ import { LabListItem } from '../../components/labs/LabListItem';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
+import { showErrorNotification } from '../../utils/notifications';
 import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';
