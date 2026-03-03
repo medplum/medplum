@@ -14,7 +14,9 @@ import { config } from 'dotenv';
 import { describe, expect, test } from 'vitest';
 import { HealthieClient } from './client';
 import { fetchAllergySensitivities } from './allergy';
+import { fetchDocuments } from './document';
 import { fetchMedications } from './medication';
+import { fetchOrganizationMembers } from './provider';
 import { fetchHealthieFormAnswerGroups } from './questionnaire-response';
 import {
   fetchMostRecentAllergyDate,
@@ -202,6 +204,41 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
       console.log(`Most recent form date: ${date}`);
     } else {
       console.log('No form answer groups found for patient');
+    }
+  });
+
+  test('can fetch organization members (providers)', async () => {
+    const providers = await fetchOrganizationMembers(healthieClient);
+
+    expect(Array.isArray(providers)).toBe(true);
+    console.log(`Found ${providers.length} active providers`);
+
+    if (providers.length > 0) {
+      const provider = providers[0];
+      expect(provider.id).toBeDefined();
+      expect(typeof provider.id).toBe('string');
+      console.log(
+        `  First provider: id=${provider.id}, name=${provider.first_name} ${provider.last_name}, npi=${provider.npi}`
+      );
+    }
+  });
+
+  test('can fetch documents for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const documents = await fetchDocuments(healthieClient, testPatientId);
+
+    expect(Array.isArray(documents)).toBe(true);
+    console.log(`Found ${documents.length} documents for patient ${testPatientId}`);
+
+    if (documents.length > 0) {
+      const doc = documents[0];
+      expect(doc.id).toBeDefined();
+      expect(typeof doc.id).toBe('string');
+      console.log(`  First document: id=${doc.id}, name=${doc.display_name}, type=${doc.file_content_type}`);
     }
   });
 
