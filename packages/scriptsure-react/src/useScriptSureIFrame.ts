@@ -29,18 +29,19 @@ export function useScriptSureIFrame(options: ScriptSureIFrameOptions): string | 
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
   const onPatientSyncSuccessRef = useRef(onPatientSyncSuccess);
-  onPatientSyncSuccessRef.current = onPatientSyncSuccess;
-
   const onIframeSuccessRef = useRef(onIframeSuccess);
-  onIframeSuccessRef.current = onIframeSuccess;
-
   const onErrorRef = useRef(onError);
-  onErrorRef.current = onError;
+
+  useEffect(() => {
+    onPatientSyncSuccessRef.current = onPatientSyncSuccess;
+    onIframeSuccessRef.current = onIframeSuccess;
+    onErrorRef.current = onError;
+  }, [onPatientSyncSuccess, onIframeSuccess, onError]);
 
   useEffect(() => {
     let cancelled = false;
 
-    (async (): Promise<void> => {
+    const run = async (): Promise<void> => {
       try {
         if (patientId) {
           await medplum.executeBot(SCRIPTSURE_PATIENT_SYNC_BOT, { patientId });
@@ -62,7 +63,11 @@ export function useScriptSureIFrame(options: ScriptSureIFrameOptions): string | 
           onErrorRef.current?.(err);
         }
       }
-    })();
+    };
+
+    run().catch(() => {
+      // Handled via onErrorRef when !cancelled
+    });
 
     return (): void => {
       cancelled = true;
