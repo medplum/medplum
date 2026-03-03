@@ -82,6 +82,7 @@ export function MessagesPage(): JSX.Element {
         query={formatSearchQuery(parsedSearch).substring(1)}
         showPatientSummary={true}
         pharmacyDialogComponent={DoseSpotPharmacyDialog}
+        allowPatientSelection={true}
         onNew={onNew}
         getThreadUri={getThreadUri}
         onViewInDocuments={onViewInDocuments}
