@@ -75,3 +75,4 @@ for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
 }
 
 Object.defineProperty(globalThis.window, 'sessionStorage', { value: new MemoryStorage() });
+Object.defineProperty(globalThis.window, 'scrollTo', { value: () => {} });
