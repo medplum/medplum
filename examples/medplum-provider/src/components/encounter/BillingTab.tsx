@@ -88,7 +88,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         'Coverage',
         `patient=${getReferenceString(patient)}&status=active&_sort=-_lastUpdated`
       );
-      console.log('coverageResults', coverageResults);
       if (coverageResults.length > 0) {
         setCoverage(coverageResults[0]);
       } else {
