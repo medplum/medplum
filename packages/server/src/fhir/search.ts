@@ -3,6 +3,7 @@ import {
   badRequest,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  deriveIdentifierSearchParameter,
   evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
@@ -47,7 +48,6 @@ import {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
-import { deriveIdentifierSearchParameter } from './lookups/util';
 import { clamp } from './operations/utils/parameters';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -76,6 +76,12 @@ import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-c
  * Defines the maximum number of resources returned in a single search result.
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
+
+/**
+ * Defines the minimum page size for cursor-based pagination that accommodates resources with the same lastUpdated. This value
+ * is relevant primarily to the deprecated v1 cursor format, but is enforced for v2 cursors as well.
+ */
+export const minCursorBasedSearchPageSize = 20;
 
 const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
 
@@ -127,9 +133,10 @@ export async function searchImpl<T extends Resource>(
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
-  let total = undefined;
+  let total: number | undefined = undefined;
   if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
-    total = await getCount(repo, searchRequest, rowCount);
+    const countResult = await getCount(repo, searchRequest, { rowCount });
+    total = countResult.accurate ?? countResult.estimate;
   }
 
   return {
@@ -301,9 +308,34 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
-  const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
+  const config = getConfig();
+  const originalLimit = builder.limit_;
+
+  if (config.fhirSearchMinLimit !== undefined && config.fhirSearchMinLimit > builder.limit_) {
+    builder.limit(config.fhirSearchMinLimit);
+  }
+
+  const client = repo.getDatabaseClient(DatabaseMode.READER);
+  let rows: any[];
+  try {
+    if (config.fhirSearchDiscourageSeqScan) {
+      // Despite the name, this doesn't truly remove the possibility of a sequential scan,
+      // just massively inflates the cost of a sequential scan to the planner.
+      await client.query('SET enable_seqscan = off');
+    }
+    rows = await builder.execute(client);
+  } finally {
+    if (config.fhirSearchDiscourageSeqScan) {
+      await client.query('RESET enable_seqscan');
+    }
+  }
+
+  const rowCount = Math.min(rows.length, originalLimit);
+  const resources = [];
+  for (let i = 0; i < rowCount; i++) {
+    const row = rows[i];
+    resources.push(JSON.parse(row.content));
+  }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
@@ -629,7 +661,7 @@ function getSearchLinks(
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
-    searchRequest.count >= 20 &&
+    searchRequest.count >= minCursorBasedSearchPageSize &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
@@ -770,6 +802,18 @@ function getSearchUrl(searchRequest: SearchRequest): string {
   return `${getConfig().baseUrl}fhir/R4/${searchRequest.resourceType}${formatSearchQuery(searchRequest)}`;
 }
 
+export interface CountResult {
+  estimate: number;
+  accurate?: number;
+}
+
+export interface GetCountOptions {
+  /** The number of matching results if found. Used to clamp the estimate count. */
+  rowCount?: number;
+  /** If true, always compute the accurate count regardless of the estimate threshold. */
+  forceAccurate?: boolean;
+}
+
 /**
  * Returns the count for a search request.
  * This ignores page number and page size.
@@ -777,16 +821,39 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * If the estimate is less than the "accurateCountThreshold" config setting (default 1,000,000), then we run an accurate count.
  * @param repo - The repository.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
- * @returns The total number of matching results.
+ * @param options - Options for controlling count behavior.
+ * @returns The count result with estimate and optionally accurate count.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount?: number): Promise<number> {
-  let estimateCount = await getEstimateCount(repo, searchRequest);
-  estimateCount = clampEstimateCount(searchRequest, estimateCount, rowCount);
-  if (estimateCount < getConfig().accurateCountThreshold) {
-    return getAccurateCount(repo, searchRequest);
+export async function getCount(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  options?: GetCountOptions
+): Promise<CountResult> {
+  // When the data query returned fewer rows than the page size and we're not
+  // using cursor pagination, we already know the exact total: offset + rowCount.
+  // Skip both the EXPLAIN and COUNT(*) queries.
+  if (
+    options?.rowCount !== undefined && // We actually fetched results
+    !options.forceAccurate && // Caller isn't explicitly requesting a DB count
+    !searchRequest.cursor && // Cursor adds WHERE clauses the count query won't have, so rowCount isn't representative
+    options.rowCount <= (searchRequest.count ?? DEFAULT_SEARCH_COUNT) && // Fewer results than requested means we've seen them all
+    (options.rowCount > 0 || (searchRequest.offset ?? 0) === 0) // With offset + zero rows, total could be 0..offset
+  ) {
+    const exact = (searchRequest.offset ?? 0) + options.rowCount;
+    return { estimate: exact, accurate: exact };
   }
-  return estimateCount;
+
+  let estimate = await getEstimateCount(repo, searchRequest);
+  estimate = clampEstimateCount(searchRequest, estimate, options?.rowCount);
+
+  const shouldGetAccurate = options?.forceAccurate || estimate < getConfig().accurateCountThreshold;
+
+  if (shouldGetAccurate) {
+    const accurate = await getAccurateCount(repo, searchRequest);
+    return { estimate, accurate };
+  }
+
+  return { estimate };
 }
 
 /**

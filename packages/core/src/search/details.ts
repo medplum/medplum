@@ -14,6 +14,7 @@ import { parseFhirPath } from '../fhirpath/parse';
 import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
+import { getInnerDerivedIdentifierExpression, getParsedDerivedIdentifierExpression } from './derived';
 
 export const SearchParameterType = {
   BOOLEAN: 'BOOLEAN',
@@ -78,7 +79,8 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
-  const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
+  const expression = searchParam.expression as string;
+  const expressions = getExpressionsForResourceType(resourceType, expression);
 
   const builder: SearchParameterDetailsBuilder = {
     elementDefinitions: [],
@@ -120,10 +122,25 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     }
   }
 
+  let parsedExpression: FhirPathAtom;
+  if (searchParam.code.endsWith(':identifier')) {
+    // Derived identifier search parameters define their expressions like "(Condition).identifier"
+    // This breaks the optimizations in `getExpressionsForResourceType` that filter out other unioned resource types,
+    // To keep the optimization, extract the inner expression and then manually add the ".identifier" wrapper.
+    const innerExpression = getInnerDerivedIdentifierExpression(expression);
+    if (innerExpression === undefined) {
+      throw new Error(`Unexpected expression for derived identifier search parameter: ${expression}`);
+    }
+    const parsedInnerExpression = getParsedExpressionForResourceType(resourceType, innerExpression);
+    parsedExpression = getParsedDerivedIdentifierExpression(expression, parsedInnerExpression);
+  } else {
+    parsedExpression = getParsedExpressionForResourceType(resourceType, expression);
+  }
+
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions,
-    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
+    parsedExpression,
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);

@@ -6,21 +6,26 @@ concurrency:
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Staging
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      id-token: write
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
       TURBO_CACHE: 'remote:rw'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -49,10 +54,9 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1
         with:
-          aws-access-key-id: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -63,7 +67,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build App Docker Image
-        run: ./scripts/build-docker-app.sh
+        run: ./scripts/build-docker-app.sh --latest
         env:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_APP_DOCKERHUB_REPOSITORY }}
 
@@ -78,7 +82,7 @@ jobs:
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
 
       - name: Build Server Docker Image
-        run: ./scripts/build-docker-server.sh
+        run: ./scripts/build-docker-server.sh --latest
         env:
           SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
 

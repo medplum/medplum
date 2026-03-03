@@ -71,7 +71,14 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
+const integerKeys = [
+  'port',
+  'accurateCountThreshold',
+  'defaultRateLimit',
+  'defaultAuthRateLimit',
+  'defaultFhirQuota',
+  'fhirSearchMinLimit',
+];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
@@ -88,6 +95,7 @@ const booleanKeys = [
   'database.disableConnectionConfiguration',
   'database.disableRunPostDeployMigrations',
   'database.runMigrations',
+  'fhirSearchDiscourageSeqScan',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
@@ -103,6 +111,15 @@ export function isBooleanConfig(key: string): boolean {
   return booleanKeys.includes(key);
 }
 
+const objectKeys = new Set([
+  'tls',
+  'ssl',
+  'defaultProjectSystemSetting',
+  'defaultOAuthClients',
+  'smtp',
+  'arrayColumnPadding',
+]);
+
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
+  return objectKeys.has(key);
 }

@@ -7,12 +7,9 @@ const maxResourceVersion = 7 - 1;
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',
   prepareJobData(asyncJob: WithId<AsyncJob>) {
-    return prepareReindexJobData(
-      ['AllergyIntolerance', 'Immunization', 'ProjectMembership'],
-      asyncJob.id,
-      undefined,
-      maxResourceVersion
-    );
+    return prepareReindexJobData(['AllergyIntolerance', 'Immunization', 'ProjectMembership'], asyncJob.id, {
+      maxResourceVersion,
+    });
   },
   run: async (repo, job, jobData) => {
     return new ReindexJob(repo).execute(job, jobData);

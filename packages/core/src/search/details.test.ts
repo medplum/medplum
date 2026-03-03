@@ -2,6 +2,7 @@ import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { deriveIdentifierSearchParameter } from './derived';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 
 const searchParams: SearchParameter[] = [];
@@ -291,6 +292,29 @@ describe('SearchParameterDetails', () => {
     expect(details).toBeDefined();
     expect(details.elementDefinitions).toBeDefined();
     expect(details.elementDefinitions?.length).toBe(1);
+  });
+
+  test('Optimized derived reference identifier search parameter', () => {
+    const patientRefParam = searchParams.find((e) => e.id === 'clinical-patient') as SearchParameter;
+    expect(patientRefParam).toBeDefined();
+    expect(
+      patientRefParam.expression?.startsWith(
+        'AllergyIntolerance.patient | CarePlan.subject.where(resolve() is Patient)'
+      )
+    ).toBe(true);
+
+    // search parameter details should strip down to the expression only relevant to Observation
+    const derivedParam = deriveIdentifierSearchParameter(patientRefParam);
+    expect(
+      derivedParam.expression?.startsWith('(AllergyIntolerance.patient | CarePlan.subject.where(resolve() is Patient)')
+    ).toBe(true);
+    const details = getSearchParameterDetails('Observation', derivedParam);
+    expect(details).toBeDefined();
+    expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toBeDefined();
+    expect(details.parsedExpression.toString()).toStrictEqual(
+      'Observation.subject.where((resolve() is Patient)).identifier'
+    );
   });
 
   test('Everything', () => {
