@@ -7,14 +7,23 @@ import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healt
 import { HealthieClient } from './healthie/client';
 import {
   HEALTHIE_ALLERGY_ID_SYSTEM,
+  HEALTHIE_DOCUMENT_ID_SYSTEM,
   HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
   HEALTHIE_POLICY_ID_SYSTEM,
+  HEALTHIE_PROVIDER_ID_SYSTEM,
+  HEALTHIE_PROVIDER_ROLE_ID_SYSTEM,
   HEALTHIE_USER_ID_SYSTEM,
 } from './healthie/constants';
 import { convertHealthiePolicyToFhir, fetchPolicies } from './healthie/coverage';
+import { convertHealthieDocumentToFhir, downloadDocumentContent, fetchDocuments, shouldDownloadDocument } from './healthie/document';
 import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/medication';
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
+import {
+  convertHealthieProviderToPractitioner,
+  convertHealthieProviderToPractitionerRole,
+  fetchOrganizationMembers,
+} from './healthie/provider';
 import { convertHealthieFormAnswerGroupToFhir, fetchHealthieFormAnswerGroups } from './healthie/questionnaire-response';
 
 interface ImportHealthiePatientsInput {
@@ -35,6 +44,43 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
   }
 
   const healthie = new HealthieClient(HEALTHIE_API_URL.valueString, HEALTHIE_CLIENT_SECRET.valueString);
+
+  // Fetch and sync all providers (Practitioner + PractitionerRole)
+  const providers = await fetchOrganizationMembers(healthie);
+  console.log(`Found ${providers.length} active providers to sync`);
+
+  if (providers.length > 0) {
+    const providerBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [],
+    };
+
+    for (const provider of providers) {
+      const practitioner = convertHealthieProviderToPractitioner(provider);
+      const practitionerIdentifier = { system: HEALTHIE_PROVIDER_ID_SYSTEM, value: provider.id };
+
+      providerBundle.entry?.push({
+        resource: practitioner,
+        request: {
+          method: 'PUT',
+          url: `Practitioner?identifier=${HEALTHIE_PROVIDER_ID_SYSTEM}|${provider.id}`,
+        },
+      });
+
+      const practitionerRole = convertHealthieProviderToPractitionerRole(provider, practitionerIdentifier);
+      providerBundle.entry?.push({
+        resource: practitionerRole,
+        request: {
+          method: 'PUT',
+          url: `PractitionerRole?identifier=${HEALTHIE_PROVIDER_ROLE_ID_SYSTEM}|${provider.id}`,
+        },
+      });
+    }
+
+    await medplum.executeBatch(providerBundle);
+    console.log(`Successfully synced ${providers.length} providers`);
+  }
 
   // Fetch all patients from the Healthie API
   const healthiePatientIds = patientIds || (await fetchHealthiePatientIds(healthie, { count, offset }));
@@ -60,6 +106,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
 
       // Add the patient resource to the bundle
       const fhirPatient = convertHealthiePatientToFhir(healthiePatient);
+
+      if (healthiePatient.dietitian_id) {
+        fhirPatient.generalPractitioner = [
+          {
+            identifier: { system: HEALTHIE_PROVIDER_ID_SYSTEM, value: healthiePatient.dietitian_id },
+          },
+        ];
+      }
+
       const patientReference = {
         ...createReference(fhirPatient),
         reference: `urn:uuid:${generateId()}`,
@@ -129,6 +184,49 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
           request: {
             method: 'PUT',
             url: `Coverage?identifier=${HEALTHIE_POLICY_ID_SYSTEM}|${policy.id}`,
+          },
+        });
+      }
+
+      // Fetch and add all documents for this patient
+      const documents = await fetchDocuments(healthie, healthiePatient.id);
+      console.log(`Found ${documents.length} documents for patient ${healthiePatient.id}`);
+
+      for (const doc of documents) {
+        const needsDownload = await shouldDownloadDocument(doc, medplum);
+        if (!needsDownload) {
+          continue;
+        }
+
+        let binaryData: { data: string; contentType: string } | undefined;
+        if (doc.expiring_url) {
+          binaryData = await downloadDocumentContent(doc.expiring_url);
+        }
+
+        const { documentReference, binary } = convertHealthieDocumentToFhir(
+          doc,
+          binaryData?.data,
+          patientReference
+        );
+
+        if (binary) {
+          const binaryFullUrl = `urn:uuid:${generateId()}`;
+          patientBundle.entry?.push({
+            resource: binary,
+            fullUrl: binaryFullUrl,
+            request: {
+              method: 'PUT',
+              url: `Binary?_tag=${HEALTHIE_DOCUMENT_ID_SYSTEM}|binary-${doc.id}`,
+            },
+          });
+          documentReference.content[0].attachment.url = binaryFullUrl;
+        }
+
+        patientBundle.entry?.push({
+          resource: documentReference,
+          request: {
+            method: 'PUT',
+            url: `DocumentReference?identifier=${HEALTHIE_DOCUMENT_ID_SYSTEM}|${doc.id}`,
           },
         });
       }
