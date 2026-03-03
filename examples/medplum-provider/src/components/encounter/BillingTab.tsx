@@ -338,13 +338,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                   <Text size="xs" c="dimmed">
                     Claim Status:
                   </Text>
-                  {candidLoading || getEncounterBot === undefined ? (
-                    <Skeleton height={22} width={100} radius="xl" />
-                  ) : candidStatus ? (
-                    <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
-                      {formatCandidStatus(candidStatus)}
-                    </Badge>
-                  ) : null}
+                  {renderCandidStatusBadge(candidLoading || getEncounterBot === undefined, candidStatus)}
                 </Stack>
                 <Box style={{ flex: 1 }}>
                   <Text size="sm">
@@ -358,13 +352,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                     </Text>
                     .
                   </Text>
-                  {candidLoading || getEncounterBot === undefined ? (
-                    <Skeleton height={14} width={200} mt={4} />
-                  ) : candidCreatedAt ? (
-                    <Text size="sm" c="dimmed">
-                      Submitted on {formatDateTime(candidCreatedAt)}
-                    </Text>
-                  ) : null}
+                  {renderCandidSubmittedAt(candidLoading || getEncounterBot === undefined, candidCreatedAt)}
                 </Box>
                 <Button
                   variant="outline"
@@ -437,6 +425,34 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       )}
     </Stack>
   );
+};
+
+const renderCandidStatusBadge = (loading: boolean, status: string | undefined): JSX.Element | null => {
+  if (loading) {
+    return <Skeleton height={22} width={100} radius="xl" />;
+  }
+  if (status) {
+    return (
+      <Badge color={getStatusColor(status)} radius="xl" variant="filled">
+        {formatCandidStatus(status)}
+      </Badge>
+    );
+  }
+  return null;
+};
+
+const renderCandidSubmittedAt = (loading: boolean, createdAt: string | undefined): JSX.Element | null => {
+  if (loading) {
+    return <Skeleton height={14} width={200} mt={4} />;
+  }
+  if (createdAt) {
+    return (
+      <Text size="sm" c="dimmed">
+        Submitted on {formatDateTime(createdAt)}
+      </Text>
+    );
+  }
+  return null;
 };
 
 const getStatusColor = (status: string): string => {
