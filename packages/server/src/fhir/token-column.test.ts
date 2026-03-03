@@ -10,7 +10,9 @@ import { loadStructureDefinitions } from './structure';
 import {
   buildTokenColumns,
   buildTokenColumnsSearchFilter,
+  getAllPaddingSentinels,
   getPaddingElement,
+  getPaddingFraction,
   hashTokenColumnValue,
 } from './token-column';
 
@@ -797,6 +799,59 @@ describe('buildTokenColumnsSearchFilter', () => {
     });
   });
 });
+describe('getAllPaddingSentinels', () => {
+  test('m=0 returns empty array', () => {
+    expect(getAllPaddingSentinels(0)).toStrictEqual([]);
+  });
+
+  test('m=1 returns single sentinel', () => {
+    const sentinels = getAllPaddingSentinels(1);
+    expect(sentinels).toStrictEqual(['00000000-0000-0000-0000-000000000000']);
+  });
+
+  test('m=3 returns three sentinels', () => {
+    const sentinels = getAllPaddingSentinels(3);
+    expect(sentinels).toStrictEqual([
+      '00000000-0000-0000-0000-000000000000',
+      '00000000-0000-0000-0000-000000000001',
+      '00000000-0000-0000-0000-000000000002',
+    ]);
+  });
+
+  test('m=17 returns seventeen sentinels', () => {
+    const sentinels = getAllPaddingSentinels(17);
+    expect(sentinels).toHaveLength(17);
+    expect(sentinels[0]).toStrictEqual('00000000-0000-0000-0000-000000000000');
+    expect(sentinels[9]).toStrictEqual('00000000-0000-0000-0000-000000000009');
+    expect(sentinels[10]).toStrictEqual('00000000-0000-0000-0000-000000000010');
+    expect(sentinels[16]).toStrictEqual('00000000-0000-0000-0000-000000000016');
+  });
+
+  test('all sentinels are valid UUIDs', () => {
+    const sentinels = getAllPaddingSentinels(20);
+    for (const sentinel of sentinels) {
+      expect(isUUID(sentinel)).toStrictEqual(true);
+    }
+  });
+});
+
+describe('getPaddingFraction', () => {
+  test('computes correct fraction', () => {
+    const fraction = getPaddingFraction({ m: 10, lambda: 4.3, statisticsTarget: 100 });
+    expect(fraction).toBeCloseTo((10 * 4.3) / (100 * 300), 10);
+  });
+
+  test('m=0 returns 0', () => {
+    const fraction = getPaddingFraction({ m: 0, lambda: 4.3, statisticsTarget: 100 });
+    expect(fraction).toStrictEqual(0);
+  });
+
+  test('lambda=0 returns 0', () => {
+    const fraction = getPaddingFraction({ m: 10, lambda: 0, statisticsTarget: 100 });
+    expect(fraction).toStrictEqual(0);
+  });
+});
+
 describe('getPaddingElement', () => {
   test('Math.random is 0.99999999', () => {
     const rng = jest.fn().mockReturnValue(0.99999999);

@@ -25,6 +25,8 @@ import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import type { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
+import type { RepaddingJobData } from './repadding';
+import { RepaddingJob } from './repadding';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import {
   addVerboseQueueLogging,
@@ -71,6 +73,8 @@ export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJ
   type: 'reindex';
 }
 
+export type ReindexQueueJobData = ReindexJobData | RepaddingJobData;
+
 const ReindexQueueName = 'ReindexQueue';
 
 interface ReindexJobSettings {
@@ -100,7 +104,7 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
     connection: getBullmqRedisConnectionOptions(config),
   };
 
-  const queue = new Queue<ReindexJobData>(ReindexQueueName, {
+  const queue = new Queue<ReindexQueueJobData>(ReindexQueueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 1,
@@ -111,10 +115,10 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
     },
   });
 
-  let worker: Worker<ReindexJobData> | undefined;
+  let worker: Worker<ReindexQueueJobData> | undefined;
   if (options?.workerEnabled !== false) {
     const workerBullmq = getWorkerBullmqConfig(config, 'reindex');
-    worker = new Worker<ReindexJobData>(
+    worker = new Worker<ReindexQueueJobData>(
       ReindexQueueName,
       async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
       {
@@ -122,7 +126,7 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
         ...workerBullmq,
       }
     );
-    addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
+    addVerboseQueueLogging<ReindexQueueJobData>(queue, worker, (job) => ({
       asyncJob: 'AsyncJob/' + job.data.asyncJobId,
       jobType: job.data.type,
     }));
@@ -131,9 +135,15 @@ export const initReindexWorker: WorkerInitializer = (config, options?: WorkerIni
   return { queue, worker, name: ReindexQueueName };
 };
 
-export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
+export async function jobProcessor(job: Job<ReindexQueueJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in the future
-  const result = await new ReindexJob(systemRepo).execute(job, job.data);
+
+  if (job.data.type === 'repadding') {
+    await new RepaddingJob(systemRepo).execute(job as Job<RepaddingJobData>, job.data);
+    return;
+  }
+
+  const result = await new ReindexJob(systemRepo).execute(job as Job<ReindexJobData>, job.data);
   if (result === 'ineligible') {
     await moveToDelayedAndThrow(job, 'Reindex job delayed since worker is not eligible to execute it');
   }
@@ -549,7 +559,7 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
  * This is used by the unit tests.
  * @returns The reindex queue (if available).
  */
-export function getReindexQueue(): Queue<ReindexJobData> | undefined {
+export function getReindexQueue(): Queue<ReindexQueueJobData> | undefined {
   return queueRegistry.get(ReindexQueueName);
 }
 
@@ -558,7 +568,15 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
   if (!queue) {
     throw new Error(`Job queue ${ReindexQueueName} not available`);
   }
-  return queue.add('ReindexJobData', job);
+  return queue.add('ReindexJobData', job) as Promise<Job<ReindexJobData>>;
+}
+
+export async function addRepaddingJob(data: RepaddingJobData): Promise<Job<RepaddingJobData>> {
+  const queue = getReindexQueue();
+  if (!queue) {
+    throw new Error(`Job queue ${ReindexQueueName} not available`);
+  }
+  return queue.add('RepaddingJobData', data) as Promise<Job<RepaddingJobData>>;
 }
 
 export interface ReindexJobOptions {

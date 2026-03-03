@@ -7,7 +7,7 @@ import type { Repository } from '../../fhir/repo';
 import type { PhasalMigration } from '../types';
 
 export interface PostDeployJobData {
-  readonly type: 'reindex' | 'custom' | 'dynamic';
+  readonly type: 'reindex' | 'custom' | 'dynamic' | 'repadding';
   readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;

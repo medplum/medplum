@@ -28,7 +28,7 @@ import { generateAccessToken } from './oauth/keys';
 import { createTestProject, withTestContext } from './test.setup';
 import * as version from './util/version';
 import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
-import type { ReindexJobData } from './workers/reindex';
+import type { ReindexJobData, ReindexQueueJobData } from './workers/reindex';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
 import { queueRegistry } from './workers/utils';
 
@@ -89,7 +89,7 @@ function getQueueAddSpy(): jest.MockedFunctionDeep<Queue<PostDeployJobData>['add
   return jest.mocked(queue.add);
 }
 
-function getReindexQueueAddSpy(): jest.MockedFunctionDeep<Queue<ReindexJobData>['add']> {
+function getReindexQueueAddSpy(): jest.MockedFunctionDeep<Queue<ReindexQueueJobData>['add']> {
   const queue = getReindexQueue();
   if (!queue) {
     throw new Error(`Reindex job queue not available`);

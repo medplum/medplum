@@ -8,6 +8,7 @@ import {
   forbidden,
   getQueryString,
   getResourceTypes,
+  getSearchParameter,
   OperationOutcomeError,
   parseSearchRequest,
   validateResourceType,
@@ -20,12 +21,13 @@ import { assert } from 'node:console';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import type { AuthenticatedRequestContext } from '../context';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getShardSystemRepo, Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
+import { getSearchParameterImplementation } from '../fhir/searchparameter';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
@@ -41,7 +43,8 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
 import type { ReindexJobOptions } from '../workers/reindex';
-import { addReindexJob } from '../workers/reindex';
+import { addReindexJob, addRepaddingJob } from '../workers/reindex';
+import type { RepaddingJobData, RepaddingUnit } from '../workers/repadding';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -547,6 +550,137 @@ superAdminRouter.post('/reloadcron', async (req: Request, res: Response) => {
     };
   });
 });
+
+// POST to /admin/super/repad
+// to repad array columns after changing the array column padding configuration.
+superAdminRouter.post(
+  '/repad',
+  [
+    body('searchParamCode').isString().notEmpty().withMessage('searchParamCode is required'),
+    body('resourceTypes').isString().optional(),
+    body('oldConfig').isObject().withMessage('oldConfig is required'),
+    body('oldConfig.m').isInt({ min: 0 }).withMessage('oldConfig.m must be an integer >= 0'),
+    body('oldConfig.lambda').isFloat({ min: 0 }).withMessage('oldConfig.lambda must be a number >= 0'),
+    body('oldConfig.statisticsTarget')
+      .isInt({ min: 1 })
+      .withMessage('oldConfig.statisticsTarget must be an integer >= 1'),
+    body('newConfig').isObject().withMessage('newConfig is required'),
+    body('newConfig.m').isInt({ min: 0 }).withMessage('newConfig.m must be an integer >= 0'),
+    body('newConfig.lambda').isFloat({ min: 0 }).withMessage('newConfig.lambda must be a number >= 0'),
+    body('newConfig.statisticsTarget')
+      .isInt({ min: 1 })
+      .withMessage('newConfig.statisticsTarget must be an integer >= 1'),
+    body('batchSize')
+      .optional()
+      .isInt({ min: 1, max: 100_000 })
+      .withMessage('batchSize must be an integer from 1 to 100000'),
+    body('delayBetweenBatches')
+      .optional()
+      .isInt({ min: 0, max: 60_000 })
+      .withMessage('delayBetweenBatches must be an integer from 0 to 60000 milliseconds'),
+    body('classifyStatementTimeout')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('classifyStatementTimeout must be a non-negative integer'),
+    body('batchStatementTimeout')
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage('batchStatementTimeout must be a non-negative integer'),
+  ],
+  async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const searchParamCode = req.body.searchParamCode as string;
+
+    let resourceTypes: string[];
+    if (!req.body.resourceTypes || req.body.resourceTypes === '*') {
+      resourceTypes = getResourceTypes().filter((rt) => rt !== 'Binary');
+    } else {
+      resourceTypes = (req.body.resourceTypes as string).split(',').map((t) => t.trim());
+      for (const resourceType of resourceTypes) {
+        validateResourceType(resourceType);
+      }
+    }
+
+    // Resolve search param code to token column names per resource type
+    const units: RepaddingUnit[] = [];
+    const seen = new Set<string>();
+    for (const resourceType of resourceTypes) {
+      const searchParam = getSearchParameter(resourceType, searchParamCode);
+      if (!searchParam) {
+        continue;
+      }
+      try {
+        const impl = getSearchParameterImplementation(resourceType as ResourceType, searchParam);
+        if (impl.searchStrategy !== 'token-column') {
+          continue;
+        }
+        const key = `${resourceType}/${impl.tokenColumnName}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          units.push({ resourceType: resourceType as ResourceType, columnName: impl.tokenColumnName });
+        }
+      } catch {
+        // Skip resource types where the search param doesn't apply
+        continue;
+      }
+    }
+
+    if (units.length === 0) {
+      sendOutcome(res, badRequest(`No token-column search parameters found for code "${searchParamCode}"`));
+      return;
+    }
+
+    const oldConfig = {
+      m: Number(req.body.oldConfig.m),
+      lambda: Number(req.body.oldConfig.lambda),
+      statisticsTarget: Number(req.body.oldConfig.statisticsTarget),
+    };
+    const newConfig = {
+      m: Number(req.body.newConfig.m),
+      lambda: Number(req.body.newConfig.lambda),
+      statisticsTarget: Number(req.body.newConfig.statisticsTarget),
+    };
+
+    const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID);
+    const exec = new AsyncJobExecutor(systemRepo);
+    await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+    await exec.run(async (asyncJob) => {
+      const ctx = tryGetRequestContext();
+      const jobData: RepaddingJobData = {
+        type: 'repadding',
+        asyncJobId: asyncJob.id,
+        units,
+        oldConfig,
+        newConfig,
+        currentUnitIndex: 0,
+        currentPhase: 'classify',
+        startTime: Date.now(),
+        count: 0,
+        results: Object.create(null),
+        batchSize: req.body.batchSize ? Number(req.body.batchSize) : undefined,
+        delayBetweenBatches: req.body.delayBetweenBatches ? Number(req.body.delayBetweenBatches) : undefined,
+        classifyStatementTimeout: req.body.classifyStatementTimeout
+          ? Number(req.body.classifyStatementTimeout)
+          : undefined,
+        batchStatementTimeout: req.body.batchStatementTimeout ? Number(req.body.batchStatementTimeout) : undefined,
+        requestId: ctx?.requestId,
+        traceId: ctx?.traceId,
+      };
+      await addRepaddingJob(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  }
+);
 
 export function requireSuperAdmin(): AuthenticatedRequestContext {
   const ctx = getAuthenticatedContext();
