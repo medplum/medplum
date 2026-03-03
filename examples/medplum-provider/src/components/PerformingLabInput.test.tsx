@@ -3,14 +3,14 @@
 import { MantineProvider } from '@mantine/core';
 import type { Patient } from '@medplum/fhirtypes';
 import type { LabOrganization } from '@medplum/health-gorilla-core';
+import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-react';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { PerformingLabInput } from './PerformingLabInput';
-import { useHealthGorillaLabOrder, HealthGorillaLabOrderProvider } from '@medplum/health-gorilla-react';
 
 vi.mock('@medplum/health-gorilla-react', async () => {
   const actual = await vi.importActual('@medplum/health-gorilla-react');

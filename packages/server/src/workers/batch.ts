@@ -23,9 +23,8 @@ import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { reconnectOnError } from '../redis';
-import type { WorkerInitializer } from './utils';
-import { queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -43,9 +42,9 @@ export interface BatchJobData {
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
 
-export const initBatchWorker: WorkerInitializer = (config) => {
+export const initBatchWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<BatchJobData>(queueName, {
@@ -53,17 +52,21 @@ export const initBatchWorker: WorkerInitializer = (config) => {
     defaultJobOptions: { attempts: 1 },
   });
 
-  const worker = new Worker<BatchJobData>(
-    queueName,
-    (job) => {
-      const { authState, requestId, traceId } = job.data;
-      return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
-    },
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
+  let worker: Worker<BatchJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'batch');
+    worker = new Worker<BatchJobData>(
+      queueName,
+      (job) => {
+        const { authState, requestId, traceId } = job.data;
+        return runInAsyncContext(authState, requestId, traceId, () => execBatchJob(job));
+      },
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
+    );
+  }
 
   return { queue, worker, name: queueName };
 };

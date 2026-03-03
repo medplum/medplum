@@ -282,6 +282,7 @@ function applyProjectAdminAccessPolicy(
       criteria: `Project?_id=${resolveId(membership.project)}`,
       readonlyFields: ['features', 'link', 'systemSetting'],
       hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+      interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
     });
 
     if (project.link) {

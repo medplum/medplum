@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Communication } from '@medplum/fhirtypes';
-import type { JSX } from 'react';
-import { ThreadInbox } from '@medplum/react';
-import { useLocation, useNavigate, useParams } from 'react-router';
-import { useEffect, useMemo } from 'react';
-import { formatSearchQuery, Operator } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import { formatSearchQuery, Operator } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+import { ThreadInbox } from '@medplum/react';
+import type { JSX } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { normalizeCommunicationSearch } from '../../utils/communication-search';
 
 export function CommunicationTab(): JSX.Element {

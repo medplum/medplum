@@ -4,17 +4,17 @@ import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary, useMedplum } from '@medplum/react';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
 import type { Location } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
 import { usePatient } from '../../hooks/usePatient';
-import classes from './PatientPage.module.css';
-import { formatPatientPageTabUrl, getPatientPageTabs } from './PatientPage.utils';
-import type { PatientPageTabInfo } from './PatientPage.utils';
-import { PatientTabsNavigation } from './PatientTabsNavigation';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
+import classes from './PatientPage.module.css';
+import type { PatientPageTabInfo } from './PatientPage.utils';
+import { formatPatientPageTabUrl, getPatientPageTabs } from './PatientPage.utils';
+import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location, tabs: PatientPageTabInfo[]): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';

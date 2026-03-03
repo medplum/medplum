@@ -5,28 +5,30 @@ import {
   Paper,
   Group,
   Divider,
-  ActionIcon,
+  Flex,
+  Group,
+  Modal,
+  Paper,
   ScrollArea,
-  Stack,
   Skeleton,
+  Stack,
   Text,
   Box,
   Modal,
   Tabs,
   Tooltip,
 } from '@mantine/core';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { JSX } from 'react';
-import type { ServiceRequest } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { useNavigate, useParams } from 'react-router';
+import type { ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
 import { IconPlus } from '@tabler/icons-react';
+import cx from 'clsx';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { LabListItem } from '../../components/labs/LabListItem';
-import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
+import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './LabsPage.module.css';
 

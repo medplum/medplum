@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Communication } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
-import { createConversationTopic, saveMessage, loadConversationMessages, loadRecentTopics } from './spacePersistence';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { Message } from '../types/spaces';
+import { createConversationTopic, loadConversationMessages, loadRecentTopics, saveMessage } from './spacePersistence';
 
 describe('spacePersistence', () => {
   let medplum: MockClient;

@@ -108,7 +108,7 @@ import {
  */
 export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
-export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env?.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -196,6 +196,17 @@ export interface MedplumClientOptions {
   fhircastHubUrl?: string;
 
   /**
+   * CDS Services URL.
+   *
+   * Default value is `baseUrl + "/cds-services"`.
+   *
+   * Can be specified as absolute URL or relative to `baseUrl`.
+   *
+   * Use this if you want to use a different path when connecting to a CDS Services endpoint.
+   */
+  cdsServicesUrl?: string;
+
+  /**
    * The client ID.
    *
    * Client ID can be used for SMART-on-FHIR customization.
@@ -253,6 +264,17 @@ export interface MedplumClientOptions {
    * Default value is `0`, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The maximum time in milliseconds to wait between retries for failed requests.
+   *
+   * When the client encounters a rate-limited response (HTTP 429) or a server error (HTTP 5xx), it will automatically retry the request after a delay. The delay is calculated using an exponential backoff strategy, and this setting defines the maximum delay time.
+   *
+   * If the retry delay exceeds this maximum time, the client will not retry the request and will return the error response to the caller immediately. Setting this value to zero disables retries for failed requests.
+   *
+   * Default value is `2000` (2 seconds).
+   */
+  maxRetryTime?: number;
 
   /**
    * The refresh grace period in milliseconds.
@@ -940,10 +962,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly fhircastHubUrl: string;
+  private readonly cdsServicesUrl: string;
   private readonly defaultHeaders: Record<string, string>;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly maxRetryTime: number;
   private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
@@ -983,6 +1007,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
     this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
+    this.cdsServicesUrl = concatUrls(this.baseUrl, options?.cdsServicesUrl ?? 'cds-services');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.credentialsInHeader = options?.authCredentialsMethod === 'header';
@@ -990,6 +1015,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
+    this.maxRetryTime = options?.maxRetryTime ?? 2000;
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -1130,6 +1156,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   getFhircastHubUrl(): string {
     return this.fhircastHubUrl;
+  }
+
+  /**
+   * Returns the current CDS Services URL.
+   * By default, this is set to `https://api.medplum.com/cds-services`.
+   * This can be overridden by setting the `cdsServicesUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current CDS Services URL.
+   */
+  getCdsServicesUrl(): string {
+    return this.cdsServicesUrl;
   }
 
   /**
@@ -2978,7 +3015,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The list of CDS services.
    */
   getCdsServices(options?: MedplumRequestOptions): Promise<CdsDiscoveryResponse> {
-    return this.get<CdsDiscoveryResponse>('/cds-services', options);
+    return this.get<CdsDiscoveryResponse>(this.cdsServicesUrl, options);
   }
 
   /**
@@ -2989,7 +3026,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The CDS response.
    */
   callCdsService(id: string, body: CdsRequest, options?: MedplumRequestOptions): Promise<CdsResponse> {
-    return this.post(`/cds-services/${id}`, body, ContentType.JSON, options);
+    return this.post(concatUrls(this.cdsServicesUrl, id), body, ContentType.JSON, options);
   }
 
   /**
@@ -3597,7 +3634,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
-        const maxRetryTime = options.maxRetryTime ?? 2_000;
+        const maxRetryTime = options.maxRetryTime ?? this.maxRetryTime;
         // Return to user immediately if delay would be very long
         if (delayMs > maxRetryTime) {
           return response;

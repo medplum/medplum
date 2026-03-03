@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import type { MedplumServerConfig } from '../config/types';
+import type { MedplumServerConfig, WorkerName } from '../config/types';
 import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { addCronJobs, initCronWorker } from './cron';
@@ -14,25 +14,29 @@ import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
 import { queueRegistry } from './utils';
 
+const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
+  { name: 'subscription', init: initSubscriptionWorker },
+  { name: 'download', init: initDownloadWorker },
+  { name: 'cron', init: initCronWorker },
+  { name: 'reindex', init: initReindexWorker },
+  { name: 'batch', init: initBatchWorker },
+  { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
+  { name: 'set-accounts', init: initSetAccountsWorker },
+];
+
 /**
  * Initializes all background workers.
  * @param config - The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
  */
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
-  const initializers: WorkerInitializer[] = [
-    initSubscriptionWorker,
-    initDownloadWorker,
-    initCronWorker,
-    initReindexWorker,
-    initBatchWorker,
-    initPostDeployMigrationWorker,
-    initSetAccountsWorker,
-  ];
+  const enabledWorkers = config.workers?.enabled;
+  const enableAll = config.workers?.enabled?.includes('*');
 
-  for (const initializer of initializers) {
-    const { name, queue, worker } = initializer(config);
-    queueRegistry.add(name, queue, worker);
+  for (const { name, init } of workerDefs) {
+    const workerEnabled = enableAll || enabledWorkers === undefined || enabledWorkers.includes(name);
+    const { name: queueName, queue, worker } = init(config, { workerEnabled });
+    queueRegistry.add(queueName, queue, worker);
   }
   globalLogger.debug('Workers initialized');
 }

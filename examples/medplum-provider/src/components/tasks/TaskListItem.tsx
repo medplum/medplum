@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
 import type { HumanName, Task } from '@medplum/fhirtypes';
+import { MedplumLink, StatusBadge, useResource } from '@medplum/react';
+import cx from 'clsx';
 import type { JSX } from 'react';
 import classes from './TaskListItem.module.css';
-import cx from 'clsx';
 
 interface TaskListItemProps {
   task: Task;

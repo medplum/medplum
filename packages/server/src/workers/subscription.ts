@@ -49,13 +49,20 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
-import { getRedis, reconnectOnError } from '../redis';
+import { getActiveSubscriptions, publish, removeActiveSubscriptions } from '../pubsub';
+import { getCacheRedis } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
-import { getActiveSubsKey } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome, createSubscriptionAuditEvent } from '../util/auditevent';
-import type { WorkerInitializer } from './utils';
-import { addVerboseQueueLogging, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
+import {
+  addVerboseQueueLogging,
+  findProjectMembership,
+  getBullmqRedisConnectionOptions,
+  getWorkerBullmqConfig,
+  isJobSuccessful,
+  queueRegistry,
+} from './utils';
 
 /**
  * The timeout for outbound rest-hook subscription HTTP requests.
@@ -120,9 +127,9 @@ function getLoggingFields(job: Job<SubscriptionJobData>): Record<string, string 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
 
-export const initSubscriptionWorker: WorkerInitializer = (config) => {
+export const initSubscriptionWorker: WorkerInitializer = (config, options?: WorkerInitializerOptions) => {
   const defaultOptions: QueueBaseOptions = {
-    connection: { ...config.redis, reconnectOnError },
+    connection: getBullmqRedisConnectionOptions(config),
   };
 
   const queue = new Queue<SubscriptionJobData>(queueName, {
@@ -136,39 +143,43 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
     },
   });
 
-  const worker = new Worker<SubscriptionJobData>(
-    queueName,
-    (job) =>
-      job.data.authState
-        ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
-        : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
-    {
-      ...defaultOptions,
-      ...config.bullmq,
-    }
-  );
-  addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
-  worker.on('active', (job) => {
-    // Only record queuedDuration on the first attempt
-    if (job.attemptsMade === 0) {
-      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
-    }
-  });
-  worker.on('completed', (job) => {
-    recordHistogramValue(
-      'medplum.subscription.executionDuration',
-      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+  let worker: Worker<SubscriptionJobData> | undefined;
+  if (options?.workerEnabled !== false) {
+    const workerBullmq = getWorkerBullmqConfig(config, 'subscription');
+    worker = new Worker<SubscriptionJobData>(
+      queueName,
+      (job) =>
+        job.data.authState
+          ? runInAsyncContext(job.data.authState, job.data.requestId, job.data.traceId, () => execSubscriptionJob(job))
+          : tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+      {
+        ...defaultOptions,
+        ...workerBullmq,
+      }
     );
-    recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
-  });
-  worker.on('failed', (job) => {
-    if (job) {
+    addVerboseQueueLogging<SubscriptionJobData>(queue, worker, getLoggingFields);
+    worker.on('active', (job) => {
+      // Only record queuedDuration on the first attempt
+      if (job.attemptsMade === 0) {
+        recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - job.timestamp) / 1000);
+      }
+    });
+    worker.on('completed', (job) => {
       recordHistogramValue(
-        'medplum.subscription.failedExecutionDuration',
+        'medplum.subscription.executionDuration',
         ((job.finishedOn as number) - (job.processedOn as number)) / 1000
       );
-    }
-  });
+      recordHistogramValue('medplum.subscription.totalDuration', ((job.finishedOn as number) - job.timestamp) / 1000);
+    });
+    worker.on('failed', (job) => {
+      if (job) {
+        recordHistogramValue(
+          'medplum.subscription.failedExecutionDuration',
+          ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+        );
+      }
+    });
+  }
 
   return { queue, worker, name: queueName };
 };
@@ -291,7 +302,11 @@ export async function addSubscriptionJobs(
   const subscriptions = await getSubscriptions(resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
-  const wsEvents = [] as [Resource, string, SubEventsOptions][];
+  const wsSubEvents = [] as [string, SubEventsOptions][];
+  // Cache access policy results per (author, channel type) for the duration of this evaluation.
+  // Within one addSubscriptionJobs() call, `resource` and `project` are constant,
+  // so the boolean result is identical for all subscriptions sharing the same author AND channel type.
+  const accessPolicyCache = new Map<string, boolean>();
   for (const subscription of subscriptions) {
     if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
@@ -317,12 +332,23 @@ export async function addSubscriptionJobs(
       continue;
     }
     if (matches) {
-      if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+      const authorRef = getReferenceString(subscription.meta?.author as Reference);
+      // Channel type is part of the key because satisfiesAccessPolicy() is hardcoded to always
+      // return `true` for rest-hook subscriptions (see the TODO comment on that function).
+      // Without it, a cached `true` from a rest-hook sub could bypass the real policy check
+      // for a websocket sub sharing the same author.
+      const cacheKey = `${authorRef}:${subscription.channel.type}`;
+      let satisfied = accessPolicyCache.get(cacheKey);
+      if (satisfied === undefined) {
+        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        accessPolicyCache.set(cacheKey, satisfied);
+      }
+      if (!satisfied) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id, { includeResource: true }]);
+        wsSubEvents.push([subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
@@ -341,8 +367,8 @@ export async function addSubscriptionJobs(
     }
   }
 
-  if (wsEvents.length) {
-    await getRedis().publish('medplum:subscriptions:r4:websockets', JSON.stringify(wsEvents));
+  if (wsSubEvents.length) {
+    await publish('medplum:subscriptions:r4:websockets', JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -407,24 +433,51 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
       },
     ],
   });
-  const redis = getRedis();
-  const hashKey = getActiveSubsKey(projectId, resource.resourceType);
-  const entries = await redis.hgetall(hashKey);
+
   const redisOnlySubRefStrs: string[] = [];
-  for (const [ref, criteria] of Object.entries(entries)) {
-    try {
-      if (matchesSearchRequest(resource, parseSearchRequest(criteria))) {
-        redisOnlySubRefStrs.push(ref);
+  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
+  if (Object.keys(entries).length) {
+    const cachedCriteriaEvalMap = new Map<string, boolean>();
+    const wsEvalStartTime = Date.now();
+    for (const [ref, criteria] of Object.entries(entries)) {
+      try {
+        const cached = cachedCriteriaEvalMap.get(criteria);
+        let matches: boolean;
+
+        if (cached !== undefined) {
+          matches = cached;
+        } else {
+          matches = matchesSearchRequest(resource, parseSearchRequest(criteria));
+          cachedCriteriaEvalMap.set(criteria, matches);
+        }
+
+        if (matches) {
+          redisOnlySubRefStrs.push(ref);
+        }
+      } catch (err) {
+        getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
       }
-    } catch (err) {
-      getLogger().warn('[WS] Error while evaluating criteria for subscription', { err, subscription: ref, criteria });
     }
+    getLogger().info('[WS] Evaluated active subscription criteria', {
+      projectId,
+      resourceType: resource.resourceType,
+      numSubscriptions: Object.keys(entries).length,
+      evalDurationMs: Date.now() - wsEvalStartTime,
+    });
   }
+
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
+    const cacheRedis = getCacheRedis();
+    const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
-      if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
+      // This used to be set to 50 because we evaluated every Subscription for the entire project at this point
+      // However, we now store the Subscription criteria and use that to filter before doing the mget above,
+      // Which means by this point only Subscriptions with not only the same resource type but also have matching criteria
+      // Would be in the list by now
+      // That means for subscriptions with niche criteria we may not get enough subs to trigger any GC unless the threshold is pretty low
+      // Trying 5 for now (50 -> 5)
+      if (redisOnlySubStrs.length - activeSubStrs.length >= 5) {
         getLogger().warn('Excessive subscription cache miss', {
           numKeys: redisOnlySubRefStrs.length,
           hitRate: activeSubStrs.length / redisOnlySubStrs.length,
@@ -436,7 +489,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await redis.hdel(hashKey, ...inactiveSubs);
+        await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];

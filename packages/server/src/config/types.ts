@@ -29,6 +29,30 @@ export interface MedplumServerConfig {
   /** @deprecated specify `readonlyDatabase.host` and `readonlyDatabase.ssl.require` as needed */
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  /**
+   * Optional separate Redis config for caching (resource cache, keyvalue store, server registry, etc.).
+   * Falls back to `redis` if not specified.
+   * Separating cache from other purposes can improve performance under high load by isolating cache operations.
+   */
+  cacheRedis?: MedplumRedisConfig;
+  /**
+   * Optional separate Redis config for rate limiting (HTTP rate limiter, FHIR quota, resource cap).
+   * Falls back to `redis` if not specified.
+   * Separating rate limiting from other purposes can improve performance under high load by isolating rate limiting operations.
+   */
+  rateLimitRedis?: MedplumRedisConfig;
+  /**
+   * Optional separate Redis config for pub/sub (websockets, FHIRcast, agent, MCP).
+   * Falls back to `redis` if not specified.
+   * Separating pub/sub from other purposes can improve performance under high load by isolating pub/sub operations.
+   */
+  pubSubRedis?: MedplumRedisConfig;
+  /**
+   * Optional separate Redis config for BullMQ job queues (all background workers).
+   * Falls back to `redis` if not specified.
+   * Separating background job queues from other purposes can improve performance under high load by isolating job queue operations.
+   */
+  backgroundJobsRedis?: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
@@ -80,6 +104,8 @@ export interface MedplumServerConfig {
   defaultAuthRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
+  /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
+  defaultMaxUserWebSocketSubscriptions?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
@@ -137,6 +163,12 @@ export interface MedplumServerConfig {
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
   mfaAuthenticatorWindow?: number;
+
+  /**
+   * Optional configuration for background worker pools.
+   * Allows running separate server pools for HTTP request serving vs. background job processing.
+   */
+  workers?: MedplumWorkersConfig;
 }
 
 export interface ArrayColumnPaddingConfig {
@@ -214,6 +246,30 @@ export interface MedplumBullmqConfig {
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
   readonly userInfoUrl: string;
+}
+
+export type WorkerName =
+  | 'subscription'
+  | 'download'
+  | 'cron'
+  | 'reindex'
+  | 'batch'
+  | 'post-deploy-migration'
+  | 'set-accounts';
+
+export interface MedplumWorkersConfig {
+  /**
+   * Which workers to run on this server instance. Include '*' to enable all workers.
+   * If undefined/omitted: all workers run (backwards compatible default)
+   * Specify an empty array to run no workers e.g. for an HTTP-only pool.
+   */
+  enabled?: (WorkerName | '*')[];
+
+  /**
+   * Per-worker BullMQ overrides, merged on top of global `bullmq` config.
+   * Only takes effect for workers that are enabled.
+   */
+  bullmq?: Partial<Record<WorkerName, Partial<MedplumBullmqConfig>>>;
 }
 
 export interface MedplumFissionConfig {

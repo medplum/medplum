@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { notifications } from '@mantine/notifications';
+import * as core from '@medplum/core';
 import { describe, expect, test, vi } from 'vitest';
 import { showErrorNotification } from './notifications';
-import * as core from '@medplum/core';
-import { notifications } from '@mantine/notifications';
 
 describe('notifications utils', () => {
   test('normalizes error and shows notification', () => {

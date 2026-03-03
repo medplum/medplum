@@ -7,6 +7,7 @@ import {
   IconUserCheck,
   IconStethoscope,
   IconCheck,
+  IconChevronRight,
   IconExclamationCircle,
   IconX,
 } from '@tabler/icons-react';
@@ -21,6 +22,7 @@ import {
   TASK_PRIORITY_LABELS,
 } from './TaskFilterMenu.utils';
 import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { TASK_PRIORITIES, TASK_STATUSES, TaskFilterType } from './TaskFilterMenu.utils';
 
 function capitalizeLabel(value: string): string {
   return value

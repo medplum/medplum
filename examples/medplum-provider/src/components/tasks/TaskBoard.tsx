@@ -5,10 +5,13 @@ import {
   Paper,
   Group,
   Divider,
-  ActionIcon,
+  Flex,
+  Group,
+  Pagination,
+  Paper,
   ScrollArea,
-  Stack,
   Skeleton,
+  Stack,
   Text,
   Box,
   Pagination,
@@ -24,15 +27,20 @@ import { Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
 import { useNavigate } from 'react-router';
 import { useMedplum } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
-import { TaskFilterType } from './TaskFilterMenu.utils';
-import type { TaskFilterValue } from './TaskFilterMenu.utils';
-import { TaskFilterMenu } from './TaskFilterMenu';
 import { IconPlus } from '@tabler/icons-react';
+import cx from 'clsx';
+import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { showErrorNotification } from '../../utils/notifications';
+import { NewTaskModal } from './NewTaskModal';
+import classes from './TaskBoard.module.css';
+import { TaskDetailPanel } from './TaskDetailPanel';
+import { TaskFilterMenu } from './TaskFilterMenu';
+import type { TaskFilterValue } from './TaskFilterMenu.utils';
+import { TaskFilterType } from './TaskFilterMenu.utils';
 import { TaskListItem } from './TaskListItem';
 import { TaskSelectEmpty } from './TaskSelectEmpty';
-import { NewTaskModal } from './NewTaskModal';
-import { TaskDetailPanel } from './TaskDetailPanel';
 
 interface FilterState {
   performerType: CodeableConcept | undefined;

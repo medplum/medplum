@@ -20,8 +20,8 @@ import type { PlanDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import cx from 'clsx';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import classes from './AddPlanDefinition.module.css';
 
 interface AddPlanDefinitionProps {
