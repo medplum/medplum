@@ -3,7 +3,7 @@
   width: 100%;
   display: flex;
   flex-direction: row;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .borderRight {
