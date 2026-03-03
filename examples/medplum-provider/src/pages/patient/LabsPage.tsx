@@ -26,8 +26,8 @@ import { LabListItem } from '../../components/labs/LabListItem';
 import { LabOrderDetails } from '../../components/labs/LabOrderDetails';
 import { LabSelectEmpty } from '../../components/labs/LabSelectEmpty';
 import { usePatient } from '../../hooks/usePatient';
-import { OrderLabsPage } from '../labs/OrderLabsPage';
 import { showErrorNotification } from '../../utils/notifications';
+import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './LabsPage.module.css';
 
 type LabTab = 'open' | 'completed';

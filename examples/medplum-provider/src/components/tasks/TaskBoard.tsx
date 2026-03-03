@@ -16,8 +16,8 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core';
-import { Operator, parseSearchRequest } from '@medplum/core';
 import type { SearchRequest } from '@medplum/core';
+import { Operator, parseSearchRequest } from '@medplum/core';
 import type { CodeableConcept, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';

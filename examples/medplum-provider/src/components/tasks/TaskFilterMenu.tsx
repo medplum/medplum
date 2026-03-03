@@ -1,26 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Menu, ActionIcon, Text, Flex, Tooltip, Indicator, Divider, Box } from '@mantine/core';
+import { ActionIcon, Box, Divider, Flex, Indicator, Menu, Text, Tooltip } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import type { CodeableConcept, Patient, Task } from '@medplum/fhirtypes';
 import {
-  IconFilter2Plus,
-  IconChevronRight,
-  IconUserCheck,
-  IconStethoscope,
   IconCheck,
+  IconChevronRight,
   IconExclamationCircle,
+  IconFilter2Plus,
+  IconStethoscope,
+  IconUserCheck,
   IconX,
 } from '@tabler/icons-react';
-import { useDisclosure } from '@mantine/hooks';
 import type { JSX, ReactNode } from 'react';
-import type { Patient, Task, CodeableConcept } from '@medplum/fhirtypes';
+import type { TaskFilterValue } from './TaskFilterMenu.utils';
 import {
-  TaskFilterType,
-  TASK_STATUSES,
-  TASK_STATUS_LABELS,
   TASK_PRIORITIES,
   TASK_PRIORITY_LABELS,
+  TASK_STATUSES,
+  TASK_STATUS_LABELS,
+  TaskFilterType,
 } from './TaskFilterMenu.utils';
-import type { TaskFilterValue } from './TaskFilterMenu.utils';
 
 function capitalizeLabel(value: string): string {
   return value
@@ -158,9 +158,7 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
                 ) : null
               }
             >
-              <Text size="sm">
-                {capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}
-              </Text>
+              <Text size="sm">{capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}</Text>
             </Menu.Item>
           ))}
         </FilterSubmenu>
