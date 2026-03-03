@@ -131,18 +131,23 @@ export function SchedulePage(): JSX.Element | null {
     [createAppointmentHandlers]
   );
 
-  const handleBookSuccess = useCallback((results: { appointments: Appointment[]; slots: Slot[] }) => {
-    setAppointments((state) => results.appointments.concat(state ?? EMPTY));
-    setSlots((state) =>
-      results.slots
-        .filter(
-          // We don't show "busy" slots, assuming that they are duplicative of
-          // more descriptive Appointment resources.
-          (slot) => slot.status !== 'busy'
-        )
-        .concat(state ?? EMPTY)
-    );
-  }, []);
+  const handleBookSuccess = useCallback(
+    (results: { appointments: Appointment[]; slots: Slot[] }) => {
+      setAppointments((state) => results.appointments.concat(state ?? EMPTY));
+      setAppointmentDetails(results.appointments[0]);
+      appointmentDetailsHandlers.open();
+      setSlots((state) =>
+        results.slots
+          .filter(
+            // We don't show "busy" slots, assuming that they are duplicative of
+            // more descriptive Appointment resources.
+            (slot) => slot.status !== 'busy'
+          )
+          .concat(state ?? EMPTY)
+      );
+    },
+    [appointmentDetailsHandlers]
+  );
 
   // When an appointment is selected, navigate to the detail page
   const handleSelectAppointment = useCallback(
