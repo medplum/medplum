@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
-import type { Binary, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
+import type { DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import type { HealthieClient } from './client';
 import { HEALTHIE_DOCUMENT_ID_SYSTEM } from './constants';
 import { convertHealthieTimestampToIso } from './questionnaire-response';
@@ -73,7 +73,7 @@ export async function fetchDocuments(healthie: HealthieClient, patientId: string
 
 export async function downloadDocumentContent(
   expiringUrl: string
-): Promise<{ data: string; contentType: string } | undefined> {
+): Promise<{ data: Uint8Array; contentType: string } | undefined> {
   try {
     const response = await fetch(expiringUrl);
     if (!response.ok) {
@@ -87,12 +87,7 @@ export async function downloadDocumentContent(
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (const byte of bytes) {
-      binary += String.fromCharCode(byte);
-    }
-    const data = btoa(binary);
+    const data = new Uint8Array(arrayBuffer);
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
     return { data, contentType };
@@ -128,30 +123,12 @@ export async function shouldDownloadDocument(doc: HealthieDocument, medplum: Med
 
 export function convertHealthieDocumentToFhir(
   doc: HealthieDocument,
-  binaryData: string | undefined,
   patientReference: Reference<Patient>
-): { documentReference: DocumentReference; binary?: Binary } {
+): DocumentReference {
   const contentType = doc.file_content_type || 'application/octet-stream';
   const title = doc.display_name || `document-${doc.id}`;
 
-  let binary: Binary | undefined;
-  if (binaryData) {
-    binary = {
-      resourceType: 'Binary',
-      contentType,
-      data: binaryData,
-      meta: {
-        tag: [
-          {
-            system: HEALTHIE_DOCUMENT_ID_SYSTEM,
-            code: `binary-${doc.id}`,
-          },
-        ],
-      },
-    };
-  }
-
-  const documentReference: DocumentReference = {
+  return {
     resourceType: 'DocumentReference',
     identifier: [{ system: HEALTHIE_DOCUMENT_ID_SYSTEM, value: doc.id }],
     status: 'current',
@@ -167,6 +144,4 @@ export function convertHealthieDocumentToFhir(
       },
     ],
   };
-
-  return { documentReference, binary };
 }
