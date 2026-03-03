@@ -148,19 +148,29 @@ export function TaskFilterMenu(props: TaskFilterMenuProps): JSX.Element {
           label="Performer Type"
           isActive={!!performerType}
         >
-          {uniquePerformerTypes.map((type, index) => (
-            <Menu.Item
-              key={`${type.coding?.[0]?.code ?? index}`}
-              onClick={() => onFilterChange?.(TaskFilterType.PERFORMER_TYPE, type)}
-              rightSection={
-                performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? (
-                  <IconCheck size={16} color="var(--mantine-color-blue-6)" />
-                ) : null
-              }
-            >
-              <Text size="sm">{capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}</Text>
+          {uniquePerformerTypes.length > 0 ? (
+            uniquePerformerTypes.map((type, index) => (
+              <Menu.Item
+                key={`${type.coding?.[0]?.code ?? index}`}
+                onClick={() => onFilterChange?.(TaskFilterType.PERFORMER_TYPE, type)}
+                rightSection={
+                  performerType?.coding?.[0]?.code === type.coding?.[0]?.code ? (
+                    <IconCheck size={16} color="var(--mantine-color-blue-6)" />
+                  ) : null
+                }
+              >
+                <Text size="sm">
+                  {capitalizeLabel(type.coding?.[0]?.display ?? type.coding?.[0]?.code ?? 'Unknown')}
+                </Text>
+              </Menu.Item>
+            ))
+          ) : (
+            <Menu.Item disabled>
+              <Text size="sm" c="dimmed">
+                No performer types available
+              </Text>
             </Menu.Item>
-          ))}
+          )}
         </FilterSubmenu>
 
         {hasActiveFilter && (
