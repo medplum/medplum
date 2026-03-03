@@ -130,7 +130,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           setCandidCreatedAt(createdAt);
         }
       })
-      .catch((err) => showErrorNotification("Unable to fetch Candid Health claim: " + err))
+      .catch((err) => showErrorNotification('Unable to fetch Candid Health claim: ' + err))
       .finally(() => setCandidLoading(false));
   }, [candidEncounterId, getEncounterBot, medplum]);
 
