@@ -103,6 +103,14 @@ const mockClaim: WithId<Claim> = {
   provider: { reference: 'Practitioner/practitioner-123' },
 };
 
+const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
+  const fn = vi.fn().mockResolvedValue(undefined) as ReturnType<
+    typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
+  >;
+  fn.cancel = vi.fn();
+  return fn;
+};
+
 describe('BillingTab', () => {
   let medplum: MockClient;
 
@@ -110,9 +118,7 @@ describe('BillingTab', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
     // Mock useDebouncedUpdateResource to return a function that resolves immediately
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(
-      vi.fn().mockResolvedValue(undefined)
-    );
+    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
   });
 
   const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
@@ -431,7 +437,7 @@ describe('BillingTab', () => {
     const user = userEvent.setup();
     const setChargeItems = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -647,7 +653,7 @@ describe('BillingTab', () => {
   test('creates claim when practitioner is changed and charge items exist', async () => {
     const setEncounter = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -787,7 +793,7 @@ describe('BillingTab', () => {
   test('updates claim when practitioner is changed and claim already exists', async () => {
     const setEncounter = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -1058,7 +1064,7 @@ describe('BillingTab', () => {
 
   test('handles error in encounter change', async () => {
     const setEncounter = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
     vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
