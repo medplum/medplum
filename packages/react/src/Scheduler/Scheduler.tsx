@@ -29,8 +29,9 @@ import classes from './Scheduler.module.css';
  */
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
-  readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
+  readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[];
   readonly questionnaire?: Questionnaire | Reference<Questionnaire>;
+  fetchSlots?: SlotSearchFunction;
 }
 
 // Finds the first entry in Schedule.actor of type Reference<Practitioner>
@@ -59,14 +60,9 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     }
 
     // Function to fetch slots
-    let fetchSlots: SlotSearchFunction;
-
-    // If the user provides a function to fetch slots, use it
-    if (typeof props.schedule === 'function') {
-      fetchSlots = props.schedule;
-    } else {
-      // Otherwise, search based on the schedule(s) provided
-      fetchSlots = async (period: Period): Promise<Slot[]> => {
+    const fetchSlots: SlotSearchFunction =
+      props.fetchSlots ??
+      (async (period) => {
         const scheduleArray: string[] = [];
         if (!Array.isArray(props.schedule)) {
           scheduleArray.push(
@@ -91,17 +87,16 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
           ['start', 'lt' + period.end],
         ]);
         return medplum.searchResources('Slot', slotSearchParams);
-      };
-    }
+      });
 
     fetchSlots({ start: getStart(month), end: getEnd(month) })
       .then(setSlots)
       .catch(console.error);
-  }, [medplum, props.schedule, month]);
+  }, [medplum, props.schedule, props.fetchSlots, month]);
 
   // If a single Schedule or Reference<Schedule> is provided, set the actor from it
   useEffect(() => {
-    if (props.schedule && typeof props.schedule !== 'function' && !Array.isArray(props.schedule)) {
+    if (props.schedule && !Array.isArray(props.schedule)) {
       if (isResource(props.schedule)) {
         setActor(onlyPractitioner(props.schedule));
       } else {

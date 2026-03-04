@@ -99,7 +99,7 @@ export const CustomSlotSearch = (): JSX.Element => {
   };
   return (
     <Document>
-      <Scheduler schedule={customSlotSearch} questionnaire={ExampleQuestionnaire} />
+      <Scheduler fetchSlots={customSlotSearch} questionnaire={ExampleQuestionnaire} />
     </Document>
   );
 };
