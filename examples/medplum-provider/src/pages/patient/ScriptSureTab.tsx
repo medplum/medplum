@@ -4,8 +4,8 @@ import { Box } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
-import { useRef } from 'react';
 import type { JSX } from 'react';
+import { useRef } from 'react';
 import { useParams } from 'react-router';
 
 export function ScriptSureTab(): JSX.Element {

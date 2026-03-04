@@ -27,10 +27,7 @@ describe('useScriptSureIFrame', () => {
     const onPatientSyncSuccess = vi.fn();
     const onIframeSuccess = vi.fn();
 
-    medplum.executeBot = vi
-      .fn()
-      .mockResolvedValueOnce(allOk)
-      .mockResolvedValueOnce({ url: mockIframeUrl });
+    medplum.executeBot = vi.fn().mockResolvedValueOnce(allOk).mockResolvedValueOnce({ url: mockIframeUrl });
 
     await act(async () => {
       render(
