@@ -6,9 +6,10 @@ import type { AsyncJob, Parameters, ParametersParameter, ResourceType } from '@m
 import type { Job } from 'bullmq';
 import type { Pool } from 'pg';
 import type { ArrayColumnPaddingConfig } from '../config/types';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, withPoolClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import type { SystemRepository } from '../fhir/repo';
+import { isValidColumnName } from '../fhir/sql';
 import { getAllPaddingSentinels, getPaddingFraction } from '../fhir/token-column';
 import { globalLogger } from '../logger';
 import type { PostDeployJobData } from '../migrations/data/types';
@@ -54,8 +55,7 @@ const defaultSettings: RepaddingJobSettings = {
   batchStatementTimeout: 300_000, // 5 min for batch phases
 };
 
-// Pattern for valid column names (code-controlled, always __[a-zA-Z]+)
-const COLUMN_NAME_PATTERN = /^__[a-zA-Z]+$/;
+const PHASES = ['classify', 'swap', 'remove', 'add', 'cleanup'] as const;
 
 export class RepaddingJob {
   private readonly systemRepo: SystemRepository;
@@ -95,31 +95,22 @@ export class RepaddingJob {
 
     while (data.currentUnitIndex < data.units.length) {
       const unit = data.units[data.currentUnitIndex];
-      const unitKey = `${unit.resourceType}/${unit.columnName}`;
 
       // Validate resource type and column name for SQL safety
       validateResourceType(unit.resourceType);
-      if (!COLUMN_NAME_PATTERN.test(unit.columnName)) {
+      if (!isValidColumnName(unit.columnName)) {
         throw new Error(`Invalid column name: ${unit.columnName}`);
       }
 
       const unitStartTime = Date.now();
+      const unitKey = `${unit.resourceType}/${unit.columnName}`;
       const existingResult = data.results[unitKey] as RepaddingResult | undefined;
       let swapped = existingResult ? existingResult.swapped : 0;
       let removed = existingResult ? existingResult.removed : 0;
       let added = existingResult ? existingResult.added : 0;
 
-      const phases: ('classify' | 'swap' | 'remove' | 'add' | 'cleanup')[] = [
-        'classify',
-        'swap',
-        'remove',
-        'add',
-        'cleanup',
-      ];
-      const startPhaseIndex = phases.indexOf(data.currentPhase);
-
-      for (let pi = startPhaseIndex; pi < phases.length; pi++) {
-        const phase = phases[pi];
+      for (let pi = PHASES.indexOf(data.currentPhase); pi < PHASES.length; pi++) {
+        const phase = PHASES[pi];
         data.currentPhase = phase;
 
         // Check if job is still active
@@ -188,25 +179,17 @@ export class RepaddingJob {
     const oldFrac = getPaddingFraction(data.oldConfig);
     const newFrac = getPaddingFraction(data.newConfig);
 
-    // Drop existing work table if any (idempotent for restarts)
-    await pool.query(`DROP TABLE IF EXISTS "${workTable}"`);
+    await withPoolClient(async (client) => {
+      // Drop existing work table if any (idempotent for restarts)
+      await pool.query(`DROP TABLE IF EXISTS "${workTable}"`);
 
-    if (data.oldConfig.m === 0 && data.newConfig.m === 0) {
-      // No-op: create empty work table
-      await pool.query(`CREATE TABLE "${workTable}" (id UUID, action TEXT)`);
-      return;
-    }
-
-    // Set statement timeout for classify phase
-    const client = await pool.connect();
-    try {
-      if (this.settings.classifyStatementTimeout > 0) {
+      if (typeof this.settings.classifyStatementTimeout === 'number') {
         await client.query(`SET statement_timeout = ${this.settings.classifyStatementTimeout}`);
       }
 
-      if (newFrac <= oldFrac && data.oldConfig.m > 0) {
-        // Optimization: only need rows with old sentinels (GIN-indexed)
-        const swapProbability = oldFrac > 0 ? Math.min(1.0, newFrac / oldFrac) : 0;
+      const swapProbability = oldFrac > 0 ? Math.min(1.0, newFrac / oldFrac) : 0;
+      if (oldFrac > 0 && newFrac <= oldFrac) {
+        // Optimization: only need rows with old sentinels; nothing will be added
         await client.query(
           `CREATE TABLE "${workTable}" AS
            SELECT id::UUID,
@@ -217,10 +200,7 @@ export class RepaddingJob {
           [swapProbability, oldSentinels]
         );
       } else {
-        // Full table scan needed for potential adds
-        const swapProbability = oldFrac > 0 ? Math.min(1.0, newFrac / oldFrac) : 0;
         const addProbability = oldFrac >= 1.0 ? 0 : (newFrac - oldFrac) / (1.0 - oldFrac);
-
         await client.query(
           `CREATE TABLE "${workTable}" AS
            SELECT id::UUID, action::TEXT FROM (
@@ -244,15 +224,8 @@ export class RepaddingJob {
           [oldSentinels, swapProbability, newSentinels, addProbability, newFrac, oldFrac]
         );
       }
-    } finally {
-      if (this.settings.classifyStatementTimeout > 0) {
-        await client.query('RESET statement_timeout');
-      }
-      client.release();
-    }
-
-    // Create index on work table for efficient batch processing
-    await pool.query(`CREATE INDEX ON "${workTable}" (action)`);
+      await client.query(`CREATE INDEX ON "${workTable}" (action)`);
+    }, pool);
   }
 
   private async processBatchLoop(
@@ -266,15 +239,13 @@ export class RepaddingJob {
     const newSentinels = getAllPaddingSentinels(data.newConfig.m);
     const newM = data.newConfig.m;
     let totalProcessed = 0;
+    await withPoolClient(async (client) => {
+      if (typeof this.settings.batchStatementTimeout === 'number') {
+        await client.query(`SET statement_timeout = ${this.settings.batchStatementTimeout}`);
+      }
 
-    while (true) {
-      const client = await pool.connect();
       let rowsAffected = 0;
-      try {
-        if (this.settings.batchStatementTimeout > 0) {
-          await client.query(`SET statement_timeout = ${this.settings.batchStatementTimeout}`);
-        }
-
+      while (true) {
         switch (action) {
           case 'swap': {
             const result = await client.query(
@@ -335,23 +306,17 @@ export class RepaddingJob {
             break;
           }
         }
-      } finally {
-        if (this.settings.batchStatementTimeout > 0) {
-          await client.query('RESET statement_timeout');
+
+        if (rowsAffected === 0) {
+          break;
         }
-        client.release();
-      }
+        totalProcessed += rowsAffected;
 
-      totalProcessed += rowsAffected;
-
-      if (rowsAffected === 0) {
-        break;
+        if (this.settings.delayBetweenBatches > 0) {
+          await sleep(this.settings.delayBetweenBatches);
+        }
       }
-
-      if (this.settings.delayBetweenBatches > 0) {
-        await sleep(this.settings.delayBetweenBatches);
-      }
-    }
+    }, pool);
 
     return totalProcessed;
   }
