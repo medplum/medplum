@@ -81,7 +81,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
 
-  console.log('encounter', encounter);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
