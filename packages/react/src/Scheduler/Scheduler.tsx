@@ -29,8 +29,8 @@ import classes from './Scheduler.module.css';
  */
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
-  readonly schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
-  readonly questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
+  readonly questionnaire?: Questionnaire | Reference<Questionnaire>;
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
