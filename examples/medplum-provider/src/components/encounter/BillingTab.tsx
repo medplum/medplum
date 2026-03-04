@@ -71,13 +71,17 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
+  const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
+  const [backgroundChecking, setBackgroundChecking] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef<WithId<Claim> | undefined>(claim);
   claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
+
+  console.log('encounter', encounter);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -113,14 +117,53 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
 
-  useEffect(() => {
-    if (!candidEncounterId || !getEncounterBot) {
+  const fetchCandidEncounter = useCallback(async (): Promise<void> => {
+    if (!getEncounterBot || !claimRef.current) {
       return;
     }
+    const payload = candidEncounterId ? { encounterId: candidEncounterId } : { externalId: encounter.id };
     setCandidLoading(true);
+    try {
+      const result = await medplum.executeBot(getEncounterBot.id, payload, 'application/json');
+      const encounterId = result?.fullEncounter?.encounterId;
+      if (encounterId) {
+        setResolvedCandidEncounterId(encounterId);
+      }
+      const status = result?.fullEncounter?.claims?.[0]?.status;
+      if (status) {
+        setCandidStatus(status);
+      }
+      const createdAt = result?.fullEncounter?.createdAt;
+      if (createdAt) {
+        setCandidCreatedAt(createdAt);
+      }
+    } catch (err) {
+      showErrorNotification('Unable to fetch Candid Health claim: ' + err);
+    } finally {
+      setCandidLoading(false);
+    }
+  }, [candidEncounterId, encounter.id, getEncounterBot, medplum]);
+
+  useEffect(() => {
+    if (!candidEncounterId) {
+      return;
+    }
+    fetchCandidEncounter().catch(showErrorNotification);
+  }, [candidEncounterId, fetchCandidEncounter]);
+
+  // Background safeguard: if claim exists but has no Candid encounter ID, silently check via externalId.
+  useEffect(() => {
+    if (!claim?.id || candidEncounterId || !getEncounterBot) {
+      return;
+    }
+    setBackgroundChecking(true);
     medplum
-      .executeBot(getEncounterBot.id, { encounterId: candidEncounterId }, 'application/json')
+      .executeBot(getEncounterBot.id, { externalId: encounter.id }, 'application/json')
       .then((result) => {
+        const encounterId = result?.fullEncounter?.encounterId;
+        if (encounterId) {
+          setResolvedCandidEncounterId(encounterId);
+        }
         const status = result?.fullEncounter?.claims?.[0]?.status;
         if (status) {
           setCandidStatus(status);
@@ -130,9 +173,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
           setCandidCreatedAt(createdAt);
         }
       })
-      .catch((err) => showErrorNotification('Unable to fetch Candid Health claim: ' + err))
-      .finally(() => setCandidLoading(false));
-  }, [candidEncounterId, getEncounterBot, medplum]);
+      .catch(() => undefined)
+      .finally(() => setBackgroundChecking(false));
+  }, [claim?.id, candidEncounterId, encounter.id, getEncounterBot, medplum]);
 
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
@@ -266,6 +309,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
 
     setSubmitting(true);
+    debouncedUpdateClaim.cancel();
     try {
       const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
       showNotification({
@@ -275,12 +319,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       });
       const updatedClaim = await medplum.readResource('Claim', claim.id);
       setClaim(updatedClaim);
+      await fetchCandidEncounter();
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setSubmitting(false);
     }
-  }, [billingBot, claim, medplum, setClaim]);
+  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>
@@ -327,78 +372,110 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Menu>
   );
 
-  return (
-    <Stack gap="md">
-      {claim &&
-        (candidEncounterId ? (
-          <Card withBorder shadow="sm" p={0}>
-            <Stack p="md" gap="md">
-              <Flex align="center" justify="space-between" gap="md">
-                <Stack gap={4} miw={100}>
-                  <Text size="xs" c="dimmed">
-                    Claim Status:
+  const renderClaimCard = (): JSX.Element | null => {
+    if (!claim) {
+      return null;
+    }
+    if (candidLoading || backgroundChecking || getEncounterBot === undefined) {
+      return (
+        <Card withBorder shadow="sm" p="md">
+          <Skeleton height={20} width="60%" mb="sm" />
+          <Skeleton height={14} width="40%" />
+        </Card>
+      );
+    }
+    if (candidEncounterId || candidStatus) {
+      return (
+        <Card withBorder shadow="sm" p={0}>
+          <Stack p="md" gap="md">
+            <Flex align="center" justify="space-between" gap="md">
+              <Stack gap={4} miw={100}>
+                <Text size="xs" c="dimmed">
+                  Claim Status:
+                </Text>
+                {candidStatus && (
+                  <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
+                    {formatCandidStatus(candidStatus)}
+                  </Badge>
+                )}
+              </Stack>
+              <Box style={{ flex: 1 }}>
+                <Text size="sm">
+                  Claim submitted for{' '}
+                  <Text component="span" fw={700}>
+                    ${(claim.total?.value ?? 0).toFixed(0)}
+                  </Text>{' '}
+                  by{' '}
+                  <Text component="span" fw={700}>
+                    {formatHumanName(practitioner?.name?.[0])}
                   </Text>
-                  {renderCandidStatusBadge(candidLoading || getEncounterBot === undefined, candidStatus)}
-                </Stack>
-                <Box style={{ flex: 1 }}>
-                  <Text size="sm">
-                    Claim submitted for{' '}
-                    <Text component="span" fw={700}>
-                      ${(claim.total?.value ?? 0).toFixed(0)}
-                    </Text>{' '}
-                    by{' '}
-                    <Text component="span" fw={700}>
-                      {formatHumanName(practitioner?.name?.[0])}
-                    </Text>
-                    .
+                  .
+                </Text>
+                {candidCreatedAt && (
+                  <Text size="sm" c="dimmed">
+                    Submitted on {formatDateTime(candidCreatedAt)}
                   </Text>
-                  {renderCandidSubmittedAt(candidLoading || getEncounterBot === undefined, candidCreatedAt)}
-                </Box>
+                )}
+              </Box>
+              {(resolvedCandidEncounterId ?? candidEncounterId) && (
                 <Button
                   variant="outline"
                   rightSection={<IconExternalLink size={14} />}
-                  onClick={() => window.open(`${CANDID_CLAIM_BASE_URL}${candidEncounterId}`, '_blank')}
+                  onClick={() =>
+                    window.open(
+                      `${CANDID_CLAIM_BASE_URL}${resolvedCandidEncounterId ?? candidEncounterId}`,
+                      '_blank'
+                    )
+                  }
                 >
                   View Claim on Candid
                 </Button>
-              </Flex>
-              <Divider />
-              <Group>{exportClaimMenu()}</Group>
-            </Stack>
-          </Card>
-        ) : (
-          <Card withBorder shadow="sm">
-            <Flex justify="space-between">
-              {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
-
-              {billingBot && (
-                <Button
-                  variant="outline"
-                  leftSection={<IconSend size={16} />}
-                  loading={submitting}
-                  onClick={submitClaim}
-                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
-                >
-                  Submit Claim
-                </Button>
-              )}
-              {billingBot === null && (
-                <Button
-                  variant="outline"
-                  leftSection={<IconSend size={16} />}
-                  onClick={() => {
-                    window.open('https://www.medplum.com/contact', '_blank');
-                  }}
-                >
-                  Request to connect a billing service
-                </Button>
               )}
             </Flex>
-          </Card>
-        ))}
+            <Divider />
+            <Group>{exportClaimMenu()}</Group>
+          </Stack>
+        </Card>
+      );
+    }
+    return (
+      <Card withBorder shadow="sm">
+        <Flex justify="space-between">
+          {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
+          {billingBot && (
+            <Button
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              loading={submitting}
+              onClick={submitClaim}
+              disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+            >
+              Submit Claim
+            </Button>
+          )}
+          {billingBot === null && (
+            <Button
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              onClick={() => {
+                window.open('https://www.medplum.com/contact', '_blank');
+              }}
+            >
+              Request to connect a billing service
+            </Button>
+          )}
+        </Flex>
+      </Card>
+    );
+  };
+
+  return (
+    <Stack gap="md">
+      {renderClaimCard()}
 
       <Group grow align="flex-start">
         <VisitDetailsPanel
+          key={encounter.meta?.lastUpdated}
           practitioner={practitioner}
           encounter={encounter}
           onEncounterChange={handleEncounterChange}
@@ -425,34 +502,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       )}
     </Stack>
   );
-};
-
-const renderCandidStatusBadge = (loading: boolean, status: string | undefined): JSX.Element | null => {
-  if (loading) {
-    return <Skeleton height={22} width={100} radius="xl" />;
-  }
-  if (status) {
-    return (
-      <Badge color={getStatusColor(status)} radius="xl" variant="filled">
-        {formatCandidStatus(status)}
-      </Badge>
-    );
-  }
-  return null;
-};
-
-const renderCandidSubmittedAt = (loading: boolean, createdAt: string | undefined): JSX.Element | null => {
-  if (loading) {
-    return <Skeleton height={14} width={200} mt={4} />;
-  }
-  if (createdAt) {
-    return (
-      <Text size="sm" c="dimmed">
-        Submitted on {formatDateTime(createdAt)}
-      </Text>
-    );
-  }
-  return null;
 };
 
 const getStatusColor = (status: string): string => {
