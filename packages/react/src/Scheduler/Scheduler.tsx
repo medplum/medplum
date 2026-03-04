@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isReference } from '@medplum/core';
+import { getReferenceString, isReference, isResource } from '@medplum/core';
 import type {
   Period,
   Practitioner,
@@ -93,7 +93,9 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   // If a single Schedule or Reference<Schedule> is provided, set the actor from it
   useEffect(() => {
     if (props.schedule && typeof props.schedule !== 'function' && !Array.isArray(props.schedule)) {
-      if (isReference<Schedule>(props.schedule)) {
+      if (isResource(props.schedule)) {
+        setActor(props.schedule.actor?.[0] as Reference<Practitioner>);
+      } else {
         medplum
           .readReference<Schedule>(props.schedule)
           .then((schedule) => {
@@ -101,8 +103,6 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             setActor(actorRef);
           })
           .catch(console.error);
-      } else {
-        setActor((props.schedule as Schedule).actor?.[0] as Reference<Practitioner>);
       }
     }
   }, [medplum, props.schedule]);
