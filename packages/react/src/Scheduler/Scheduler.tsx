@@ -83,27 +83,29 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         ]);
         return medplum.searchResources('Slot', slotSearchParams);
       };
-
-      // If a single schedule is provided, set the actor
-      if (props.schedule && !Array.isArray(props.schedule)) {
-        if (isReference(props.schedule)) {
-          medplum
-            .readReference<Schedule>(props.schedule as Reference<Schedule>)
-            .then((schedule) => {
-              const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
-              setActor(actorRef);
-            })
-            .catch(console.error);
-        } else {
-          setActor((props.schedule as Schedule).actor?.[0] as Reference<Practitioner>);
-        }
-      }
     }
 
     fetchSlots({ start: getStart(month), end: getEnd(month) })
       .then(setSlots)
       .catch(console.error);
   }, [medplum, props.schedule, month]);
+
+  // If a single Schedule or Reference<Schedule> is provided, set the actor from it
+  useEffect(() => {
+    if (props.schedule && typeof props.schedule !== 'function' && !Array.isArray(props.schedule)) {
+      if (isReference<Schedule>(props.schedule)) {
+        medplum
+          .readReference<Schedule>(props.schedule)
+          .then((schedule) => {
+            const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
+            setActor(actorRef);
+          })
+          .catch(console.error);
+      } else {
+        setActor((props.schedule as Schedule).actor?.[0] as Reference<Practitioner>);
+      }
+    }
+  }, [medplum, props.schedule]);
 
   // Create a map of start times to slots to handle duplicate start times
   const startTimeToSlotMap = useMemo(() => {
