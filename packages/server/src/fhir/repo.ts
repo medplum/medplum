@@ -86,6 +86,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
+import type { ArrayColumnPaddingConfig } from '../config/types';
 import { syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -1706,7 +1707,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
-      buildTokenColumns(searchParam, impl, columns, resource);
+      buildTokenColumns(searchParam, impl, columns, resource, {
+        paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
+      });
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       columnImpl = impl;
@@ -2788,4 +2791,26 @@ function truncateTextColumn(value: string | undefined): string | undefined {
   }
 
   return Array.from(value).slice(0, 675).join('');
+}
+
+function getArrayPaddingConfig(
+  searchParam: SearchParameter,
+  resourceType: string
+): ArrayColumnPaddingConfig | undefined {
+  const paddingConfigEntry = getConfig().arrayColumnPadding?.[searchParam.code];
+  if (paddingConfigEntry) {
+    if (Array.isArray(paddingConfigEntry)) {
+      for (const entry of paddingConfigEntry) {
+        if (entry.resourceType === undefined || entry.resourceType.includes(resourceType)) {
+          return entry.config;
+        }
+      }
+      return undefined;
+    }
+
+    if (paddingConfigEntry.resourceType === undefined || paddingConfigEntry.resourceType.includes(resourceType)) {
+      return paddingConfigEntry.config;
+    }
+  }
+  return undefined;
 }

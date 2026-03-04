@@ -90,6 +90,7 @@ const integerKeys = new Set([
   'shutdownTimeoutMilliseconds',
   'transactionAttempts',
   'transactionExpBackoffBaseDelayMs',
+  'fhirSearchMinLimit',
 
   'database.maxConnections',
   'database.port',
@@ -123,6 +124,7 @@ const booleanKeys = new Set([
   'database.disableConnectionConfiguration',
   'database.disableRunPostDeployMigrations',
   'database.runMigrations',
+  'fhirSearchDiscourageSeqScan',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
@@ -138,7 +140,14 @@ export function isBooleanConfig(key: string): boolean {
   return booleanKeys.has(key);
 }
 
-const objectKeys = new Set(['tls', 'ssl', 'defaultProjectSystemSetting', 'defaultOAuthClients', 'smtp']);
+const objectKeys = new Set([
+  'tls',
+  'ssl',
+  'defaultProjectSystemSetting',
+  'defaultOAuthClients',
+  'smtp',
+  'arrayColumnPadding',
+]);
 
 export function isObjectConfig(key: string): boolean {
   return objectKeys.has(key);
