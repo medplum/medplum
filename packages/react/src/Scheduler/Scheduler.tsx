@@ -33,6 +33,15 @@ export interface SchedulerProps {
   readonly questionnaire?: Questionnaire | Reference<Questionnaire>;
 }
 
+// Finds the first entry in Schedule.actor of type Reference<Practitioner>
+function onlyPractitioner(schedule: Schedule): Reference<Practitioner> | undefined {
+  const refs = schedule.actor.filter((ref) => isReference<Practitioner>(ref, 'Practitioner'));
+  if (refs.length === 1) {
+    return refs[0];
+  }
+  return undefined;
+}
+
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
   const questionnaire = useResource(props.questionnaire);
@@ -94,14 +103,11 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   useEffect(() => {
     if (props.schedule && typeof props.schedule !== 'function' && !Array.isArray(props.schedule)) {
       if (isResource(props.schedule)) {
-        setActor(props.schedule.actor?.[0] as Reference<Practitioner>);
+        setActor(onlyPractitioner(props.schedule));
       } else {
         medplum
           .readReference<Schedule>(props.schedule)
-          .then((schedule) => {
-            const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
-            setActor(actorRef);
-          })
+          .then((schedule) => setActor(onlyPractitioner(schedule)))
           .catch(console.error);
       }
     }
