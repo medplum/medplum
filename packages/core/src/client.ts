@@ -3579,6 +3579,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new OperationOutcomeError(normalizeOperationOutcome(body));
     }
 
+    Object.defineProperty(body, '_medplum', {
+      enumerable: false,
+      configurable: false,
+      writable: false,
+      value: { created: response.status === 201 },
+    });
+
     return body as T;
   }
 
