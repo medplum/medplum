@@ -289,7 +289,7 @@ describe('useEncounterChart', () => {
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
     vi.mocked(createClaimFromEncounter).mockResolvedValue(newClaim);
 
-    const { result } = renderHook(() => useEncounterChart(mockEncounter, mockPatient), { wrapper });
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
     // Wait for all prerequisites to be met
     await waitFor(() => {
@@ -318,7 +318,7 @@ describe('useEncounterChart', () => {
     const createdClaim = await medplum.createResource(mockClaim);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
 
-    const { result } = renderHook(() => useEncounterChart(mockEncounter, mockPatient), { wrapper });
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
     await waitFor(() => {
       expect(result.current.claim).toBeDefined();
@@ -375,7 +375,7 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
-    const { result } = renderHook(() => useEncounterChart(mockEncounter, mockPatient), { wrapper });
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
     await waitFor(() => {
       expect(result.current.practitioner).toBeDefined();
