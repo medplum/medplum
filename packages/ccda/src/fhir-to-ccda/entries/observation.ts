@@ -310,6 +310,22 @@ export function mapReferenceRange(
     };
   }
 
+  if (referenceRange.low || referenceRange.high) {
+    return {
+      observationRange: {
+        value: {
+          '@_xsi:type': 'IVL_PQ',
+          low: referenceRange.low
+            ? { '@_value': referenceRange.low.value?.toString(), '@_unit': referenceRange.low.unit }
+            : undefined,
+          high: referenceRange.high
+            ? { '@_value': referenceRange.high.value?.toString(), '@_unit': referenceRange.high.unit }
+            : undefined,
+        },
+      },
+    };
+  }
+
   return {
     observationRange: {
       text: createTextFromExtensions(referenceRange.extension),

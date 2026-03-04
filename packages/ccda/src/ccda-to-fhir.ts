@@ -115,6 +115,7 @@ import type {
   CcdaPatientRole,
   CcdaPerformer,
   CcdaProcedure,
+  CcdaQuantity,
   CcdaReferenceRange,
   CcdaSection,
   CcdaSubstanceAdministration,
@@ -1317,6 +1318,28 @@ class CcdaToFhirConverter {
     const result: ObservationReferenceRange = {};
 
     result.extension = this.mapTextReference(observationRange.text);
+
+    const value = observationRange.value as CcdaQuantity | undefined;
+    if (value?.low) {
+      result.low = {
+        value: value.low['@_value'] ? Number.parseFloat(value.low['@_value']) : undefined,
+        unit: value.low['@_unit'],
+        system: UCUM,
+        code: value.low['@_unit'],
+      };
+    }
+    if (value?.high) {
+      result.high = {
+        value: value.high['@_value'] ? Number.parseFloat(value.high['@_value']) : undefined,
+        unit: value.high['@_unit'],
+        system: UCUM,
+        code: value.high['@_unit'],
+      };
+    }
+
+    if (!result.extension && !result.low && !result.high) {
+      return undefined;
+    }
 
     return result;
   }
