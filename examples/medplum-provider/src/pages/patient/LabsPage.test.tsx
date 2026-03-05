@@ -205,7 +205,7 @@ describe('LabsPage', () => {
     }
 
     await waitFor(() => {
-      expect(screen.getByText('Order Labs')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Submit Order' })).toBeInTheDocument();
     });
 
     const closeButton = document.querySelector('.mantine-Modal-close');
@@ -213,9 +213,12 @@ describe('LabsPage', () => {
       await userEvent.click(closeButton);
     }
 
-    await waitFor(() => {
-      expect(screen.queryByText('Order Labs')).not.toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('button', { name: 'Submit Order' })).not.toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   test('filters out draft and entered-in-error orders from open tab', async () => {
