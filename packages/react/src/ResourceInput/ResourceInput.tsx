@@ -83,12 +83,14 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
+  readonly filterItems?: (items: T[]) => T[];
   readonly placeholder?: string;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
   readonly label?: AsyncAutocompleteProps<T>['label'];
+  readonly description?: AsyncAutocompleteProps<T>['description'];
   readonly error?: AsyncAutocompleteProps<T>['error'];
 }
 
@@ -102,7 +104,7 @@ function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
 
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element | null {
   const medplum = useMedplum();
-  const { resourceType, searchCriteria } = props;
+  const { resourceType, searchCriteria, filterItems } = props;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const defaultValue = useResource(props.defaultValue, setOutcome);
   const ItemComponent = props.itemComponent ?? DefaultItemComponent;
@@ -118,9 +120,10 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       });
 
       const resources = await medplum.searchResources(resourceType, searchParams, { signal });
-      return resources as unknown as T[];
+      const items = resources as unknown as T[];
+      return filterItems ? filterItems(items) : items;
     },
-    [medplum, resourceType, searchCriteria]
+    [medplum, resourceType, searchCriteria, filterItems]
   );
 
   const handleChange = useCallback(
@@ -144,6 +147,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       disabled={props.disabled}
       name={props.name}
       label={props.label}
+      description={props.description}
       error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
