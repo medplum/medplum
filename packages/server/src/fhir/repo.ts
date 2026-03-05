@@ -364,6 +364,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.currentProject;
   }
 
+  effectiveAccessPolicy(): Readonly<AccessPolicy> | undefined {
+    return this.context.accessPolicy;
+  }
+
   /**
    * Returns a project by ID.
    * This handles the common case where the project ID is the same as the current project ID,

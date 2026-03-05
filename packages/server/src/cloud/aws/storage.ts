@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -8,6 +8,7 @@ import { concatUrls } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { Readable } from 'node:stream';
 import { getConfig } from '../../config/loader';
+import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 
@@ -94,14 +95,18 @@ export class S3Storage extends BaseBinaryStorage {
    * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/modules/_aws_sdk_cloudfront_signer.html
    *
    * @param binary - Binary resource.
+   * @param opts - Optional parameters.
    * @returns Presigned URL to access the binary data.
    */
-  async getPresignedUrl(binary: Binary): Promise<string> {
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
     const config = getConfig();
 
-    if (!config.signingKey || !config.signingKeyId) {
+    if (!config.signingKey || !config.signingKeyId || opts?.upload) {
       const Key = this.getKey(binary);
-      return s3GetSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key }), { expiresIn: 3600 });
+      const cmd = opts?.upload
+        ? new PutObjectCommand({ Bucket: this.bucket, Key })
+        : new GetObjectCommand({ Bucket: this.bucket, Key });
+      return s3GetSignedUrl(this.client, cmd, { expiresIn: 3600 });
     }
 
     const storageBaseUrl = config.storageBaseUrl;
