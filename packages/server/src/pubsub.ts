@@ -14,6 +14,8 @@ export type ActiveSubscriptionEntry = {
   criteria: string;
   expiration: number;
   author: string;
+  loginId: string;
+  membershipId: string;
 };
 
 export type ActiveSubscriptionMap = { [ref: string]: ActiveSubscriptionEntry };

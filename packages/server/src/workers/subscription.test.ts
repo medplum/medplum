@@ -2208,7 +2208,13 @@ describe('Subscription Worker', () => {
       const subRef = `Subscription/${subscription.id}`;
       const expiration = Math.floor(Date.now() / 1000) + 3600;
       await addUserActiveWebSocketSubscription(authorRef, subRef);
-      await setActiveSubscription(projectId, criteriaResourceType, subRef, { criteria, expiration, author: authorRef });
+      await setActiveSubscription(projectId, criteriaResourceType, subRef, {
+        criteria,
+        expiration,
+        author: authorRef,
+        loginId: randomUUID(),
+        membershipId: randomUUID(),
+      });
       return authorRef;
     }
 
@@ -3114,6 +3120,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
+          loginId: randomUUID(),
+          membershipId: randomUUID(),
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -3121,6 +3129,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
+          loginId: randomUUID(),
+          membershipId: randomUUID(),
         });
 
         // Both entries should be in the hash before the worker runs
@@ -3178,6 +3188,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: futureExpiry,
           author: authorRef,
+          loginId: randomUUID(),
+          membershipId: randomUUID(),
         });
 
         await addUserActiveWebSocketSubscription(authorRef, expiredSubRef);
@@ -3185,6 +3197,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
+          loginId: randomUUID(),
+          membershipId: randomUUID(),
         });
 
         const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
@@ -3227,6 +3241,8 @@ describe('Subscription Worker', () => {
           criteria: 'Patient',
           expiration: pastExpiry,
           author: authorRef,
+          loginId: randomUUID(),
+          membershipId: randomUUID(),
         });
 
         // No notification should fire despite the criteria matching

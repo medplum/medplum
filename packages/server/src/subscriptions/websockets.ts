@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import {
+  badRequest,
+  createReference,
+  EMPTY,
+  normalizeErrorString,
+  OperationOutcomeError,
+} from '@medplum/core';
 import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
@@ -28,6 +34,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { findProjectMembership } from '../workers/utils';
 
 interface BaseSubscriptionClientMsg {
   type: string;
@@ -350,11 +357,26 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     const subRef = `Subscription/${verifiedToken.subscription_id}`;
     // We know exp is always defined for these tokens
     const expiration = verifiedToken.exp as number;
+    let membershipId = verifiedToken.membership_id;
+    if (!membershipId) {
+      const membership = await findProjectMembership(cacheEntry.projectId, { reference: verifiedToken.profile });
+      if (!membership) {
+        globalLogger.warn('[WS] Failed to retrieve project membership for profile when binding to token', {
+          projectId: cacheEntry.projectId,
+          profile: verifiedToken.profile,
+          subscriptionId: verifiedToken.subscription_id,
+        });
+        return;
+      }
+      membershipId = membership.id;
+    }
     await addUserActiveWebSocketSubscription(verifiedToken.profile, subRef);
     await setActiveSubscription(cacheEntry.projectId, criteriaResourceType, subRef, {
       criteria: cacheEntry.resource.criteria,
       expiration,
       author: verifiedToken.profile,
+      loginId: verifiedToken.login_id,
+      membershipId,
     });
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
     ensureHeartbeatHandler();

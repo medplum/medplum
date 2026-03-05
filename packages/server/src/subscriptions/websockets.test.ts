@@ -29,11 +29,13 @@ import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
 import {
   addUserActiveWebSocketSubscription,
+  getActiveSubscriptions,
   getUserActiveWebSocketSubscriptionCount,
   isSubscriptionActive,
   publish,
 } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
+import * as workerUtilsModule from '../workers/utils';
 
 jest.mock('hibp');
 
@@ -1444,6 +1446,124 @@ describe('WebSocket Subscription', () => {
       await repo.deleteResource('Subscription', sub.id);
 
       expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterBind - 1);
+    }));
+
+  test('Bind resolves membership via lookup when membership claim is absent from token', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      // Simulate an older token that lacks the membership claim
+      const origVerifyJwt = keysModule.verifyJwt;
+      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
+        const result = await origVerifyJwt(t);
+        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        return { ...result, payload: rest };
+      });
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Wait for the active entry to appear, then verify membership was populated via fallback lookup
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+          }
+          const entries = await getActiveSubscriptions(project.id as string, 'Patient');
+          const entry = entries[`Subscription/${subscription.id}`];
+          expect(entry).toBeDefined();
+          expect(entry.membershipId).toMatch(/^[\da-f-]{36}$/);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      verifyJwtSpy.mockRestore();
+    }));
+
+  test('Bind fails with warning when membership claim is absent and membership lookup returns nothing', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const token = await keysModule.generateAccessToken(
+        {
+          client_id: randomUUID(),
+          login_id: randomUUID(),
+          sub: randomUUID(),
+          username: randomUUID(),
+          scope: 'mock',
+          profile: getReferenceString(repo.getAuthor()) ?? '',
+        },
+        {
+          additionalClaims: {
+            // We need subscription_id but intentionally leave off membership_id
+            subscription_id: subscription.id,
+          },
+        }
+      );
+
+      // Simulate an older token that lacks the membership claim
+      const origVerifyJwt = keysModule.verifyJwt;
+      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
+        const result = await origVerifyJwt(t);
+        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        return { ...result, payload: rest };
+      });
+      // Simulate membership not found (e.g. deleted or cross-project token)
+      const findProjectMembershipSpy = jest
+        .spyOn(workerUtilsModule, 'findProjectMembership')
+        .mockResolvedValueOnce(undefined);
+      const warnSpy = jest.spyOn(globalLogger, 'warn');
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .exec(async () => {
+          await sleep(1000);
+          expect(warnSpy).toHaveBeenCalledWith(
+            '[WS] Failed to retrieve project membership for profile when binding to token',
+            expect.objectContaining({ subscriptionId: subscription.id })
+          );
+          const active = await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`);
+          expect(active).toBe(0);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      verifyJwtSpy.mockRestore();
+      findProjectMembershipSpy.mockRestore();
+      warnSpy.mockRestore();
     }));
 
   test('Error when user exceeds max concurrent WebSocket subscriptions', () =>

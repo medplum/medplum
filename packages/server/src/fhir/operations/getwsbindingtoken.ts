@@ -12,6 +12,7 @@ const ONE_HOUR = 60 * 60 * 1000;
 
 export type AdditionalWsBindingClaims = {
   subscription_id: string;
+  membership_id: string;
 };
 
 // Source (for backport version): https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/OperationDefinition-backport-subscription-get-ws-binding-token.json.html
@@ -139,7 +140,7 @@ const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { login, profile, repo, project } = getAuthenticatedContext();
+  const { login, profile, repo, project, membership } = getAuthenticatedContext();
   const { baseUrl } = getConfig();
 
   if (!project.features?.includes('websocket-subscriptions')) {
@@ -191,6 +192,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     {
       additionalClaims: {
         subscription_id: subscriptionId,
+        membership_id: membership.id,
       } satisfies AdditionalWsBindingClaims,
       lifetime: '1h',
     }
