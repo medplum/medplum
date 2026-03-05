@@ -104,7 +104,7 @@ const mockClaim: WithId<Claim> = {
 };
 
 const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
-  const fn = vi.fn().mockResolvedValue(undefined) as ReturnType<
+  const fn = vi.fn().mockResolvedValue(undefined) as unknown as ReturnType<
     typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
   >;
   fn.cancel = vi.fn();

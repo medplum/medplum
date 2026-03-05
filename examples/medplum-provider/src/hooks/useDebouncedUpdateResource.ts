@@ -3,7 +3,7 @@
 import { useDebouncedCallback } from '@mantine/hooks';
 import type { MedplumClient } from '@medplum/core';
 import type { Resource } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
+import { useMemo } from 'react';
 
 export const DEFAULT_SAVE_TIMEOUT_MS = 500;
 
@@ -27,15 +27,15 @@ export function useDebouncedUpdateResource<T extends Resource>(
     return (await medplum.updateResource(resourcePayload)) as T;
   }, timeoutMs);
 
-  const update = useCallback(
-    async (resourcePayload: T): Promise<T> => {
-      debouncedCallback(resourcePayload);
-      return resourcePayload;
-    },
+  return useMemo<DebouncedUpdateResource<T>>(
+    () =>
+      Object.assign(
+        async (resourcePayload: T): Promise<T> => {
+          debouncedCallback(resourcePayload);
+          return resourcePayload;
+        },
+        { cancel: debouncedCallback.cancel }
+      ),
     [debouncedCallback]
-  ) as DebouncedUpdateResource<T>;
-
-  update.cancel = debouncedCallback.cancel;
-
-  return update;
+  );
 }
