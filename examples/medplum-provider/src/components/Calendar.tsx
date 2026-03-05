@@ -7,12 +7,14 @@ import dayjs from 'dayjs';
 import timezone from 'dayjs/plugin/timezone';
 import utc from 'dayjs/plugin/utc';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import { Calendar as ReactBigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import type { Range } from '../types/scheduling';
+import type { AvailabilityByDay } from '../utils/scheduling';
 import { SchedulingTransientIdentifier } from '../utils/scheduling';
+import classes from './Calendar.module.css';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -22,6 +24,43 @@ type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment;
 type SlotEvent = Event & { type: 'slot'; slot: Slot; status: string; start: Date; end: Date };
 type ScheduleEvent = AppointmentEvent | SlotEvent;
 
+// Context used to pass availability rules into custom components mounted
+// inside ReactBigCalendar
+const AvailabilityContext = createContext<
+  | {
+      timeZone?: string | undefined;
+      byDay: AvailabilityByDay;
+    }
+  | undefined
+>(undefined);
+
+type TimeSlotWrapperProps = {
+  value: Date;
+  // I'm not sure when this prop is passed or what values it holds; documenting
+  // it as `unknown` for now since I'm not using it.
+  resource: unknown;
+  children: React.ReactNode;
+};
+
+// Wraps time slots with available/unavailable info
+export const TimeSlotWrapper = (props: TimeSlotWrapperProps): JSX.Element => {
+  const availability = useContext(AvailabilityContext);
+  if (!availability) {
+    return <>{props.children}</>;
+  }
+
+  const ts = dayjs(props.value).tz(availability.timeZone);
+  const day = ts.day();
+  const minuteOffset = ts.hour() * 60 + ts.minute();
+
+  const isAvailable = availability.byDay[day].some(({ start, end }) => start <= minuteOffset && minuteOffset < end);
+  if (isAvailable) {
+    return <>{props.children}</>;
+  }
+  return <div className={classes.unavailable}>{props.children}</div>;
+};
+
+// Custom UI component for header controls
 export const CalendarToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element => {
   const [firstRender, setFirstRender] = useState(true);
   useEffect(() => {
@@ -137,6 +176,10 @@ export function Calendar(props: {
   onSelectSlot?: (slot: Slot) => void;
   onSelectAppointment?: (appointment: Appointment) => void;
   onRangeChange?: (range: Range) => void;
+  availability?: {
+    byDay: AvailabilityByDay;
+    timeZone: string | undefined;
+  };
 }): JSX.Element {
   const [view, setView] = useState<View>('week');
   const [date, setDate] = useState<Date>(new Date());
@@ -188,29 +231,40 @@ export function Calendar(props: {
 
   const backgroundEvents = slotsToEvents(props.slots.filter((slot) => !SchedulingTransientIdentifier.get(slot)));
 
+  const { availability } = props;
   return (
-    <ReactBigCalendar
-      components={{ toolbar: CalendarToolbar }}
-      view={view}
-      date={date}
-      localizer={dayjsLocalizer(dayjs)}
-      events={events}
-      // Background events don't show in the month view
-      backgroundEvents={backgroundEvents}
-      onNavigate={(newDate: Date, newView: View) => {
-        setDate(newDate);
-        setView(newView);
-      }}
-      onRangeChange={handleRangeChange}
-      onSelectSlot={props.onSelectInterval}
-      onSelectEvent={handleSelectEvent}
-      onView={setView}
-      // Default scroll to current time
-      scrollToTime={date}
-      selectable
-      eventPropGetter={eventPropGetter}
-      style={props.style}
-      dayLayoutAlgorithm="no-overlap"
-    />
+    <AvailabilityContext value={availability}>
+      <ReactBigCalendar
+        components={{
+          toolbar: CalendarToolbar,
+
+          // The types for timeSlotWrapper are wrong and don't indicate the prop types
+          // that are actually passed. For now, just use a type assertion to bypass. :confounded:
+          // https://github.com/jquense/react-big-calendar/blob/v1.19.4/src/TimeSlotGroup.js#L23
+          // https://github.com/DefinitelyTyped/DefinitelyTyped/blob/a57c04e837/types/react-big-calendar/index.d.ts#L206
+          timeSlotWrapper: availability ? (TimeSlotWrapper as React.ComponentType) : undefined,
+        }}
+        view={view}
+        date={date}
+        localizer={dayjsLocalizer(dayjs)}
+        events={events}
+        // Background events don't show in the month view
+        backgroundEvents={backgroundEvents}
+        onNavigate={(newDate: Date, newView: View) => {
+          setDate(newDate);
+          setView(newView);
+        }}
+        onRangeChange={handleRangeChange}
+        onSelectSlot={props.onSelectInterval}
+        onSelectEvent={handleSelectEvent}
+        onView={setView}
+        // Default scroll to current time
+        scrollToTime={date}
+        selectable
+        eventPropGetter={eventPropGetter}
+        style={props.style}
+        dayLayoutAlgorithm="no-overlap"
+      />
+    </AvailabilityContext>
   );
 }

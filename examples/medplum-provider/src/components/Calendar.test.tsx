@@ -4,6 +4,8 @@ import type { Appointment, Slot } from '@medplum/fhirtypes';
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, userEvent } from '../test-utils/render';
 import type { Range } from '../types/scheduling';
+import type { AvailabilityByDay } from '../utils/scheduling';
+import { DayMap } from '../utils/scheduling';
 import { Calendar } from './Calendar';
 
 // Mock document.elementFromPoint for react-big-calendar Selection
@@ -389,6 +391,52 @@ describe('Calendar', () => {
       );
       const calendar = container.querySelector('.rbc-calendar');
       expect(calendar).toHaveStyle({ height: '500px', width: '100%' });
+    });
+  });
+
+  describe('availability', () => {
+    const empty = (): AvailabilityByDay => ({ 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
+
+    test('does not render unavailable styling when no availability prop is given', () => {
+      const { container } = setup();
+      expect(container.querySelector('[class*="unavailable"]')).not.toBeInTheDocument();
+    });
+
+    test('marks time slots outside the availability window with unavailable class', () => {
+      // Only weekdays 9am-5pm are available; weekend slots should be marked unavailable.
+      // Week view always renders all 7 days, so weekend slots are always present.
+      const availability = {
+        byDay: {
+          ...empty(),
+          [DayMap.mon]: [{ start: 9 * 60, end: 17 * 60 }],
+          [DayMap.tue]: [{ start: 9 * 60, end: 17 * 60 }],
+          [DayMap.wed]: [{ start: 9 * 60, end: 17 * 60 }],
+          [DayMap.thu]: [{ start: 9 * 60, end: 17 * 60 }],
+          [DayMap.fri]: [{ start: 9 * 60, end: 17 * 60 }],
+        },
+        timeZone: undefined,
+      };
+      const { container } = render(<Calendar slots={[]} appointments={[]} availability={availability} />);
+      // CSS module class names may be hashed in the test environment; use substring match
+      expect(container.querySelector('[class*="unavailable"]')).toBeInTheDocument();
+    });
+
+    test('does not mark slots as unavailable when all times and days are available', () => {
+      // Availability covers every minute of every day
+      const availability = {
+        byDay: {
+          [DayMap.sun]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.mon]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.tue]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.wed]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.thu]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.fri]: [{ start: 0, end: 24 * 60 }],
+          [DayMap.sat]: [{ start: 0, end: 24 * 60 }],
+        },
+        timeZone: undefined,
+      };
+      const { container } = render(<Calendar slots={[]} appointments={[]} availability={availability} />);
+      expect(container.querySelector('[class*="unavailable"]')).not.toBeInTheDocument();
     });
   });
 });
