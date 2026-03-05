@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import type { SearchRequest } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
   LogLevel,
@@ -2197,8 +2197,11 @@ describe('Subscription Worker', () => {
      * pubsub active subscriptions hash.  In production this happens inside
      * `onBind` in websockets.ts; here we call the Redis helpers directly so
      * that the subscription worker can find the entry when evaluating criteria.
+     * @param subscription - The Subscription to simulate binding to.
+     * @param projectId - The project ID the Subscription belongs to.
+     * @returns A Promise that resolves to the reference string of the author.
      */
-    async function bindSubscription(subscription: Subscription & { id: string }, projectId: string): Promise<string> {
+    async function bindSubscription(subscription: WithId<Subscription>, projectId: string): Promise<string> {
       const authorRef = subscription.meta?.author?.reference ?? 'Practitioner/test-author';
       const criteria = subscription.criteria ?? '*';
       const criteriaResourceType = criteria.split('?')[0] as ResourceType;
