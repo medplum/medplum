@@ -192,7 +192,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
       additionalClaims: {
         subscription_id: subscriptionId,
       } satisfies AdditionalWsBindingClaims,
-      lifetime: '1hr',
+      lifetime: '1h',
     }
   );
 

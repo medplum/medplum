@@ -2395,7 +2395,7 @@ describe('Subscription Worker', () => {
         const originalConsoleLog = console.log;
         console.log = jest.fn();
 
-        const { repo: noWsSubRepo } = await createTestProject({
+        const { repo: noWsSubRepo, project } = await createTestProject({
           withRepo: true,
           project: { name: 'No WebSocket Subs Project' },
         });
@@ -2411,6 +2411,7 @@ describe('Subscription Worker', () => {
         });
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
+        await bindSubscription(subscription, project.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2443,7 +2444,7 @@ describe('Subscription Worker', () => {
 
         // Create an access policy in different project
         // This should trigger an error when the subscription is executed
-        const { repo: wsRepo } = await createTestProject({
+        const { repo: wsRepo, project } = await createTestProject({
           withClient: true,
           withRepo: true,
           project: {
@@ -2467,6 +2468,8 @@ describe('Subscription Worker', () => {
 
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
+
+        await bindSubscription(subscription, project.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -2566,7 +2569,11 @@ describe('Subscription Worker', () => {
           resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
         });
 
-        const { repo: wsRepo, membership } = await createTestProject({
+        const {
+          repo: wsRepo,
+          project,
+          membership,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
           project: {
@@ -2592,6 +2599,8 @@ describe('Subscription Worker', () => {
         expect(membership.accessPolicy).toBeDefined();
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
+
+        await bindSubscription(subscription, project.id);
 
         await superAdminRepo.deleteResource('ProjectMembership', membership.id);
 
@@ -2623,7 +2632,11 @@ describe('Subscription Worker', () => {
           resource: [{ resourceType: 'Patient', readonly: true }, { resourceType: 'Subscription' }],
         });
 
-        const { repo: wsRepo, membership } = await createTestProject({
+        const {
+          repo: wsRepo,
+          membership,
+          project,
+        } = await createTestProject({
           withClient: true,
           withRepo: true,
           project: {
@@ -2649,6 +2662,8 @@ describe('Subscription Worker', () => {
         expect(membership.accessPolicy).toBeDefined();
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
+
+        await bindSubscription(subscription, project.id);
 
         await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
@@ -3023,13 +3038,16 @@ describe('Subscription Worker', () => {
           withRepo: true,
         });
 
-        await wsSubRepo.createResource<Subscription>({
+        const subscription = await wsSubRepo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
           status: 'active',
           criteria: 'Patient',
           channel: { type: 'websocket' },
         });
+
+        expect(subscription).toBeDefined();
+        await bindSubscription(subscription, wsProject.id);
 
         const mockInfo = jest.fn();
         const getLoggerSpy = jest.spyOn(loggerModule, 'getLogger').mockReturnValue({
