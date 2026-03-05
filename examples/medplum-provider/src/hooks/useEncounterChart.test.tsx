@@ -358,7 +358,7 @@ describe('useEncounterChart', () => {
     await medplum.createResource(encounterWithoutPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([mockChargeItem]);
 
-    const { result } = renderHook(() => useEncounterChart(encounterWithoutPractitioner, mockPatient), { wrapper });
+    const { result } = renderHook(() => useEncounterChart(encounterWithoutPractitioner), { wrapper });
 
     await waitFor(() => {
       expect(result.current.chargeItems).toHaveLength(1);
@@ -430,9 +430,7 @@ describe('useEncounterChart', () => {
     await medplum.createResource(mockPractitioner);
     vi.mocked(getChargeItemsForEncounter).mockResolvedValue([]);
 
-    const patientRef: Reference<Patient> = { reference: 'Patient/patient-123' };
-
-    const { result } = renderHook(() => useEncounterChart(mockEncounter, patientRef), { wrapper });
+    const { result } = renderHook(() => useEncounterChart(mockEncounter), { wrapper });
 
     await waitFor(() => {
       expect(result.current.encounter?.id).toBe('encounter-123');
