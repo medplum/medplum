@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Badge,
-  Button,
   Divider,
   Group,
   Loader,
   Paper,
   ScrollArea,
   Stack,
+  Tabs,
   Text,
   ThemeIcon,
   Timeline,
@@ -26,12 +26,10 @@ import type {
 } from '@medplum/fhirtypes';
 import { AttachmentDisplay, ObservationTable, useMedplum, useResource } from '@medplum/react';
 import { IconCheck, IconClipboardCheck, IconFlask, IconSend } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchLabOrderRequisitionDocuments, getHealthGorillaRequisitionId } from '../../utils/documentReference';
 import { showErrorNotification } from '../../utils/notifications';
-import classes from './LabOrderDetails.module.css';
 
 interface LabOrderDetailsProps {
   order: ServiceRequest;
@@ -384,26 +382,19 @@ export function LabOrderDetails(props: LabOrderDetailsProps): JSX.Element {
               </Stack>
               <Divider />
               <Group justify="space-between" align="center">
-                <Group gap="xs">
-                  <Button
-                    className={cx(classes.button, {
-                      [classes.selected]: activeDetailTab === (order.status !== 'completed' ? 'progress' : 'report'),
-                    })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab(order.status !== 'completed' ? 'progress' : 'report')}
-                  >
-                    {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
-                  </Button>
-                  <Button
-                    className={cx(classes.button, { [classes.selected]: activeDetailTab === 'order' })}
-                    h={32}
-                    radius="xl"
-                    onClick={() => setActiveDetailTab('order')}
-                  >
-                    Order Details
-                  </Button>
-                </Group>
+                <Tabs
+                  value={activeDetailTab}
+                  onChange={(value) => setActiveDetailTab(value as 'report' | 'progress' | 'order')}
+                  variant="unstyled"
+                  className="pill-tabs"
+                >
+                  <Tabs.List>
+                    <Tabs.Tab value={order.status !== 'completed' ? 'progress' : 'report'}>
+                      {order.status !== 'completed' ? 'Progress Tracker' : 'Report'}
+                    </Tabs.Tab>
+                    <Tabs.Tab value="order">Order Details</Tabs.Tab>
+                  </Tabs.List>
+                </Tabs>
                 <Badge size="lg" color={getStatusColor(order.status)} variant="light">
                   {getStatusDisplayText(order.status)}
                 </Badge>
