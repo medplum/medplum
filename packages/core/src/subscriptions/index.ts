@@ -15,11 +15,7 @@ import type { ProfileResource, WithId } from '../utils';
 import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
-import {
-  DEFAULT_PING_INTERVAL_MS,
-  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
-  WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
-} from './constants';
+import { DEFAULT_PING_INTERVAL_MS, WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS, WS_SUB_TOKEN_REFRESH_INTERVAL_MS } from './constants';
 
 const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
 
@@ -319,7 +315,8 @@ export class SubscriptionManager {
 
     // Get binding token
     const { parameter } = await this.medplum.get<Parameters>(
-      `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`
+      `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`,
+      { cache: 'reload' }
     );
     const token = parameter?.find((param) => param.name === 'token')?.valueString;
     const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;

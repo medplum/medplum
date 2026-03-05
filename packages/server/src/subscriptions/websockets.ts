@@ -1,13 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { badRequest, createReference, EMPTY, normalizeErrorString } from '@medplum/core';
-import type { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
+import { badRequest, createReference, EMPTY, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import type { Bundle, Project, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import type { Redis } from 'ioredis';
 import type { JWTPayload } from 'jose';
 import crypto, { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
+import { getConfig } from '../config/loader';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
@@ -19,7 +20,13 @@ import type { MedplumAccessTokenClaims } from '../oauth/keys';
 import { verifyJwt } from '../oauth/keys';
 import { getLoginForAccessToken } from '../oauth/utils';
 import { setGauge } from '../otel/otel';
-import { removeActiveSubscriptions, removeUserActiveWebSocketSubscriptions } from '../pubsub';
+import {
+  addUserActiveWebSocketSubscription,
+  getUserActiveWebSocketSubscriptionCount,
+  removeActiveSubscriptions,
+  removeUserActiveWebSocketSubscriptions,
+  setActiveSubscription,
+} from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
@@ -41,7 +48,7 @@ export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { ty
 
 export interface WebSocketSubMetadata {
   rawToken: string;
-  criteriaResourceType: string;
+  criteriaResourceType: ResourceType;
 }
 
 export type WebSocketSubToken = MedplumAccessTokenClaims & AdditionalWsBindingClaims;
@@ -129,17 +136,17 @@ async function setupSubscriptionHandler(): Promise<void> {
         const redis = getCacheRedis();
         const redisKeys = deadSubscriptionIds.map((id) => `Subscription/${id}`);
         const cacheEntries = await redis.mget(...redisKeys);
-        const projectToSubsByResourceType = new Map<string, Map<string, string[]>>();
+        const projectToSubsByResourceType = new Map<string, Map<ResourceType, string[]>>();
         for (let i = 0; i < deadSubscriptionIds.length; i++) {
           const cacheEntryStr = cacheEntries[i];
           if (!cacheEntryStr) {
             continue;
           }
           const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-          const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+          const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
           let subsByResourceType = projectToSubsByResourceType.get(cacheEntry.projectId);
           if (!subsByResourceType) {
-            subsByResourceType = new Map<string, string[]>();
+            subsByResourceType = new Map<ResourceType, string[]>();
             projectToSubsByResourceType.set(cacheEntry.projectId, subsByResourceType);
           }
           let subIds = subsByResourceType.get(criteriaResourceType);
@@ -200,7 +207,7 @@ function subscribeWsToSubscription(
   ws: WebSocket,
   subscriptionId: string,
   rawToken: string,
-  criteriaResourceType: string
+  criteriaResourceType: ResourceType
 ): void {
   let wsSet = subToWsLookup.get(subscriptionId);
   let subEntryMap = wsToSubLookup.get(ws);
@@ -337,7 +344,18 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-    const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0];
+
+    // We can cast here because these criteria are proven to be valid when calling $get-ws-binding-token
+    const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
+    const subRef = `Subscription/${verifiedToken.subscription_id}`;
+    // We know exp is always defined for these tokens
+    const expiration = verifiedToken.exp as number;
+    await addUserActiveWebSocketSubscription(verifiedToken.profile, subRef);
+    await setActiveSubscription(cacheEntry.projectId, criteriaResourceType, subRef, {
+      criteria: cacheEntry.resource.criteria,
+      expiration,
+      author: verifiedToken.profile,
+    });
     subscribeWsToSubscription(socket, verifiedToken.subscription_id, rawToken, criteriaResourceType);
     ensureHeartbeatHandler();
     if (!userRef) {
@@ -346,11 +364,13 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     if (!socketProjectId) {
       socketProjectId = cacheEntry.projectId;
     }
+    const userSubCount = await getUserActiveWebSocketSubscriptionCount(verifiedToken.profile);
     globalLogger.info('[WS] Bound to subscription', {
       socketId,
       subscriptionId: verifiedToken.subscription_id,
       user: verifiedToken.profile,
       projectId: socketProjectId,
+      userSubscriptions: userSubCount,
     });
     // Send a handshake to notify client that this subscription is active for this connection
     socket.send(JSON.stringify(createHandshakeBundle(verifiedToken.subscription_id)));
@@ -400,7 +420,7 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
       return;
     }
     const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
-    const subIdsByResourceType = new Map<string, string[]>();
+    const subIdsByResourceType = new Map<ResourceType, string[]>();
     if (subMetadata) {
       subIdsByResourceType.set(subMetadata.criteriaResourceType, [verifiedToken.subscription_id]);
     }
@@ -538,8 +558,10 @@ export function createSubEventNotification<T extends WithId<Resource>>(
   };
 }
 
-export function getSubIdsByResourceType(subscriptionEntries: Map<string, WebSocketSubMetadata>): Map<string, string[]> {
-  const byResourceType = new Map<string, string[]>();
+export function getSubIdsByResourceType(
+  subscriptionEntries: Map<string, WebSocketSubMetadata>
+): Map<ResourceType, string[]> {
+  const byResourceType = new Map<ResourceType, string[]>();
   for (const [subscriptionId, metadata] of subscriptionEntries) {
     let ids = byResourceType.get(metadata.criteriaResourceType);
     if (!ids) {
@@ -553,7 +575,7 @@ export function getSubIdsByResourceType(subscriptionEntries: Map<string, WebSock
 
 export async function markInMemorySubscriptionsInactive(
   projectId: string,
-  subIdsByResourceType: Map<string, string[]>
+  subIdsByResourceType: Map<ResourceType, string[]>
 ): Promise<void> {
   let cacheRedis: Redis | undefined;
   try {
@@ -568,7 +590,7 @@ export async function markInMemorySubscriptionsInactive(
 
   // Collect all subscription refs and build a per-resource-type map for later cleanup
   const refStrs: string[] = [];
-  const refsByResourceType = new Map<string, string[]>();
+  const refsByResourceType = new Map<ResourceType, string[]>();
   for (const [resourceType, ids] of subIdsByResourceType) {
     const refs = ids.map((id) => `Subscription/${id}`);
     refsByResourceType.set(resourceType, refs);
@@ -628,5 +650,18 @@ export async function markInMemorySubscriptionsInactive(
         globalLogger.debug('Attempted to remove user subscription tracking when Redis is closed');
       }
     }
+  }
+}
+
+export async function checkWebSocketSubscriptionLimit(project: WithId<Project>, authorRef: string): Promise<void> {
+  const maxUserWsSubs =
+    project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
+    // We know this is defined in defaults so this is safe to cast
+    (getConfig().defaultMaxUserWebSocketSubscriptions as number);
+  const userSubCount = await getUserActiveWebSocketSubscriptionCount(authorRef);
+  if (userSubCount >= maxUserWsSubs) {
+    throw new OperationOutcomeError(
+      badRequest(`User has exceeded allotted maximum number of concurrent WebSocket subscriptions: ${maxUserWsSubs}`)
+    );
   }
 }
