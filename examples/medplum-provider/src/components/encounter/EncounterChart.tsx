@@ -3,14 +3,7 @@
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type {
-  ClinicalImpression,
-  Encounter,
-  Practitioner,
-  Provenance,
-  Reference,
-  Task,
-} from '@medplum/fhirtypes';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';

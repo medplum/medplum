@@ -40,9 +40,7 @@ export interface EncounterChartHook {
   setAppointment: Dispatch<SetStateAction<WithId<Appointment> | undefined>>;
 }
 
-export function useEncounterChart(
-  encounter: WithId<Encounter> | Reference<Encounter> | undefined
-): EncounterChartHook {
+export function useEncounterChart(encounter: WithId<Encounter> | Reference<Encounter> | undefined): EncounterChartHook {
   const medplum = useMedplum();
   const encounterResource = useResource(encounter);
   const patientReference = encounterResource?.subject as Reference<Patient> | undefined;

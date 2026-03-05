@@ -81,7 +81,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
 
-
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
       if (!patient) {
@@ -421,10 +420,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
                   variant="outline"
                   rightSection={<IconExternalLink size={14} />}
                   onClick={() =>
-                    window.open(
-                      `${CANDID_CLAIM_BASE_URL}${resolvedCandidEncounterId ?? candidEncounterId}`,
-                      '_blank'
-                    )
+                    window.open(`${CANDID_CLAIM_BASE_URL}${resolvedCandidEncounterId ?? candidEncounterId}`, '_blank')
                   }
                 >
                   View Claim on Candid
