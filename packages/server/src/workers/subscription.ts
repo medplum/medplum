@@ -49,8 +49,9 @@ import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
+import type {
+  ActiveSubscriptionEntry} from '../pubsub';
 import {
-  ActiveSubscriptionEntry,
   cleanupActiveSubs,
   getActiveSubscriptions,
   publish,

@@ -15,7 +15,11 @@ import type { ProfileResource, WithId } from '../utils';
 import { deepEquals, extractAccountReferences, getExtension, getReferenceString, resolveId } from '../utils';
 import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../websockets/reconnecting-websocket';
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
-import { DEFAULT_PING_INTERVAL_MS, WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS, WS_SUB_TOKEN_REFRESH_INTERVAL_MS } from './constants';
+import {
+  DEFAULT_PING_INTERVAL_MS,
+  WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
+  WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
+} from './constants';
 
 const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
 
