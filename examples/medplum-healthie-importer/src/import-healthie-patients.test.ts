@@ -168,18 +168,21 @@ describe('fetch-patients handler', () => {
     mockQuery.mockResolvedValueOnce({ medications: [] });
     mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+    mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
 
     // Patient 2498842 (the one with medications)
     mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[1]] }); // Patient with medications
     mockQuery.mockResolvedValueOnce(MOCK_MEDICATION_RESPONSE); // This patient has the medications
     mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+    mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
 
     // Patient 2501783 (the one with complete demographics)
     mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[4]] }); // Patient with full demo data
     mockQuery.mockResolvedValueOnce({ medications: [] });
     mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
     mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+    mockQuery.mockResolvedValueOnce({ user: { policies: [] } });
   }
 
   beforeAll(() => {

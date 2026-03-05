@@ -14,6 +14,7 @@ import { config } from 'dotenv';
 import { describe, expect, test } from 'vitest';
 import { HealthieClient } from './client';
 import { fetchAllergySensitivities } from './allergy';
+import { fetchPolicies } from './coverage';
 import { fetchMedications } from './medication';
 import { fetchHealthieFormAnswerGroups } from './questionnaire-response';
 import {
@@ -145,6 +146,27 @@ describe.skipIf(shouldSkip)('Healthie API Integration Tests', () => {
         expect(answer.id).toBeDefined();
         console.log(`  First form has ${form.form_answers.length} answers`);
       }
+    }
+  });
+
+  test('can fetch policies for a patient', async () => {
+    if (!testPatientId) {
+      console.log('Skipping: No test patient available');
+      return;
+    }
+
+    const policies = await fetchPolicies(healthieClient, testPatientId);
+
+    expect(Array.isArray(policies)).toBe(true);
+    console.log(`Found ${policies.length} policies for patient ${testPatientId}`);
+
+    if (policies.length > 0) {
+      const policy = policies[0];
+      expect(policy.id).toBeDefined();
+      expect(typeof policy.id).toBe('string');
+      console.log(
+        `  First policy: id=${policy.id}, priority=${policy.priority_type}, holder_relationship=${policy.holder_relationship}, payer=${policy.insurance_plan?.payer_name}`
+      );
     }
   });
 
