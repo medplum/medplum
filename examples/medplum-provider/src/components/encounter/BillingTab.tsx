@@ -442,7 +442,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
       <Group grow align="flex-start">
         <VisitDetailsPanel
-          key={encounter.meta?.lastUpdated}
           practitioner={practitioner}
           encounter={encounter}
           onEncounterChange={handleEncounterChange}
