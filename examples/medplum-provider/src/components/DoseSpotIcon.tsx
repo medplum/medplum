@@ -18,3 +18,24 @@ export function DoseSpotIcon(): JSX.Element {
     icon
   );
 }
+
+const dotStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: -4,
+  right: -4,
+  width: 10,
+  height: 10,
+  borderRadius: '50%',
+  backgroundColor: 'var(--mantine-color-red-filled)',
+};
+
+export function DoseSpotTileIcon(): JSX.Element {
+  const unreadCount = useDoseSpotNotifications();
+
+  return (
+    <>
+      <img src="/img/dosespot-icon.png" alt="DoseSpot" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+      {unreadCount ? <span style={dotStyle} /> : null}
+    </>
+  );
+}

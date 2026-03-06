@@ -23,7 +23,7 @@
 }
 
 .menuTitle {
-  height: 40px;
+  height: 32px;
   margin: 0;
   padding-left: 10px;
   display: flex;
@@ -142,4 +142,110 @@
 
 .divider {
   border-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
+}
+
+.appsSection {
+  display: grid;
+  margin-top: var(--mantine-spacing-md);
+}
+
+.appsExpanded {
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  max-height: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease, max-height 0ms linear 150ms;
+
+  &[data-opened] {
+    opacity: 1;
+    max-height: 500px;
+    pointer-events: auto;
+    transition: opacity 150ms ease, max-height 0ms linear 0ms;
+  }
+
+  & .appTilesGrid {
+    min-width: 230px;
+  }
+}
+
+.appsCollapsed {
+  grid-row: 1;
+  grid-column: 1;
+  align-self: start;
+  min-width: 0;
+  overflow: hidden;
+  max-height: 50px;
+  transition: opacity 150ms ease, max-height 0ms linear 0ms;
+
+  &[data-opened] {
+    opacity: 0;
+    max-height: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease, max-height 0ms linear 150ms;
+  }
+}
+
+.appTilesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mantine-spacing-xs);
+  padding: 4px var(--mantine-spacing-xs);
+}
+
+.appTile {
+  position: relative;
+  overflow: visible;
+  width: calc((100% - 4 * var(--mantine-spacing-xs)) / 5);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: white;
+  border: 1px solid var(--mantine-color-gray-3);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 100ms ease;
+
+  &:hover {
+    border-color: var(--mantine-color-gray-5);
+  }
+
+  &[data-active] {
+    border-color: var(--mantine-primary-color-light-color);
+  }
+
+  & svg:global(.tabler-icon) {
+    width: 20px;
+    height: 20px;
+  }
+
+  & > img {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+}
+
+.appsNotificationDot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--mantine-color-red-filled);
+}
+
+.appsNotificationDotCollapsed {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--mantine-color-red-filled);
 }
