@@ -184,10 +184,10 @@ export function LaunchPage(): JSX.Element {
         // sessionStorage so that navigating back to the sandbox patient picker and picking
         // a different patient re-triggers a valid callback (same state, new code).
 
-        // Replace the /launch?code=... history entry with / (home) so that the
-        // back button from the destination goes home rather than to the OAuth page.
-        // Then push the destination as a new history entry.
-        navigate('/', { replace: true });
+        // Silently replace the /launch?code=... history entry with / (home) so that
+        // the back button from the destination goes home rather than to the OAuth page.
+        // Using replaceState avoids a React re-render flash before navigating forward.
+        window.history.replaceState(window.history.state, '', '/');
         if (tokenData.patient) {
           sessionStorage.setItem('smart_patient', tokenData.patient);
           navigate('/patient');
