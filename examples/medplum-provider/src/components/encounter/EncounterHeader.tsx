@@ -123,19 +123,31 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             {status === 'cancelled' || status === 'finished' ? (
               <>
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.Unsigned && (
-                  <ActionIcon radius="50%" variant={'outline'} color={'gray'} onClick={handleSign}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
                     <IconLock size={16} />
                   </ActionIcon>
                 )}
 
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.Signed && (
-                  <ActionIcon radius="50%" variant={'outline'} color={'gray'} onClick={handleSign}>
+                  <ActionIcon
+                    radius="xl"
+                    variant="transparent"
+                    size={32}
+                    className="outline-icon-button"
+                    onClick={handleSign}
+                  >
                     <IconLockOpen size={16} />
                   </ActionIcon>
                 )}
 
                 {status === 'finished' && chartNoteStatus === ChartNoteStatus.SignedAndLocked && (
-                  <ActionIcon radius="50%" variant={'filled'} color={'blue'} onClick={handleSign}>
+                  <ActionIcon radius="xl" variant="filled" color="blue" onClick={handleSign}>
                     <IconLock size={16} />
                   </ActionIcon>
                 )}
@@ -167,7 +179,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
         <Box px="md" pb="md">
           <SegmentedControl
             value={activeTab}
-            onChange={(value: string) => handleTabChange(value)}
+            onChange={handleTabChange}
             data={[
               { label: 'Note & Tasks', value: 'notes' },
               { label: 'Details & Billing', value: 'details' },

@@ -31,7 +31,8 @@ import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getSystemRepo } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
+import { getProjectSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './utils';
@@ -71,7 +72,6 @@ jest.mock('node-fetch');
 
 describe('OAuth2 Token', () => {
   const app = express();
-  const systemRepo = getSystemRepo();
   const domain = randomUUID() + '.example.com';
   const email = `text@${domain}`;
   const password = randomUUID();
@@ -82,6 +82,7 @@ describe('OAuth2 Token', () => {
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
   let invalidAuthClient: ClientApplication;
+  let systemRepo: SystemRepository;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -89,6 +90,7 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
+    systemRepo = getProjectSystemRepo(project);
 
     // Add secondary secret for testing
     client.retiringSecret = generateSecret(32);
@@ -281,6 +283,27 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid authorization header');
+  });
+
+  test('Client credentials auth header empty secret', async () => {
+    // Create a client without an secret
+    const badClient = await withTestContext(() =>
+      systemRepo.createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        name: 'Bad Client',
+        description: 'Bad Client',
+        secret: '',
+        redirectUris: ['https://example.com'],
+      })
+    );
+
+    const header = Buffer.from(badClient.id + ':' + badClient.secret).toString('base64');
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .type('form')
+      .set('Authorization', 'Basic ' + header)
+      .send();
+    expect(res.status).toBe(401);
   });
 
   test('Token for client empty secret', async () => {
@@ -1772,6 +1795,63 @@ describe('OAuth2 Token', () => {
     expect(res2.body.encounter).toBeDefined();
   });
 
+  test.each([
+    {
+      fieldName: 'patient',
+      resourceType: 'Patient',
+      externalId: '0e4af968e733693405e943e1',
+      identifierSystem: 'https://healthgorilla.com/patient-id',
+      responseField: 'patient',
+    },
+    {
+      fieldName: 'encounter',
+      resourceType: 'Encounter',
+      externalId: 'VISIT-12345',
+      identifierSystem: 'https://example.com/visit-id',
+      responseField: 'encounter',
+    },
+  ])(
+    'Smart App Launch with $fieldName identifier returns identifier value',
+    async ({ fieldName, resourceType, externalId, identifierSystem, responseField }) => {
+      const fhirId = randomUUID();
+
+      // Create a SmartAppLaunch with both reference and identifier
+      const launch = await withTestContext(() =>
+        systemRepo.createResource<SmartAppLaunch>({
+          resourceType: 'SmartAppLaunch',
+          [fieldName]: {
+            reference: `${resourceType}/${fhirId}`,
+            identifier: {
+              system: identifierSystem,
+              value: externalId,
+            },
+          },
+        })
+      );
+
+      const res = await request(app).post('/auth/login').type('json').send({
+        clientId: client.id,
+        launch: launch.id,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+      expect(res.status).toBe(200);
+
+      const res2 = await request(app).post('/oauth2/token').type('form').send({
+        grant_type: 'authorization_code',
+        code: res.body.code,
+        client_id: client.id,
+        client_secret: client.secret,
+        code_verifier: 'xyz',
+      });
+      expect(res2.status).toBe(200);
+      // When identifier is present, it should be returned instead of the FHIR resource ID
+      expect(res2.body[responseField]).toBe(externalId);
+    }
+  );
+
   test('IP address allow', async () => {
     const res = await request(app).post('/auth/login').set('X-Forwarded-For', '5.5.5.5').type('json').send({
       clientId: client.id,
@@ -1962,13 +2042,13 @@ describe('OAuth2 Token', () => {
 
   test('Refresh tokens disabled for super admins', async () => {
     // Create a super admin project
-    const { project } = await createTestProject({ project: { superAdmin: true } });
+    const { project: superAdminProject } = await createTestProject({ project: { superAdmin: true } });
 
     // Create a test user
     const email = `test-${randomUUID()}@example.com`;
     const password = 'test-password';
     await inviteUser({
-      project,
+      project: superAdminProject,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'Test',

@@ -78,7 +78,6 @@ export function isPrimitiveType(code: string): boolean {
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
 export const validationRegexes: Record<string, RegExp> = {
-  base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
   date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
@@ -553,7 +552,7 @@ class ResourceValidator implements CrawlerVisitor {
    * @param path - The FHIR element path for issue reporting.
    */
   private validateBase64Binary(str: string, path: string): void {
-    if (!validationRegexes.base64Binary.exec(str)) {
+    if (!isValidBase64Binary(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid base64Binary format'));
       return;
     }
@@ -780,4 +779,28 @@ function isTerminologyType(type: string): boolean {
     default:
       return false;
   }
+}
+
+function isValidBase64Binary(str: string): boolean {
+  // validates FHIR base64Binary format without regex backtracking to avoid catastrophic backtracking
+  if (str.length === 0) {
+    return false;
+  }
+  let padding = 0;
+  if (str.endsWith('==')) {
+    padding = 2;
+  } else if (str.endsWith('=')) {
+    padding = 1;
+  }
+
+  const dataLen = str.length - padding;
+  if (dataLen < 0) {
+    return false;
+  }
+  // add padding to dataLen instead of using str.length to check for invalid padding like ===
+  if ((padding + dataLen) % 4 !== 0) {
+    return false;
+  }
+  const dataPart = padding > 0 ? str.slice(0, -padding) : str;
+  return /^[A-Za-z\d+/]+$/.test(dataPart);
 }

@@ -5,21 +5,21 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Device } from './Device';
-import { Extension } from './Extension';
-import { Location } from './Location';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Period } from './Period';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { Signature } from './Signature';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Device } from './Device.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { Signature } from './Signature.d.ts';
 
 /**
  * Provenance of a resource is a record that describes entities and

@@ -4,6 +4,7 @@ import type { BackgroundJobContext, WithId } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { addBackgroundJobs, closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config/loader';
+import type { WorkerName } from '../config/types';
 import { closeDatabase, initDatabase } from '../database';
 import { loadStructureDefinitions } from '../fhir/structure';
 import { getLogger } from '../logger';
@@ -13,6 +14,7 @@ import { initBinaryStorage } from '../storage/loader';
 import * as cronModule from './cron';
 import * as downloadModule from './download';
 import * as subscriptionModule from './subscription';
+import { queueRegistry } from './utils';
 
 describe('Workers', () => {
   beforeAll(() => {
@@ -21,7 +23,7 @@ describe('Workers', () => {
 
   test('Init and close', async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
+    initRedis(config);
     await initDatabase(config);
     await seedDatabase(config);
     initBinaryStorage('file:binary');
@@ -30,6 +32,44 @@ describe('Workers', () => {
     await closeDatabase();
     await closeRedis();
   });
+
+  test('Init with workers.enabled = [] (HTTP-only pool)', async () => {
+    const config = await loadTestConfig();
+    config.workers = { enabled: [] };
+    initRedis(config);
+    await initDatabase(config);
+    await seedDatabase(config);
+    initBinaryStorage('file:binary');
+    initWorkers(config);
+
+    // Queues should still be available for enqueuing even with no workers enabled
+    expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
+
+    await closeWorkers();
+    await closeDatabase();
+    await closeRedis();
+  });
+
+  test.each([[[]], [['subscription']], [['subscription', '*']]] as [(WorkerName | '*')[]][])(
+    'Init with workers.enabled %s',
+    async (enabledWorkers) => {
+      const config = await loadTestConfig();
+      config.workers = { enabled: enabledWorkers };
+      initRedis(config);
+      await initDatabase(config);
+      await seedDatabase(config);
+      initBinaryStorage('file:binary');
+      initWorkers(config);
+
+      // Queues should still be available regardless of which workers are enabled
+      expect(queueRegistry.get('SubscriptionQueue')).toBeDefined();
+      expect(queueRegistry.get('DownloadQueue')).toBeDefined();
+
+      await closeWorkers();
+      await closeDatabase();
+      await closeRedis();
+    }
+  );
 
   describe('addBackgroundJobs', () => {
     afterEach(() => {

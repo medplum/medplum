@@ -52,9 +52,36 @@ export interface MedplumSourceInfraConfig {
   rdsReaderInstanceType?: ValueOrExternalSecret<string>;
   rdsProxyEnabled?: ValueOrExternalSecret<boolean>;
   rdsClusterParameters?: StringMap;
+  rdsForceRetain?: ValueOrExternalSecret<boolean>;
   rdsAutoMinorVersionUpgrade?: ValueOrExternalSecret<boolean>;
   cacheNodeType?: ValueOrExternalSecret<string>;
   cacheSecurityGroupId?: ValueOrExternalSecret<string>;
+  cacheEngine?: ValueOrExternalSecret<string>;
+  cacheEngineVersion?: ValueOrExternalSecret<string>;
+  cacheRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  rateLimitRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  pubSubRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: ValueOrExternalSecret<string>;
+    securityGroupId?: ValueOrExternalSecret<string>;
+    engine?: ValueOrExternalSecret<string>;
+    engineVersion?: ValueOrExternalSecret<string>;
+  };
   desiredServerCount: ValueOrExternalSecret<number>;
   serverImage: ValueOrExternalSecret<string>;
   serverMemory: ValueOrExternalSecret<number>;
@@ -96,6 +123,40 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: ValueOrExternalSecret<string>;
+    serverImage?: ValueOrExternalSecret<string>;
+    serverMemory?: ValueOrExternalSecret<number>;
+    serverCpu?: ValueOrExternalSecret<number>;
+    desiredCount: ValueOrExternalSecret<number>;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: ValueOrExternalSecret<number>;
+      maxCapacity: ValueOrExternalSecret<number>;
+      targetUtilizationPercent: ValueOrExternalSecret<number>;
+      scaleInCooldown: ValueOrExternalSecret<number>;
+      scaleOutCooldown: ValueOrExternalSecret<number>;
+    };
+    additionalContainers?: {
+      name: ValueOrExternalSecret<string>;
+      image: ValueOrExternalSecret<string>;
+      cpu?: ValueOrExternalSecret<number>;
+      memory?: ValueOrExternalSecret<number>;
+      essential?: ValueOrExternalSecret<boolean>;
+      command?: ValueOrExternalSecret<string>[];
+      environment?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: ValueOrExternalSecret<boolean>;
   rdsPersistentParameterGroups?: ValueOrExternalSecret<boolean>;
@@ -156,8 +217,35 @@ export interface MedplumInfraConfig {
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
+  rdsForceRetain?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
+  cacheEngine?: string;
+  cacheEngineVersion?: string;
+  cacheRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  rateLimitRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  pubSubRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
+  backgroundJobsRedis?: {
+    nodeType?: string;
+    securityGroupId?: string;
+    engine?: string;
+    engineVersion?: string;
+  };
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
@@ -199,6 +287,40 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+  workers?: {
+    enabled?: string[];
+    bullmq?: Record<string, unknown>;
+  };
+  workerServices?: {
+    id: string;
+    serverImage?: string;
+    serverMemory?: number;
+    serverCpu?: number;
+    desiredCount: number;
+    environment?: StringMap;
+    workers?: {
+      enabled?: string[];
+      bullmq?: Record<string, unknown>;
+    };
+    fargateAutoScaling?: {
+      minCapacity: number;
+      maxCapacity: number;
+      targetUtilizationPercent: number;
+      scaleInCooldown: number;
+      scaleOutCooldown: number;
+    };
+    additionalContainers?: {
+      name: string;
+      image: string;
+      cpu?: number;
+      memory?: number;
+      essential?: boolean;
+      command?: string[];
+      environment?: {
+        [key: string]: string;
+      };
+    }[];
+  }[];
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;

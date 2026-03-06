@@ -2,9 +2,16 @@
 sidebar_position: 5.2
 ---
 
-# Update User Email
+# User $update-email
 
 This operation updates both the [`User`](/docs/api/fhir/medplum/user) resource (for authentication) and optionally the associated profile resource (Patient, Practitioner, or RelatedPerson) with the new email address.
+
+## Use Cases
+
+- **Patient Email Changes**: Update a patient's email address for both login credentials and contact information
+- **Provider Contact Updates**: Keep practitioner email addresses synchronized between authentication and profile records
+- **Credential Recovery Scenarios**: Update email addresses during account recovery workflows
+- **User Migration**: Change email addresses as part of user account migration or consolidation
 
 ```
 POST [base]/User/[id]/$update-email
@@ -122,4 +129,3 @@ await medplum.post(`fhir/R4/User/${userId}/$update-email`, {
 - [User Management Guide](/docs/user-management)
 - [Project vs Server Scoped Users](/docs/user-management/project-vs-server-scoped-users)
 - [User Resource](/docs/api/fhir/medplum/user)
-

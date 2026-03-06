@@ -38,6 +38,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import type { ReturnAckCategory } from './agent';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import type { CdsDiscoveryResponse, CdsRequest, CdsResponse } from './cds';
@@ -107,7 +108,7 @@ import {
  */
 export type ClientLogLevel = 'none' | 'basic' | 'verbose';
 
-export const MEDPLUM_VERSION: string = import.meta.env.MEDPLUM_VERSION ?? '';
+export const MEDPLUM_VERSION: string = import.meta.env?.MEDPLUM_VERSION ?? '';
 export const MEDPLUM_CLI_CLIENT_ID = 'medplum-cli';
 export const DEFAULT_ACCEPT = ContentType.FHIR_JSON + ', */*; q=0.1';
 
@@ -195,6 +196,17 @@ export interface MedplumClientOptions {
   fhircastHubUrl?: string;
 
   /**
+   * CDS Services URL.
+   *
+   * Default value is `baseUrl + "/cds-services"`.
+   *
+   * Can be specified as absolute URL or relative to `baseUrl`.
+   *
+   * Use this if you want to use a different path when connecting to a CDS Services endpoint.
+   */
+  cdsServicesUrl?: string;
+
+  /**
    * The client ID.
    *
    * Client ID can be used for SMART-on-FHIR customization.
@@ -252,6 +264,17 @@ export interface MedplumClientOptions {
    * Default value is `0`, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The maximum time in milliseconds to wait between retries for failed requests.
+   *
+   * When the client encounters a rate-limited response (HTTP 429) or a server error (HTTP 5xx), it will automatically retry the request after a delay. The delay is calculated using an exponential backoff strategy, and this setting defines the maximum delay time.
+   *
+   * If the retry delay exceeds this maximum time, the client will not retry the request and will return the error response to the caller immediately. Setting this value to zero disables retries for failed requests.
+   *
+   * Default value is `2000` (2 seconds).
+   */
+  maxRetryTime?: number;
 
   /**
    * The refresh grace period in milliseconds.
@@ -422,6 +445,12 @@ export interface PushToAgentOptions extends MedplumRequestOptions {
    * Time to wait before request timeout in milliseconds; defaults to `10000` (10 s)
    */
   waitTimeout?: number;
+  /**
+   * The ACK-level that the agent should wait for when sending HL7 messages.
+   * - `'first'`: Return on the first ACK message received (default)
+   * - `'application'`: Wait for application-level ACK (AA), skipping commit ACKs (CA)
+   */
+  returnAck?: ReturnAckCategory;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -933,10 +962,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly fhircastHubUrl: string;
+  private readonly cdsServicesUrl: string;
   private readonly defaultHeaders: Record<string, string>;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly maxRetryTime: number;
   private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
@@ -976,6 +1007,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
     this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
+    this.cdsServicesUrl = concatUrls(this.baseUrl, options?.cdsServicesUrl ?? 'cds-services');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.credentialsInHeader = options?.authCredentialsMethod === 'header';
@@ -983,6 +1015,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
     this.logLevel = this.initializeLogLevel(options);
+    this.maxRetryTime = options?.maxRetryTime ?? 2000;
 
     this.cacheTime =
       options?.cacheTime ?? (!isBrowserEnvironment() ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -1126,6 +1159,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Returns the current CDS Services URL.
+   * By default, this is set to `https://api.medplum.com/cds-services`.
+   * This can be overridden by setting the `cdsServicesUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current CDS Services URL.
+   */
+  getCdsServicesUrl(): string {
+    return this.cdsServicesUrl;
+  }
+
+  /**
    * Returns default headers to include in all requests.
    * This can be used to set custom headers such as Cookies or Authorization headers.
    * @category HTTP
@@ -1251,14 +1295,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: URL | string, body?: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
+  post<T = any>(url: URL | string, body?: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<T> {
     url = url.toString();
     this.setRequestBody(options, body);
     if (contentType) {
       this.setRequestContentType(options, contentType);
     }
     this.invalidateUrl(url);
-    return this.request('POST', url, options);
+    return this.request<T>('POST', url, options);
   }
 
   /**
@@ -1338,7 +1382,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     options?: MedplumRequestOptions
   ): Promise<LoginAuthenticationResponse> {
     const { codeChallengeMethod, codeChallenge } = await this.startPkce();
-    return this.post(
+    return this.post<LoginAuthenticationResponse>(
       'auth/newuser',
       {
         ...newUserRequest,
@@ -1348,7 +1392,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       },
       undefined,
       options
-    ) as Promise<LoginAuthenticationResponse>;
+    );
   }
 
   /**
@@ -1363,7 +1407,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     newProjectRequest: NewProjectRequest,
     options?: MedplumRequestOptions
   ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newproject', newProjectRequest, undefined, options) as Promise<LoginAuthenticationResponse>;
+    return this.post<LoginAuthenticationResponse>('auth/newproject', newProjectRequest, undefined, options);
   }
 
   /**
@@ -1378,7 +1422,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     newPatientRequest: NewPatientRequest,
     options?: MedplumRequestOptions
   ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newpatient', newPatientRequest, undefined, options) as Promise<LoginAuthenticationResponse>;
+    return this.post<LoginAuthenticationResponse>('auth/newpatient', newPatientRequest, undefined, options);
   }
 
   /**
@@ -1392,7 +1436,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     loginRequest: EmailPasswordLoginRequest,
     options?: MedplumRequestOptions
   ): Promise<LoginAuthenticationResponse> {
-    return this.post(
+    return this.post<LoginAuthenticationResponse>(
       'auth/login',
       {
         ...(await this.ensureCodeChallenge(loginRequest)),
@@ -1401,7 +1445,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       },
       undefined,
       options
-    ) as Promise<LoginAuthenticationResponse>;
+    );
   }
 
   /**
@@ -1417,7 +1461,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     loginRequest: GoogleLoginRequest,
     options?: MedplumRequestOptions
   ): Promise<LoginAuthenticationResponse> {
-    return this.post(
+    return this.post<LoginAuthenticationResponse>(
       'auth/google',
       {
         ...(await this.ensureCodeChallenge(loginRequest)),
@@ -1426,7 +1470,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       },
       undefined,
       options
-    ) as Promise<LoginAuthenticationResponse>;
+    );
   }
 
   /**
@@ -1510,21 +1554,28 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Exchange an external access token for a Medplum access token.
    * @param token - The access token that was generated by the external identity provider.
    * @param clientId - The ID of the `ClientApplication` in your Medplum project that will be making the exchange request.
+   * @param membershipId - Optional membership ID to restrict the exchange to a specific ProjectMembership.
    * @returns The user profile resource.
    * @category Authentication
    */
-  async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
+  async exchangeExternalAccessToken(token: string, clientId?: string, membershipId?: string): Promise<ProfileResource> {
     clientId = clientId ?? this.clientId;
     if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
 
-    return this.fetchTokens({
+    const params: Record<string, string> = {
       grant_type: OAuthGrantType.TokenExchange,
       subject_token_type: OAuthTokenType.AccessToken,
       client_id: clientId,
       subject_token: token,
-    });
+    };
+
+    if (membershipId) {
+      params.membership_id = membershipId;
+    }
+
+    return this.fetchTokens(params);
   }
 
   /**
@@ -2014,7 +2065,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (options?.expandProfile) {
           const url = this.fhirUrl('StructureDefinition', '$expand-profile');
           url.search = new URLSearchParams({ url: profileUrl }).toString();
-          const sdBundle = (await this.post(url.toString(), {})) as Bundle<StructureDefinition>;
+          const sdBundle = await this.post<Bundle<StructureDefinition>>(url.toString(), {});
           indexStructureDefinitionBundle(sdBundle);
         } else {
           // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
@@ -2228,7 +2279,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const url = this.fhirUrl(resource.resourceType);
     this.setRequestHeader(options, 'If-None-Exist', query);
 
-    const result = await this.post(url, resource, undefined, options);
+    const result = await this.post<WithId<T>>(url, resource, undefined, options);
     this.cacheResource(result, options);
     this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
     this.invalidateSearches(resource.resourceType);
@@ -2942,7 +2993,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     waitForResponse?: boolean,
     options?: PushToAgentOptions
   ): Promise<any> {
-    const { waitTimeout, ...requestOptions } = options ?? {};
+    const { waitTimeout, returnAck, ...requestOptions } = options ?? {};
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
@@ -2951,6 +3002,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         contentType,
         waitForResponse,
         ...(waitTimeout !== undefined ? { waitTimeout } : undefined),
+        ...(returnAck !== undefined ? { returnAck } : undefined),
       },
       ContentType.FHIR_JSON,
       requestOptions
@@ -2963,7 +3015,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The list of CDS services.
    */
   getCdsServices(options?: MedplumRequestOptions): Promise<CdsDiscoveryResponse> {
-    return this.get<CdsDiscoveryResponse>('/cds-services', options);
+    return this.get<CdsDiscoveryResponse>(this.cdsServicesUrl, options);
   }
 
   /**
@@ -2974,7 +3026,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The CDS response.
    */
   callCdsService(id: string, body: CdsRequest, options?: MedplumRequestOptions): Promise<CdsResponse> {
-    return this.post(`/cds-services/${id}`, body, ContentType.JSON, options);
+    return this.post(concatUrls(this.cdsServicesUrl, id), body, ContentType.JSON, options);
   }
 
   /**
@@ -3424,6 +3476,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setCacheEntry(key: string, value: ReadablePromise<any>, options: MedplumRequestOptions | undefined): void {
     if (this.isCacheEnabled(options)) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
+
+      // If the request is aborted, remove the abort result from the cache so
+      // later attempts will not re-resolve the abort.
+      if (options?.signal) {
+        options.signal.addEventListener('abort', () => {
+          this.requestCache.delete(key);
+        });
+      }
     }
   }
 
@@ -3574,7 +3634,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
-        const maxRetryTime = options.maxRetryTime ?? 2_000;
+        const maxRetryTime = options.maxRetryTime ?? this.maxRetryTime;
         // Return to user immediately if delay would be very long
         if (delayMs > maxRetryTime) {
           return response;
@@ -3731,7 +3791,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     };
 
     // Execute the batch request
-    const response = (await this.post(this.fhirBaseUrl, batch)) as Bundle;
+    const response = await this.post<Bundle>(this.fhirBaseUrl, batch);
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
@@ -4173,11 +4233,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       events,
     } as PendingSubscriptionRequest;
 
-    const body = (await this.post(
+    const body = await this.post<{ 'hub.channel.endpoint': string }>(
       this.fhircastHubUrl,
       serializeFhircastSubscriptionRequest(subRequest),
       ContentType.FORM_URL_ENCODED
-    )) as { 'hub.channel.endpoint': string };
+    );
 
     const endpoint = body['hub.channel.endpoint'];
     if (!endpoint) {

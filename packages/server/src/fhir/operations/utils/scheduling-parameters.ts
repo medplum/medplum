@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ActivityDefinition, Duration, Schedule } from '@medplum/fhirtypes';
+import type { ActivityDefinition, CodeableConcept, Duration, Schedule } from '@medplum/fhirtypes';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -18,13 +18,6 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
-// The SchedulingParameters extension constrains codes:
-// - `system` and `code` must be present
-export type HardCoding = {
-  system: string;
-  code: string;
-};
-
 // The allowed nested extensions
 type SchedulingParametersExtensionExtension =
   | { url: 'bufferBefore'; valueDuration: HardDuration }
@@ -32,7 +25,7 @@ type SchedulingParametersExtensionExtension =
   | { url: 'alignmentInterval'; valueDuration: HardDuration }
   | { url: 'alignmentOffset'; valueDuration: HardDuration }
   | { url: 'duration'; valueDuration: HardDuration }
-  | { url: 'serviceType'; valueCoding: HardCoding }
+  | { url: 'serviceType'; valueCodeableConcept: CodeableConcept }
   | { url: 'timezone'; valueCode: string }
   | {
       url: 'availability';
@@ -66,7 +59,7 @@ export type SchedulingParameters = {
   alignmentInterval: number; // minutes
   alignmentOffset: number; // minutes
   duration: number; // minutes
-  serviceType: HardCoding[]; // codes that may be booked into this availability
+  serviceType: CodeableConcept[]; // codes that may be booked into this availability
   timezone?: string;
 };
 
@@ -152,7 +145,9 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
     );
 
     // serviceType has cardinality 0..*
-    const serviceType = extension.extension.filter((ext) => ext.url === 'serviceType').map((ext) => ext.valueCoding);
+    const serviceType = extension.extension
+      .filter((ext) => ext.url === 'serviceType')
+      .map((ext) => ext.valueCodeableConcept);
 
     const availability = rawAvailability.map((ext) => ({
       dayOfWeek: ext.valueTiming.repeat.dayOfWeek,

@@ -5,38 +5,38 @@
  * Do not edit manually.
  */
 
-import { Annotation } from './Annotation';
-import { Appointment } from './Appointment';
-import { AppointmentResponse } from './AppointmentResponse';
-import { CarePlan } from './CarePlan';
-import { CareTeam } from './CareTeam';
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { Condition } from './Condition';
-import { Device } from './Device';
-import { DiagnosticReport } from './DiagnosticReport';
-import { DocumentReference } from './DocumentReference';
-import { Encounter } from './Encounter';
-import { Endpoint } from './Endpoint';
-import { Extension } from './Extension';
-import { Group } from './Group';
-import { Identifier } from './Identifier';
-import { Location } from './Location';
-import { Media } from './Media';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Observation } from './Observation';
-import { Organization } from './Organization';
-import { Patient } from './Patient';
-import { Practitioner } from './Practitioner';
-import { PractitionerRole } from './PractitionerRole';
-import { Procedure } from './Procedure';
-import { Reference } from './Reference';
-import { RelatedPerson } from './RelatedPerson';
-import { Resource } from './Resource';
-import { ServiceRequest } from './ServiceRequest';
-import { Specimen } from './Specimen';
-import { Task } from './Task';
+import type { Annotation } from './Annotation.d.ts';
+import type { Appointment } from './Appointment.d.ts';
+import type { AppointmentResponse } from './AppointmentResponse.d.ts';
+import type { CarePlan } from './CarePlan.d.ts';
+import type { CareTeam } from './CareTeam.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { Condition } from './Condition.d.ts';
+import type { Device } from './Device.d.ts';
+import type { DiagnosticReport } from './DiagnosticReport.d.ts';
+import type { DocumentReference } from './DocumentReference.d.ts';
+import type { Encounter } from './Encounter.d.ts';
+import type { Endpoint } from './Endpoint.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Group } from './Group.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Location } from './Location.d.ts';
+import type { Media } from './Media.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Observation } from './Observation.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Practitioner } from './Practitioner.d.ts';
+import type { PractitionerRole } from './PractitionerRole.d.ts';
+import type { Procedure } from './Procedure.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedPerson } from './RelatedPerson.d.ts';
+import type { Resource } from './Resource.d.ts';
+import type { ServiceRequest } from './ServiceRequest.d.ts';
+import type { Specimen } from './Specimen.d.ts';
+import type { Task } from './Task.d.ts';
 
 /**
  * Representation of the content produced in a DICOM imaging study. A

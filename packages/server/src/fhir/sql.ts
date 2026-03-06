@@ -1,10 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  SearchParameterType,
+  append,
+  conflict,
+  normalizeOperationOutcome,
+  serverTimeout,
+} from '@medplum/core';
 import type { Period } from '@medplum/fhirtypes';
 import { env } from 'node:process';
 import type { Client, Pool, PoolClient } from 'pg';
 import { getLogger } from '../logger';
+import type { ColumnSearchParameterImplementation } from './searchparameter';
 
 let DEBUG: string | undefined = env['SQL_DEBUG'];
 
@@ -1278,4 +1286,64 @@ export function replaceNullWithUndefinedInRows(rows: any[]): void {
       row[k] ??= undefined;
     }
   }
+}
+
+export function getSearchParamColumnType(impl: ColumnSearchParameterImplementation): string {
+  let baseColumnType: string;
+  switch (impl.type) {
+    case SearchParameterType.UUID:
+      baseColumnType = 'UUID';
+      break;
+    case SearchParameterType.BOOLEAN:
+      baseColumnType = 'BOOLEAN';
+      break;
+    case SearchParameterType.DATE:
+      baseColumnType = 'DATE';
+      break;
+    case SearchParameterType.DATETIME:
+      baseColumnType = 'TIMESTAMPTZ';
+      break;
+    case SearchParameterType.NUMBER:
+    case SearchParameterType.QUANTITY:
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
+        baseColumnType = 'INTEGER';
+      } else {
+        baseColumnType = 'DOUBLE PRECISION';
+      }
+      break;
+    default:
+      baseColumnType = 'TEXT';
+  }
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
+}
+
+// PostgreSQL btree index entries have a maximum size of 2704 bytes. The index tuple includes
+// a few bytes of overhead on top of the column data, but we use a more conservative limit
+// of 2048 bytes for the data payload to stay well within the btree maximum.
+export const MAX_INDEX_DATA_BYTES = 2048;
+const truncationEncoder = new TextEncoder();
+const truncationDecoder = new TextDecoder();
+const truncationBuffer = new Uint8Array(MAX_INDEX_DATA_BYTES);
+
+/**
+ * Apply a maximum string length to ensure the value can be stored in a btree-indexed column.
+ * Uses {@link TextEncoder.encodeInto} to write the longest valid UTF-8 prefix that fits
+ * within the byte limit, avoiding both partial multi-byte characters and unnecessarily
+ * aggressive truncation.
+ * @param value - The column value to truncate.
+ * @returns The possibly truncated column value.
+ */
+export function truncateTextColumn(value: string | null | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if (truncationEncoder.encode(value).length <= MAX_INDEX_DATA_BYTES) {
+    return value;
+  }
+
+  // encodeInto writes as many complete UTF-8 characters as fit in the buffer,
+  // never producing a partial multi-byte sequence.
+  const { written } = truncationEncoder.encodeInto(value, truncationBuffer);
+  return truncationDecoder.decode(truncationBuffer.subarray(0, written));
 }

@@ -107,7 +107,7 @@ The first decision you need to make is which FHIR resource type semantically mod
 
 - **`HealthcareService`**: Best for service-based access control where tenants represent different departments or services (e.g., Cardiology Department, Oncology Department).
 
-- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to small care teams that work directly with a patient.
+- **`CareTeam`**: Best for care coordination scenarios where clinical data needs to be tightly contained to the providers working directly with a patient. Each patient gets their own `CareTeam` resource (e.g., `CareTeam/alice-smith`, `CareTeam/bob-jones`), and a clinician's `ProjectMembership` accumulates one access entry per patient as they are assigned to their care. See [Modeling Provider Organizations](/docs/administration/provider-directory/provider-organizations) for a deeper look at how CareTeams fit into your provider data model.
 
 **You are not limited to these resource types.** You can use any FHIR resource type that accurately models your tenants. The implementation patterns shown in the following steps apply regardless of your choice.
 
@@ -184,30 +184,28 @@ graph TB
 %%{init: {'theme': 'neutral' }}%%
 graph TB
     subgraph CTSection[" "]
-        UserCT[User/user-1]
+        UserCT[User/nurse-jane]
         PMCT[ProjectMembership/membership-1]
-        CT1[CareTeam/diabetes-care-team]
-        CT2[CareTeam/hypertension-care-team]
-        PatCT1[Patient/patient-1]
-        PatCT2[Patient/patient-2]
-        PatCTShared[Patient/patient-3<br/>Shared]
+        CT1[CareTeam/alice-smith]
+        CT2[CareTeam/bob-jones]
+        PatCT1[Patient/alice-smith]
+        PatCT2[Patient/bob-jones]
         UserCT --> PMCT
         PMCT --> CT1
         PMCT --> CT2
         CT1 --> PatCT1
-        CT1 --> PatCTShared
         CT2 --> PatCT2
-        CT2 --> PatCTShared
     end
-    
+
     style UserCT fill:#e8f5e9
     style PMCT fill:#fff4e1
     style CT1 fill:#e1f5ff
     style CT2 fill:#e1f5ff
     style PatCT1 fill:#e8f5e9
     style PatCT2 fill:#e8f5e9
-    style PatCTShared fill:#fff4e1
 ```
+
+_Each patient has their own CareTeam. Nurse Jane's ProjectMembership accumulates one access entry per patient as she is assigned to their care._
 
   </TabItem>
 </Tabs>
@@ -292,7 +290,7 @@ Compartments are an advanced FHIR concept that gives you a way to label a resour
 
 ### Adding references to the meta.compartment field
 
-In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation to add references to the **meta.compartment** field.
+In all resources, the `meta.compartment` field is **readonly**. You cannot modify it directly. Instead, you need to use the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation to add references to the **meta.compartment** field.
 
 
 <Tabs groupId="tenant-type">
@@ -360,7 +358,7 @@ This will update the **meta.compartment** field of the Patient resource to inclu
 </TabItem>
 </Tabs>
 
-Any resource can be assigned to a tenant with this model. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation on that specific resource.
+Any resource can be assigned to a tenant with this model. For example, you could also assign a [Questionnaire](/docs/api/fhir/resources/questionnaire) to a tenant by calling the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation on that specific resource.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -392,7 +390,7 @@ Any resource can be assigned to a tenant with this model. For example, you could
 
 For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse) belongs to a Patient if it has a reference to the Patient in the `subject` or `author` field, a [Communication](/docs/api/fhir/resources/communication) belongs to a Patient if it has a reference to the Patient in the `subject`, `recipient`, or `sender` field, etc.
 
-**To assign a Patient and all resources that _"belong"_ to that Patient to a tenant, call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation with `propagate` set to `true`.**
+**To assign a Patient and all resources that _"belong"_ to that Patient to a tenant, call the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation with `propagate` set to `true`.**
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -418,13 +416,13 @@ For example, a [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireres
   </TabItem>
 </Tabs>
 
-**You only need to call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation once when assigning Patient to a tenant.** You do not need to call it again when new resources are created that _"belong"_ to that Patient because they will inherit the `meta.compartment` field from the Patient.
+**You only need to call the [$set-accounts](/docs/api/fhir/operations/set-accounts) operation once when assigning Patient to a tenant.** You do not need to call it again when new resources are created that _"belong"_ to that Patient because they will inherit the `meta.compartment` field from the Patient.
 
 ### What if you need to assign a Patient to multiple tenants?
 
 This is common in scenarios where you need the Patient to be visible across multiple organizations, services, or care teams.
 
-To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) with multiple tenant references. This will label the Patient and all resources that _"belong"_ to that Patient with the multiple tenant references.
+To assign a Patient to multiple tenants, you can call the [$set-accounts](/docs/api/fhir/operations/set-accounts) with multiple tenant references. This will label the Patient and all resources that _"belong"_ to that Patient with the multiple tenant references.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -583,7 +581,7 @@ Here is an example method for updating a User's ProjectMembership to add a new t
 
 ### What if your User needs to access multiple tenants?
 
-To grant access to multiple tenants, include multiple entries in the `access` array, each with different tenant parameters. 
+To grant access to multiple tenants, include multiple entries in the `access` array, each with different tenant parameters. **This pattern scales to any number of tenants per user.** For example, a nurse with a panel of 100 students would have 100 entries in their `access` array — one per student's CareTeam — and this is expected and supported.
 
 <Tabs groupId="tenant-type">
   <TabItem value="organization" label="Organization">
@@ -655,7 +653,7 @@ To grant access to multiple tenants, include multiple entries in the `access` ar
       "parameter": [
         {
           "name": "care_team",
-          "valueReference": { "reference": "CareTeam/diabetes-care-team" }
+          "valueReference": { "reference": "CareTeam/alice-smith" }
         }
       ]
     },
@@ -664,10 +662,11 @@ To grant access to multiple tenants, include multiple entries in the `access` ar
       "parameter": [
         {
           "name": "care_team",
-          "valueReference": { "reference": "CareTeam/hypertension-care-team" }
+          "valueReference": { "reference": "CareTeam/bob-jones" }
         }
       ]
     }
+    // ... one entry per patient CareTeam the user is assigned to
   ]
 }
 ```

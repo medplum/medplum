@@ -6,6 +6,7 @@ import {
   createReference,
   EMPTY,
   getReferenceString,
+  isNotFound,
   isResource,
   isString,
   OperationOutcomeError,
@@ -20,10 +21,12 @@ import type {
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
+  Resource,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
-import { getSystemRepo, Repository } from './repo';
+import type { SystemRepository } from './repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -40,12 +43,24 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
   const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
-  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const project = await systemRepo.readReference(membership.project);
-  const allowedProjects: WithId<Project>[] = [project];
+  const globalSystemRepo = getGlobalSystemRepo();
+  const refs: Reference[] = [membership.project, realMembership.profile];
+  const resolved = await globalSystemRepo.readReferences<Resource>(refs);
 
+  if (resolved[0] instanceof Error) {
+    throw resolved[0];
+  }
+  const project = resolved[0] as WithId<Project>;
+  let profile: WithId<ProfileResource> | undefined;
+  if (isResource(resolved[1])) {
+    profile = resolved[1] as WithId<ProfileResource>;
+  } else if (!(resolved[1] instanceof OperationOutcomeError && isNotFound(resolved[1].outcome))) {
+    throw resolved[1];
+  }
+
+  const allowedProjects: WithId<Project>[] = [project];
   if (project.link) {
     const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
@@ -54,6 +69,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
+    const systemRepo = getProjectSystemRepo(project);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -70,7 +86,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: realMembership.profile as Reference,
+    author: profile ? createReference(profile) : realMembership.profile,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
     projectAdmin: membership.admin,
@@ -122,12 +138,14 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     access.push(...membership.access);
   }
 
+  const systemRepo = getProjectSystemRepo(membership.project);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
   const accessPolicyMap = new Map<string, AccessPolicy>();
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(
+      systemRepo,
       entry,
       membership.profile as Reference<ProfileResource>,
       accessPolicyMap
@@ -165,17 +183,18 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
 
 /**
  * Reads an access policy and replaces all variables.
+ * @param systemRepo - The system repository.
  * @param access - The access policy and parameters.
  * @param profile - The user profile.
  * @param accessPolicyMap - Map of already-fetched access policies to avoid redundant lookups.
  * @returns The AccessPolicy with variables resolved.
  */
 async function buildAccessPolicyResources(
+  systemRepo: SystemRepository,
   access: ProjectMembershipAccess,
   profile: Reference<ProfileResource>,
   accessPolicyMap: Map<string, AccessPolicy>
 ): Promise<AccessPolicy> {
-  const systemRepo = getSystemRepo();
   const accessPolicyReference = access.policy;
   const policyReferenceString = getReferenceString(accessPolicyReference);
   if (!isString(policyReferenceString)) {
@@ -263,6 +282,7 @@ function applyProjectAdminAccessPolicy(
       criteria: `Project?_id=${resolveId(membership.project)}`,
       readonlyFields: ['features', 'link', 'systemSetting'],
       hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
+      interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
     });
 
     if (project.link) {

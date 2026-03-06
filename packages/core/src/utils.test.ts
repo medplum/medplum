@@ -586,6 +586,30 @@ describe('Core Utils', () => {
       resourceType: 'Patient',
       identifier: [{ system: 'x', value: 'y' }],
     });
+
+    // New identifiers array with "use" attribute
+    const r5: Patient = { resourceType: 'Patient' };
+    setIdentifier(r5, 'x', 'y', { use: 'temp' });
+    expect(r5).toStrictEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y', use: 'temp' }] });
+
+    // Existing identifiers array, new Identifier with "use" attribute
+    const r6: Patient = { resourceType: 'Patient', identifier: [{ system: 'a', value: 'b' }] };
+    setIdentifier(r6, 'x', 'y', { use: 'usual' });
+    expect(r6).toStrictEqual({
+      resourceType: 'Patient',
+      identifier: [
+        { system: 'a', value: 'b' },
+        { system: 'x', value: 'y', use: 'usual' },
+      ],
+    });
+
+    // Existing identifiers array, update existing Identifier with new value and "use" attribute
+    const r7: Patient = { resourceType: 'Patient', identifier: [{ system: 'x', value: 'b' }] };
+    setIdentifier(r7, 'x', 'y', { use: 'secondary' });
+    expect(r7).toStrictEqual({
+      resourceType: 'Patient',
+      identifier: [{ system: 'x', value: 'y', use: 'secondary' }],
+    });
   });
 
   test('Get extension undefined value', () => {

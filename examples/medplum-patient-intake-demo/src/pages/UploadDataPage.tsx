@@ -168,9 +168,9 @@ async function uploadExampleBots(
     if (!existingBot) {
       const projectId = profile.meta?.project;
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
-      existingBot = (await medplum.post(createBotUrl, {
+      existingBot = await medplum.post<WithId<Bot>>(createBotUrl, {
         name: botName,
-      })) as WithId<Bot>;
+      });
     }
 
     botIds[botName] = existingBot.id;

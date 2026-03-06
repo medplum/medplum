@@ -5,10 +5,10 @@
  * Do not edit manually.
  */
 
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Quantity } from './Quantity';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Quantity } from './Quantity.d.ts';
 
 /**
  * The marketing status describes the date when a medicinal product is

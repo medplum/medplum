@@ -5,37 +5,37 @@
  * Do not edit manually.
  */
 
-import { Address } from './Address';
-import { Age } from './Age';
-import { Annotation } from './Annotation';
-import { Attachment } from './Attachment';
-import { CodeableConcept } from './CodeableConcept';
-import { Coding } from './Coding';
-import { ContactDetail } from './ContactDetail';
-import { ContactPoint } from './ContactPoint';
-import { Contributor } from './Contributor';
-import { Count } from './Count';
-import { DataRequirement } from './DataRequirement';
-import { Distance } from './Distance';
-import { Dosage } from './Dosage';
-import { Duration } from './Duration';
-import { Expression } from './Expression';
-import { HumanName } from './HumanName';
-import { Identifier } from './Identifier';
-import { Meta } from './Meta';
-import { Money } from './Money';
-import { ParameterDefinition } from './ParameterDefinition';
-import { Period } from './Period';
-import { Quantity } from './Quantity';
-import { Range } from './Range';
-import { Ratio } from './Ratio';
-import { Reference } from './Reference';
-import { RelatedArtifact } from './RelatedArtifact';
-import { SampledData } from './SampledData';
-import { Signature } from './Signature';
-import { Timing } from './Timing';
-import { TriggerDefinition } from './TriggerDefinition';
-import { UsageContext } from './UsageContext';
+import type { Address } from './Address.d.ts';
+import type { Age } from './Age.d.ts';
+import type { Annotation } from './Annotation.d.ts';
+import type { Attachment } from './Attachment.d.ts';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Coding } from './Coding.d.ts';
+import type { ContactDetail } from './ContactDetail.d.ts';
+import type { ContactPoint } from './ContactPoint.d.ts';
+import type { Contributor } from './Contributor.d.ts';
+import type { Count } from './Count.d.ts';
+import type { DataRequirement } from './DataRequirement.d.ts';
+import type { Distance } from './Distance.d.ts';
+import type { Dosage } from './Dosage.d.ts';
+import type { Duration } from './Duration.d.ts';
+import type { Expression } from './Expression.d.ts';
+import type { HumanName } from './HumanName.d.ts';
+import type { Identifier } from './Identifier.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Money } from './Money.d.ts';
+import type { ParameterDefinition } from './ParameterDefinition.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Quantity } from './Quantity.d.ts';
+import type { Range } from './Range.d.ts';
+import type { Ratio } from './Ratio.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { RelatedArtifact } from './RelatedArtifact.d.ts';
+import type { SampledData } from './SampledData.d.ts';
+import type { Signature } from './Signature.d.ts';
+import type { Timing } from './Timing.d.ts';
+import type { TriggerDefinition } from './TriggerDefinition.d.ts';
+import type { UsageContext } from './UsageContext.d.ts';
 
 /**
  * Optional Extension Element - found in all resources.

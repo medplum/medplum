@@ -4,23 +4,25 @@ import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary, useMedplum } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
 import type { JSX } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
 import type { Location } from 'react-router';
+import { Outlet, useLocation, useNavigate } from 'react-router';
+import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
 import { usePatient } from '../../hooks/usePatient';
-import classes from './PatientPage.module.css';
-import { formatPatientPageTabUrl, getPatientPageTabs } from './PatientPage.utils';
-import type { PatientPageTabInfo } from './PatientPage.utils';
-import { PatientTabsNavigation } from './PatientTabsNavigation';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
+import classes from './PatientPage.module.css';
+import type { PatientPageTabInfo } from './PatientPage.utils';
+import { formatPatientPageTabUrl, getPatientPageTabs } from './PatientPage.utils';
+import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location, tabs: PatientPageTabInfo[]): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
-  const tab = tabId
-    ? tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()))
-    : undefined;
-  return tab;
+  // If tabId is empty, find the tab with empty url (timeline)
+  if (!tabId) {
+    return tabs.find((t) => t.url === '');
+  }
+  return tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()));
 }
 
 export function PatientPage(): JSX.Element {
@@ -98,13 +100,16 @@ export function PatientPage(): JSX.Element {
               onRequestLabs={() => {
                 setIsLabsModalOpen(true);
               }}
+              pharmacyDialogComponent={DoseSpotPharmacyDialog}
             />
           </ScrollArea>
         </div>
 
         <div className={classes.content}>
           <PatientTabsNavigation tabs={tabs} currentTab={currentTab} onTabChange={onTabChange} />
-          <Outlet />
+          <div className={classes.contentBody}>
+            <Outlet />
+          </div>
         </div>
       </div>
       <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">

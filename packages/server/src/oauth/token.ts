@@ -25,7 +25,7 @@ import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { getSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -110,7 +110,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
@@ -128,7 +128,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const membership = await getClientApplicationMembership(client);
+  const membership = await getClientApplicationMembership(systemRepo, client);
   if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
@@ -183,7 +183,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const searchResult = await systemRepo.search({
     resourceType: 'Login',
     filters: [
@@ -213,7 +213,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   if (login.granted) {
-    await revokeLogin(login);
+    await revokeLogin(systemRepo, login);
     sendTokenError(res, 'invalid_grant', 'Token already granted');
     return;
   }
@@ -281,7 +281,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined || !claims.refresh_secret) {
@@ -395,7 +395,7 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
@@ -508,7 +508,7 @@ async function parseClientAssertion(
     return { error: 'Invalid client assertion issuer' };
   }
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const clientId = claims.iss as string;
   let client: ClientApplication;
   try {
@@ -608,7 +608,7 @@ async function validateClientIdAndSecret(
 async function sendTokenResponse(res: Response, login: WithId<Login>, client?: ClientApplication): Promise<void> {
   const config = getConfig();
 
-  const systemRepo = getSystemRepo();
+  const systemRepo = getGlobalSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const membership = await systemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
@@ -623,8 +623,10 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
 
   if (login.launch) {
     const launch = await systemRepo.readReference(login.launch);
-    patient = resolveId(launch.patient);
-    encounter = resolveId(launch.encounter);
+    // Prefer identifier.value if present (for SMART apps that need a specific external identifier),
+    // otherwise fall back to the FHIR resource ID
+    patient = launch.patient?.identifier?.value ?? resolveId(launch.patient);
+    encounter = launch.encounter?.identifier?.value ?? resolveId(launch.encounter);
   }
 
   if (membership.profile?.reference?.startsWith('Patient/')) {

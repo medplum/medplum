@@ -411,6 +411,123 @@ describe('Infra', () => {
     await unlink(filename);
   });
 
+  test('Purpose-specific Redis clusters', async () => {
+    const filename = await writeConfig('./medplum.purposeRedis.config.json', {
+      ...baseConfig,
+      stackName: 'MedplumPurposeRedisStack',
+      cacheRedis: { nodeType: 'cache.r6g.large' },
+      rateLimitRedis: { nodeType: 'cache.t3.small' },
+      pubSubRedis: {},
+      backgroundJobsRedis: { securityGroupId: 'sg-1234' },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Workers config', async () => {
+    const filename = await writeConfig('./medplum.workers.config.json', {
+      ...baseConfig,
+      name: 'workers',
+      stackName: 'MedplumWorkersStack',
+      workers: {
+        enabled: ['subscription', 'cron'],
+        bullmq: { subscription: { concurrency: 50 } },
+      },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Workers config enabled only', async () => {
+    const filename = await writeConfig('./medplum.workersEnabledOnly.config.json', {
+      ...baseConfig,
+      name: 'workersEnabledOnly',
+      stackName: 'MedplumWorkersEnabledOnlyStack',
+      workers: {
+        enabled: ['subscription'],
+      },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Additional service - worker', async () => {
+    const filename = await writeConfig('./medplum.additionalService.config.json', {
+      ...baseConfig,
+      name: 'worker',
+      stackName: 'MedplumWorkerStack',
+      workerServices: [
+        {
+          id: 'Worker',
+          desiredCount: 2,
+          environment: {
+            MEDPLUM_WORKERS_ENABLED: '["subscription","cron"]',
+            MEDPLUM_DATABASE_MAX_CONNECTIONS: '10',
+          },
+        },
+      ],
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Additional service with auto-scaling', async () => {
+    const filename = await writeConfig('./medplum.additionalServiceAutoScaling.config.json', {
+      ...baseConfig,
+      name: 'workerAutoScaling',
+      stackName: 'MedplumWorkerAutoScalingStack',
+      workerServices: [
+        {
+          id: 'Worker',
+          desiredCount: 1,
+          serverMemory: 1024,
+          serverCpu: 512,
+          fargateAutoScaling: {
+            minCapacity: 1,
+            maxCapacity: 5,
+            targetUtilizationPercent: 70,
+            scaleInCooldown: 60,
+            scaleOutCooldown: 60,
+          },
+        },
+      ],
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Multiple additional services', async () => {
+    const filename = await writeConfig('./medplum.multipleAdditionalServices.config.json', {
+      ...baseConfig,
+      name: 'multiService',
+      stackName: 'MedplumMultiServiceStack',
+      workerServices: [
+        {
+          id: 'SubscriptionWorker',
+          desiredCount: 2,
+          environment: {
+            MEDPLUM_WORKERS_ENABLED: '["subscription"]',
+          },
+        },
+        {
+          id: 'CronWorker',
+          desiredCount: 1,
+          environment: {
+            MEDPLUM_WORKERS_ENABLED: '["cron"]',
+          },
+        },
+      ],
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
   test('Use containerRegistryCredentialsSecretArn', async () => {
     const filename = await writeConfig('./medplum.containerRegistryCredentialsSecretArn.config.json', {
       ...baseConfig,

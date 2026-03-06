@@ -30,6 +30,23 @@ const mockProfile = {
   id: 'practitioner-123',
 };
 
+// Helper to create a mock streaming response
+function createMockStreamingResponse(content: string): Response {
+  const encoder = new TextEncoder();
+  const sseData = `data: ${JSON.stringify({ content })}\n\ndata: [DONE]\n\n`;
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(sseData));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+}
+
 describe('SpacesInbox', () => {
   let medplum: MockClient;
   const onNewTopicMock = vi.fn();
@@ -42,6 +59,9 @@ describe('SpacesInbox', () => {
     Element.prototype.scrollTo = vi.fn();
     medplum.getProfile = vi.fn().mockResolvedValue(mockProfile) as any;
     medplum.searchResources = vi.fn().mockResolvedValue([]);
+    medplum.searchOne = vi.fn().mockResolvedValue({ resourceType: 'Bot', id: 'bot-123' });
+    medplum.getAccessToken = vi.fn().mockReturnValue('mock-token');
+    medplum.fhirUrl = vi.fn().mockReturnValue(new URL('https://api.medplum.com/fhir/R4/Bot/bot-123/$execute'));
     medplum.readReference = vi.fn().mockImplementation((ref: any) => {
       if (ref.reference?.startsWith('Communication/')) {
         return Promise.resolve(mockTopic);
@@ -198,34 +218,29 @@ describe('SpacesInbox', () => {
       const user = userEvent.setup();
       const mockPatient = { resourceType: 'Patient', id: 'patient-123', name: [{ given: ['John'], family: 'Doe' }] };
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient/patient-123',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient John Doe' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockResolvedValue(mockPatient);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient John Doe'));
 
       await act(async () => {
         setup();
@@ -251,34 +266,29 @@ describe('SpacesInbox', () => {
     test('handles FHIR request errors', async () => {
       const user = userEvent.setup();
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/nonexistent',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient/nonexistent',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Patient not found' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockRejectedValue(new Error('Not found'));
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Patient not found'));
 
       await act(async () => {
         setup();
@@ -295,7 +305,7 @@ describe('SpacesInbox', () => {
       });
 
       await waitFor(() => {
-        expect(medplum.executeBot).toHaveBeenCalledTimes(2);
+        expect(globalThis.fetch).toHaveBeenCalled();
       });
     });
   });
@@ -304,37 +314,32 @@ describe('SpacesInbox', () => {
     test('displays resource boxes when resources are returned', async () => {
       const user = userEvent.setup();
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient/patient-123',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -358,37 +363,32 @@ describe('SpacesInbox', () => {
     test('opens resource panel when clicking on resource box', async () => {
       const user = userEvent.setup();
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient/patient-123',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -416,37 +416,32 @@ describe('SpacesInbox', () => {
     test('closes resource panel when clicking close button', async () => {
       const user = userEvent.setup();
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient/patient-123',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient/patient-123',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found patient' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockResolvedValue({
         resourceType: 'Patient',
         id: 'patient-123',
       });
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found patient'));
 
       await act(async () => {
         setup();
@@ -570,34 +565,29 @@ describe('SpacesInbox', () => {
         ],
       };
 
-      medplum.executeBot = vi
-        .fn()
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'tool_calls',
-              valueString: JSON.stringify([
-                {
-                  id: 'tool-1',
-                  function: {
-                    name: 'fhir_request',
-                    arguments: JSON.stringify({
-                      method: 'GET',
-                      path: 'Patient?name=John',
-                    }),
-                  },
+      medplum.executeBot = vi.fn().mockResolvedValueOnce({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'tool_calls',
+            valueString: JSON.stringify([
+              {
+                id: 'tool-1',
+                function: {
+                  name: 'fhir_request',
+                  arguments: JSON.stringify({
+                    method: 'GET',
+                    path: 'Patient?name=John',
+                  }),
                 },
-              ]),
-            },
-          ],
-        })
-        .mockResolvedValueOnce({
-          resourceType: 'Parameters',
-          parameter: [{ name: 'content', valueString: 'Found 2 patients' }],
-        });
+              },
+            ]),
+          },
+        ],
+      });
 
       medplum.get = vi.fn().mockResolvedValue(mockBundle);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(createMockStreamingResponse('Found 2 patients'));
 
       await act(async () => {
         setup();

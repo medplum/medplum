@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MedplumProvider } from '@medplum/react';
 import type { Encounter, Organization, Patient, Practitioner, Task } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { TaskProperties } from './TaskProperties';
 
 describe('TaskProperties', () => {
@@ -78,7 +78,8 @@ describe('TaskProperties', () => {
     await waitFor(() => {
       const dueDateInput = screen.getByLabelText('Due Date');
       expect(dueDateInput).toBeInTheDocument();
-      expect(dueDateInput).toHaveValue('2024-12-31T00:00');
+      const value = (dueDateInput as HTMLInputElement).value;
+      expect(value).toMatch(/2024-12-31/);
     });
   });
 

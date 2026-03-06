@@ -6,6 +6,7 @@ import {
   Code,
   Divider,
   Grid,
+  Group,
   InputWrapper,
   Modal,
   NativeSelect,
@@ -18,7 +19,7 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, forbidden, getReferenceString, normalizeErrorString, resolveId } from '@medplum/core';
 import type { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -34,12 +35,14 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
+import { WsSubStatsWidget } from './WsSubStatsWidget';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<ReactNode | undefined>();
+  const [clearWsSubsProject, setClearWsSubsProject] = useState<Reference<Project> | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -65,6 +68,21 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
   }
 
+  function executeClearAllWsSubs(): void {
+    close();
+    const projectId = resolveId(clearWsSubsProject);
+    medplum
+      .post(
+        'fhir/R4/$clear-all-ws-subs',
+        projectId
+          ? { resourceType: 'Parameters', parameter: [{ name: 'projectId', valueString: projectId }] }
+          : undefined
+      )
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+    setClearWsSubsProject(undefined);
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -88,7 +106,7 @@ export function SuperAdminPage(): JSX.Element {
 
   function getDatabaseStats(formData: Record<string, string>): void {
     medplum
-      .post(
+      .post<Parameters>(
         'fhir/R4/$db-stats',
         formData.tableNames
           ? {
@@ -97,7 +115,7 @@ export function SuperAdminPage(): JSX.Element {
             }
           : undefined
       )
-      .then((params: Parameters) => {
+      .then((params) => {
         setModalTitle('Database Stats');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
         open();
@@ -107,8 +125,8 @@ export function SuperAdminPage(): JSX.Element {
 
   function getDatabaseInvalidIndexes(): void {
     medplum
-      .post('fhir/R4/$db-invalid-indexes')
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$db-invalid-indexes')
+      .then((params) => {
         setModalTitle('Database Invalid Indexes');
         setModalContent(
           <pre>
@@ -125,8 +143,8 @@ export function SuperAdminPage(): JSX.Element {
 
   function getSchemaDiff(): void {
     medplum
-      .post('fhir/R4/$db-schema-diff')
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$db-schema-diff')
+      .then((params) => {
         setModalTitle('Schema Diff');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
@@ -266,7 +284,54 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Explain Search</Title>
       <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
       <ExplainSearchForm setModalTitle={setModalTitle} setModalContent={setModalContent} openModal={open} />
-
+      <Divider my="lg" />
+      <Title order={2}>WebSocket Subscription Stats</Title>
+      <p>View active WebSocket subscription statistics by project, resource type, and criteria.</p>
+      <WsSubStatsWidget />
+      <Divider my="lg" />
+      <Title order={2}>Clear All WebSocket Subscriptions</Title>
+      <p>
+        Removes all active WebSocket subscription records from Redis. This is useful for cleaning up stale subscriptions
+        during maintenance or after a deployment issue. Connected clients will need to re-bind.
+      </p>
+      <Stack>
+        <FormSection title="Project (optional)" htmlFor="clearWsSubsProject">
+          <ReferenceInput<Project>
+            name="clearWsSubsProject"
+            placeholder="All projects"
+            targetTypes={['Project']}
+            onChange={setClearWsSubsProject}
+          />
+        </FormSection>
+        <div>
+          <Button
+            onClick={() => {
+              setModalTitle('Clear All WebSocket Subscriptions');
+              setModalContent(
+                <Stack>
+                  <Text>
+                    Are you sure you want to completely clear{' '}
+                    <strong>
+                      {clearWsSubsProject
+                        ? `WebSocket subscriptions for "${clearWsSubsProject.display ?? clearWsSubsProject.reference}"`
+                        : 'ALL WebSocket subscriptions'}
+                    </strong>
+                    ? Connected clients will need to re-bind their subscriptions.
+                  </Text>
+                  <Group align="center">
+                    <Button color="red" onClick={executeClearAllWsSubs}>
+                      Clear
+                    </Button>
+                  </Group>
+                </Stack>
+              );
+              open();
+            }}
+          >
+            Clear All WebSocket Subscriptions
+          </Button>
+        </div>
+      </Stack>
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
@@ -479,6 +544,7 @@ export function ExplainSearchForm({
     const toSubmit = {
       query: formData.query,
       analyze: formData.analyze === 'on',
+      count: formData.count === 'on',
       format: 'text',
     };
 
@@ -488,17 +554,31 @@ export function ExplainSearchForm({
     }
 
     medplum
-      .post('fhir/R4/$explain', toSubmit, undefined, { headers })
-      .then((params: Parameters) => {
+      .post<Parameters>('fhir/R4/$explain', toSubmit, undefined, { headers })
+      .then((params) => {
         setModalTitle('Database Explain');
         const explainLine = params.parameter?.find((p) => p.name === 'explain')?.valueString;
         const queryLine = params.parameter?.find((p) => p.name === 'query')?.valueString;
         const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
+        const countEstimate = params.parameter?.find((p) => p.name === 'countEstimate')?.valueInteger?.toLocaleString();
+        const countAccurate = params.parameter?.find((p) => p.name === 'countAccurate')?.valueInteger?.toLocaleString();
         const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
         setModalContent(
-          <Code block maw={'100%'}>
-            {lines}
-          </Code>
+          <Stack>
+            <div>
+              <Text fw={700}>Query</Text>
+              <Code block maw={'100%'} style={{ whiteSpace: 'pre-wrap' }}>
+                {lines}
+              </Code>
+            </div>
+            {(countEstimate || countAccurate) && (
+              <div>
+                <Text fw={700}>Counts</Text>
+                {countEstimate && <Text>Estimate: {countEstimate}</Text>}
+                {countAccurate && <Text>Accurate: {countAccurate}</Text>}
+              </div>
+            )}
+          </Stack>
         );
         openModal();
       })
@@ -514,7 +594,10 @@ export function ExplainSearchForm({
     <Form onSubmit={explainSearch}>
       <Stack>
         <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
-        <Checkbox name="analyze" label="Analyze" />
+        <Group>
+          <Checkbox name="analyze" label="Analyze" />
+          <Checkbox name="count" label="Total count" />
+        </Group>
         <InputWrapper label="On Behalf Of">
           <Stack gap="sm">
             <ReferenceInput<Project>

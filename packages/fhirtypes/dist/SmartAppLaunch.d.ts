@@ -5,13 +5,13 @@
  * Do not edit manually.
  */
 
-import { Encounter } from './Encounter';
-import { Extension } from './Extension';
-import { Meta } from './Meta';
-import { Narrative } from './Narrative';
-import { Patient } from './Patient';
-import { Reference } from './Reference';
-import { Resource } from './Resource';
+import type { Encounter } from './Encounter.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Meta } from './Meta.d.ts';
+import type { Narrative } from './Narrative.d.ts';
+import type { Patient } from './Patient.d.ts';
+import type { Reference } from './Reference.d.ts';
+import type { Resource } from './Resource.d.ts';
 
 /**
  * This resource contains context details for a SMART App Launch.

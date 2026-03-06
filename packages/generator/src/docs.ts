@@ -7,9 +7,11 @@ import fs, { writeFileSync } from 'fs';
 import type { DOMWindow } from 'jsdom';
 import { JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
-import fetch from 'node-fetch';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 import { resolve } from 'path/posix';
+import type { ReadableStream as WebReadableStream } from 'stream/web';
 import * as unzipper from 'unzipper';
 
 import type {
@@ -400,44 +402,42 @@ function rewriteLinksText(text: string | undefined): string {
  */
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
   console.info('Downloading FHIR Spec...');
-  return new Promise((resolve, reject) => {
-    fetch(downloadURL)
-      .then((response) => {
-        if (!response.ok) {
-          reject(new Error(`Error downloading file: ${response.status} ${response.statusText}`));
-          return;
+
+  const response = await fetch(downloadURL);
+  if (!response.ok) {
+    throw new Error(`Error downloading file: ${response.status} ${response.statusText}`);
+  }
+  if (!response.body) {
+    throw new Error('Response body is null');
+  }
+
+  // Download the zip file
+  const nodeReadable = Readable.fromWeb(response.body as WebReadableStream);
+  await pipeline(nodeReadable, fs.createWriteStream(zipFilePath));
+
+  // Extract the zip file
+  await new Promise<void>((resolve, reject) => {
+    fs.createReadStream(zipFilePath)
+      .pipe(unzipper.Parse())
+      .on('entry', function (entry) {
+        const fileName = entry.path;
+        const type = entry.type;
+        const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
+
+        if (type === 'Directory') {
+          mkdirp.sync(fullPath);
+          entry.autodrain();
+        } else {
+          mkdirp.sync(path.dirname(fullPath));
+          entry.pipe(fs.createWriteStream(fullPath));
         }
-
-        const fileStream = fs.createWriteStream(zipFilePath);
-        response.body.pipe(fileStream);
-
-        // Inside your 'downloadAndUnzip' function, replace the extraction part with this:
-        fileStream.on('finish', async () => {
-          fs.createReadStream(zipFilePath)
-            .pipe(unzipper.Parse())
-            .on('entry', function (entry) {
-              const fileName = entry.path;
-              const type = entry.type; // 'Directory' or 'File'
-              const fullPath = path.join(outputFolder, fileName).replaceAll('\\', '/');
-
-              if (type === 'Directory') {
-                mkdirp.sync(fullPath);
-                entry.autodrain();
-              } else {
-                mkdirp.sync(path.dirname(fullPath));
-                entry.pipe(fs.createWriteStream(fullPath));
-              }
-              console.info('\rDownloading FHIR Spec...');
-            })
-            .on('close', resolve)
-            .on('error', reject);
-        });
+        console.info('\rDownloading FHIR Spec...');
       })
-      .catch(() => {
-        reject(new Error('Error downloading or unzipping file'));
-      });
+      .on('close', resolve)
+      .on('error', reject);
   });
 }
+
 /**
  * For each core FHIR resource type, find the corresponding HTML page and extract the relevant introductory sections.
  * @param htmlDirectory - Directory containing HTML files for each resource ([resourceType].html)
@@ -608,7 +608,7 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
 async function fetchHtmlSpecContent(
   definitions: StructureDefinition[]
 ): Promise<Record<string, Record<string, string | string[] | undefined>>> {
-  const downloadURL = 'http://hl7.org/fhir/R4/fhir-spec.zip';
+  const downloadURL = 'https://hl7.org/fhir/R4/fhir-spec.zip';
   const zipFile = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec.zip');
   const outputFolder = path.resolve(import.meta.dirname, '..', 'output', 'fhir-spec');
   const siteDir = path.resolve(outputFolder, 'site');

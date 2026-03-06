@@ -82,8 +82,8 @@ echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
 # ioredis - v5.9.x broke BullMQ, holding off on updating until late Jan 2026
-# pdfmake - v0.3.x introduced breaking changes to the API
-EXCLUDE="ioredis pdfmake"
+# pdfmake, @types/pdfmake - v0.3.x introduced breaking changes to the API
+EXCLUDE="ioredis pdfmake @types/pdfmake"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -98,8 +98,9 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # zod - version 4+ is incompatible with MCP SDK
 # uuid - version 12+ requires ESM, holding back until server supports ESM
-# next eslint-config-next @next/bundle-analyzer - 16 of course is a non-trivial upgrade 
-MAJOR_EXCLUDE="@types/node commander hibp jose node-fetch npm zod uuid next eslint-config-next @next/bundle-analyzer"
+# otplib - version 13+ requires ESM, holding back until server supports ESM
+# temporal-polyfill - version 1.0.0 is actually an old version, holding back to 0.3.0 which is the latest stable version
+MAJOR_EXCLUDE="@types/node @types/node-fetch commander hibp jose node-fetch npm zod uuid otplib temporal-polyfill"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -127,7 +128,7 @@ set +e
 gh pr view
 PR_VIEW_EXIT_CODE=$?
 
-# Set the -e flag back 
+# Set the -e flag back
 set -e
 
 if [ "$PR_VIEW_EXIT_CODE" -ne 0 ]; then
@@ -152,7 +153,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --no-deprecated --cooldown "$COOLDOWN" --reject "$EXCLUDE $MAJOR_EXCLUDE" --target greatest --pre 0 --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

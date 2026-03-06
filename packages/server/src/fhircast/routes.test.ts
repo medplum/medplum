@@ -11,7 +11,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { MedplumServerConfig } from '../config/types';
-import { getRedis } from '../redis';
+import { getCacheRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 import { setTopicCurrentContext } from './utils';
 
@@ -231,7 +231,7 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis returns `null`', async () => {
-    const redis = getRedis();
+    const redis = getCacheRedis();
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -269,7 +269,7 @@ describe('FHIRcast routes', () => {
   });
 
   test('Redis result contains error', async () => {
-    const redis = getRedis();
+    const redis = getCacheRedis();
     const mockCommander = new MockChainableCommander();
     const mockFn = (() => {
       return mockCommander;
@@ -794,7 +794,7 @@ describe('FHIRcast routes', () => {
     expect(publishRes.status).toBe(202);
     expect(publishRes.body.event?.event?.['context.versionId']).toBeDefined();
 
-    const latestContextStr = (await getRedis().get(
+    const latestContextStr = (await getCacheRedis().get(
       `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestContextStr).toBeTruthy();

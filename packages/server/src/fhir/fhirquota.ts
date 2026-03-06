@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Logger } from '@medplum/core';
-import { deepClone, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
+import { deepClone, LRUCache, OperationOutcomeError, sleep, tooManyRequests } from '@medplum/core';
 import type { Response } from 'express';
 import type Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import type { AuthState } from '../oauth/middleware';
+
+type InMemoryBlock = {
+  result: RateLimiterRes;
+  resetTimestamp: number;
+};
+const blockedUsers = new LRUCache<InMemoryBlock>(1000);
 
 export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;
@@ -86,6 +92,8 @@ export class FhirRateLimiter {
 
   private async consumeImpl(points: number): Promise<void> {
     this.delta += points;
+    await this.checkInMemoryBlock(points);
+
     try {
       const result = await this.limiter.consume(this.userKey, points);
       if (this.delta > this.logThreshold) {
@@ -122,8 +130,31 @@ export class FhirRateLimiter {
     }
   }
 
+  async checkInMemoryBlock(points: number): Promise<void> {
+    const userBlock = blockedUsers.get(this.userKey);
+    if (userBlock) {
+      if (Date.now() <= userBlock.resetTimestamp) {
+        this.setState(userBlock.result);
+        await this.block(points, userBlock.result);
+      } else {
+        blockedUsers.delete(this.userKey);
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Block the request, either by throwing an error to induce a 429 error response,
+   * or by waiting until more quota is available and retrying.
+   *
+   * @param points - The number of points being consumed.
+   * @param result - The over-limit rate limiter result.
+   * @throws {OperationOutcomeError} 429 error
+   */
   async block(points: number, result: RateLimiterRes): Promise<void> {
     if (this.enabled) {
+      blockedUsers.set(this.userKey, { result, resetTimestamp: Date.now() + result.msBeforeNext });
+
       if (this.async) {
         // Sleep until quota resets, plus up to 25% jitter to prevent simultaneous retries
         const waitMs = Math.ceil(result.msBeforeNext * (1 + Math.random() * 0.25));

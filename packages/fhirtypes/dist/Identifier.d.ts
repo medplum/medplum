@@ -5,11 +5,11 @@
  * Do not edit manually.
  */
 
-import { CodeableConcept } from './CodeableConcept';
-import { Extension } from './Extension';
-import { Organization } from './Organization';
-import { Period } from './Period';
-import { Reference } from './Reference';
+import type { CodeableConcept } from './CodeableConcept.d.ts';
+import type { Extension } from './Extension.d.ts';
+import type { Organization } from './Organization.d.ts';
+import type { Period } from './Period.d.ts';
+import type { Reference } from './Reference.d.ts';
 
 /**
  * An identifier - identifies some entity uniquely and unambiguously.

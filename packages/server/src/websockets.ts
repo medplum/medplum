@@ -15,7 +15,8 @@ import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat 
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from './heartbeat';
 import { globalLogger } from './logger';
 import { setGauge } from './otel/otel';
-import { getRedis, getRedisSubscriber } from './redis';
+import { publish } from './pubsub';
+import { getPubSubRedisSubscriber } from './redis';
 import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
@@ -138,7 +139,7 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redisSubscriber = getRedisSubscriber();
+  const redisSubscriber = getPubSubRedisSubscriber();
   const channel = randomUUID();
 
   await redisSubscriber.subscribe(channel);
@@ -153,7 +154,7 @@ async function handleEchoConnection(socket: WebSocket): Promise<void> {
     'message',
     AsyncLocalStorage.bind(async (data: RawData) => {
       echoMessagesReceived++;
-      await getRedis().publish(channel, data as Buffer);
+      await publish(channel, data as Buffer);
     })
   );
 
