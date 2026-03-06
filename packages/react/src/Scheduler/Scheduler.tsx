@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Stack, Text } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isReference, isResource } from '@medplum/core';
+import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
 import type {
   Period,
   Practitioner,
@@ -103,7 +104,13 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         medplum
           .readReference<Schedule>(props.schedule)
           .then((schedule) => setActor(onlyPractitioner(schedule)))
-          .catch(console.error);
+          .catch((error: unknown) => {
+            showNotification({
+              color: 'red',
+              title: 'Error',
+              message: normalizeErrorString(error),
+            });
+          });
       }
     }
   }, [medplum, props.schedule]);
