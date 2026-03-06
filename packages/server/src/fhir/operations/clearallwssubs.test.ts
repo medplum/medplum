@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { getActiveSubsKey, type ActiveSubscriptionEntry } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
@@ -56,22 +57,32 @@ describe('$clear-all-ws-subs', () => {
     const userId = randomUUID();
     const userKey = `medplum:subscriptions:r4:user:Practitioner/${userId}:active`;
 
+    const entry1: ActiveSubscriptionEntry = {
+      criteria: 'Observation?code=85354-9',
+      expiration: Math.floor(Date.now() / 1000) + 3600,
+      author: `Practitioner/${userId}`,
+      loginId: randomUUID(),
+      membershipId: randomUUID(),
+    };
+    const entry2: ActiveSubscriptionEntry = {
+      criteria: 'Patient?name=Alice',
+      expiration: Math.floor(Date.now() / 1000) + 3600,
+      author: `Practitioner/${userId}`,
+      loginId: randomUUID(),
+      membershipId: randomUUID(),
+    };
     await pubSubRedis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+      getActiveSubsKey(projectId, 'Observation'),
       `Subscription/${sub1Id}`,
-      'Observation?code=85354-9'
+      JSON.stringify(entry1)
     );
-    await pubSubRedis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Patient`,
-      `Subscription/${sub2Id}`,
-      'Patient?name=Alice'
-    );
+    await pubSubRedis.hset(getActiveSubsKey(projectId, 'Patient'), `Subscription/${sub2Id}`, JSON.stringify(entry2));
     await cacheRedis.set(`Subscription/${sub1Id}`, JSON.stringify({ id: sub1Id }));
     await cacheRedis.set(`Subscription/${sub2Id}`, JSON.stringify({ id: sub2Id }));
     await pubSubRedis.sadd(userKey, `Subscription/${sub1Id}`, `Subscription/${sub2Id}`);
 
-    expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId}:active:Observation`)).toBe(1);
-    expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId}:active:Patient`)).toBe(1);
+    expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Observation'))).toBe(1);
+    expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Patient'))).toBe(1);
     expect(await cacheRedis.exists(`Subscription/${sub1Id}`)).toBe(1);
     expect(await cacheRedis.exists(`Subscription/${sub2Id}`)).toBe(1);
     expect(await pubSubRedis.scard(userKey)).toBe(2);
@@ -86,8 +97,8 @@ describe('$clear-all-ws-subs', () => {
 
     expect(res.status).toBe(200);
 
-    expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId}:active:Observation`)).toBe(0);
-    expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId}:active:Patient`)).toBe(0);
+    expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Observation'))).toBe(0);
+    expect(await pubSubRedis.exists(getActiveSubsKey(projectId, 'Patient'))).toBe(0);
     expect(await cacheRedis.exists(`Subscription/${sub1Id}`)).toBe(0);
     expect(await cacheRedis.exists(`Subscription/${sub2Id}`)).toBe(0);
     expect(await pubSubRedis.exists(userKey)).toBe(0);
@@ -104,15 +115,31 @@ describe('$clear-all-ws-subs', () => {
     const authorRef = `Practitioner/${userId}`;
     const userKey = `medplum:subscriptions:r4:user:${authorRef}:active`;
 
+    const loginId1 = randomUUID();
+    const membershipId1 = randomUUID();
+    const entry1: ActiveSubscriptionEntry = {
+      criteria: 'Observation?status=final',
+      expiration: Math.floor(Date.now() / 1000) + 3600,
+      author: authorRef,
+      loginId: loginId1,
+      membershipId: membershipId1,
+    };
+    const entry2: ActiveSubscriptionEntry = {
+      criteria: 'Observation?status=final',
+      expiration: Math.floor(Date.now() / 1000) + 3600,
+      author: authorRef,
+      loginId: randomUUID(),
+      membershipId: randomUUID(),
+    };
     await pubSubRedis.hset(
-      `medplum:subscriptions:r4:project:${projectId1}:active:Observation`,
+      getActiveSubsKey(projectId1, 'Observation'),
       `Subscription/${sub1Id}`,
-      'Observation?status=final'
+      JSON.stringify(entry1)
     );
     await pubSubRedis.hset(
-      `medplum:subscriptions:r4:project:${projectId2}:active:Observation`,
+      getActiveSubsKey(projectId2, 'Observation'),
       `Subscription/${sub2Id}`,
-      'Observation?status=final'
+      JSON.stringify(entry2)
     );
     // Cache entry for sub1 includes meta.author so the project-scoped clear can find the user key
     await cacheRedis.set(
@@ -140,14 +167,14 @@ describe('$clear-all-ws-subs', () => {
 
       expect(res.status).toBe(200);
 
-      expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId1}:active:Observation`)).toBe(0);
+      expect(await pubSubRedis.exists(getActiveSubsKey(projectId1, 'Observation'))).toBe(0);
       expect(await cacheRedis.exists(`Subscription/${sub1Id}`)).toBe(0);
-      expect(await pubSubRedis.exists(`medplum:subscriptions:r4:project:${projectId2}:active:Observation`)).toBe(1);
+      expect(await pubSubRedis.exists(getActiveSubsKey(projectId2, 'Observation'))).toBe(1);
       expect(await cacheRedis.exists(`Subscription/${sub2Id}`)).toBe(1);
       // sub1 SREMed from user set; sub2 from project2 remains
       expect(await pubSubRedis.smembers(userKey)).toEqual([`Subscription/${sub2Id}`]);
     } finally {
-      await pubSubRedis.del(`medplum:subscriptions:r4:project:${projectId2}:active:Observation`);
+      await pubSubRedis.del(getActiveSubsKey(projectId2, 'Observation'));
       await pubSubRedis.del(userKey);
       await cacheRedis.del(`Subscription/${sub2Id}`);
     }
