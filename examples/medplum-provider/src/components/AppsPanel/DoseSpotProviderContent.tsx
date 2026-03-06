@@ -7,7 +7,6 @@ import {
   Center,
   Divider,
   Group,
-  Loader,
   Paper,
   Select,
   Stack,

@@ -21,7 +21,9 @@ export function DoseSpotContent(): JSX.Element {
   const iframeUrl = useDoseSpotIFrame({
     patientId,
     onIframeSuccess: () => {
-      if (notifiedRef.current) return;
+      if (notifiedRef.current) {
+        return;
+      }
       notifiedRef.current = true;
       showNotification({ color: 'green', title: 'DoseSpot', message: 'Connected to DoseSpot' });
     },

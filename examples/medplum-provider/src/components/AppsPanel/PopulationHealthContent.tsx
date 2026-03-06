@@ -113,7 +113,12 @@ function QualityMeasuresCard(): JSX.Element {
         <Table.Tbody>
           {QUALITY_MEASURES.map((row) => {
             const pct = Math.round((row.actual / row.target) * 100);
-            const color = pct >= 95 ? 'green' : pct >= 80 ? 'blue' : 'orange';
+            let color = 'orange';
+            if (pct >= 95) {
+              color = 'green';
+            } else if (pct >= 80) {
+              color = 'blue';
+            }
             return (
               <Table.Tr key={row.measure}>
                 <Table.Td>
@@ -137,6 +142,16 @@ function QualityMeasuresCard(): JSX.Element {
       </Table>
     </Card>
   );
+}
+
+function getPriorityColor(priority: string): string {
+  if (priority === 'High') {
+    return 'red';
+  }
+  if (priority === 'Medium') {
+    return 'orange';
+  }
+  return 'gray';
 }
 
 function CareGapsCard(): JSX.Element {
@@ -171,7 +186,7 @@ function CareGapsCard(): JSX.Element {
               <Badge
                 size="xs"
                 variant="light"
-                color={gap.priority === 'High' ? 'red' : gap.priority === 'Medium' ? 'orange' : 'gray'}
+                color={getPriorityColor(gap.priority)}
               >
                 {gap.priority}
               </Badge>
