@@ -320,7 +320,7 @@ export class SubscriptionManager {
     // Get binding token
     const { parameter } = await this.medplum.get<Parameters>(
       `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`,
-      { cache: 'reload' }
+      { cache: 'no-cache' }
     );
     const token = parameter?.find((param) => param.name === 'token')?.valueString;
     const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
