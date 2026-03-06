@@ -72,5 +72,4 @@ describe('ClaimSubmittedPanel', () => {
     setup({ status: 'waiting_for_provider' });
     expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
   });
-
 });
