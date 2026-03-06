@@ -1,13 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
-import { Document, Scheduler } from '@medplum/react';
+import type { Bundle, Slot } from '@medplum/fhirtypes';
+import { isDefined } from '@medplum/core';
+import { Document, Scheduler, useMedplum } from '@medplum/react';
+import type { SlotSearchFunction } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
 import { IconInfoCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
 
 export function GetCare(): JSX.Element {
+  const medplum = useMedplum();
   const [schedule, loading] = useSearchOne('Schedule');
+
+  const fetchSlots: SlotSearchFunction = async (period) => {
+    if (!schedule) {
+      return [];
+    }
+
+    // $find op requires `start` and `end` times are defined
+    if (!period.start || !period.end) {
+      return [];
+    }
+
+    const params = new URLSearchParams({ start: period.start, end: period.end });
+    const findUrl = medplum.fhirUrl('Schedule', schedule.id, '$find');
+    const bundle = await medplum.get<Bundle<Slot>>(`${findUrl}?${params}`);
+    return bundle.entry?.map((entry) => entry.resource).filter(isDefined) ?? [];
+  };
 
   if (loading) {
     return (
@@ -29,7 +49,7 @@ export function GetCare(): JSX.Element {
 
   return (
     <Document width={800}>
-      <Scheduler schedule={schedule} />
+      <Scheduler schedule={schedule} fetchSlots={fetchSlots} />
     </Document>
   );
 }
