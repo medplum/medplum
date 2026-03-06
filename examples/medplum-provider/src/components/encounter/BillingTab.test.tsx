@@ -1144,7 +1144,7 @@ describe('BillingTab', () => {
       expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
     });
 
-    test('displays claim amount and billing provider from Candid encounter', async () => {
+    test('displays claim amount from Candid encounter service lines', async () => {
       vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
       vi.spyOn(medplum, 'executeBot').mockResolvedValue({
         fullEncounter: {
@@ -1154,7 +1154,6 @@ describe('BillingTab', () => {
             { chargeAmountCents: 25000 },
             { chargeAmountCents: 15000 },
           ],
-          billingProvider: { firstName: 'Maddy', lastName: 'Li' },
         },
       });
 
@@ -1162,7 +1161,6 @@ describe('BillingTab', () => {
 
       await waitFor(() => {
         expect(screen.getByText('$400')).toBeInTheDocument();
-        expect(screen.getByText('Maddy Li')).toBeInTheDocument();
       });
     });
 

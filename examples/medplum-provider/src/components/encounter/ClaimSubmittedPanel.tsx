@@ -10,14 +10,13 @@ const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/'
 export interface ClaimSubmittedPanelProps {
   status?: string;
   claimAmount: number;
-  billingProvider: string;
   createdAt?: string;
   candidEncounterId?: string;
   exportMenu: ReactNode;
 }
 
 export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Element => {
-  const { status, claimAmount, billingProvider, createdAt, candidEncounterId, exportMenu } = props;
+  const { status, claimAmount, createdAt, candidEncounterId, exportMenu } = props;
 
   return (
     <Card withBorder shadow="sm" p={0}>
@@ -38,10 +37,6 @@ export const ClaimSubmittedPanel = (props: ClaimSubmittedPanelProps): JSX.Elemen
               Claim submitted for{' '}
               <Text component="span" fw={700}>
                 ${claimAmount}
-              </Text>{' '}
-              by{' '}
-              <Text component="span" fw={700}>
-                {billingProvider}
               </Text>
               .
             </Text>

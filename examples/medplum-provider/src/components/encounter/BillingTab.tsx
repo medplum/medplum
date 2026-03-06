@@ -55,7 +55,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
   const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
-  const [candidBillingProvider, setCandidBillingProvider] = useState<string | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
   const [backgroundChecking, setBackgroundChecking] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
@@ -125,10 +124,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
         setCandidClaimAmount(totalCents / 100);
       }
-      const bp = result?.fullEncounter?.billingProvider;
-      if (bp?.firstName || bp?.lastName) {
-        setCandidBillingProvider([bp.firstName, bp.lastName].filter(Boolean).join(' '));
-      }
     } catch (err) {
       showErrorNotification('Unable to fetch Candid Health claim: ' + err);
     } finally {
@@ -168,10 +163,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         if (serviceLines?.length) {
           const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
           setCandidClaimAmount(totalCents / 100);
-        }
-        const bp = result?.fullEncounter?.billingProvider;
-        if (bp?.firstName || bp?.lastName) {
-          setCandidBillingProvider([bp.firstName, bp.lastName].filter(Boolean).join(' '));
         }
       })
       .catch(() => undefined)
@@ -393,7 +384,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <ClaimSubmittedPanel
           status={candidStatus}
           claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
-          billingProvider={candidBillingProvider ?? ''}
+
           createdAt={candidCreatedAt}
           candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
           exportMenu={exportClaimMenu()}
