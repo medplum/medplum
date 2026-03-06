@@ -71,10 +71,7 @@ describe('ClaimSubmittedPanel', () => {
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
     setup({ candidEncounterId: 'enc-123' });
     await userEvent.click(screen.getByText('View Claim on Candid'));
-    expect(windowOpenSpy).toHaveBeenCalledWith(
-      'https://app-staging.joincandidhealth.com/claims/enc-123',
-      '_blank'
-    );
+    expect(windowOpenSpy).toHaveBeenCalledWith('https://app-staging.joincandidhealth.com/claims/enc-123', '_blank');
     windowOpenSpy.mockRestore();
   });
 
