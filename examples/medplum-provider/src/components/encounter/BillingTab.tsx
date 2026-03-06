@@ -21,7 +21,6 @@ import { useMedplum } from '@medplum/react';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useEncounterChartContext } from './EncounterChartContext';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
@@ -32,6 +31,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
 import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
+import { useEncounterChartContext } from './EncounterChartContext';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
@@ -42,8 +42,17 @@ export interface BillingTabProps {
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const { chartNoteStatus } = props;
-  const { encounter, setEncounter, claim, setClaim, patient, practitioner, setPractitioner, chargeItems, setChargeItems } =
-    useEncounterChartContext();
+  const {
+    encounter,
+    setEncounter,
+    claim,
+    setClaim,
+    patient,
+    practitioner,
+    setPractitioner,
+    chargeItems,
+    setChargeItems,
+  } = useEncounterChartContext();
   const medplum = useMedplum();
   const candidEncounterId = claim ? getIdentifier(claim, CANDID_IDENTIFIER_SYSTEM) : undefined;
   const [conditions, setConditions] = useState<Condition[]>([]);
@@ -63,7 +72,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   claimRef.current = claim;
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const debouncedUpdateClaim = useDebouncedUpdateResource(medplum);
-
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -430,11 +438,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <VisitDetailsPanel key={encounter?.meta?.lastUpdated} onEncounterChange={handleEncounterChange} />
       </Group>
 
-      <ConditionList
-        conditions={conditions}
-        setConditions={setConditions}
-        onDiagnosisChange={handleDiagnosisChange}
-      />
+      <ConditionList conditions={conditions} setConditions={setConditions} onDiagnosisChange={handleDiagnosisChange} />
 
       <ChargeItemList updateChargeItems={updateChargeItems} />
     </Stack>

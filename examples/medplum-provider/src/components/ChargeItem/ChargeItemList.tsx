@@ -9,9 +9,9 @@ import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/re
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import { applyChargeItemDefinition, calculateTotalPrice } from '../../utils/chargeitems';
 import { showErrorNotification } from '../../utils/notifications';
+import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import ChargeItemPanel from './ChargeItemPanel';
 
 export interface ChargeItemListProps {

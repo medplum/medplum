@@ -6,8 +6,8 @@ import type { Condition, EncounterDiagnosis } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
-import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import { showErrorNotification } from '../../utils/notifications';
+import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import ConditionItem from './ConditionItem';
 import ConditionModal from './ConditionModal';
 
