@@ -13,7 +13,7 @@ import {
   ThemeIcon,
 } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
-import type { JSX } from 'react';
+import type { ComponentType, JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
@@ -29,6 +29,34 @@ import { useMarketplace } from './MarketplaceContext';
 import type { MarketplaceListing } from './types';
 
 // ─── Listing Card ───────────────────────────────────────────────────────────
+
+function ListingIcon({
+  listing,
+  TypeIcon,
+}: {
+  readonly listing: MarketplaceListing;
+  readonly TypeIcon: ComponentType<{ size: number }>;
+}): JSX.Element {
+  if (listing.icon) {
+    return (
+      <Box w={48} h={48} style={{ borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
+        <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }} />
+      </Box>
+    );
+  }
+  if (listingIconComponent[listing.id]) {
+    return (
+      <Box w={48} h={48} style={{ borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
+        <TypeIcon size={24} />
+      </Box>
+    );
+  }
+  return (
+    <ThemeIcon size="48px" radius="md" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'} style={{ flexShrink: 0 }}>
+      <TypeIcon size={18} />
+    </ThemeIcon>
+  );
+}
 
 function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
   const { isInstalled } = useMarketplace();
@@ -47,19 +75,7 @@ function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX
     >
       <Group justify="space-between" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
         <Group gap="sm" wrap="nowrap" style={{ overflow: 'hidden', minWidth: 0 }}>
-          {listing.icon ? (
-            <Box w={48} h={48} style={{ borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
-              <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }} />
-            </Box>
-          ) : listingIconComponent[listing.id] ? (
-            <Box w={48} h={48} style={{ borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
-              <TypeIcon size={24} />
-            </Box>
-          ) : (
-            <ThemeIcon size="48px" radius="md" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'} style={{ flexShrink: 0 }}>
-              <TypeIcon size={18} />
-            </ThemeIcon>
-          )}
+          <ListingIcon listing={listing} TypeIcon={TypeIcon} />
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
             <Text fw={700} size="lg" lineClamp={1}>
               {listing.name}

@@ -35,10 +35,10 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 
 /**
  * Returns the patient page tabs filtered based on user permissions.
- * @param membership - The current user's project membership.
+ * @param _membership - The current user's project membership.
  * @returns Filtered array of patient page tabs.
  */
-export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
+export function getPatientPageTabs(_membership: ProjectMembership | undefined): PatientPageTabInfo[] {
   return PatientPageTabs;
 }
 
