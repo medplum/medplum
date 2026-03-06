@@ -5,7 +5,8 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { getActiveSubsKey, type ActiveSubscriptionEntry } from '../../pubsub';
+import { getActiveSubsKey  } from '../../pubsub';
+import type {ActiveSubscriptionEntry} from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
