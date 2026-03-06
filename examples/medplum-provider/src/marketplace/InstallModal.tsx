@@ -146,12 +146,7 @@ export function InstallModal({ opened, onClose, listingId, listingName }: Instal
       }}
     >
       <Divider />
-      <Group
-        gap={0}
-        align="flex-start"
-        wrap="nowrap"
-        style={{ flex: 1, minHeight: 0 }}
-      >
+      <Group gap={0} align="flex-start" wrap="nowrap" style={{ flex: 1, minHeight: 0 }}>
         <Box p="lg" style={{ flexShrink: 0, width: '33%' }}>
           <Stepper
             active={completed ? totalSteps : step}
@@ -273,16 +268,29 @@ const CAREBRIDGE_PERMISSIONS = [
   { icon: IconHeartbeat, label: 'Read conditions and diagnoses', description: 'Active and resolved conditions' },
   { icon: IconFileAnalytics, label: 'Read care plans and goals', description: 'Treatment plans and patient goals' },
   { icon: IconVaccine, label: 'Read immunization records', description: 'Vaccination history and schedules' },
-  { icon: IconDatabase, label: 'Generate population health reports', description: 'Aggregate analytics and quality measures' },
+  {
+    icon: IconDatabase,
+    label: 'Generate population health reports',
+    description: 'Aggregate analytics and quality measures',
+  },
 ];
 
 function GoogleLogo(): JSX.Element {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
       <path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
       <path fill="none" d="M0 0h48v48H0z" />
     </svg>
   );
@@ -453,7 +461,8 @@ function DoseSpotCredentialsStep({ onNext }: { readonly onNext: () => void }): J
             <IconLock size={12} />
           </ThemeIcon>
           <Text size="xs" c="dimmed">
-            Credentials are encrypted at rest and transmitted over TLS. They are never exposed in logs or client-side code.
+            Credentials are encrypted at rest and transmitted over TLS. They are never exposed in logs or client-side
+            code.
           </Text>
         </Group>
       </Paper>
@@ -518,7 +527,8 @@ function DoseSpotEncryptionStep({
             <IconShieldCheck size={12} />
           </ThemeIcon>
           <Text size="xs" c="dimmed">
-            These settings satisfy DEA 21 CFR Part 1311 requirements for electronic prescribing of controlled substances.
+            These settings satisfy DEA 21 CFR Part 1311 requirements for electronic prescribing of controlled
+            substances.
           </Text>
         </Group>
       </Paper>
@@ -599,18 +609,13 @@ function TelehealthPlanStep({ onNext }: { readonly onNext: () => void }): JSX.El
               h="100%"
               style={{
                 cursor: 'pointer',
-                borderColor:
-                  selected === plan.id ? `var(--mantine-color-${plan.color}-5)` : undefined,
+                borderColor: selected === plan.id ? `var(--mantine-color-${plan.color}-5)` : undefined,
                 borderWidth: selected === plan.id ? 2 : 1,
                 position: 'relative',
               }}
             >
               {plan.badge && (
-                <Badge
-                  size="xs"
-                  color={plan.color}
-                  style={{ position: 'absolute', top: 8, right: 8 }}
-                >
+                <Badge size="xs" color={plan.color} style={{ position: 'absolute', top: 8, right: 8 }}>
                   {plan.badge}
                 </Badge>
               )}
@@ -849,10 +854,7 @@ function TelehealthConfigStep({
             defaultChecked
             description="Allow providers and patients to share their screen"
           />
-          <Switch
-            label="Enable recording"
-            description="Record visits for documentation (requires patient consent)"
-          />
+          <Switch label="Enable recording" description="Record visits for documentation (requires patient consent)" />
         </Stack>
       </Paper>
     </StepLayout>

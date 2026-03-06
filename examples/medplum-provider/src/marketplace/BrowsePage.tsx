@@ -1,17 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  Badge,
-  Box,
-  Card,
-  Center,
-  Group,
-  SimpleGrid,
-  Stack,
-  Text,
-  ThemeIcon,
-} from '@mantine/core';
+import { Badge, Box, Card, Center, Group, SimpleGrid, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 import type { ComponentType, JSX } from 'react';
 import { useEffect, useMemo } from 'react';
@@ -24,8 +14,8 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
 import { useMarketplace } from './MarketplaceContext';
+import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
 import type { MarketplaceListing } from './types';
 
 // ─── Listing Card ───────────────────────────────────────────────────────────
@@ -39,20 +29,52 @@ function ListingIcon({
 }): JSX.Element {
   if (listing.icon) {
     return (
-      <Box w={48} h={48} style={{ borderRadius: 10, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
-        <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }} />
+      <Box
+        w={48}
+        h={48}
+        style={{
+          borderRadius: 10,
+          overflow: 'hidden',
+          flexShrink: 0,
+          border: '1px solid var(--mantine-color-gray-2)',
+          background: 'white',
+        }}
+      >
+        <img
+          src={listing.icon}
+          alt={listing.name}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }}
+        />
       </Box>
     );
   }
   if (listingIconComponent[listing.id]) {
     return (
-      <Box w={48} h={48} style={{ borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
+      <Box
+        w={48}
+        h={48}
+        style={{
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          border: '1px solid var(--mantine-color-gray-2)',
+          background: 'white',
+        }}
+      >
         <TypeIcon size={24} />
       </Box>
     );
   }
   return (
-    <ThemeIcon size="48px" radius="md" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'} style={{ flexShrink: 0 }}>
+    <ThemeIcon
+      size="48px"
+      radius="md"
+      variant="light"
+      color={typeBadgeColor[listing.type] ?? 'gray'}
+      style={{ flexShrink: 0 }}
+    >
       <TypeIcon size={18} />
     </ThemeIcon>
   );
@@ -71,7 +93,13 @@ function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX
       padding="lg"
       radius="lg"
       withBorder={false}
-      style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', border: '1px solid var(--mantine-color-gray-1)' }}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid var(--mantine-color-gray-1)',
+      }}
     >
       <Group justify="space-between" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
         <Group gap="sm" wrap="nowrap" style={{ overflow: 'hidden', minWidth: 0 }}>
@@ -98,7 +126,14 @@ function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX
 
       <Group gap="4">
         {listing.categories.slice(0, 2).map((cat) => (
-          <Badge key={cat} size="md" variant="light" color="gray.5" c="dark.3" style={{ textTransform: 'none', fontWeight: 500 }}>
+          <Badge
+            key={cat}
+            size="md"
+            variant="light"
+            color="gray.5"
+            c="dark.3"
+            style={{ textTransform: 'none', fontWeight: 500 }}
+          >
             {cat}
           </Badge>
         ))}

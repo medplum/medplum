@@ -1,18 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  Badge,
-  Box,
-  Card,
-  Divider,
-  Group,
-  SimpleGrid,
-  Text,
-  ThemeIcon,
-  Title,
-  UnstyledButton,
-} from '@mantine/core';
+import { Badge, Box, Card, Divider, Group, SimpleGrid, Text, ThemeIcon, Title, UnstyledButton } from '@mantine/core';
 import { IconBuildingSkyscraper } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
@@ -22,11 +11,7 @@ import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
 import type { MarketplaceListing } from './types';
 
 const allServiceTypes = Array.from(
-  new Set(
-    listings
-      .filter((l) => l.type === 'Service Provider')
-      .flatMap((l) => l.serviceTypes ?? [])
-  )
+  new Set(listings.filter((l) => l.type === 'Service Provider').flatMap((l) => l.serviceTypes ?? []))
 ).sort();
 
 function PartnerCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
@@ -134,9 +119,9 @@ export function PartnersPage(): JSX.Element {
 
       <Box mb="64px">
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
-        {serviceProviders.map((listing) => (
-          <PartnerCard key={listing.id} listing={listing} />
-        ))}
+          {serviceProviders.map((listing) => (
+            <PartnerCard key={listing.id} listing={listing} />
+          ))}
         </SimpleGrid>
       </Box>
     </Box>

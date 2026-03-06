@@ -1,15 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {
-  Box,
-  Card,
-  Group,
-  SimpleGrid,
-  Text,
-  ThemeIcon,
-  Title,
-} from '@mantine/core';
+import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconPackages } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect } from 'react';
@@ -48,7 +40,13 @@ export function CollectionsPage(): JSX.Element {
               padding="lg"
               radius="lg"
               withBorder={false}
-              style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', border: '1px solid var(--mantine-color-gray-1)' }}
+              style={{
+                textDecoration: 'none',
+                color: 'inherit',
+                display: 'flex',
+                flexDirection: 'column',
+                border: '1px solid var(--mantine-color-gray-1)',
+              }}
             >
               <Group gap="sm" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
                 <ThemeIcon size="48px" radius="md" variant="light" color="grape" style={{ flexShrink: 0 }}>

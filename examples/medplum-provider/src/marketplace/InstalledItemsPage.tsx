@@ -23,13 +23,7 @@ import { IconPackage, IconPlus, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import {
-  getListingById,
-  typeBadgeColor,
-  typeBrowseLabels,
-  typeDisplayNames,
-  typeIconComponent,
-} from './data';
+import { getListingById, typeBadgeColor, typeBrowseLabels, typeDisplayNames, typeIconComponent } from './data';
 import { useMarketplace } from './MarketplaceContext';
 import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
 import type { ListingType, MarketplaceListing } from './types';
@@ -114,7 +108,13 @@ export function InstalledItemsPage(): JSX.Element {
   return (
     <Box px="xl" py="xl">
       {/* Pill Tabs */}
-      <Tabs value={activeTab} onChange={(v) => setActiveTab(v ?? 'all')} variant="unstyled" className="pill-tabs" mb="lg">
+      <Tabs
+        value={activeTab}
+        onChange={(v) => setActiveTab(v ?? 'all')}
+        variant="unstyled"
+        className="pill-tabs"
+        mb="lg"
+      >
         <Group justify="space-between" align="flex-end">
           <Tabs.List>
             {typeTabs.map((tab) => (
@@ -270,12 +270,7 @@ export function InstalledItemsPage(): JSX.Element {
       >
         {viewingListing && (
           <Stack gap="md">
-            <TextInput
-              label="Name"
-              value={editName}
-              onChange={(e) => setEditName(e.currentTarget.value)}
-              required
-            />
+            <TextInput label="Name" value={editName} onChange={(e) => setEditName(e.currentTarget.value)} required />
             <Textarea
               label="Description"
               value={editDescription}
