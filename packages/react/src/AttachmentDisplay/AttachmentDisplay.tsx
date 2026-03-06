@@ -21,38 +21,19 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
   }
 
   return (
-    <div data-testid="attachment-display" style={{ width: '100%', overflow: 'hidden' }}>
+    <div data-testid="attachment-display">
       {contentType?.startsWith('image/') && (
-        <img
-          data-testid="attachment-image"
-          style={{
-            width: '100%',
-            maxWidth: props.maxWidth ?? '100%',
-            height: 'auto',
-            display: 'block',
-          }}
-          src={url}
-          alt={title}
-        />
+        <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={title} />
       )}
       {contentType?.startsWith('video/') && (
-        <video
-          data-testid="attachment-video"
-          style={{
-            width: '100%',
-            maxWidth: props.maxWidth ?? '100%',
-            height: 'auto',
-            display: 'block',
-          }}
-          controls={true}
-        >
+        <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>
           <source type={contentType} src={url} />
         </video>
       )}
       {(contentType?.startsWith('text/') ||
         contentType === 'application/json' ||
         contentType === 'application/pdf') && (
-        <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth ?? '100%', minHeight: 400 }}>
+        <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe
             title="Attachment"
             width="100%"

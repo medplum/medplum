@@ -78,8 +78,7 @@ describe('TaskProperties', () => {
     await waitFor(() => {
       const dueDateInput = screen.getByLabelText('Due Date');
       expect(dueDateInput).toBeInTheDocument();
-      const value = (dueDateInput as HTMLInputElement).value;
-      expect(value).toMatch(/2024-12-31/);
+      expect(dueDateInput).toHaveValue('2024-12-31T00:00');
     });
   });
 
