@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
-import type { Bundle, Slot } from '@medplum/fhirtypes';
-import { isDefined } from '@medplum/core';
+import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
+import { createReference, isDefined } from '@medplum/core';
 import { Document, Scheduler, useMedplum } from '@medplum/react';
 import type { SlotSearchFunction } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
@@ -11,6 +11,7 @@ import type { JSX } from 'react';
 
 export function GetCare(): JSX.Element {
   const medplum = useMedplum();
+  const patient = medplum.getProfile() as Patient;
   const [schedule, loading] = useSearchOne('Schedule');
 
   const fetchSlots: SlotSearchFunction = async (period) => {
@@ -27,6 +28,16 @@ export function GetCare(): JSX.Element {
     const findUrl = medplum.fhirUrl('Schedule', schedule.id, '$find');
     const bundle = await medplum.get<Bundle<Slot>>(`${findUrl}?${params}`);
     return bundle.entry?.map((entry) => entry.resource).filter(isDefined) ?? [];
+  };
+
+  const bookSlot = async (slot: Slot): Promise<void> => {
+    await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'slot', resource: slot },
+        { name: 'patient-reference', valueReference: createReference(patient) },
+      ],
+    });
   };
 
   if (loading) {
@@ -49,7 +60,7 @@ export function GetCare(): JSX.Element {
 
   return (
     <Document width={800}>
-      <Scheduler schedule={schedule} fetchSlots={fetchSlots} />
+      <Scheduler schedule={schedule} fetchSlots={fetchSlots} onSelectSlot={bookSlot} />
     </Document>
   );
 }
