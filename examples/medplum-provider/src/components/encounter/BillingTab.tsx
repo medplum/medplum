@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
+import { Button, Card, Flex, Group, Menu, Skeleton, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { formatDateTime, formatHumanName, getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
@@ -19,7 +19,7 @@ import type {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconDownload, IconExternalLink, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -31,10 +31,10 @@ import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
+import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
-const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
 
 export interface BillingTabProps {
   patient: WithId<Patient>;
@@ -72,6 +72,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
+  const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
   const [backgroundChecking, setBackgroundChecking] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
@@ -135,6 +136,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (createdAt) {
         setCandidCreatedAt(createdAt);
       }
+      const serviceLines = result?.fullEncounter?.serviceLines;
+      if (serviceLines?.length) {
+        const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
+        setCandidClaimAmount(totalCents / 100);
+      }
     } catch (err) {
       showErrorNotification('Unable to fetch Candid Health claim: ' + err);
     } finally {
@@ -169,6 +175,11 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         const createdAt = result?.fullEncounter?.createdAt;
         if (createdAt) {
           setCandidCreatedAt(createdAt);
+        }
+        const serviceLines = result?.fullEncounter?.serviceLines;
+        if (serviceLines?.length) {
+          const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
+          setCandidClaimAmount(totalCents / 100);
         }
       })
       .catch(() => undefined)
@@ -384,53 +395,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     if (candidEncounterId || candidStatus) {
       return (
-        <Card withBorder shadow="sm" p={0}>
-          <Stack p="md" gap="md">
-            <Flex align="center" justify="space-between" gap="md">
-              <Stack gap={4} miw={100}>
-                <Text size="xs" c="dimmed">
-                  Claim Status:
-                </Text>
-                {candidStatus && (
-                  <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
-                    {formatCandidStatus(candidStatus)}
-                  </Badge>
-                )}
-              </Stack>
-              <Box style={{ flex: 1 }}>
-                <Text size="sm">
-                  Claim submitted for{' '}
-                  <Text component="span" fw={700}>
-                    ${(claim.total?.value ?? 0).toFixed(0)}
-                  </Text>{' '}
-                  by{' '}
-                  <Text component="span" fw={700}>
-                    {formatHumanName(practitioner?.name?.[0])}
-                  </Text>
-                  .
-                </Text>
-                {candidCreatedAt && (
-                  <Text size="sm" c="dimmed">
-                    Submitted on {formatDateTime(candidCreatedAt)}
-                  </Text>
-                )}
-              </Box>
-              {(resolvedCandidEncounterId ?? candidEncounterId) && (
-                <Button
-                  variant="outline"
-                  rightSection={<IconExternalLink size={14} />}
-                  onClick={() =>
-                    window.open(`${CANDID_CLAIM_BASE_URL}${resolvedCandidEncounterId ?? candidEncounterId}`, '_blank')
-                  }
-                >
-                  View Claim on Candid
-                </Button>
-              )}
-            </Flex>
-            <Divider />
-            <Group>{exportClaimMenu()}</Group>
-          </Stack>
-        </Card>
+        <ClaimSubmittedPanel
+          status={candidStatus}
+          claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
+          createdAt={candidCreatedAt}
+          candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
+          exportMenu={exportClaimMenu()}
+        />
       );
     }
     return (
@@ -498,22 +469,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Stack>
   );
 };
-
-const getStatusColor = (status: string): string => {
-  if (['rejected', 'denied'].includes(status)) {
-    return 'red';
-  }
-  if (['paid', 'finalized_paid'].includes(status)) {
-    return 'green';
-  }
-  return 'violet';
-};
-
-const formatCandidStatus = (status: string): string =>
-  status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {
