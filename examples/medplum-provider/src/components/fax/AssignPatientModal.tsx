@@ -6,8 +6,8 @@ import { createReference, normalizeErrorString } from '@medplum/core';
 import type { Patient, Reference } from '@medplum/fhirtypes';
 import { ResourceInput, useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
 import type { JSX } from 'react';
+import { useEffect, useState } from 'react';
 
 interface AssignPatientModalProps {
   opened: boolean;
@@ -46,9 +46,7 @@ export function AssignPatientModal({
 
     setIsSubmitting(true);
     try {
-      await medplum.patchResource(resourceType, resourceId, [
-        { op: 'add', path: '/subject', value: patient },
-      ]);
+      await medplum.patchResource(resourceType, resourceId, [{ op: 'add', path: '/subject', value: patient }]);
 
       notifications.show({
         color: 'green',
@@ -74,9 +72,7 @@ export function AssignPatientModal({
   const handleRemovePatient = async (): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await medplum.patchResource(resourceType, resourceId, [
-        { op: 'remove', path: '/subject' },
-      ]);
+      await medplum.patchResource(resourceType, resourceId, [{ op: 'remove', path: '/subject' }]);
 
       notifications.show({
         color: 'green',

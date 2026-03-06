@@ -1,14 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Button, Divider, Modal, Stack, Text, TextInput, Textarea } from '@mantine/core';
+import { Box, Button, Divider, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { createReference, isNotFound, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import type { Attachment, Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff, IconUpload } from '@tabler/icons-react';
-import { useRef, useState } from 'react';
 import type { JSX } from 'react';
-
+import { useRef, useState } from 'react';
 
 export interface SendFaxModalProps {
   opened: boolean;
@@ -206,58 +205,61 @@ export function SendFaxModal({
           <Stack gap="lg" p="lg">
             {!defaultAttachment && (
               <>
-              <Stack gap={4}>
-                <Text size="sm" fw={500}>
-                  Document <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
-                </Text>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  accept=".pdf,.png,.jpg,.jpeg,.tiff"
-                  style={{ display: 'none' }}
-                />
-                <Box
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDragging(false);
-                    const dropped = e.dataTransfer.files?.[0];
-                    if (dropped) {
-                      setFile(dropped);
-                    }
-                  }}
-                  style={{
-                    border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-3)'}`,
-                    borderRadius: 'var(--mantine-radius-md)',
-                    padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : undefined,
-                    transition: 'border-color 150ms ease, background-color 150ms ease',
-                  }}
-                >
-                  <Stack align="center" gap={4}>
-                    <IconUpload size={24} color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'} />
-                    <Text size="sm" c={file ? undefined : 'dimmed'}>
-                      {file ? file.name : 'Drag a file here or click to browse'}
-                    </Text>
-                    {!file && (
-                      <Text size="xs" c="gray.5">
-                        PDF, PNG, JPG, TIFF
+                <Stack gap={4}>
+                  <Text size="sm" fw={500}>
+                    Document <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+                  </Text>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    accept=".pdf,.png,.jpg,.jpeg,.tiff"
+                    style={{ display: 'none' }}
+                  />
+                  <Box
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const dropped = e.dataTransfer.files?.[0];
+                      if (dropped) {
+                        setFile(dropped);
+                      }
+                    }}
+                    style={{
+                      border: `2px dashed ${isDragging ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-3)'}`,
+                      borderRadius: 'var(--mantine-radius-md)',
+                      padding: 'var(--mantine-spacing-xl) var(--mantine-spacing-md)',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      backgroundColor: isDragging ? 'var(--mantine-color-blue-0)' : undefined,
+                      transition: 'border-color 150ms ease, background-color 150ms ease',
+                    }}
+                  >
+                    <Stack align="center" gap={4}>
+                      <IconUpload
+                        size={24}
+                        color={file ? 'var(--mantine-color-blue-5)' : 'var(--mantine-color-gray-5)'}
+                      />
+                      <Text size="sm" c={file ? undefined : 'dimmed'}>
+                        {file ? file.name : 'Drag a file here or click to browse'}
                       </Text>
-                    )}
-                  </Stack>
+                      {!file && (
+                        <Text size="xs" c="gray.5">
+                          PDF, PNG, JPG, TIFF
+                        </Text>
+                      )}
+                    </Stack>
+                  </Box>
+                </Stack>
+                <Box py="xs">
+                  <Divider />
                 </Box>
-              </Stack>
-              <Box py="xs">
-                <Divider />
-              </Box>
               </>
             )}
             <TextInput
@@ -279,7 +281,11 @@ export function SendFaxModal({
               <Divider />
             </Box>
             <TextInput
-              label={<>Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span></>}
+              label={
+                <>
+                  Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
+                </>
+              }
               placeholder="+1 (555) 123-4567"
               value={faxNumber}
               onChange={(e) => setFaxNumber(e.currentTarget.value)}

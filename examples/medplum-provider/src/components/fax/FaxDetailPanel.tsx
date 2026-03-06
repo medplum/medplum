@@ -4,22 +4,15 @@ import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } fr
 import { notifications } from '@mantine/notifications';
 import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum/core';
 import type { Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl } from '@medplum/react-hooks';
 import { MedplumLink, useMedplum, useResource } from '@medplum/react';
-import {
-  IconArchive,
-  IconArchiveOff,
-  IconCircleOff,
-  IconDownload,
-  IconSend,
-  IconUserPlus,
-} from '@tabler/icons-react';
-import { useState } from 'react';
+import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import { IconArchive, IconArchiveOff, IconCircleOff, IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import { useState } from 'react';
 import { AssignPatientModal } from './AssignPatientModal';
-import { SendFaxModal } from './SendFaxModal';
 import { formatFaxNumber } from './fax.utils';
 import classes from './FaxBoard.module.css';
+import { SendFaxModal } from './SendFaxModal';
 
 interface FaxDetailPanelProps {
   fax: Communication;
@@ -35,9 +28,7 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
 
   const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
   const attachmentUrl = useCachedBinaryUrl(attachment?.url);
-  const isInbound =
-    fax.category?.[0]?.coding?.[0]?.code === 'inbound' ||
-    !fax.category?.[0]?.coding?.[0]?.code;
+  const isInbound = fax.category?.[0]?.coding?.[0]?.code === 'inbound' || !fax.category?.[0]?.coding?.[0]?.code;
   const isArchived = fax.status === 'entered-in-error';
 
   const originatingFaxNumber = fax.extension?.find(
@@ -102,23 +93,47 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
                 <Group gap="xs">
                   {attachment?.url && (
                     <Tooltip label="Download" position="bottom" openDelay={500}>
-                      <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={handleDownload}>
+                      <ActionIcon
+                        variant="transparent"
+                        radius="xl"
+                        size={32}
+                        className="outline-icon-button"
+                        onClick={handleDownload}
+                      >
                         <IconDownload size={16} />
                       </ActionIcon>
                     </Tooltip>
                   )}
                   <Tooltip label={isArchived ? 'Unarchive' : 'Archive'} position="bottom" openDelay={500}>
-                    <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={handleArchiveToggle}>
+                    <ActionIcon
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={handleArchiveToggle}
+                    >
                       {isArchived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Assign Patient" position="bottom" openDelay={500}>
-                    <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={() => setAssignModalOpened(true)}>
+                    <ActionIcon
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={() => setAssignModalOpened(true)}
+                    >
                       <IconUserPlus size={16} />
                     </ActionIcon>
                   </Tooltip>
                   <Tooltip label="Forward / Re-Fax" position="bottom" openDelay={500}>
-                    <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={() => setForwardModalOpened(true)}>
+                    <ActionIcon
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={() => setForwardModalOpened(true)}
+                    >
                       <IconSend size={16} />
                     </ActionIcon>
                   </Tooltip>
@@ -130,7 +145,15 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
 
             {attachmentUrl && attachment?.contentType?.startsWith('image/') ? (
               <Box p="md" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
-                <Box style={{ display: 'block', maxWidth: 'fit-content', borderRadius: 4, overflow: 'hidden', position: 'relative' }}>
+                <Box
+                  style={{
+                    display: 'block',
+                    maxWidth: 'fit-content',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                    position: 'relative',
+                  }}
+                >
                   <img
                     src={attachmentUrl}
                     alt={attachment.title ?? 'Fax attachment'}
@@ -151,7 +174,14 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
             ) : (
               <Box p="md" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 {attachmentUrl ? (
-                  <Box style={{ flex: 1, borderRadius: 4, overflow: 'hidden', border: '1px solid color-mix(in srgb, var(--mantine-color-gray-3) 50%, transparent)' }}>
+                  <Box
+                    style={{
+                      flex: 1,
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                      border: '1px solid color-mix(in srgb, var(--mantine-color-gray-3) 50%, transparent)',
+                    }}
+                  >
                     <iframe
                       title="Fax attachment"
                       width="100%"

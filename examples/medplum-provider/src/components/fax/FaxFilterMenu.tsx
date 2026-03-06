@@ -1,6 +1,8 @@
-import { Menu, ActionIcon, Text, Flex, Tooltip, Indicator, Divider, Box } from '@mantine/core';
-import { IconFilter2Plus, IconChevronRight, IconCheck, IconX, IconStethoscope } from '@tabler/icons-react';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { ActionIcon, Box, Divider, Flex, Indicator, Menu, Text, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { IconCheck, IconChevronRight, IconFilter2Plus, IconStethoscope, IconX } from '@tabler/icons-react';
 import type { JSX, ReactNode } from 'react';
 
 const FAX_STATUSES = ['in-progress', 'completed', 'stopped', 'entered-in-error'] as const;
@@ -8,8 +10,8 @@ type FaxStatus = (typeof FAX_STATUSES)[number];
 
 const FAX_STATUS_LABELS: Record<FaxStatus, string> = {
   'in-progress': 'Unread',
-  'completed': 'Read / Archived',
-  'stopped': 'Failed',
+  completed: 'Read / Archived',
+  stopped: 'Failed',
   'entered-in-error': 'Error',
 };
 

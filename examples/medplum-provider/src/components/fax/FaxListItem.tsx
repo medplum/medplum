@@ -28,7 +28,7 @@ function getRecipientDisplay(fax: Communication, recipient: Organization | undef
   const ref = fax.recipient[0];
   if (recipient?.resourceType === 'Organization' && recipient.name === 'Fax Recipient') {
     const faxNumber = recipient.contact?.[0]?.telecom?.find((t) => t.system === 'fax')?.value;
-    return faxNumber ? formatFaxNumber(faxNumber) : ref.display ?? 'Unknown recipient';
+    return faxNumber ? formatFaxNumber(faxNumber) : (ref.display ?? 'Unknown recipient');
   }
   const display = ref.display ?? 'Unknown recipient';
   return display && /^\d[\d\s\-+()]*$/.test(display.replace(/\s/g, '')) ? formatFaxNumber(display) : display;
@@ -41,9 +41,7 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
   const faxUrl = getFaxUri(fax);
 
   const firstLine =
-    activeTab === 'sent'
-      ? getRecipientDisplay(fax, recipient as Organization | undefined)
-      : getSenderOrRecipient(fax);
+    activeTab === 'sent' ? getRecipientDisplay(fax, recipient as Organization | undefined) : getSenderOrRecipient(fax);
 
   const faxDirection = fax.category
     ?.flatMap((c) => c.coding ?? [])
@@ -96,7 +94,6 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
   );
 }
 
-
 function getSenderOrRecipient(fax: Communication): string {
   const originatingFaxNumber = fax.extension?.find(
     (ext) => ext.url === 'https://efax.com/originating-fax-number'
@@ -110,4 +107,3 @@ function getSenderOrRecipient(fax: Communication): string {
   }
   return 'Unknown Sender';
 }
-

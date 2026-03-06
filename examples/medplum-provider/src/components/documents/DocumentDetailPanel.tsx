@@ -3,20 +3,14 @@
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { formatDate, normalizeErrorString } from '@medplum/core';
-import type { Attachment, Communication, DocumentReference, Reference, Patient } from '@medplum/fhirtypes';
-import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import type { Attachment, Communication, DocumentReference, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import {
-  IconCheck,
-  IconCircleCheck,
-  IconCircleOff,
-  IconExternalLink,
-  IconPrinter,
-} from '@tabler/icons-react';
-import { useState } from 'react';
+import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import { IconCheck, IconCircleCheck, IconCircleOff, IconExternalLink, IconPrinter } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import type { PatientDocument } from './DocumentListItem.utils';
+import { useState } from 'react';
 import { SendFaxModal } from '../fax/SendFaxModal';
+import type { PatientDocument } from './DocumentListItem.utils';
 
 interface DocumentDetailPanelProps {
   item: PatientDocument;
@@ -95,7 +89,14 @@ export function DocumentDetailPanel({ item, patientRef, onDocumentChange }: Docu
                           }
                         }}
                       />
-                      <ActionIcon variant="filled" color="blue" radius="xl" size={32} data-save-name onClick={() => handleSaveName().catch(console.error)}>
+                      <ActionIcon
+                        variant="filled"
+                        color="blue"
+                        radius="xl"
+                        size={32}
+                        data-save-name
+                        onClick={() => handleSaveName().catch(console.error)}
+                      >
                         <IconCheck size={16} />
                       </ActionIcon>
                     </Group>
@@ -120,14 +121,26 @@ export function DocumentDetailPanel({ item, patientRef, onDocumentChange }: Docu
                   {attachment?.url && (
                     <>
                       <Tooltip label="Open in Browser" position="bottom" openDelay={500}>
-                        <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={handleOpenInBrowser}>
+                        <ActionIcon
+                          variant="transparent"
+                          radius="xl"
+                          size={32}
+                          className="outline-icon-button"
+                          onClick={handleOpenInBrowser}
+                        >
                           <IconExternalLink size={16} />
                         </ActionIcon>
                       </Tooltip>
                     </>
                   )}
                   <Tooltip label="Fax Document" position="bottom" openDelay={500}>
-                    <ActionIcon variant="transparent" radius="xl" size={32} className="outline-icon-button" onClick={() => setFaxModalOpened(true)}>
+                    <ActionIcon
+                      variant="transparent"
+                      radius="xl"
+                      size={32}
+                      className="outline-icon-button"
+                      onClick={() => setFaxModalOpened(true)}
+                    >
                       <IconPrinter size={16} />
                     </ActionIcon>
                   </Tooltip>
@@ -141,7 +154,14 @@ export function DocumentDetailPanel({ item, patientRef, onDocumentChange }: Docu
               <>
                 <Box p="md" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   {attachmentUrl && (
-                    <Box style={{ flex: 1, borderRadius: 4, overflow: 'hidden', border: `1px solid color-mix(in srgb, var(--mantine-color-gray-3) 50%, transparent)` }}>
+                    <Box
+                      style={{
+                        flex: 1,
+                        borderRadius: 4,
+                        overflow: 'hidden',
+                        border: `1px solid color-mix(in srgb, var(--mantine-color-gray-3) 50%, transparent)`,
+                      }}
+                    >
                       <iframe
                         title="Attachment"
                         width="100%"
@@ -225,7 +245,15 @@ function getAuthor(item: PatientDocument): string | undefined {
   return sender?.display ?? sender?.reference;
 }
 
-function DocumentMetadata({ item, contentType, author }: { item: PatientDocument; contentType: string | undefined; author: string | undefined }): JSX.Element {
+function DocumentMetadata({
+  item,
+  contentType,
+  author,
+}: {
+  item: PatientDocument;
+  contentType: string | undefined;
+  author: string | undefined;
+}): JSX.Element {
   return (
     <Stack gap="sm">
       <Group align="flex-start" gap="lg">
@@ -287,7 +315,9 @@ function AttachmentPreview({ attachment, url }: AttachmentPreviewProps): JSX.Ele
 
   if (contentType.startsWith('image/')) {
     return (
-      <Box style={{ display: 'block', maxWidth: 'fit-content', position: 'relative', borderRadius: 4, overflow: 'hidden' }}>
+      <Box
+        style={{ display: 'block', maxWidth: 'fit-content', position: 'relative', borderRadius: 4, overflow: 'hidden' }}
+      >
         <img
           src={url}
           alt={attachment.title ?? 'Attachment'}
@@ -310,10 +340,7 @@ function AttachmentPreview({ attachment, url }: AttachmentPreviewProps): JSX.Ele
   if (contentType.startsWith('video/')) {
     return (
       <Box style={{ width: '100%', maxWidth: '100%', position: 'relative', borderRadius: 4, overflow: 'hidden' }}>
-        <video
-          style={{ width: '100%', maxWidth: '100%', height: 'auto', display: 'block' }}
-          controls={true}
-        >
+        <video style={{ width: '100%', maxWidth: '100%', height: 'auto', display: 'block' }} controls={true}>
           <source type={contentType} src={url} />
         </video>
         <Box

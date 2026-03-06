@@ -5,9 +5,9 @@ import { formatDate } from '@medplum/core';
 import { MedplumLink } from '@medplum/react';
 import cx from 'clsx';
 import type { JSX } from 'react';
+import classes from './DocumentListItem.module.css';
 import type { PatientDocument } from './DocumentListItem.utils';
 import { formatContentType } from './DocumentListItem.utils';
-import classes from './DocumentListItem.module.css';
 
 interface DocumentListItemProps {
   item: PatientDocument;

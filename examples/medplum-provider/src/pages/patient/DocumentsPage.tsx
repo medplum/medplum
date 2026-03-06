@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
+  ActionIcon,
   Box,
   Divider,
   Flex,
   Group,
-  ActionIcon,
   Paper,
   ScrollArea,
   Skeleton,
@@ -16,17 +16,17 @@ import {
 import { getReferenceString } from '@medplum/core';
 import type { Communication, DocumentReference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconPlus, IconSortDescending, IconSortAscending } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { IconPlus, IconSortAscending, IconSortDescending } from '@tabler/icons-react';
 import type { JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { usePatient } from '../../hooks/usePatient';
-import { showErrorNotification } from '../../utils/notifications';
+import { DocumentDetailPanel } from '../../components/documents/DocumentDetailPanel';
 import { DocumentListItem } from '../../components/documents/DocumentListItem';
 import type { PatientDocument } from '../../components/documents/DocumentListItem.utils';
 import { toPatientDocument } from '../../components/documents/DocumentListItem.utils';
-import { DocumentDetailPanel } from '../../components/documents/DocumentDetailPanel';
 import { DocumentSelectEmpty } from '../../components/documents/DocumentSelectEmpty';
+import { usePatient } from '../../hooks/usePatient';
+import { showErrorNotification } from '../../utils/notifications';
 import classes from './DocumentsPage.module.css';
 
 const FAX_MEDIUM = 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode|FAXWRIT';
@@ -83,17 +83,25 @@ export function DocumentsPage(): JSX.Element {
 
     try {
       const [docRefs, faxComms] = await Promise.all([
-        medplum.searchResources('DocumentReference', {
-          patient: patientReference,
-          _sort: '-_lastUpdated',
-          _count: '100',
-        }, { cache: 'no-cache' }),
-        medplum.searchResources('Communication', {
-          subject: patientReference,
-          medium: FAX_MEDIUM,
-          _sort: '-sent',
-          _count: '100',
-        }, { cache: 'no-cache' }),
+        medplum.searchResources(
+          'DocumentReference',
+          {
+            patient: patientReference,
+            _sort: '-_lastUpdated',
+            _count: '100',
+          },
+          { cache: 'no-cache' }
+        ),
+        medplum.searchResources(
+          'Communication',
+          {
+            subject: patientReference,
+            medium: FAX_MEDIUM,
+            _sort: '-sent',
+            _count: '100',
+          },
+          { cache: 'no-cache' }
+        ),
       ]);
 
       const allDocs: PatientDocument[] = [
@@ -194,7 +202,7 @@ export function DocumentsPage(): JSX.Element {
     return documents;
   }, [documents, sortAsc]);
 
-  const patientRef = patient ? { reference: `Patient/${patient.id}` } as const : undefined;
+  const patientRef = patient ? ({ reference: `Patient/${patient.id}` } as const) : undefined;
 
   return (
     <Box w="100%" h="100%" style={{ overflow: 'hidden' }}>
@@ -251,7 +259,8 @@ export function DocumentsPage(): JSX.Element {
                     filteredDocs.length > 0 &&
                     filteredDocs.map((item, index) => {
                       const isSelected = selectedDoc?.id === item.id;
-                      const nextIsSelected = index < filteredDocs.length - 1 && selectedDoc?.id === filteredDocs[index + 1]?.id;
+                      const nextIsSelected =
+                        index < filteredDocs.length - 1 && selectedDoc?.id === filteredDocs[index + 1]?.id;
 
                       return (
                         <DocumentListItem

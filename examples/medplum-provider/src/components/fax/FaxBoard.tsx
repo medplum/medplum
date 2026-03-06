@@ -1,33 +1,33 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import {
-  Flex,
-  Paper,
-  Group,
-  Divider,
   ActionIcon,
-  ScrollArea,
-  Stack,
-  Skeleton,
-  Text,
   Box,
+  Divider,
+  Flex,
+  Group,
+  Paper,
+  ScrollArea,
+  Skeleton,
+  Stack,
   Tabs,
+  Text,
   Tooltip,
 } from '@mantine/core';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { JSX } from 'react';
+import { isNotFound, OperationOutcomeError } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { useNavigate, useSearchParams } from 'react-router';
 import { IconSend } from '@tabler/icons-react';
-import { isNotFound, OperationOutcomeError } from '@medplum/core';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
-import { FaxListItem } from './FaxListItem';
-import type { FaxTab } from './FaxListItem';
-import { FaxSelectEmpty } from './FaxSelectEmpty';
-import { FaxDetailPanel } from './FaxDetailPanel';
-import { SendFaxModal } from './SendFaxModal';
 import classes from './FaxBoard.module.css';
+import { FaxDetailPanel } from './FaxDetailPanel';
+import type { FaxTab } from './FaxListItem';
+import { FaxListItem } from './FaxListItem';
+import { FaxSelectEmpty } from './FaxSelectEmpty';
+import { SendFaxModal } from './SendFaxModal';
 
 interface FaxBoardProps {
   selectedFaxId: string | undefined;
@@ -100,7 +100,9 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     };
     fetchList().catch(showErrorNotification);
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [activeTab, refreshKey, medplum, buildSearchParams]);
 
   // Poll eFax once on mount, then refresh the list when done
@@ -163,10 +165,7 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     selectFax().catch(console.error);
   }, [selectedFaxId, faxes, medplum]);
 
-  const getFaxUri = useCallback(
-    (fax: Communication): string => buildFaxUrl(fax.id),
-    [buildFaxUrl]
-  );
+  const getFaxUri = useCallback((fax: Communication): string => buildFaxUrl(fax.id), [buildFaxUrl]);
 
   const handleTabChange = (value: string | null): void => {
     if (value) {
@@ -205,12 +204,7 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
           <Flex direction="column" h="100%" className={classes.borderRight}>
             <Paper>
               <Flex h={64} align="center" justify="space-between" p="md">
-                <Tabs
-                  value={activeTab}
-                  onChange={handleTabChange}
-                  variant="unstyled"
-                  className="pill-tabs"
-                >
+                <Tabs value={activeTab} onChange={handleTabChange} variant="unstyled" className="pill-tabs">
                   <Tabs.List>
                     <Tabs.Tab value="inbox">Received</Tabs.Tab>
                     <Tabs.Tab value="sent">Sent</Tabs.Tab>
@@ -271,11 +265,7 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
         )}
       </Flex>
 
-      <SendFaxModal
-        opened={sendModalOpened}
-        onClose={() => setSendModalOpened(false)}
-        onFaxSent={handleFaxSent}
-      />
+      <SendFaxModal opened={sendModalOpened} onClose={() => setSendModalOpened(false)} onFaxSent={handleFaxSent} />
     </Box>
   );
 }

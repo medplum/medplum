@@ -50,14 +50,8 @@ describe('DocumentsPage', () => {
           <MantineProvider>
             <Notifications />
             <Routes>
-              <Route
-                path="/Patient/:patientId/DocumentReference/:documentId"
-                element={<DocumentsPage />}
-              />
-              <Route
-                path="/Patient/:patientId/DocumentReference"
-                element={<DocumentsPage />}
-              />
+              <Route path="/Patient/:patientId/DocumentReference/:documentId" element={<DocumentsPage />} />
+              <Route path="/Patient/:patientId/DocumentReference" element={<DocumentsPage />} />
             </Routes>
           </MantineProvider>
         </MedplumProvider>
