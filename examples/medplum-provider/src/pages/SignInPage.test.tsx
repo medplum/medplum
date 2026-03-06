@@ -72,7 +72,7 @@ describe('SignInPage', () => {
       fireEvent.click(submitButton);
     });
 
-    // After successful sign-in, user is redirected to the patient list
-    expect(await screen.findByText('Patients')).toBeInTheDocument();
+    // After successful sign-in, the header shows the user's name
+    expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
   });
 });
