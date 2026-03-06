@@ -28,6 +28,7 @@ import {
   setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis, getPubSubRedisSubscriber } from '../redis';
+import { invariant } from '../util/invariant';
 import { findProjectMembership } from '../workers/utils';
 
 interface BaseSubscriptionClientMsg {
@@ -350,7 +351,8 @@ export async function handleR4SubscriptionConnection(socket: WebSocket): Promise
     const criteriaResourceType = cacheEntry.resource.criteria.split('?')[0] as ResourceType;
     const subRef = `Subscription/${verifiedToken.subscription_id}`;
     // We know exp is always defined for these tokens
-    const expiration = verifiedToken.exp as number;
+    const expiration = verifiedToken.exp;
+    invariant(typeof expiration === 'number');
     let membershipId = verifiedToken.membership_id;
     if (!membershipId) {
       const membership = await findProjectMembership(cacheEntry.projectId, { reference: verifiedToken.profile });
