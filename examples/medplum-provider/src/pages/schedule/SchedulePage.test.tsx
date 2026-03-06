@@ -6,7 +6,7 @@ import { createReference, ReadablePromise } from '@medplum/core';
 import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, getByText, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -518,7 +518,8 @@ describe('$find/$book component integration tests', () => {
     await user.click(screen.getByRole('button', { name: 'Create Appointment' }));
 
     // Appointment should be in the big calendar
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    const calendar = screen.getByTestId('calendar');
+    expect(getByText(calendar, 'Homer Simpson')).toBeInTheDocument();
 
     // Buffer-after unavailable slot should be in the big calendar
     expect(screen.getByText('Blocked')).toBeInTheDocument();
