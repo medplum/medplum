@@ -2,25 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Period, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import type { SlotSearchFunction } from './Scheduler';
+import type { SchedulerProps, SlotSearchFunction } from './Scheduler';
 import { Scheduler } from './Scheduler';
 
 const medplum = new MockClient();
 
-function setup(
-  schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | undefined,
-  questionnaire = ExampleQuestionnaire,
-  fetchSlots?: SlotSearchFunction
-): void {
+function setup(props: SchedulerProps): void {
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <Scheduler schedule={schedule} questionnaire={questionnaire} fetchSlots={fetchSlots} />
+        <Scheduler {...props} />
       </MedplumProvider>
     </MemoryRouter>
   );
@@ -72,19 +68,19 @@ describe('Scheduler', () => {
 
   test('Renders by reference', async () => {
     await act(async () => {
-      setup(createReference(DrAliceSmithSchedule));
+      setup({ schedule: createReference(DrAliceSmithSchedule) });
     });
   });
 
   test('Renders resources', async () => {
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule });
     });
   });
 
   test('Success', async () => {
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -116,7 +112,7 @@ describe('Scheduler', () => {
 
   test('Renders with schedule array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -124,7 +120,7 @@ describe('Scheduler', () => {
 
   test('Renders with schedule reference array', async () => {
     await act(async () => {
-      setup([createReference(DrAliceSmithSchedule), createReference(DrBobSchedule)]);
+      setup({ schedule: [createReference(DrAliceSmithSchedule), createReference(DrBobSchedule)] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -150,14 +146,14 @@ describe('Scheduler', () => {
       },
     ];
 
-    const customSlotSearch: SlotSearchFunction = async (period: Period): Promise<Slot[]> => {
+    const fetchSlots: SlotSearchFunction = async (period: Period): Promise<Slot[]> => {
       expect(period.start).toBeDefined();
       expect(period.end).toBeDefined();
       return mockSlots;
     };
 
     await act(async () => {
-      setup(undefined, undefined, customSlotSearch);
+      setup({ fetchSlots });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -180,7 +176,7 @@ describe('Scheduler', () => {
     const customSlotSearch: SlotSearchFunction = jest.fn().mockResolvedValue(mockSlots);
 
     await act(async () => {
-      setup(DrAliceSmithSchedule, ExampleQuestionnaire, customSlotSearch);
+      setup({ schedule: DrAliceSmithSchedule, questionnaire: ExampleQuestionnaire, fetchSlots: customSlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -203,7 +199,7 @@ describe('Scheduler', () => {
 
   test('Displays actor information for single schedule', async () => {
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule });
     });
 
     await waitFor(() => {
@@ -213,7 +209,7 @@ describe('Scheduler', () => {
 
   test('Does not display actor for schedule array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -223,7 +219,7 @@ describe('Scheduler', () => {
 
   test('Does not display actor without a Schedule', async () => {
     await act(async () => {
-      setup(undefined);
+      setup({});
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -233,7 +229,7 @@ describe('Scheduler', () => {
 
   test('Handles empty schedule array', async () => {
     await act(async () => {
-      setup([]);
+      setup({ schedule: [] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -243,7 +239,7 @@ describe('Scheduler', () => {
     const emptySlotSearch: SlotSearchFunction = async (): Promise<Slot[]> => [];
 
     await act(async () => {
-      setup(undefined, undefined, emptySlotSearch);
+      setup({ fetchSlots: emptySlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -254,7 +250,7 @@ describe('Scheduler', () => {
 
   test('Shows slots from multiple schedules in array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -316,7 +312,7 @@ describe('Scheduler', () => {
     const customSlotSearch: SlotSearchFunction = async (): Promise<Slot[]> => mockSlots;
 
     await act(async () => {
-      setup(undefined, undefined, customSlotSearch);
+      setup({ fetchSlots: customSlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
