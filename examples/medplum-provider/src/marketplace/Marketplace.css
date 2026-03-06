@@ -1,0 +1,33 @@
+/* Marketplace pages — theme-aware background for light/dark mode */
+.marketplace-root {
+  background-color: var(--mantine-color-body);
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--app-shell-header-offset, 0px));
+  overflow: hidden;
+}
+
+.marketplace-breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
+.marketplace-breadcrumb-link:hover {
+  opacity: 1;
+}
+
+/* Spin animation for the install loading state */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
