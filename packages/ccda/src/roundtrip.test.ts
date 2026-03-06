@@ -78,6 +78,25 @@ describe('convertCcdaToFhir', () => {
     const bundle = convertCcdaToFhir(ccda, { ignoreUnsupportedSections: true });
     expect(bundle).toBeDefined();
   });
+
+  test('deterministicIds produces stable output for non-UUID roots', () => {
+    // Start with a valid CCDA XML file
+    const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, 'ProblemPneumonia.xml'), 'utf8'));
+
+    // Change a UUID root to an OID so it goes through the deterministic ID path
+    (ccda as any).component.structuredBody.component[0].section[0].entry[0].act[0].id[0]['@_root'] =
+      '1.3.6.1.4.1.22812.4.111.0.4.1.2.1';
+
+    // Without deterministicIds, output differs between runs
+    const bundle1 = normalizeFhir(convertCcdaToFhir(ccda));
+    const bundle2 = normalizeFhir(convertCcdaToFhir(ccda));
+    expect(bundle1).not.toEqual(bundle2);
+
+    // With deterministicIds, output is stable
+    const bundle3 = normalizeFhir(convertCcdaToFhir(ccda, { deterministicIds: true }));
+    const bundle4 = normalizeFhir(convertCcdaToFhir(ccda, { deterministicIds: true }));
+    expect(bundle3).toEqual(bundle4);
+  });
 });
 
 describe('convertFhirToCcda', () => {

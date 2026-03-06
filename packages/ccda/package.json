@@ -57,7 +57,8 @@
   },
   "dependencies": {
     "@medplum/core": "5.1.1",
-    "fast-xml-parser": "5.4.1"
+    "fast-xml-parser": "5.4.1",
+    "uuid": "11.1.0"
   },
   "devDependencies": {
     "@medplum/definitions": "5.1.1",
