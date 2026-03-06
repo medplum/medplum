@@ -9,7 +9,6 @@ import type { IncomingMessage } from 'node:http';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { executeBot } from '../bots/execute';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -146,13 +145,13 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
 
     agentId = command.agentId;
 
-    const authState = await getLoginForAccessToken(undefined, command.accessToken);
-    if (!authState) {
+    const repo = (await getLoginForAccessToken(undefined, command.accessToken))?.repo;
+    if (!repo) {
       sendError('Invalid access token');
       return;
     }
 
-    const repo = await getRepoForLogin(authState, true);
+    // const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -200,13 +199,14 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
       return;
     }
 
-    const authState = await getLoginForAccessToken(undefined, command.accessToken);
-    if (!authState) {
+    const authResult = await getLoginForAccessToken(undefined, command.accessToken);
+    if (!authResult) {
       sendError('Invalid access token');
       return;
     }
+    const { authState, repo } = authResult;
 
-    const repo = await getRepoForLogin(authState, true);
+    // const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
