@@ -17,18 +17,18 @@ import {
   Tooltip,
 } from '@mantine/core';
 import {
+  IconDots,
+  IconMaximize,
+  IconMessageCircle,
   IconMicrophone,
   IconMicrophoneOff,
+  IconPhone,
+  IconRecordMail,
+  IconScreenShare,
+  IconSettings,
+  IconUsers,
   IconVideo,
   IconVideoOff,
-  IconScreenShare,
-  IconPhone,
-  IconDots,
-  IconMessageCircle,
-  IconUsers,
-  IconMaximize,
-  IconSettings,
-  IconRecordMail,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
@@ -125,13 +125,7 @@ function VideoControls({
     >
       <Group justify="center" gap="xs">
         <Tooltip label={muted ? 'Unmute' : 'Mute'} position="top">
-          <ActionIcon
-            size="lg"
-            radius="xl"
-            variant="filled"
-            color={muted ? 'red' : 'gray.7'}
-            onClick={onToggleMute}
-          >
+          <ActionIcon size="lg" radius="xl" variant="filled" color={muted ? 'red' : 'gray.7'} onClick={onToggleMute}>
             {muted ? <IconMicrophoneOff size={18} /> : <IconMicrophone size={18} />}
           </ActionIcon>
         </Tooltip>

@@ -15,27 +15,61 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
-import {
-  IconCircleCheck,
-  IconId,
-  IconLock,
-  IconPill,
-  IconShieldCheck,
-} from '@tabler/icons-react';
+import { IconCircleCheck, IconId, IconLock, IconPill, IconShieldCheck } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 
 const US_STATES = [
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
-  'Connecticut', 'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho',
-  'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana',
-  'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
-  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
-  'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
-  'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
-  'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
-  'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington',
-  'West Virginia', 'Wisconsin', 'Wyoming',
+  'Alabama',
+  'Alaska',
+  'Arizona',
+  'Arkansas',
+  'California',
+  'Colorado',
+  'Connecticut',
+  'Delaware',
+  'Florida',
+  'Georgia',
+  'Hawaii',
+  'Idaho',
+  'Illinois',
+  'Indiana',
+  'Iowa',
+  'Kansas',
+  'Kentucky',
+  'Louisiana',
+  'Maine',
+  'Maryland',
+  'Massachusetts',
+  'Michigan',
+  'Minnesota',
+  'Mississippi',
+  'Missouri',
+  'Montana',
+  'Nebraska',
+  'Nevada',
+  'New Hampshire',
+  'New Jersey',
+  'New Mexico',
+  'New York',
+  'North Carolina',
+  'North Dakota',
+  'Ohio',
+  'Oklahoma',
+  'Oregon',
+  'Pennsylvania',
+  'Rhode Island',
+  'South Carolina',
+  'South Dakota',
+  'Tennessee',
+  'Texas',
+  'Utah',
+  'Vermont',
+  'Virginia',
+  'Washington',
+  'West Virginia',
+  'Wisconsin',
+  'Wyoming',
 ];
 
 function ProviderSetupForm({ onComplete }: { readonly onComplete: () => void }): JSX.Element {
@@ -170,8 +204,8 @@ function ProviderSetupForm({ onComplete }: { readonly onComplete: () => void }):
               description="Required for electronic prescribing of controlled substances"
             />
             <Text size="xs" c="dimmed">
-              You will be redirected to complete identity verification after enrollment. This
-              typically takes 5–10 minutes and requires a government-issued photo ID.
+              You will be redirected to complete identity verification after enrollment. This typically takes 5–10
+              minutes and requires a government-issued photo ID.
             </Text>
           </Stack>
         </Paper>
@@ -182,8 +216,8 @@ function ProviderSetupForm({ onComplete }: { readonly onComplete: () => void }):
               <IconLock size={12} />
             </ThemeIcon>
             <Text size="xs" c="dimmed">
-              Your credentials are encrypted at rest and verified against the NPPES NPI Registry and
-              DEA NTIS database. No data is shared with third parties.
+              Your credentials are encrypted at rest and verified against the NPPES NPI Registry and DEA NTIS database.
+              No data is shared with third parties.
             </Text>
           </Group>
         </Paper>
@@ -214,8 +248,8 @@ function SubmissionConfirmation(): JSX.Element {
             Submitted for Verification
           </Title>
           <Text size="sm" c="dimmed">
-            Your provider enrollment has been submitted. DoseSpot will verify your credentials
-            against the NPPES registry, DEA database, and state licensing boards.
+            Your provider enrollment has been submitted. DoseSpot will verify your credentials against the NPPES
+            registry, DEA database, and state licensing boards.
           </Text>
         </div>
         <Paper withBorder p="md" radius="md" w="100%">
@@ -225,10 +259,12 @@ function SubmissionConfirmation(): JSX.Element {
                 <IconPill size={12} />
               </ThemeIcon>
               <div>
-                <Text size="sm" fw={500}>Basic Prescribing: 1–2 Business Days</Text>
+                <Text size="sm" fw={500}>
+                  Basic Prescribing: 1–2 Business Days
+                </Text>
                 <Text size="xs" c="dimmed">
-                  Non-controlled substance prescribing will be verified within 1–2 business days
-                  once your NPI and state license are verified and approved.
+                  Non-controlled substance prescribing will be verified within 1–2 business days once your NPI and state
+                  license are verified and approved.
                 </Text>
               </div>
             </Group>
@@ -238,10 +274,12 @@ function SubmissionConfirmation(): JSX.Element {
                 <IconShieldCheck size={12} />
               </ThemeIcon>
               <div>
-                <Text size="sm" fw={500}>Full EPCS Capabilities: 1–2 Weeks</Text>
+                <Text size="sm" fw={500}>
+                  Full EPCS Capabilities: 1–2 Weeks
+                </Text>
                 <Text size="xs" c="dimmed">
-                  Controlled substance prescribing (Schedule II–V) requires DEA verification
-                  and EPCS identity proofing, which typically takes 1–2 weeks to complete.
+                  Controlled substance prescribing (Schedule II–V) requires DEA verification and EPCS identity proofing,
+                  which typically takes 1–2 weeks to complete.
                 </Text>
               </div>
             </Group>
@@ -249,8 +287,7 @@ function SubmissionConfirmation(): JSX.Element {
         </Paper>
         <Paper withBorder p="sm" radius="md" bg="blue.0" w="100%">
           <Text size="xs" c="dimmed" ta="center">
-            You&apos;ll receive an email notification at each stage of verification.
-            No action is needed until then.
+            You&apos;ll receive an email notification at each stage of verification. No action is needed until then.
           </Text>
         </Paper>
       </Stack>

@@ -26,7 +26,7 @@ const appMeta: Record<string, AppMeta> = {
     title: 'Growth Chart',
     icon: <IconChartLine size={18} />,
   },
-  'dosespot': {
+  dosespot: {
     title: 'DoseSpot',
     icon: <img src="/img/dosespot-icon.png" alt="DoseSpot" style={{ width: 18, height: 18, objectFit: 'contain' }} />,
   },
@@ -34,7 +34,7 @@ const appMeta: Record<string, AppMeta> = {
     title: 'Population Health',
     icon: <IconChartBar size={18} />,
   },
-  'telehealth': {
+  telehealth: {
     title: 'TelehealthBridge',
     icon: <IconVideo size={18} />,
   },
@@ -52,9 +52,7 @@ function getPatientIdFromPathname(pathname: string): string | undefined {
 function useAppTitle(appId: string | null): ReactNode {
   const location = useLocation();
   const patientId = getPatientIdFromPathname(location.pathname);
-  const patient = useResource<Patient>(
-    patientId ? { reference: `Patient/${patientId}` } : undefined
-  );
+  const patient = useResource<Patient>(patientId ? { reference: `Patient/${patientId}` } : undefined);
 
   const baseTitle = (appId && appMeta[appId]?.title) ?? 'App';
 
@@ -64,7 +62,8 @@ function useAppTitle(appId: string | null): ReactNode {
     if (name) {
       return (
         <>
-          {appMeta[appId].title}<span style={{ fontWeight: 400, paddingLeft: 6, color: 'var(--mantine-color-gray-6)' }}>for {name}</span>
+          {appMeta[appId].title}
+          <span style={{ fontWeight: 400, paddingLeft: 6, color: 'var(--mantine-color-gray-6)' }}>for {name}</span>
         </>
       );
     }

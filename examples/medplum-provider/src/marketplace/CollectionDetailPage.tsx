@@ -43,11 +43,23 @@ function CollectionListingCard({ listing }: { readonly listing: MarketplaceListi
       padding="lg"
       radius="lg"
       withBorder={false}
-      style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', border: '1px solid var(--mantine-color-gray-1)' }}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid var(--mantine-color-gray-1)',
+      }}
     >
       <Group justify="space-between" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
         <Group gap="sm" wrap="nowrap" style={{ overflow: 'hidden', minWidth: 0 }}>
-          <ThemeIcon size="48px" radius="md" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'} style={{ flexShrink: 0 }}>
+          <ThemeIcon
+            size="48px"
+            radius="md"
+            variant="light"
+            color={typeBadgeColor[listing.type] ?? 'gray'}
+            style={{ flexShrink: 0 }}
+          >
             <TypeIcon size={18} />
           </ThemeIcon>
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
@@ -72,7 +84,14 @@ function CollectionListingCard({ listing }: { readonly listing: MarketplaceListi
 
       <Group gap="4">
         {listing.categories.slice(0, 2).map((cat) => (
-          <Badge key={cat} size="md" variant="light" color="gray.5" c="dark.3" style={{ textTransform: 'none', fontWeight: 500 }}>
+          <Badge
+            key={cat}
+            size="md"
+            variant="light"
+            color="gray.5"
+            c="dark.3"
+            style={{ textTransform: 'none', fontWeight: 500 }}
+          >
             {cat}
           </Badge>
         ))}
@@ -88,10 +107,7 @@ export function CollectionDetailPage(): JSX.Element {
 
   useEffect(() => {
     if (collection) {
-      setBreadcrumbs([
-        { label: 'Collections', to: '/marketplace/collections' },
-        { label: collection.name },
-      ]);
+      setBreadcrumbs([{ label: 'Collections', to: '/marketplace/collections' }, { label: collection.name }]);
     }
     return () => setBreadcrumbs([]);
   }, [collection, setBreadcrumbs]);
@@ -119,7 +135,9 @@ export function CollectionDetailPage(): JSX.Element {
             <IconPackages size={28} />
           </ThemeIcon>
           <div>
-            <Title order={3} size="h4" fw={800}>{collection.name}</Title>
+            <Title order={3} size="h4" fw={800}>
+              {collection.name}
+            </Title>
             <Text size="sm" c="dimmed">
               {collectionListings.length} items in this collection
             </Text>
@@ -136,9 +154,9 @@ export function CollectionDetailPage(): JSX.Element {
 
       <Box mb="64px">
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
-        {collectionListings.map((listing) => (
-          <CollectionListingCard key={listing.id} listing={listing} />
-        ))}
+          {collectionListings.map((listing) => (
+            <CollectionListingCard key={listing.id} listing={listing} />
+          ))}
         </SimpleGrid>
       </Box>
     </Box>

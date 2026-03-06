@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString } from '@medplum/core';
+import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import type { NavbarApp, NavbarMenu } from '@medplum/react';
 import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
@@ -10,15 +11,14 @@ import {
   IconChartLine,
   IconClipboardCheck,
   IconMail,
+  IconUsers,
   IconVideo,
   IconWorldSearch,
-  IconUsers,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { Suspense, useMemo } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { AppsPanelLayout, AppsPanelProvider, useAppsPanel } from './components/AppsPanel';
-import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { DoseSpotTileIcon } from './components/DoseSpotIcon';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
@@ -196,7 +196,17 @@ function AppShellWithPanel(): JSX.Element {
       });
     }
     return result;
-  }, [hasDoseSpotApp, hasDoseSpotProvider, hasGrowthChart, hasCareBridge, hasTelehealth, doseSpotHasNotifications, openApp, openAppId, closePanel]);
+  }, [
+    hasDoseSpotApp,
+    hasDoseSpotProvider,
+    hasGrowthChart,
+    hasCareBridge,
+    hasTelehealth,
+    doseSpotHasNotifications,
+    openApp,
+    openAppId,
+    closePanel,
+  ]);
 
   return (
     <AppShell
@@ -219,9 +229,7 @@ function AppShellWithPanel(): JSX.Element {
                 </Route>
                 <Route
                   path="/"
-                  element={
-                    <Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />
-                  }
+                  element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}
                 />
                 <Route path="/Patient/new" element={<ResourceCreatePage />} />
                 <Route path="/Patient/:patientId" element={<PatientPage />}>

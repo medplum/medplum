@@ -6,11 +6,11 @@ import {
   IconBrain,
   IconChartBar,
   IconChartLine,
-  IconUsersGroup,
   IconDatabase,
   IconLayout,
   IconPackages,
   IconRobot,
+  IconUsersGroup,
   IconVideo,
 } from '@tabler/icons-react';
 import type { Collection, MarketplaceListing, Vendor } from './types';
@@ -26,7 +26,7 @@ export const vendors: Record<string, Vendor> = {
     logo: '',
     website: 'https://example.com/apex',
   },
-  'carebridge': {
+  carebridge: {
     id: 'carebridge',
     name: 'CareBridge Analytics',
     description:
@@ -34,7 +34,7 @@ export const vendors: Record<string, Vendor> = {
     logo: '',
     website: 'https://example.com/carebridge',
   },
-  'medplum': {
+  medplum: {
     id: 'medplum',
     name: 'Medplum',
     description:
@@ -66,7 +66,7 @@ export const vendors: Record<string, Vendor> = {
     logo: '',
     website: 'https://example.com/stellarhealth',
   },
-  'vitalink': {
+  vitalink: {
     id: 'vitalink',
     name: 'VitaLink Solutions',
     description:
@@ -90,7 +90,7 @@ export const vendors: Record<string, Vendor> = {
     logo: '',
     website: 'https://www.candidhealth.com',
   },
-  'dosespot': {
+  dosespot: {
     id: 'dosespot',
     name: 'DoseSpot',
     description:
@@ -1208,31 +1208,31 @@ export const allVendors: Vendor[] = Object.values(vendors).sort((a, b) => a.name
 /** Maps internal ListingType values to user-facing display names */
 export const typeDisplayNames: Record<string, string> = {
   'Agent Prompt / Skill': 'Agent Prompt / Skill',
-  'App': 'App',
-  'Automation': 'Automation',
+  App: 'App',
+  Automation: 'Automation',
   'Content Pack': 'Data & Content',
   'Service Provider': 'Service Provider',
-  'Template': 'Templates',
+  Template: 'Templates',
 };
 
 /** Plural display names for browse page titles and "See all" labels */
 export const typeBrowseLabels: Record<string, string> = {
   'Agent Prompt / Skill': 'Agent Prompts & Skills',
-  'App': 'Apps',
-  'Automation': 'Automations',
+  App: 'Apps',
+  Automation: 'Automations',
   'Content Pack': 'Data & Content',
   'Service Provider': 'Service Providers',
-  'Template': 'Templates',
+  Template: 'Templates',
 };
 
 export const typeBadgeColor: Record<string, string> = {
-  'App': 'blue',
-  'Automation': 'teal',
-  'Template': 'violet',
+  App: 'blue',
+  Automation: 'teal',
+  Template: 'violet',
   'Content Pack': 'orange',
   'Agent Prompt / Skill': 'pink',
   'Service Provider': 'cyan',
-  'Collections': 'grape',
+  Collections: 'grape',
 };
 
 /** Per-listing icon overrides — takes precedence over typeIconComponent when set */
@@ -1245,10 +1245,10 @@ export const listingIconComponent: Record<string, typeof IconApps> = {
 /** Maps listing types to their icon components */
 export const typeIconComponent: Record<string, typeof IconApps> = {
   'Agent Prompt / Skill': IconBrain,
-  'App': IconApps,
-  'Automation': IconRobot,
+  App: IconApps,
+  Automation: IconRobot,
   'Content Pack': IconDatabase,
   'Service Provider': IconUsersGroup,
-  'Template': IconLayout,
-  'Collections': IconPackages,
+  Template: IconLayout,
+  Collections: IconPackages,
 };

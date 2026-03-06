@@ -16,7 +16,14 @@ import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { HumanName, ResourceType } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
-import { IconBookmark, IconCirclePlus, IconLayoutGrid, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
+import {
+  IconBookmark,
+  IconCirclePlus,
+  IconLayoutGrid,
+  IconLayoutSidebar,
+  IconSearch,
+  IconX,
+} from '@tabler/icons-react';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
@@ -194,9 +201,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </Stack>
               </Fragment>
             ))}
-            {props.apps && props.apps.length > 0 && (
-              <AppsSection apps={props.apps} opened={opened} />
-            )}
+            {props.apps && props.apps.length > 0 && <AppsSection apps={props.apps} opened={opened} />}
             {props.displayAddBookmark && (
               <Tooltip label="Add Bookmark" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
                 <UnstyledButton
@@ -421,11 +426,7 @@ function AppsSection({ apps, opened }: AppsSectionProps): JSX.Element {
         <div className={classes.appTilesGrid}>
           {apps.map((app) => (
             <Tooltip key={app.id} label={app.label} openDelay={0}>
-              <UnstyledButton
-                className={classes.appTile}
-                data-active={app.active || undefined}
-                onClick={app.onClick}
-              >
+              <UnstyledButton className={classes.appTile} data-active={app.active || undefined} onClick={app.onClick}>
                 {app.icon}
               </UnstyledButton>
             </Tooltip>

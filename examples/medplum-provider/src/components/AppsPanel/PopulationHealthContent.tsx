@@ -183,11 +183,7 @@ function CareGapsCard(): JSX.Element {
                   {gap.gap} · {gap.days} days overdue
                 </Text>
               </div>
-              <Badge
-                size="xs"
-                variant="light"
-                color={getPriorityColor(gap.priority)}
-              >
+              <Badge size="xs" variant="light" color={getPriorityColor(gap.priority)}>
                 {gap.priority}
               </Badge>
             </Group>

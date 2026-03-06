@@ -4,9 +4,8 @@
 import { ActionIcon, Group, Text, Tooltip } from '@mantine/core';
 import { IconArrowsDiagonal2, IconArrowsDiagonalMinimize2, IconX } from '@tabler/icons-react';
 import type { JSX, ReactElement, ReactNode } from 'react';
-import { useAppsPanel } from './AppsPanelContext';
 import classes from './AppsPanel.module.css';
-
+import { useAppsPanel } from './AppsPanelContext';
 
 interface AppsPanelProps {
   readonly icon?: ReactElement;
@@ -27,11 +26,7 @@ export function AppsPanel({ icon, title, children }: AppsPanelProps): JSX.Elemen
           </Text>
         </Group>
         <Group gap={12}>
-          <Tooltip
-            label={panelMaximized ? 'View Smaller' : 'View Larger'}
-            position="bottom"
-            openDelay={600}
-          >
+          <Tooltip label={panelMaximized ? 'View Smaller' : 'View Larger'} position="bottom" openDelay={600}>
             <ActionIcon
               variant="transparent"
               size={32}
@@ -40,11 +35,7 @@ export function AppsPanel({ icon, title, children }: AppsPanelProps): JSX.Elemen
               aria-label={panelMaximized ? 'View Smaller' : 'View Larger'}
               className={classes.panelActionIcon}
             >
-              {panelMaximized ? (
-                <IconArrowsDiagonalMinimize2 size={16} />
-              ) : (
-                <IconArrowsDiagonal2 size={16} />
-              )}
+              {panelMaximized ? <IconArrowsDiagonalMinimize2 size={16} /> : <IconArrowsDiagonal2 size={16} />}
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Close" position="bottom" openDelay={600}>

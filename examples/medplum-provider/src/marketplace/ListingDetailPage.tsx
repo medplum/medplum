@@ -41,6 +41,7 @@ import {
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { useAppsPanel } from '../components/AppsPanel';
 import {
   getListingById,
   listingIconComponent,
@@ -49,7 +50,6 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
-import { useAppsPanel } from '../components/AppsPanel';
 import { InstallModal } from './InstallModal';
 import { useMarketplace } from './MarketplaceContext';
 import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
@@ -144,10 +144,21 @@ function InstallButton({
     const appId = LISTING_TO_APP_PANEL_ID[listingId];
     return (
       <Stack gap="sm" w="100%">
-        <Badge size="lg" variant="light" color="green" leftSection={<IconCircleCheck size={14} />} style={{ alignSelf: 'center' }}>
+        <Badge
+          size="lg"
+          variant="light"
+          color="green"
+          leftSection={<IconCircleCheck size={14} />}
+          style={{ alignSelf: 'center' }}
+        >
           Installed
         </Badge>
-        <Button size="md" rightSection={<IconArrowUpRight size={16} />} onClick={appId ? handleOpenApp : undefined} fullWidth>
+        <Button
+          size="md"
+          rightSection={<IconArrowUpRight size={16} />}
+          onClick={appId ? handleOpenApp : undefined}
+          fullWidth
+        >
           {copy.openLabel}
         </Button>
       </Stack>
@@ -163,11 +174,7 @@ function InstallButton({
 
 // ─── Request Access button (for listings requiring admin approval) ──────────
 
-function RequestAccessButton({
-  listingId,
-}: {
-  readonly listingId: string;
-}): JSX.Element {
+function RequestAccessButton({ listingId }: { readonly listingId: string }): JSX.Element {
   const { isInstalled, install } = useMarketplace();
   const { openApp } = useAppsPanel();
   const installed = isInstalled(listingId);
@@ -205,10 +212,21 @@ function RequestAccessButton({
     const appId = LISTING_TO_APP_PANEL_ID[listingId];
     return (
       <Stack gap="sm" w="100%">
-        <Badge size="lg" variant="light" color="green" leftSection={<IconCircleCheck size={14} />} style={{ alignSelf: 'center' }}>
+        <Badge
+          size="lg"
+          variant="light"
+          color="green"
+          leftSection={<IconCircleCheck size={14} />}
+          style={{ alignSelf: 'center' }}
+        >
           Installed
         </Badge>
-        <Button size="md" rightSection={<IconArrowUpRight size={16} />} onClick={appId ? handleOpenApp : undefined} fullWidth>
+        <Button
+          size="md"
+          rightSection={<IconArrowUpRight size={16} />}
+          onClick={appId ? handleOpenApp : undefined}
+          fullWidth
+        >
           Open App
         </Button>
       </Stack>
@@ -265,20 +283,52 @@ function ListingIcon({ listing, size }: { readonly listing: MarketplaceListing; 
   const boxRadius = size === 64 ? 12 : 10;
   if (listing.icon) {
     return (
-      <Box w={size} h={size} style={{ borderRadius: boxRadius, overflow: 'hidden', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
-        <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }} />
+      <Box
+        w={size}
+        h={size}
+        style={{
+          borderRadius: boxRadius,
+          overflow: 'hidden',
+          flexShrink: 0,
+          border: '1px solid var(--mantine-color-gray-2)',
+          background: 'white',
+        }}
+      >
+        <img
+          src={listing.icon}
+          alt={listing.name}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: '0.5rem' }}
+        />
       </Box>
     );
   }
   if (listingIconComponent[listing.id]) {
     return (
-      <Box w={size} h={size} style={{ borderRadius: boxRadius, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--mantine-color-gray-2)', background: 'white' }}>
+      <Box
+        w={size}
+        h={size}
+        style={{
+          borderRadius: boxRadius,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          border: '1px solid var(--mantine-color-gray-2)',
+          background: 'white',
+        }}
+      >
         <TypeIcon size={Math.round(size * 0.5)} />
       </Box>
     );
   }
   return (
-    <ThemeIcon size={size} radius="md" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'} style={{ flexShrink: 0 }}>
+    <ThemeIcon
+      size={size}
+      radius="md"
+      variant="light"
+      color={typeBadgeColor[listing.type] ?? 'gray'}
+      style={{ flexShrink: 0 }}
+    >
       <TypeIcon size={Math.round(size * 0.375)} />
     </ThemeIcon>
   );
@@ -296,7 +346,13 @@ function RelatedListingCard({ listing }: { readonly listing: MarketplaceListing 
       padding="lg"
       radius="lg"
       withBorder={false}
-      style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', border: '1px solid var(--mantine-color-gray-1)' }}
+      style={{
+        textDecoration: 'none',
+        color: 'inherit',
+        display: 'flex',
+        flexDirection: 'column',
+        border: '1px solid var(--mantine-color-gray-1)',
+      }}
     >
       <Group justify="space-between" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
         <Group gap="sm" wrap="nowrap" style={{ overflow: 'hidden', minWidth: 0 }}>
@@ -321,7 +377,14 @@ function RelatedListingCard({ listing }: { readonly listing: MarketplaceListing 
       </Text>
       <Group gap="4">
         {listing.categories.slice(0, 2).map((cat) => (
-          <Badge key={cat} size="md" variant="light" color="gray.5" c="dark.3" style={{ textTransform: 'none', fontWeight: 500 }}>
+          <Badge
+            key={cat}
+            size="md"
+            variant="light"
+            color="gray.5"
+            c="dark.3"
+            style={{ textTransform: 'none', fontWeight: 500 }}
+          >
             {cat}
           </Badge>
         ))}
@@ -363,38 +426,46 @@ export function ListingDetailPage(): JSX.Element {
   const openLightbox = useCallback((index: number): void => setLightboxIndex(index), []);
   const goPrev = useCallback((): void => {
     setLightboxIndex((i) => {
-      if (i === null) { return null; }
+      if (i === null) {
+        return null;
+      }
       return i === 0 ? screenshotCount - 1 : i - 1;
     });
   }, [screenshotCount]);
   const goNext = useCallback((): void => {
     setLightboxIndex((i) => {
-      if (i === null) { return null; }
+      if (i === null) {
+        return null;
+      }
       return i === screenshotCount - 1 ? 0 : i + 1;
     });
   }, [screenshotCount]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (lightboxIndex === null) { return; }
-      if (e.key === 'Escape') { closeLightbox(); }
-      if (e.key === 'ArrowLeft') { goPrev(); }
-      if (e.key === 'ArrowRight') { goNext(); }
+      if (lightboxIndex === null) {
+        return;
+      }
+      if (e.key === 'Escape') {
+        closeLightbox();
+      }
+      if (e.key === 'ArrowLeft') {
+        goPrev();
+      }
+      if (e.key === 'ArrowRight') {
+        goNext();
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxIndex, closeLightbox, goPrev, goNext]);
 
-  const typeBrowseLink = listing
-    ? `/marketplace/browse?${new URLSearchParams({ type: listing.type }).toString()}`
-    : '';
+  const typeBrowseLink = listing ? `/marketplace/browse?${new URLSearchParams({ type: listing.type }).toString()}` : '';
   const typeLabel = listing ? (typeBrowseLabels[listing.type] ?? listing.type) : '';
 
   useEffect(() => {
     if (listing) {
-      setBreadcrumbs([
-        { label: typeLabel, to: typeBrowseLink },
-      ]);
+      setBreadcrumbs([{ label: typeLabel, to: typeBrowseLink }]);
     }
     return () => setBreadcrumbs([]);
   }, [listing, typeLabel, typeBrowseLink, setBreadcrumbs]);
@@ -424,13 +495,14 @@ export function ListingDetailPage(): JSX.Element {
       <Grid gutter="xl" align="stretch">
         {/* ── Main content ─────────────────────────────────────────── */}
         <Grid.Col span={{ base: 12, md: 8 }}>
-
           {/* Header */}
           <Group mb={64} gap="lg" align="center" justify="space-between" wrap="nowrap">
             <Group gap="md" align="center">
               <ListingIcon listing={listing} size={64} />
               <Stack gap={4}>
-                <Title order={3} fw={800}>{listing.name}</Title>
+                <Title order={3} fw={800}>
+                  {listing.name}
+                </Title>
                 {listing.vendor.website && (
                   <Anchor
                     href={listing.vendor.website}
@@ -534,7 +606,9 @@ export function ListingDetailPage(): JSX.Element {
                   justifyContent: 'center',
                 }}
               >
-                <Text size="sm" c="dimmed">No preview available</Text>
+                <Text size="sm" c="dimmed">
+                  No preview available
+                </Text>
               </Box>
             )}
           </Box>
@@ -677,127 +751,181 @@ export function ListingDetailPage(): JSX.Element {
               </Group>
             </Paper>
           )}
-
         </Grid.Col>
 
         {/* ── Install sidebar ──────────────────────────────────────── */}
         <Grid.Col span={{ base: 12, md: 4 }} style={{ display: 'flex', flexDirection: 'column' }}>
-            <Box px="xl" pb="xl" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)', flex: 1 }}>
+          <Box px="xl" pb="xl" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)', flex: 1 }}>
+            <Stack gap={24}>
+              {/* Categories */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Categories
+                </Title>
+                <Group gap={4}>
+                  {listing.categories.map((cat) => (
+                    <Badge
+                      key={cat}
+                      component={Link}
+                      to={`/marketplace/browse?${new URLSearchParams({ category: cat }).toString()}`}
+                      size="md"
+                      variant="light"
+                      color="gray.5"
+                      c="dark.3"
+                      style={{ cursor: 'pointer', textDecoration: 'none', textTransform: 'none', fontWeight: 500 }}
+                    >
+                      {cat}
+                    </Badge>
+                  ))}
+                </Group>
+              </Box>
 
-              <Stack gap={24}>
-                {/* Categories */}
-                <Box>
-                  <Title order={6} fw={700} mb={4}>Categories</Title>
-                  <Group gap={4}>
-                    {listing.categories.map((cat) => (
-                      <Badge
-                        key={cat}
-                        component={Link}
-                        to={`/marketplace/browse?${new URLSearchParams({ category: cat }).toString()}`}
-                        size="md"
-                        variant="light"
-                        color="gray.5"
-                        c="dark.3"
-                        style={{ cursor: 'pointer', textDecoration: 'none', textTransform: 'none', fontWeight: 500 }}
-                      >
-                        {cat}
-                      </Badge>
-                    ))}
-                  </Group>
-                </Box>
-
-                {/* Type */}
-                <Box>
-                  <Title order={6} fw={700} mb={4}>Type</Title>
-                  <Group gap={8}>
-                    <TypeIcon size={15} color="var(--mantine-color-gray-7)" style={{ flexShrink: 0 }} />
-                    <Text size="md" c="gray.7">{listing.type}</Text>
-                  </Group>
-                </Box>
-
-                {/* Version */}
-                <Box>
-                  <Title order={6} fw={700} mb={4}>Version</Title>
-                  <Text size="md" c="gray.7">{listing.version}</Text>
-                </Box>
-
-                {/* Last Updated */}
-                <Box>
-                  <Title order={6} fw={700} mb={4}>Last Updated</Title>
+              {/* Type */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Type
+                </Title>
+                <Group gap={8}>
+                  <TypeIcon size={15} color="var(--mantine-color-gray-7)" style={{ flexShrink: 0 }} />
                   <Text size="md" c="gray.7">
-                    {new Date(listing.lastUpdated).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    {listing.type}
                   </Text>
-                </Box>
+                </Group>
+              </Box>
 
-                {/* Developer */}
+              {/* Version */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Version
+                </Title>
+                <Text size="md" c="gray.7">
+                  {listing.version}
+                </Text>
+              </Box>
+
+              {/* Last Updated */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Last Updated
+                </Title>
+                <Text size="md" c="gray.7">
+                  {new Date(listing.lastUpdated).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Text>
+              </Box>
+
+              {/* Developer */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Developer
+                </Title>
+                {listing.vendor.website ? (
+                  <Anchor
+                    href={listing.vendor.website}
+                    target="_blank"
+                    size="md"
+                    c="gray.7"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+                  >
+                    {listing.vendor.name}
+                    <IconExternalLink size={13} style={{ flexShrink: 0 }} />
+                  </Anchor>
+                ) : (
+                  <Text size="md" c="gray.7">
+                    {listing.vendor.name}
+                  </Text>
+                )}
+              </Box>
+
+              {/* Service Types */}
+              {isServiceProvider && listing.serviceTypes && listing.serviceTypes.length > 0 && (
                 <Box>
-                  <Title order={6} fw={700} mb={4}>Developer</Title>
-                  {listing.vendor.website ? (
+                  <Title order={6} fw={700} mb={4}>
+                    Service Types
+                  </Title>
+                  <Stack gap={8}>
+                    {listing.serviceTypes.map((st) => (
+                      <Text key={st} size="md" c="dimmed">
+                        {st}
+                      </Text>
+                    ))}
+                  </Stack>
+                </Box>
+              )}
+
+              {/* Resources */}
+              <Box>
+                <Title order={6} fw={700} mb={4}>
+                  Resources
+                </Title>
+                <Stack gap={8}>
+                  {listing.supportUrl && (
                     <Anchor
-                      href={listing.vendor.website}
+                      href={listing.supportUrl}
                       target="_blank"
                       size="md"
                       c="gray.7"
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
                     >
-                      {listing.vendor.name}
-                      <IconExternalLink size={13} style={{ flexShrink: 0 }} />
+                      <IconHeadset size={15} style={{ flexShrink: 0 }} />
+                      Support
                     </Anchor>
-                  ) : (
-                    <Text size="md" c="gray.7">{listing.vendor.name}</Text>
                   )}
-                </Box>
-
-                {/* Service Types */}
-                {isServiceProvider && listing.serviceTypes && listing.serviceTypes.length > 0 && (
-                  <Box>
-                    <Title order={6} fw={700} mb={4}>Service Types</Title>
-                    <Stack gap={8}>
-                      {listing.serviceTypes.map((st) => (
-                        <Text key={st} size="md" c="dimmed">{st}</Text>
-                      ))}
-                    </Stack>
-                  </Box>
-                )}
-
-                {/* Resources */}
-                <Box>
-                  <Title order={6} fw={700} mb={4}>Resources</Title>
-                  <Stack gap={8}>
-                    {listing.supportUrl && (
-                      <Anchor href={listing.supportUrl} target="_blank" size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                        <IconHeadset size={15} style={{ flexShrink: 0 }} />
-                        Support
-                      </Anchor>
-                    )}
-                    {listing.docsUrl && (
-                      <Anchor href={listing.docsUrl} target="_blank" size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                        <IconBook size={15} style={{ flexShrink: 0 }} />
-                        Documentation
-                      </Anchor>
-                    )}
-                    {listing.contactUrl && (
-                      <Anchor href={listing.contactUrl} target="_blank" size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                        <IconMail size={15} style={{ flexShrink: 0 }} />
-                        Contact
-                      </Anchor>
-                    )}
-                    {listing.termsUrl && (
-                      <Anchor href={listing.termsUrl} target="_blank" size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                        <IconFile size={15} style={{ flexShrink: 0 }} />
-                        Terms
-                      </Anchor>
-                    )}
-                    {listing.privacyUrl && (
-                      <Anchor href={listing.privacyUrl} target="_blank" size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-                        <IconShieldCheck size={15} style={{ flexShrink: 0 }} />
-                        Privacy Policy
-                      </Anchor>
-                    )}
-                  </Stack>
-                </Box>
-              </Stack>
-            </Box>
+                  {listing.docsUrl && (
+                    <Anchor
+                      href={listing.docsUrl}
+                      target="_blank"
+                      size="md"
+                      c="gray.7"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                    >
+                      <IconBook size={15} style={{ flexShrink: 0 }} />
+                      Documentation
+                    </Anchor>
+                  )}
+                  {listing.contactUrl && (
+                    <Anchor
+                      href={listing.contactUrl}
+                      target="_blank"
+                      size="md"
+                      c="gray.7"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                    >
+                      <IconMail size={15} style={{ flexShrink: 0 }} />
+                      Contact
+                    </Anchor>
+                  )}
+                  {listing.termsUrl && (
+                    <Anchor
+                      href={listing.termsUrl}
+                      target="_blank"
+                      size="md"
+                      c="gray.7"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                    >
+                      <IconFile size={15} style={{ flexShrink: 0 }} />
+                      Terms
+                    </Anchor>
+                  )}
+                  {listing.privacyUrl && (
+                    <Anchor
+                      href={listing.privacyUrl}
+                      target="_blank"
+                      size="md"
+                      c="gray.7"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
+                    >
+                      <IconShieldCheck size={15} style={{ flexShrink: 0 }} />
+                      Privacy Policy
+                    </Anchor>
+                  )}
+                </Stack>
+              </Box>
+            </Stack>
+          </Box>
         </Grid.Col>
       </Grid>
 

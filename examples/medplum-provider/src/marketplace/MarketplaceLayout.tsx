@@ -53,7 +53,9 @@ export function MarketplaceLayout(): JSX.Element {
                 </Text>
                 {breadcrumbs.map((crumb, i) => (
                   <Group key={i} gap={6} align="baseline" wrap="nowrap">
-                    <Text c="dimmed" fw={400} size="xl" style={{ lineHeight: 1.3 }}>/</Text>
+                    <Text c="dimmed" fw={400} size="xl" style={{ lineHeight: 1.3 }}>
+                      /
+                    </Text>
                     {crumb.to ? (
                       <Text
                         component={Link}

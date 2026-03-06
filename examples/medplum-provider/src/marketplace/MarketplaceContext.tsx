@@ -49,49 +49,39 @@ export function MarketplaceProvider({ children }: { readonly children: ReactNode
     setCustomListings((prev) => prev.filter((l) => l.id !== listingId));
   }, []);
 
-  const addCustomListing = useCallback(
-    (name: string, type: ListingType, description?: string): void => {
-      const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const newListing: MarketplaceListing = {
-        id,
-        name,
-        tagline: description ?? '',
-        description: description ?? '',
-        type,
-        categories: [],
-        vendor: { id: 'custom', name: 'Custom', description: 'User-created item', logo: '' },
-        version: '1.0.0',
-        lastUpdated: new Date().toISOString().split('T')[0],
-        icon: '',
-        features: [],
-        popularity: 0,
-      };
-      setCustomListings((prev) => [...prev, newListing]);
-      // Auto-install
-      setInstalledItems((prev) => ({
-        ...prev,
-        [id]: {
-          listingId: id,
-          installedAt: new Date().toISOString(),
-          status: 'active',
-        },
-      }));
-    },
-    []
-  );
+  const addCustomListing = useCallback((name: string, type: ListingType, description?: string): void => {
+    const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const newListing: MarketplaceListing = {
+      id,
+      name,
+      tagline: description ?? '',
+      description: description ?? '',
+      type,
+      categories: [],
+      vendor: { id: 'custom', name: 'Custom', description: 'User-created item', logo: '' },
+      version: '1.0.0',
+      lastUpdated: new Date().toISOString().split('T')[0],
+      icon: '',
+      features: [],
+      popularity: 0,
+    };
+    setCustomListings((prev) => [...prev, newListing]);
+    // Auto-install
+    setInstalledItems((prev) => ({
+      ...prev,
+      [id]: {
+        listingId: id,
+        installedAt: new Date().toISOString(),
+        status: 'active',
+      },
+    }));
+  }, []);
 
-  const updateCustomListing = useCallback(
-    (id: string, name: string, description?: string): void => {
-      setCustomListings((prev) =>
-        prev.map((l) =>
-          l.id === id
-            ? { ...l, name, tagline: description ?? '', description: description ?? '' }
-            : l
-        )
-      );
-    },
-    []
-  );
+  const updateCustomListing = useCallback((id: string, name: string, description?: string): void => {
+    setCustomListings((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, name, tagline: description ?? '', description: description ?? '' } : l))
+    );
+  }, []);
 
   const value = useMemo<MarketplaceContextValue>(
     () => ({
