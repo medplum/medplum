@@ -11,14 +11,13 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { ActivityDefinition, Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
-import type { SchedulingParameters } from './utils/scheduling-parameters';
-import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
+import { chooseSchedulingParameters } from './utils/scheduling-parameters';
 
 const findOperation = {
   resourceType: 'OperationDefinition',
@@ -45,35 +44,6 @@ type FindParameters = {
   'service-type'?: string;
   _count?: number;
 };
-
-// Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
-//
-// - Each schedulingParameters description is returned at most once
-// - If no specific matches are found, falls back to "wildcard" matches
-//   (scheduling parameters having no associated codes match any input codes)
-function filterByServiceTypes(
-  schedulingParameters: SchedulingParameters[],
-  serviceTypes: string[]
-): [SchedulingParameters, CodeableConcept | undefined][] {
-  if (serviceTypes.length) {
-    const results: [SchedulingParameters, CodeableConcept][] = [];
-    for (const params of schedulingParameters) {
-      const serviceType = params.serviceType.find((codeableConcept) =>
-        codeableConcept.coding?.some((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`))
-      );
-      if (serviceType) {
-        results.push([params, serviceType]);
-      }
-    }
-    if (results.length) {
-      return results;
-    }
-  }
-
-  // We didn't find any parameters matching serviceType entries, use any wildcard results instead
-  return schedulingParameters.filter((params) => params.serviceType.length === 0).map((params) => [params, undefined]);
-}
 
 /**
  * Handles HTTP requests for the Schedule $find operation.
@@ -112,7 +82,21 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, slots] = await Promise.all([
+  const activityDefinitionSearch: Promise<ActivityDefinition[]> =
+    serviceTypes.length === 0
+      ? Promise.resolve([])
+      : ctx.repo.searchResources<ActivityDefinition>({
+          resourceType: 'ActivityDefinition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.EQUALS,
+              value: serviceTypes.join(','),
+            },
+          ],
+        });
+
+  const [schedule, slots, activityDefinitions] = await Promise.all([
     ctx.repo.readResource<Schedule>('Schedule', req.params.id),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
@@ -142,6 +126,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
+    activityDefinitionSearch,
   ]);
 
   // If we filled a full search page of slots, then there may be slots we
@@ -161,10 +146,8 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-
   const resultSlots: Slot[] = flatMapMax(
-    filterByServiceTypes(allSchedulingParameters, serviceTypes),
+    chooseSchedulingParameters(schedule, activityDefinitions, serviceTypes),
     ([schedulingParameters, serviceType], _idx, maxCount) => {
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
