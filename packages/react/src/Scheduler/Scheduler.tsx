@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack, Text } from '@mantine/core';
+import { Button, Loader, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
@@ -135,7 +135,11 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   }, [slots, date]);
 
   if (!slots) {
-    return null;
+    return (
+      <div className={classes.container} data-testid="scheduler">
+        <Loader />
+      </div>
+    );
   }
 
   return (
