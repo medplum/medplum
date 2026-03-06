@@ -79,8 +79,9 @@ describe('Scheduler', () => {
   });
 
   test('Success', async () => {
+    const onSelectSlot = jest.fn();
     await act(async () => {
-      setup({ schedule: DrAliceSmithSchedule });
+      setup({ schedule: DrAliceSmithSchedule, onSelectSlot });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -103,6 +104,7 @@ describe('Scheduler', () => {
     });
 
     expect(screen.getByText("You're all set!")).toBeDefined();
+    expect(onSelectSlot).toHaveBeenCalled();
   });
 
   test('Renders with schedule array', async () => {

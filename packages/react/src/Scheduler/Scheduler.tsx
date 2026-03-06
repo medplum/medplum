@@ -23,6 +23,7 @@ export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
   readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[];
   fetchSlots?: SlotSearchFunction;
+  onSelectSlot?: (slot: Slot) => void;
 }
 
 // Finds the first entry in Schedule.actor of type Reference<Practitioner>
@@ -42,6 +43,11 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const [actor, setActor] = useState<Reference<Practitioner> | undefined>();
   const [slots, setSlots] = useState<Slot[]>();
   const [selectedSlot, setSelectedSlot] = useState<Slot>();
+
+  const handleSelectSlot = (slot: Slot): void => {
+    setSelectedSlot(slot);
+    props.onSelectSlot?.(slot);
+  };
 
   useEffect(() => {
     if (!props.schedule) {
@@ -158,7 +164,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
               {Array.from(startTimeToSlotMap?.entries() ?? []).map(([startTime, slot]) => {
                 return (
                   <div key={slot.id}>
-                    <Button variant="outline" style={{ width: 150 }} onClick={() => setSelectedSlot(slot)}>
+                    <Button variant="outline" style={{ width: 150 }} onClick={() => handleSelectSlot(slot)}>
                       {startTime}
                     </Button>
                   </div>
