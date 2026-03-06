@@ -36,6 +36,21 @@ import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
 
+interface CandidServiceLine {
+  chargeAmountCents?: number;
+}
+
+interface CandidFullEncounter {
+  encounterId?: string;
+  createdAt?: string;
+  claims?: { status?: string }[];
+  serviceLines?: CandidServiceLine[];
+}
+
+interface CandidBotResponse {
+  fullEncounter?: CandidFullEncounter;
+}
+
 export interface BillingTabProps {
   patient: WithId<Patient>;
   encounter: WithId<Encounter>;
@@ -116,6 +131,26 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
 
+  const processCandidResponse = useCallback((result: CandidBotResponse): void => {
+    const encounterId = result?.fullEncounter?.encounterId;
+    if (encounterId) {
+      setResolvedCandidEncounterId(encounterId);
+    }
+    const status = result?.fullEncounter?.claims?.[0]?.status;
+    if (status) {
+      setCandidStatus(status);
+    }
+    const createdAt = result?.fullEncounter?.createdAt;
+    if (createdAt) {
+      setCandidCreatedAt(createdAt);
+    }
+    const serviceLines = result?.fullEncounter?.serviceLines;
+    if (serviceLines?.length) {
+      const totalCents = serviceLines.reduce((sum: number, line: CandidServiceLine) => sum + (line.chargeAmountCents ?? 0), 0);
+      setCandidClaimAmount(totalCents / 100);
+    }
+  }, []);
+
   const fetchCandidEncounter = useCallback(async (): Promise<void> => {
     if (!getEncounterBot || !claimRef.current) {
       return;
@@ -124,29 +159,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     setCandidLoading(true);
     try {
       const result = await medplum.executeBot(getEncounterBot.id, payload, 'application/json');
-      const encounterId = result?.fullEncounter?.encounterId;
-      if (encounterId) {
-        setResolvedCandidEncounterId(encounterId);
-      }
-      const status = result?.fullEncounter?.claims?.[0]?.status;
-      if (status) {
-        setCandidStatus(status);
-      }
-      const createdAt = result?.fullEncounter?.createdAt;
-      if (createdAt) {
-        setCandidCreatedAt(createdAt);
-      }
-      const serviceLines = result?.fullEncounter?.serviceLines;
-      if (serviceLines?.length) {
-        const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
-        setCandidClaimAmount(totalCents / 100);
-      }
+      processCandidResponse(result);
     } catch (err) {
       showErrorNotification('Unable to fetch Candid Health claim: ' + err);
     } finally {
       setCandidLoading(false);
     }
-  }, [candidEncounterId, encounter.id, getEncounterBot, medplum]);
+  }, [candidEncounterId, encounter.id, getEncounterBot, medplum, processCandidResponse]);
 
   useEffect(() => {
     if (!candidEncounterId) {
@@ -163,28 +182,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     setBackgroundChecking(true);
     medplum
       .executeBot(getEncounterBot.id, { externalId: encounter.id }, 'application/json')
-      .then((result) => {
-        const encounterId = result?.fullEncounter?.encounterId;
-        if (encounterId) {
-          setResolvedCandidEncounterId(encounterId);
-        }
-        const status = result?.fullEncounter?.claims?.[0]?.status;
-        if (status) {
-          setCandidStatus(status);
-        }
-        const createdAt = result?.fullEncounter?.createdAt;
-        if (createdAt) {
-          setCandidCreatedAt(createdAt);
-        }
-        const serviceLines = result?.fullEncounter?.serviceLines;
-        if (serviceLines?.length) {
-          const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
-          setCandidClaimAmount(totalCents / 100);
-        }
-      })
+      .then(processCandidResponse)
       .catch(() => undefined)
       .finally(() => setBackgroundChecking(false));
-  }, [claim?.id, candidEncounterId, encounter.id, getEncounterBot, medplum]);
+  }, [claim?.id, candidEncounterId, encounter.id, getEncounterBot, medplum, processCandidResponse]);
 
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
