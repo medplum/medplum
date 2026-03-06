@@ -218,7 +218,13 @@ describe('Get WebSocket binding token', () => {
       expect(res2.status).toBe(400);
       expect(res2.body).toMatchObject<OperationOutcome>({
         resourceType: 'OperationOutcome',
-        issue: [{ severity: 'error', code: 'invalid', details: { text: 'Invalid channel type for this operation: rest-hook' } }],
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Invalid channel type for this operation: rest-hook' },
+          },
+        ],
       });
     }));
 
