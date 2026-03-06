@@ -128,7 +128,7 @@ export async function cleanupActiveSubs(projectId: string, entryMap: ActiveSubsc
     for (const [authorRef, refs] of getSubRefsByAuthorRef(entryMap)) {
       await removeUserActiveWebSocketSubscriptions(authorRef, refs);
     }
-  } catch (_err: unknown) {
-    globalLogger.error('Attempted to remove active sub entries but Redis was already closed');
+  } catch (err: unknown) {
+    globalLogger.error('Error when attempting to remove sub entries', err as Error);
   }
 }
