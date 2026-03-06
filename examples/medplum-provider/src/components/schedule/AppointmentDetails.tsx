@@ -105,15 +105,19 @@ export function AppointmentDetails(props: {
       return;
     }
 
-    const encounter = await createEncounter(
-      medplum,
-      encounterClass,
-      patientParticipant,
-      planDefinition,
-      props.appointment
-    );
+    try {
+      const encounter = await createEncounter(
+        medplum,
+        encounterClass,
+        patientParticipant,
+        planDefinition,
+        props.appointment
+      );
 
-    navigate(`/Patient/${patientParticipant.id}/Encounter/${encounter.id}`)?.catch(showErrorNotification);
+      navigate(`/Patient/${patientParticipant.id}/Encounter/${encounter.id}`)?.catch(console.error);
+    } catch (err) {
+      showErrorNotification(err);
+    }
   }, [medplum, patientParticipant, encounterClass, planDefinition, props.appointment, navigate]);
 
   return (
