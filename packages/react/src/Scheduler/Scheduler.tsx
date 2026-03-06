@@ -24,6 +24,7 @@ export interface SchedulerProps {
   readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[];
   fetchSlots?: SlotSearchFunction;
   onSelectSlot?: (slot: Slot) => void;
+  children?: React.ReactNode;
 }
 
 // Finds the first entry in Schedule.actor of type Reference<Practitioner>
@@ -173,12 +174,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             </Stack>
           </div>
         )}
-        {date && selectedSlot && (
-          <div>
-            <h3>You're all set!</h3>
-            <p>Check your email for a calendar invite.</p>
-          </div>
-        )}
+        {props.children}
       </div>
     </div>
   );

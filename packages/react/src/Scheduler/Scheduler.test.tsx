@@ -103,7 +103,44 @@ describe('Scheduler', () => {
       fireEvent.click(screen.getByText('9:00 AM'));
     });
 
-    expect(screen.getByText("You're all set!")).toBeDefined();
+    expect(onSelectSlot).toHaveBeenCalled();
+  });
+
+  test('Renders children prop', async () => {
+    await act(async () => {
+      setup({ schedule: DrAliceSmithSchedule, children: <div>Searching inside your network.</div> });
+    });
+
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
+  });
+
+  test('Children prop is rendered after slot selection', async () => {
+    const onSelectSlot = jest.fn();
+    await act(async () => {
+      setup({
+        schedule: DrAliceSmithSchedule,
+        onSelectSlot,
+        children: <div>Searching inside your network.</div>,
+      });
+    });
+
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
+
+    // Move forward one month and select a slot
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next month'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '15' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('9:00 AM'));
+    });
+
+    // Children remain visible after slot selection and callback is invoked
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
     expect(onSelectSlot).toHaveBeenCalled();
   });
 

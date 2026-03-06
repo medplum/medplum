@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Alert, Loader } from '@mantine/core';
 import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
-import { createReference, isDefined } from '@medplum/core';
+import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import { Document, Scheduler, useMedplum } from '@medplum/react';
 import type { SlotSearchFunction } from '@medplum/react';
 import { useSearchOne } from '@medplum/react-hooks';
 import { IconInfoCircle } from '@tabler/icons-react';
+import { useState } from 'react';
 import type { JSX } from 'react';
 
 export function GetCare(): JSX.Element {
@@ -30,14 +31,25 @@ export function GetCare(): JSX.Element {
     return bundle.entry?.map((entry) => entry.resource).filter(isDefined) ?? [];
   };
 
+  const [bookSuccess, setBookSuccess] = useState(false);
+  const [bookLoading, setBookLoading] = useState(false);
+  const [bookError, setBookError] = useState<unknown>();
+
   const bookSlot = async (slot: Slot): Promise<void> => {
-    await medplum.post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
-      resourceType: 'Parameters',
-      parameter: [
-        { name: 'slot', resource: slot },
-        { name: 'patient-reference', valueReference: createReference(patient) },
-      ],
-    });
+    setBookLoading(true);
+    await medplum
+      .post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'slot', resource: slot },
+          { name: 'patient-reference', valueReference: createReference(patient) },
+        ],
+      })
+      .then(
+        () => setBookSuccess(true),
+        (err) => setBookError(err)
+      )
+      .finally(() => setBookLoading(false));
   };
 
   if (loading) {
@@ -60,7 +72,20 @@ export function GetCare(): JSX.Element {
 
   return (
     <Document width={800}>
-      <Scheduler schedule={schedule} fetchSlots={fetchSlots} onSelectSlot={bookSlot} />
+      <Scheduler schedule={schedule} fetchSlots={fetchSlots} onSelectSlot={bookSlot}>
+        {bookLoading && <Loader />}
+        {!!bookError && (
+          <Alert variant="outline" color="red" title="Booking failed" icon={<IconInfoCircle />}>
+            {normalizeErrorString(bookError)}
+          </Alert>
+        )}
+        {bookSuccess && (
+          <div>
+            <h3>You're all set!</h3>
+            <p>Your appointment has been created.</p>
+          </div>
+        )}
+      </Scheduler>
     </Document>
   );
 }
