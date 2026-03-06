@@ -27,7 +27,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           data-testid="attachment-image"
           style={{
             width: '100%',
-            maxWidth: props.maxWidth != null ? props.maxWidth : '100%',
+            maxWidth: props.maxWidth ?? '100%',
             height: 'auto',
             display: 'block',
           }}
@@ -40,7 +40,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           data-testid="attachment-video"
           style={{
             width: '100%',
-            maxWidth: props.maxWidth != null ? props.maxWidth : '100%',
+            maxWidth: props.maxWidth ?? '100%',
             height: 'auto',
             display: 'block',
           }}
