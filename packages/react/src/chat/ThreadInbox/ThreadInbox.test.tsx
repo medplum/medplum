@@ -70,16 +70,16 @@ describe('ThreadInbox', () => {
   };
 
   test('renders filter buttons and new message button', async () => {
-    setup();
-    expect(screen.getByText('In progress')).toBeInTheDocument();
+    await setup();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
     const iconButtons = screen.getAllByRole('button', { name: '' });
     expect(iconButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   test('renders status filter buttons', async () => {
-    setup();
-    expect(screen.getByText('In progress')).toBeInTheDocument();
+    await setup();
+    expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
@@ -337,12 +337,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    await user.click(screen.getByText('In Progress'));
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
+    await user.click(statusButton);
 
     await waitFor(() => {
       expect(screen.getByRole('menu')).toBeInTheDocument();
@@ -366,12 +368,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    await user.click(screen.getByText('In Progress'));
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
+    await user.click(statusButton);
 
     await waitFor(() => {
       expect(screen.getByRole('menu')).toBeInTheDocument();
@@ -448,12 +452,14 @@ describe('ThreadInbox', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByText('In Progress')).toBeInTheDocument();
+        expect(screen.getAllByRole('button', { name: 'In Progress' }).length).toBeGreaterThan(0);
       },
       { timeout: 3000 }
     );
 
-    await user.click(screen.getByText('In Progress'));
+    const statusButtons = screen.getAllByRole('button', { name: 'In Progress' });
+    const statusButton = statusButtons[statusButtons.length - 1];
+    await user.click(statusButton);
 
     await waitFor(() => {
       expect(screen.getByRole('menu')).toBeInTheDocument();

@@ -18,10 +18,11 @@ import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location, tabs: PatientPageTabInfo[]): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
-  const tab = tabId
-    ? tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()))
-    : undefined;
-  return tab;
+  // If tabId is empty, find the tab with empty url (timeline)
+  if (!tabId) {
+    return tabs.find((t) => t.url === '');
+  }
+  return tabs.find((t) => t.id === tabId || t.url.toLowerCase().startsWith(tabId.toLowerCase()));
 }
 
 export function PatientPage(): JSX.Element {
@@ -106,7 +107,9 @@ export function PatientPage(): JSX.Element {
 
         <div className={classes.content}>
           <PatientTabsNavigation tabs={tabs} currentTab={currentTab} onTabChange={onTabChange} />
-          <Outlet />
+          <div className={classes.contentBody}>
+            <Outlet />
+          </div>
         </div>
       </div>
       <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">
