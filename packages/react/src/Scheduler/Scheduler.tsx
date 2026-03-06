@@ -4,21 +4,12 @@ import { Button, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
 import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
-import type {
-  Period,
-  Practitioner,
-  Questionnaire,
-  QuestionnaireResponse,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import type { Period, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
-import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
@@ -31,7 +22,6 @@ import classes from './Scheduler.module.css';
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
   readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[];
-  readonly questionnaire?: Questionnaire | Reference<Questionnaire>;
   fetchSlots?: SlotSearchFunction;
 }
 
@@ -46,11 +36,9 @@ function onlyPractitioner(schedule: Schedule): Reference<Practitioner> | undefin
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
-  const questionnaire = useResource(props.questionnaire);
 
   const [month, setMonth] = useState<Date>(getStartMonth());
   const [date, setDate] = useState<Date>();
-  const [response, setResponse] = useState<QuestionnaireResponse>();
   const [actor, setActor] = useState<Reference<Practitioner> | undefined>();
   const [slots, setSlots] = useState<Slot[]>();
   const [selectedSlot, setSelectedSlot] = useState<Slot>();
@@ -139,7 +127,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     return startTimeToSlotMap;
   }, [slots, date]);
 
-  if (!slots || !questionnaire) {
+  if (!slots) {
     return null;
   }
 
@@ -179,10 +167,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             </Stack>
           </div>
         )}
-        {date && selectedSlot && !response && (
-          <QuestionnaireForm questionnaire={questionnaire} submitButtonText="Next" onSubmit={setResponse} />
-        )}
-        {date && selectedSlot && response && (
+        {date && selectedSlot && (
           <div>
             <h3>You're all set!</h3>
             <p>Check your email for a calendar invite.</p>

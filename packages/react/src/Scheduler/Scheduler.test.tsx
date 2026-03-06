@@ -3,7 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
 import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
-import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
+import { DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -102,11 +102,6 @@ describe('Scheduler', () => {
       fireEvent.click(screen.getByText('9:00 AM'));
     });
 
-    // Click next
-    await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
-    });
-
     expect(screen.getByText("You're all set!")).toBeDefined();
   });
 
@@ -176,7 +171,7 @@ describe('Scheduler', () => {
     const customSlotSearch: SlotSearchFunction = jest.fn().mockResolvedValue(mockSlots);
 
     await act(async () => {
-      setup({ schedule: DrAliceSmithSchedule, questionnaire: ExampleQuestionnaire, fetchSlots: customSlotSearch });
+      setup({ schedule: DrAliceSmithSchedule, fetchSlots: customSlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
