@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
+import { Button, Card, Flex, Group, Menu, Skeleton, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { formatDateTime, formatHumanName, getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
@@ -15,13 +15,13 @@ import type {
   Encounter,
   EncounterDiagnosis,
   Media,
-  Patient,
   Practitioner,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconDownload, IconExternalLink, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEncounterChartContext } from './EncounterChartContext';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { ChartNoteStatus } from '../../types/encounter';
@@ -31,37 +31,19 @@ import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
+import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
-const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
 
 export interface BillingTabProps {
-  patient: WithId<Patient>;
-  encounter: WithId<Encounter>;
-  setEncounter: (encounter: WithId<Encounter>) => void;
-  practitioner: WithId<Practitioner> | undefined;
-  setPractitioner: (practitioner: WithId<Practitioner>) => void;
-  chargeItems: WithId<ChargeItem>[] | undefined;
-  setChargeItems: (chargeItems: WithId<ChargeItem>[]) => void;
-  claim: WithId<Claim> | undefined;
-  setClaim: (claim: WithId<Claim>) => void;
   chartNoteStatus: ChartNoteStatus;
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const {
-    encounter,
-    setEncounter,
-    claim,
-    patient,
-    practitioner,
-    setPractitioner,
-    chargeItems,
-    setChargeItems,
-    setClaim,
-    chartNoteStatus,
-  } = props;
+  const { chartNoteStatus } = props;
+  const { encounter, setEncounter, claim, setClaim, patient, practitioner, setPractitioner, chargeItems, setChargeItems } =
+    useEncounterChartContext();
   const medplum = useMedplum();
   const candidEncounterId = claim ? getIdentifier(claim, CANDID_IDENTIFIER_SYSTEM) : undefined;
   const [conditions, setConditions] = useState<Condition[]>([]);
@@ -72,6 +54,8 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
   const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
+  const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
+  const [candidBillingProvider, setCandidBillingProvider] = useState<string | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
   const [backgroundChecking, setBackgroundChecking] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
@@ -120,7 +104,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     if (!getEncounterBot || !claimRef.current) {
       return;
     }
-    const payload = candidEncounterId ? { encounterId: candidEncounterId } : { externalId: encounter.id };
+    const payload = candidEncounterId ? { encounterId: candidEncounterId } : { externalId: encounter?.id };
     setCandidLoading(true);
     try {
       const result = await medplum.executeBot(getEncounterBot.id, payload, 'application/json');
@@ -136,12 +120,21 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       if (createdAt) {
         setCandidCreatedAt(createdAt);
       }
+      const serviceLines = result?.fullEncounter?.serviceLines;
+      if (serviceLines?.length) {
+        const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
+        setCandidClaimAmount(totalCents / 100);
+      }
+      const bp = result?.fullEncounter?.billingProvider;
+      if (bp?.firstName || bp?.lastName) {
+        setCandidBillingProvider([bp.firstName, bp.lastName].filter(Boolean).join(' '));
+      }
     } catch (err) {
       showErrorNotification('Unable to fetch Candid Health claim: ' + err);
     } finally {
       setCandidLoading(false);
     }
-  }, [candidEncounterId, encounter.id, getEncounterBot, medplum]);
+  }, [candidEncounterId, encounter?.id, getEncounterBot, medplum]);
 
   useEffect(() => {
     if (!candidEncounterId) {
@@ -157,7 +150,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     setBackgroundChecking(true);
     medplum
-      .executeBot(getEncounterBot.id, { externalId: encounter.id }, 'application/json')
+      .executeBot(getEncounterBot.id, { externalId: encounter?.id }, 'application/json')
       .then((result) => {
         const encounterId = result?.fullEncounter?.encounterId;
         if (encounterId) {
@@ -171,13 +164,25 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         if (createdAt) {
           setCandidCreatedAt(createdAt);
         }
+        const serviceLines = result?.fullEncounter?.serviceLines;
+        if (serviceLines?.length) {
+          const totalCents = serviceLines.reduce((sum: number, line: any) => sum + (line.chargeAmountCents ?? 0), 0);
+          setCandidClaimAmount(totalCents / 100);
+        }
+        const bp = result?.fullEncounter?.billingProvider;
+        if (bp?.firstName || bp?.lastName) {
+          setCandidBillingProvider([bp.firstName, bp.lastName].filter(Boolean).join(' '));
+        }
       })
       .catch(() => undefined)
       .finally(() => setBackgroundChecking(false));
-  }, [claim?.id, candidEncounterId, encounter.id, getEncounterBot, medplum]);
+  }, [claim?.id, candidEncounterId, encounter?.id, getEncounterBot, medplum]);
 
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+      if (!encounter) {
+        return;
+      }
       const updatedEncounter = { ...encounter, diagnosis };
       setEncounter(updatedEncounter);
       await debouncedUpdateResource(updatedEncounter);
@@ -385,56 +390,14 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     if (candidEncounterId || candidStatus) {
       return (
-        <Card withBorder shadow="sm" p={0}>
-          <Stack p="md" gap="md">
-            <Flex align="center" justify="space-between" gap="md">
-              <Stack gap={4} miw={100}>
-                <Text size="xs" c="dimmed">
-                  Claim Status:
-                </Text>
-                {candidStatus && (
-                  <Badge color={getStatusColor(candidStatus)} radius="xl" variant="filled">
-                    {formatCandidStatus(candidStatus)}
-                  </Badge>
-                )}
-              </Stack>
-              <Box style={{ flex: 1 }}>
-                <Text size="sm">
-                  Claim submitted for{' '}
-                  <Text component="span" fw={700}>
-                    ${(claim.total?.value ?? 0).toFixed(0)}
-                  </Text>{' '}
-                  by{' '}
-                  <Text component="span" fw={700}>
-                    {formatHumanName(practitioner?.name?.[0])}
-                  </Text>
-                  .
-                </Text>
-                {candidCreatedAt && (
-                  <Text size="sm" c="dimmed">
-                    Submitted on {formatDateTime(candidCreatedAt)}
-                  </Text>
-                )}
-              </Box>
-              {(resolvedCandidEncounterId ?? candidEncounterId) && (
-                <Button
-                  variant="outline"
-                  rightSection={<IconExternalLink size={14} />}
-                  onClick={() =>
-                    window.open(
-                      `${CANDID_CLAIM_BASE_URL}${resolvedCandidEncounterId ?? candidEncounterId}`,
-                      '_blank'
-                    )
-                  }
-                >
-                  View Claim on Candid
-                </Button>
-              )}
-            </Flex>
-            <Divider />
-            <Group>{exportClaimMenu()}</Group>
-          </Stack>
-        </Card>
+        <ClaimSubmittedPanel
+          status={candidStatus}
+          claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
+          billingProvider={candidBillingProvider ?? ''}
+          createdAt={candidCreatedAt}
+          candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
+          exportMenu={exportClaimMenu()}
+        />
       );
     }
     return (
@@ -473,51 +436,19 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       {renderClaimCard()}
 
       <Group grow align="flex-start">
-        <VisitDetailsPanel
-          key={encounter.meta?.lastUpdated}
-          practitioner={practitioner}
-          encounter={encounter}
-          onEncounterChange={handleEncounterChange}
-        />
+        <VisitDetailsPanel key={encounter?.meta?.lastUpdated} onEncounterChange={handleEncounterChange} />
       </Group>
 
-      {encounter && (
-        <ConditionList
-          patient={patient}
-          encounter={encounter}
-          conditions={conditions}
-          setConditions={setConditions}
-          onDiagnosisChange={handleDiagnosisChange}
-        />
-      )}
+      <ConditionList
+        conditions={conditions}
+        setConditions={setConditions}
+        onDiagnosisChange={handleDiagnosisChange}
+      />
 
-      {chargeItems && (
-        <ChargeItemList
-          patient={patient}
-          encounter={encounter}
-          chargeItems={chargeItems}
-          updateChargeItems={updateChargeItems}
-        />
-      )}
+      <ChargeItemList updateChargeItems={updateChargeItems} />
     </Stack>
   );
 };
-
-const getStatusColor = (status: string): string => {
-  if (['rejected', 'denied'].includes(status)) {
-    return 'red';
-  }
-  if (['paid', 'finalized_paid'].includes(status)) {
-    return 'green';
-  }
-  return 'violet';
-};
-
-const formatCandidStatus = (status: string): string =>
-  status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {

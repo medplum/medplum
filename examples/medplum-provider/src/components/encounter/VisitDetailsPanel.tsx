@@ -5,15 +5,15 @@ import { createReference } from '@medplum/core';
 import type { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { DateTimeInput, ResourceInput } from '@medplum/react';
 import type { JSX } from 'react';
+import { useEncounterChartContext } from './EncounterChartContext';
 
 interface VisitDetailsPanelProps {
-  practitioner?: Practitioner;
-  encounter: Encounter;
   onEncounterChange: (encounter: Encounter) => void;
 }
 
 export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element => {
-  const { practitioner, encounter, onEncounterChange } = props;
+  const { onEncounterChange } = props;
+  const { encounter, practitioner } = useEncounterChartContext();
 
   const handlePractitionerChange = async (practitioner: Practitioner | undefined): Promise<void> => {
     if (!encounter || !practitioner) {
@@ -81,14 +81,14 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
           <DateTimeInput
             name="checkin"
             label="Check in"
-            defaultValue={encounter.period?.start}
+            defaultValue={encounter?.period?.start}
             onChange={handleCheckinChange}
           />
 
           <DateTimeInput
             name="checkout"
             label="Check out"
-            defaultValue={encounter.period?.end}
+            defaultValue={encounter?.period?.end}
             onChange={handleCheckoutChange}
           />
         </Stack>

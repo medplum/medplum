@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Button, Card, Flex, Modal, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import type { Condition, Encounter, EncounterDiagnosis, Patient } from '@medplum/fhirtypes';
+import type { Condition, EncounterDiagnosis } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
+import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import { showErrorNotification } from '../../utils/notifications';
 import ConditionItem from './ConditionItem';
 import ConditionModal from './ConditionModal';
 
 interface ConditionListProps {
-  patient: Patient;
-  encounter: Encounter;
   conditions: Condition[] | undefined;
   setConditions: (conditions: Condition[]) => void;
   onDiagnosisChange: (diagnosis: EncounterDiagnosis[]) => void;
 }
 
 export const ConditionList = (props: ConditionListProps): JSX.Element => {
-  const { patient, encounter, conditions, setConditions, onDiagnosisChange } = props;
+  const { conditions, setConditions, onDiagnosisChange } = props;
+  const { patient, encounter } = useEncounterChartContext();
   const medplum = useMedplum();
   const [opened, setOpened] = useState(false);
 
@@ -114,7 +114,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     try {
       await medplum.deleteResource('Condition', condition.id as string);
       setConditions(conditions?.filter((c) => c.id !== condition.id));
-      const updatedDiagnosis = encounter.diagnosis?.filter(
+      const updatedDiagnosis = encounter?.diagnosis?.filter(
         (d) => d.condition?.reference !== getReferenceString(condition)
       );
       const reindexedDiagnosis = updatedDiagnosis?.map((d, index) => ({
@@ -178,9 +178,11 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
           </Stack>
         </Card>
       </Stack>
-      <Modal opened={opened} onClose={() => setOpened(false)} title={'Add Diagnosis'}>
-        <ConditionModal patient={patient} encounter={encounter} onSubmit={handleConditionSubmit} />
-      </Modal>
+      {patient && encounter && (
+        <Modal opened={opened} onClose={() => setOpened(false)} title={'Add Diagnosis'}>
+          <ConditionModal patient={patient} encounter={encounter} onSubmit={handleConditionSubmit} />
+        </Modal>
+      )}
     </>
   );
 };

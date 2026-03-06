@@ -18,6 +18,7 @@ import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
+import { EncounterChartProvider } from './EncounterChartContext';
 import { updateEncounterStatus } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskPanel } from '../tasks/encounter/TaskPanel';
@@ -46,22 +47,18 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const medplum = useMedplum();
 
   const [activeTab, setActiveTab] = useState<string>('notes');
+  const hookResult = useEncounterChart(encounterProp);
   const {
     encounter,
     patient: patientResource,
-    claim,
     practitioner,
     tasks,
     clinicalImpression,
-    chargeItems,
     appointment,
     setEncounter,
-    setClaim,
-    setPractitioner,
     setTasks,
     setClinicalImpression,
-    setChargeItems,
-  } = useEncounterChart(encounterProp);
+  } = hookResult;
 
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
@@ -228,7 +225,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   }
 
   return (
-    <>
+    <EncounterChartProvider value={hookResult}>
       <Stack justify="space-between" gap={0}>
         <EncounterHeader
           encounter={encounter}
@@ -267,22 +264,9 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
               ))}
             </Stack>
           )}
-          {activeTab === 'details' && (
-            <BillingTab
-              encounter={encounter}
-              setEncounter={setEncounter}
-              claim={claim}
-              patient={patientResource}
-              practitioner={practitioner}
-              setPractitioner={setPractitioner}
-              chargeItems={chargeItems}
-              setChargeItems={setChargeItems}
-              setClaim={setClaim}
-              chartNoteStatus={chartNoteStatus}
-            />
-          )}
+          {activeTab === 'details' && <BillingTab chartNoteStatus={chartNoteStatus} />}
         </Box>
       </Stack>
-    </>
+    </EncounterChartProvider>
   );
 };

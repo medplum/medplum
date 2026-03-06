@@ -9,7 +9,9 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { EncounterChartHook } from '../../hooks/useEncounterChart';
 import * as chargeItemsUtils from '../../utils/chargeitems';
+import { EncounterChartProvider } from '../encounter/EncounterChartContext';
 import { ChargeItemList } from './ChargeItemList';
 
 const mockPatient: WithId<Patient> = {
@@ -54,6 +56,24 @@ vi.mock('../../utils/chargeitems', () => ({
   calculateTotalPrice: vi.fn(),
 }));
 
+const defaultContextValue: EncounterChartHook = {
+  encounter: mockEncounter,
+  patient: mockPatient,
+  claim: undefined,
+  practitioner: undefined,
+  tasks: [],
+  clinicalImpression: undefined,
+  chargeItems: [],
+  appointment: undefined,
+  setEncounter: vi.fn(),
+  setClaim: vi.fn(),
+  setPractitioner: vi.fn(),
+  setTasks: vi.fn(),
+  setClinicalImpression: vi.fn(),
+  setChargeItems: vi.fn(),
+  setAppointment: vi.fn(),
+};
+
 describe('ChargeItemList', () => {
   let medplum: MockClient;
 
@@ -66,17 +86,19 @@ describe('ChargeItemList', () => {
     vi.spyOn(chargeItemsUtils, 'applyChargeItemDefinition').mockImplementation(async (_, item) => item);
   });
 
-  const setup = (props: Partial<Parameters<typeof ChargeItemList>[0]> = {}): ReturnType<typeof render> => {
+  interface SetupOptions extends Partial<EncounterChartHook> {
+    updateChargeItems?: (chargeItems: WithId<ChargeItem>[]) => void;
+  }
+
+  const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
+    const { updateChargeItems, ...contextOverrides } = options;
+    const contextValue = { ...defaultContextValue, ...contextOverrides } as EncounterChartHook;
     return render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
-          <ChargeItemList
-            patient={mockPatient}
-            encounter={mockEncounter}
-            chargeItems={[]}
-            updateChargeItems={vi.fn()}
-            {...props}
-          />
+          <EncounterChartProvider value={contextValue}>
+            <ChargeItemList updateChargeItems={updateChargeItems ?? vi.fn()} />
+          </EncounterChartProvider>
         </MantineProvider>
       </MedplumProvider>
     );

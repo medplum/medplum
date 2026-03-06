@@ -21,10 +21,12 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
+import type { EncounterChartHook } from '../../hooks/useEncounterChart';
 import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import * as claimsUtils from '../../utils/claims';
 import { BillingTab } from './BillingTab';
+import { EncounterChartProvider } from './EncounterChartContext';
 
 vi.mock('@mantine/notifications', async () => {
   const actual = await vi.importActual('@mantine/notifications');
@@ -111,6 +113,24 @@ const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModu
   return fn;
 };
 
+const defaultContextValue: EncounterChartHook = {
+  encounter: mockEncounter,
+  patient: mockPatient,
+  claim: undefined,
+  practitioner: mockPractitioner,
+  tasks: [],
+  clinicalImpression: undefined,
+  chargeItems: [],
+  appointment: undefined,
+  setEncounter: vi.fn(),
+  setClaim: vi.fn(),
+  setPractitioner: vi.fn(),
+  setTasks: vi.fn(),
+  setClinicalImpression: vi.fn(),
+  setChargeItems: vi.fn(),
+  setAppointment: vi.fn(),
+};
+
 describe('BillingTab', () => {
   let medplum: MockClient;
 
@@ -121,26 +141,17 @@ describe('BillingTab', () => {
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
   });
 
-  const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
+  const setup = async (contextOverrides: Partial<EncounterChartHook> = {}): Promise<void> => {
+    const contextValue = { ...defaultContextValue, ...contextOverrides } as EncounterChartHook;
     return act(async () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
             <MantineProvider>
               <Notifications />
-              <BillingTab
-                patient={mockPatient}
-                encounter={mockEncounter}
-                setEncounter={vi.fn()}
-                practitioner={mockPractitioner}
-                setPractitioner={vi.fn()}
-                chargeItems={[]}
-                setChargeItems={vi.fn()}
-                claim={undefined}
-                setClaim={vi.fn()}
-                chartNoteStatus={ChartNoteStatus.SignedAndLocked}
-                {...props}
-              />
+              <EncounterChartProvider value={contextValue}>
+                <BillingTab chartNoteStatus={ChartNoteStatus.SignedAndLocked} />
+              </EncounterChartProvider>
             </MantineProvider>
           </MedplumProvider>
         </MemoryRouter>
@@ -1131,6 +1142,28 @@ describe('BillingTab', () => {
 
       expect(screen.queryByText('Waiting For Provider')).not.toBeInTheDocument();
       expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
+    });
+
+    test('displays claim amount and billing provider from Candid encounter', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        fullEncounter: {
+          claims: [{ status: 'waiting_for_provider' }],
+          createdAt: '2026-03-02T21:32:57.748Z',
+          serviceLines: [
+            { chargeAmountCents: 25000 },
+            { chargeAmountCents: 15000 },
+          ],
+          billingProvider: { firstName: 'Maddy', lastName: 'Li' },
+        },
+      });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('$400')).toBeInTheDocument();
+        expect(screen.getByText('Maddy Li')).toBeInTheDocument();
+      });
     });
 
     test('shows error notification when get-encounter bot call fails', async () => {

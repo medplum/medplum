@@ -9,6 +9,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { EncounterChartHook } from '../../hooks/useEncounterChart';
+import { EncounterChartProvider } from './EncounterChartContext';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const mockEncounter: WithId<Encounter> = {
@@ -23,10 +25,28 @@ const mockEncounter: WithId<Encounter> = {
   subject: { reference: 'Patient/patient-123' },
 };
 
-const mockPractitioner: Practitioner = {
+const mockPractitioner: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: 'practitioner-123',
   name: [{ given: ['Dr.'], family: 'Test' }],
+};
+
+const defaultContextValue: EncounterChartHook = {
+  encounter: mockEncounter,
+  patient: undefined,
+  claim: undefined,
+  practitioner: undefined,
+  tasks: [],
+  clinicalImpression: undefined,
+  chargeItems: [],
+  appointment: undefined,
+  setEncounter: vi.fn(),
+  setClaim: vi.fn(),
+  setPractitioner: vi.fn(),
+  setTasks: vi.fn(),
+  setClinicalImpression: vi.fn(),
+  setChargeItems: vi.fn(),
+  setAppointment: vi.fn(),
 };
 
 describe('VisitDetailsPanel', () => {
@@ -36,12 +56,20 @@ describe('VisitDetailsPanel', () => {
     medplum = new MockClient();
   });
 
-  const setup = (props: Partial<Parameters<typeof VisitDetailsPanel>[0]> = {}): ReturnType<typeof render> => {
+  interface SetupOptions extends Partial<EncounterChartHook> {
+    onEncounterChange?: (encounter: Encounter) => void;
+  }
+
+  const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
+    const { onEncounterChange, ...contextOverrides } = options;
+    const contextValue = { ...defaultContextValue, ...contextOverrides } as EncounterChartHook;
     return render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
-            <VisitDetailsPanel encounter={mockEncounter} onEncounterChange={vi.fn()} {...props} />
+            <EncounterChartProvider value={contextValue}>
+              <VisitDetailsPanel onEncounterChange={onEncounterChange ?? vi.fn()} />
+            </EncounterChartProvider>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>

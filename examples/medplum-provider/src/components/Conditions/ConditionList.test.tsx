@@ -9,6 +9,8 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { EncounterChartHook } from '../../hooks/useEncounterChart';
+import { EncounterChartProvider } from '../encounter/EncounterChartContext';
 import { ConditionList } from './ConditionList';
 
 const mockPatient: WithId<Patient> = {
@@ -57,6 +59,24 @@ const mockCondition: Condition = {
   },
 };
 
+const defaultContextValue: EncounterChartHook = {
+  encounter: mockEncounter,
+  patient: mockPatient,
+  claim: undefined,
+  practitioner: undefined,
+  tasks: [],
+  clinicalImpression: undefined,
+  chargeItems: [],
+  appointment: undefined,
+  setEncounter: vi.fn(),
+  setClaim: vi.fn(),
+  setPractitioner: vi.fn(),
+  setTasks: vi.fn(),
+  setClinicalImpression: vi.fn(),
+  setChargeItems: vi.fn(),
+  setAppointment: vi.fn(),
+};
+
 describe('ConditionList', () => {
   let medplum: MockClient;
 
@@ -65,18 +85,25 @@ describe('ConditionList', () => {
     vi.clearAllMocks();
   });
 
-  const setup = (props: Partial<Parameters<typeof ConditionList>[0]> = {}): ReturnType<typeof render> => {
+  interface SetupOptions extends Partial<EncounterChartHook> {
+    conditions?: Condition[];
+    setConditions?: (conditions: Condition[]) => void;
+    onDiagnosisChange?: Parameters<typeof ConditionList>[0]['onDiagnosisChange'];
+  }
+
+  const setup = (options: SetupOptions = {}): ReturnType<typeof render> => {
+    const { conditions, setConditions, onDiagnosisChange, ...contextOverrides } = options;
+    const contextValue = { ...defaultContextValue, ...contextOverrides } as EncounterChartHook;
     return render(
       <MedplumProvider medplum={medplum}>
         <MantineProvider>
-          <ConditionList
-            patient={mockPatient}
-            encounter={mockEncounter}
-            conditions={[]}
-            setConditions={vi.fn()}
-            onDiagnosisChange={vi.fn()}
-            {...props}
-          />
+          <EncounterChartProvider value={contextValue}>
+            <ConditionList
+              conditions={conditions ?? []}
+              setConditions={setConditions ?? vi.fn()}
+              onDiagnosisChange={onDiagnosisChange ?? vi.fn()}
+            />
+          </EncounterChartProvider>
         </MantineProvider>
       </MedplumProvider>
     );

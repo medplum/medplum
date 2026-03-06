@@ -4,24 +4,23 @@ import { Box, Button, Card, Flex, Modal, Stack, Text, TextInput } from '@mantine
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
-import type { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
+import type { ChargeItem, ChargeItemDefinition, CodeableConcept } from '@medplum/fhirtypes';
 import { AsyncAutocomplete, CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { useEncounterChartContext } from '../encounter/EncounterChartContext';
 import { applyChargeItemDefinition, calculateTotalPrice } from '../../utils/chargeitems';
 import { showErrorNotification } from '../../utils/notifications';
 import ChargeItemPanel from './ChargeItemPanel';
 
 export interface ChargeItemListProps {
-  chargeItems: WithId<ChargeItem>[];
   updateChargeItems: (chargeItems: WithId<ChargeItem>[]) => void;
-  patient: WithId<Patient>;
-  encounter: WithId<Encounter>;
 }
 
 export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
-  const { chargeItems, updateChargeItems, patient, encounter } = props;
+  const { updateChargeItems } = props;
+  const { chargeItems, patient, encounter } = useEncounterChartContext();
   const [chargeItemsState, setChargeItemsState] = useState<WithId<ChargeItem>[]>(chargeItems);
   const [opened, { open, close }] = useDisclosure(false);
   const medplum = useMedplum();
@@ -59,6 +58,10 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
     ): Promise<void> => {
       if (!cptCode || !chargeItemDefinition) {
         showErrorNotification('Please select both CPT code and charge item definition');
+        return;
+      }
+
+      if (!patient || !encounter) {
         return;
       }
 
