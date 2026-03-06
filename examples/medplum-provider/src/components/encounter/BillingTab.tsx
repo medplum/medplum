@@ -146,7 +146,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
     const serviceLines = result?.fullEncounter?.serviceLines;
     if (serviceLines?.length) {
-      const totalCents = serviceLines.reduce((sum: number, line: CandidServiceLine) => sum + (line.chargeAmountCents ?? 0), 0);
+      const totalCents = serviceLines.reduce(
+        (sum: number, line: CandidServiceLine) => sum + (line.chargeAmountCents ?? 0),
+        0
+      );
       setCandidClaimAmount(totalCents / 100);
     }
   }, []);
