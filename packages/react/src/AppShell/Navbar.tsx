@@ -175,10 +175,21 @@ export function Navbar(props: NavbarProps): JSX.Element {
                       />
                     ) : (
                       <NavbarLinkContent
-                        key={link.href}
+                        key={link.label ?? link.href}
                         to={link.href}
                         active={link.href === activeLink?.href}
-                        onClick={(e) => onLinkClick(e, link.href)}
+                        onClick={(e: SyntheticEvent) => {
+                          if (link.onClick) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            link.onClick();
+                            if (window.innerWidth < 768) {
+                              props.closeNavbar();
+                            }
+                          } else {
+                            onLinkClick(e, link.href);
+                          }
+                        }}
                         icon={link.icon}
                         label={link.label ?? ''}
                         opened={opened}
@@ -283,7 +294,6 @@ interface NavbarLinkContentProps {
 function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
   const { to, icon, label, onClick, active, count, alert, opened, onDismiss } = props;
   const showCount = count !== undefined && count > 0;
-
   const iconElement = icon ?? <IconBookmark />;
   const showDot = showCount && alert && !opened;
 
