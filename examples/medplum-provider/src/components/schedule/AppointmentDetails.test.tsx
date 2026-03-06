@@ -386,6 +386,54 @@ describe('AppointmentDetails', () => {
       expect(createEncounter).not.toHaveBeenCalled();
     });
 
+    test('createEncounter failure shows an error message', async () => {
+      const user = userEvent.setup();
+
+      // Create a PlanDefinition so ResourceInput can find it (searched by `name`)
+      await medplum.createResource({
+        resourceType: 'PlanDefinition',
+        name: 'Test Plan',
+        title: 'Test Plan',
+        status: 'active',
+      });
+
+      const encounterError = new Error('Failed to create encounter');
+      vi.mocked(createEncounter).mockRejectedValue(encounterError);
+
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
+      });
+
+      // Fill in Encounter Class — MockClient's ValueSet expansion returns 'Test Display'
+      const classInput = screen.getByLabelText(/Encounter Class/i);
+      await user.type(classInput, 'Test');
+      await waitFor(() => {
+        expect(screen.getByText('Test Display')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Test Display'));
+
+      // Fill in Care template
+      const templateInput = screen.getByLabelText(/Care template/i);
+      await user.type(templateInput, 'Test Plan');
+      await waitFor(() => {
+        expect(screen.getByText('Test Plan')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Test Plan'));
+
+      // Wait for the Apply button to become enabled, then submit
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      });
+      await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+      await waitFor(() => {
+        expect(showErrorNotification).toHaveBeenCalledWith(encounterError);
+      });
+    });
+
     test('renders patient name when patient participant is loaded', async () => {
       const appointment = createAppointmentWithPatient(patient.id as string);
       await setup({ appointment });
