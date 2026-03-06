@@ -1150,10 +1150,7 @@ describe('BillingTab', () => {
         fullEncounter: {
           claims: [{ status: 'waiting_for_provider' }],
           createdAt: '2026-03-02T21:32:57.748Z',
-          serviceLines: [
-            { chargeAmountCents: 25000 },
-            { chargeAmountCents: 15000 },
-          ],
+          serviceLines: [{ chargeAmountCents: 25000 }, { chargeAmountCents: 15000 }],
         },
       });
 

@@ -392,7 +392,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         <ClaimSubmittedPanel
           status={candidStatus}
           claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
-
           createdAt={candidCreatedAt}
           candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
           exportMenu={exportClaimMenu()}

@@ -20,12 +20,10 @@ function setup(props: Partial<React.ComponentProps<typeof ClaimSubmittedPanel>> 
 }
 
 describe('ClaimSubmittedPanel', () => {
-
   test('renders export menu', () => {
     setup();
     expect(screen.getByText('Export')).toBeInTheDocument();
   });
-
 
   test('shows formatted status badge when status is provided', () => {
     setup({ status: 'waiting_for_provider' });
