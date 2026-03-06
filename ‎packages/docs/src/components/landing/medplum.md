@@ -2,9 +2,12 @@
 
 Medplum is an open-source, FHIR-native healthcare developer platform providing a clinical data repository, FHIR R4 API, auth, server-side logic (Bots), and a React UI component library.
 
-- **License:** Apache 2.0 — **Repository:** https://github.com/medplum/medplum
-- **Docs:** https://www.medplum.com/docs — **Blog:** https://www.medplum.com/blog
-- **Storybook:** https://storybook.medplum.com/ — **Discord:** https://discord.gg/medplum
+- **License:** Apache 2.0
+- **Repository:** https://github.com/medplum/medplum
+- **Docs:** https://www.medplum.com/docs
+- **Blog:** https://www.medplum.com/blog
+- **Storybook:** https://storybook.medplum.com/
+- **Discord:** https://discord.gg/medplum
 - **App (admin):** https://app.medplum.com
 - **Version:** v5.x (Mantine v8, React 19, react-router v7)
 
