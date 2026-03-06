@@ -1,98 +1,45 @@
 # Medplum Developer Reference
 
-> **Purpose:** This file is designed to be given to an AI coding agent (e.g., Claude Code, Cursor, Copilot) to help it understand the Medplum platform and spin up a Medplum project. It contains architecture details, setup instructions, key APIs, and links to documentation.
+Medplum is an open-source, FHIR-native healthcare developer platform providing a clinical data repository, FHIR R4 API, auth, server-side logic (Bots), and a React UI component library.
+
+- **License:** Apache 2.0 — **Repository:** https://github.com/medplum/medplum
+- **Docs:** https://www.medplum.com/docs — **Blog:** https://www.medplum.com/blog
+- **Storybook:** https://storybook.medplum.com/ — **Discord:** https://discord.gg/medplum
+- **App (admin):** https://app.medplum.com
+- **Version:** v5.x (Mantine v8, React 19, react-router v7)
 
 ---
 
-## What is Medplum?
-
-Medplum is an open-source, FHIR-native healthcare developer platform. It provides a complete backend for building healthcare applications — including a clinical data repository, FHIR API, authentication, authorization, server-side logic (Bots), and a React UI component library.
-
-- **License:** Apache 2.0
-- **Language:** Full-stack TypeScript (Node.js + React)
-- **Repository:** https://github.com/medplum/medplum
-- **Latest Version:** v5.x (as of early 2026)
-- **Documentation:** https://www.medplum.com/docs
-- **Blog (release notes):** https://www.medplum.com/blog *(authoritative source — if docs and blog conflict, trust the blog)*
-- **Storybook (React Components):** https://storybook.medplum.com/
-- **Discord:** https://discord.gg/medplum
-
-### Core Components
+## Core Components
 
 | Component | Description |
 |---|---|
-| **Medplum CDR (Server)** | FHIR R4 compliant clinical data repository. Hosts healthcare data in a secure, compliant backend. |
-| **Medplum API** | RESTful FHIR API + GraphQL for reading, writing, and searching clinical data. |
-| **Medplum Auth** | OAuth 2.0 / OpenID Connect / SMART-on-FHIR identity and access management. |
-| **Medplum SDK (`@medplum/core`)** | TypeScript client library for interacting with the API from browser, Node.js, or Bots. |
-| **Medplum React (`@medplum/react`)** | Pre-built React components for clinical UIs (patient timelines, resource forms, search, etc). |
-| **Medplum Bots** | Server-side TypeScript functions triggered by FHIR Subscriptions or manual invocation. |
-| **Medplum CLI (`@medplum/cli`)** | Command-line tool for managing projects, deploying Bots, bulk import/export. |
-| **Medplum App** | Admin web app at https://app.medplum.com for managing projects and resources. |
-| **Medplum Provider** | Out-of-the-box EHR web app at https://provider.medplum.com for clinical users. |
+| `@medplum/core` | MedplumClient SDK, FHIR utilities, auth helpers |
+| `@medplum/fhirtypes` | TypeScript type definitions for FHIR R4 |
+| `@medplum/react` | Pre-built React components (built on Mantine v8) |
+| `@medplum/react-hooks` | React hooks (useMedplum, useMedplumContext, useSearch, etc.) |
+| Medplum Bots | Server-side TypeScript functions triggered by subscriptions or HTTP |
+| `@medplum/cli` | CLI for managing projects, deploying Bots, bulk import/export |
+| Medplum App | Admin UI at https://app.medplum.com for managing projects and resources |
+| Medplum Provider | Out-of-the-box EHR at https://provider.medplum.com |
 
 ---
-
-## Quick Start Options
-
-There are two primary ways to get started:
-
-### Option A: Use Medplum Cloud (Fastest)
-
-Connect your app to Medplum's hosted service — no backend setup needed.
-
-1. Register at https://app.medplum.com
-2. Create a new Project
-3. Build your app using the SDK packages (see [NPM Packages](#npm-packages) below)
 
 ## NPM Packages
 
-These are the packages you'll use when building apps on top of Medplum:
-
-### Core Packages
-
 ```bash
 npm install @medplum/core @medplum/fhirtypes
-```
-
-| Package | NPM | Description |
-|---|---|---|
-| `@medplum/core` | https://www.npmjs.com/package/@medplum/core | MedplumClient SDK, FHIR utilities, auth helpers |
-| `@medplum/fhirtypes` | https://www.npmjs.com/package/@medplum/fhirtypes | TypeScript type definitions for FHIR R4 resources |
-
-### React Packages
-
-```bash
 npm install @medplum/react @medplum/react-hooks
-npm install -D @mantine/core @mantine/hooks @mantine/notifications
+npm install @mantine/core @mantine/hooks @mantine/notifications
+# Optional peer deps required at runtime:
+npm install @mantine/spotlight rfc6902 signature_pad
 ```
 
-| Package | NPM | Description |
-|---|---|---|
-| `@medplum/react` | https://www.npmjs.com/package/@medplum/react | Pre-built React components (ResourceTable, PatientTimeline, SearchControl, etc.) |
-| `@medplum/react-hooks` | https://www.npmjs.com/package/@medplum/react-hooks | React hooks (useMedplum, useMedplumContext, useSearch, etc.) |
-
-Medplum React components are built on [Mantine v8](https://mantine.dev/) (upgraded from v7 in Medplum v5) and use PostCSS. You will also need React 19+ and React Router v6+.
-
-### CLI
-
-```bash
-npm install -g @medplum/cli
-# or use npx
-npx medplum <command>
-```
-
-### Mock (for testing)
-
-```bash
-npm install -D @medplum/mock
-```
+> `@medplum/react` 5.x requires Mantine **v8** (not v7).
 
 ---
 
-## Building a New App on Medplum
-
-### Minimal React App Setup
+## Minimal React App Setup
 
 ```tsx
 // src/main.tsx
@@ -107,19 +54,13 @@ import { BrowserRouter } from 'react-router';
 import { App } from './App';
 
 const medplum = new MedplumClient({
-  // For Medplum Cloud:
-  // baseUrl: 'https://api.medplum.com/',
-  // For local development:
-  // baseUrl: 'http://localhost:8103/',
+  clientId: import.meta.env.VITE_MEDPLUM_CLIENT_ID, // required for Medplum Cloud
   onUnauthenticated: () => (window.location.href = '/'),
 });
 
-const theme = createTheme({
-  /** Customize Mantine theme here */
-});
+const theme = createTheme({});
 
-const root = createRoot(document.getElementById('root') as HTMLDivElement);
-root.render(
+createRoot(document.getElementById('root') as HTMLDivElement).render(
   <StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
@@ -132,138 +73,69 @@ root.render(
 );
 ```
 
-### Common SDK Operations
-
-```typescript
-import { MedplumClient } from '@medplum/core';
-import { Patient, Encounter } from '@medplum/fhirtypes';
-
-const medplum = new MedplumClient({ baseUrl: 'http://localhost:8103/' });
-
-// Authenticate
-await medplum.startLogin({ email: 'admin@example.com', password: 'medplum_admin' });
-
-// Create a Patient
-const patient = await medplum.createResource<Patient>({
-  resourceType: 'Patient',
-  name: [{ given: ['Jane'], family: 'Doe' }],
-});
-
-// Read a resource
-const fetched = await medplum.readResource('Patient', patient.id!);
-
-// Search for resources
-const bundle = await medplum.searchResources('Patient', { name: 'Jane' });
-
-// Update a resource
-await medplum.updateResource({ ...patient, birthDate: '1990-01-15' });
-
-// Delete a resource
-await medplum.deleteResource('Patient', patient.id!);
-
-// GraphQL query
-const result = await medplum.graphql(`{
-  PatientList(name: "Jane") {
-    id
-    name { given family }
-  }
-}`);
+**Auth gate pattern:**
+```tsx
+// src/App.tsx
+if (medplum.isLoading()) return null;
+if (!medplum.getProfile()) return <PublicRoutes />;
+return <AuthenticatedShell />;
 ```
 
-### Writing a Bot
+---
 
-Bots are server-side TypeScript functions. They receive a `MedplumClient` and a `BotEvent`:
+## Common SDK Operations
 
-```typescript
-// src/my-bot.ts
+```ts
+// Authenticate
+await medplum.startLogin({ email: 'admin@example.com', password: '...' });
+
+// CRUD
+const patient = await medplum.createResource<Patient>({ resourceType: 'Patient', ... });
+const fetched  = await medplum.readResource('Patient', patient.id!);
+await medplum.updateResource({ ...patient, birthDate: '1990-01-15' });
+await medplum.deleteResource('Patient', patient.id!);
+
+// Search
+const results = await medplum.searchResources('Patient', { name: 'Jane' });
+
+// GraphQL
+const result = await medplum.graphql(`{ PatientList(name: "Jane") { id name { given family } } }`);
+
+// Custom operation / bot
+await medplum.post(medplum.fhirUrl('Bot', BOT_ID, '$execute'), parametersBody);
+```
+
+---
+
+## Writing a Bot
+
+```ts
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
-  const name = patient.name?.[0];
-  console.log(`New patient: ${name?.given?.[0]} ${name?.family}`);
-
-  // Bots can create/read/update/delete resources
-  await medplum.createResource({
-    resourceType: 'Task',
-    status: 'requested',
-    intent: 'order',
-    description: `Welcome task for ${name?.given?.[0]}`,
-    for: { reference: `Patient/${patient.id}` },
-  });
-
+  // Bots run as service account — full project access
+  await medplum.createResource({ resourceType: 'Task', status: 'requested', intent: 'order', ... });
   return true;
 }
 ```
 
-Deploy with the CLI:
-
+Deploy:
 ```bash
-export MEDPLUM_CLIENT_ID=<your-client-id>
-export MEDPLUM_CLIENT_SECRET=<your-client-secret>
+export MEDPLUM_CLIENT_ID=<id>
+export MEDPLUM_CLIENT_SECRET=<secret>
 npm run build
-npx medplum bot deploy my-bot
+npx medplum bot deploy <bot-name>
 ```
+
+**If `$deploy` fails due to shell quoting issues**, use Python's `http.client` to POST the payload directly with `json.dumps`.
 
 ---
 
-## Example Applications
+## FHIR Essentials
 
-Medplum maintains several example applications that demonstrate real-world patterns:
-
-### Medplum Provider (EHR)
-
-A full-featured, open-source provider-facing EHR application.
-
-- **Repository:** https://github.com/medplum/medplum-provider
-- **Live Demo:** https://provider.medplum.com
-- **Docs:** https://www.medplum.com/docs/provider
-
-**Features:** Patient charting, visit documentation, scheduling, task management, lab orders, messaging, billing/claims (CMS 1500), care templates (PlanDefinition-based workflows).
-
-**Setup:**
-
-```bash
-git clone https://github.com/medplum/medplum-provider.git
-cd medplum-provider
-npm install
-npm run dev
-# Opens at http://localhost:3000
-# Sign in with your Medplum Cloud or local server credentials
-```
-
-### Medplum Hello World
-
-Minimal starter app demonstrating patient list and details.
-
-- **Repository:** https://github.com/medplum/medplum-hello-world
-
-```bash
-git clone https://github.com/medplum/medplum-hello-world.git
-cd medplum-hello-world
-cp .env.defaults .env   # edit if needed
-npm install
-npm run dev
-```
-
-### Scheduling Demo
-
-Appointment booking, slot management, and encounter creation.
-
-- **Repository:** https://github.com/medplum/medplum-scheduling-demo
-
-### Other Examples
-
-The `examples/` directory in the main monorepo contains additional code samples used in documentation. Browse at: https://github.com/medplum/medplum/tree/main/examples
-
----
-
-## FHIR Essentials for Agents
-
-FHIR (Fast Healthcare Interoperability Resources) is the data standard Medplum is built on. Key concepts:
-
-### Resource Types You'll Use Most
+### Common Resource Types
 
 | Resource | Purpose |
 |---|---|
@@ -274,87 +146,314 @@ FHIR (Fast Healthcare Interoperability Resources) is the data standard Medplum i
 | `Condition` | Diagnoses and problems |
 | `MedicationRequest` | Medication orders/prescriptions |
 | `ServiceRequest` | Lab orders, referrals, procedure requests |
-| `DiagnosticReport` | Lab reports, imaging reports |
+| `DiagnosticReport` | Lab/imaging reports |
 | `Appointment` | Scheduled visits |
-| `Task` | Workflow tasks and to-dos |
+| `Slot` | Bookable time windows on a Schedule |
+| `Schedule` | A provider's availability container |
+| `Task` | Workflow tasks |
 | `Communication` | Messages between participants |
-| `Questionnaire` / `QuestionnaireResponse` | Forms and their responses |
-| `PlanDefinition` | Care plan templates (Care Templates in Provider app) |
-| `CarePlan` | Patient-specific care plans |
+| `Questionnaire` / `QuestionnaireResponse` | Forms and responses |
+| `PlanDefinition` / `CarePlan` | Care templates and patient-specific plans |
+| `Bot` | Server-side automation |
 | `Subscription` | Webhooks — trigger Bots on resource changes |
-| `Bot` | Server-side automation logic |
 | `ClientApplication` | OAuth client for API access |
 | `ProjectMembership` | User membership in a project |
 
-### FHIR Search
+### Search Parameter Naming
 
-Medplum supports the full FHIR search specification:
+FHIR search params use **kebab-case**, not camelCase — a common source of 400 errors:
+
+| Wrong | Correct | Resource |
+|---|---|---|
+| `basedOn` | `based-on` | `DiagnosticReport` |
+| `partOf` | `part-of` | `Observation`, `Procedure` |
+| `derivedFrom` | `derived-from` | `Observation` |
+
+### Verified Working Queries
 
 ```
-GET /fhir/R4/Patient?name=Jane&birthdate=1990-01-15
-GET /fhir/R4/Observation?patient=Patient/123&code=http://loinc.org|55284-4
-GET /fhir/R4/Encounter?_sort=-date&_count=10
+ServiceRequest?_count=100&_sort=-_lastUpdated
+ServiceRequest?subject=Patient/{id}&_sort=-_lastUpdated
+Patient?_count=200&_sort=name
+DiagnosticReport?based-on=ServiceRequest/{id}
+DiagnosticReport?subject=Patient/{id}
+Observation?patient=Patient/{id}
+Observation?code={code}&patient=Patient/{id}
+Immunization?patient=Patient/{id}
+MedicationRequest?patient=Patient/{id}
+CarePlan?subject=Patient/{id}
+Coverage?beneficiary=Patient/{id}
+QuestionnaireResponse?source=Patient/{id}&_sort=-authored
 ```
-
-SDK equivalent:
-
-```typescript
-const patients = await medplum.searchResources('Patient', {
-  name: 'Jane',
-  birthdate: '1990-01-15',
-});
-```
-
-### FHIR Documentation
-
-- Medplum FHIR Basics: https://www.medplum.com/docs/fhir-basics
-- Medplum Search Docs: https://www.medplum.com/docs/search
-- Medplum FHIR API Reference: https://www.medplum.com/docs/api/fhir
-- Official FHIR R4 Spec: https://hl7.org/fhir/R4/
 
 ---
 
-## Server Configuration
+## FHIR Operations — Notes
 
-The Medplum server can be configured via JSON file or environment variables.
+### `PlanDefinition/$apply`
 
-### JSON Config (`medplum.config.json`)
+Must be called as an **instance operation** (type-level returns 404). Pass `subject` as `valueString`:
+
+```
+POST /fhir/R4/PlanDefinition/{id}/$apply
+{ "resourceType": "Parameters", "parameter": [{ "name": "subject", "valueString": "Patient/<id>" }] }
+```
+
+Returns a `CarePlan`. Navigate `CarePlan → activity[0].reference → RequestGroup → action[0].resource → Task` to get the created Task.
+
+### `QuestionnaireResponse/$extract`
+
+Use this for structured data extraction — do not manually iterate items.
+
+```ts
+const bundle = await medplum.get(medplum.fhirUrl('QuestionnaireResponse', id, '$extract'));
+if (bundle.entry?.length) await medplum.executeBatch(bundle);
+```
+
+Requires extraction templates in `Questionnaire.contained`. Without them, returns an empty Bundle.
+
+**Recommended pattern** for questionnaire → DiagnosticReport:
+1. Provider submits questionnaire → `QuestionnaireResponse` saved
+2. Call `$extract` → creates `Observation` resources
+3. Create `DiagnosticReport` with `result` = Observation refs, `basedOn` = ServiceRequest
+4. On sign/lock → set DiagnosticReport status to `final`
+
+---
+
+## Bots as Custom Operations
+
+### Patient-scoped vs. admin users
+
+**For patient-scoped users**, call Bots directly via `Bot/{id}/$execute`. OperationDefinition routing (e.g. `Schedule/$proxy-find`) returns `403 Forbidden` for patient tokens — the routing adds a permission check on the resource type that patients cannot pass.
+
+**For practitioner/admin users**, the OperationDefinition pattern (`POST /fhir/R4/{ResourceType}/$operation`) works fine.
+
+```ts
+// Patient portal — call Bot directly
+medplum.post(medplum.fhirUrl('Bot', BOT_ID, '$execute'), parametersBody); // ✅
+
+// ❌ Forbidden for patients
+medplum.post('fhir/R4/Schedule/$proxy-find', parametersBody);
+```
+
+### AccessPolicy for Bot execution
+
+Patients need `['read', 'create']` on the Bot resource — `readonly: true` is **not sufficient**:
 
 ```json
-{
-  "baseUrl": "http://localhost:8103/",
-  "port": 8103,
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "dbname": "medplum",
-    "username": "medplum",
-    "password": "medplum"
-  },
-  "redis": {
-    "host": "localhost",
-    "port": 6379
-  }
-}
+{ "resourceType": "Bot", "criteria": "Bot?_id=<bot-id>", "interaction": ["read", "create"] }
 ```
+
+### AccessPolicy `interaction` and `$` operations
+
+Standard `interaction` values: `read`, `search`, `create`, `update`, `delete`, `history`, `vread`.
+
+Custom `$` operations **cannot** be granted via `interaction` — **except `$expand` on `ValueSet`**:
+```json
+{ "resourceType": "ValueSet", "interaction": ["read", "search", "history", "vread", "$expand"] }
+```
+
+### `$find` and SchedulingParameters
+
+- `$find` requires `service-type=system|code` if the Schedule's `SchedulingParameters` includes a `serviceType` sub-extension — without it, returns empty (not an error)
+- `duration` must be `valueDuration: { value: N, unit: "h" }` — UCUM-annotated form is not accepted
+- Practitioner actor must have `http://hl7.org/fhir/StructureDefinition/timezone` extension (IANA code, e.g. `America/Los_Angeles`) — missing timezone returns 400
+- `$find` generates virtual slots dynamically — **do not pre-create free Slot resources** (they expire)
+- `availability` must be `valueTiming` with `repeat.dayOfWeek`, `repeat.timeOfDay`, `repeat.duration`, `repeat.durationUnit`
+- `timeOfDay` is **local time** relative to the Practitioner's IANA timezone
+
+### Timezone handling — bots must be UTC-transparent
+
+Bots must never perform timezone conversion. Accept ISO 8601 UTC strings and pass them through unchanged:
+
+```js
+// ✅ Correct
+const searchParams = new URLSearchParams({ start, end });
+return medplum.get('fhir/R4/' + scheduleRef + '/$find?' + searchParams);
+```
+
+Client-side: send UTC datetimes (`.toISOString()`) and guard against past slots:
+```ts
+const effectiveStart = start < now.current ? now.current : start;
+```
+
+---
+
+## Debugging Bots
+
+Each bot execution emits an `AuditEvent`:
+
+```bash
+npx medplum get 'fhir/R4/AuditEvent?entity=Bot/<bot-id>&_sort=-_lastUpdated&_count=20'
+```
+
+Or in the app: search `AuditEvent` → filter by `entity = Bot/<bot-id>`.
+
+| Field | Meaning |
+|---|---|
+| `outcome` | `0` = success, `8` = error |
+| `outcomeDesc` | error message or console output |
+| `recorded` | execution timestamp |
+
+---
+
+## Inviting Users
+
+### Via CLI (requires interactive user login — NOT ClientApplication auth)
+
+```bash
+npx medplum login   # authenticate as a project admin user first
+npx medplum project invite --role Patient --send-email <firstName> <lastName> <email>
+```
+
+`npx medplum project invite` with ClientApplication (service account) auth returns `403 Forbidden`.
+
+### Via API
+
+```ts
+await medplum.post(`admin/projects/${projectId}/invite`, {
+  resourceType: 'Patient',
+  firstName,
+  lastName,
+  email,
+  scope: 'project',           // 'project' = scoped to this project; 'server' = global user
+  accessPolicy: { reference: 'AccessPolicy/<id>' },
+  sendEmail: true,
+});
+```
+
+Always check for an existing Patient with that email first to avoid duplicates:
+```ts
+const existing = await medplum.searchResources('Patient', { email });
+if (existing.length > 0) { /* skip invite */ }
+```
+
+---
+
+## Project Setup (Sample Hospital Demo)
+
+Both portals connect to **Medplum Cloud** at `https://api.medplum.com/`.
+
+- **Project ID:** `<your-project-id>`
+- **Client ID:** `<your-client-id>` (stored in `.env` as `VITE_MEDPLUM_CLIENT_ID`)
+- **Client Secret:** server-side only — never in frontend code
+
+### WebSockets (required for messaging)
+
+`ThreadInbox` and `BaseChat` require WebSockets. Enable at:
+`app.medplum.com` → Admin → Project → Settings → **Enable WebSockets** → Save.
 
 ### Environment Variables
 
-All config keys can be set as environment variables prefixed with `MEDPLUM_`, using `ALL_CAPS_SNAKE_CASE`:
-
 ```bash
-export MEDPLUM_BASE_URL="http://localhost:8103/"
-export MEDPLUM_PORT=8103
-export MEDPLUM_DATABASE_HOST="localhost"
-export MEDPLUM_DATABASE_PORT=5432
-export MEDPLUM_DATABASE_DBNAME="medplum"
-export MEDPLUM_DATABASE_USERNAME="medplum"
-export MEDPLUM_DATABASE_PASSWORD="medplum"
-export MEDPLUM_REDIS_HOST="localhost"
-export MEDPLUM_REDIS_PORT=6379
+cp .env.example .env   # fill in VITE_MEDPLUM_CLIENT_ID
 ```
 
-Full config reference: https://www.medplum.com/docs/self-hosting/server-config
+`.env` is gitignored — never commit it.
+
+---
+
+## Portals
+
+| Portal | Port | Directory |
+|---|---|---|
+| Provider Portal | 3000 | `provider-portal/` |
+| Patient Portal | 3001 | `patient-portal/` |
+| Employer Portal | 3002 | `employer-portal/` |
+
+```bash
+cd provider-portal && npm run dev   # → http://localhost:3000
+cd patient-portal  && npm run dev   # → http://localhost:3001
+cd employer-portal && npm run dev   # → http://localhost:3002
+```
+
+---
+
+## Routing Convention
+
+Route paths must mirror the FHIR resource name exactly (PascalCase). Example:
+
+| Route | FHIR Resource | Display Label |
+|---|---|---|
+| `/Patient` | `Patient` | Patients (or Employees, Members, etc.) |
+| `/Patient/:id` | `Patient` | Patient detail |
+| `/ServiceRequest` | `ServiceRequest` | Orders / Authorizations |
+| `/ServiceRequest/:id` | `ServiceRequest` | Order detail |
+| `/ServiceRequest/new` | `ServiceRequest` | New Order |
+
+Non-resource routes (e.g. `/` Dashboard) are exempt.
+
+---
+
+## Patient Access Policy
+
+- **Name:** Sample Hospital Patient Access Policy
+- **ID:** `<your-access-policy-id>`
+
+| Resource | Access | Filter |
+|---|---|---|
+| `Patient` | Read/Write | Own record only (`%patient.id`) |
+| `ServiceRequest` | Read/Write | subject = patient |
+| `Communication` | Read/Write | subject = patient |
+| `DiagnosticReport` | Read/Write | subject = patient |
+| `Observation` | Read/Write | subject = patient |
+| `Immunization` | Read/Write | patient = patient |
+| `MedicationRequest` | Read/Write | subject = patient |
+| `QuestionnaireResponse` | Read/Write | subject = patient |
+| `Appointment` | Read/Write | patient = patient |
+| `Questionnaire` | Read-only | All |
+| `Schedule` | read, search, vread | All |
+| `Slot` | Read-only | All |
+| `Practitioner` | Read-only | All |
+| `ValueSet` | Read-only + `$expand` | All |
+| `CodeSystem` | Read-only | All |
+
+Assign when inviting patients:
+```json
+{ "resourceType": "ProjectMembership", "accessPolicy": { "reference": "AccessPolicy/<your-access-policy-id>" } }
+```
+
+---
+
+## Project Bots
+
+| Bot | ID | How to Call | Purpose |
+|---|---|---|---|
+| `proxy-find-bot` | `<proxy-find-bot-id>` | `POST /fhir/R4/Bot/{id}/$execute` | Proxies `Schedule/$find` for patient-scoped users |
+| `book-bot` | `<book-bot-id>` | `POST /fhir/R4/Bot/{id}/$execute` | Books slot + patches Appointment to add patient participant |
+
+**Why `book-bot` is needed:** `Appointment/$book` does not add the patient as a participant. Without the patient participant, the patient's AccessPolicy filter blocks them from reading/updating the Appointment.
+
+Source files: `bots/proxy-find-bot.js`, `bots/book-bot.js`
+
+---
+
+## Custom Theme Pattern
+
+Example of a custom brand color palette with Mantine:
+
+```ts
+const brandColor = ['#FFF0EB','#FFD5C8','#FFB8A3','#FF997E','#FF7A59','#F55C37','#E8411E','#C8371A','#A82D15','#882210'];
+createTheme({ primaryColor: 'brandColor', primaryShade: 6, colors: { brandColor } })
+```
+
+Shade 6 is the primary action color. Apply consistently across all portals.
+
+---
+
+## Known Installation Gotchas
+
+- **Provider portal** — requires `npm install --legacy-peer-deps` (`@medplum/dosespot-core` is not on the public npm registry)
+- **`@medplum/react-hooks` may not auto-install** with `--legacy-peer-deps` — install explicitly: `npm install @medplum/react-hooks@5.1.0 --legacy-peer-deps`
+- **`clientId` required** — without it, Medplum Cloud login returns 400 Bad Request
+- **Vite does not hot-reload new packages** — fully restart the dev server after installing
+- **SVG/PNG imports** need module declarations in `src/vite-env.d.ts`:
+
+```ts
+/// <reference types="vite/client" />
+declare module '*.svg' { const src: string; export default src; }
+declare module '*.png' { const src: string; export default src; }
+```
 
 ---
 
@@ -362,11 +461,11 @@ Full config reference: https://www.medplum.com/docs/self-hosting/server-config
 
 | Method | Best For | Docs |
 |---|---|---|
-| **Docker Compose Full Stack** | Quick local dev, demos | https://www.medplum.com/docs/self-hosting/running-full-medplum-stack-in-docker |
-| **Install on Ubuntu** | Single-server production (uses APT repo) | https://www.medplum.com/docs/self-hosting/install-on-ubuntu |
-| **AWS CDK** | Scalable cloud production | https://www.medplum.com/docs/self-hosting/install-on-aws |
-| **GCP / Azure** | Cloud alternatives | https://www.medplum.com/docs/self-hosting/install-on-gcp |
-| **Install from Scratch** | Learning / custom setups | https://www.medplum.com/docs/self-hosting/install-from-scratch |
+| Docker Compose | Quick local dev, demos | https://www.medplum.com/docs/self-hosting/running-full-medplum-stack-in-docker |
+| Ubuntu APT | Single-server production | https://www.medplum.com/docs/self-hosting/install-on-ubuntu |
+| AWS CDK | Scalable cloud production | https://www.medplum.com/docs/self-hosting/install-on-aws |
+
+Full server config reference: https://www.medplum.com/docs/self-hosting/server-config
 
 ---
 
@@ -374,139 +473,22 @@ Full config reference: https://www.medplum.com/docs/self-hosting/server-config
 
 | Topic | URL |
 |---|---|
-| **Getting Started** | https://www.medplum.com/docs |
-| **Tutorials** | https://www.medplum.com/docs/tutorials |
-| **FHIR Basics** | https://www.medplum.com/docs/fhir-basics |
-| **FHIR Datastore (CRUD)** | https://www.medplum.com/docs/fhir-datastore |
-| **Search** | https://www.medplum.com/docs/search |
-| **Authentication** | https://www.medplum.com/docs/auth |
-| **Authorization & Access Control** | https://www.medplum.com/docs/access |
-| **React Components** | https://www.medplum.com/docs/react |
-| **React Component Storybook** | https://storybook.medplum.com/ |
-| **Bots (Server-side logic)** | https://www.medplum.com/docs/bots |
-| **Bots in Production** | https://www.medplum.com/docs/bots/bots-in-production |
-| **Subscriptions (Webhooks)** | https://www.medplum.com/docs/subscriptions |
-| **CLI Reference** | https://www.medplum.com/docs/cli |
-| **SDK / MedplumClient** | https://www.medplum.com/docs/sdk/core.medplumclient |
-| **GraphQL** | https://www.medplum.com/docs/graphql |
-| **GraphiQL IDE** | https://graphiql.medplum.com/ |
-| **Charting** | https://www.medplum.com/docs/charting |
-| **Scheduling** | https://www.medplum.com/docs/scheduling |
-| **Medications** | https://www.medplum.com/docs/medications |
-| **Labs & Imaging** | https://www.medplum.com/docs/labs-imaging |
-| **Messaging** | https://www.medplum.com/docs/communications |
-| **Billing** | https://www.medplum.com/docs/billing |
-| **Care Planning** | https://www.medplum.com/docs/careplans |
-| **Questionnaires** | https://www.medplum.com/docs/questionnaires |
-| **Provider App Docs** | https://www.medplum.com/docs/provider |
-| **Integrations** | https://www.medplum.com/docs/integration |
-| **SMART on FHIR** | https://www.medplum.com/docs/integration/smart-app-launch |
-| **Self-Hosting** | https://www.medplum.com/docs/self-hosting |
-| **Server Config** | https://www.medplum.com/docs/self-hosting/server-config |
-| **Contributing** | https://www.medplum.com/docs/contributing |
-| **Run the Stack** | https://www.medplum.com/docs/contributing/run-the-stack |
-| **API Reference** | https://www.medplum.com/docs/api |
-| **Compliance** | https://www.medplum.com/docs/compliance |
-
----
-
-## Agent Instructions: Common Tasks
-
-Below are step-by-step playbooks for common tasks an AI agent might perform.
-
-### Task: Set Up a New App Against Medplum Cloud
-
-```bash
-# 1. Create project
-mkdir my-medplum-app && cd my-medplum-app
-npm init -y
-
-# 2. Install dependencies
-npm install @medplum/core @medplum/fhirtypes @medplum/react @medplum/react-hooks
-npm install @mantine/core @mantine/hooks @mantine/notifications
-npm install react react-dom react-router
-npm install -D typescript vite @vitejs/plugin-react postcss postcss-preset-mantine
-
-# 3. Configure TypeScript
-npx tsc --init --target es2022 --module esnext --jsx react-jsx --moduleResolution bundler --strict
-
-# 4. User registers at https://app.medplum.com and creates a Project
-# 5. Use MedplumClient with baseUrl: 'https://api.medplum.com/' (default)
-```
-
-### Task: Run the Provider App (Standalone)
-git clone https://github.com/medplum/medplum-provider.git
-
-```bash
-# 1. Find directory
-cd medplum-provider
-
-#2. Build and deploy 
-npm install
-npm run dev
-
-#3. Open at http://localhost:3000
-#   Connects to Medplum Cloud by default
-#   Sign in with your Medplum account credentials
-```
-
-### Task: Use the Medplum CLI
-
-```bash
-#1. Install the CLI
-npm install -g @medplum/cli
-
-#2. Login to Medplum
-medplum login
-
-#3. This opens an OAuth flow in your browser — follow the prompts to authenticate
-
-#4. Verify login
-medplum whoami
-```
-
-### Task: Create and Deploy a Bot
-
-```bash
-# 1. Set up credentials
-export MEDPLUM_CLIENT_ID=<your-client-id>
-export MEDPLUM_CLIENT_SECRET=<your-client-secret>
-
-# 2. Write your bot (see Writing a Bot section above)
-
-# 3. Build and deploy
-npm run build
-npx medplum bot deploy <bot-name>
-
-# 4. Create a Subscription in the Medplum App to trigger the bot
-#    (e.g., trigger on Patient create/update)
-```
-
----
-
-## Version Notes (v5.x)
-
-Medplum v5 (released October 2025) includes important changes:
-
-- **Node.js 22+** required (Node 20 deprecated; tested on 22 and 24)
-- **PostgreSQL 14+** required (Postgres 13 dropped; tested on 14 and 18)
-- **Redis 7+** required (Redis 6 dropped)
-- **React 19** required (React 18 dropped)
-- **ES Modules (ESM)** by default — SDK packages are dual-published as CJS+ESM, but ESM is recommended
-- **Mantine v8** — UI component library upgraded from v7
-- **Express v5** — Backend server framework upgrade
-- **Storybook v9** — Component documentation upgrade
-
-If starting a new project, use ESM (`"type": "module"` in package.json).
-
-> **Note:** If there are discrepancies between the Medplum docs and the [Medplum blog](https://www.medplum.com/blog), **always trust the blog release notes** — they contain the latest authoritative information about the platform. Documentation pages can become outdated between releases. For example, the "Run the Stack" contributing guide may still reference Node.js 20+, but the [v5 release blog](https://www.medplum.com/blog/v5-release) confirms Node 20 is deprecated.
-
----
-
-## Getting Help
-
-- **Documentation:** https://www.medplum.com/docs
-- **Discord Community:** https://discord.gg/medplum
-- **GitHub Issues:** https://github.com/medplum/medplum/issues
-- **GitHub Discussions:** https://github.com/medplum/medplum/discussions
-- **Email:** support@medplum.com
+| Getting Started | https://www.medplum.com/docs |
+| FHIR Basics | https://www.medplum.com/docs/fhir-basics |
+| Search | https://www.medplum.com/docs/search |
+| Auth | https://www.medplum.com/docs/auth |
+| Access Control | https://www.medplum.com/docs/access |
+| React Components | https://www.medplum.com/docs/react |
+| Storybook | https://storybook.medplum.com/ |
+| Bots | https://www.medplum.com/docs/bots |
+| Subscriptions | https://www.medplum.com/docs/subscriptions |
+| CLI | https://www.medplum.com/docs/cli |
+| SDK Reference | https://www.medplum.com/docs/sdk/core.medplumclient |
+| GraphQL | https://www.medplum.com/docs/graphql |
+| Scheduling | https://www.medplum.com/docs/scheduling |
+| Questionnaires | https://www.medplum.com/docs/questionnaires |
+| Care Planning | https://www.medplum.com/docs/careplans |
+| Messaging | https://www.medplum.com/docs/communications |
+| Billing | https://www.medplum.com/docs/billing |
+| Self-Hosting | https://www.medplum.com/docs/self-hosting |
+| API Reference | https://www.medplum.com/docs/api |
