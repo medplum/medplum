@@ -5,7 +5,7 @@ import { formatSearchQuery, getReferenceString, Operator } from '@medplum/core';
 import type { Task } from '@medplum/fhirtypes';
 import { Loading, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { TaskBoard } from '../../components/tasks/TaskBoard';
 import { normalizeTaskSearch } from '../../utils/task-search';
@@ -16,16 +16,19 @@ export function TasksPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const profile = useMedplumProfile();
-  const [parsedSearch, setParsedSearch] = useState<SearchRequest>();
+
+  const { normalizedSearch, needsNavigation } = useMemo(
+    () => normalizeTaskSearch(location.pathname, location.search),
+    [location.pathname, location.search]
+  );
 
   useEffect(() => {
-    const { normalizedSearch, needsNavigation } = normalizeTaskSearch(location.pathname, location.search);
     if (needsNavigation) {
       navigate(`/Task${formatSearchQuery(normalizedSearch)}`)?.catch(console.error);
-    } else {
-      setParsedSearch(normalizedSearch);
     }
-  }, [location, navigate]);
+  }, [needsNavigation, normalizedSearch, navigate]);
+
+  const parsedSearch = needsNavigation ? undefined : normalizedSearch;
 
   if (!parsedSearch) {
     return <Loading />;
