@@ -26,8 +26,8 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
-import { useMarketplace } from './MarketplaceContext';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplace } from './useMarketplace';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { MarketplaceListing } from './types';
 
 function CollectionListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
@@ -128,7 +128,7 @@ export function CollectionDetailPage(): JSX.Element {
   const collectionListings = getListingsForCollection(collection.id);
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       <Group mb="md" gap="md" justify="space-between" wrap="wrap" mx="4">
         <Group gap="md">
           <ThemeIcon size={48} radius="md" variant="light" color="grape">

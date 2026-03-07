@@ -41,7 +41,7 @@ import {
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useState } from 'react';
 import { useAppsPanel } from '../components/AppsPanel';
-import { useMarketplace } from './MarketplaceContext';
+import { useMarketplace } from './useMarketplace';
 
 // ─── Setup flow configuration per listing ───────────────────────────────────
 

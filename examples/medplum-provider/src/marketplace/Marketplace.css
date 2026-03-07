@@ -18,6 +18,51 @@
   opacity: 1;
 }
 
+/* Action icon buttons on listing detail installed state */
+.marketplace-action-icon {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  transition: border-color 150ms ease;
+}
+
+.marketplace-action-icon:hover {
+  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-gray-5));
+}
+
+.marketplace-action-icon:active {
+  transform: none;
+}
+
+.marketplace-action-icon svg {
+  color: var(--mantine-color-gray-6);
+}
+
+.marketplace-action-icon-red {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  transition: border-color 150ms ease;
+}
+
+.marketplace-action-icon-red:hover {
+  border-color: light-dark(var(--mantine-color-red-4), var(--mantine-color-red-6));
+}
+
+.marketplace-action-icon-red:active {
+  transform: none;
+}
+
+.marketplace-action-icon-red svg {
+  color: var(--mantine-color-red-6);
+}
+
+/* Type filter chips on marketplace home */
+.marketplace-type-chip {
+  background: var(--mantine-color-gray-0);
+  transition: background 150ms ease-in-out;
+}
+
+.marketplace-type-chip:hover {
+  background: var(--mantine-color-gray-1);
+}
+
 /* Spin animation for the install loading state */
 @keyframes spin {
   from {

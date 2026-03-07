@@ -5,7 +5,7 @@ import { Box, Button, Divider, Group, Text } from '@mantine/core';
 import { IconSettings } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useLocation, useOutletContext } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 
 import './Marketplace.css';
 
@@ -14,12 +14,8 @@ export interface BreadcrumbItem {
   to?: string;
 }
 
-interface MarketplaceOutletContext {
+export interface MarketplaceOutletContext {
   setBreadcrumbs: (items: BreadcrumbItem[]) => void;
-}
-
-export function useMarketplaceBreadcrumbs(): MarketplaceOutletContext {
-  return useOutletContext<MarketplaceOutletContext>();
 }
 
 export function MarketplaceLayout(): JSX.Element {
@@ -37,7 +33,7 @@ export function MarketplaceLayout(): JSX.Element {
   return (
     <div className="marketplace-root">
       <Box style={{ backgroundColor: 'var(--mantine-color-body)', flexShrink: 0 }}>
-        <Group justify="space-between" py="0.875rem" px="xl">
+        <Group justify="space-between" py="0.875rem" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
           <Group gap={6} align="baseline">
             {breadcrumbs.length > 0 ? (
               <>
@@ -91,7 +87,7 @@ export function MarketplaceLayout(): JSX.Element {
             Manage Installed
           </Button>
         </Group>
-        <Divider mx="xl" />
+        <Divider style={{ marginInline: 'calc(var(--mantine-spacing-xl) * 3)' }} />
       </Box>
       <Box ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
         <Outlet context={{ setBreadcrumbs }} />

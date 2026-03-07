@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
+  ActionIcon,
   Anchor,
   Badge,
   Box,
@@ -12,12 +13,12 @@ import {
   Grid,
   Group,
   Modal,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core';
 import {
@@ -35,6 +36,7 @@ import {
   IconMail,
   IconSend,
   IconShieldCheck,
+  IconTrash,
   IconWorld,
   IconX,
 } from '@tabler/icons-react';
@@ -44,6 +46,7 @@ import { Link, useParams } from 'react-router';
 import { useAppsPanel } from '../components/AppsPanel';
 import {
   getListingById,
+  listingIconColor,
   listingIconComponent,
   typeBadgeColor,
   typeBrowseLabels,
@@ -51,8 +54,8 @@ import {
   typeIconComponent,
 } from './data';
 import { InstallModal } from './InstallModal';
-import { useMarketplace } from './MarketplaceContext';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplace } from './useMarketplace';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { ListingType, MarketplaceListing } from './types';
 
 const LISTINGS_WITH_SETUP_FLOW = new Set(['carebridge-dashboard', 'dosespot-eprescribing', 'telehealth-bridge']);
@@ -101,13 +104,15 @@ function getActionCopy(type: ListingType): {
 function InstallButton({
   listingId,
   listingType,
+  contactEmail,
   onSetupRequired,
 }: {
   readonly listingId: string;
   readonly listingType: ListingType;
+  readonly contactEmail?: string;
   readonly onSetupRequired?: () => void;
 }): JSX.Element {
-  const { isInstalled, install } = useMarketplace();
+  const { isInstalled, install, uninstall } = useMarketplace();
   const { openApp } = useAppsPanel();
   const installed = isInstalled(listingId);
   const [installing, setInstalling] = useState(false);
@@ -141,27 +146,63 @@ function InstallButton({
   }
 
   if (installed) {
+    const isAddableType =
+      listingType !== 'App' && listingType !== 'Service Provider';
     const appId = LISTING_TO_APP_PANEL_ID[listingId];
     return (
-      <Stack gap="sm" w="100%">
+      <Group gap="xs" align="center" justify="flex-end">
         <Badge
-          size="lg"
+          size="xl"
           variant="light"
           color="green"
-          leftSection={<IconCircleCheck size={14} />}
-          style={{ alignSelf: 'center' }}
+          leftSection={<IconCircleCheck size={16} />}
+          style={{ textTransform: 'none' }}
+          fw={600}
+          fz="0.875rem"
         >
           Installed
         </Badge>
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          onClick={appId ? handleOpenApp : undefined}
-          fullWidth
-        >
-          {copy.openLabel}
-        </Button>
-      </Stack>
+        <Tooltip label="Remove" position="bottom" openDelay={600}>
+          <ActionIcon
+            variant="transparent"
+            size={32}
+            radius="xl"
+            aria-label={copy.remove}
+            onClick={() => uninstall(listingId)}
+            className="marketplace-action-icon"
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Tooltip>
+        {!isAddableType && (
+          <Tooltip label="Open App" position="bottom" openDelay={600}>
+            <ActionIcon
+              variant="transparent"
+              size={32}
+              radius="xl"
+              aria-label={copy.openLabel}
+              onClick={appId ? handleOpenApp : undefined}
+              className="marketplace-action-icon"
+            >
+              <IconArrowUpRight size={16} />
+            </ActionIcon>
+          </Tooltip>
+        )}
+      </Group>
+    );
+  }
+
+  if (listingType === 'Service Provider' && contactEmail) {
+    return (
+      <Button
+        leftSection={<IconMail size={16} />}
+        size="md"
+        component="a"
+        href={`mailto:${contactEmail}`}
+        fullWidth
+      >
+        {copy.action}
+      </Button>
     );
   }
 
@@ -175,7 +216,7 @@ function InstallButton({
 // ─── Request Access button (for listings requiring admin approval) ──────────
 
 function RequestAccessButton({ listingId }: { readonly listingId: string }): JSX.Element {
-  const { isInstalled, install } = useMarketplace();
+  const { isInstalled, install, uninstall } = useMarketplace();
   const { openApp } = useAppsPanel();
   const installed = isInstalled(listingId);
   const [requested, setRequested] = useState(false);
@@ -211,25 +252,41 @@ function RequestAccessButton({ listingId }: { readonly listingId: string }): JSX
   if (installed) {
     const appId = LISTING_TO_APP_PANEL_ID[listingId];
     return (
-      <Stack gap="sm" w="100%">
+      <Group gap="xs" align="center">
         <Badge
-          size="lg"
+          size="xl"
           variant="light"
           color="green"
           leftSection={<IconCircleCheck size={14} />}
-          style={{ alignSelf: 'center' }}
+          style={{ textTransform: 'none' }}
         >
           Installed
         </Badge>
-        <Button
-          size="md"
-          rightSection={<IconArrowUpRight size={16} />}
-          onClick={appId ? handleOpenApp : undefined}
-          fullWidth
-        >
-          Open App
-        </Button>
-      </Stack>
+        <Tooltip label="Open App" position="bottom" openDelay={600}>
+          <ActionIcon
+            variant="transparent"
+            size={32}
+            radius="xl"
+            aria-label="Open App"
+            onClick={appId ? handleOpenApp : undefined}
+            className="marketplace-action-icon"
+          >
+            <IconArrowUpRight size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Remove" position="bottom" openDelay={600}>
+          <ActionIcon
+            variant="transparent"
+            size={32}
+            radius="xl"
+            aria-label="Remove"
+            onClick={() => uninstall(listingId)}
+            className="marketplace-action-icon"
+          >
+            <IconTrash size={16} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
     );
   }
 
@@ -257,23 +314,11 @@ function RequestAccessButton({ listingId }: { readonly listingId: string }): JSX
 
 // ─── Uninstall button (right side of action area, only when installed) ──────
 
-function UninstallButton({
-  listingId,
-  listingType,
-}: {
+function UninstallButton(_props: {
   readonly listingId: string;
   readonly listingType: ListingType;
-}): JSX.Element | null {
-  const { isInstalled, uninstall } = useMarketplace();
-  if (!isInstalled(listingId)) {
-    return null;
-  }
-  const copy = getActionCopy(listingType);
-  return (
-    <Button variant="subtle" color="red" size="xs" onClick={() => uninstall(listingId)} fullWidth>
-      {copy.remove}
-    </Button>
-  );
+}): null {
+  return null;
 }
 
 // ─── Related Listing Card ────────────────────────────────────────────────────
@@ -317,7 +362,7 @@ function ListingIcon({ listing, size }: { readonly listing: MarketplaceListing; 
           background: 'white',
         }}
       >
-        <TypeIcon size={Math.round(size * 0.5)} />
+        <TypeIcon size={Math.round(size * 0.5)} color={listingIconColor[listing.id]} />
       </Box>
     );
   }
@@ -491,7 +536,7 @@ export function ListingDetailPage(): JSX.Element {
   const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       <Grid gutter="xl" align="stretch">
         {/* ── Main content ─────────────────────────────────────────── */}
         <Grid.Col span={{ base: 12, md: 8 }}>
@@ -523,6 +568,7 @@ export function ListingDetailPage(): JSX.Element {
                 <InstallButton
                   listingId={listing.id}
                   listingType={listing.type}
+                  contactEmail={listing.contactEmail}
                   onSetupRequired={hasSetupFlow ? openInstallModal : undefined}
                 />
               )}
@@ -727,39 +773,15 @@ export function ListingDetailPage(): JSX.Element {
             ))}
           </Box>
 
-          {/* Service Provider: Contact CTA */}
-          {isServiceProvider && listing.contactUrl && (
-            <Paper shadow="xs" p="lg" mb="xl" radius="lg" withBorder>
-              <Group justify="space-between">
-                <div>
-                  <Text fw={500} size="md">
-                    Interested in these services?
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    Contact {listing.vendor.name} to discuss your needs.
-                  </Text>
-                </div>
-                <Button
-                  variant="light"
-                  rightSection={<IconExternalLink size={14} />}
-                  component="a"
-                  href={listing.contactUrl}
-                  target="_blank"
-                >
-                  Contact
-                </Button>
-              </Group>
-            </Paper>
-          )}
         </Grid.Col>
 
         {/* ── Install sidebar ──────────────────────────────────────── */}
         <Grid.Col span={{ base: 12, md: 4 }} style={{ display: 'flex', flexDirection: 'column' }}>
-          <Box px="xl" pb="xl" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)', flex: 1 }}>
-            <Stack gap={24}>
+          <Box style={{ borderLeft: '1px solid var(--mantine-color-gray-3)', flex: 1, paddingInline: 'var(--mantine-spacing-xl)', paddingBlock: 'var(--mantine-spacing-xs)' }}>
+            <Stack gap={32}>
               {/* Categories */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Categories
                 </Title>
                 <Group gap={4}>
@@ -782,7 +804,7 @@ export function ListingDetailPage(): JSX.Element {
 
               {/* Type */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Type
                 </Title>
                 <Group gap={8}>
@@ -795,7 +817,7 @@ export function ListingDetailPage(): JSX.Element {
 
               {/* Version */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Version
                 </Title>
                 <Text size="md" c="gray.7">
@@ -805,7 +827,7 @@ export function ListingDetailPage(): JSX.Element {
 
               {/* Last Updated */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Last Updated
                 </Title>
                 <Text size="md" c="gray.7">
@@ -819,7 +841,7 @@ export function ListingDetailPage(): JSX.Element {
 
               {/* Developer */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Developer
                 </Title>
                 {listing.vendor.website ? (
@@ -843,7 +865,7 @@ export function ListingDetailPage(): JSX.Element {
               {/* Service Types */}
               {isServiceProvider && listing.serviceTypes && listing.serviceTypes.length > 0 && (
                 <Box>
-                  <Title order={6} fw={700} mb={4}>
+                  <Title order={6} fw={700} mb={8}>
                     Service Types
                   </Title>
                   <Stack gap={8}>
@@ -858,11 +880,11 @@ export function ListingDetailPage(): JSX.Element {
 
               {/* Resources */}
               <Box>
-                <Title order={6} fw={700} mb={4}>
+                <Title order={6} fw={700} mb={8}>
                   Resources
                 </Title>
                 <Stack gap={8}>
-                  {listing.supportUrl && (
+                  {listing.supportUrl ? (
                     <Anchor
                       href={listing.supportUrl}
                       target="_blank"
@@ -873,6 +895,11 @@ export function ListingDetailPage(): JSX.Element {
                       <IconHeadset size={15} style={{ flexShrink: 0 }} />
                       Support
                     </Anchor>
+                  ) : (
+                    <Text size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconHeadset size={15} style={{ flexShrink: 0 }} />
+                      Support
+                    </Text>
                   )}
                   {listing.docsUrl && (
                     <Anchor
@@ -898,7 +925,7 @@ export function ListingDetailPage(): JSX.Element {
                       Contact
                     </Anchor>
                   )}
-                  {listing.termsUrl && (
+                  {listing.termsUrl ? (
                     <Anchor
                       href={listing.termsUrl}
                       target="_blank"
@@ -909,8 +936,13 @@ export function ListingDetailPage(): JSX.Element {
                       <IconFile size={15} style={{ flexShrink: 0 }} />
                       Terms
                     </Anchor>
+                  ) : (
+                    <Text size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconFile size={15} style={{ flexShrink: 0 }} />
+                      Terms
+                    </Text>
                   )}
-                  {listing.privacyUrl && (
+                  {listing.privacyUrl ? (
                     <Anchor
                       href={listing.privacyUrl}
                       target="_blank"
@@ -921,6 +953,11 @@ export function ListingDetailPage(): JSX.Element {
                       <IconShieldCheck size={15} style={{ flexShrink: 0 }} />
                       Privacy Policy
                     </Anchor>
+                  ) : (
+                    <Text size="md" c="gray.7" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <IconShieldCheck size={15} style={{ flexShrink: 0 }} />
+                      Privacy Policy
+                    </Text>
                   )}
                 </Stack>
               </Box>

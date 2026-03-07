@@ -7,12 +7,12 @@ import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfil
 import {
   IconBook2,
   IconCalendarEvent,
-  IconChartBar,
-  IconChartLine,
+  IconChartAreaLineFilled,
   IconClipboardCheck,
+  IconClipboardSmileFilled,
   IconMail,
   IconUsers,
-  IconVideo,
+  IconVideoFilled,
   IconWorldSearch,
 } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -159,7 +159,7 @@ function AppShellWithPanel(): JSX.Element {
       const isActive = openAppId === 'growth-chart';
       result.push({
         id: 'growth-chart',
-        icon: <IconChartLine />,
+        icon: <IconChartAreaLineFilled style={{ color: 'var(--mantine-color-blue-6)' }} />,
         label: 'Growth Chart',
         active: isActive,
         onClick: () => (isActive ? closePanel() : openApp('growth-chart')),
@@ -169,7 +169,7 @@ function AppShellWithPanel(): JSX.Element {
       const isActive = openAppId === 'carebridge-dashboard';
       result.push({
         id: 'carebridge-dashboard',
-        icon: <IconChartBar />,
+        icon: <IconClipboardSmileFilled style={{ color: 'var(--mantine-color-teal-6)' }} />,
         label: 'Population Health',
         active: isActive,
         onClick: () => (isActive ? closePanel() : openApp('carebridge-dashboard')),
@@ -179,7 +179,7 @@ function AppShellWithPanel(): JSX.Element {
       const isActive = openAppId === 'telehealth';
       result.push({
         id: 'telehealth',
-        icon: <IconVideo />,
+        icon: <IconVideoFilled style={{ color: 'var(--mantine-color-violet-6)' }} />,
         label: 'TelehealthBridge',
         active: isActive,
         onClick: () => (isActive ? closePanel() : openApp('telehealth')),

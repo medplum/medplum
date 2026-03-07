@@ -7,7 +7,7 @@ import type { JSX } from 'react';
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { collections } from './data';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 
 export function CollectionsPage(): JSX.Element {
   const { setBreadcrumbs } = useMarketplaceBreadcrumbs();
@@ -17,7 +17,7 @@ export function CollectionsPage(): JSX.Element {
   }, [setBreadcrumbs]);
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       <Group mb="lg" mx="4">
         <Title order={3} size="h4" fw={800}>
           Collections

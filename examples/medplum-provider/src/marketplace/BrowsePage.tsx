@@ -7,6 +7,7 @@ import type { ComponentType, JSX } from 'react';
 import { useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import {
+  listingIconColor,
   listingIconComponent,
   listings,
   typeBadgeColor,
@@ -14,8 +15,8 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
-import { useMarketplace } from './MarketplaceContext';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplace } from './useMarketplace';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { MarketplaceListing } from './types';
 
 // ─── Listing Card ───────────────────────────────────────────────────────────
@@ -25,7 +26,7 @@ function ListingIcon({
   TypeIcon,
 }: {
   readonly listing: MarketplaceListing;
-  readonly TypeIcon: ComponentType<{ size: number }>;
+  readonly TypeIcon: ComponentType<{ size: number; color?: string }>;
 }): JSX.Element {
   if (listing.icon) {
     return (
@@ -63,7 +64,7 @@ function ListingIcon({
           background: 'white',
         }}
       >
-        <TypeIcon size={24} />
+        <TypeIcon size={24} color={listingIconColor[listing.id]} />
       </Box>
     );
   }
@@ -128,7 +129,7 @@ function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX
         {listing.categories.slice(0, 2).map((cat) => (
           <Badge
             key={cat}
-            size="md"
+            size="lg"
             variant="light"
             color="gray.5"
             c="dark.3"
@@ -175,7 +176,7 @@ export function BrowsePage(): JSX.Element {
   }, [title, setBreadcrumbs]);
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       {filtered.length > 0 ? (
         <Box mb="64px">
           <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
