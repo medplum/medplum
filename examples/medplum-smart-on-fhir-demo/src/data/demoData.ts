@@ -103,7 +103,9 @@ function buildConditionEntry(patientUrn: string, factor: { code: string; display
     resource: {
       resourceType: 'Condition',
       ...DEMO_META,
-      clinicalStatus: { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }] },
+      clinicalStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
+      },
       code: { coding: [{ system: SNOMED, code: factor.code, display: factor.display }], text: factor.display },
       subject: { reference: patientUrn },
     } as Condition,
@@ -175,6 +177,8 @@ export async function createDemoPatients(medplum: MedplumClient): Promise<void> 
     return !status.startsWith('2');
   });
   if (failed.length > 0) {
-    throw new Error(`Demo data creation failed for ${failed.length} entries. First error: ${failed[0].response?.status} ${failed[0].response?.outcome ? JSON.stringify(failed[0].response.outcome) : ''}`);
+    throw new Error(
+      `Demo data creation failed for ${failed.length} entries. First error: ${failed[0].response?.status} ${failed[0].response?.outcome ? JSON.stringify(failed[0].response.outcome) : ''}`
+    );
   }
 }
