@@ -1,6 +1,9 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Container, Loader, Text } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { EHR_SCOPE, MEDPLUM_CLIENT_ID, SMART_HEALTH_IT_CLIENT_ID } from '../config';
 
@@ -23,7 +26,7 @@ function getClientId(params: URLSearchParams, iss: string): string {
 
   // Otherwise determine based on issuer domain
   const issuerUrl = new URL(iss);
-  if (issuerUrl.hostname.endsWith('smarthealthit.org')) {
+  if (issuerUrl.hostname === 'smarthealthit.org' || issuerUrl.hostname.endsWith('.smarthealthit.org')) {
     return SMART_HEALTH_IT_CLIENT_ID;
   }
 
@@ -171,7 +174,8 @@ export function LaunchPage(): JSX.Element {
         const tokenData = await exchangeCodeForToken(params, config, clientId);
 
         // For Medplum flows, configure the SDK client so it can be used downstream.
-        if (new URL(iss).hostname.endsWith('medplum.com')) {
+        const issHostname = new URL(iss).hostname;
+        if (issHostname === 'medplum.com' || issHostname.endsWith('.medplum.com')) {
           medplum.setAccessToken(tokenData.access_token);
         }
 
@@ -183,15 +187,11 @@ export function LaunchPage(): JSX.Element {
         // sessionStorage so that navigating back to the sandbox patient picker and picking
         // a different patient re-triggers a valid callback (same state, new code).
 
-        // Silently replace the /launch?code=... history entry with / (home) so that
-        // the back button from the destination goes home rather than to the OAuth page.
-        // Using replaceState avoids a React re-render flash before navigating forward.
-        window.history.replaceState(window.history.state, '', '/');
         if (tokenData.patient) {
           sessionStorage.setItem('smart_patient', tokenData.patient);
-          navigate('/patient');
+          Promise.resolve(navigate('/patient')).catch(() => {});
         } else {
-          navigate('/select-patient');
+          Promise.resolve(navigate('/select-patient')).catch(() => {});
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
