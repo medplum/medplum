@@ -53,18 +53,16 @@ describe('ParticipantFilter', () => {
     expect(button).toBeInTheDocument();
   });
 
-  test('button shows transparent variant when no filter is active', async () => {
+  test('button shows light variant when no filter is active', async () => {
     await setup(undefined, []);
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('data-variant', 'transparent');
+    expect(button).toHaveAttribute('data-variant', 'light');
   });
 
-  test('button shows indicator when filter is active', async () => {
+  test('button shows filled variant when filter is active', async () => {
     await setup(undefined, [{ reference: 'Patient/patient-456', display: 'Jane Smith' }]);
     const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('data-variant', 'transparent');
-    const indicator = button.closest('.mantine-Indicator-root');
-    expect(indicator).toBeInTheDocument();
+    expect(button).toHaveAttribute('data-variant', 'filled');
   });
 
   test('opens popover when button is clicked', async () => {

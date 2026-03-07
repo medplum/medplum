@@ -386,9 +386,9 @@ describe('TaskBoard', () => {
       expect(searchSpy).toHaveBeenCalled();
     });
 
-    // Switch to All Tasks tab (this should navigate to reset pagination)
-    const allTasksTab = screen.getByRole('tab', { name: 'All Tasks' });
-    expect(allTasksTab).toBeInTheDocument();
+    // Switch to All Tasks (this should navigate to reset pagination)
+    const allTasksLink = screen.getByRole('link', { name: 'All Tasks' });
+    expect(allTasksLink).toHaveAttribute('href', '/Task?_sort=-_lastUpdated');
   });
 
   test('filters and displays only in-progress tasks, then selects and marks as completed the first task', async () => {
@@ -641,10 +641,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('Urgent')).toBeInTheDocument();
+      expect(screen.getByText('urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Urgent'));
+    await user.click(screen.getByText('urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -685,10 +685,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('Urgent')).toBeInTheDocument();
+      expect(screen.getByText('urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Urgent'));
+    await user.click(screen.getByText('urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();
@@ -725,10 +725,10 @@ describe('TaskBoard', () => {
     await user.hover(screen.getByText('Priority'));
 
     await waitFor(() => {
-      expect(screen.getByText('Urgent')).toBeInTheDocument();
+      expect(screen.getByText('urgent')).toBeInTheDocument();
     });
 
-    await user.click(screen.getByText('Urgent'));
+    await user.click(screen.getByText('urgent'));
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalled();

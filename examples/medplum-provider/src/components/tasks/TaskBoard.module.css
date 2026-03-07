@@ -27,8 +27,19 @@
 }
 
 .segmentedControl .mantine-SegmentedControl-label {
-  font-weight: 450;
-  padding: 8px var(--mantine-spacing-md);
+  font-weight: 500;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
   color: light-dark(var(--mantine-color-dark-9), var(--mantine-color-gray-0));
-  overflow: visible;
+}
+
+.button {
+  height: 32px;
+  background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-8));
+  color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-4));
+  font-weight: 500;
+}
+
+.selected {
+  background-color: light-dark(var(--mantine-color-black), var(--mantine-color-gray-6));
+  color: light-dark(var(--mantine-color-white), var(--mantine-color-white));
 }
