@@ -1,14 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Button, Container, Divider, Group, List, Paper, Stack, Text, Title } from '@mantine/core';
-import {
-  IconArrowUpRight,
-  IconBook,
-  IconDatabase,
-  IconRocket,
-  IconSettings,
-  IconUser,
-} from '@tabler/icons-react';
+import { IconArrowUpRight, IconBook, IconDatabase, IconRocket, IconSettings, IconUser } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -61,7 +54,8 @@ export function HomePage(): JSX.Element {
             Medplum SMART on FHIR Demo
           </Title>
           <Text size="lg" mt=".25rem" className={classes.textSecondary}>
-            A demonstration of SMART on FHIR standalone launch. Connect to your Medplum project or the public SMART Health IT Sandbox.
+            A demonstration of SMART on FHIR standalone launch. Connect to your Medplum project or the public SMART
+            Health IT Sandbox.
           </Text>
         </Box>
 
@@ -84,12 +78,24 @@ export function HomePage(): JSX.Element {
               <Stack gap="md">
                 <Group gap="xs" align="center">
                   <IconSettings size={18} color="var(--mantine-color-blue-6)" />
-                  <Text fw={700} size="sm">Step 1 — Configure a ClientApplication</Text>
+                  <Text fw={700} size="sm">
+                    Step 1 — Configure a ClientApplication
+                  </Text>
                 </Group>
                 <List size="sm" spacing={4}>
-                  <List.Item>Sign up for a Medplum account at <a href="https://app.medplum.com" target="_blank">app.medplum.com</a></List.Item>
-                  <List.Item>In your Medplum project, create a <strong>ClientApplication</strong> with redirect URI set to <code>http://localhost:8001/launch</code></List.Item>
-                  <List.Item>Copy the client ID and paste it into <code>MEDPLUM_CLIENT_ID</code> in <code>src/config.ts</code></List.Item>
+                  <List.Item>
+                    Sign up for a Medplum account at{' '}
+                    <a href="https://app.medplum.com" target="_blank">
+                      app.medplum.com
+                    </a>
+                  </List.Item>
+                  <List.Item>
+                    In your Medplum project, create a <strong>ClientApplication</strong> with redirect URI set to{' '}
+                    <code>http://localhost:8001/launch</code>
+                  </List.Item>
+                  <List.Item>
+                    Copy the client ID and paste it into <code>MEDPLUM_CLIENT_ID</code> in <code>src/config.ts</code>
+                  </List.Item>
                 </List>
               </Stack>
 
@@ -100,7 +106,9 @@ export function HomePage(): JSX.Element {
                 <Stack gap={4}>
                   <Group gap="xs" align="center">
                     <IconDatabase size={18} color="var(--mantine-color-blue-6)" />
-                    <Text fw={700} size="sm">Step 2 — Generate Sample Data</Text>
+                    <Text fw={700} size="sm">
+                      Step 2 — Generate Sample Data
+                    </Text>
                   </Group>
                   <Text size="sm" className={classes.textSecondary}>
                     If you already have data in your Medplum project, you can skip this step.
@@ -153,7 +161,8 @@ export function HomePage(): JSX.Element {
                   </Paper>
                 </Box>
                 <Text size="sm" c="dimmed">
-                  + 8 more patients generated with the same data structure. Resources are tagged with a demo tag for easy identification.
+                  + 8 more patients generated with the same data structure. Resources are tagged with a demo tag for
+                  easy identification.
                 </Text>
                 <Button variant="outline" onClick={() => navigate('/setup')} fullWidth>
                   Setup Demo Data
@@ -167,7 +176,9 @@ export function HomePage(): JSX.Element {
                 <Stack gap={4}>
                   <Group gap="xs" align="center">
                     <IconRocket size={18} color="var(--mantine-color-blue-6)" />
-                    <Text fw={700} size="sm">Step 3 — Launch the App</Text>
+                    <Text fw={700} size="sm">
+                      Step 3 — Launch the App
+                    </Text>
                   </Group>
                   <Text size="sm" className={classes.textSecondary}>
                     You'll be redirected to Medplum to sign in, prompted to set your scopes, and select a patient.
@@ -200,8 +211,9 @@ export function HomePage(): JSX.Element {
             </Group>
             <Paper radius="md" withBorder p="lg" shadow="sm">
               <Text size="sm" className={classes.textSecondary} mb="md">
-              A good way to explore the app without a Medplum account. 
-              Uses the public SMART Health IT Launcher pre-loaded with synthetic patients. You'll be redirected to the SMART Health IT Sandbox patient picker, and then back to the app.
+                A good way to explore the app without a Medplum account. Uses the public SMART Health IT Launcher
+                pre-loaded with synthetic patients. You'll be redirected to the SMART Health IT Sandbox patient picker,
+                and then back to the app.
               </Text>
               <Button
                 fullWidth

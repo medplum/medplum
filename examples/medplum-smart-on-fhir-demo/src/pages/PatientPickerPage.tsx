@@ -11,8 +11,12 @@ export function PatientPickerPage(): JSX.Element {
 
   return (
     <Container size="xl" mt="xl">
-      <Anchor onClick={() => navigate('/')} mb="md" display="block">← Back to Home</Anchor>
-      <Title order={1} mb="md">Select a Patient</Title>
+      <Anchor onClick={() => navigate('/')} mb="md" display="block">
+        ← Back to Home
+      </Anchor>
+      <Title order={1} mb="md">
+        Select a Patient
+      </Title>
       <SearchControl
         search={{ resourceType: 'Patient', fields: ['name', 'birthdate', 'gender'] }}
         onClick={(e) => {
