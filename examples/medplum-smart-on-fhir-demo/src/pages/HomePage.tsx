@@ -31,20 +31,6 @@ async function initiateLaunch(clientId: string, fhirUrl: string): Promise<void> 
   window.location.href = `${config.authorization_endpoint}?${params.toString()}`;
 }
 
-interface LaunchButtonProps {
-  clientId: string;
-  fhirUrl: string;
-  children: React.ReactNode;
-}
-
-function LaunchButton({ clientId, fhirUrl, children }: LaunchButtonProps): JSX.Element {
-  const handleClick = (): void => {
-    initiateLaunch(clientId, fhirUrl).catch(console.error);
-  };
-
-  return <div onClick={handleClick}>{children}</div>;
-}
-
 export function HomePage(): JSX.Element {
   return (
     <Container size="md" mt="xl">
@@ -56,13 +42,23 @@ export function HomePage(): JSX.Element {
         </Text>
         <Text>To test the app, you can use one of these launch options:</Text>
 
-        <LaunchButton clientId={MEDPLUM_CLIENT_ID} fhirUrl={MEDPLUM_FHIR_URL}>
-          <Button>Launch with Medplum</Button>
-        </LaunchButton>
+        <Text c="dimmed" size="sm">
+          <strong>Launch with Medplum</strong> — See README for setup instructions. Authenticates against your Medplum project. After login you will be
+          prompted to select a patient from your project.
+        </Text>
+        <Button onClick={() => initiateLaunch(MEDPLUM_CLIENT_ID, MEDPLUM_FHIR_URL).catch(console.error)}>
+          Launch with Medplum
+        </Button>
 
-        <LaunchButton clientId={SMART_HEALTH_IT_CLIENT_ID} fhirUrl={SMART_HEALTH_IT_FHIR_URL}>
-          <Button>Launch with SMART Health IT Sandbox</Button>
-        </LaunchButton>
+        <Text c="dimmed" size="sm">
+          <strong>Launch with SMART Health IT Sandbox</strong> — No setup required. Uses the public SMART Launcher from the SMART Health IT sandbox pre-loaded
+          with synthetic patient data. You will be prompted to select a patient from the sandbox.
+        </Text>
+        <Button
+          onClick={() => initiateLaunch(SMART_HEALTH_IT_CLIENT_ID, SMART_HEALTH_IT_FHIR_URL).catch(console.error)}
+        >
+          Launch with SMART Health IT Sandbox
+        </Button>
       </Stack>
     </Container>
   );

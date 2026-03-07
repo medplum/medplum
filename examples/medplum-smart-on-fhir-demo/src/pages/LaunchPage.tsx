@@ -73,7 +73,7 @@ async function initiateEhrLaunch(params: URLSearchParams): Promise<never> {
     redirect_uri: window.location.origin + '/launch',
     state,
     aud: iss,
-    launch: launch as string,
+    launch: launch ?? '',
   });
 
   const url = new URL(config.authorization_endpoint);
