@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isResourceType } from '@medplum/core';
 import type { ResourceType } from '@medplum/fhirtypes';
 import { globalLogger } from './logger';
-import { getPubSubRedis } from './redis';
+import { getCacheRedis, getPubSubRedis } from './redis';
 
 export function publish(channel: string, message: string | Buffer): Promise<number> {
   return getPubSubRedis().publish(channel, message);
@@ -118,6 +119,52 @@ export function removeUserActiveWebSocketSubscriptions(authorRef: string, refs: 
 
 export function getUserActiveWebSocketSubscriptionCount(authorRef: string): Promise<number> {
   return getPubSubRedis().scard(getUserActiveSubsKey(authorRef));
+}
+
+export function getUserActiveWebSocketSubscriptions(authorRef: string): Promise<string[]> {
+  return getPubSubRedis().smembers(getUserActiveSubsKey(authorRef));
+}
+
+export async function cleanupUserSubs(authorRef: string): Promise<void> {
+  const refs = await getUserActiveWebSocketSubscriptions(authorRef);
+  if (!refs.length) {
+    return;
+  }
+  const cacheEntries = await getCacheRedis().mget(...refs);
+  const staleRefs: string[] = [];
+  type ActiveCheckItem = { ref: string; projectId: string; resourceType: ResourceType };
+  const activeCheckItems: ActiveCheckItem[] = [];
+  for (let i = 0; i < refs.length; i++) {
+    const entry = cacheEntries[i];
+    if (entry === null) {
+      staleRefs.push(refs[i]);
+    } else {
+      const cacheValue = JSON.parse(entry) as { resource?: { criteria?: string }; projectId?: string };
+      const projectId = cacheValue.projectId;
+      const criteriaResourceType = cacheValue.resource?.criteria?.split('?')[0];
+      if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {
+        activeCheckItems.push({ ref: refs[i], projectId, resourceType: criteriaResourceType });
+      }
+    }
+  }
+  if (activeCheckItems.length) {
+    const pipeline = getPubSubRedis().pipeline();
+    for (const { projectId, resourceType, ref } of activeCheckItems) {
+      pipeline.hexists(getActiveSubsKey(projectId, resourceType), ref);
+    }
+    const results = await pipeline.exec();
+    if (results) {
+      for (let i = 0; i < activeCheckItems.length; i++) {
+        const [err, active] = results[i];
+        if (!err && !active) {
+          staleRefs.push(activeCheckItems[i].ref);
+        }
+      }
+    }
+  }
+  if (staleRefs.length) {
+    await removeUserActiveWebSocketSubscriptions(authorRef, staleRefs);
+  }
 }
 
 export async function cleanupActiveSubs(projectId: string, entryMap: ActiveSubscriptionMap): Promise<void> {
