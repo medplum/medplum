@@ -141,10 +141,7 @@ export function PatientPage(): JSX.Element {
       }
     };
 
-    fetchData().catch((err) => {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      setLoading(false);
-    });
+    fetchData().catch(console.error);
   }, [medplum]);
 
   const getBpChartData = (): ChartData<'line', number[]> => {
