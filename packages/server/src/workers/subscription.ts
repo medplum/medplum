@@ -594,11 +594,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
   } catch (err) {
-    try {
-      await catchJobError(subscription, job, err);
-    } catch (catchErr) {
-      throw catchErr;
-    }
+    await catchJobError(subscription, job, err);
   }
 }
 

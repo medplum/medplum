@@ -1,4 +1,7 @@
-import { ContentType, type BackgroundJobInteraction } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import type { BackgroundJobInteraction } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import type { Resource, Subscription } from '@medplum/fhirtypes';
 import type { Job, Queue } from 'bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
