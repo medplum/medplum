@@ -23,9 +23,8 @@ interface LineChartProps {
 }
 
 const AsyncLine = lazy(async () => {
-  const { CategoryScale, Chart, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } = await import(
-    'chart.js'
-  );
+  const { CategoryScale, Chart, Legend, LinearScale, LineElement, PointElement, Title, Tooltip } =
+    await import('chart.js');
   Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
   const { Line } = await import('react-chartjs-2');
   return { default: Line };

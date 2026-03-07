@@ -243,7 +243,10 @@ export function PatientPage(): JSX.Element {
       <Stack gap="md">
         {/* Back link — only available in Medplum flow which has an in-app patient picker */}
         {isMedplumFlow && (
-          <Anchor onClick={() => navigate('/select-patient')} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <Anchor
+            onClick={() => navigate('/select-patient')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
             <IconArrowLeft size={16} />
             Back to patients
           </Anchor>
@@ -255,9 +258,13 @@ export function PatientPage(): JSX.Element {
             <ResourceAvatar value={patient} size={56} radius={56} />
             <Stack gap={4}>
               <Group gap="xs" align="center">
-                <Title order={2} fw={700}>{patientName}</Title>
+                <Title order={2} fw={700}>
+                  {patientName}
+                </Title>
                 {gender && (
-                  <Badge variant="light" color="blue" size="sm">{gender}</Badge>
+                  <Badge variant="light" color="blue" size="sm">
+                    {gender}
+                  </Badge>
                 )}
               </Group>
               {patient.birthDate && (
@@ -280,7 +287,9 @@ export function PatientPage(): JSX.Element {
             </Text>
             <Text className={classes.vitalUnit}>mmHg</Text>
             {lastBp?.effectiveDateTime && (
-              <Text size="xs" c="dimmed" mt={4}>{formatDate(lastBp.effectiveDateTime)}</Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                {formatDate(lastBp.effectiveDateTime)}
+              </Text>
             )}
           </Paper>
           <Paper p="lg" radius="md" withBorder className={classes.vitalCard}>
@@ -290,7 +299,9 @@ export function PatientPage(): JSX.Element {
             </Text>
             <Text className={classes.vitalUnit}>{weightUnit}</Text>
             {latestWeight?.effectiveDateTime && (
-              <Text size="xs" c="dimmed" mt={4}>{formatDate(latestWeight.effectiveDateTime)}</Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                {formatDate(latestWeight.effectiveDateTime)}
+              </Text>
             )}
           </Paper>
           <Paper p="lg" radius="md" withBorder className={classes.vitalCard}>
@@ -300,7 +311,9 @@ export function PatientPage(): JSX.Element {
             </Text>
             <Text className={classes.vitalUnit}>{bmiUnit}</Text>
             {latestBmi?.effectiveDateTime && (
-              <Text size="xs" c="dimmed" mt={4}>{formatDate(latestBmi.effectiveDateTime)}</Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                {formatDate(latestBmi.effectiveDateTime)}
+              </Text>
             )}
           </Paper>
         </div>
@@ -324,9 +337,12 @@ export function PatientPage(): JSX.Element {
                   </Table.Thead>
                   <Table.Tbody>
                     {[...bpReadings].reverse().map((obs, i) => {
-                      const sys = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6')?.valueQuantity?.value;
-                      const dia = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4')?.valueQuantity?.value;
-                      const classification = sys !== undefined && dia !== undefined ? classifyBp(Math.round(sys), Math.round(dia)) : null;
+                      const sys = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6')?.valueQuantity
+                        ?.value;
+                      const dia = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4')?.valueQuantity
+                        ?.value;
+                      const classification =
+                        sys !== undefined && dia !== undefined ? classifyBp(Math.round(sys), Math.round(dia)) : null;
                       return (
                         <Table.Tr key={i}>
                           <Table.Td>{obs.effectiveDateTime ? formatDate(obs.effectiveDateTime) : '—'}</Table.Td>
@@ -362,10 +378,20 @@ export function PatientPage(): JSX.Element {
                     {i > 0 && <Divider />}
                     <Group justify="space-between" py="sm">
                       <Group gap="sm">
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: 'var(--mantine-color-blue-5)', flexShrink: 0 }} />
+                        <div
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--mantine-color-blue-5)',
+                            flexShrink: 0,
+                          }}
+                        />
                         <Text size="sm">{getConditionName(c)}</Text>
                       </Group>
-                      <Badge variant="light" color="green" size="sm">Active</Badge>
+                      <Badge variant="light" color="green" size="sm">
+                        Active
+                      </Badge>
                     </Group>
                   </div>
                 ))}
