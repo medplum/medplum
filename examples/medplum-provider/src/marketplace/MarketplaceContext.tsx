@@ -3,8 +3,8 @@
 
 import type { JSX, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { MarketplaceContext } from './MarketplaceContext.context';
 import type { MarketplaceContextValue } from './MarketplaceContext.context';
+import { MarketplaceContext } from './MarketplaceContext.context';
 import type { InstalledItem, ListingType, MarketplaceListing } from './types';
 
 export function MarketplaceProvider({ children }: { readonly children: ReactNode }): JSX.Element {
@@ -88,4 +88,3 @@ export function MarketplaceProvider({ children }: { readonly children: ReactNode
 
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>;
 }
-

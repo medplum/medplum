@@ -23,10 +23,18 @@ import { IconPackage, IconPlus, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { getListingById, listingIconColor, listingIconComponent, typeBadgeColor, typeBrowseLabels, typeDisplayNames, typeIconComponent } from './data';
+import {
+  getListingById,
+  listingIconColor,
+  listingIconComponent,
+  typeBadgeColor,
+  typeBrowseLabels,
+  typeDisplayNames,
+  typeIconComponent,
+} from './data';
+import type { ListingType, MarketplaceListing } from './types';
 import { useMarketplace } from './useMarketplace';
 import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-import type { ListingType, MarketplaceListing } from './types';
 
 // ─── Tab configuration ──────────────────────────────────────────────────────
 
@@ -176,7 +184,8 @@ export function InstalledItemsPage(): JSX.Element {
             </Table.Thead>
             <Table.Tbody>
               {filteredListings.map(({ item, listing }) => {
-                const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
+                const TypeIcon =
+                  listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
                 const iconColor = listingIconColor[listing.id];
                 let iconElement: JSX.Element;
                 if (listing.icon) {
@@ -191,7 +200,11 @@ export function InstalledItemsPage(): JSX.Element {
                         flexShrink: 0,
                       }}
                     >
-                      <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: 2 }} />
+                      <img
+                        src={listing.icon}
+                        alt={listing.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: 2 }}
+                      />
                     </Box>
                   );
                 } else if (iconColor) {

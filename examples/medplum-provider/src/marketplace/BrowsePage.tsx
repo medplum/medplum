@@ -15,9 +15,9 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
+import type { MarketplaceListing } from './types';
 import { useMarketplace } from './useMarketplace';
 import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-import type { MarketplaceListing } from './types';
 
 // ─── Listing Card ───────────────────────────────────────────────────────────
 

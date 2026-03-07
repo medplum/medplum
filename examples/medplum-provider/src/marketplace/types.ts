@@ -1,13 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-export type ListingType =
-  | 'App'
-  | 'Automation'
-  | 'Template'
-  | 'Content Pack'
-  | 'Spaces Skill'
-  | 'Service Provider';
+export type ListingType = 'App' | 'Automation' | 'Template' | 'Content Pack' | 'Spaces Skill' | 'Service Provider';
 
 export interface Vendor {
   readonly id: string;
