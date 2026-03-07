@@ -27,6 +27,7 @@
     "@mantine/spotlight": "8.3.15",
     "@medplum/core": "5.1.1",
     "@medplum/dosespot-react": "5.1.1",
+    "@medplum/scriptsure-react": "5.1.1",
     "@medplum/eslint-config": "5.1.1",
     "@medplum/fhirtypes": "5.1.1",
     "@medplum/health-gorilla-core": "5.1.1",
