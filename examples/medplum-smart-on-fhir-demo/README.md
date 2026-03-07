@@ -1,5 +1,5 @@
 # Medplum SMART on FHIR Demo
-**This demo application is currently under construction.**
+**This demo application is currently under construction. Standalone launch flows via Medplum or the Health IT Sandbox are functional.**
 
 This is a demo application showcasing SMART on FHIR integration with Medplum. It demonstrates how to:
 

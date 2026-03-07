@@ -151,9 +151,8 @@ export function LaunchPage(): JSX.Element {
     const handleSmartLaunch = async (): Promise<void> => {
       try {
         const params = new URLSearchParams(window.location.search);
-        const launch = params.get('launch');
 
-        if (launch) {
+        if (params.get('launch')) {
           await initiateEhrLaunch(params);
           return;
         }
@@ -199,9 +198,7 @@ export function LaunchPage(): JSX.Element {
       }
     };
 
-    handleSmartLaunch().catch((err) => {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    });
+    handleSmartLaunch().catch(console.error);
   }, [navigate, medplum]);
 
   if (error) {
