@@ -29,6 +29,7 @@ import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
 import { getUserActiveWebSocketSubscriptionCount, isSubscriptionActive, publish } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
+import { findAndExecDispatchJob } from '../workers/test-utils';
 
 jest.mock('hibp');
 
@@ -142,6 +143,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -273,6 +275,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -461,6 +464,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
         })
         .expectJson({
           resourceType: 'OperationOutcome',

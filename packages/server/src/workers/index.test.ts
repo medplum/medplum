@@ -12,6 +12,7 @@ import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { initBinaryStorage } from '../storage/loader';
 import * as cronModule from './cron';
+import * as dispatchModule from './dispatch';
 import * as downloadModule from './download';
 import * as subscriptionModule from './subscription';
 import { queueRegistry } from './utils';
@@ -87,6 +88,10 @@ describe('Workers', () => {
 
       const loggerErrorSpy = jest.spyOn(getLogger(), 'error').mockImplementation(() => {});
 
+      const dispatchSpy = jest.spyOn(dispatchModule, 'addDispatchJobs').mockImplementation(() => {
+        throw errorType === 'error' ? new Error('Test error') : 'Test error';
+      });
+
       const subSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs').mockImplementation(() => {
         throw errorType === 'error' ? new Error('Test error') : 'Test error';
       });
@@ -101,10 +106,11 @@ describe('Workers', () => {
 
       await addBackgroundJobs(resource, undefined, {} as BackgroundJobContext);
 
-      expect(subSpy).toHaveBeenCalledTimes(1);
-      expect(downloadSpy).toHaveBeenCalledTimes(1);
-      expect(cronSpy).toHaveBeenCalledTimes(1);
-      expect(loggerErrorSpy).toHaveBeenCalledTimes(3);
+      expect(dispatchSpy).toHaveBeenCalledTimes(1);
+      expect(subSpy).toHaveBeenCalledTimes(0);
+      expect(downloadSpy).toHaveBeenCalledTimes(0);
+      expect(cronSpy).toHaveBeenCalledTimes(0);
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
     });
   });
 });

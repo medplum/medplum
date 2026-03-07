@@ -117,7 +117,7 @@ async function addDispatchJobData(job: DispatchJobData): Promise<void> {
  * Executes a dispatch job.
  * @param job - The dispatch job details.
  */
-export async function execDispatchJob<T extends Resource = Resource>(job: Job<DispatchJobData>): Promise<void> {
+export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> {
   const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
   const { resourceType, id, versionId, previousVersionId } = job.data;
   const resource = await systemRepo.readVersion(resourceType, id, versionId);
