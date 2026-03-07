@@ -1603,7 +1603,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      expect(findAndExecSubscriptionJob(patient2, 'update')).rejects.toThrow('Job not found');
+      await expect(findAndExecSubscriptionJob(patient2, 'update')).rejects.toThrow('Job not found');
     }));
 
   test('Error during FhirPath evaluation should not result in other Subscriptions not firing', () =>
@@ -1661,9 +1661,7 @@ describe('Subscription Worker', () => {
 
       (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow(
-        'Job not found'
-      );
+      await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow('Job not found');
       await findAndExecSubscriptionJob(patient, 'update', subscription2);
     }));
 
