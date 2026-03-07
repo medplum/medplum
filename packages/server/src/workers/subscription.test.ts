@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import type { BackgroundJobInteraction, SearchRequest, WithId } from '@medplum/core';
+import type { SearchRequest, WithId } from '@medplum/core';
 import {
   ContentType,
   LogLevel,
@@ -51,11 +51,11 @@ import { getPubSubRedisSubscriber } from '../redis';
 import type { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
-import type { DispatchJobData } from './dispatch';
-import { execDispatchJob, getDispatchQueue } from './dispatch';
 import type { SubscriptionJobData } from './subscription';
-import { addSubscriptionJobs, execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
+import { addSubscriptionJobs, execSubscriptionJob, initSubscriptionWorker } from './subscription';
+import { findAndExecDispatchJob, findAndExecSubscriptionJob } from './test-utils';
 import * as workerUtils from './utils';
+
 jest.mock('node-fetch');
 const mockBullmq = jest.mocked(bullmqModule);
 
@@ -293,12 +293,12 @@ describe('Subscription Worker', () => {
       await repo.updateResource({ ...patient, active: true });
 
       // Update should not trigger the subscription
-      await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Job not found');
 
       // Delete the patient
       await repo.deleteResource('Patient', patient.id);
 
-      await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Job not found');
     }));
 
   test('Delete-only subscription', () =>
@@ -337,13 +337,13 @@ describe('Subscription Worker', () => {
         expect(patient).toBeDefined();
 
         // Create should trigger the subscription
-        await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+        await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
 
         // Update the patient
         await repo.updateResource({ ...patient, active: true });
 
         // Update should not trigger the subscription
-        await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Subscription job not found');
+        await expect(findAndExecSubscriptionJob(patient, 'update')).rejects.toThrow('Job not found');
 
         // Delete the patient
         await repo.deleteResource('Patient', patient.id);
@@ -499,7 +499,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore subscriptions missing URL', () =>
@@ -521,7 +521,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   // Skip test
@@ -543,7 +543,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore subscriptions with different criteria resource type', () =>
@@ -565,7 +565,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore subscriptions with different criteria parameter', () =>
@@ -588,7 +588,7 @@ describe('Subscription Worker', () => {
         code: { text: 'ok' },
       });
 
-      await expect(findAndExecSubscriptionJob(obs1, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(obs1, 'create')).rejects.toThrow('Job not found');
 
       const obs2 = await repo.createResource<Observation>({
         resourceType: 'Observation',
@@ -618,7 +618,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore resource changes in different project', () =>
@@ -642,7 +642,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test('Ignore resource changes in different account compartment', () =>
@@ -676,7 +676,7 @@ describe('Subscription Worker', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
       expect(patient).toBeDefined();
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
     }));
 
   test.skip('Retries in preamble errors', () =>
@@ -1121,7 +1121,7 @@ describe('Subscription Worker', () => {
         status: 'off',
       });
 
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
@@ -1163,7 +1163,7 @@ describe('Subscription Worker', () => {
       // But let's delete the subscription
       await repo.deleteResource('Subscription', subscription.id);
 
-      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient, 'create')).rejects.toThrow('Job not found');
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
@@ -1609,7 +1609,7 @@ describe('Subscription Worker', () => {
       // Update the patient
       const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
-      await expect(findAndExecSubscriptionJob(patient2, 'update')).rejects.toThrow('Subscription job not found');
+      await expect(findAndExecSubscriptionJob(patient2, 'update')).rejects.toThrow('Job not found');
     }));
 
   test('Error during FhirPath evaluation should not result in other Subscriptions not firing', () =>
@@ -1667,9 +1667,7 @@ describe('Subscription Worker', () => {
 
       (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-      await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow(
-        'Subscription job not found'
-      );
+      await expect(findAndExecSubscriptionJob(patient, 'update', subscription1)).rejects.toThrow('Job not found');
       await findAndExecSubscriptionJob(patient, 'update', subscription2);
     }));
 
@@ -2089,50 +2087,6 @@ describe('Subscription Worker', () => {
           { includeResource: true },
         ]);
       }));
-
-    // test.each([
-    //   [{ type: 'websocket' }, false], // websocket subscriptions should not trigger subscriptions since they have a different persistence story
-    //   [{ type: 'rest-hook' }, true], // even though endpoint is missing, this is still valid as a trigger of (valid) subscriptions
-    //   [{ type: 'rest-hook', endpoint: 'https://example.com/subscription' }, true],
-    //   [{ type: 'message' }, true],
-    // ] as [SubscriptionChannel, boolean][])(
-    //   'Ignore subscriptions on subscriptions with channel %j',
-    //   (subChannel, expectedToFire) =>
-    //     withTestContext(async () => {
-    //       const { repo: wsSubRepo } = await createTestProject({
-    //         project: { name: 'WebSocket Subs Project', features: ['websocket-subscriptions'] },
-    //         withRepo: true,
-    //       });
-
-    //       const subscription = await wsSubRepo.createResource<Subscription>({
-    //         resourceType: 'Subscription',
-    //         reason: 'test',
-    //         status: 'active',
-    //         criteria: 'Subscription',
-    //         channel: {
-    //           type: 'rest-hook',
-    //           endpoint: 'https://example.com/subscription',
-    //         },
-    //       });
-    //       expect(subscription).toBeDefined();
-    //       expect(subscription.id).toBeDefined();
-
-    //       const sub = await wsSubRepo.createResource<Subscription>({
-    //         resourceType: 'Subscription',
-    //         status: 'active',
-    //         reason: "raison d'être",
-    //         criteria: 'Patient?name=somethingrandom',
-    //         channel: subChannel,
-    //       });
-
-    //       expect(sub).toBeDefined();
-    //       if (expectedToFire) {
-    //         await findAndExecSubscriptionJob(sub, 'create');
-    //       } else {
-    //         await expect(findAndExecSubscriptionJob(sub, 'create')).rejects.toThrow('Subscription job not found');
-    //       }
-    //     })
-    // );
 
     test('execSubscriptionJob ignores resource versions that cannot be found', () =>
       withTestContext(async () => {
@@ -3178,70 +3132,3 @@ describe('Subscription Worker Event Handling', () => {
     }
   });
 });
-
-async function findAndExecDispatchJob(resource: Resource, interaction: BackgroundJobInteraction): Promise<void> {
-  const dispatchQueue = getDispatchQueue();
-  if (!dispatchQueue) {
-    throw new Error('Dispatch queue not initialized');
-  }
-
-  const dispatchJobData = (dispatchQueue.add as jest.Mock).mock.calls.find(
-    ([_jobName, jobData]) =>
-      jobData.interaction === interaction &&
-      jobData.resourceType === resource.resourceType &&
-      jobData.id === resource.id
-  )?.[1] as DispatchJobData | undefined;
-  if (!dispatchJobData) {
-    throw new Error(`Dispatch job not found for '${interaction}' '${resource.resourceType}/${resource.id}'`);
-  }
-
-  const dispatchJob = { id: 1, data: dispatchJobData } as unknown as Job;
-  await execDispatchJob(dispatchJob);
-}
-
-async function findAndExecSubscriptionJob(
-  resource: Resource,
-  interaction: BackgroundJobInteraction,
-  subscription?: Subscription
-): Promise<Job[]> {
-  await findAndExecDispatchJob(resource, interaction);
-
-  const subscriptionQueue = getSubscriptionQueue();
-  if (!subscriptionQueue) {
-    throw new Error('Subscription queue not initialized');
-  }
-
-  const subscriptionJobData = (subscriptionQueue.add as jest.Mock).mock.calls.find(
-    ([_jobName, jobData]) =>
-      jobData.interaction === interaction &&
-      jobData.resourceType === resource.resourceType &&
-      jobData.id === resource.id &&
-      (!subscription || jobData.subscriptionId === subscription.id)
-  )?.[1] as SubscriptionJobData | undefined;
-  if (!subscriptionJobData) {
-    throw new Error(`Subscription job not found for '${interaction}' '${resource.resourceType}/${resource.id}'`);
-  }
-
-  const result: Job[] = [];
-  const maxRetries = 3;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const subscriptionJob = {
-      id: 1 + attempt,
-      data: subscriptionJobData,
-      attemptsMade: attempt,
-      changePriority: jest.fn(),
-    } as unknown as Job;
-    result.push(subscriptionJob);
-    try {
-      await execSubscriptionJob(subscriptionJob);
-      break; // Exit loop if successful
-    } catch (err) {
-      if (attempt === maxRetries - 1) {
-        throw err;
-      }
-    }
-  }
-
-  return result;
-}
