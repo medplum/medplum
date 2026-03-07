@@ -827,6 +827,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -1032,6 +1033,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -1159,6 +1161,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           // Wait for the dead subscription handler to process the event.
           // The subscription was already active from creation, but the handler may
           // remove it before we can poll the active hash, so wait for the log instead.
@@ -1247,11 +1250,13 @@ describe('WebSocket Subscription', () => {
         .exec(async () => {
           mockGetLoginForAccessToken = true;
 
-          await repo.createResource<DocumentReference>({
+          const docRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
             status: 'current',
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
+          expect(docRef).toBeDefined();
+          await findAndExecDispatchJob(docRef, 'create');
 
           // Wait for the dead subscription cleanup (triggered by failed token validation)
           // to remove the subscription from the active hash.
@@ -1338,11 +1343,13 @@ describe('WebSocket Subscription', () => {
           mockGetLoginForAccessToken = true;
 
           // First event: triggers the dead subscription path
-          await repo.createResource<DocumentReference>({
+          const docRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
             status: 'current',
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
+          expect(docRef).toBeDefined();
+          await findAndExecDispatchJob(docRef, 'create');
 
           // Wait for subscription to be cleaned up (removed from active set by dead subscription handler)
           let subActive = true;
