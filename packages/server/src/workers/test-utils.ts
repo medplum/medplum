@@ -7,9 +7,11 @@ import type { Job, Queue } from 'bullmq';
 import { execDispatchJob, getDispatchQueue } from './dispatch';
 import { execDownloadJob, getDownloadQueue } from './download';
 import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
+
 /**
  * Finds the dispatch job for the given resource and interaction, and executes it.
  * This emulates what BullMQ would do when processing the job, and allows us to test the effects of the job in our unit tests.
+ *
  * @param resource - The resource that was created or updated.
  * @param interaction - The interaction that triggered the job (e.g. 'create', 'update', etc.).
  */
@@ -28,6 +30,7 @@ export async function findAndExecDispatchJob(resource: Resource, interaction: Ba
  * Finds the subscription job for the given resource and interaction, and executes it.
  * Also executes the dispatch job, since the subscription job is added by the dispatch job.
  * This emulates what BullMQ would do when processing the job, and allows us to test the effects of the job in our unit tests.
+ *
  * @param resource - The resource that was created or updated.
  * @param interaction - The interaction that triggered the job (e.g. 'create', 'update', etc.).
  * @param subscription - Optional subscription to match. If not provided, will match any subscription job for the resource and interaction.
@@ -50,6 +53,14 @@ export async function findAndExecSubscriptionJob(
   );
 }
 
+/**
+ * Finds the download job for the given resource and interaction, and executes it.
+ *
+ * @param resource - The resource that was created or updated.
+ * @param interaction - The interaction that triggered the job (e.g. 'create', 'update', etc.).
+ * @param url - Optional URL to match. If not provided, will match any download job for the resource and interaction.
+ * @returns The list of download jobs that were executed (there may be more than one if the job was retried).
+ */
 export async function findAndExecDownloadJob(
   resource: Resource,
   interaction: BackgroundJobInteraction,
@@ -59,20 +70,19 @@ export async function findAndExecDownloadJob(
   return findAndExecJob(
     getDownloadQueue,
     execDownloadJob,
-    // (jobData) => jobData.resourceType === resource.resourceType && jobData.id === resource.id
-    (jobData) => {
-      //   console.log('Test', {
-      //     resourceType: jobData.resourceType,
-      //     id: jobData.id,
-      //     match: jobData.resourceType === resource.resourceType && jobData.id === resource.id,
-      //   });
-      return (
-        jobData.resourceType === resource.resourceType && jobData.id === resource.id && (!url || jobData.url === url)
-      );
-    }
+    (jobData) =>
+      jobData.resourceType === resource.resourceType && jobData.id === resource.id && (!url || jobData.url === url)
   );
 }
 
+/**
+ * Finds the job in the given queue that matches the provided criteria, and executes it.
+ *
+ * @param getQueue - A function that returns the queue to search for the job. This is necessary because the queue may not be initialized at the time this function is called.
+ * @param execJob - A function that executes the job. This is necessary because the job processing logic is defined in the worker, and we want to reuse that logic in our tests.
+ * @param matchJob - A function that matches the job data to find the correct job to execute. This is necessary because there may be multiple jobs in the queue, and we want to find the one that matches our criteria.
+ * @returns The list of jobs that were executed (there may be more than one if the job was retried).
+ */
 async function findAndExecJob(
   getQueue: () => Queue | undefined,
   execJob: (job: Job) => Promise<void>,
@@ -112,6 +122,14 @@ async function findAndExecJob(
   return result;
 }
 
+/**
+ * Returns a mock Response object with the given status, body, and headers. This is useful for testing fetch calls in our workers.
+ *
+ * @param status - The HTTP status code to return in the response.
+ * @param body - The body of the response. This can be a string, a Blob, or any other type that can be returned by fetch.
+ * @param headers - Optional headers to include in the response. This can be used to override the default headers that are included in the response (e.g. content-disposition, content-type, etc.).
+ * @returns The mock Response object with the given status, body, and headers.
+ */
 export function mockFetchResponse(status: number, body: any, headers: Record<string, string> = {}): Response {
   return {
     status,
