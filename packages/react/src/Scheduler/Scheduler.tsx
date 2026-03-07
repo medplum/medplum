@@ -1,23 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Stack, Text } from '@mantine/core';
+import { Button, Loader, Stack, Text } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { getReferenceString, isReference } from '@medplum/core';
-import type {
-  Period,
-  Practitioner,
-  Questionnaire,
-  QuestionnaireResponse,
-  Reference,
-  Schedule,
-  Slot,
-} from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { getReferenceString, isReference, isResource, normalizeErrorString } from '@medplum/core';
+import type { Period, Practitioner, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
-import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
 import classes from './Scheduler.module.css';
@@ -29,20 +21,34 @@ import classes from './Scheduler.module.css';
  */
 export type SlotSearchFunction = (period: Period) => Promise<Slot[]>;
 export interface SchedulerProps {
-  readonly schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction;
-  readonly questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly schedule?: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[];
+  fetchSlots?: SlotSearchFunction;
+  onSelectSlot?: (slot: Slot) => void;
+  children?: React.ReactNode;
+}
+
+// Finds the first entry in Schedule.actor of type Reference<Practitioner>
+function onlyPractitioner(schedule: Schedule): Reference<Practitioner> | undefined {
+  const refs = schedule.actor.filter((ref) => isReference<Practitioner>(ref, 'Practitioner'));
+  if (refs.length === 1) {
+    return refs[0];
+  }
+  return undefined;
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
-  const questionnaire = useResource(props.questionnaire);
 
   const [month, setMonth] = useState<Date>(getStartMonth());
   const [date, setDate] = useState<Date>();
-  const [response, setResponse] = useState<QuestionnaireResponse>();
   const [actor, setActor] = useState<Reference<Practitioner> | undefined>();
   const [slots, setSlots] = useState<Slot[]>();
   const [selectedSlot, setSelectedSlot] = useState<Slot>();
+
+  const handleSelectSlot = (slot: Slot): void => {
+    setSelectedSlot(slot);
+    props.onSelectSlot?.(slot);
+  };
 
   useEffect(() => {
     if (!props.schedule) {
@@ -50,14 +56,9 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     }
 
     // Function to fetch slots
-    let fetchSlots: SlotSearchFunction;
-
-    // If the user provides a function to fetch slots, use it
-    if (typeof props.schedule === 'function') {
-      fetchSlots = props.schedule;
-    } else {
-      // Otherwise, search based on the schedule(s) provided
-      fetchSlots = async (period: Period): Promise<Slot[]> => {
+    const fetchSlots: SlotSearchFunction =
+      props.fetchSlots ??
+      (async (period) => {
         const scheduleArray: string[] = [];
         if (!Array.isArray(props.schedule)) {
           scheduleArray.push(
@@ -82,28 +83,32 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
           ['start', 'lt' + period.end],
         ]);
         return medplum.searchResources('Slot', slotSearchParams);
-      };
-
-      // If a single schedule is provided, set the actor
-      if (props.schedule && !Array.isArray(props.schedule)) {
-        if (isReference(props.schedule)) {
-          medplum
-            .readReference<Schedule>(props.schedule as Reference<Schedule>)
-            .then((schedule) => {
-              const actorRef = schedule.actor?.[0] as Reference<Practitioner>;
-              setActor(actorRef);
-            })
-            .catch(console.error);
-        } else {
-          setActor((props.schedule as Schedule).actor?.[0] as Reference<Practitioner>);
-        }
-      }
-    }
+      });
 
     fetchSlots({ start: getStart(month), end: getEnd(month) })
       .then(setSlots)
       .catch(console.error);
-  }, [medplum, props.schedule, month]);
+  }, [medplum, props.schedule, props.fetchSlots, month]);
+
+  // If a single Schedule or Reference<Schedule> is provided, set the actor from it
+  useEffect(() => {
+    if (props.schedule && !Array.isArray(props.schedule)) {
+      if (isResource(props.schedule)) {
+        setActor(onlyPractitioner(props.schedule));
+      } else {
+        medplum
+          .readReference<Schedule>(props.schedule)
+          .then((schedule) => setActor(onlyPractitioner(schedule)))
+          .catch((error: unknown) => {
+            showNotification({
+              color: 'red',
+              title: 'Error',
+              message: normalizeErrorString(error),
+            });
+          });
+      }
+    }
+  }, [medplum, props.schedule]);
 
   // Create a map of start times to slots to handle duplicate start times
   const startTimeToSlotMap = useMemo(() => {
@@ -129,8 +134,12 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     return startTimeToSlotMap;
   }, [slots, date]);
 
-  if (!slots || !questionnaire) {
-    return null;
+  if (!slots) {
+    return (
+      <div className={classes.container} data-testid="scheduler">
+        <Loader />
+      </div>
+    );
   }
 
   return (
@@ -160,7 +169,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
               {Array.from(startTimeToSlotMap?.entries() ?? []).map(([startTime, slot]) => {
                 return (
                   <div key={slot.id}>
-                    <Button variant="outline" style={{ width: 150 }} onClick={() => setSelectedSlot(slot)}>
+                    <Button variant="outline" style={{ width: 150 }} onClick={() => handleSelectSlot(slot)}>
                       {startTime}
                     </Button>
                   </div>
@@ -169,15 +178,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             </Stack>
           </div>
         )}
-        {date && selectedSlot && !response && (
-          <QuestionnaireForm questionnaire={questionnaire} submitButtonText="Next" onSubmit={setResponse} />
-        )}
-        {date && selectedSlot && response && (
-          <div>
-            <h3>You're all set!</h3>
-            <p>Check your email for a calendar invite.</p>
-          </div>
-        )}
+        {props.children}
       </div>
     </div>
   );
