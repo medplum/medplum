@@ -26,9 +26,9 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
+import type { MarketplaceListing } from './types';
 import { useMarketplace } from './useMarketplace';
 import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-import type { MarketplaceListing } from './types';
 
 function CollectionListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
   const { isInstalled } = useMarketplace();

@@ -18,9 +18,9 @@ import {
   typeDisplayNames,
   typeIconComponent,
 } from './data';
+import type { ListingType, MarketplaceListing } from './types';
 import { useMarketplace } from './useMarketplace';
 import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-import type { ListingType, MarketplaceListing } from './types';
 
 // ─── URL helpers ────────────────────────────────────────────────────────────
 
@@ -33,7 +33,6 @@ function browseByCategory(category: string): string {
   const params = new URLSearchParams({ category });
   return `/marketplace/browse?${params.toString()}`;
 }
-
 
 // ─── Listing Icon ────────────────────────────────────────────────────────────
 
@@ -452,17 +451,19 @@ export function MarketplacePage(): JSX.Element {
                 component={Link}
                 to={browseByCategory(cat)}
                 className="marketplace-type-chip"
-                style={{
-                  ['--chip-bg' as string]: 'var(--mantine-color-gray-1)',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '7px 14px',
-                  borderRadius: 9999,
-                  textDecoration: 'none',
-                  color: 'var(--mantine-color-dark-3)',
-                  fontSize: 'var(--mantine-font-size-sm)',
-                  fontWeight: 500,
-                } as React.CSSProperties}
+                style={
+                  {
+                    ['--chip-bg' as string]: 'var(--mantine-color-gray-1)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '7px 14px',
+                    borderRadius: 9999,
+                    textDecoration: 'none',
+                    color: 'var(--mantine-color-dark-3)',
+                    fontSize: 'var(--mantine-font-size-sm)',
+                    fontWeight: 500,
+                  } as React.CSSProperties
+                }
               >
                 {cat}
               </Box>

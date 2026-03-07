@@ -54,9 +54,9 @@ import {
   typeIconComponent,
 } from './data';
 import { InstallModal } from './InstallModal';
+import type { ListingType, MarketplaceListing } from './types';
 import { useMarketplace } from './useMarketplace';
 import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-import type { ListingType, MarketplaceListing } from './types';
 
 const LISTINGS_WITH_SETUP_FLOW = new Set(['carebridge-dashboard', 'dosespot-eprescribing', 'telehealth-bridge']);
 
@@ -146,8 +146,7 @@ function InstallButton({
   }
 
   if (installed) {
-    const isAddableType =
-      listingType !== 'App' && listingType !== 'Service Provider';
+    const isAddableType = listingType !== 'App' && listingType !== 'Service Provider';
     const appId = LISTING_TO_APP_PANEL_ID[listingId];
     return (
       <Group gap="xs" align="center" justify="flex-end">
@@ -194,13 +193,7 @@ function InstallButton({
 
   if (listingType === 'Service Provider' && contactEmail) {
     return (
-      <Button
-        leftSection={<IconMail size={16} />}
-        size="md"
-        component="a"
-        href={`mailto:${contactEmail}`}
-        fullWidth
-      >
+      <Button leftSection={<IconMail size={16} />} size="md" component="a" href={`mailto:${contactEmail}`} fullWidth>
         {copy.action}
       </Button>
     );
@@ -314,10 +307,7 @@ function RequestAccessButton({ listingId }: { readonly listingId: string }): JSX
 
 // ─── Uninstall button (right side of action area, only when installed) ──────
 
-function UninstallButton(_props: {
-  readonly listingId: string;
-  readonly listingType: ListingType;
-}): null {
+function UninstallButton(_props: { readonly listingId: string; readonly listingType: ListingType }): null {
   return null;
 }
 
@@ -772,12 +762,18 @@ export function ListingDetailPage(): JSX.Element {
               </Text>
             ))}
           </Box>
-
         </Grid.Col>
 
         {/* ── Install sidebar ──────────────────────────────────────── */}
         <Grid.Col span={{ base: 12, md: 4 }} style={{ display: 'flex', flexDirection: 'column' }}>
-          <Box style={{ borderLeft: '1px solid var(--mantine-color-gray-3)', flex: 1, paddingInline: 'var(--mantine-spacing-xl)', paddingBlock: 'var(--mantine-spacing-xs)' }}>
+          <Box
+            style={{
+              borderLeft: '1px solid var(--mantine-color-gray-3)',
+              flex: 1,
+              paddingInline: 'var(--mantine-spacing-xl)',
+              paddingBlock: 'var(--mantine-spacing-xs)',
+            }}
+          >
             <Stack gap={32}>
               {/* Categories */}
               <Box>

@@ -7,8 +7,8 @@ import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { listings } from './data';
-import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { MarketplaceListing } from './types';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 
 const allServiceTypes = Array.from(
   new Set(listings.filter((l) => l.type === 'Service Provider').flatMap((l) => l.serviceTypes ?? []))
