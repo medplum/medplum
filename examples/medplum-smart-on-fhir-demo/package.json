@@ -33,6 +33,7 @@
     "@medplum/fhirtypes": "4.2.4",
     "@medplum/mock": "4.2.4",
     "@medplum/react": "4.2.4",
+    "@medplum/react-hooks": "4.2.4",
     "@tabler/icons-react": "3.17.0",
     "@types/node": "20.19.1",
     "@types/react": "19.1.8",
