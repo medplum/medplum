@@ -15,7 +15,7 @@ export function PatientPickerPage(): JSX.Element {
         onClick={(e) => {
           const patient = e.resource as Patient;
           sessionStorage.setItem('smart_patient', patient.id as string);
-          navigate('/patient')?.catch(console.error);
+          navigate('/patient');
         }}
         hideToolbar
       />
