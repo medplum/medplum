@@ -4,7 +4,7 @@
 import { formatHumanName } from '@medplum/core';
 import type { Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import { IconChartBar, IconChartLine, IconVideo } from '@tabler/icons-react';
+import { IconChartAreaLineFilled, IconClipboardSmileFilled, IconVideoFilled } from '@tabler/icons-react';
 import type { JSX, ReactElement, ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import { AppsPanel } from './AppsPanel';
@@ -24,7 +24,7 @@ interface AppMeta {
 const appMeta: Record<string, AppMeta> = {
   'growth-chart': {
     title: 'Growth Chart',
-    icon: <IconChartLine size={18} />,
+    icon: <IconChartAreaLineFilled size={18} color="var(--mantine-color-blue-6)" />,
   },
   dosespot: {
     title: 'DoseSpot',
@@ -32,11 +32,11 @@ const appMeta: Record<string, AppMeta> = {
   },
   'carebridge-dashboard': {
     title: 'Population Health',
-    icon: <IconChartBar size={18} />,
+    icon: <IconClipboardSmileFilled size={18} color="var(--mantine-color-teal-6)" />,
   },
   telehealth: {
     title: 'TelehealthBridge',
-    icon: <IconVideo size={18} />,
+    icon: <IconVideoFilled size={18} color="var(--mantine-color-violet-6)" />,
   },
   'dosespot-provider': {
     title: 'DoseSpot Provider',

@@ -23,9 +23,9 @@ import { IconPackage, IconPlus, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { getListingById, typeBadgeColor, typeBrowseLabels, typeDisplayNames, typeIconComponent } from './data';
-import { useMarketplace } from './MarketplaceContext';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { getListingById, listingIconColor, listingIconComponent, typeBadgeColor, typeBrowseLabels, typeDisplayNames, typeIconComponent } from './data';
+import { useMarketplace } from './useMarketplace';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { ListingType, MarketplaceListing } from './types';
 
 // ─── Tab configuration ──────────────────────────────────────────────────────
@@ -34,8 +34,8 @@ const typeTabs: { value: string; label: string; canAddNew: boolean }[] = [
   { value: 'all', label: 'All', canAddNew: false },
   { value: 'App', label: 'Apps', canAddNew: true },
   { value: 'Automation', label: 'Automations', canAddNew: true },
-  { value: 'Agent Prompt / Skill', label: 'Agent Prompts & Skills', canAddNew: true },
-  { value: 'Template', label: 'Templates', canAddNew: false },
+  { value: 'Spaces Skill', label: 'Spaces Skills', canAddNew: true },
+  { value: 'Template', label: 'Template', canAddNew: false },
   { value: 'Content Pack', label: 'Data & Content', canAddNew: false },
 ];
 
@@ -106,14 +106,14 @@ export function InstalledItemsPage(): JSX.Element {
   }, [setBreadcrumbs]);
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       {/* Pill Tabs */}
       <Tabs
         value={activeTab}
         onChange={(v) => setActiveTab(v ?? 'all')}
         variant="unstyled"
         className="pill-tabs"
-        mb="lg"
+        mb="xl"
       >
         <Group justify="space-between" align="flex-end">
           <Tabs.List>
@@ -123,11 +123,14 @@ export function InstalledItemsPage(): JSX.Element {
               </Tabs.Tab>
             ))}
           </Tabs.List>
-          {canAddNew && (
-            <Button size="sm" leftSection={<IconPlus size={16} />} onClick={openAddModal}>
-              Add New {typeBrowseLabels[activeTab] ? typeDisplayNames[activeTab] : ''}
-            </Button>
-          )}
+          <Button
+            size="sm"
+            leftSection={<IconPlus size={16} />}
+            onClick={openAddModal}
+            style={{ visibility: canAddNew ? 'visible' : 'hidden' }}
+          >
+            Add New {typeBrowseLabels[activeTab] ? typeDisplayNames[activeTab] : ''}
+          </Button>
         </Group>
       </Tabs>
 
@@ -146,8 +149,16 @@ export function InstalledItemsPage(): JSX.Element {
                 ? 'Browse the marketplace to discover apps, templates, bots, and more to extend your Medplum environment.'
                 : getInstalledEmptyMessage(canAddNew)}
             </Text>
-            <Button component={Link} to="/marketplace" variant="light">
-              Browse Marketplace
+            <Button
+              component={Link}
+              to={
+                activeTab === 'all'
+                  ? '/marketplace'
+                  : `/marketplace/browse?${new URLSearchParams({ type: activeTab }).toString()}`
+              }
+              variant="light"
+            >
+              {activeTab === 'all' ? 'Browse Marketplace' : `Browse ${currentTab?.label ?? 'Marketplace'}`}
             </Button>
           </Stack>
         </Center>
@@ -160,20 +171,58 @@ export function InstalledItemsPage(): JSX.Element {
                 <Table.Th>Type</Table.Th>
                 <Table.Th>Vendor</Table.Th>
                 <Table.Th>Installed</Table.Th>
-                <Table.Th>Status</Table.Th>
                 <Table.Th style={{ width: 100 }}>Actions</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {filteredListings.map(({ item, listing }) => {
-                const TypeIcon = typeIconComponent[listing.type] ?? typeIconComponent['App'];
+                const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
+                const iconColor = listingIconColor[listing.id];
+                let iconElement: JSX.Element;
+                if (listing.icon) {
+                  iconElement = (
+                    <Box
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        border: '1px solid var(--mantine-color-gray-3)',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <img src={listing.icon} alt={listing.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', padding: 2 }} />
+                    </Box>
+                  );
+                } else if (iconColor) {
+                  iconElement = (
+                    <Box
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 6,
+                        border: '1px solid var(--mantine-color-gray-3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <TypeIcon size={12} color={iconColor} />
+                    </Box>
+                  );
+                } else {
+                  iconElement = (
+                    <ThemeIcon size="sm" radius="sm" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'}>
+                      <TypeIcon size={12} />
+                    </ThemeIcon>
+                  );
+                }
                 return (
                   <Table.Tr key={item.listingId}>
                     <Table.Td>
                       <Group gap="xs">
-                        <ThemeIcon size="sm" radius="sm" variant="light" color={typeBadgeColor[listing.type] ?? 'gray'}>
-                          <TypeIcon size={12} />
-                        </ThemeIcon>
+                        {iconElement}
                         {listing.id.startsWith('custom-') ? (
                           <Anchor
                             size="sm"
@@ -211,11 +260,6 @@ export function InstalledItemsPage(): JSX.Element {
                       </Text>
                     </Table.Td>
                     <Table.Td>
-                      <Badge size="xs" variant="light" color={item.status === 'active' ? 'green' : 'yellow'}>
-                        {item.status}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
                       <Button
                         size="xs"
                         variant="subtle"
@@ -223,7 +267,7 @@ export function InstalledItemsPage(): JSX.Element {
                         leftSection={<IconTrash size={12} />}
                         onClick={() => uninstall(item.listingId)}
                       >
-                        Uninstall
+                        Remove
                       </Button>
                     </Table.Td>
                   </Table.Tr>
@@ -277,30 +321,6 @@ export function InstalledItemsPage(): JSX.Element {
               onChange={(e) => setEditDescription(e.currentTarget.value)}
               rows={3}
             />
-            <div>
-              <Text size="xs" fw={500} c="dimmed" mb={2}>
-                Type
-              </Text>
-              <Badge size="sm" variant="light" color={typeBadgeColor[viewingListing.type] ?? 'gray'}>
-                {typeDisplayNames[viewingListing.type] ?? viewingListing.type}
-              </Badge>
-            </div>
-            <Group gap="xl">
-              <div>
-                <Text size="xs" fw={500} c="dimmed" mb={2}>
-                  Version
-                </Text>
-                <Text size="sm">{viewingListing.version}</Text>
-              </div>
-              <div>
-                <Text size="xs" fw={500} c="dimmed" mb={2}>
-                  Status
-                </Text>
-                <Badge size="sm" variant="light" color="green">
-                  Active
-                </Badge>
-              </div>
-            </Group>
             <Group justify="space-between" mt="sm">
               <Button
                 variant="subtle"
@@ -311,7 +331,7 @@ export function InstalledItemsPage(): JSX.Element {
                   closeDetailModal();
                 }}
               >
-                Uninstall
+                Remove
               </Button>
               <Group gap="sm">
                 <Button variant="subtle" onClick={closeDetailModal}>

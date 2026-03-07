@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {
-  IconApps,
-  IconBrain,
-  IconChartBar,
-  IconChartLine,
-  IconDatabase,
-  IconLayout,
-  IconPackages,
-  IconRobot,
-  IconUsersGroup,
-  IconVideo,
+  IconAppsFilled,
+  IconBoltFilled,
+  IconBookmarksFilled,
+  IconChartAreaLineFilled,
+  IconClipboardSmileFilled,
+  IconFoldersFilled,
+  IconLayoutFilled,
+  IconSparklesFilled,
+  IconUserFilled,
+  IconVideoFilled,
 } from '@tabler/icons-react';
 import type { Collection, MarketplaceListing, Vendor } from './types';
 
@@ -781,7 +781,7 @@ Designed for both covered entities and business associates operating on the Medp
 Output is a structured FHIR QuestionnaireResponse with coded symptom observations and a recommended care pathway (emergency, urgent care, same-day appointment, routine appointment, self-care).
 
 The agent uses clinical guidelines (ESI and MTS frameworks) and is designed as a decision support tool — not a replacement for clinical judgment.`,
-    type: 'Agent Prompt / Skill',
+    type: 'Spaces Skill',
     categories: ['Decision Support', 'Patient Engagement'],
     vendor: vendors['prism-ai'],
     version: '1.2.0',
@@ -807,7 +807,7 @@ The agent uses clinical guidelines (ESI and MTS frameworks) and is designed as a
 The agent supports configurable summary formats: brief (1 paragraph), standard (structured sections), and comprehensive (detailed with timeline). All summaries cite source FHIR resources for verification.
 
 Output is available as plain text, markdown, or a FHIR DocumentReference for storage in the patient record.`,
-    type: 'Agent Prompt / Skill',
+    type: 'Spaces Skill',
     categories: ['Decision Support', 'Interoperability'],
     vendor: vendors['prism-ai'],
     version: '1.0.3',
@@ -833,7 +833,7 @@ Output is available as plain text, markdown, or a FHIR DocumentReference for sto
 The assistant understands clinical synonyms, anatomical laterality, and specificity requirements. It can also validate existing code selections and suggest more specific codes when available.
 
 Designed for use during documentation and coding review workflows.`,
-    type: 'Agent Prompt / Skill',
+    type: 'Spaces Skill',
     categories: ['Billing', 'Decision Support'],
     vendor: vendors['prism-ai'],
     version: '1.1.0',
@@ -859,7 +859,7 @@ Designed for use during documentation and coding review workflows.`,
 Interaction severity is classified as minor, moderate, major, or contraindicated. Each finding includes a clinical explanation, management recommendation, and literature reference.
 
 The agent can process a full medication reconciliation or check individual new prescriptions against the existing list.`,
-    type: 'Agent Prompt / Skill',
+    type: 'Spaces Skill',
     categories: ['Pharmacy', 'Decision Support'],
     vendor: vendors['prism-ai'],
     version: '1.3.0',
@@ -885,7 +885,7 @@ The agent can process a full medication reconciliation or check individual new p
 The agent can scan individual records or run in batch mode across a patient cohort. Issues are classified by severity (critical, warning, info) and type (completeness, accuracy, consistency, timeliness).
 
 Use this agent before data migrations, quality reporting, or certification audits to ensure your data meets expected standards.`,
-    type: 'Agent Prompt / Skill',
+    type: 'Spaces Skill',
     categories: ['Compliance', 'Data Migration'],
     vendor: vendors['vitalink'],
     version: '1.0.0',
@@ -928,6 +928,7 @@ Engagement models range from fixed-scope projects to ongoing retainer support.`,
     ],
     serviceTypes: ['Implementation', 'Clinical'],
     contactUrl: 'https://example.com/stellarhealth/contact',
+    contactEmail: 'hello@stellarhealth.example.com',
     popularity: 90,
     compatibility: 'Medplum 3.x+',
   },
@@ -955,6 +956,7 @@ ComplianceFirst works with both covered entities and business associates and has
     ],
     serviceTypes: ['Compliance'],
     contactUrl: 'https://example.com/compliancefirst/contact',
+    contactEmail: 'info@compliancefirst.example.com',
     popularity: 82,
     compatibility: 'All Medplum versions',
   },
@@ -982,6 +984,7 @@ Typical migrations are completed in 8-12 weeks with a parallel-run validation pe
     ],
     serviceTypes: ['Implementation'],
     contactUrl: 'https://example.com/vitalink/contact',
+    contactEmail: 'contact@vitalink.example.com',
     popularity: 75,
     compatibility: 'All Medplum versions',
   },
@@ -1009,6 +1012,7 @@ Prism AI follows responsible AI principles and ensures all clinical AI tools inc
     ],
     serviceTypes: ['Implementation', 'Clinical'],
     contactUrl: 'https://example.com/prismai/contact',
+    contactEmail: 'hello@prismai.example.com',
     popularity: 78,
     compatibility: 'Medplum 3.x+',
   },
@@ -1036,6 +1040,7 @@ CareBridge works on a project or retainer basis and integrates directly with you
     ],
     serviceTypes: ['Implementation', 'Clinical'],
     contactUrl: 'https://example.com/carebridge/contact',
+    contactEmail: 'info@carebridge.example.com',
     popularity: 74,
     compatibility: 'Medplum 3.x+',
   },
@@ -1063,6 +1068,7 @@ Nimbus has deep expertise in pediatrics, OB/GYN, and primary care workflows.`,
     ],
     serviceTypes: ['Clinical', 'Implementation'],
     contactUrl: 'https://example.com/nimbus/contact',
+    contactEmail: 'hello@nimbusclinical.example.com',
     popularity: 71,
     compatibility: 'All Medplum versions',
   },
@@ -1207,22 +1213,22 @@ export const allVendors: Vendor[] = Object.values(vendors).sort((a, b) => a.name
 
 /** Maps internal ListingType values to user-facing display names */
 export const typeDisplayNames: Record<string, string> = {
-  'Agent Prompt / Skill': 'Agent Prompt / Skill',
+  'Spaces Skill': 'Spaces Skill',
   App: 'App',
   Automation: 'Automation',
   'Content Pack': 'Data & Content',
   'Service Provider': 'Service Provider',
-  Template: 'Templates',
+  Template: 'Template',
 };
 
 /** Plural display names for browse page titles and "See all" labels */
 export const typeBrowseLabels: Record<string, string> = {
-  'Agent Prompt / Skill': 'Agent Prompts & Skills',
+  'Spaces Skill': 'Spaces Skills',
   App: 'Apps',
   Automation: 'Automations',
   'Content Pack': 'Data & Content',
   'Service Provider': 'Service Providers',
-  Template: 'Templates',
+  Template: 'Template',
 };
 
 export const typeBadgeColor: Record<string, string> = {
@@ -1230,25 +1236,32 @@ export const typeBadgeColor: Record<string, string> = {
   Automation: 'teal',
   Template: 'violet',
   'Content Pack': 'orange',
-  'Agent Prompt / Skill': 'pink',
+  'Spaces Skill': 'pink',
   'Service Provider': 'cyan',
   Collections: 'grape',
 };
 
 /** Per-listing icon overrides — takes precedence over typeIconComponent when set */
-export const listingIconComponent: Record<string, typeof IconApps> = {
-  'carebridge-dashboard': IconChartBar,
-  'telehealth-bridge': IconVideo,
-  'growth-chart-app': IconChartLine,
+export const listingIconComponent: Record<string, typeof IconAppsFilled> = {
+  'carebridge-dashboard': IconClipboardSmileFilled,
+  'telehealth-bridge': IconVideoFilled,
+  'growth-chart-app': IconChartAreaLineFilled,
+};
+
+/** Per-listing icon color overrides */
+export const listingIconColor: Record<string, string> = {
+  'carebridge-dashboard': 'var(--mantine-color-teal-6)',
+  'telehealth-bridge': 'var(--mantine-color-violet-6)',
+  'growth-chart-app': 'var(--mantine-color-blue-6)',
 };
 
 /** Maps listing types to their icon components */
-export const typeIconComponent: Record<string, typeof IconApps> = {
-  'Agent Prompt / Skill': IconBrain,
-  App: IconApps,
-  Automation: IconRobot,
-  'Content Pack': IconDatabase,
-  'Service Provider': IconUsersGroup,
-  Template: IconLayout,
-  Collections: IconPackages,
+export const typeIconComponent: Record<string, typeof IconAppsFilled> = {
+  'Spaces Skill': IconSparklesFilled,
+  App: IconAppsFilled,
+  Automation: IconBoltFilled,
+  'Content Pack': IconFoldersFilled,
+  'Service Provider': IconUserFilled,
+  Template: IconLayoutFilled,
+  Collections: IconBookmarksFilled,
 };

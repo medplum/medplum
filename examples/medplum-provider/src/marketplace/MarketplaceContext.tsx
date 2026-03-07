@@ -2,20 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { JSX, ReactNode } from 'react';
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { MarketplaceContext } from './MarketplaceContext.context';
+import type { MarketplaceContextValue } from './MarketplaceContext.context';
 import type { InstalledItem, ListingType, MarketplaceListing } from './types';
-
-interface MarketplaceContextValue {
-  readonly installedItems: Record<string, InstalledItem>;
-  readonly customListings: MarketplaceListing[];
-  readonly isInstalled: (listingId: string) => boolean;
-  readonly install: (listingId: string) => void;
-  readonly uninstall: (listingId: string) => void;
-  readonly addCustomListing: (name: string, type: ListingType, description?: string) => void;
-  readonly updateCustomListing: (id: string, name: string, description?: string) => void;
-}
-
-const MarketplaceContext = createContext<MarketplaceContextValue | undefined>(undefined);
 
 export function MarketplaceProvider({ children }: { readonly children: ReactNode }): JSX.Element {
   const [installedItems, setInstalledItems] = useState<Record<string, InstalledItem>>({});
@@ -99,10 +89,3 @@ export function MarketplaceProvider({ children }: { readonly children: ReactNode
   return <MarketplaceContext.Provider value={value}>{children}</MarketplaceContext.Provider>;
 }
 
-export function useMarketplace(): MarketplaceContextValue {
-  const context = useContext(MarketplaceContext);
-  if (!context) {
-    throw new Error('useMarketplace must be used within a MarketplaceProvider');
-  }
-  return context;
-}

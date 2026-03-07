@@ -2,23 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Anchor, Badge, Box, Card, Divider, Group, SimpleGrid, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconPackages } from '@tabler/icons-react';
+import { IconBookmarksFilled } from '@tabler/icons-react';
 import type { ComponentType, JSX } from 'react';
-import { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
 import {
   allCategories,
   allTypes,
   collections,
   getListingById,
+  listingIconColor,
   listingIconComponent,
   listings,
   typeBadgeColor,
   typeDisplayNames,
   typeIconComponent,
 } from './data';
-import { useMarketplace } from './MarketplaceContext';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplace } from './useMarketplace';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { ListingType, MarketplaceListing } from './types';
 
 // ─── URL helpers ────────────────────────────────────────────────────────────
@@ -33,40 +34,6 @@ function browseByCategory(category: string): string {
   return `/marketplace/browse?${params.toString()}`;
 }
 
-// ─── Type Card ──────────────────────────────────────────────────────────────
-
-function TypeCard({ type, isCollection }: { readonly type: string; readonly isCollection?: boolean }): JSX.Element {
-  const Icon = isCollection
-    ? (typeIconComponent['Collections'] ?? IconPackages)
-    : (typeIconComponent[type] ?? IconPackages);
-  const displayName = isCollection ? 'Collections' : (typeDisplayNames[type] ?? type);
-  const link = isCollection ? '/marketplace/collections' : browseByType(type);
-
-  return (
-    <Card
-      component={Link}
-      to={link}
-      padding="md"
-      radius="md"
-      withBorder
-      style={{ textDecoration: 'none', color: 'inherit', textAlign: 'left' }}
-    >
-      <Stack align="center" gap="xs">
-        <ThemeIcon
-          size={48}
-          radius="md"
-          variant="light"
-          color={isCollection ? typeBadgeColor['Collections'] : (typeBadgeColor[type] ?? 'gray')}
-        >
-          <Icon size={24} />
-        </ThemeIcon>
-        <Text size="sm" fw={400} lineClamp={1}>
-          {displayName}
-        </Text>
-      </Stack>
-    </Card>
-  );
-}
 
 // ─── Listing Icon ────────────────────────────────────────────────────────────
 
@@ -75,7 +42,7 @@ function ListingIcon({
   TypeIcon,
 }: {
   readonly listing: MarketplaceListing;
-  readonly TypeIcon: ComponentType<{ size: number }>;
+  readonly TypeIcon: ComponentType<{ size: number; color?: string }>;
 }): JSX.Element {
   if (listing.icon) {
     return (
@@ -113,7 +80,7 @@ function ListingIcon({
           background: 'white',
         }}
       >
-        <TypeIcon size={24} />
+        <TypeIcon size={24} color={listingIconColor[listing.id]} />
       </Box>
     );
   }
@@ -135,7 +102,7 @@ function ListingIcon({
 function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
   const { isInstalled } = useMarketplace();
   const installed = isInstalled(listing.id);
-  const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? IconPackages;
+  const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? IconBookmarksFilled;
 
   return (
     <Card
@@ -172,7 +139,7 @@ function ListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX
         )}
       </Group>
 
-      <Text size="lg" c="gray.6" lineClamp={3} mb="xl" style={{ flex: 1 }}>
+      <Text size="lg" c="gray.7" lineClamp={3} mb="xl" pr="xs" style={{ flex: 1 }}>
         {listing.tagline}
       </Text>
 
@@ -229,7 +196,7 @@ function CollectionCard({
     >
       <Group gap="sm" mb="sm" wrap="nowrap" style={{ overflow: 'hidden' }}>
         <ThemeIcon size="48px" radius="md" variant="light" color="grape" style={{ flexShrink: 0 }}>
-          <IconPackages size={18} />
+          <IconBookmarksFilled size={18} />
         </ThemeIcon>
         <div style={{ overflow: 'hidden', minWidth: 0 }}>
           <Text fw={700} size="lg" lineClamp={1}>
@@ -240,7 +207,7 @@ function CollectionCard({
           </Text>
         </div>
       </Group>
-      <Text size="lg" c="gray.6" lineClamp={3} mb="xl" style={{ flex: 1 }}>
+      <Text size="lg" c="gray.7" lineClamp={3} mb="xl" style={{ flex: 1 }}>
         {collection.description}
       </Text>
       <Group gap="4">
@@ -287,12 +254,12 @@ function MerchandisedSection({ config }: { readonly config: SectionConfig }): JS
     }
     // Sort by popularity
     result.sort((a, b) => b.popularity - a.popularity);
-    return result.slice(0, config.maxRows * 4);
+    return result.slice(0, config.maxRows * 3);
   }, [config]);
 
   // Collections section
   if (config.isCollections) {
-    const displayCollections = collections.slice(0, config.maxRows * 4);
+    const displayCollections = collections.slice(0, config.maxRows * 3);
     if (displayCollections.length === 0) {
       return null;
     }
@@ -416,38 +383,101 @@ export function MarketplacePage(): JSX.Element {
   }, [setBreadcrumbs]);
 
   return (
-    <Box px="xl" py="xl">
-      {/* Type cards */}
-      <SimpleGrid cols={{ base: 3, sm: 4, md: 7 }} spacing="lg" mb="lg">
-        {allTypes.map((type) => (
-          <TypeCard key={type} type={type} />
-        ))}
-        <TypeCard type="Collections" isCollection />
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
+      {/* Browse filters — two column layout */}
+      <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xl" mb="64px">
+        {/* Left: Browse by Type */}
+        <Stack gap="sm">
+          <Title order={6} fw={700} mb={4}>
+            Browse by Type
+          </Title>
+          <Group gap="xs" wrap="wrap">
+            {allTypes.map((type) => {
+              const Icon = typeIconComponent[type] ?? IconBookmarksFilled;
+              const color = typeBadgeColor[type] ?? 'gray';
+              return (
+                <Box
+                  key={type}
+                  component={Link}
+                  to={browseByType(type)}
+                  className="marketplace-type-chip"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '12px 18px',
+                    borderRadius: 'var(--mantine-radius-md)',
+                    textDecoration: 'none',
+                    color: 'var(--mantine-color-dark-6)',
+                    fontSize: 'var(--mantine-font-size-md)',
+                    fontWeight: 500,
+                  }}
+                >
+                  <Icon size={18} color={`var(--mantine-color-${color}-6)`} style={{ flexShrink: 0 }} />
+                  {typeDisplayNames[type] ?? type}
+                </Box>
+              );
+            })}
+            <Box
+              component={Link}
+              to="/marketplace/collections"
+              className="marketplace-type-chip"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '12px 18px',
+                borderRadius: 'var(--mantine-radius-md)',
+                textDecoration: 'none',
+                color: 'var(--mantine-color-dark-6)',
+                fontSize: 'var(--mantine-font-size-md)',
+                fontWeight: 500,
+              }}
+            >
+              <IconBookmarksFilled size={14} color="var(--mantine-color-grape-6)" style={{ flexShrink: 0 }} />
+              Collections
+            </Box>
+          </Group>
+        </Stack>
+
+        {/* Right: Browse by Category */}
+        <Stack gap="sm">
+          <Title order={6} fw={700} mb={4}>
+            Browse by Category
+          </Title>
+          <Group gap="xs" wrap="wrap">
+            {allCategories.map((cat) => (
+              <Box
+                key={cat}
+                component={Link}
+                to={browseByCategory(cat)}
+                className="marketplace-type-chip"
+                style={{
+                  ['--chip-bg' as string]: 'var(--mantine-color-gray-1)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: '7px 14px',
+                  borderRadius: 9999,
+                  textDecoration: 'none',
+                  color: 'var(--mantine-color-dark-3)',
+                  fontSize: 'var(--mantine-font-size-sm)',
+                  fontWeight: 500,
+                } as React.CSSProperties}
+              >
+                {cat}
+              </Box>
+            ))}
+          </Group>
+        </Stack>
       </SimpleGrid>
 
-      {/* Category pills */}
-      <Group gap="xs" mb="xl" justify="center">
-        {allCategories.map((cat) => (
-          <Badge
-            key={cat}
-            component={Link}
-            to={browseByCategory(cat)}
-            size="lg"
-            variant="light"
-            color="gray.6"
-            c="dark.6"
-            style={{ cursor: 'pointer', textDecoration: 'none', textTransform: 'none', fontWeight: 500, minHeight: 36 }}
-          >
-            {cat}
-          </Badge>
-        ))}
-      </Group>
-
-      <Divider mb="xl" />
+      <Divider />
 
       {/* Merchandised sections */}
-      {merchandisedSections.map((section) => (
-        <MerchandisedSection key={section.title} config={section} />
+      {merchandisedSections.map((section, i) => (
+        <Box key={section.title} mt={i === 0 ? 'xl' : undefined}>
+          <MerchandisedSection config={section} />
+        </Box>
       ))}
     </Box>
   );

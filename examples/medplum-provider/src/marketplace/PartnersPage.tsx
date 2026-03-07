@@ -7,7 +7,7 @@ import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { listings } from './data';
-import { useMarketplaceBreadcrumbs } from './MarketplaceLayout';
+import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 import type { MarketplaceListing } from './types';
 
 const allServiceTypes = Array.from(
@@ -72,7 +72,7 @@ export function PartnersPage(): JSX.Element {
   }, [selectedServiceType]);
 
   return (
-    <Box px="xl" py="xl">
+    <Box py="xl" style={{ paddingInline: 'calc(var(--mantine-spacing-xl) * 3)' }}>
       <Group mb="xs" mx="4">
         <Title order={3} size="h4" fw={800}>
           Partners & Service Providers

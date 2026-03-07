@@ -6,7 +6,7 @@ export type ListingType =
   | 'Automation'
   | 'Template'
   | 'Content Pack'
-  | 'Agent Prompt / Skill'
+  | 'Spaces Skill'
   | 'Service Provider';
 
 export interface Vendor {
@@ -36,6 +36,7 @@ export interface MarketplaceListing {
   readonly compatibility?: string;
   readonly serviceTypes?: string[];
   readonly contactUrl?: string;
+  readonly contactEmail?: string;
   readonly supportUrl?: string;
   readonly docsUrl?: string;
   readonly termsUrl?: string;
