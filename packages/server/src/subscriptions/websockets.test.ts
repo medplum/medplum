@@ -29,6 +29,7 @@ import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
 import { getUserActiveWebSocketSubscriptionCount, isSubscriptionActive, publish } from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
+import { findAndExecDispatchJob } from '../workers/test-utils';
 
 jest.mock('hibp');
 
@@ -142,6 +143,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -273,6 +275,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -461,6 +464,7 @@ describe('WebSocket Subscription', () => {
             },
           });
           expect(version2).toBeDefined();
+          await findAndExecDispatchJob(version2, 'update');
         })
         .expectJson({
           resourceType: 'OperationOutcome',
@@ -813,6 +817,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -1018,6 +1023,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           let subActive = false;
           while (!subActive) {
             await sleep(0);
@@ -1146,6 +1152,7 @@ describe('WebSocket Subscription', () => {
             ],
           });
           expect(documentRef).toBeDefined();
+          await findAndExecDispatchJob(documentRef, 'create');
           // Wait for the dead subscription handler to process the event.
           // The subscription was already active from creation, but the handler may
           // remove it before we can poll the active hash, so wait for the log instead.
@@ -1234,11 +1241,13 @@ describe('WebSocket Subscription', () => {
         .exec(async () => {
           mockGetLoginForAccessToken = true;
 
-          await repo.createResource<DocumentReference>({
+          const docRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
             status: 'current',
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
+          expect(docRef).toBeDefined();
+          await findAndExecDispatchJob(docRef, 'create');
 
           // The subscription was already active from creation. The dead subscription cleanup
           // (triggered by the failed token validation in the pub/sub handler) may remove it
@@ -1326,11 +1335,13 @@ describe('WebSocket Subscription', () => {
           mockGetLoginForAccessToken = true;
 
           // First event: triggers the dead subscription path
-          await repo.createResource<DocumentReference>({
+          const docRef = await repo.createResource<DocumentReference>({
             resourceType: 'DocumentReference',
             status: 'current',
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
+          expect(docRef).toBeDefined();
+          await findAndExecDispatchJob(docRef, 'create');
 
           // Wait for subscription to be cleaned up (removed from active set by dead subscription handler)
           let subActive = true;
