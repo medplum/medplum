@@ -126,7 +126,8 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     : undefined;
   const projectId = resource.meta?.project;
   const project = projectId ? await systemRepo.readResource<Project>('Project', projectId) : undefined;
-  const context = { interaction: job.data.interaction, project, systemRepo } as BackgroundJobContext;
+  const interaction = job.data.interaction;
+  const context = { interaction, project, systemRepo } as BackgroundJobContext;
 
   try {
     await addSubscriptionJobs(resource, previousVersion, context);
@@ -138,23 +139,25 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     });
   }
 
-  try {
-    await addDownloadJobs(resource, previousVersion, context);
-  } catch (err) {
-    getLogger().error('Error adding download jobs', {
-      resourceType: resource.resourceType,
-      resource: resource.id,
-      err,
-    });
-  }
+  if (interaction !== 'delete') {
+    try {
+      await addDownloadJobs(resource, previousVersion, context);
+    } catch (err) {
+      getLogger().error('Error adding download jobs', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        err,
+      });
+    }
 
-  try {
-    await addCronJobs(resource, previousVersion, context);
-  } catch (err) {
-    getLogger().error('Error adding cron jobs', {
-      resourceType: resource.resourceType,
-      resource: resource.id,
-      err,
-    });
+    try {
+      await addCronJobs(resource, previousVersion, context);
+    } catch (err) {
+      getLogger().error('Error adding cron jobs', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        err,
+      });
+    }
   }
 }
