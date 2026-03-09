@@ -8,7 +8,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { Location } from 'react-router';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DoseSpotPharmacyDialog } from '../../components/pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../../components/pharmacy/usePharmacyDialog';
 import { usePatient } from '../../hooks/usePatient';
 import { OrderLabsPage } from '../labs/OrderLabsPage';
 import classes from './PatientPage.module.css';
@@ -33,6 +33,7 @@ export function PatientPage(): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
   const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
+  const PharmacyDialogComponent = usePharmacyDialog();
   const tabs = getPatientPageTabs(membership);
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location, tabs) ?? tabs[0]).id;
@@ -100,7 +101,7 @@ export function PatientPage(): JSX.Element {
               onRequestLabs={() => {
                 setIsLabsModalOpen(true);
               }}
-              pharmacyDialogComponent={DoseSpotPharmacyDialog}
+              pharmacyDialogComponent={PharmacyDialogComponent}
             />
           </ScrollArea>
         </div>

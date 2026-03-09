@@ -5,6 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useScriptSureIFrame } from '@medplum/scriptsure-react';
 import type { JSX } from 'react';
+import classes from './DoseSpotNotificationsPage.module.css';
 
 export function ScriptSurePage(): JSX.Element {
   const iframeUrl = useScriptSureIFrame({
@@ -19,16 +20,18 @@ export function ScriptSurePage(): JSX.Element {
   });
 
   return (
-    <Box style={{ flex: 1, minHeight: 0 }}>
-      {iframeUrl && (
-        <iframe
-          id="scriptsure-iframe"
-          name="scriptsure-iframe"
-          title="ScriptSure e-Prescribing"
-          src={iframeUrl}
-          style={{ width: '100%', height: '100%', border: 'none' }}
-        />
-      )}
+    <Box className={classes.container}>
+      <Box className={classes.iframeContainer}>
+        {iframeUrl && (
+          <iframe
+            id="scriptsure-iframe"
+            name="scriptsure-iframe"
+            title="ScriptSure e-Prescribing"
+            src={iframeUrl}
+            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          />
+        )}
+      </Box>
     </Box>
   );
 }
