@@ -49,6 +49,7 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
   const [sendModalOpened, setSendModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
+  const faxQueryRef = useRef<string>('');
 
   // Clear the list when switching tabs so the skeleton shows
   useEffect(() => {
@@ -65,6 +66,7 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
         const params = Object.fromEntries(new URLSearchParams(query));
         const results = await medplum.searchResources('Communication', params, { cache: 'no-cache' });
         if (!cancelled) {
+          faxQueryRef.current = query;
           setFaxes(results);
         }
       } catch (error) {
@@ -107,13 +109,13 @@ export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri
   }, [medplum]);
 
   useEffect(() => {
-    if (!loading && faxes.length > 0 && !faxId) {
+    if (!loading && faxes.length > 0 && !faxId && faxQueryRef.current === query) {
       const firstFax = faxes[0];
       if (firstFax?.id) {
         navigate(getFaxUri(firstFax))?.catch(console.error);
       }
     }
-  }, [loading, faxes, faxId, navigate, getFaxUri]);
+  }, [loading, faxes, faxId, navigate, getFaxUri, query]);
 
   useEffect(() => {
     const selectFax = async (): Promise<void> => {

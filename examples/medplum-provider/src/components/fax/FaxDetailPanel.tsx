@@ -1,12 +1,11 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Divider, Flex, Group, Paper, Stack, Text, Tooltip } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum/core';
+import { formatDateTime, getDisplayString } from '@medplum/core';
 import type { Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
-import { MedplumLink, useMedplum, useResource } from '@medplum/react';
+import { MedplumLink, useResource } from '@medplum/react';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
-import { IconCircleOff, IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
+import { IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { AssignPatientModal } from './AssignPatientModal';
@@ -20,7 +19,6 @@ interface FaxDetailPanelProps {
 }
 
 export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.Element {
-  const medplum = useMedplum();
   const patient = useResource(fax.subject);
   const [assignModalOpened, setAssignModalOpened] = useState(false);
   const [forwardModalOpened, setForwardModalOpened] = useState(false);
