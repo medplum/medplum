@@ -82,7 +82,7 @@ export function HomePage(): JSX.Element {
                     Step 1 — Configure a ClientApplication
                   </Text>
                 </Group>
-                <List size="sm" spacing={4}>
+                <List size="sm">
                   <List.Item>
                     Sign up for a Medplum account at{' '}
                     <a href="https://app.medplum.com" target="_blank">
@@ -113,7 +113,7 @@ export function HomePage(): JSX.Element {
 
               {/* Step 2: Setup */}
               <Stack gap="md">
-                <Stack gap={4}>
+                <Stack>
                   <Group gap="xs" align="center">
                     <IconDatabase size={18} color="var(--mantine-color-blue-6)" />
                     <Text fw={700} size="sm">
@@ -139,7 +139,7 @@ export function HomePage(): JSX.Element {
                         </Stack>
                       </Group>
                       <Divider />
-                      <List size="sm" className={classes.flexOne} spacing={4}>
+                      <List size="sm" className={classes.flexOne}>
                         <List.Item>Male, born 1978-03-15</List.Item>
                         <List.Item>5 blood pressure readings</List.Item>
                         <List.Item>Weight &amp; BMI observations</List.Item>
@@ -161,7 +161,7 @@ export function HomePage(): JSX.Element {
                         </Stack>
                       </Group>
                       <Divider />
-                      <List size="sm" className={classes.flexOne} spacing={4}>
+                      <List size="sm" className={classes.flexOne}>
                         <List.Item>Female, born 1985-07-22</List.Item>
                         <List.Item>5 blood pressure readings</List.Item>
                         <List.Item>Weight &amp; BMI observations</List.Item>
@@ -193,7 +193,7 @@ export function HomePage(): JSX.Element {
                   {/* Standalone launch card */}
                   <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
                     <Stack gap="md" className={classes.flexOne}>
-                      <Stack gap={4}>
+                      <Stack>
                         <Group gap="xs" align="center">
                           <IconRocket size={16} color="var(--mantine-color-blue-6)" />
                           <Text fw={700} size="sm">
@@ -217,7 +217,7 @@ export function HomePage(): JSX.Element {
                   {/* EHR launch card */}
                   <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
                     <Stack gap="md" className={classes.flexOne}>
-                      <Stack gap={4}>
+                      <Stack>
                         <Group gap="xs" align="center">
                           <IconApps size={16} color="var(--mantine-color-blue-6)" />
                           <Text fw={700} size="sm">
@@ -228,7 +228,7 @@ export function HomePage(): JSX.Element {
                           Launch from within a patient's record — patient context is passed automatically.
                         </Text>
                       </Stack>
-                      <List size="sm" spacing={4}>
+                      <List size="sm">
                         <List.Item>
                           Navigate to any{' '}
                           <a href="https://app.medplum.com/Patient" target="_blank">
