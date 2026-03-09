@@ -5,6 +5,7 @@ import {
   Divider,
   AppShell as MantineAppShell,
   Menu,
+  Popover,
   ScrollArea,
   Stack,
   Text,
@@ -15,7 +16,14 @@ import { spotlight } from '@mantine/spotlight';
 import { formatHumanName } from '@medplum/core';
 import type { HumanName, ResourceType } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useMedplumProfile, useNotificationCount } from '@medplum/react-hooks';
-import { IconBookmark, IconCirclePlus, IconLayoutSidebar, IconSearch, IconX } from '@tabler/icons-react';
+import {
+  IconBookmark,
+  IconCirclePlus,
+  IconLayoutGrid,
+  IconLayoutSidebar,
+  IconSearch,
+  IconX,
+} from '@tabler/icons-react';
 import type { JSX, MouseEvent, MouseEventHandler, ReactNode, SyntheticEvent } from 'react';
 import { Fragment, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
@@ -30,6 +38,7 @@ export interface NavbarLink {
   readonly icon?: JSX.Element;
   readonly label?: string;
   readonly href: string;
+  readonly onClick?: () => void;
   /** Static count to display. Ignored if notificationCount is provided. */
   readonly count?: number;
   /** If true, shows red alert styling (red dot on collapsed icon, red count text when expanded). */
@@ -49,11 +58,21 @@ export interface NavbarMenu {
   readonly links?: NavbarLink[];
 }
 
+export interface NavbarApp {
+  readonly id: string;
+  readonly icon: JSX.Element;
+  readonly label: string;
+  readonly active?: boolean;
+  readonly hasNotification?: boolean;
+  readonly onClick: () => void;
+}
+
 export interface NavbarProps {
   readonly pathname?: string;
   readonly searchParams?: URLSearchParams;
   readonly logo?: ReactNode;
   readonly menus?: NavbarMenu[];
+  readonly apps?: NavbarApp[];
   readonly navbarToggle: () => void;
   readonly closeNavbar: () => void;
   readonly spotlightEnabled?: boolean;
@@ -100,7 +119,6 @@ export function Navbar(props: NavbarProps): JSX.Element {
               onClick={props.navbarToggle}
               aria-expanded={opened}
               aria-controls="navbar"
-              aria-label="Medplum Logo"
             >
               {props.logo}
             </UnstyledButton>
@@ -111,7 +129,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
             {props.spotlightEnabled && (
               <Box mb={2}>
                 <Tooltip label="Search" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
-                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()} aria-label="Search">
+                  <UnstyledButton className={classes.link} onClick={() => spotlight.open()}>
                     <IconSearch size="1.2rem" />
                     <span className={classes.linkLabel} data-opened={opened || undefined}>
                       Search
@@ -146,7 +164,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                         key={link.href}
                         to={link.href}
                         active={link.href === activeLink?.href}
-                        onClick={(e) => onLinkClick(e, link.href)}
+                        onClick={(e: SyntheticEvent) => onLinkClick(e, link.href)}
                         icon={link.icon}
                         label={link.label ?? ''}
                         opened={opened}
@@ -156,10 +174,21 @@ export function Navbar(props: NavbarProps): JSX.Element {
                       />
                     ) : (
                       <NavbarLinkContent
-                        key={link.href}
+                        key={link.label ?? link.href}
                         to={link.href}
                         active={link.href === activeLink?.href}
-                        onClick={(e) => onLinkClick(e, link.href)}
+                        onClick={(e: SyntheticEvent) => {
+                          if (link.onClick) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            link.onClick();
+                            if (window.innerWidth < 768) {
+                              props.closeNavbar();
+                            }
+                          } else {
+                            onLinkClick(e, link.href);
+                          }
+                        }}
                         icon={link.icon}
                         label={link.label ?? ''}
                         opened={opened}
@@ -172,6 +201,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                 </Stack>
               </Fragment>
             ))}
+            {props.apps && props.apps.length > 0 && <AppsSection apps={props.apps} opened={opened} />}
             {props.displayAddBookmark && (
               <Tooltip label="Add Bookmark" position="right" transitionProps={{ duration: 0 }} disabled={opened}>
                 <UnstyledButton
@@ -263,7 +293,6 @@ interface NavbarLinkContentProps {
 function NavbarLinkContent(props: NavbarLinkContentProps): JSX.Element {
   const { to, icon, label, onClick, active, count, alert, opened, onDismiss } = props;
   const showCount = count !== undefined && count > 0;
-
   const iconElement = icon ?? <IconBookmark />;
   const showDot = showCount && alert && !opened;
 
@@ -330,6 +359,81 @@ function NavbarLinkWithSubscription(props: NavbarLinkWithSubscriptionProps): JSX
       count={count}
       onDismiss={props.onDismiss}
     />
+  );
+}
+
+interface AppsSectionProps {
+  readonly apps: NavbarApp[];
+  readonly opened: boolean;
+}
+
+function AppsSection({ apps, opened }: AppsSectionProps): JSX.Element {
+  const [popoverOpened, setPopoverOpened] = useState(false);
+  const hasAnyNotification = apps.some((app) => app.hasNotification);
+
+  return (
+    <div className={classes.appsSection}>
+      <div className={classes.appsCollapsed} data-opened={opened || undefined}>
+        <Popover
+          width={250}
+          position="right-start"
+          shadow="md"
+          opened={!opened && popoverOpened}
+          onChange={setPopoverOpened}
+          disabled={opened}
+        >
+          <Popover.Target>
+            <Tooltip label="Apps" position="right" transitionProps={{ duration: 0 }} disabled={opened || popoverOpened}>
+              <UnstyledButton className={classes.link} onClick={() => setPopoverOpened((o) => !o)}>
+                <span style={{ position: 'relative', display: 'inline-flex' }}>
+                  <IconLayoutGrid size="1.2rem" />
+                  {hasAnyNotification && <span className={classes.appsNotificationDotCollapsed} />}
+                </span>
+              </UnstyledButton>
+            </Tooltip>
+          </Popover.Target>
+          <Popover.Dropdown
+            style={{
+              paddingInline: 'var(--mantine-spacing-md)',
+              paddingBlock: 'var(--mantine-spacing-xs) var(--mantine-spacing-md)',
+              borderRadius: 'var(--mantine-radius-md)',
+            }}
+          >
+            <Text size="xs" c="dimmed" mb="xs" fw={500}>
+              Apps
+            </Text>
+            <div className={classes.appTilesGrid} style={{ padding: 0 }}>
+              {apps.map((app) => (
+                <Tooltip key={app.id} label={app.label}>
+                  <UnstyledButton
+                    className={classes.appTile}
+                    data-active={app.active || undefined}
+                    onClick={() => app.onClick()}
+                  >
+                    {app.icon}
+                    {app.hasNotification && <span className={classes.appsNotificationDot} />}
+                  </UnstyledButton>
+                </Tooltip>
+              ))}
+            </div>
+          </Popover.Dropdown>
+        </Popover>
+      </div>
+      <div className={classes.appsExpanded} data-opened={opened || undefined}>
+        <Text className={classes.menuTitle} data-opened>
+          Apps
+        </Text>
+        <div className={classes.appTilesGrid}>
+          {apps.map((app) => (
+            <Tooltip key={app.id} label={app.label} openDelay={0}>
+              <UnstyledButton className={classes.appTile} data-active={app.active || undefined} onClick={app.onClick}>
+                {app.icon}
+              </UnstyledButton>
+            </Tooltip>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -7,10 +7,6 @@
   font-size: 14px;
 }
 
-.mantine-ActionIcon-root:active {
-  transform: none;
-}
-
 /* Pill-style tabs used across Tasks, Messages, Labs, and Patient tabs */
 .pill-tabs .mantine-Tabs-list {
   display: flex;
@@ -43,32 +39,4 @@
 .pill-tabs .mantine-Tabs-tab[data-active]:hover {
   background-color: light-dark(var(--mantine-color-gray-1), var(--mantine-color-gray-7));
   color: light-dark(var(--mantine-color-gray-9), var(--mantine-color-white));
-}
-
-/* Outline-style ActionIcon buttons (filter, delete, lock, etc.) */
-.mantine-ActionIcon-root.outline-icon-button {
-  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
-  transition: border-color 150ms ease;
-}
-
-.mantine-ActionIcon-root.outline-icon-button:hover,
-.mantine-ActionIcon-root.outline-icon-button[data-opened] {
-  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-gray-5));
-}
-
-.mantine-ActionIcon-root.outline-icon-button svg {
-  color: var(--mantine-color-gray-6);
-}
-
-/* Menu item styles */
-.mantine-Menu-item {
-  border-radius: var(--mantine-radius-sm);
-}
-
-.mantine-Menu-item:hover {
-  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-gray-8));
-}
-
-.filter-submenu-dropdown {
-  min-width: 200px;
 }

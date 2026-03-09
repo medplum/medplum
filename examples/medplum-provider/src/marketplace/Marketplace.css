@@ -1,0 +1,78 @@
+/* Marketplace pages — theme-aware background for light/dark mode */
+.marketplace-root {
+  background-color: var(--mantine-color-body);
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--app-shell-header-offset, 0px));
+  overflow: hidden;
+}
+
+.marketplace-breadcrumb-link {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}
+
+.marketplace-breadcrumb-link:hover {
+  opacity: 1;
+}
+
+/* Action icon buttons on listing detail installed state */
+.marketplace-action-icon {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  transition: border-color 150ms ease;
+}
+
+.marketplace-action-icon:hover {
+  border-color: light-dark(var(--mantine-color-gray-5), var(--mantine-color-gray-5));
+}
+
+.marketplace-action-icon:active {
+  transform: none;
+}
+
+.marketplace-action-icon svg {
+  color: var(--mantine-color-gray-6);
+}
+
+.marketplace-action-icon-red {
+  border: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-gray-6));
+  transition: border-color 150ms ease;
+}
+
+.marketplace-action-icon-red:hover {
+  border-color: light-dark(var(--mantine-color-red-4), var(--mantine-color-red-6));
+}
+
+.marketplace-action-icon-red:active {
+  transform: none;
+}
+
+.marketplace-action-icon-red svg {
+  color: var(--mantine-color-red-6);
+}
+
+/* Type filter chips on marketplace home */
+.marketplace-type-chip {
+  background: var(--mantine-color-gray-0);
+  transition: background 150ms ease-in-out;
+}
+
+.marketplace-type-chip:hover {
+  background: var(--mantine-color-gray-1);
+}
+
+/* Spin animation for the install loading state */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

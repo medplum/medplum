@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Patient, ProjectMembership } from '@medplum/fhirtypes';
-import { hasDoseSpotIdentifier } from '../../components/utils';
 
 export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
@@ -36,13 +35,11 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 
 /**
  * Returns the patient page tabs filtered based on user permissions.
- * Currently filters out the DoseSpot tab if the user doesn't have DoseSpot access.
- * @param membership - The current user's project membership.
+ * @param _membership - The current user's project membership.
  * @returns Filtered array of patient page tabs.
  */
-export function getPatientPageTabs(membership: ProjectMembership | undefined): PatientPageTabInfo[] {
-  const hasDoseSpot = hasDoseSpotIdentifier(membership);
-  return PatientPageTabs.filter((tab) => tab.id !== 'dosespot' || hasDoseSpot);
+export function getPatientPageTabs(_membership: ProjectMembership | undefined): PatientPageTabInfo[] {
+  return PatientPageTabs;
 }
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
