@@ -55,7 +55,6 @@ export function FaxInboxPage(): JSX.Element {
           });
           return;
         }
-       
       }
       showNotification({
         color: 'green',
