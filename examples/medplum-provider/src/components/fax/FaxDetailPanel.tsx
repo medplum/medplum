@@ -35,13 +35,10 @@ export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.E
     : formatFaxNumber(fax.recipient?.[0]?.display || 'Unknown recipient');
 
   const handleDownload = (): void => {
-    if (attachment?.url) {
-      const link = document.createElement('a');
-      link.href = attachment.url;
-      link.download = attachment.title || 'fax.pdf';
-      link.target = '_blank';
-      link.click();
+    if (!attachmentUrl) {
+      return;
     }
+    window.open(attachmentUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
