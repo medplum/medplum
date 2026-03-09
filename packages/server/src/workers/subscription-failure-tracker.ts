@@ -71,5 +71,5 @@ export async function recordSubscriptionFailure(
  */
 export async function clearSubscriptionFailures(subscriptionId: string): Promise<void> {
   const redis = getCacheRedis();
-  await redis.del(getRedisKey(subscriptionId));
+  await redis.unlink(getRedisKey(subscriptionId));
 }
