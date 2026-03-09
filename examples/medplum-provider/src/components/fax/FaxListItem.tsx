@@ -11,7 +11,6 @@ import classes from './FaxListItem.module.css';
 
 export type FaxTab = 'inbox' | 'sent';
 
-
 interface FaxListItemProps {
   fax: Communication;
   selectedFax: Communication | undefined;
