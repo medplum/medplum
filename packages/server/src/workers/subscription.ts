@@ -40,6 +40,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert';
 import { createHmac } from 'node:crypto';
 import { executeBot } from '../bots/execute';
+import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { isPreCommitSubscription } from '../fhir/precommit';
@@ -843,12 +844,13 @@ async function catchJobError(
   globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   const result = await recordSubscriptionFailure(subscription.id);
   if (result) {
-    await autoDisableSubscription(systemRepo, subscription, result.failureCount);
+    await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
   }
 }
 
 async function autoDisableSubscription(
   systemRepo: SystemRepository,
+  trigger: SubscriptionAutoDisableTrigger,
   subscription: WithId<Subscription>,
   failureCount: number
 ): Promise<void> {
@@ -869,7 +871,7 @@ async function autoDisableSubscription(
         {
           ...current,
           status: 'off',
-          error: `Automatically disabled after ${failureCount} consecutive failed events`,
+          error: `Automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`,
         },
         { ifMatch: versionId }
       );
@@ -879,7 +881,7 @@ async function autoDisableSubscription(
         subscription,
         new Date().toISOString(),
         AuditEventOutcome.SeriousFailure,
-        `Subscription automatically disabled after ${failureCount} consecutive failed events`,
+        `Subscription automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`,
         subscription
       );
     });
