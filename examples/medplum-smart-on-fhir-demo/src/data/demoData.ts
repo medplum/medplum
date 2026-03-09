@@ -12,8 +12,7 @@ const US_CORE_PATIENT = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core
 const US_CORE_BP = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure';
 const US_CORE_BODY_WEIGHT = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-body-weight';
 const US_CORE_BMI = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-bmi';
-const US_CORE_CONDITION =
-  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns';
+const US_CORE_CONDITION = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns';
 
 const VITAL_SIGNS_CATEGORY = [
   { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },

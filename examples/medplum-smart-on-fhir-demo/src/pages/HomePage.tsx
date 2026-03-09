@@ -1,7 +1,15 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Button, Container, Divider, Group, List, Paper, Stack, Text, Title } from '@mantine/core';
-import { IconApps, IconArrowUpRight, IconBook, IconDatabase, IconRocket, IconSettings, IconUser } from '@tabler/icons-react';
+import {
+  IconApps,
+  IconArrowUpRight,
+  IconBook,
+  IconDatabase,
+  IconRocket,
+  IconSettings,
+  IconUser,
+} from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import {
