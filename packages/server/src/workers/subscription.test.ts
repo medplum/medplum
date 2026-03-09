@@ -3084,6 +3084,55 @@ describe('Subscription Worker', () => {
         expect(auditEvents.length).toBeGreaterThanOrEqual(1);
       }));
 
+    test('Auto-disables subscription that already has an error value', () =>
+      withTestContext(async () => {
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
+
+        const url = 'https://example.com/existing-error-test';
+        const subscription = await repo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: { type: 'rest-hook', endpoint: url },
+          error: 'Some pre-existing error',
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+              valueInteger: 1,
+            },
+          ],
+        });
+
+        await clearSubscriptionFailures(subscription.id);
+
+        const queue = getSubscriptionQueue() as any;
+        queue.add.mockClear();
+
+        (fetch as unknown as jest.Mock).mockImplementation(() => {
+          throw new Error('Connection refused');
+        });
+
+        for (let i = 0; i < 3; i++) {
+          await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: `ExistingError${i}` }],
+          });
+          const job = {
+            id: `existing-error-${i}`,
+            data: queue.add.mock.calls[i][1],
+            attemptsMade: 1,
+            changePriority: jest.fn(),
+          } as unknown as Job;
+          await execSubscriptionJob(job);
+        }
+
+        // Verify subscription was disabled and error was overwritten
+        const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+        expect(updated.status).toBe('off');
+        expect(updated.error).toContain('Automatically disabled');
+      }));
+
     test('Failure counter resets on success', () =>
       withTestContext(async () => {
         getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
@@ -3162,11 +3211,11 @@ describe('Subscription Worker', () => {
         expect(updated.status).toBe('active');
       }));
 
-    test('Does not double-disable an already disabled subscription', () =>
+    test('Patch test op prevents auto-disable when subscription is concurrently disabled', () =>
       withTestContext(async () => {
-        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 2, timeWindowSeconds: 600 }];
+        getConfig().subscriptionAutoDisable = [{ maxConsecutiveFailures: 3, timeWindowSeconds: 600 }];
 
-        const url = 'https://example.com/double-disable-test';
+        const url = 'https://example.com/patch-test-op';
         const subscription = await repo.createResource<Subscription>({
           resourceType: 'Subscription',
           reason: 'test',
@@ -3183,47 +3232,43 @@ describe('Subscription Worker', () => {
 
         await clearSubscriptionFailures(subscription.id);
 
-        // Manually disable the subscription
-        await systemRepo.updateResource<Subscription>({
-          ...subscription,
-          status: 'off',
-        });
-
         const queue = getSubscriptionQueue() as any;
         queue.add.mockClear();
 
-        (fetch as unknown as jest.Mock).mockImplementation(() => {
+        let callCount = 0;
+        (fetch as unknown as jest.Mock).mockImplementation(async () => {
+          callCount++;
+          if (callCount === 3) {
+            // Simulate a concurrent process disabling the subscription after execSubscriptionJob
+            // has already loaded it (status was 'active') but before catchJobError runs the patch.
+            const current = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
+            await systemRepo.updateResource<Subscription>({
+              ...current,
+              status: 'off',
+              error: 'Disabled by admin',
+            });
+          }
           throw new Error('Connection refused');
         });
 
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          name: [{ given: ['Test'], family: 'DoubleDisable' }],
-        });
-
-        // Manually construct a job since the subscription is off and won't be queued
-        const job = {
-          id: 'double-disable-1',
-          data: {
-            subscriptionId: subscription.id,
+        for (let i = 0; i < 3; i++) {
+          await repo.createResource<Patient>({
             resourceType: 'Patient',
-            channelType: 'rest-hook',
-            id: patient.id,
-            versionId: patient.meta?.versionId,
-            interaction: 'create',
-            requestTime: new Date().toISOString(),
-          } as SubscriptionJobData,
-          attemptsMade: 1,
-          changePriority: jest.fn(),
-        } as unknown as Job;
+            name: [{ given: ['Test'], family: `PatchTest${i}` }],
+          });
+          const job = {
+            id: `patch-test-${i}`,
+            data: queue.add.mock.calls[i][1],
+            attemptsMade: 1,
+            changePriority: jest.fn(),
+          } as unknown as Job;
+          await execSubscriptionJob(job);
+        }
 
-        // The job returns early since the subscription is not active
-        await execSubscriptionJob(job);
-
-        // Verify subscription is still off without the auto-disable error message
+        // Verify the admin's error message was preserved, not overwritten by auto-disable
         const updated = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
         expect(updated.status).toBe('off');
-        expect(updated.error).toBeUndefined();
+        expect(updated.error).toBe('Disabled by admin');
       }));
   });
 });

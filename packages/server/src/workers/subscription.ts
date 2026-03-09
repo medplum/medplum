@@ -37,8 +37,8 @@ import type {
 import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import fetch from 'node-fetch';
-import assert from 'node:assert';
 import { createHmac } from 'node:crypto';
+import type { Operation } from 'rfc6902';
 import { executeBot } from '../bots/execute';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { getRequestContext, runInAsyncContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -855,33 +855,27 @@ async function autoDisableSubscription(
   failureCount: number
 ): Promise<void> {
   try {
-    // Re-read to get latest version and check it's still active
-    const current = await systemRepo.readResource<Subscription>('Subscription', subscription.id);
-    if (current.status !== 'active') {
-      return;
-    }
-    assert(current.meta?.versionId, 'meta.versionId is required');
-    const versionId = current.meta?.versionId;
+    const errorMessage = `Automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`;
 
-    // Use a transaction with ifMatch to ensure:
-    // 1. The Subscription hasn't been modified since our read (optimistic concurrency)
-    // 2. The AuditEvent is always created atomically with the status change
+    // Use a transaction with a JSON Patch test operation to atomically:
+    // 1. Verify the subscription is still active (test op fails if not, rolling back the transaction)
+    // 2. Disable the subscription and record the error
+    // 3. Create the AuditEvent
+    const patch: Operation[] = [
+      { op: 'test', path: '/status', value: 'active' },
+      { op: 'replace', path: '/status', value: 'off' },
+      { op: 'add', path: '/error', value: errorMessage },
+    ];
+
     await systemRepo.withTransaction(async () => {
-      await systemRepo.updateResource<Subscription>(
-        {
-          ...current,
-          status: 'off',
-          error: `Automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`,
-        },
-        { ifMatch: versionId }
-      );
+      await systemRepo.patchResource('Subscription', subscription.id, patch);
 
       await createSubscriptionAuditEvent(
         systemRepo,
         subscription,
         new Date().toISOString(),
         AuditEventOutcome.SeriousFailure,
-        `Subscription automatically disabled after ${failureCount} consecutive failed events in the last ${trigger.timeWindowSeconds} seconds`,
+        errorMessage,
         subscription
       );
     });
