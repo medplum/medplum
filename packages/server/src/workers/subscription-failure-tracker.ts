@@ -5,15 +5,13 @@ import { getConfig } from '../config/loader';
 import type { SubscriptionAutoDisableTrigger } from '../config/types';
 import { getCacheRedis } from '../redis';
 
-const DEFAULT_TRIGGERS: SubscriptionAutoDisableTrigger[] = [{ maxConsecutiveFailures: 10, timeWindowSeconds: 600 }];
-
 function getRedisKey(subscriptionId: string): string {
   return `medplum:sub:failures:${subscriptionId}`;
 }
 
-function getTriggers(): SubscriptionAutoDisableTrigger[] {
+function getTriggers(): SubscriptionAutoDisableTrigger[] | undefined {
   const config = getConfig();
-  return config.subscriptionAutoDisable ?? DEFAULT_TRIGGERS;
+  return config.subscriptionAutoDisable;
 }
 
 /**
@@ -27,7 +25,7 @@ export async function recordSubscriptionFailure(
   subscriptionId: string
 ): Promise<{ trigger: SubscriptionAutoDisableTrigger; failureCount: number } | undefined> {
   const triggers = getTriggers();
-  if (triggers.length === 0) {
+  if (!triggers || triggers.length === 0) {
     return undefined;
   }
 
