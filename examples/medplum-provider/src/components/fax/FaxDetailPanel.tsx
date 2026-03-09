@@ -6,7 +6,7 @@ import { formatDateTime, getDisplayString, normalizeErrorString } from '@medplum
 import type { Communication, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { MedplumLink, useMedplum, useResource } from '@medplum/react';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
-import { IconArchive, IconArchiveOff, IconCircleOff, IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
+import { IconCircleOff, IconDownload, IconSend, IconUserPlus } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { AssignPatientModal } from './AssignPatientModal';
@@ -17,10 +17,9 @@ import { SendFaxModal } from './SendFaxModal';
 interface FaxDetailPanelProps {
   fax: Communication;
   onFaxChange: () => void;
-  onFaxArchived?: (updatedFax: Communication) => void;
 }
 
-export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPanelProps): JSX.Element {
+export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.Element {
   const medplum = useMedplum();
   const patient = useResource(fax.subject);
   const [assignModalOpened, setAssignModalOpened] = useState(false);
@@ -29,8 +28,6 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
   const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
   const attachmentUrl = useCachedBinaryUrl(attachment?.url);
   const isInbound = fax.category?.[0]?.coding?.[0]?.code === 'inbound' || !fax.category?.[0]?.coding?.[0]?.code;
-  const isArchived = fax.status === 'entered-in-error';
-
   const originatingFaxNumber = fax.extension?.find(
     (ext) => ext.url === 'https://efax.com/originating-fax-number'
   )?.valueString;
@@ -38,36 +35,6 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
   const faxName = isInbound
     ? formatFaxNumber(fax.sender?.display || originatingFaxNumber || 'Unknown Sender')
     : formatFaxNumber(fax.recipient?.[0]?.display || 'Unknown recipient');
-
-  const handleArchiveToggle = async (): Promise<void> => {
-    if (!fax.id) {
-      return;
-    }
-    try {
-      const newStatus = isArchived ? 'in-progress' : 'entered-in-error';
-      const updatedFax = await medplum.patchResource('Communication', fax.id, [
-        { op: 'replace', path: '/status', value: newStatus },
-      ]);
-      notifications.show({
-        color: 'green',
-        icon: '✓',
-        title: isArchived ? 'Fax successfully unarchived' : 'Fax successfully archived',
-        message: '',
-      });
-      if (onFaxArchived) {
-        onFaxArchived(updatedFax);
-      } else {
-        onFaxChange();
-      }
-    } catch (error) {
-      notifications.show({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(error),
-      });
-    }
-  };
 
   const handleDownload = (): void => {
     if (attachment?.url) {
@@ -104,17 +71,6 @@ export function FaxDetailPanel({ fax, onFaxChange, onFaxArchived }: FaxDetailPan
                       </ActionIcon>
                     </Tooltip>
                   )}
-                  <Tooltip label={isArchived ? 'Unarchive' : 'Archive'} position="bottom" openDelay={500}>
-                    <ActionIcon
-                      variant="transparent"
-                      radius="xl"
-                      size={32}
-                      className="outline-icon-button"
-                      onClick={handleArchiveToggle}
-                    >
-                      {isArchived ? <IconArchiveOff size={16} /> : <IconArchive size={16} />}
-                    </ActionIcon>
-                  </Tooltip>
                   <Tooltip label="Assign Patient" position="bottom" openDelay={500}>
                     <ActionIcon
                       variant="transparent"

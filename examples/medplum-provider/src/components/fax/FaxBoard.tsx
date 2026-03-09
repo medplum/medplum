@@ -20,7 +20,7 @@ import { useMedplum } from '@medplum/react';
 import { IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './FaxBoard.module.css';
 import { FaxDetailPanel } from './FaxDetailPanel';
@@ -30,17 +30,18 @@ import { FaxSelectEmpty } from './FaxSelectEmpty';
 import { SendFaxModal } from './SendFaxModal';
 
 interface FaxBoardProps {
-  selectedFaxId: string | undefined;
+  faxId: string | undefined;
   activeTab: FaxTab;
+  inboxUri: string;
+  sentUri: string;
+  query: string;
+  getFaxUri: (fax: Communication) => string;
+  onNew: (fax: Communication) => void;
 }
 
-const FAX_MEDIUM = 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode|FAXWRIT';
-const FAX_DIRECTION_SYSTEM = 'http://medplum.com/fhir/CodeSystem/fax-direction';
-
-export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Element {
+export function FaxBoard({ faxId, activeTab, inboxUri, sentUri, query, getFaxUri, onNew }: FaxBoardProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const [, setSearchParams] = useSearchParams();
 
   const [faxes, setFaxes] = useState<Communication[]>([]);
   const [selectedFax, setSelectedFax] = useState<Communication | undefined>();
@@ -49,32 +50,10 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
   const [refreshKey, setRefreshKey] = useState(0);
   const efaxPolledRef = useRef(false);
 
-  const buildSearchParams = useCallback((): Record<string, string> => {
-    const params: Record<string, string> = {
-      medium: FAX_MEDIUM,
-      _count: '50',
-    };
-
-    if (activeTab === 'inbox') {
-      params.category = `${FAX_DIRECTION_SYSTEM}|inbound`;
-      params['status:not'] = 'entered-in-error';
-      params._sort = '-sent';
-    } else if (activeTab === 'archived') {
-      params.status = 'entered-in-error';
-      params._sort = '-sent';
-    } else if (activeTab === 'sent') {
-      params.category = `${FAX_DIRECTION_SYSTEM}|outbound`;
-      params['status:not'] = 'entered-in-error';
-      params._sort = '-sent';
-    }
-
-    return params;
-  }, [activeTab]);
-
   // Clear the list when switching tabs so the skeleton shows
   useEffect(() => {
     setFaxes([]);
-  }, [activeTab]);
+  }, [query]);
 
   // Fetch the fax list for the current tab
   useEffect(() => {
@@ -83,10 +62,10 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     const fetchList = async (): Promise<void> => {
       setLoading(true);
       try {
-        const results = await medplum.searchResources('Communication', buildSearchParams(), { cache: 'no-cache' });
+        const params = Object.fromEntries(new URLSearchParams(query));
+        const results = await medplum.searchResources('Communication', params, { cache: 'no-cache' });
         if (!cancelled) {
-          const sorted = [...results.filter((f) => f.sent), ...results.filter((f) => !f.sent)];
-          setFaxes(sorted);
+          setFaxes(results);
         }
       } catch (error) {
         if (!cancelled) {
@@ -103,7 +82,7 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     return () => {
       cancelled = true;
     };
-  }, [activeTab, refreshKey, medplum, buildSearchParams]);
+  }, [query, refreshKey, medplum]);
 
   // Poll eFax once on mount, then refresh the list when done
   useEffect(() => {
@@ -127,32 +106,24 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     pollEfax().catch(showErrorNotification);
   }, [medplum]);
 
-  const buildFaxUrl = useCallback(
-    (faxId?: string): string => {
-      const base = faxId ? `/Fax/Communication/${faxId}` : '/Fax/Communication';
-      return activeTab === 'inbox' ? base : `${base}?tab=${activeTab}`;
-    },
-    [activeTab]
-  );
-
   useEffect(() => {
-    if (!loading && faxes.length > 0 && !selectedFaxId) {
+    if (!loading && faxes.length > 0 && !faxId) {
       const firstFax = faxes[0];
       if (firstFax?.id) {
-        navigate(buildFaxUrl(firstFax.id))?.catch(console.error);
+        navigate(getFaxUri(firstFax))?.catch(console.error);
       }
     }
-  }, [loading, faxes, selectedFaxId, navigate, buildFaxUrl]);
+  }, [loading, faxes, faxId, navigate, getFaxUri]);
 
   useEffect(() => {
     const selectFax = async (): Promise<void> => {
-      if (selectedFaxId) {
-        const fax = faxes.find((f) => f.id === selectedFaxId);
+      if (faxId) {
+        const fax = faxes.find((f) => f.id === faxId);
         if (fax) {
           setSelectedFax(fax);
         } else {
           try {
-            const fax = await medplum.readResource('Communication', selectedFaxId);
+            const fax = await medplum.readResource('Communication', faxId);
             setSelectedFax(fax);
           } catch {
             setSelectedFax(undefined);
@@ -163,17 +134,13 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
       }
     };
     selectFax().catch(console.error);
-  }, [selectedFaxId, faxes, medplum]);
-
-  const getFaxUri = useCallback((fax: Communication): string => buildFaxUrl(fax.id), [buildFaxUrl]);
+  }, [faxId, faxes, medplum]);
 
   const handleTabChange = (value: string | null): void => {
-    if (value) {
-      if (value === 'inbox') {
-        setSearchParams({});
-      } else {
-        setSearchParams({ tab: value });
-      }
+    if (value === 'inbox') {
+      navigate(inboxUri)?.catch(console.error);
+    } else if (value === 'sent') {
+      navigate(sentUri)?.catch(console.error);
     }
   };
 
@@ -181,20 +148,9 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
     setRefreshKey((k) => k + 1);
   }, []);
 
-  const handleFaxChange = (): void => {
+  const handleFaxSent = (fax: Communication): void => {
+    onNew(fax);
     refreshList();
-  };
-
-  const handleFaxArchived = useCallback((updatedFax: Communication): void => {
-    setSelectedFax(updatedFax);
-    setFaxes((prev) => prev.filter((f) => f.id !== updatedFax.id));
-    setRefreshKey((k) => k + 1);
-  }, []);
-
-  const handleFaxSent = (): void => {
-    if (activeTab === 'sent') {
-      refreshList();
-    }
   };
 
   return (
@@ -208,7 +164,6 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
                   <Tabs.List>
                     <Tabs.Tab value="inbox">Received</Tabs.Tab>
                     <Tabs.Tab value="sent">Sent</Tabs.Tab>
-                    <Tabs.Tab value="archived">Archived</Tabs.Tab>
                   </Tabs.List>
                 </Tabs>
 
@@ -257,7 +212,7 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
         </Box>
 
         {selectedFax ? (
-          <FaxDetailPanel fax={selectedFax} onFaxChange={handleFaxChange} onFaxArchived={handleFaxArchived} />
+          <FaxDetailPanel fax={selectedFax} onFaxChange={refreshList} />
         ) : (
           <Flex direction="column" h="100%" style={{ flex: 1 }}>
             <FaxSelectEmpty />
@@ -273,7 +228,6 @@ export function FaxBoard({ selectedFaxId, activeTab }: FaxBoardProps): JSX.Eleme
 function EmptyFaxState({ activeTab }: { activeTab: FaxTab }): JSX.Element {
   const labels: Record<FaxTab, string> = {
     inbox: 'No faxes in your inbox.',
-    archived: 'No archived faxes.',
     sent: 'No sent faxes.',
   };
 

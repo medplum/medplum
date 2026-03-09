@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Group, Stack, Text } from '@mantine/core';
+import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, getDisplayString } from '@medplum/core';
 import type { Communication, Organization } from '@medplum/fhirtypes';
 import { MedplumLink, useResource } from '@medplum/react';
@@ -9,9 +9,8 @@ import type { JSX } from 'react';
 import { formatFaxNumber } from './fax.utils';
 import classes from './FaxListItem.module.css';
 
-export type FaxTab = 'inbox' | 'archived' | 'sent';
+export type FaxTab = 'inbox' | 'sent';
 
-const FAX_DIRECTION_SYSTEM = 'http://medplum.com/fhir/CodeSystem/fax-direction';
 
 interface FaxListItemProps {
   fax: Communication;
@@ -43,10 +42,6 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
   const firstLine =
     activeTab === 'sent' ? getRecipientDisplay(fax, recipient as Organization | undefined) : getSenderOrRecipient(fax);
 
-  const faxDirection = fax.category
-    ?.flatMap((c) => c.coding ?? [])
-    .find((c) => c.system === FAX_DIRECTION_SYSTEM)?.code;
-
   const subjectLine = fax.topic?.text ?? '(No Subject)';
   const datePatientParts = [fax.sent ? formatDate(fax.sent) : null, patient ? getDisplayString(patient) : null].filter(
     Boolean
@@ -68,16 +63,6 @@ export function FaxListItem({ fax, selectedFax, activeTab, getFaxUri, hideDivide
               <Text fw={700} className={classes.title} flex={1}>
                 {firstLine}
               </Text>
-              {activeTab === 'archived' && faxDirection && (
-                <Badge
-                  size="xs"
-                  variant="light"
-                  color={faxDirection === 'inbound' ? 'blue' : 'orange'}
-                  style={{ flexShrink: 0 }}
-                >
-                  {faxDirection === 'inbound' ? 'Received' : 'Sent'}
-                </Badge>
-              )}
             </Group>
             <Text size="sm" c="dimmed">
               {subjectLine}
