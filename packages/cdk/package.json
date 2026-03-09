@@ -26,10 +26,10 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/types": "3.973.4",
+    "@aws-sdk/types": "3.973.5",
     "@medplum/core": "5.1.3",
-    "aws-cdk-lib": "2.240.0",
-    "cdk": "2.1108.0",
+    "aws-cdk-lib": "2.241.0",
+    "cdk": "2.1109.0",
     "cdk-nag": "2.37.55",
     "cdk-serverless-clamscan": "2.13.46",
     "constructs": "10.5.1",
