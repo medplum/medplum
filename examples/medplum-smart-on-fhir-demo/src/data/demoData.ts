@@ -7,8 +7,19 @@ const LOINC = 'http://loinc.org';
 const UCUM = 'http://unitsofmeasure.org';
 const SNOMED = 'http://snomed.info/sct';
 
+// US Core profile URLs
+const US_CORE_PATIENT = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient';
+const US_CORE_BP = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure';
+const US_CORE_BODY_WEIGHT = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-body-weight';
+const US_CORE_BMI = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-bmi';
+const US_CORE_CONDITION =
+  'http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns';
+
+const VITAL_SIGNS_CATEGORY = [
+  { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+];
+
 export const DEMO_TAG = { system: 'https://medplum.com/smart-on-fhir-demo', code: 'demo' };
-const DEMO_META = { meta: { tag: [DEMO_TAG] } };
 
 const RISK_FACTORS: { code: string; display: string }[] = [
   { code: '38341003', display: 'Hypertension' },
@@ -50,7 +61,8 @@ function buildPatientEntry(id: string, p: (typeof DEMO_PATIENTS)[number]): Bundl
     request: { method: 'POST', url: 'Patient' },
     resource: {
       resourceType: 'Patient',
-      ...DEMO_META,
+      meta: { profile: [US_CORE_PATIENT], tag: [DEMO_TAG] },
+      identifier: [{ system: 'https://medplum.com/smart-on-fhir-demo', value: id }],
       name: [{ given: [p.given], family: p.family }],
       birthDate: p.birthDate,
       gender: p.gender,
@@ -63,8 +75,9 @@ function buildBpEntry(patientUrn: string, daysAgo: number, systolic: number, dia
     request: { method: 'POST', url: 'Observation' },
     resource: {
       resourceType: 'Observation',
-      ...DEMO_META,
+      meta: { profile: [US_CORE_BP], tag: [DEMO_TAG] },
       status: 'final',
+      category: VITAL_SIGNS_CATEGORY,
       code: { coding: [{ system: LOINC, code: '55284-4', display: 'Blood pressure systolic and diastolic' }] },
       subject: { reference: patientUrn },
       effectiveDateTime: isoDate(daysAgo),
@@ -87,12 +100,29 @@ function buildWeightEntry(patientUrn: string, weightKg: number): BundleEntry {
     request: { method: 'POST', url: 'Observation' },
     resource: {
       resourceType: 'Observation',
-      ...DEMO_META,
+      meta: { profile: [US_CORE_BODY_WEIGHT], tag: [DEMO_TAG] },
       status: 'final',
+      category: VITAL_SIGNS_CATEGORY,
       code: { coding: [{ system: LOINC, code: '29463-7', display: 'Body weight' }] },
       subject: { reference: patientUrn },
       effectiveDateTime: isoDate(0),
       valueQuantity: { value: weightKg, unit: 'kg', system: UCUM, code: 'kg' },
+    } as Observation,
+  };
+}
+
+function buildBmiEntry(patientUrn: string, bmi: number): BundleEntry {
+  return {
+    request: { method: 'POST', url: 'Observation' },
+    resource: {
+      resourceType: 'Observation',
+      meta: { profile: [US_CORE_BMI], tag: [DEMO_TAG] },
+      status: 'final',
+      category: VITAL_SIGNS_CATEGORY,
+      code: { coding: [{ system: LOINC, code: '39156-5', display: 'Body mass index (BMI) [Ratio]' }] },
+      subject: { reference: patientUrn },
+      effectiveDateTime: isoDate(0),
+      valueQuantity: { value: bmi, unit: 'kg/m2', system: UCUM, code: 'kg/m2' },
     } as Observation,
   };
 }
@@ -102,28 +132,19 @@ function buildConditionEntry(patientUrn: string, factor: { code: string; display
     request: { method: 'POST', url: 'Condition' },
     resource: {
       resourceType: 'Condition',
-      ...DEMO_META,
+      meta: { profile: [US_CORE_CONDITION], tag: [DEMO_TAG] },
       clinicalStatus: {
         coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
       },
+      verificationStatus: {
+        coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'confirmed' }],
+      },
+      category: [
+        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-category', code: 'problem-list-item' }] },
+      ],
       code: { coding: [{ system: SNOMED, code: factor.code, display: factor.display }], text: factor.display },
       subject: { reference: patientUrn },
     } as Condition,
-  };
-}
-
-function buildBmiEntry(patientUrn: string, bmi: number): BundleEntry {
-  return {
-    request: { method: 'POST', url: 'Observation' },
-    resource: {
-      resourceType: 'Observation',
-      ...DEMO_META,
-      status: 'final',
-      code: { coding: [{ system: LOINC, code: '39156-5', display: 'Body mass index (BMI) [Ratio]' }] },
-      subject: { reference: patientUrn },
-      effectiveDateTime: isoDate(0),
-      valueQuantity: { value: bmi, unit: 'kg/m2', system: UCUM, code: 'kg/m2' },
-    } as Observation,
   };
 }
 
