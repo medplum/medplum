@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Button, Container, Divider, Group, List, Paper, Stack, Text, Title } from '@mantine/core';
-import { IconArrowUpRight, IconBook, IconDatabase, IconRocket, IconSettings, IconUser } from '@tabler/icons-react';
+import { IconApps, IconArrowUpRight, IconBook, IconDatabase, IconRocket, IconSettings, IconUser } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import {
@@ -54,8 +54,8 @@ export function HomePage(): JSX.Element {
             Medplum SMART on FHIR Demo
           </Title>
           <Text size="lg" mt=".25rem" className={classes.textSecondary}>
-            A demonstration of SMART on FHIR standalone launch. Connect to your Medplum project or the public SMART
-            Health IT Sandbox.
+            A demonstration of SMART on FHIR standalone and EHR launch. Connect to your Medplum project, launch from a
+            patient's Apps tab, or use the public SMART Health IT Sandbox.
           </Text>
         </Box>
 
@@ -69,7 +69,7 @@ export function HomePage(): JSX.Element {
                   Option 1: Launch with Medplum
                 </Text>
                 <Text size="sm" className={classes.textSecondary}>
-                  Connect to your own Medplum project with demo patients and clinical data.
+                  Connect to your own Medplum project — launch standalone or directly from a patient's Apps tab.
                 </Text>
               </Stack>
             </Group>
@@ -90,8 +90,18 @@ export function HomePage(): JSX.Element {
                     </a>
                   </List.Item>
                   <List.Item>
-                    In your Medplum project, create a <strong>ClientApplication</strong> with redirect URI set to{' '}
-                    <code>http://localhost:8001/launch</code>
+                    In your Medplum project, create a{' '}
+                    <a href="https://app.medplum.com/ClientApplication" target="_blank">
+                      ClientApplication
+                    </a>{' '}
+                    with redirect URI set to <code>http://localhost:8001/launch</code>
+                  </List.Item>
+                  <List.Item>
+                    To use{' '}
+                    <a href="https://www.medplum.com/docs/app/apps-tab" target="_blank">
+                      EHR launch (Apps tab)
+                    </a>
+                    , also set the <strong>Launch URI</strong> to <code>http://localhost:8001/launch</code>
                   </List.Item>
                   <List.Item>
                     Copy the client ID and paste it into <code>MEDPLUM_CLIENT_ID</code> in <code>src/config.ts</code>
@@ -173,23 +183,65 @@ export function HomePage(): JSX.Element {
 
               {/* Step 3: Launch */}
               <Stack gap="md">
-                <Stack gap={4}>
-                  <Group gap="xs" align="center">
-                    <IconRocket size={18} color="var(--mantine-color-blue-6)" />
-                    <Text fw={700} size="sm">
-                      Step 3 — Launch the App
-                    </Text>
-                  </Group>
-                  <Text size="sm" className={classes.textSecondary}>
-                    You'll be redirected to Medplum to sign in, prompted to set your scopes, and select a patient.
+                <Group gap="xs" align="center">
+                  <IconRocket size={18} color="var(--mantine-color-blue-6)" />
+                  <Text fw={700} size="sm">
+                    Step 3 — Launch the App
                   </Text>
-                </Stack>
-                <Button
-                  fullWidth
-                  onClick={() => initiateLaunch(MEDPLUM_CLIENT_ID, MEDPLUM_FHIR_URL).catch(console.error)}
-                >
-                  Launch with Medplum
-                </Button>
+                </Group>
+                <Box className={classes.launchGrid}>
+                  {/* Standalone launch card */}
+                  <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
+                    <Stack gap="md" className={classes.flexOne}>
+                      <Stack gap={4}>
+                        <Group gap="xs" align="center">
+                          <IconRocket size={16} color="var(--mantine-color-blue-6)" />
+                          <Text fw={700} size="sm">
+                            Standalone Launch
+                          </Text>
+                        </Group>
+                        <Text size="sm" className={classes.textSecondary}>
+                          You'll be redirected to Medplum to sign in, prompted to set your scopes, and select a patient.
+                        </Text>
+                      </Stack>
+                      <Button
+                        fullWidth
+                        mt="auto"
+                        onClick={() => initiateLaunch(MEDPLUM_CLIENT_ID, MEDPLUM_FHIR_URL).catch(console.error)}
+                      >
+                        Launch with Medplum
+                      </Button>
+                    </Stack>
+                  </Paper>
+
+                  {/* EHR launch card */}
+                  <Paper radius="md" withBorder p="lg" shadow="sm" className={classes.card}>
+                    <Stack gap="md" className={classes.flexOne}>
+                      <Stack gap={4}>
+                        <Group gap="xs" align="center">
+                          <IconApps size={16} color="var(--mantine-color-blue-6)" />
+                          <Text fw={700} size="sm">
+                            EHR Launch (Apps Tab)
+                          </Text>
+                        </Group>
+                        <Text size="sm" className={classes.textSecondary}>
+                          Launch from within a patient's record — patient context is passed automatically.
+                        </Text>
+                      </Stack>
+                      <List size="sm" spacing={4}>
+                        <List.Item>
+                          Navigate to any{' '}
+                          <a href="https://app.medplum.com/Patient" target="_blank">
+                            patient in Medplum
+                          </a>
+                        </List.Item>
+                        <List.Item>
+                          Open the <strong>Apps</strong> tab and click on your ClientApplication to launch.
+                        </List.Item>
+                      </List>
+                    </Stack>
+                  </Paper>
+                </Box>
               </Stack>
             </Stack>
           </Box>

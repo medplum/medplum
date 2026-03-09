@@ -35,7 +35,8 @@ function getClientId(params: URLSearchParams, iss: string): string {
 }
 
 async function fetchSmartConfiguration(iss: string): Promise<SmartConfiguration> {
-  const response = await fetch(`${iss}/.well-known/smart-configuration`, {
+  const baseUrl = iss.replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}/.well-known/smart-configuration`, {
     headers: {
       Accept: 'application/json',
     },
