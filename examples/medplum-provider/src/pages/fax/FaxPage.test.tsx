@@ -81,7 +81,6 @@ describe('FaxPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('tab', { name: 'Received' })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: 'Sent' })).toBeInTheDocument();
-      expect(screen.getByRole('tab', { name: 'Archived' })).toBeInTheDocument();
     });
   });
 
@@ -124,21 +123,10 @@ describe('FaxPage', () => {
     medplum.searchResources = vi.fn().mockResolvedValue([]);
     vi.spyOn(medplum, 'post').mockResolvedValue({});
 
-    setup('/Fax/Communication?tab=sent');
+    setup('/Fax/Communication?category=outbound');
 
     await waitFor(() => {
       expect(screen.getByText('No sent faxes.')).toBeInTheDocument();
-    });
-  });
-
-  test('shows empty state for archived tab', async () => {
-    medplum.searchResources = vi.fn().mockResolvedValue([]);
-    vi.spyOn(medplum, 'post').mockResolvedValue({});
-
-    setup('/Fax/Communication?tab=archived');
-
-    await waitFor(() => {
-      expect(screen.getByText('No archived faxes.')).toBeInTheDocument();
     });
   });
 
