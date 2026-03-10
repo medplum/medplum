@@ -54,7 +54,10 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
             data: file,
             contentType: file.type || 'application/octet-stream',
             filename: file.name,
-            additionalFields: thread.subject ? { subject: thread.subject } : undefined,
+            additionalFields: { 
+              ...(thread.subject ? { subject: thread.subject } : {}), 
+              description: file.name 
+            }
           });
           payload.push({ contentReference: createReference(docRef) });
         }
@@ -66,6 +69,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
           sent: new Date().toISOString(),
           payload,
           partOf: [threadRef],
+          subject: thread.subject
         });
         setCommunications([...communications, communication]);
         onMessageSent?.(communication);
