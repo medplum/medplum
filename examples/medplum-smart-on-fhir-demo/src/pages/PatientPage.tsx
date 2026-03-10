@@ -170,11 +170,11 @@ export function PatientPage(): JSX.Element {
   const getBpChartData = (): ChartData<'line', number[]> => {
     const dates = bpReadings.map((obs) => formatDate(obs.effectiveDateTime as string));
     const systolicData = bpReadings.map((obs) => {
-      const systolic = obs.component?.find((c) => c.code?.coding?.[0].code === '8480-6');
+      const systolic = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8480-6');
       return Math.round(systolic?.valueQuantity?.value ?? 0);
     });
     const diastolicData = bpReadings.map((obs) => {
-      const diastolic = obs.component?.find((c) => c.code?.coding?.[0].code === '8462-4');
+      const diastolic = obs.component?.find((c) => c.code?.coding?.[0]?.code === '8462-4');
       return Math.round(diastolic?.valueQuantity?.value ?? 0);
     });
 
