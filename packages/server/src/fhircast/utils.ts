@@ -20,6 +20,10 @@ export function getTopicContextStorageKey(projectId: string, topic: string): str
   return `medplum:fhircast:project:${projectId}:topic:${topic}:contexts`;
 }
 
+export function getEndpointEventsKey(endpointId: string): string {
+  return `medplum:fhircast:endpoint:${endpointId}:events`;
+}
+
 export function extractAnchorResourceType(eventName: string): FhircastAnchorResourceType {
   const loweredResourceType = eventName.split('-')[0].toLowerCase();
   const extractedResourceType = RESOURCE_TYPE_LOWER_TO_VALID_RESOURCE_TYPE[loweredResourceType];

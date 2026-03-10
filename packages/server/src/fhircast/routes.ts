@@ -37,6 +37,7 @@ import {
   cleanupContextForResource,
   extractAnchorResourceType,
   getCurrentContext,
+  getEndpointEventsKey,
   getTopicContextStorageKey,
   getTopicCurrentContextKey,
   setTopicCurrentContext,
@@ -201,6 +202,8 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     subscriptionEndpoint = result as string;
     const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
     await getCacheRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
+    // Always overwrite the events since a re-subscribe may request different events
+    await getCacheRedis().set(getEndpointEventsKey(subscriptionEndpoint), req.body['hub.events'] ?? '');
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
