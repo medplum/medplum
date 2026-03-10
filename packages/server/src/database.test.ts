@@ -221,6 +221,69 @@ describe('Database config', () => {
   });
 });
 
+describe('Connection settings', () => {
+  afterEach(async () => {
+    await closeDatabase();
+  });
+
+  test('Default connection settings', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    await initDatabase(config);
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const client = await pool.connect();
+    try {
+      const result = await client.query('SHOW statement_timeout');
+      expect(result.rows[0].statement_timeout).toBe('1min');
+
+      const result2 = await client.query('SHOW default_transaction_isolation');
+      expect(result2.rows[0].default_transaction_isolation).toBe('repeatable read');
+
+      const result3 = await client.query('SHOW idle_in_transaction_session_timeout');
+      expect(result3.rows[0].idle_in_transaction_session_timeout).toBe('30s');
+    } finally {
+      client.release();
+    }
+  });
+
+  test('Custom query timeout', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = false;
+    config.database.queryTimeout = 5000;
+    await initDatabase(config);
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const client = await pool.connect();
+    try {
+      const result = await client.query('SHOW statement_timeout');
+      expect(result.rows[0].statement_timeout).toBe('5s');
+    } finally {
+      client.release();
+    }
+  });
+
+  test('Disabled connection configuration', async () => {
+    const config = await loadTestConfig();
+    config.database.queryTimeout = 12345;
+    config.database.disableConnectionConfiguration = true;
+    await initDatabase(config);
+    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const client = await pool.connect();
+    try {
+      // With disableConnectionConfiguration, custom values are not applied. the defaults being checked here
+      // come from postgres/postgres.conf.
+      const result = await client.query('SHOW statement_timeout');
+      expect(result.rows[0].statement_timeout).toBe('1min');
+
+      // idle_in_transaction_session_timeout is not set in postgres.conf,
+      // so it should be the PostgreSQL default of 0 when connection configuration is disabled
+      const result2 = await client.query('SHOW idle_in_transaction_session_timeout');
+      expect(result2.rows[0].idle_in_transaction_session_timeout).toBe('0');
+    } finally {
+      client.release();
+    }
+  });
+});
+
 describe('Advisory locks', () => {
   let clientA: PoolClient;
   let clientB: PoolClient;

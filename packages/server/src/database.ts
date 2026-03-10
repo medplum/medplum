@@ -63,6 +63,9 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     application_name: 'medplum-server',
     ssl: config.ssl,
     max: config.maxConnections ?? 100,
+    options: config.disableConnectionConfiguration
+      ? undefined
+      : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
   };
 
   if (proxyEndpoint) {
@@ -76,20 +79,6 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   pool.on('error', (err) => {
     globalLogger.error('Database connection error', err);
   });
-
-  if (!config.disableConnectionConfiguration) {
-    pool.on('connect', (client) => {
-      client.query(`SET statement_timeout TO ${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT}`).catch((err) => {
-        globalLogger.warn('Failed to set query timeout', err);
-      });
-      client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
-        globalLogger.warn('Failed to set default transaction isolation', err);
-      });
-      client.query(`SET idle_in_transaction_session_timeout TO 30000`).catch((err) => {
-        globalLogger.warn('Failed to set transaction idle timeout', err);
-      });
-    });
-  }
 
   return pool;
 }
