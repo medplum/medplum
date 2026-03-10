@@ -36,6 +36,7 @@ import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
 import { WsSubStatsWidget } from './WsSubStatsWidget';
+import { WsUserSubStatsWidget } from './WsUserSubStatsWidget';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -332,6 +333,13 @@ export function SuperAdminPage(): JSX.Element {
           </Button>
         </div>
       </Stack>
+      <Divider my="lg" />
+      <Title order={2}>User WebSocket Subscriptions</Title>
+      <p>
+        View and manage WebSocket subscriptions for a specific user. Select an optional project to narrow the profile
+        search, then select a profile to inspect their active subscriptions grouped by criteria.
+      </p>
+      <WsUserSubStatsWidget />
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
