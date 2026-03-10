@@ -27,7 +27,7 @@ export function SendFaxModal({
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  const [recipientOrg, setRecipientOrg] = useState('');
+  const [recipientOrg, setRecipientOrg] = useState<Organization | undefined>(undefined);
   const [recipientName, setRecipientName] = useState('');
   const [faxNumber, setFaxNumber] = useState('');
   const [patient, setPatient] = useState<Reference<Patient> | undefined>(defaultPatient);
@@ -38,14 +38,43 @@ export function SendFaxModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleOrgChange = (org: Organization | undefined): void => {
+    setRecipientOrg(org);
+    if (org) {
+      const fax =
+        org.telecom?.find((t) => t.system === 'fax')?.value ??
+        org.contact?.flatMap((c) => c.telecom ?? []).find((t) => t.system === 'fax')?.value;
+      if (fax) {
+        setFaxNumber(fax);
+      } else {
+        setFaxNumber('');
+        notifications.show({
+          color: 'yellow',
+          icon: <IconCircleOff />,
+          title: 'No fax number',
+          message: 'Selected organization has no fax number. Please enter one.',
+        });
+      }
+    }
+  };
+
   const handleSend = async (): Promise<void> => {
     if (!faxNumber.trim()) {
-      notifications.show({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Validation Error',
-        message: 'A fax number is required.',
-      });
+      if (recipientOrg) {
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Validation Error',
+          message: 'Selected organization has no fax number. Please enter one.',
+        });
+      } else {
+        notifications.show({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Validation Error',
+          message: 'A fax number is required.',
+        });
+      }
       return;
     }
 
@@ -95,16 +124,13 @@ export function SendFaxModal({
         return;
       }
 
-      const existingOrg = await medplum.searchOne('Organization', {
-        telecom: `fax|${faxNumber}`,
-      });
       let recipient: Organization;
-      if (existingOrg) {
-        recipient = existingOrg;
+      if (recipientOrg) {
+        recipient = recipientOrg;
       } else {
         recipient = await medplum.createResource<Organization>({
           resourceType: 'Organization',
-          name: recipientOrg.trim() || 'Fax Recipient',
+          name: recipientName.trim() || 'Fax Recipient',
           telecom: [{ system: 'fax', value: faxNumber }],
         });
       }
@@ -177,7 +203,7 @@ export function SendFaxModal({
   };
 
   const handleClose = (): void => {
-    setRecipientOrg('');
+    setRecipientOrg(undefined);
     setRecipientName('');
     setFaxNumber('');
     if (!defaultPatient) {
@@ -288,7 +314,22 @@ export function SendFaxModal({
             <Box py="xs">
               <Divider />
             </Box>
+            
+            <ResourceInput<Organization>
+              resourceType="Organization"
+              name="recipientOrg"
+              label="Recipient Organization (optional)"
+              placeholder="Search for an organization..."
+              onChange={handleOrgChange}
+            />
             <TextInput
+              label="Recipient Name (optional)"
+              placeholder="Enter recipient name"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.currentTarget.value)}
+            />
+
+<TextInput
               label={
                 <>
                   Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
@@ -297,18 +338,6 @@ export function SendFaxModal({
               placeholder="+1 (555) 123-4567"
               value={faxNumber}
               onChange={(e) => setFaxNumber(e.currentTarget.value)}
-            />
-            <TextInput
-              label="Recipient Organization (optional)"
-              placeholder="Enter organization name"
-              value={recipientOrg}
-              onChange={(e) => setRecipientOrg(e.currentTarget.value)}
-            />
-            <TextInput
-              label="Recipient Name (optional)"
-              placeholder="Enter recipient name"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.currentTarget.value)}
             />
             <ResourceInput<Patient>
               resourceType="Patient"
