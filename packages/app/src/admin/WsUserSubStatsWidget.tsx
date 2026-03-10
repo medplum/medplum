@@ -93,7 +93,7 @@ export function WsUserSubStatsWidget(): JSX.Element {
     }
     setClearLoading(true);
     medplum
-      .post('fhir/R4/$clearuserwssubs', {
+      .post('fhir/R4/$clear-user-ws-stats', {
         resourceType: 'Parameters',
         parameter: [
           { name: 'userRef', valueReference: profile },

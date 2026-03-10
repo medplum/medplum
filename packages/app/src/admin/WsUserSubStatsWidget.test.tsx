@@ -124,8 +124,8 @@ describe('WsUserSubStatsWidget', () => {
     expect(parsed.criteriaGroups).toHaveLength(0);
   });
 
-  test('clearuserwssubs deletes user active set key', async () => {
-    medplum.router.add('POST', '$clearuserwssubs', async () => [
+  test('clear-user-ws-stats deletes user active set key', async () => {
+    medplum.router.add('POST', '$clear-user-ws-stats', async () => [
       allOk,
       {
         resourceType: 'Parameters',
@@ -133,7 +133,7 @@ describe('WsUserSubStatsWidget', () => {
       },
     ]);
 
-    const result = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$clearuserwssubs', {
+    const result = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$clear-user-ws-stats', {
       resourceType: 'Parameters',
       parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
     });

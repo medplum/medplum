@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
-describe('$clearuserwssubs', () => {
+describe('$clear-user-ws-stats', () => {
   const app = express();
 
   beforeAll(async () => {
@@ -25,7 +25,7 @@ describe('$clearuserwssubs', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: false } });
 
     const res = await request(app)
-      .post('/fhir/R4/$clearuserwssubs')
+      .post('/fhir/R4/$clear-user-ws-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
@@ -39,7 +39,7 @@ describe('$clearuserwssubs', () => {
     const userRef = `Practitioner/${randomUUID()}`;
 
     const res = await request(app)
-      .post('/fhir/R4/$clearuserwssubs')
+      .post('/fhir/R4/$clear-user-ws-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
@@ -65,7 +65,7 @@ describe('$clearuserwssubs', () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
-      .post('/fhir/R4/$clearuserwssubs')
+      .post('/fhir/R4/$clear-user-ws-stats')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
@@ -119,7 +119,7 @@ describe('$clearuserwssubs', () => {
       const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
       const res = await request(app)
-        .post('/fhir/R4/$clearuserwssubs')
+        .post('/fhir/R4/$clear-user-ws-stats')
         .set('Authorization', 'Bearer ' + accessToken)
         .send({
           resourceType: 'Parameters',

@@ -18,10 +18,10 @@ import { buildOutputParameters, parseInputParameters } from './utils/parameters'
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'clearuserwssubs',
+  name: 'clear-user-ws-stats',
   status: 'active',
   kind: 'operation',
-  code: 'clearuserwssubs',
+  code: 'clear-user-ws-stats',
   experimental: true,
   system: true,
   type: false,
