@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Badge, Box, Button, Card, Divider, Flex, Group, Menu, Skeleton, Stack, Text } from '@mantine/core';
+import { Button, Card, Flex, Group, Menu, Skeleton, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import type { WithId } from '@medplum/core';
-import { formatDateTime, formatHumanName, getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { getIdentifier, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import type {
   Bot,
   ChargeItem,
@@ -19,7 +19,7 @@ import type {
   Practitioner,
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconDownload, IconExternalLink, IconFileText, IconSend } from '@tabler/icons-react';
+import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -31,10 +31,25 @@ import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
 import { ChargeItemList } from '../ChargeItem/ChargeItemList';
 import { ConditionList } from '../Conditions/ConditionList';
+import { ClaimSubmittedPanel } from './ClaimSubmittedPanel';
 import { VisitDetailsPanel } from './VisitDetailsPanel';
 
 const CANDID_IDENTIFIER_SYSTEM = 'https://candidhealth.com/encounter-id';
-const CANDID_CLAIM_BASE_URL = 'https://app-staging.joincandidhealth.com/claims/';
+
+interface CandidServiceLine {
+  chargeAmountCents?: number;
+}
+
+interface CandidFullEncounter {
+  encounterId?: string;
+  createdAt?: string;
+  claims?: { status?: string }[];
+  serviceLines?: CandidServiceLine[];
+}
+
+interface CandidBotResponse {
+  fullEncounter?: CandidFullEncounter;
+}
 
 export interface BillingTabProps {
   patient: WithId<Patient>;
@@ -71,7 +86,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const [getEncounterBot, setGetEncounterBot] = useState<WithId<Bot> | null | undefined>(undefined);
   const [candidStatus, setCandidStatus] = useState<string | undefined>();
   const [candidCreatedAt, setCandidCreatedAt] = useState<string | undefined>();
+  const [resolvedCandidEncounterId, setResolvedCandidEncounterId] = useState<string | undefined>();
+  const [candidClaimAmount, setCandidClaimAmount] = useState<number | undefined>();
   const [candidLoading, setCandidLoading] = useState(false);
+  const [backgroundChecking, setBackgroundChecking] = useState(false);
   const conditionsRef = useRef<Condition[]>(conditions);
   conditionsRef.current = conditions;
   const claimRef = useRef<WithId<Claim> | undefined>(claim);
@@ -113,26 +131,64 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       .catch(() => setGetEncounterBot(null));
   }, [medplum]);
 
-  useEffect(() => {
-    if (!candidEncounterId || !getEncounterBot) {
+  const processCandidResponse = useCallback((result: CandidBotResponse): void => {
+    const encounterId = result?.fullEncounter?.encounterId;
+    if (encounterId) {
+      setResolvedCandidEncounterId(encounterId);
+    }
+    const status = result?.fullEncounter?.claims?.[0]?.status;
+    if (status) {
+      setCandidStatus(status);
+    }
+    const createdAt = result?.fullEncounter?.createdAt;
+    if (createdAt) {
+      setCandidCreatedAt(createdAt);
+    }
+    const serviceLines = result?.fullEncounter?.serviceLines;
+    if (serviceLines?.length) {
+      const totalCents = serviceLines.reduce(
+        (sum: number, line: CandidServiceLine) => sum + (line.chargeAmountCents ?? 0),
+        0
+      );
+      setCandidClaimAmount(totalCents / 100);
+    }
+  }, []);
+
+  const fetchCandidEncounter = useCallback(async (): Promise<void> => {
+    if (!getEncounterBot || !claimRef.current) {
       return;
     }
+    const payload = candidEncounterId ? { encounterId: candidEncounterId } : { externalId: encounter.id };
     setCandidLoading(true);
+    try {
+      const result = await medplum.executeBot(getEncounterBot.id, payload, 'application/json');
+      processCandidResponse(result);
+    } catch (err) {
+      showErrorNotification('Unable to fetch Candid Health claim: ' + err);
+    } finally {
+      setCandidLoading(false);
+    }
+  }, [candidEncounterId, encounter.id, getEncounterBot, medplum, processCandidResponse]);
+
+  useEffect(() => {
+    if (!candidEncounterId) {
+      return;
+    }
+    fetchCandidEncounter().catch(showErrorNotification);
+  }, [candidEncounterId, fetchCandidEncounter]);
+
+  // Background safeguard: if claim exists but has no Candid encounter ID, silently check via externalId.
+  useEffect(() => {
+    if (!claim?.id || candidEncounterId || !getEncounterBot) {
+      return;
+    }
+    setBackgroundChecking(true);
     medplum
-      .executeBot(getEncounterBot.id, { encounterId: candidEncounterId }, 'application/json')
-      .then((result) => {
-        const status = result?.fullEncounter?.claims?.[0]?.status;
-        if (status) {
-          setCandidStatus(status);
-        }
-        const createdAt = result?.fullEncounter?.createdAt;
-        if (createdAt) {
-          setCandidCreatedAt(createdAt);
-        }
-      })
-      .catch((err) => showErrorNotification('Unable to fetch Candid Health claim: ' + err))
-      .finally(() => setCandidLoading(false));
-  }, [candidEncounterId, getEncounterBot, medplum]);
+      .executeBot(getEncounterBot.id, { externalId: encounter.id }, 'application/json')
+      .then(processCandidResponse)
+      .catch(() => undefined)
+      .finally(() => setBackgroundChecking(false));
+  }, [claim?.id, candidEncounterId, encounter.id, getEncounterBot, medplum, processCandidResponse]);
 
   const handleDiagnosisChange = useCallback(
     async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
@@ -266,6 +322,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
 
     setSubmitting(true);
+    debouncedUpdateClaim.cancel();
     try {
       const result = await medplum.executeBot(billingBot.id, claim, 'application/fhir+json');
       showNotification({
@@ -275,12 +332,13 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       });
       const updatedClaim = await medplum.readResource('Claim', claim.id);
       setClaim(updatedClaim);
+      await fetchCandidEncounter();
     } catch (err) {
       showErrorNotification(err);
     } finally {
       setSubmitting(false);
     }
-  }, [billingBot, claim, medplum, setClaim]);
+  }, [billingBot, claim, debouncedUpdateClaim, fetchCandidEncounter, medplum, setClaim]);
 
   const exportClaimMenu = (disabled?: boolean): JSX.Element => (
     <Menu shadow="md" width={200}>
@@ -327,75 +385,63 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Menu>
   );
 
+  const renderClaimCard = (): JSX.Element | null => {
+    if (!claim) {
+      return null;
+    }
+    if (candidLoading || backgroundChecking || getEncounterBot === undefined) {
+      return (
+        <Card withBorder shadow="sm" p="md">
+          <Skeleton height={20} width="60%" mb="sm" />
+          <Skeleton height={14} width="40%" />
+        </Card>
+      );
+    }
+    if (candidEncounterId || candidStatus) {
+      return (
+        <ClaimSubmittedPanel
+          status={candidStatus}
+          claimAmount={candidClaimAmount ?? claim.total?.value ?? 0}
+          createdAt={candidCreatedAt}
+          candidEncounterId={resolvedCandidEncounterId ?? candidEncounterId}
+          exportMenu={exportClaimMenu()}
+        />
+      );
+    }
+    return (
+      <Card withBorder shadow="sm">
+        <Flex justify="space-between">
+          {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
+          {billingBot && (
+            <Button
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              loading={submitting}
+              onClick={submitClaim}
+              disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
+            >
+              Submit Claim
+            </Button>
+          )}
+          {billingBot === null && (
+            <Button
+              variant="outline"
+              leftSection={<IconSend size={16} />}
+              onClick={() => {
+                window.open('https://www.medplum.com/contact', '_blank');
+              }}
+            >
+              Request to connect a billing service
+            </Button>
+          )}
+        </Flex>
+      </Card>
+    );
+  };
+
   return (
     <Stack gap="md">
-      {claim &&
-        (candidEncounterId ? (
-          <Card withBorder shadow="sm" p={0}>
-            <Stack p="md" gap="md">
-              <Flex align="center" justify="space-between" gap="md">
-                <Stack gap={4} miw={100}>
-                  <Text size="xs" c="dimmed">
-                    Claim Status:
-                  </Text>
-                  {renderCandidStatusBadge(candidLoading || getEncounterBot === undefined, candidStatus)}
-                </Stack>
-                <Box style={{ flex: 1 }}>
-                  <Text size="sm">
-                    Claim submitted for{' '}
-                    <Text component="span" fw={700}>
-                      ${(claim.total?.value ?? 0).toFixed(0)}
-                    </Text>{' '}
-                    by{' '}
-                    <Text component="span" fw={700}>
-                      {formatHumanName(practitioner?.name?.[0])}
-                    </Text>
-                    .
-                  </Text>
-                  {renderCandidSubmittedAt(candidLoading || getEncounterBot === undefined, candidCreatedAt)}
-                </Box>
-                <Button
-                  variant="outline"
-                  rightSection={<IconExternalLink size={14} />}
-                  onClick={() => window.open(`${CANDID_CLAIM_BASE_URL}${candidEncounterId}`, '_blank')}
-                >
-                  View Claim on Candid
-                </Button>
-              </Flex>
-              <Divider />
-              <Group>{exportClaimMenu()}</Group>
-            </Stack>
-          </Card>
-        ) : (
-          <Card withBorder shadow="sm">
-            <Flex justify="space-between">
-              {exportClaimMenu(chartNoteStatus !== ChartNoteStatus.SignedAndLocked)}
-
-              {billingBot && (
-                <Button
-                  variant="outline"
-                  leftSection={<IconSend size={16} />}
-                  loading={submitting}
-                  onClick={submitClaim}
-                  disabled={chartNoteStatus !== ChartNoteStatus.SignedAndLocked}
-                >
-                  Submit Claim
-                </Button>
-              )}
-              {billingBot === null && (
-                <Button
-                  variant="outline"
-                  leftSection={<IconSend size={16} />}
-                  onClick={() => {
-                    window.open('https://www.medplum.com/contact', '_blank');
-                  }}
-                >
-                  Request to connect a billing service
-                </Button>
-              )}
-            </Flex>
-          </Card>
-        ))}
+      {renderClaimCard()}
 
       <Group grow align="flex-start">
         <VisitDetailsPanel
@@ -426,50 +472,6 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     </Stack>
   );
 };
-
-const renderCandidStatusBadge = (loading: boolean, status: string | undefined): JSX.Element | null => {
-  if (loading) {
-    return <Skeleton height={22} width={100} radius="xl" />;
-  }
-  if (status) {
-    return (
-      <Badge color={getStatusColor(status)} radius="xl" variant="filled">
-        {formatCandidStatus(status)}
-      </Badge>
-    );
-  }
-  return null;
-};
-
-const renderCandidSubmittedAt = (loading: boolean, createdAt: string | undefined): JSX.Element | null => {
-  if (loading) {
-    return <Skeleton height={14} width={200} mt={4} />;
-  }
-  if (createdAt) {
-    return (
-      <Text size="sm" c="dimmed">
-        Submitted on {formatDateTime(createdAt)}
-      </Text>
-    );
-  }
-  return null;
-};
-
-const getStatusColor = (status: string): string => {
-  if (['rejected', 'denied'].includes(status)) {
-    return 'red';
-  }
-  if (['paid', 'finalized_paid'].includes(status)) {
-    return 'green';
-  }
-  return 'violet';
-};
-
-const formatCandidStatus = (status: string): string =>
-  status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {

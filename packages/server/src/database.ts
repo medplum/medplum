@@ -85,6 +85,9 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
       client.query(`SET default_transaction_isolation TO 'REPEATABLE READ'`).catch((err) => {
         globalLogger.warn('Failed to set default transaction isolation', err);
       });
+      client.query(`SET idle_in_transaction_session_timeout TO 30000`).catch((err) => {
+        globalLogger.warn('Failed to set transaction idle timeout', err);
+      });
     });
   }
 
