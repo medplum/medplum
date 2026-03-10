@@ -95,11 +95,19 @@ export function SendFaxModal({
         return;
       }
 
-      const recipient = await medplum.createResource<Organization>({
-        resourceType: 'Organization',
-        name: recipientOrg.trim() || 'Fax Recipient',
-        contact: [{ telecom: [{ system: 'fax', value: faxNumber }] }],
+      const existingOrg = await medplum.searchOne('Organization', {
+        telecom: `fax|${faxNumber}`,
       });
+      let recipient: Organization;
+      if (existingOrg) {
+        recipient = existingOrg;
+      } else {
+        recipient = await medplum.createResource<Organization>({
+          resourceType: 'Organization',
+          name: recipientOrg.trim() || 'Fax Recipient',
+          telecom: [{ system: 'fax', value: faxNumber }],
+        });
+      }
 
       const noteEntries: { text: string }[] = [];
       if (recipientName.trim()) {
