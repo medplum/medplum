@@ -146,7 +146,6 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
     const { requestId, traceId } = requestIds(req);
     const result = await authenticateTokenImpl(req);
     if (result) {
-      // const repo = await getRepoForLogin(authState, isExtendedMode(req));
       const { authState, repo } = result;
       ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
     } else {

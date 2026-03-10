@@ -107,7 +107,6 @@ async function setupSubscriptionHandler(): Promise<void> {
             deadSubscriptionIds.push(subscriptionId);
             continue;
           }
-          // const repo = await getRepoForLogin(authState);
           rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
         } catch (err) {
           globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
