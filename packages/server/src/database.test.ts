@@ -269,7 +269,8 @@ describe('Connection settings', () => {
     const pool = getDatabasePool(DatabaseMode.WRITER);
     const client = await pool.connect();
     try {
-      // With disableConnectionConfiguration, the custom queryTimeout should not be applied
+      // With disableConnectionConfiguration, custom values are not applied. the defaults being checked here
+      // come from postgres/postgres.conf.
       const result = await client.query('SHOW statement_timeout');
       expect(result.rows[0].statement_timeout).toBe('1min');
 

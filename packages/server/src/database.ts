@@ -54,8 +54,6 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
 }
 
 async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | undefined): Promise<Pool> {
-  const statementTimeout = config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT;
-
   const poolConfig = {
     host: config.host,
     port: config.port,
@@ -67,7 +65,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     max: config.maxConnections ?? 100,
     options: config.disableConnectionConfiguration
       ? undefined
-      : `-c statement_timeout=${statementTimeout} -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
+      : `-c statement_timeout=${config.queryTimeout ?? DEFAULT_STATEMENT_TIMEOUT} -c default_transaction_isolation=repeatable\\ read -c idle_in_transaction_session_timeout=30000`,
   };
 
   if (proxyEndpoint) {
