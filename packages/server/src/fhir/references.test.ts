@@ -34,7 +34,7 @@ describe('Reference checks', () => {
         password: randomUUID(),
       });
       const systemRepo = getProjectSystemRepo(project);
-      await systemRepo.updateResource({
+      const updatedProject = await systemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,
       });
@@ -42,7 +42,7 @@ describe('Reference checks', () => {
       const authState: AuthState = {
         login: {} as Login,
         membership,
-        project,
+        project: updatedProject,
         userConfig: {} as UserConfiguration,
       };
 

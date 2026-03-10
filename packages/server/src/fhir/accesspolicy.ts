@@ -42,7 +42,7 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { login, membership: realMembership, onBehalfOfMembership, project } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
@@ -56,6 +56,11 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
         throw err;
       }
     }
+  }
+
+  let project = authState.project;
+  if (membership.project.reference !== realMembership.project.reference) {
+    project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
   const allowedProjects: WithId<Project>[] = [project];

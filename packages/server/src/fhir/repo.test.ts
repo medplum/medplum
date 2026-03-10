@@ -93,7 +93,7 @@ describe('FHIR Repo', () => {
   });
 
   test('getRepoForLogin', async () => {
-    await expect(() =>
+    await expect(
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
         membership: {
@@ -104,7 +104,7 @@ describe('FHIR Repo', () => {
         project: testProject,
         userConfig: {} as UserConfiguration,
       })
-    ).rejects.toThrow('Invalid author reference');
+    ).rejects.toThrow('Invalid reference');
   });
 
   test('Read resource with undefined id', async () => {
