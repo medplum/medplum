@@ -36,7 +36,7 @@ export function removeActiveSubscriptions(projectId: string, resourceType: strin
 }
 
 /** Pipeline hdel for each meta entry, removing each subRef from its project active hash. */
-export async function removeActiveSubscriptionsBatch(metas: ActiveSubMeta[]): Promise<void> {
+export async function batchRemoveActiveSubscription(metas: ActiveSubMeta[]): Promise<void> {
   const pipeline = getPubSubRedis().pipeline();
   for (const { projectId, resourceType, subRef } of metas) {
     pipeline.hdel(getActiveSubsKey(projectId, resourceType), subRef);

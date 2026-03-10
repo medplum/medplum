@@ -29,7 +29,7 @@ const operation: OperationDefinition = {
   parameter: [
     {
       use: 'in',
-      name: 'userRef',
+      name: 'user',
       type: 'Reference',
       min: 1,
       max: '1',
@@ -54,15 +54,15 @@ const operation: OperationDefinition = {
 export async function clearAllUserWsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const { userRef, removeFromActive } = parseInputParameters<{
-    userRef: Reference;
+  const { user, removeFromActive } = parseInputParameters<{
+    user: Reference;
     removeFromActive?: boolean;
   }>(operation, req);
-  if (!userRef?.reference) {
-    return [badRequest('userRef parameter is required')];
+  if (!user?.reference) {
+    return [badRequest('user parameter is required')];
   }
 
-  const userRefStr = getReferenceString(userRef);
+  const userRefStr = getReferenceString(user);
   invariant(userRefStr);
 
   if (removeFromActive) {

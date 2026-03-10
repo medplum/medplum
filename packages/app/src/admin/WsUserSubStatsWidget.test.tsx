@@ -13,7 +13,7 @@ describe('WsUserSubStatsWidget', () => {
   const userRef = 'Practitioner/test-practitioner-1';
 
   const mockStats = {
-    userRef,
+    user: userRef,
     totalCount: 3,
     criteriaGroups: [
       {
@@ -85,7 +85,7 @@ describe('WsUserSubStatsWidget', () => {
 
     const params = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$get-user-ws-stats', {
       resourceType: 'Parameters',
-      parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+      parameter: [{ name: 'user', valueReference: { reference: userRef } }],
     });
     const parsed = JSON.parse(params.parameter[0].valueString);
 
@@ -108,7 +108,7 @@ describe('WsUserSubStatsWidget', () => {
         parameter: [
           {
             name: 'stats',
-            valueString: JSON.stringify({ userRef, totalCount: 0, criteriaGroups: [] }),
+            valueString: JSON.stringify({ user: userRef, totalCount: 0, criteriaGroups: [] }),
           },
         ],
       },
@@ -116,7 +116,7 @@ describe('WsUserSubStatsWidget', () => {
 
     const params = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$get-user-ws-stats', {
       resourceType: 'Parameters',
-      parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+      parameter: [{ name: 'user', valueReference: { reference: userRef } }],
     });
     const parsed = JSON.parse(params.parameter[0].valueString);
 
@@ -135,7 +135,7 @@ describe('WsUserSubStatsWidget', () => {
 
     const result = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$clear-user-ws-stats', {
       resourceType: 'Parameters',
-      parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+      parameter: [{ name: 'user', valueReference: { reference: userRef } }],
     });
 
     const deleted = result.parameter?.find((p: any) => p.name === 'deleted')?.valueInteger;
@@ -144,7 +144,7 @@ describe('WsUserSubStatsWidget', () => {
 
   test('stale-only stats response is parsed correctly', async () => {
     const staleOnlyStats = {
-      userRef,
+      user: userRef,
       totalCount: 2,
       criteriaGroups: [
         {
@@ -168,7 +168,7 @@ describe('WsUserSubStatsWidget', () => {
 
     const params = await medplum.post<{ resourceType: string; parameter: any[] }>('fhir/R4/$get-user-ws-stats', {
       resourceType: 'Parameters',
-      parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+      parameter: [{ name: 'user', valueReference: { reference: userRef } }],
     });
     const parsed = JSON.parse(params.parameter[0].valueString);
 

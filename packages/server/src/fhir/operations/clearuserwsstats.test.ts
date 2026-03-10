@@ -29,7 +29,7 @@ describe('$clear-user-ws-stats', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'userRef', valueReference: { reference: 'Practitioner/test' } }],
+        parameter: [{ name: 'user', valueReference: { reference: 'Practitioner/test' } }],
       });
     expect(res.status).toBe(403);
   });
@@ -43,7 +43,7 @@ describe('$clear-user-ws-stats', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+        parameter: [{ name: 'user', valueReference: { reference: userRef } }],
       });
     expect(res.status).toBe(200);
 
@@ -69,7 +69,7 @@ describe('$clear-user-ws-stats', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'userRef', valueReference: { reference: userRef } }],
+        parameter: [{ name: 'user', valueReference: { reference: userRef } }],
       });
     expect(res.status).toBe(200);
 
@@ -124,7 +124,7 @@ describe('$clear-user-ws-stats', () => {
         .send({
           resourceType: 'Parameters',
           parameter: [
-            { name: 'userRef', valueReference: { reference: userRef } },
+            { name: 'user', valueReference: { reference: userRef } },
             { name: 'removeFromActive', valueBoolean: true },
           ],
         });

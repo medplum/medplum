@@ -24,7 +24,7 @@ const operation: OperationDefinition = {
   parameter: [
     {
       use: 'in',
-      name: 'userRef',
+      name: 'user',
       type: 'Reference',
       min: 1,
       max: '1',
@@ -51,7 +51,7 @@ export interface WsUserSubCriteriaGroup {
 }
 
 export interface WsUserSubStats {
-  userRef: string;
+  user: string;
   totalCount: number;
   criteriaGroups: WsUserSubCriteriaGroup[];
 }
@@ -59,11 +59,11 @@ export interface WsUserSubStats {
 export async function getUserWsStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const { userRef } = parseInputParameters<{ userRef: Reference }>(operation, req);
-  if (!userRef?.reference) {
-    return [badRequest('userRef parameter is required')];
+  const { user } = parseInputParameters<{ user: Reference }>(operation, req);
+  if (!user?.reference) {
+    return [badRequest('user parameter is required')];
   }
-  const userRefStr = getReferenceString(userRef);
+  const userRefStr = getReferenceString(user);
   invariant(userRefStr);
 
   const cacheRedis = getCacheRedis();
@@ -71,7 +71,7 @@ export async function getUserWsStatsHandler(req: FhirRequest): Promise<FhirRespo
   const subRefs = await getUserActiveWebSocketSubscriptions(userRefStr);
 
   if (subRefs.length === 0) {
-    const stats: WsUserSubStats = { userRef: userRefStr, totalCount: 0, criteriaGroups: [] };
+    const stats: WsUserSubStats = { user: userRefStr, totalCount: 0, criteriaGroups: [] };
     return [allOk, buildOutputParameters(operation, { stats: JSON.stringify(stats) })];
   }
 
@@ -121,6 +121,6 @@ export async function getUserWsStatsHandler(req: FhirRequest): Promise<FhirRespo
     });
   }
 
-  const stats: WsUserSubStats = { userRef: userRefStr, totalCount: subRefs.length, criteriaGroups };
+  const stats: WsUserSubStats = { user: userRefStr, totalCount: subRefs.length, criteriaGroups };
   return [allOk, buildOutputParameters(operation, { stats: JSON.stringify(stats) })];
 }

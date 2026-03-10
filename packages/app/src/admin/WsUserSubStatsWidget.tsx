@@ -21,7 +21,7 @@ interface WsUserSubCriteriaGroup {
 }
 
 interface WsUserSubStats {
-  userRef: string;
+  user: string;
   totalCount: number;
   criteriaGroups: WsUserSubCriteriaGroup[];
 }
@@ -54,7 +54,7 @@ export function WsUserSubStatsWidget(): JSX.Element {
     medplum
       .post<Parameters>('fhir/R4/$get-user-ws-stats', {
         resourceType: 'Parameters',
-        parameter: [{ name: 'userRef', valueReference: profile }],
+        parameter: [{ name: 'user', valueReference: profile }],
       })
       .then((params) => {
         const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
@@ -96,7 +96,7 @@ export function WsUserSubStatsWidget(): JSX.Element {
       .post('fhir/R4/$clear-user-ws-stats', {
         resourceType: 'Parameters',
         parameter: [
-          { name: 'userRef', valueReference: profile },
+          { name: 'user', valueReference: profile },
           ...(removeFromActive ? [{ name: 'removeFromActive', valueBoolean: true }] : []),
         ],
       })

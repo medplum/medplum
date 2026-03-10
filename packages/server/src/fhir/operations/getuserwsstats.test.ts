@@ -28,7 +28,7 @@ describe('$get-user-ws-stats', () => {
     const res = await request(app)
       .post('/fhir/R4/$get-user-ws-stats')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Parameters', parameter: [{ name: 'userRef', valueReference: { reference: 'Practitioner/test' } }] });
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'user', valueReference: { reference: 'Practitioner/test' } }] });
     expect(res.status).toBe(403);
   });
 
@@ -39,14 +39,14 @@ describe('$get-user-ws-stats', () => {
     const res = await request(app)
       .post('/fhir/R4/$get-user-ws-stats')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'Parameters', parameter: [{ name: 'userRef', valueReference: { reference: userRef } }] });
+      .send({ resourceType: 'Parameters', parameter: [{ name: 'user', valueReference: { reference: userRef } }] });
     expect(res.status).toBe(200);
 
     const params = res.body as Parameters;
     const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
     expect(statsStr).toBeDefined();
     const stats = JSON.parse(statsStr as string) as WsUserSubStats;
-    expect(stats.userRef).toBe(userRef);
+    expect(stats.user).toBe(userRef);
     expect(stats.totalCount).toBe(0);
     expect(stats.criteriaGroups).toHaveLength(0);
   });
@@ -92,14 +92,14 @@ describe('$get-user-ws-stats', () => {
       const res = await request(app)
         .post('/fhir/R4/$get-user-ws-stats')
         .set('Authorization', 'Bearer ' + accessToken)
-        .send({ resourceType: 'Parameters', parameter: [{ name: 'userRef', valueReference: { reference: userRef } }] });
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'user', valueReference: { reference: userRef } }] });
       expect(res.status).toBe(200);
 
       const params = res.body as Parameters;
       const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
       const stats = JSON.parse(statsStr as string) as WsUserSubStats;
 
-      expect(stats.userRef).toBe(userRef);
+      expect(stats.user).toBe(userRef);
       expect(stats.totalCount).toBe(3);
       expect(stats.criteriaGroups).toHaveLength(2);
 
@@ -157,7 +157,7 @@ describe('$get-user-ws-stats', () => {
       const res = await request(app)
         .post('/fhir/R4/$get-user-ws-stats')
         .set('Authorization', 'Bearer ' + accessToken)
-        .send({ resourceType: 'Parameters', parameter: [{ name: 'userRef', valueReference: { reference: userRef } }] });
+        .send({ resourceType: 'Parameters', parameter: [{ name: 'user', valueReference: { reference: userRef } }] });
       expect(res.status).toBe(200);
 
       const params = res.body as Parameters;
