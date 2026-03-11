@@ -199,5 +199,3 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
-
-
