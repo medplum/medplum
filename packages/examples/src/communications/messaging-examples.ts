@@ -14,6 +14,7 @@ const threadHeader = { id: 'example-thread-header' };
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
 
 // start-block filterActiveThreadsTs
+// Used in the Thread Lifecycle page to show how to find open threads
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed',
@@ -33,6 +34,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
 */
 
 // start-block unreadCountTs
+// Count unread messages by querying read-receipt Tasks still in 'requested' status
 const unreadCount = await medplum.search('Task', {
   code: 'https://medplum.com/task-codes|read-receipt',
   owner: `Practitioner/${userId}`,
@@ -56,6 +58,7 @@ curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask
 */
 
 // start-block loadDraftsTs
+// Set `sender` on draft Communications at creation time so they can be queried per user
 await medplum.searchResources('Communication', {
   sender: `Practitioner/${currentUser.id}`,
   status: 'preparation',
@@ -75,25 +78,28 @@ curl 'https://api.medplum.com/fhir/R4/Communication?sender=Practitioner/{current
 */
 
 // start-block queryAllThreadsTs
+// Search reference: find all thread headers, sorted by most recently active
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed',
+  _sort: '-_lastUpdated',
 });
 // end-block queryAllThreadsTs
 
 /*
 // start-block queryAllThreadsCli
-medplum get 'Communication?part-of:missing=true&status:not=completed'
+medplum get 'Communication?part-of:missing=true&status:not=completed&_sort=-_lastUpdated'
 // end-block queryAllThreadsCli
 
 // start-block queryAllThreadsCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed' \
+curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed&_sort=-_lastUpdated' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block queryAllThreadsCurl
 */
 
 // start-block queryMessagesInThreadTs
+// Retrieve all messages in a thread, sorted chronologically
 await medplum.searchResources('Communication', {
   'part-of': `Communication/${threadHeader.id}`,
   _sort: 'sent',
@@ -113,6 +119,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 */
 
 // start-block loadThreadsWithMessagesTs
+// Load thread headers and all their child messages in a single request
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   _revinclude: 'Communication:part-of',
@@ -132,6 +139,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
 */
 
 // start-block filterByPatientTs
+// Filter threads to a specific patient
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   subject: 'Patient/homer-simpson',
@@ -151,6 +159,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&subject
 */
 
 // start-block filterMyThreadsTs
+// Filter to only the current user's active threads
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   recipient: getReferenceString(profile),
@@ -171,6 +180,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
 */
 
 // start-block poolTasksTs
+// Task-based routing: find unclaimed Tasks in a pool by performer role
 await medplum.search('Task', {
   performer: 'http://snomed.info/sct|17561000',
   'owner:missing': true,
@@ -189,4 +199,5 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
+
 
