@@ -246,7 +246,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: SonarCloud Scan
-        if: ${{ matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ github.event_name != 'merge_group' && matrix.node-version == 22 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
         env:
