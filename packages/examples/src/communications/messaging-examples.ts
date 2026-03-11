@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // start-block filterActiveThreadsTs
 const activeThreads = await medplum.searchResources('Communication', {
   'part-of:missing': true,
