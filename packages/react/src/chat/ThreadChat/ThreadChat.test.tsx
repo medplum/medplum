@@ -556,7 +556,7 @@ describe('ThreadChat', () => {
       expect.objectContaining({
         filename: 'scan.pdf',
         contentType: 'application/pdf',
-        additionalFields: { subject },
+        additionalFields: { subject, description: 'scan.pdf' },
       })
     );
 
@@ -594,7 +594,9 @@ describe('ThreadChat', () => {
     await act(() => fireEvent.click(screen.getByRole('button', { name: /send message/i })));
 
     await waitFor(() => expect(createDocRefSpy).toHaveBeenCalledTimes(1));
-    expect(createDocRefSpy).toHaveBeenCalledWith(expect.objectContaining({ additionalFields: undefined }));
+    expect(createDocRefSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ additionalFields: { description: 'doc.pdf' } })
+    );
 
     createDocRefSpy.mockRestore();
   });
