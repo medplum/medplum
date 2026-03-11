@@ -325,7 +325,7 @@ export function SendFaxModal({
             <Box py="xs">
               <Divider />
             </Box>
-            
+
             <ResourceInput<Organization>
               resourceType="Organization"
               name="recipientOrg"
@@ -340,7 +340,7 @@ export function SendFaxModal({
               onChange={(e) => setRecipientName(e.currentTarget.value)}
             />
 
-<TextInput
+            <TextInput
               label={
                 <>
                   Fax Number <span style={{ color: 'var(--mantine-color-red-6)' }}>*</span>
