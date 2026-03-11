@@ -1825,7 +1825,7 @@ describe('WebSocket Subscription', () => {
 
   test('cleanupUserSubs removes both null cache entries and inactive active hash entries', () =>
     withTestContext(async () => {
-      const { project: cleanupProject, repo: cleanupRepo } = await createTestProject({
+      const { repo: cleanupRepo } = await createTestProject({
         project: { features: ['websocket-subscriptions'] },
         withRepo: true,
       });
