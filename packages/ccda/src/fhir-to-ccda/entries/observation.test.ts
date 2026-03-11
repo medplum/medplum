@@ -1129,8 +1129,41 @@ describe('observation entry functions', () => {
       const result = mapReferenceRange(referenceRange);
 
       expect(result).toBeDefined();
-      // createTextFromExtensions returns undefined if no narrative reference extension
-      expect(result?.observationRange?.text).toBeUndefined();
+      expect(result?.observationRange?.value).toEqual({
+        '@_xsi:type': 'IVL_PQ',
+        low: { '@_value': '60', '@_unit': 'bpm' },
+        high: { '@_value': '100', '@_unit': 'bpm' },
+      });
+    });
+
+    test('should map reference range with only low', () => {
+      const referenceRange = {
+        low: { value: 60, unit: 'bpm' },
+      };
+
+      const result = mapReferenceRange(referenceRange);
+
+      expect(result).toBeDefined();
+      expect(result?.observationRange?.value).toEqual({
+        '@_xsi:type': 'IVL_PQ',
+        low: { '@_value': '60', '@_unit': 'bpm' },
+        high: undefined,
+      });
+    });
+
+    test('should map reference range with only high', () => {
+      const referenceRange = {
+        high: { value: 100, unit: 'bpm' },
+      };
+
+      const result = mapReferenceRange(referenceRange);
+
+      expect(result).toBeDefined();
+      expect(result?.observationRange?.value).toEqual({
+        '@_xsi:type': 'IVL_PQ',
+        low: undefined,
+        high: { '@_value': '100', '@_unit': 'bpm' },
+      });
     });
   });
 });

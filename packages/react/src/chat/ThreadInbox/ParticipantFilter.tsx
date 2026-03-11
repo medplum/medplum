@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Checkbox, CloseButton, Group, Popover, Stack, Text, TextInput } from '@mantine/core';
+
+import {
+  ActionIcon,
+  Checkbox,
+  CloseButton,
+  Group,
+  Indicator,
+  Popover,
+  Stack,
+  Text,
+  TextInput,
+  Tooltip,
+} from '@mantine/core';
 import { useDebouncedCallback, useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
@@ -23,11 +35,9 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Reference<Patient | Practitioner>[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [additionalParticipants, setAdditionalParticipants] = useState<Reference<Patient | Practitioner>[]>([]);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
-  // Current user participant - always shown at top
   const currentUserParticipant = useMemo((): Reference<Patient | Practitioner> | undefined => {
     if (!profile) {
       return undefined;
@@ -35,11 +45,9 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
     return createReference(profile) as Reference<Patient | Practitioner>;
   }, [profile]);
 
-  // Filter additional participants (excluding current user)
-  useEffect(() => {
+  const additionalParticipants = useMemo(() => {
     const currentUserRef = currentUserParticipant?.reference;
-    const filtered = selectedParticipants.filter((p) => p.reference !== currentUserRef);
-    setAdditionalParticipants(filtered);
+    return selectedParticipants.filter((p) => p.reference !== currentUserRef);
   }, [selectedParticipants, currentUserParticipant]);
 
   const debouncedSearch = useDebouncedCallback(async (query: string): Promise<void> => {
@@ -136,23 +144,29 @@ export function ParticipantFilter(props: ParticipantFilterProps): JSX.Element {
       position="bottom-start"
       width={360}
       shadow="md"
+      radius="md"
       withinPortal
     >
       <Popover.Target>
-        <ActionIcon
-          variant={hasActiveFilter ? 'filled' : 'light'}
-          color={hasActiveFilter ? 'blue' : 'gray'}
-          onClick={opened ? close : open}
-          radius="xl"
-          size="lg"
-        >
-          <IconUsers size={18} />
-        </ActionIcon>
+        <Tooltip label="Message Participants" position="bottom" openDelay={500} disabled={opened}>
+          <Indicator disabled={!hasActiveFilter} color="blue" size={8} offset={4}>
+            <ActionIcon
+              variant="transparent"
+              onClick={opened ? close : open}
+              radius="xl"
+              size={32}
+              className="outline-icon-button"
+              data-opened={opened || undefined}
+            >
+              <IconUsers size={16} />
+            </ActionIcon>
+          </Indicator>
+        </Tooltip>
       </Popover.Target>
 
       <Popover.Dropdown p="md">
         <Stack gap="md">
-          <Text fw={600} size="sm">
+          <Text size="xs" c="dimmed" fw={500}>
             Message Participants
           </Text>
 

@@ -2,24 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference } from '@medplum/core';
-import type { Period, Reference, Schedule, Slot } from '@medplum/fhirtypes';
-import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
+import type { Period, Schedule, Slot } from '@medplum/fhirtypes';
+import { DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import type { SlotSearchFunction } from './Scheduler';
+import type { SchedulerProps, SlotSearchFunction } from './Scheduler';
 import { Scheduler } from './Scheduler';
 
 const medplum = new MockClient();
 
-function setup(
-  schedule: Schedule | Reference<Schedule> | Schedule[] | Reference<Schedule>[] | SlotSearchFunction,
-  questionnaire = ExampleQuestionnaire
-): void {
+function setup(props: SchedulerProps): void {
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <Scheduler schedule={schedule} questionnaire={questionnaire} />
+        <Scheduler {...props} />
       </MedplumProvider>
     </MemoryRouter>
   );
@@ -71,19 +68,20 @@ describe('Scheduler', () => {
 
   test('Renders by reference', async () => {
     await act(async () => {
-      setup(createReference(DrAliceSmithSchedule));
+      setup({ schedule: createReference(DrAliceSmithSchedule) });
     });
   });
 
   test('Renders resources', async () => {
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule });
     });
   });
 
   test('Success', async () => {
+    const onSelectSlot = jest.fn();
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule, onSelectSlot });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -105,17 +103,50 @@ describe('Scheduler', () => {
       fireEvent.click(screen.getByText('9:00 AM'));
     });
 
-    // Click next
+    expect(onSelectSlot).toHaveBeenCalled();
+  });
+
+  test('Renders children prop', async () => {
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      setup({ schedule: DrAliceSmithSchedule, children: <div>Searching inside your network.</div> });
     });
 
-    expect(screen.getByText("You're all set!")).toBeDefined();
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
+  });
+
+  test('Children prop is rendered after slot selection', async () => {
+    const onSelectSlot = jest.fn();
+    await act(async () => {
+      setup({
+        schedule: DrAliceSmithSchedule,
+        onSelectSlot,
+        children: <div>Searching inside your network.</div>,
+      });
+    });
+
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
+
+    // Move forward one month and select a slot
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next month'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: '15' }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('9:00 AM'));
+    });
+
+    // Children remain visible after slot selection and callback is invoked
+    expect(screen.getByText('Searching inside your network.')).toBeInTheDocument();
+    expect(onSelectSlot).toHaveBeenCalled();
   });
 
   test('Renders with schedule array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -123,13 +154,13 @@ describe('Scheduler', () => {
 
   test('Renders with schedule reference array', async () => {
     await act(async () => {
-      setup([createReference(DrAliceSmithSchedule), createReference(DrBobSchedule)]);
+      setup({ schedule: [createReference(DrAliceSmithSchedule), createReference(DrBobSchedule)] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
   });
 
-  test('Renders with custom slot search function', async () => {
+  test('Renders with no schedule and a custom slot search function', async () => {
     const mockSlots: Slot[] = [
       {
         resourceType: 'Slot',
@@ -149,22 +180,60 @@ describe('Scheduler', () => {
       },
     ];
 
-    const customSlotSearch: SlotSearchFunction = async (period: Period): Promise<Slot[]> => {
+    const fetchSlots: SlotSearchFunction = async (period: Period): Promise<Slot[]> => {
       expect(period.start).toBeDefined();
       expect(period.end).toBeDefined();
       return mockSlots;
     };
 
     await act(async () => {
-      setup(customSlotSearch);
+      setup({ fetchSlots });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
   });
 
+  test('Renders with fetchSlots prop and a Schedule', async () => {
+    const mockSlots: Slot[] = [9, 10].map((hour, idx) => {
+      const start = new Date(2023, 10, 15, hour, 0, 0, 0);
+      const end = new Date(2023, 10, 15, hour + 1, 0, 0, 0);
+      return {
+        resourceType: 'Slot',
+        id: `slot-${idx}`,
+        schedule: { reference: 'Schedule/dr-alice' },
+        status: 'free',
+        start: start.toISOString(),
+        end: end.toISOString(),
+      } satisfies WithId<Slot>;
+    });
+
+    const customSlotSearch: SlotSearchFunction = jest.fn().mockResolvedValue(mockSlots);
+
+    await act(async () => {
+      setup({ schedule: DrAliceSmithSchedule, fetchSlots: customSlotSearch });
+    });
+
+    expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
+    expect(customSlotSearch).toHaveBeenCalled();
+
+    // Find a day with available slots and click it
+    const dayButton = screen.getByRole('button', { name: '15' });
+    expect((dayButton as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(dayButton);
+    });
+
+    // Should show time selection with slots from the query
+    expect(screen.getByText('Select time')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('9:00 AM')).toBeInTheDocument();
+      expect(screen.queryByText('10:00 AM')).toBeInTheDocument();
+    });
+  });
+
   test('Displays actor information for single schedule', async () => {
     await act(async () => {
-      setup(DrAliceSmithSchedule);
+      setup({ schedule: DrAliceSmithSchedule });
     });
 
     await waitFor(() => {
@@ -174,7 +243,7 @@ describe('Scheduler', () => {
 
   test('Does not display actor for schedule array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -182,11 +251,9 @@ describe('Scheduler', () => {
     expect(screen.queryByText('Alice Smith')).not.toBeInTheDocument();
   });
 
-  test('Does not display actor for custom slot search function', async () => {
-    const customSlotSearch: SlotSearchFunction = async (): Promise<Slot[]> => [];
-
+  test('Does not display actor without a Schedule', async () => {
     await act(async () => {
-      setup(customSlotSearch);
+      setup({});
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -196,7 +263,7 @@ describe('Scheduler', () => {
 
   test('Handles empty schedule array', async () => {
     await act(async () => {
-      setup([]);
+      setup({ schedule: [] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -206,7 +273,7 @@ describe('Scheduler', () => {
     const emptySlotSearch: SlotSearchFunction = async (): Promise<Slot[]> => [];
 
     await act(async () => {
-      setup(emptySlotSearch);
+      setup({ fetchSlots: emptySlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -217,7 +284,7 @@ describe('Scheduler', () => {
 
   test('Shows slots from multiple schedules in array', async () => {
     await act(async () => {
-      setup([DrAliceSmithSchedule, DrBobSchedule]);
+      setup({ schedule: [DrAliceSmithSchedule, DrBobSchedule] });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();
@@ -279,7 +346,7 @@ describe('Scheduler', () => {
     const customSlotSearch: SlotSearchFunction = async (): Promise<Slot[]> => mockSlots;
 
     await act(async () => {
-      setup(customSlotSearch);
+      setup({ fetchSlots: customSlotSearch });
     });
 
     expect(await screen.findByTestId('scheduler')).toBeInTheDocument();

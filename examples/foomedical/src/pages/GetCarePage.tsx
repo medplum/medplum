@@ -1,43 +1,91 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { Schedule } from '@medplum/fhirtypes';
+import { Alert, Loader } from '@mantine/core';
+import type { Appointment, Bundle, Patient, Slot } from '@medplum/fhirtypes';
+import { createReference, isDefined, normalizeErrorString } from '@medplum/core';
 import { Document, Scheduler, useMedplum } from '@medplum/react';
+import type { SlotSearchFunction } from '@medplum/react';
+import { useSearchOne } from '@medplum/react-hooks';
+import { IconInfoCircle } from '@tabler/icons-react';
+import { useState } from 'react';
 import type { JSX } from 'react';
 
 export function GetCare(): JSX.Element {
   const medplum = useMedplum();
-  const schedule = medplum.searchOne('Schedule').read();
+  const patient = medplum.getProfile() as Patient;
+  const [schedule, loading] = useSearchOne('Schedule');
+
+  const fetchSlots: SlotSearchFunction = async (period) => {
+    if (!schedule) {
+      return [];
+    }
+
+    // $find op requires `start` and `end` times are defined
+    if (!period.start || !period.end) {
+      return [];
+    }
+
+    const params = new URLSearchParams({ start: period.start, end: period.end });
+    const findUrl = medplum.fhirUrl('Schedule', schedule.id, '$find');
+    const bundle = await medplum.get<Bundle<Slot>>(`${findUrl}?${params}`);
+    return bundle.entry?.map((entry) => entry.resource).filter(isDefined) ?? [];
+  };
+
+  const [bookSuccess, setBookSuccess] = useState(false);
+  const [bookLoading, setBookLoading] = useState(false);
+  const [bookError, setBookError] = useState<unknown>();
+
+  const bookSlot = async (slot: Slot): Promise<void> => {
+    setBookLoading(true);
+    await medplum
+      .post<Bundle<Appointment | Slot>>(medplum.fhirUrl('Appointment', '$book'), {
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'slot', resource: slot },
+          { name: 'patient-reference', valueReference: createReference(patient) },
+        ],
+      })
+      .then(
+        () => setBookSuccess(true),
+        (err) => setBookError(err)
+      )
+      .finally(() => setBookLoading(false));
+  };
+
+  if (loading) {
+    return (
+      <Document width={800}>
+        <Loader />
+      </Document>
+    );
+  }
+
+  if (!schedule) {
+    return (
+      <Document width={800}>
+        <Alert variant="outline" color="red" title="Schedule unavailable" icon={<IconInfoCircle />}>
+          Loading the schedule failed.
+        </Alert>
+      </Document>
+    );
+  }
 
   return (
     <Document width={800}>
-      <Scheduler
-        schedule={schedule as Schedule}
-        questionnaire={{
-          resourceType: 'Questionnaire',
-          status: 'active',
-          name: 'Test',
-          item: [
-            {
-              id: 'id-1',
-              linkId: 'q1',
-              type: 'string',
-              text: 'Question 1',
-            },
-            {
-              id: 'id-2',
-              linkId: 'q2',
-              type: 'string',
-              text: 'Question 2',
-            },
-            {
-              id: 'id-3',
-              linkId: 'q3',
-              type: 'string',
-              text: 'Question 3',
-            },
-          ],
-        }}
-      />
+      <Scheduler schedule={schedule} fetchSlots={fetchSlots} onSelectSlot={bookSlot}>
+        {bookLoading && <Loader />}
+        {!!bookError && (
+          <Alert variant="outline" color="red" title="Booking failed" icon={<IconInfoCircle />}>
+            {normalizeErrorString(bookError)}
+          </Alert>
+        )}
+        {bookSuccess && (
+          <div>
+            <h3>You're all set!</h3>
+            <p>Your appointment has been created.</p>
+          </div>
+        )}
+      </Scheduler>
     </Document>
   );
 }

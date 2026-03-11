@@ -98,14 +98,13 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import {
-  addUserActiveWebSocketSubscription,
   getUserActiveWebSocketSubscriptionCount,
   removeActiveSubscriptions,
   removeUserActiveWebSocketSubscriptions,
-  setActiveSubscription,
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import { getBinaryStorage } from '../storage/loader';
+import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
 import {
   AuditEventOutcome,
@@ -121,6 +120,7 @@ import {
   UpdateInteraction,
   VreadInteraction,
 } from '../util/auditevent';
+import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -847,7 +847,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.validateResource(result);
     // If this is a Subscription resource we are creating, we want to make sure the user is not over their per-user limit
     if (create && result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
-      await this.checkWebSocketSubscriptionLimit(result);
+      const projectId = result.meta?.project;
+      const author = result.meta?.author?.reference;
+      if (!(projectId && author)) {
+        throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
+      }
+      const project = await this.getProjectById(projectId);
+      invariant(project);
+      await checkWebSocketSubscriptionLimit(project, author);
     }
 
     if (this.context.checkReferencesOnWrite) {
@@ -945,58 +952,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     // Handle special cases for resource caching
-    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
-      const project = resource?.meta?.project;
-      const author = resource?.meta?.author?.reference;
-      if (!(project && author)) {
-        throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
-      }
-      await addUserActiveWebSocketSubscription(author, `Subscription/${resource.id}`);
-      // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      // The active list is sharded by resource type so that lookups only scan relevant subscriptions
-      const criteriaResourceType = resource.criteria.split('?')[0];
-      if (!isResourceType(criteriaResourceType)) {
-        getLogger().debug('[WS] Subscription has invalid criteria resource type', {
-          subscription: `Subscription/${resource.id}`,
-          criteria: resource.criteria,
-        });
-        return;
-      }
-      await setActiveSubscription(project, criteriaResourceType, `Subscription/${resource.id}`, resource.criteria);
-      if (create) {
-        const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
-        getLogger().info('[WS] Subscription created', {
-          subscriptionId: resource.id,
-          criteria: resource.criteria,
-          user: author,
-          userSubscriptions: userSubCount,
-        });
-      }
+    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket' && create) {
+      getLogger().info('[WS] Subscription created', {
+        subscriptionId: resource.id,
+        criteria: resource.criteria,
+        user: resource.meta?.author?.reference,
+      });
     }
+
     if (resource.resourceType === 'StructureDefinition') {
       await removeCachedProfile(resource);
-    }
-  }
-
-  private async checkWebSocketSubscriptionLimit(resource: WithId<Resource>): Promise<void> {
-    const projectId = resource?.meta?.project;
-    const author = resource?.meta?.author?.reference;
-    if (!(projectId && author)) {
-      throw new OperationOutcomeError(badRequest('No project or author connected to the specified Subscription.'));
-    }
-    const project = await this.getProjectById(projectId);
-    if (!project) {
-      throw new OperationOutcomeError(badRequest('No valid project connected to the specified Subscription.'));
-    }
-    const maxUserWsSubs =
-      project.systemSetting?.find((setting) => setting.name === 'maxUserWebSocketSubscriptions')?.valueInteger ??
-      // We know this is defined in defaults so this is safe to cast
-      (getConfig().defaultMaxUserWebSocketSubscriptions as number);
-    const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
-    if (userSubCount >= maxUserWsSubs) {
-      throw new OperationOutcomeError(
-        badRequest(`User has exceeded allotted maximum number of concurrent WebSocket subscriptions: ${maxUserWsSubs}`)
-      );
     }
   }
 
@@ -2432,7 +2397,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       durationMs?: number;
     }
   ): void {
-    if (this.context.author.reference === 'system') {
+    const resource = options?.resource;
+    const isSystem = this.context.author.reference === 'system';
+
+    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
+      const duration = options.durationMs / 1000; // Report duration in whole seconds
+      recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
+        attributes: {
+          system: isSystem,
+          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        },
+      });
+    }
+    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
+      attributes: {
+        system: isSystem,
+        resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+      },
+    });
+
+    if (isSystem) {
       // Don't log system events.
       return;
     }
@@ -2444,7 +2429,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (options?.searchRequest) {
       query = options.searchRequest.resourceType + formatSearchQuery(options.searchRequest);
     }
-    const resource = options?.resource;
 
     const auditEvent = createAuditEvent(
       RestfulOperationType,
@@ -2461,21 +2445,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     );
     logAuditEvent(auditEvent);
-
-    if (options?.durationMs !== undefined && outcome === AuditEventOutcome.Success) {
-      const duration = options.durationMs / 1000; // Report duration in whole seconds
-      recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
-        attributes: {
-          resourceType: isResource(resource) ? resource?.resourceType : undefined,
-        },
-      });
-    }
-    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
-      attributes: {
-        resourceType: isResource(resource) ? resource?.resourceType : undefined,
-        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
-      },
-    });
 
     if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();

@@ -9,8 +9,10 @@ import {
   HEALTHIE_ALLERGY_ID_SYSTEM,
   HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
+  HEALTHIE_POLICY_ID_SYSTEM,
   HEALTHIE_USER_ID_SYSTEM,
 } from './healthie/constants';
+import { convertHealthiePolicyToFhir, fetchPolicies } from './healthie/coverage';
 import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/medication';
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
 import { convertHealthieFormAnswerGroupToFhir, fetchHealthieFormAnswerGroups } from './healthie/questionnaire-response';
@@ -118,7 +120,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<ImportHeal
         });
       }
 
-      // <You can add additional resources conversions here>
+      const policies = await fetchPolicies(healthie, healthiePatient.id);
+      console.log(`Found ${policies.length} policies for patient ${healthiePatient.id}`);
+
+      for (const policy of policies) {
+        patientBundle.entry?.push({
+          resource: convertHealthiePolicyToFhir(policy, patientReference),
+          request: {
+            method: 'PUT',
+            url: `Coverage?identifier=${HEALTHIE_POLICY_ID_SYSTEM}|${policy.id}`,
+          },
+        });
+      }
 
       // Execute the bundle for this patient
       if (patientBundle.entry && patientBundle.entry.length > 0) {

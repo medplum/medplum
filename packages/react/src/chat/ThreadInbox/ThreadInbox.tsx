@@ -15,8 +15,10 @@ import {
   ScrollArea,
   Skeleton,
   Stack,
+  Tabs,
   Text,
   ThemeIcon,
+  Tooltip,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
@@ -25,7 +27,6 @@ import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest 
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
-import cx from 'clsx';
 import type { ComponentType, JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
@@ -63,6 +64,7 @@ export interface ThreadInboxProps {
   readonly completedUri: string;
   readonly uploadEnabled?: boolean;
   readonly onViewInDocuments?: (reference: Reference<DocumentReference>) => void;
+  readonly allowPatientSelection?: boolean;
 }
 
 export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
@@ -79,6 +81,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     onChange,
     inProgressUri,
     completedUri,
+    allowPatientSelection = false,
   } = props;
 
   const navigate = useMedplumNavigate();
@@ -179,31 +182,30 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
             <Paper h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
               <ScrollArea style={{ flex: 1 }} scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
+                  <Tabs
+                    value={status}
+                    onChange={(value) => {
+                      navigate(value === 'in-progress' ? inProgressUri : completedUri);
+                    }}
+                    variant="unstyled"
+                    className="pill-tabs"
+                  >
+                    <Tabs.List>
+                      <Tabs.Tab value="in-progress">In Progress</Tabs.Tab>
+                      <Tabs.Tab value="completed">Completed</Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs>
                   <Group gap="xs">
-                    <Button
-                      onClick={() => navigate(inProgressUri)}
-                      className={cx(classes.button, { [classes.selected]: status === 'in-progress' })}
-                      h={32}
-                      radius="xl"
-                    >
-                      In progress
-                    </Button>
-                    <Button
-                      onClick={() => navigate(completedUri)}
-                      className={cx(classes.button, { [classes.selected]: status === 'completed' })}
-                      h={32}
-                      radius="xl"
-                    >
-                      Completed
-                    </Button>
                     <ParticipantFilter
                       selectedParticipants={selectedParticipants}
                       onFilterChange={handleParticipantsChange}
                     />
+                    <Tooltip label="New Message" position="bottom" openDelay={500}>
+                      <ActionIcon radius="xl" variant="filled" color="blue" size={32} onClick={openModal}>
+                        <IconPlus size={16} />
+                      </ActionIcon>
+                    </Tooltip>
                   </Group>
-                  <ActionIcon radius="50%" variant="filled" color="blue" onClick={openModal}>
-                    <IconPlus size={16} />
-                  </ActionIcon>
                 </Flex>
                 <Divider />
                 {loading ? (
@@ -331,7 +333,13 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog subject={subject} opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopicCompletion} />
+      <NewTopicDialog
+        subject={subject}
+        opened={modalOpened}
+        onClose={closeModal}
+        onSubmit={handleNewTopicCompletion}
+        allowPatientSelection={allowPatientSelection}
+      />
     </>
   );
 }
