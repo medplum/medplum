@@ -1,7 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+
+// start-block imports
+import { MedplumClient, getReferenceString } from '@medplum/core';
+
+// end-block imports
+
+const medplum = new MedplumClient();
+
+const userId = 'example-user-id';
+const currentUser = { id: 'example-user-id' };
+const threadHeader = { id: 'example-thread-header' };
+const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
+
 // start-block filterActiveThreadsTs
-const activeThreads = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed',
 });
@@ -20,10 +33,10 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
 */
 
 // start-block unreadCountTs
-const unreadCount = await medplum.search('Communication', {
-  recipient: `Practitioner/${userId}`,
-  'status:not': 'completed',
-  'part-of:missing': false,
+const unreadCount = await medplum.search('Task', {
+  code: 'https://medplum.com/task-codes|read-receipt',
+  owner: `Practitioner/${userId}`,
+  status: 'requested',
   _total: 'accurate',
   _count: 0,
 });
@@ -32,18 +45,18 @@ const count = unreadCount.total ?? 0;
 
 /*
 // start-block unreadCountCli
-medplum get 'Communication?recipient=Practitioner/{userId}&status:not=completed&part-of:missing=false&_total=accurate&_count=0'
+medplum get 'Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{userId}&status=requested&_total=accurate&_count=0'
 // end-block unreadCountCli
 
 // start-block unreadCountCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?recipient=Practitioner/{userId}&status:not=completed&part-of:missing=false&_total=accurate&_count=0' \
+curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask-codes%7Cread-receipt&owner=Practitioner/{userId}&status=requested&_total=accurate&_count=0' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block unreadCountCurl
 */
 
 // start-block loadDraftsTs
-const myDrafts = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   sender: `Practitioner/${currentUser.id}`,
   status: 'preparation',
 });
@@ -60,9 +73,9 @@ curl 'https://api.medplum.com/fhir/R4/Communication?sender=Practitioner/{current
   -H 'content-type: application/fhir+json'
 // end-block loadDraftsCurl
 */
-  
+
 // start-block queryAllThreadsTs
-const threads = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed',
 });
@@ -81,7 +94,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
 */
 
 // start-block queryMessagesInThreadTs
-const messages = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of': `Communication/${threadHeader.id}`,
   _sort: 'sent',
 });
@@ -97,10 +110,10 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block queryMessagesInThreadCurl
-
+*/
 
 // start-block loadThreadsWithMessagesTs
-const threadsWithMessages = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of:missing': true,
   _revinclude: 'Communication:part-of',
 });
@@ -119,7 +132,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
 */
 
 // start-block filterByPatientTs
-const patientThreads = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of:missing': true,
   subject: 'Patient/homer-simpson',
 });
@@ -135,10 +148,10 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&subject
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterByPatientCurl
-
+*/
 
 // start-block filterMyThreadsTs
-const myThreads = await medplum.searchResources('Communication', {
+await medplum.searchResources('Communication', {
   'part-of:missing': true,
   recipient: getReferenceString(profile),
   'status:not': 'completed',
@@ -158,7 +171,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
 */
 
 // start-block poolTasksTs
-const poolTasks = await medplum.search('Task', {
+await medplum.search('Task', {
   performer: 'http://snomed.info/sct|17561000',
   'owner:missing': true,
   _include: 'Task:focus',
@@ -176,3 +189,4 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
+
