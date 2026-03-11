@@ -151,7 +151,6 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
       return;
     }
 
-    // const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -206,7 +205,6 @@ export async function handleAgentConnection(socket: WebSocket, request: Incoming
     }
     const { authState, repo } = authResult;
 
-    // const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
