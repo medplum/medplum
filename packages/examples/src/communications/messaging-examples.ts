@@ -42,7 +42,7 @@ const unreadCount = await medplum.search('Task', {
   _total: 'accurate',
   _count: 0,
 });
-const count = unreadCount.total ?? 0;
+// unreadCount.total contains the number of unread messages
 // end-block unreadCountTs
 
 /*
