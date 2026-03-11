@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isResourceType } from '@medplum/core';
 import type { ResourceType, Subscription } from '@medplum/fhirtypes';
-import { CacheEntry } from './fhir/repo';
+import type { CacheEntry } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getCacheRedis, getPubSubRedis } from './redis';
 
