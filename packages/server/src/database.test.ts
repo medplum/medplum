@@ -256,7 +256,6 @@ describe('Database config', () => {
   });
 });
 
-
 describe('Advisory locks', () => {
   let clientA: PoolClient;
   let clientB: PoolClient;
