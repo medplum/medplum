@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -188,6 +188,107 @@ describe('Get WebSocket binding token', () => {
     expect(res2.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'invalid' }],
+    });
+  });
+
+  test('should return error for non-websocket channel type', () =>
+    withTestContext(async () => {
+      // Create a rest-hook subscription (not websocket)
+      const res1 = await request(app)
+        .post('/fhir/R4/Subscription')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'Patient',
+          channel: {
+            type: 'rest-hook',
+            endpoint: 'https://example.com/hook',
+          },
+        } satisfies Subscription);
+      expect(res1.status).toBe(201);
+      const createdSub = res1.body as Subscription;
+
+      const res2 = await request(app)
+        .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res2.status).toBe(400);
+      expect(res2.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Invalid channel type for this operation: rest-hook' },
+          },
+        ],
+      });
+    }));
+
+  test('should return error for Subscription with invalid criteria resource type', () =>
+    withTestContext(async () => {
+      // Create a subscription with a criteria that has an unrecognized resource type
+      const res1 = await request(app)
+        .post('/fhir/R4/Subscription')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: 'NotARealResourceType?code=123',
+          channel: {
+            type: 'websocket',
+          },
+        } satisfies Subscription);
+      expect(res1.status).toBe(201);
+      const createdSub = res1.body as Subscription;
+
+      const res2 = await request(app)
+        .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res2.status).toBe(400);
+      expect(res2.body).toMatchObject<OperationOutcome>({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: expect.stringContaining('NotARealResourceType') },
+          },
+        ],
+      });
+    }));
+
+  test('should return error for Subscription with empty criteria', async () => {
+    // Use createTestProject + repo to bypass HTTP-level FHIR validation and write a
+    // subscription with empty criteria directly — testing the defensive `!subscription.criteria` branch.
+    const { accessToken: projectAccessToken, repo } = await createTestProject({
+      withAccessToken: true,
+      withRepo: { strictMode: false },
+      project: { features: ['websocket-subscriptions'] },
+    });
+
+    const createdSub = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: '',
+      channel: { type: 'websocket' },
+    } as unknown as Subscription);
+
+    const res = await request(app)
+      .get(`/fhir/R4/Subscription/${createdSub.id}/$get-ws-binding-token`)
+      .set('Authorization', 'Bearer ' + projectAccessToken);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'Invalid empty Subscription criteria' } }],
     });
   });
 });
