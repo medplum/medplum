@@ -146,8 +146,17 @@ export function getTypedPropertyValueWithSchema(
 
   const lastPathSegmentIndex = element.path.lastIndexOf('.');
   const lastPathSegment = element.path.substring(lastPathSegmentIndex + 1);
+  let lastPathSegmentTrimmed = lastPathSegment;
+  let choiceOfType = false;
+  if (lastPathSegment.endsWith('[x]')) {
+    lastPathSegmentTrimmed = lastPathSegment.substring(0, lastPathSegment.length - 3);
+    choiceOfType = true;
+  }
   for (const type of types) {
-    const candidatePath = lastPathSegment.replace('[x]', capitalize(type.code));
+    let candidatePath = lastPathSegmentTrimmed;
+    if (choiceOfType) {
+      candidatePath += capitalize(type.code);
+    }
     resultValue = value[candidatePath];
     primitiveExtension = value['_' + candidatePath];
     if (resultValue !== undefined || primitiveExtension !== undefined) {

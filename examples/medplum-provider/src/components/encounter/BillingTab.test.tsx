@@ -21,6 +21,7 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import * as useDebouncedUpdateResourceModule from '../../hooks/useDebouncedUpdateResource';
+import { ChartNoteStatus } from '../../types/encounter';
 import * as chargeItemsUtils from '../../utils/chargeitems';
 import * as claimsUtils from '../../utils/claims';
 import { BillingTab } from './BillingTab';
@@ -102,6 +103,14 @@ const mockClaim: WithId<Claim> = {
   provider: { reference: 'Practitioner/practitioner-123' },
 };
 
+const mockDebouncedUpdate = (): ReturnType<typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource> => {
+  const fn = vi.fn().mockResolvedValue(undefined) as unknown as ReturnType<
+    typeof useDebouncedUpdateResourceModule.useDebouncedUpdateResource
+  >;
+  fn.cancel = vi.fn();
+  return fn;
+};
+
 describe('BillingTab', () => {
   let medplum: MockClient;
 
@@ -109,9 +118,7 @@ describe('BillingTab', () => {
     medplum = new MockClient();
     vi.clearAllMocks();
     // Mock useDebouncedUpdateResource to return a function that resolves immediately
-    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(
-      vi.fn().mockResolvedValue(undefined)
-    );
+    vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(mockDebouncedUpdate());
   });
 
   const setup = async (props: Partial<Parameters<typeof BillingTab>[0]> = {}): Promise<void> => {
@@ -131,6 +138,7 @@ describe('BillingTab', () => {
                 setChargeItems={vi.fn()}
                 claim={undefined}
                 setClaim={vi.fn()}
+                chartNoteStatus={ChartNoteStatus.SignedAndLocked}
                 {...props}
               />
             </MantineProvider>
@@ -429,7 +437,7 @@ describe('BillingTab', () => {
     const user = userEvent.setup();
     const setChargeItems = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -645,7 +653,7 @@ describe('BillingTab', () => {
   test('creates claim when practitioner is changed and charge items exist', async () => {
     const setEncounter = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -785,7 +793,7 @@ describe('BillingTab', () => {
   test('updates claim when practitioner is changed and claim already exists', async () => {
     const setEncounter = vi.fn();
     const setClaim = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
 
@@ -1056,7 +1064,7 @@ describe('BillingTab', () => {
 
   test('handles error in encounter change', async () => {
     const setEncounter = vi.fn();
-    const debouncedUpdateResource = vi.fn().mockResolvedValue(undefined);
+    const debouncedUpdateResource = mockDebouncedUpdate();
 
     vi.spyOn(useDebouncedUpdateResourceModule, 'useDebouncedUpdateResource').mockReturnValue(debouncedUpdateResource);
     vi.spyOn(medplum, 'updateResource').mockRejectedValue(new Error('Update failed'));
@@ -1069,6 +1077,94 @@ describe('BillingTab', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Visit Details')).toBeInTheDocument();
+    });
+  });
+
+  describe('Candid Health integration', () => {
+    const mockCandidClaim: WithId<Claim> = {
+      ...mockClaim,
+      identifier: [{ system: 'https://candidhealth.com/encounter-id', value: 'candid-encounter-123' }],
+    };
+
+    const mockGetEncounterBot = { resourceType: 'Bot', id: 'get-encounter-bot-123' };
+
+    test('shows Candid claim card when claim has a Candid encounter ID', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({ fullEncounter: { claims: [] } });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
+      });
+    });
+
+    test('displays formatted status badge and submission date from bot response', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        fullEncounter: {
+          claims: [{ status: 'waiting_for_provider' }],
+          createdAt: '2026-03-02T21:32:57.748Z',
+        },
+      });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Waiting For Provider')).toBeInTheDocument();
+        expect(screen.getByText(/Submitted on/)).toBeInTheDocument();
+      });
+    });
+
+    test('hides status badge and submission date when bot response has no status or createdAt', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({
+        fullEncounter: { claims: [] },
+      });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('Claim Status:')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText('Waiting For Provider')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Submitted on/)).not.toBeInTheDocument();
+    });
+
+    test('shows error notification when get-encounter bot call fails', async () => {
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockRejectedValue(new Error('Network error'));
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText(/Unable to fetch Candid Health claim/)).toBeInTheDocument();
+      });
+    });
+
+    test('View Claim on Candid button opens the correct Candid URL', async () => {
+      const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+      const user = userEvent.setup();
+
+      vi.spyOn(medplum, 'searchOne').mockResolvedValue(mockGetEncounterBot as any);
+      vi.spyOn(medplum, 'executeBot').mockResolvedValue({ fullEncounter: { claims: [] } });
+
+      await setup({ claim: mockCandidClaim });
+
+      await waitFor(() => {
+        expect(screen.getByText('View Claim on Candid')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByText('View Claim on Candid'));
+
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        'https://app-staging.joincandidhealth.com/claims/candid-encounter-123',
+        '_blank'
+      );
+
+      windowOpenSpy.mockRestore();
     });
   });
 

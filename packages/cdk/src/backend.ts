@@ -61,6 +61,7 @@ export class BackEnd extends Construct {
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
+  workersParameter?: ssm.StringParameter;
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
@@ -481,7 +482,7 @@ export class BackEnd extends Construct {
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials),
+      image: this.getContainerImage(config, config.serverImage, containerRegistryCredentials, 'Server'),
       command: [region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${region}:/medplum/${name}/`],
       logging: this.logDriver,
       environment: config.environment,
@@ -492,25 +493,7 @@ export class BackEnd extends Construct {
       hostPort: config.apiPort,
     });
 
-    for (const container of config.additionalContainers ?? EMPTY) {
-      this.taskDefinition.addContainer('AdditionalContainer-' + container.name, {
-        containerName: container.name,
-        image: this.getContainerImage(config, container.image, containerRegistryCredentials),
-        command: container.command,
-        environment: container.environment,
-        logging: this.logDriver,
-        essential: container.essential ?? false, // Default to false
-      });
-    }
-
-    if (config.fireLens?.enabled) {
-      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
-        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
-        essential: true,
-        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
-        environment: config.fireLens.environment,
-      });
-    }
+    this.addSidecarContainers(this.taskDefinition, config, config.additionalContainers, containerRegistryCredentials);
 
     // Security Groups
     this.fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
@@ -534,29 +517,10 @@ export class BackEnd extends Construct {
     });
 
     // Add autoscaling
-    if (config.fargateAutoScaling) {
-      const scaling = this.fargateService.autoScaleTaskCount({
-        minCapacity: config.fargateAutoScaling.minCapacity,
-        maxCapacity: config.fargateAutoScaling.maxCapacity,
-      });
-      scaling.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: config.fargateAutoScaling.targetUtilizationPercent,
-        scaleInCooldown: Duration.seconds(config.fargateAutoScaling.scaleInCooldown),
-        scaleOutCooldown: Duration.seconds(config.fargateAutoScaling.scaleOutCooldown),
-      });
-    }
+    this.addAutoScaling(this.fargateService, config.fargateAutoScaling);
 
     // Add dependencies - make sure Fargate service is created after RDS and Redis
-    if (this.rdsCluster) {
-      this.fargateService.node.addDependency(this.rdsCluster);
-    }
-    if (this.rdsProxy) {
-      this.fargateService.node.addDependency(this.rdsProxy);
-    }
-    this.fargateService.node.addDependency(this.redisCluster);
-    for (const { cluster } of purposeRedisClusters) {
-      this.fargateService.node.addDependency(cluster);
-    }
+    this.addServiceDependencies(this.fargateService, purposeRedisClusters);
 
     // Load Balancer Target Group
     this.targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
@@ -664,6 +628,11 @@ export class BackEnd extends Construct {
       });
     }
 
+    // Additional Services (e.g., background workers)
+    for (const service of config.workerServices ?? []) {
+      this.createWorkerService(config, service, containerRegistryCredentials, purposeRedisClusters);
+    }
+
     // DNS
     if (!config.skipDns) {
       // Route 53
@@ -715,6 +684,16 @@ export class BackEnd extends Construct {
       description: 'Bot lambda execution role ARN',
       stringValue: this.botLambdaRole.roleArn,
     });
+
+    // Workers configuration
+    if (config.workers) {
+      this.workersParameter = new ssm.StringParameter(this, 'WorkersParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/workers`,
+        description: 'Background workers configuration',
+        stringValue: JSON.stringify(config.workers),
+      });
+    }
   }
 
   /**
@@ -724,12 +703,14 @@ export class BackEnd extends Construct {
    * @param config - The config settings (account number and region).
    * @param imageName - The image name.
    * @param credentials - The credentials for the image repository.
+   * @param constructIdPrefix - Prefix for the construct ID to avoid collisions (default: 'Server').
    * @returns The container image.
    */
   private getContainerImage(
     config: MedplumInfraConfig,
     imageName: string,
-    credentials: secretsmanager.ISecret | undefined
+    credentials: secretsmanager.ISecret | undefined,
+    constructIdPrefix: string
   ): ecs.ContainerImage {
     // Pull out the image name and tag from the image URI if it's an ECR image
     const ecrImageUriRegex = new RegExp(
@@ -742,7 +723,7 @@ export class BackEnd extends Construct {
       // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
       const ecrRepo = Repository.fromRepositoryArn(
         this,
-        'ServerImageRepo',
+        `${constructIdPrefix}ImageRepo`,
         `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
       );
       return ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
@@ -750,6 +731,168 @@ export class BackEnd extends Construct {
 
     // Otherwise, use the standard container image
     return ecs.ContainerImage.fromRegistry(imageName, { credentials });
+  }
+
+  /**
+   * Adds sidecar containers and a FireLens log router to a task definition.
+   * @param taskDefinition - The task definition to add containers to.
+   * @param config - The infra config (for FireLens and registry settings).
+   * @param additionalContainers - The sidecar container definitions.
+   * @param credentials - Optional registry credentials.
+   * @param idPrefix - Optional prefix for construct IDs to avoid collisions.
+   */
+  private addSidecarContainers(
+    taskDefinition: ecs.FargateTaskDefinition,
+    config: MedplumInfraConfig,
+    additionalContainers: NonNullable<MedplumInfraConfig['additionalContainers']> | undefined,
+    credentials: secretsmanager.ISecret | undefined,
+    idPrefix?: string
+  ): void {
+    const prefix = idPrefix ? `${idPrefix}` : '';
+    for (const container of additionalContainers ?? EMPTY) {
+      taskDefinition.addContainer(`${prefix}AdditionalContainer-${container.name}`, {
+        containerName: container.name,
+        image: this.getContainerImage(config, container.image, credentials, `${prefix || 'Server'}-${container.name}`),
+        command: container.command,
+        environment: container.environment,
+        logging: this.logDriver,
+        essential: container.essential ?? false,
+      });
+    }
+
+    if (config.fireLens?.enabled) {
+      taskDefinition.addFirelensLogRouter(`${prefix}FireLensRouter`, {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
+    }
+  }
+
+  /**
+   * Adds CPU-based auto-scaling to a Fargate service.
+   * @param service - The Fargate service to add auto-scaling to.
+   * @param autoScaling - The auto-scaling configuration, or undefined to skip.
+   * @param idPrefix - Optional prefix for the scaling policy construct ID.
+   */
+  private addAutoScaling(
+    service: ecs.FargateService,
+    autoScaling: MedplumInfraConfig['fargateAutoScaling'],
+    idPrefix?: string
+  ): void {
+    if (!autoScaling) {
+      return;
+    }
+    const prefix = idPrefix ?? '';
+    const scaling = service.autoScaleTaskCount({
+      minCapacity: autoScaling.minCapacity,
+      maxCapacity: autoScaling.maxCapacity,
+    });
+    scaling.scaleOnCpuUtilization(`${prefix}CpuScaling`, {
+      targetUtilizationPercent: autoScaling.targetUtilizationPercent,
+      scaleInCooldown: Duration.seconds(autoScaling.scaleInCooldown),
+      scaleOutCooldown: Duration.seconds(autoScaling.scaleOutCooldown),
+    });
+  }
+
+  /**
+   * Adds RDS and Redis dependencies to a Fargate service so it is created after the data stores.
+   * @param service - The Fargate service to add dependencies to.
+   * @param purposeRedisClusters - Purpose-specific Redis clusters to add as dependencies.
+   */
+  private addServiceDependencies(
+    service: ecs.FargateService,
+    purposeRedisClusters: { cluster: elasticache.CfnReplicationGroup }[]
+  ): void {
+    if (this.rdsCluster) {
+      service.node.addDependency(this.rdsCluster);
+    }
+    if (this.rdsProxy) {
+      service.node.addDependency(this.rdsProxy);
+    }
+    service.node.addDependency(this.redisCluster);
+    for (const { cluster } of purposeRedisClusters) {
+      service.node.addDependency(cluster);
+    }
+  }
+
+  /**
+   * Creates an additional Fargate service to run background jobs. If `workers` is not specified in the
+   * service's configuration AND no MEDPLUM_WORKERS* environment variables are present, all background
+   * workers are run on this service.
+   *
+   * The service shares the same cluster, VPC, security group, and dependencies as the primary service,
+   * but is not added to the ALB and uses a `,env` config suffix for env var overrides.
+   * @param config - The infra config.
+   * @param service - The additional service definition.
+   * @param containerRegistryCredentials - Optional registry credentials.
+   * @param purposeRedisClusters - Purpose-specific Redis clusters to add as dependencies.
+   */
+  private createWorkerService(
+    config: MedplumInfraConfig,
+    service: NonNullable<MedplumInfraConfig['workerServices']>[number],
+    containerRegistryCredentials: secretsmanager.ISecret | undefined,
+    purposeRedisClusters: { cluster: elasticache.CfnReplicationGroup }[]
+  ): void {
+    const name = config.name;
+    const region = config.region;
+    const serviceId = service.id + 'Worker';
+
+    const serviceTaskDef = new ecs.FargateTaskDefinition(this, `${serviceId}TaskDefinition`, {
+      memoryLimitMiB: service.serverMemory ?? config.serverMemory,
+      cpu: service.serverCpu ?? config.serverCpu,
+      taskRole: this.taskRole,
+    });
+
+    const serviceImage = service.serverImage ?? config.serverImage;
+    const serviceCommand = region === 'us-east-1' ? `aws:/medplum/${name}/,env` : `aws:${region}:/medplum/${name}/,env`;
+    const serviceEnv = { ...config.environment, ...service.environment };
+
+    // enable all workers if no worker config specified for this service
+    if (!service.workers && !Object.keys(service.environment ?? {}).some((k) => k.startsWith('MEDPLUM_WORKERS'))) {
+      serviceEnv['MEDPLUM_WORKERS_ENABLED'] = JSON.stringify(['*']);
+    }
+
+    serviceTaskDef.addContainer(`${serviceId}Container`, {
+      image: this.getContainerImage(config, serviceImage, containerRegistryCredentials, serviceId),
+      command: [serviceCommand],
+      logging: this.logDriver,
+      environment: serviceEnv,
+    });
+
+    // Add port mappings for ECS health checks (not for ALB)
+    serviceTaskDef.defaultContainer?.addPortMappings({
+      containerPort: config.apiPort,
+      hostPort: config.apiPort,
+    });
+
+    this.addSidecarContainers(
+      serviceTaskDef,
+      config,
+      service.additionalContainers ?? config.additionalContainers,
+      containerRegistryCredentials,
+      serviceId
+    );
+
+    const serviceFargate = new ecs.FargateService(this, `${serviceId}FargateService`, {
+      cluster: this.ecsCluster,
+      taskDefinition: serviceTaskDef,
+      assignPublicIp: false,
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+      },
+      desiredCount: service.desiredCount,
+      securityGroups: [this.fargateSecurityGroup],
+      healthCheckGracePeriod: Duration.minutes(5),
+      minHealthyPercent: 50,
+    });
+
+    // Add dependencies - same as primary service
+    this.addServiceDependencies(serviceFargate, purposeRedisClusters);
+
+    // Optional auto-scaling
+    this.addAutoScaling(serviceFargate, service.fargateAutoScaling, serviceId);
   }
 
   private createRedisCluster(

@@ -17,15 +17,24 @@ import { useMemo, useState } from 'react';
 import { QuestionnaireForm } from '../../QuestionnaireForm/QuestionnaireForm';
 import { ResourceInput } from '../../ResourceInput/ResourceInput';
 
+/**
+ * Props for the NewTopicDialog component.
+ * @param subject - The patient to associate with the new thread. When provided and `allowPatientSelection` is false, the patient field is pre-filled and disabled.
+ * @param opened - Whether the dialog is open.
+ * @param onClose - Callback fired when the dialog is closed.
+ * @param onSubmit - Callback fired with the created Communication resource after successful submission.
+ * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `subject` and disabled. Use true for provider-facing contexts, false for patient-facing apps.
+ */
 interface NewTopicDialogProps {
   subject: Reference<Patient> | Patient | undefined;
   opened: boolean;
   onClose: () => void;
   onSubmit?: (communication: Communication) => void;
+  allowPatientSelection?: boolean;
 }
 
 export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
-  const { subject, opened, onClose, onSubmit } = props;
+  const { subject, opened, onClose, onSubmit, allowPatientSelection = false } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
@@ -99,13 +108,14 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
       <Stack gap="xl">
         <Stack gap={0}>
           <Text fw={500}>Patient</Text>
-          <Text c="dimmed">Select a patient</Text>
+          {allowPatientSelection && <Text c="dimmed">Select a patient</Text>}
 
           <ResourceInput
             resourceType="Patient"
             name="patient"
             required={true}
             defaultValue={patient}
+            disabled={!allowPatientSelection && !!patient}
             onChange={(value) => {
               setPatient(value ? (createReference(value) as Reference<Patient>) : undefined);
             }}

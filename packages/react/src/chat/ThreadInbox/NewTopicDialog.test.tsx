@@ -20,11 +20,17 @@ describe('NewTopicDialog', () => {
     jest.clearAllMocks();
   });
 
-  const setup = (opened = true, subject?: Patient): void => {
+  const setup = (opened = true, subject?: Patient, allowPatientSelection?: boolean): void => {
     render(
       <>
         <Notifications />
-        <NewTopicDialog opened={opened} onClose={mockOnClose} onSubmit={mockOnSubmit} subject={subject} />
+        <NewTopicDialog
+          opened={opened}
+          onClose={mockOnClose}
+          onSubmit={mockOnSubmit}
+          subject={subject}
+          allowPatientSelection={allowPatientSelection}
+        />
       </>,
       ({ children }) => (
         <MemoryRouter>
@@ -44,10 +50,22 @@ describe('NewTopicDialog', () => {
     expect(screen.queryByText('New Message')).not.toBeInTheDocument();
   });
 
-  test('displays patient input field', () => {
+  test('shows disabled patient field by default (allowPatientSelection=false)', () => {
     setup(true);
     expect(screen.getByText('Patient')).toBeInTheDocument();
+    expect(screen.queryByText('Select a patient')).not.toBeInTheDocument();
+  });
+
+  test('shows enabled patient field with hint when allowPatientSelection is true', () => {
+    setup(true, undefined, true);
+    expect(screen.getByText('Patient')).toBeInTheDocument();
     expect(screen.getByText('Select a patient')).toBeInTheDocument();
+  });
+
+  test('shows disabled patient field without hint when allowPatientSelection is false', () => {
+    setup(true, undefined, false);
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+    expect(screen.queryByText('Select a patient')).not.toBeInTheDocument();
   });
 
   test('displays practitioner input field', () => {
@@ -66,9 +84,9 @@ describe('NewTopicDialog', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 
-  test('shows error when submitting without patient', async () => {
+  test('shows error when submitting without patient and search is enabled', async () => {
     const user = userEvent.setup();
-    setup(true);
+    setup(true, undefined, true);
 
     const submitButton = screen.getByRole('button', { name: 'Next' });
     await user.click(submitButton);
