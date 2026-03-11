@@ -3,16 +3,8 @@
 import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { createReference, getReferenceString } from '@medplum/core';
-import type {
-  ClinicalImpression,
-  Encounter,
-  Patient,
-  Practitioner,
-  Provenance,
-  Reference,
-  Task,
-} from '@medplum/fhirtypes';
-import { Loading, useMedplum, useResource } from '@medplum/react';
+import type { ClinicalImpression, Encounter, Practitioner, Provenance, Reference, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -45,13 +37,11 @@ export interface EncounterChartProps {
 export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
   const { encounter: encounterProp } = props;
   const medplum = useMedplum();
-  const encounterResource = useResource(encounterProp);
-  const patientReference = encounterResource?.subject as Reference<Patient> | undefined;
-  const patientResource = useResource(patientReference);
 
   const [activeTab, setActiveTab] = useState<string>('notes');
   const {
     encounter,
+    patient: patientResource,
     claim,
     practitioner,
     tasks,
@@ -64,7 +54,7 @@ export const EncounterChart = (props: EncounterChartProps): JSX.Element => {
     setTasks,
     setClinicalImpression,
     setChargeItems,
-  } = useEncounterChart(encounterProp, patientReference);
+  } = useEncounterChart(encounterProp);
 
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
