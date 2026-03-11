@@ -27,8 +27,15 @@ import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
 import * as oauthUtilsModule from '../oauth/utils';
-import { getUserActiveWebSocketSubscriptionCount, isSubscriptionActive, publish } from '../pubsub';
+import {
+  addUserActiveWebSocketSubscription,
+  getActiveSubscriptions,
+  getUserActiveWebSocketSubscriptionCount,
+  isSubscriptionActive,
+  publish,
+} from '../pubsub';
 import { createTestProject, withTestContext } from '../test.setup';
+import * as workerUtilsModule from '../workers/utils';
 
 jest.mock('hibp');
 
@@ -1062,16 +1069,15 @@ describe('WebSocket Subscription', () => {
 
   test('Undefined authState returned', () =>
     withTestContext(async () => {
-      // Import the module to mock
-      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
       let mockGetLoginForAccessToken = false;
       const getLoginForAccessTokenSpy = jest
         .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
         .mockImplementation(async (...args) => {
           if (mockGetLoginForAccessToken) {
-            return undefined; // Return undefined auth state
+            return undefined;
           }
-          return originalGetLoginForAccessToken(...args);
+          return actualGetLoginForAccessToken(...args);
         });
       const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
 
@@ -1176,7 +1182,7 @@ describe('WebSocket Subscription', () => {
 
   test('Dead subscription removed from active set when token fails to validate', () =>
     withTestContext(async () => {
-      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
       let mockGetLoginForAccessToken = false;
       const getLoginForAccessTokenSpy = jest
         .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
@@ -1184,7 +1190,7 @@ describe('WebSocket Subscription', () => {
           if (mockGetLoginForAccessToken) {
             return undefined;
           }
-          return originalGetLoginForAccessToken(...args);
+          return actualGetLoginForAccessToken(...args);
         });
 
       const binary = await repo.createResource<Binary>({
@@ -1240,17 +1246,16 @@ describe('WebSocket Subscription', () => {
             content: [{ attachment: { url: `Binary/${binary.id}` } }],
           });
 
-          // The subscription was already active from creation. The dead subscription cleanup
-          // (triggered by the failed token validation in the pub/sub handler) may remove it
-          // before or after we start polling. Just wait for it to become inactive.
+          // Wait for the dead subscription cleanup (triggered by failed token validation)
+          // to remove the subscription from the active hash.
           let subActive = true;
           while (subActive) {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
                 project.id as string,
-                'Patient',
-                `Subscription/${patientSubscription?.id}`
+                'DocumentReference',
+                `Subscription/${subscription.id}`
               )) === 1;
           }
           expect(subActive).toStrictEqual(false);
@@ -1266,7 +1271,7 @@ describe('WebSocket Subscription', () => {
 
   test('Dead subscription not notified on subsequent events after purge', () =>
     withTestContext(async () => {
-      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
+      const actualGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
       let mockGetLoginForAccessToken = false;
       const getLoginForAccessTokenSpy = jest
         .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
@@ -1274,7 +1279,7 @@ describe('WebSocket Subscription', () => {
           if (mockGetLoginForAccessToken) {
             return undefined;
           }
-          return originalGetLoginForAccessToken(...args);
+          return actualGetLoginForAccessToken(...args);
         });
       const globalLoggerInfoSpy = jest.spyOn(globalLogger, 'info');
 
@@ -1339,8 +1344,8 @@ describe('WebSocket Subscription', () => {
             subActive =
               (await isSubscriptionActive(
                 project.id as string,
-                'Patient',
-                `Subscription/${patientSubscription?.id}`
+                'DocumentReference',
+                `Subscription/${subscription.id}`
               )) === 1;
           }
 
@@ -1386,14 +1391,13 @@ describe('WebSocket Subscription', () => {
       const authorRef = sub.meta?.author?.reference as string;
       expect(authorRef).toBeDefined();
 
-      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
-      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
-
       const res = await request(server)
         .get(`/fhir/R4/Subscription/${sub.id}/$get-ws-binding-token`)
         .set('Authorization', 'Bearer ' + accessToken);
       const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
 
+      // Subscriptions are only added to the user active set when bound, not when created
+      let countAfterBind = 0;
       await request(server)
         .ws('/ws/subscriptions-r4')
         .sendJson({ type: 'bind-with-token', payload: { token } })
@@ -1404,14 +1408,18 @@ describe('WebSocket Subscription', () => {
             entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
           });
         })
+        .exec(async () => {
+          countAfterBind = await getUserActiveWebSocketSubscriptionCount(authorRef);
+          expect(countAfterBind).toBeGreaterThanOrEqual(1);
+        })
         .close()
         .expectClosed()
         .exec(async () => {
           // After disconnect, user active set should be decremented
-          while ((await getUserActiveWebSocketSubscriptionCount(authorRef)) >= countAfterCreate) {
+          while ((await getUserActiveWebSocketSubscriptionCount(authorRef)) >= countAfterBind) {
             await sleep(0);
           }
-          expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+          expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterBind - 1);
         });
     }));
 
@@ -1429,12 +1437,133 @@ describe('WebSocket Subscription', () => {
       const authorRef = sub.meta?.author?.reference as string;
       expect(authorRef).toBeDefined();
 
-      const countAfterCreate = await getUserActiveWebSocketSubscriptionCount(authorRef);
-      expect(countAfterCreate).toBeGreaterThanOrEqual(1);
+      // Subscriptions are only added to the user active set when bound, not when created.
+      // Manually add the subscription to simulate it having been bound.
+      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub.id}`);
+      const countAfterBind = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      expect(countAfterBind).toBeGreaterThanOrEqual(1);
 
       await repo.deleteResource('Subscription', sub.id);
 
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterCreate - 1);
+      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterBind - 1);
+    }));
+
+  test('Bind resolves membership via lookup when membership claim is absent from token', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
+
+      // Simulate an older token that lacks the membership claim
+      const origVerifyJwt = keysModule.verifyJwt;
+      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
+        const result = await origVerifyJwt(t);
+        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        return { ...result, payload: rest };
+      });
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            resourceType: 'Bundle',
+            type: 'history',
+            entry: [{ resource: { resourceType: 'SubscriptionStatus', type: 'handshake' } }],
+          });
+        })
+        .exec(async () => {
+          // Wait for the active entry to appear, then verify membership was populated via fallback lookup
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+          }
+          const entries = await getActiveSubscriptions(project.id as string, 'Patient');
+          const entry = entries[`Subscription/${subscription.id}`];
+          expect(entry).toBeDefined();
+          expect(entry.membershipId).toMatch(/^[\da-f-]{36}$/);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      verifyJwtSpy.mockRestore();
+    }));
+
+  test('Bind fails with warning when membership claim is absent and membership lookup returns nothing', () =>
+    withTestContext(async () => {
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: { type: 'websocket' },
+      });
+
+      const token = await keysModule.generateAccessToken(
+        {
+          client_id: randomUUID(),
+          login_id: randomUUID(),
+          sub: randomUUID(),
+          username: randomUUID(),
+          scope: 'mock',
+          profile: getReferenceString(repo.getAuthor()) ?? '',
+        },
+        {
+          additionalClaims: {
+            // We need subscription_id but intentionally leave off membership_id
+            subscription_id: subscription.id,
+          },
+        }
+      );
+
+      // Simulate an older token that lacks the membership claim
+      const origVerifyJwt = keysModule.verifyJwt;
+      const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
+        const result = await origVerifyJwt(t);
+        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        return { ...result, payload: rest };
+      });
+      // Simulate membership not found (e.g. deleted or cross-project token)
+      const findProjectMembershipSpy = jest
+        .spyOn(workerUtilsModule, 'findProjectMembership')
+        .mockResolvedValueOnce(undefined);
+      const warnSpy = jest.spyOn(globalLogger, 'warn');
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .exec(async () => {
+          await sleep(1000);
+          expect(warnSpy).toHaveBeenCalledWith(
+            '[WS] Failed to retrieve project membership for profile when binding to token',
+            expect.objectContaining({ subscriptionId: subscription.id })
+          );
+          const active = await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`);
+          expect(active).toBe(0);
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          await sleep(0);
+        });
+
+      verifyJwtSpy.mockRestore();
+      findProjectMembershipSpy.mockRestore();
+      warnSpy.mockRestore();
     }));
 
   test('Error when user exceeds max concurrent WebSocket subscriptions', () =>
@@ -1447,15 +1576,16 @@ describe('WebSocket Subscription', () => {
         withRepo: true,
       });
 
-      // First two should succeed
-      await limitRepo.createResource<Subscription>({
+      // Create two subscriptions and simulate them being bound (added to the user active set).
+      // The limit check at create time reads the bound count, so we need to bind first.
+      const sub1 = await limitRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
         criteria: 'Patient',
         channel: { type: 'websocket' },
       });
-      await limitRepo.createResource<Subscription>({
+      const sub2 = await limitRepo.createResource<Subscription>({
         resourceType: 'Subscription',
         reason: 'test',
         status: 'active',
@@ -1463,7 +1593,11 @@ describe('WebSocket Subscription', () => {
         channel: { type: 'websocket' },
       });
 
-      // Third should fail
+      const authorRef = sub1.meta?.author?.reference as string;
+      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub1.id}`);
+      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub2.id}`);
+
+      // Third should fail since 2 are already active
       await expect(
         limitRepo.createResource<Subscription>({
           resourceType: 'Subscription',
