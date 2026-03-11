@@ -7,7 +7,7 @@ import type { Attachment, Communication, Organization, Patient, Reference } from
 import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff, IconUpload } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface SendFaxModalProps {
   opened: boolean;
@@ -37,6 +37,19 @@ export function SendFaxModal({
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (opened) {
+      setRecipientOrg(undefined);
+      setRecipientName('');
+      setFaxNumber('');
+      setPatient(defaultPatient);
+      setSubject('');
+      setCoverNote('');
+      setFile(null);
+      setIsSubmitting(false);
+    }
+  }, [opened, defaultPatient]);
 
   const handleOrgChange = (org: Organization | undefined): void => {
     setRecipientOrg(org);
@@ -131,7 +144,7 @@ export function SendFaxModal({
         recipient = await medplum.createResource<Organization>({
           resourceType: 'Organization',
           name: recipientName.trim() || 'Fax Recipient',
-          telecom: [{ system: 'fax', value: faxNumber }],
+          contact: [{ telecom: [{ system: 'fax', value: digits }] }],
         });
       }
 
@@ -206,9 +219,7 @@ export function SendFaxModal({
     setRecipientOrg(undefined);
     setRecipientName('');
     setFaxNumber('');
-    if (!defaultPatient) {
-      setPatient(undefined);
-    }
+    setPatient(defaultPatient);
     setSubject('');
     setCoverNote('');
     setFile(null);

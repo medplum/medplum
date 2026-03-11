@@ -24,7 +24,8 @@ export function FaxDetailPanel({ fax, onFaxChange }: FaxDetailPanelProps): JSX.E
   const [forwardModalOpened, setForwardModalOpened] = useState(false);
 
   const attachment = fax.payload?.find((p) => p.contentAttachment)?.contentAttachment;
-  const attachmentUrl = useCachedBinaryUrl(attachment?.url);
+  const rawAttachmentUrl = useCachedBinaryUrl(attachment?.url);
+  const attachmentUrl = isValidUrl(rawAttachmentUrl) ? rawAttachmentUrl : undefined;
   const isInbound = fax.category?.[0]?.coding?.[0]?.code === 'inbound' || !fax.category?.[0]?.coding?.[0]?.code;
   const originatingFaxNumber = fax.extension?.find(
     (ext) => ext.url === 'https://efax.com/originating-fax-number'
@@ -272,4 +273,16 @@ function FaxMetadata({ fax, isInbound, originatingFaxNumber, patient }: FaxMetad
       )}
     </Stack>
   );
+}
+
+function isValidUrl(url: string | undefined): url is string {
+  if (!url) {
+    return false;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.href.length > 0;
+  } catch {
+    return false;
+  }
 }
