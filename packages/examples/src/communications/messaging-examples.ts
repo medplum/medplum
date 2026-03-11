@@ -35,14 +35,14 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
 
 // start-block unreadCountTs
 // Count unread messages by querying read-receipt Tasks still in 'requested' status
-const unreadCount = await medplum.search('Task', {
+// The returned Bundle's `total` field contains the unread count
+await medplum.search('Task', {
   code: 'https://medplum.com/task-codes|read-receipt',
   owner: `Practitioner/${userId}`,
   status: 'requested',
   _total: 'accurate',
   _count: 0,
 });
-// unreadCount.total contains the number of unread messages
 // end-block unreadCountTs
 
 /*
