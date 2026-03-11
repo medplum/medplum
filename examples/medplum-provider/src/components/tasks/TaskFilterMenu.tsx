@@ -52,7 +52,7 @@ function FilterSubmenu({ icon, label, isActive, children }: FilterSubmenuProps):
             </Flex>
             <Flex align="center" gap={4}>
               {isActive && <ActiveDot />}
-              <IconChevronRight size={16} color="var(--mantine-color-dimmed)" />
+              <IconChevronRight size={16} color="var(--mantine-color-gray-6)" />
             </Flex>
           </Flex>
         </Menu.Target>
