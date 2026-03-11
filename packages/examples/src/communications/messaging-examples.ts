@@ -7,6 +7,7 @@ const activeThreads = await medplum.searchResources('Communication', {
 });
 // end-block filterActiveThreadsTs
 
+/*
 // start-block filterActiveThreadsCli
 medplum get 'Communication?part-of:missing=true&status:not=completed'
 // end-block filterActiveThreadsCli
@@ -16,6 +17,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterActiveThreadsCurl
+*/
 
 // start-block unreadCountTs
 const unreadCount = await medplum.search('Communication', {
@@ -28,6 +30,7 @@ const unreadCount = await medplum.search('Communication', {
 const count = unreadCount.total ?? 0;
 // end-block unreadCountTs
 
+/*
 // start-block unreadCountCli
 medplum get 'Communication?recipient=Practitioner/{userId}&status:not=completed&part-of:missing=false&_total=accurate&_count=0'
 // end-block unreadCountCli
@@ -37,6 +40,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?recipient=Practitioner/{user
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block unreadCountCurl
+*/
 
 // start-block loadDraftsTs
 const myDrafts = await medplum.searchResources('Communication', {
@@ -45,6 +49,7 @@ const myDrafts = await medplum.searchResources('Communication', {
 });
 // end-block loadDraftsTs
 
+/*
 // start-block loadDraftsCli
 medplum get 'Communication?sender=Practitioner/{currentUserId}&status=preparation'
 // end-block loadDraftsCli
@@ -54,7 +59,8 @@ curl 'https://api.medplum.com/fhir/R4/Communication?sender=Practitioner/{current
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block loadDraftsCurl
-
+*/
+  
 // start-block queryAllThreadsTs
 const threads = await medplum.searchResources('Communication', {
   'part-of:missing': true,
@@ -62,6 +68,7 @@ const threads = await medplum.searchResources('Communication', {
 });
 // end-block queryAllThreadsTs
 
+/*
 // start-block queryAllThreadsCli
 medplum get 'Communication?part-of:missing=true&status:not=completed'
 // end-block queryAllThreadsCli
@@ -71,6 +78,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block queryAllThreadsCurl
+*/
 
 // start-block queryMessagesInThreadTs
 const messages = await medplum.searchResources('Communication', {
@@ -79,6 +87,7 @@ const messages = await medplum.searchResources('Communication', {
 });
 // end-block queryMessagesInThreadTs
 
+/*
 // start-block queryMessagesInThreadCli
 medplum get 'Communication?part-of=Communication/{threadHeaderId}&_sort=sent'
 // end-block queryMessagesInThreadCli
@@ -89,6 +98,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
   -H 'content-type: application/fhir+json'
 // end-block queryMessagesInThreadCurl
 
+
 // start-block loadThreadsWithMessagesTs
 const threadsWithMessages = await medplum.searchResources('Communication', {
   'part-of:missing': true,
@@ -96,6 +106,7 @@ const threadsWithMessages = await medplum.searchResources('Communication', {
 });
 // end-block loadThreadsWithMessagesTs
 
+/*
 // start-block loadThreadsWithMessagesCli
 medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
 // end-block loadThreadsWithMessagesCli
@@ -105,6 +116,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinc
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block loadThreadsWithMessagesCurl
+*/
 
 // start-block filterByPatientTs
 const patientThreads = await medplum.searchResources('Communication', {
@@ -113,6 +125,7 @@ const patientThreads = await medplum.searchResources('Communication', {
 });
 // end-block filterByPatientTs
 
+/*
 // start-block filterByPatientCli
 medplum get 'Communication?part-of:missing=true&subject=Patient/homer-simpson'
 // end-block filterByPatientCli
@@ -123,6 +136,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&subject
   -H 'content-type: application/fhir+json'
 // end-block filterByPatientCurl
 
+
 // start-block filterMyThreadsTs
 const myThreads = await medplum.searchResources('Communication', {
   'part-of:missing': true,
@@ -131,6 +145,7 @@ const myThreads = await medplum.searchResources('Communication', {
 });
 // end-block filterMyThreadsTs
 
+/*
 // start-block filterMyThreadsCli
 medplum get 'Communication?part-of:missing=true&recipient=Practitioner/{id}&status:not=completed'
 // end-block filterMyThreadsCli
@@ -140,6 +155,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterMyThreadsCurl
+*/
 
 // start-block poolTasksTs
 const poolTasks = await medplum.search('Task', {
@@ -149,6 +165,7 @@ const poolTasks = await medplum.search('Task', {
 });
 // end-block poolTasksTs
 
+/*
 // start-block poolTasksCli
 medplum get 'Task?performer=http://snomed.info/sct|17561000&owner:missing=true&_include=Task:focus'
 // end-block poolTasksCli
@@ -158,3 +175,4 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
+*/
