@@ -1,3 +1,9 @@
+---
+sidebar_position: 3
+tags: [communications, task, routing]
+keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
+---
+
 import ExampleCode from '!!raw-loader!./messaging-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
@@ -5,9 +11,13 @@ import TabItem from '@theme/TabItem';
 
 # Task-Based Routing
 
-When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR `Task` resource alongside `Communication`. This separates the **message content** (Communication) from the **routing and assignment lifecycle** (Task), so you can reassign work without muddying the conversation data.
+When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR [`Task`](/docs/api/fhir/resources/task) resource alongside [`Communication`](/docs/api/fhir/resources/communication). This separates **message content** ([`Communication`](/docs/api/fhir/resources/communication)) from the **routing and assignment lifecycle** ([`Task`](/docs/api/fhir/resources/task)), allowing you to reassign work without modifying conversation data.
 
-> **Key concept:** `Task` is the **authoritative** source for routing and assignment. `Communication.recipient` is **informational** — it reflects who should see the thread (for access policy scoping and display), but if there's ever a conflict between `Task.owner` and `Communication.recipient`, the Task is the source of truth. When rerouting, always update the Task first, then update the Communication recipient to match.
+:::note Key concept
+
+[`Task`](/docs/api/fhir/resources/task) is the **authoritative** source for routing and assignment. `Communication.recipient` is **informational** — it reflects who should see the thread (for access policy scoping and display), but if there's ever a conflict between `Task.owner` and `Communication.recipient`, the [`Task`](/docs/api/fhir/resources/task) is the source of truth. When rerouting, always update the [`Task`](/docs/api/fhir/resources/task) first, then update `Communication.recipient` to match.
+
+:::
 
 ## Communication + Task Relationship
 
@@ -22,9 +32,9 @@ flowchart TD
 
 | Element          | What It Does                                                                                                                                                              |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `focus`          | Links the Task to the Communication thread header it's tracking                                                                                                           |
+| `focus`          | Links the [`Task`](/docs/api/fhir/resources/task) to the [`Communication`](/docs/api/fhir/resources/communication) thread header it's tracking                                                                                                           |
 | `for`            | The patient this Task is about (mirrors `Communication.subject`)                                                                                                          |
-| `owner`          | Who is currently responsible — a `Practitioner` (individual). Cleared when rerouting to a pool.                                                                           |
+| `owner`          | Who is currently responsible — a [`Practitioner`](/docs/api/fhir/resources/practitioner) (individual). Cleared when rerouting to a pool.                                                                           |
 | `performerType`  | The type of provider who should handle this Task (e.g. "Health coach"). Used for pool-based routing — providers whose `PractitionerRole.code` matches can claim the Task. |
 | `requester`      | Who created or triggered the Task                                                                                                                                         |
 | `status`         | Task lifecycle: `requested` → `accepted` → `completed` (or `cancelled`)                                                                                                  |
@@ -34,7 +44,7 @@ flowchart TD
 
 ## Create a Task for a thread
 
-When a new message arrives that requires action, create a Task linked to the thread via `focus`. Use `performerType` to route to a provider pool, or set `owner` directly for individual assignment.
+When a new message arrives that requires action, create a [`Task`](/docs/api/fhir/resources/task) linked to the thread via `focus`. Use `performerType` to route to a provider pool, or set `owner` directly for individual assignment.
 
 ```ts
 const task = await medplum.createResource({
@@ -56,13 +66,17 @@ const task = await medplum.createResource({
 });
 ```
 
-To assign directly to a specific provider instead of a pool, set `owner` to the Practitioner reference and omit `performerType`.
+To assign directly to a specific provider instead of a pool, set `owner` to the [`Practitioner`](/docs/api/fhir/resources/practitioner) reference and omit `performerType`.
 
-> **Tip:** Don't create a Task for every message — only for messages that require a response. Use `Communication.category` or business logic in a Bot to decide which messages need Tasks. In production, Task creation is typically handled by a Bot triggered via a Subscription on `Communication` creation rather than created manually.
+:::tip
+
+Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require a response. Use `Communication.category` or business logic in a Bot to determine which messages need routing. In production, [`Task`](/docs/api/fhir/resources/task) creation is typically handled by a Bot triggered via a [`Subscription`](/docs/api/fhir/resources/subscription) on [`Communication`](/docs/api/fhir/resources/communication) creation rather than created manually.
+
+:::
 
 ## Claim a Task from the pool
 
-When a team member picks up the Task, update `status` to `accepted` and set `owner` to the specific Practitioner:
+When a team member picks up the [`Task`](/docs/api/fhir/resources/task), update `status` to `accepted` and set `owner` to the specific [`Practitioner`](/docs/api/fhir/resources/practitioner):
 
 ```ts
 await medplum.patchResource('Task', task.id!, [
@@ -75,7 +89,7 @@ await medplum.patchResource('Task', task.id!, [
 ]);
 ```
 
-To see unclaimed Tasks in a pool, query by `performerType`:
+To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, query by `performerType`:
 
 ```
 Task?performer=http://snomed.info/sct|224535009&status=requested
@@ -105,7 +119,7 @@ await medplum.patchResource('Communication', threadHeader.id!, [
 
 ## Reroute to a provider pool
 
-Clear `Task.owner`, set `Task.performerType` to the role type, and clear `Communication.recipient`. Providers whose `PractitionerRole.code` matches the `performerType` can see and claim the Task.
+Clear `Task.owner`, set `Task.performerType` to the role type, and clear `Communication.recipient`. Providers whose `PractitionerRole.code` matches the `performerType` can see and claim the [`Task`](/docs/api/fhir/resources/task).
 
 ```ts
 await medplum.patchResource('Task', task.id!, [
@@ -153,7 +167,7 @@ Providers match pools via their `PractitionerRole.code`.
 
 ## Tracking Reroute History
 
-When Tasks are rerouted, you'll want an audit trail of who owned it previously, when it was reassigned, and why. Task version history (`meta.versionId`) automatically captures every state change, so the basic audit trail is always available via `medplum.readHistory('Task', task.id!)`. The question is how to capture the **reason** for the reroute.
+When [`Task`](/docs/api/fhir/resources/task) resources are rerouted, you may need an audit trail of who owned them previously, when they were reassigned, and why. [`Task`](/docs/api/fhir/resources/task) version history (`meta.versionId`) automatically captures every state change, so the basic audit trail is always available via `medplum.readHistory('Task', task.id!)`. The question is how to capture the **reason** for the reroute.
 
 ### Capturing reroute reasons
 
@@ -178,7 +192,7 @@ await medplum.patchResource('Task', task.id!, [
 ]);
 ```
 
-**Structured reason codes:** If you need standardized, queryable reason codes, create a `Provenance` resource alongside the Task update. `Provenance.reason` accepts coded values:
+**Structured reason codes:** If you need standardized, queryable reason codes, create a [`Provenance`](/docs/api/fhir/resources/provenance) resource alongside the [`Task`](/docs/api/fhir/resources/task) update. `Provenance.reason` accepts coded values:
 
 ```ts
 await medplum.createResource({
@@ -208,7 +222,7 @@ You can then query `Provenance?target=Task/{id}` to get the full reroute history
 
 ### Reroute visibility: should the original owner still see the Task?
 
-`Task.owner` is `0..1`, so it can only reference a single Practitioner. When rerouting, you need to decide whether the original owner retains visibility.
+`Task.owner` is `0..1`, so it can only reference a single [`Practitioner`](/docs/api/fhir/resources/practitioner). When rerouting, you need to decide whether the original owner retains visibility.
 
 **If the original owner does NOT need to see the Task after reroute:** Update `Task.owner` directly. The original owner loses access (assuming access policies are scoped to `owner`):
 
@@ -218,7 +232,7 @@ await medplum.patchResource('Task', task.id!, [
 ]);
 ```
 
-**If the original owner DOES need to retain visibility:** Create a new Task for the new owner and mark the original as rerouted. Both owners can see their respective Tasks, and `Task.focus` links both to the same thread:
+**If the original owner DOES need to retain visibility:** Create a new [`Task`](/docs/api/fhir/resources/task) for the new owner and mark the original as rerouted. Both owners can see their respective [`Task`](/docs/api/fhir/resources/task) resources, and `Task.focus` links both to the same thread:
 
 ```ts
 const newTask = await medplum.createResource({
@@ -252,10 +266,9 @@ await medplum.patchResource('Task', task.id!, [
 ]);
 ```
 
-## In your UI
+## See Also
 
-Build a task queue view by querying unclaimed Tasks for the current user's pool. Use `Task.priority` to drive visual urgency indicators (color coding, sort order, badges). Display the linked thread's `topic` (from the `focus` Communication) so the provider has context before claiming.
-
-After claiming, navigate the user to the thread detail view so they can read the conversation and respond.
-
----
+- [Organizing Communications Using Threads](/docs/communications/organizing-communications) — structuring message threads with [`Communication`](/docs/api/fhir/resources/communication) resources
+- [`Communication`](/docs/api/fhir/resources/communication) FHIR resource API
+- [`Task`](/docs/api/fhir/resources/task) FHIR resource API
+- [Contact Center Demo](https://github.com/medplum/medplum-chat-demo) — an in-depth example of a provider messaging application
