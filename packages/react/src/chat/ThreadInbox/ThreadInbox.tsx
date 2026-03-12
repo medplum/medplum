@@ -27,10 +27,10 @@ import { getReferenceString, normalizeErrorString, Operator, parseSearchRequest 
 import type { Communication, DocumentReference, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplumNavigate, useThreadInbox } from '@medplum/react-hooks';
 import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
-import type { ComponentType, JSX } from 'react';
+import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { PatientSummary } from '../../PatientSummary/PatientSummary';
-import type { PharmacyDialogBaseProps } from '../../PatientSummary/Pharmacies';
+import type { PatientSummarySectionConfig } from '../../PatientSummary/PatientSummary.types';
 import { ThreadChat } from '../ThreadChat/ThreadChat';
 import { ChatList } from './ChatList';
 import { NewTopicDialog } from './NewTopicDialog';
@@ -43,7 +43,7 @@ import classes from './ThreadInbox.module.css';
  * @param threadId - The id of the thread to select.
  * @param subject - The default subject when creating a new thread.
  * @param showPatientSummary - Whether to show the patient summary.
- * @param pharmacyDialogComponent - Optional component to render as the pharmacy dialog in the patient summary.
+ * @param sections - Optional sections configuration for the patient summary.
  * @param onNew - A function to handle a new thread.
  * @param getThreadUri - A function to build thread URIs.
  * @param onChange - A function to handle search changes.
@@ -56,7 +56,7 @@ export interface ThreadInboxProps {
   readonly threadId: string | undefined;
   readonly subject?: Reference<Patient> | Patient;
   readonly showPatientSummary?: boolean;
-  readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly sections?: PatientSummarySectionConfig[];
   readonly onNew: (message: Communication) => void;
   readonly getThreadUri: (topic: Communication) => string;
   readonly onChange: (search: SearchRequest) => void;
@@ -73,7 +73,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
     threadId,
     subject,
     showPatientSummary = false,
-    pharmacyDialogComponent,
+    sections,
     onNew,
     getThreadUri,
     uploadEnabled,
@@ -320,7 +320,7 @@ export function ThreadInbox(props: ThreadInboxProps): JSX.Element {
                     <PatientSummary
                       key={selectedThread.id}
                       patient={selectedThread.subject as Reference<Patient>}
-                      pharmacyDialogComponent={pharmacyDialogComponent}
+                      sections={sections}
                     />
                   </ScrollArea>
                 </Flex>
