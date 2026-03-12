@@ -206,6 +206,16 @@ export async function executeToolCalls(
   return { messages, resourceRefs };
 }
 
+/** Strip display-only fields that should not be sent to the AI API */
+function toApiMessages(messages: Message[]): Pick<Message, 'role' | 'content' | 'tool_calls' | 'tool_call_id'>[] {
+  return messages.map(({ role, content, tool_calls, tool_call_id }) => ({
+    role,
+    content,
+    ...(tool_calls !== undefined && { tool_calls }),
+    ...(tool_call_id !== undefined && { tool_call_id }),
+  }));
+}
+
 export async function sendToBot(
   medplum: ReturnType<typeof useMedplum>,
   botId: Identifier,
@@ -215,7 +225,7 @@ export async function sendToBot(
   const response = await medplum.executeBot(botId, {
     resourceType: 'Parameters',
     parameter: [
-      { name: 'messages', valueString: JSON.stringify(messages) },
+      { name: 'messages', valueString: JSON.stringify(toApiMessages(messages)) },
       { name: 'model', valueString: model },
     ],
   });
@@ -255,7 +265,7 @@ export async function sendToBotStreaming(
     body: JSON.stringify({
       resourceType: 'Parameters',
       parameter: [
-        { name: 'messages', valueString: JSON.stringify(messages) },
+        { name: 'messages', valueString: JSON.stringify(toApiMessages(messages)) },
         { name: 'model', valueString: model },
         ...(additionalParams || []),
       ],
@@ -342,6 +352,7 @@ export interface ProcessMessageParams {
   setCurrentFhirRequest: (request: string | undefined) => void;
   onNewTopic: (topic: Communication) => void;
   onStreamChunk?: (chunk: string) => void;
+  onComponentStreamChunk?: (chunk: string) => void;
 }
 
 export interface ProcessMessageResult {
@@ -364,6 +375,7 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     setCurrentFhirRequest,
     onNewTopic,
     onStreamChunk,
+    onComponentStreamChunk,
   } = params;
 
   // Create topic on first message
@@ -404,27 +416,28 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     currentMessages.push(...toolMessages);
     allResourceRefs.push(...resourceRefs);
 
-    // Save assistant message with tool_calls AND all tool responses AFTER execution completes
-    // This prevents corrupted state where tool_calls exist without responses
+    // Save tool responses before the assistant message so a failed save never leaves
+    // an assistant+tool_calls record without corresponding responses in the DB.
     if (activeTopicId) {
       const baseSequence = currentMessages.length - 1 - toolMessages.length;
-      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, baseSequence);
       for (let i = 0; i < toolMessages.length; i++) {
         await saveMessage(medplum, activeTopicId, toolMessages[i], baseSequence + 1 + i);
       }
+      await saveMessage(medplum, activeTopicId, assistantMessageWithToolCalls, baseSequence);
     }
 
     if (initialResponse.visualize && allResourceRefs.length > 0) {
       const fhirData = await collectFhirData(medplum, allResourceRefs);
 
       let componentCode: string | undefined;
-      if (onStreamChunk) {
+      const componentChunkCallback = onComponentStreamChunk ?? onStreamChunk;
+      if (componentChunkCallback) {
         const result = await sendToBotStreaming(
           medplum,
           componentGeneratorBotSseId,
           currentMessages,
           selectedModel,
-          onStreamChunk,
+          componentChunkCallback,
           [{ name: 'fhirData', valueString: JSON.stringify(fhirData) }]
         );
         content = result.content;
