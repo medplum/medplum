@@ -2901,10 +2901,11 @@ describe('Subscription Worker', () => {
 
         // The valid subscription fires a notification — use it to confirm the worker ran
         const nextNotificationPromise = waitForNextSubNotification<Patient>();
-        await wsSubRepo.createResource<Patient>({
+        const patient = await wsSubRepo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
+        await findAndExecDispatchJob(patient, 'create');
         await nextNotificationPromise;
 
         // The expired entry should have been cleaned from the hash
@@ -2967,10 +2968,11 @@ describe('Subscription Worker', () => {
 
         // Trigger the worker; valid sub fires, expired is cleaned up
         const nextNotificationPromise = waitForNextSubNotification<Patient>();
-        await wsSubRepo.createResource<Patient>({
+        const patient = await wsSubRepo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
+        await findAndExecDispatchJob(patient, 'create');
         await nextNotificationPromise;
 
         // Expired entry should be removed from the user active set
@@ -3008,10 +3010,11 @@ describe('Subscription Worker', () => {
 
         // No notification should fire despite the criteria matching
         const assertPromise = assertNoWsNotifications();
-        await wsSubRepo.createResource<Patient>({
+        const patient = await wsSubRepo.createResource<Patient>({
           resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'Smith' }],
         });
+        await findAndExecDispatchJob(patient, 'create');
         await assertPromise;
 
         // And the entry should be cleaned up from the hash
