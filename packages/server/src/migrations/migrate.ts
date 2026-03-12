@@ -238,6 +238,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingSystemTable(result);
   buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
+  buildShardSyncOutboxTable(result);
 
   return result;
 }
@@ -751,6 +752,22 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
       { name: 'firstBoot', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
     ],
     indexes: [],
+  });
+}
+
+function buildShardSyncOutboxTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'shard_sync_outbox',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'resourceType', type: 'TEXT', notNull: true },
+      { name: 'resourceId', type: 'UUID', notNull: true },
+      { name: 'resourceVersionId', type: 'UUID', notNull: true }, // may not be useful since we read from the resource table
+    ],
+    indexes: [
+      // { columns: ['id'], indexType: 'btree' },
+      // { columns: ['resourceType', 'id'], indexType: 'btree' },
+    ],
   });
 }
 
