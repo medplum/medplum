@@ -20,7 +20,23 @@ Creating a note while charting can take many forms. One very popular method for 
 
 When capturing this data digitally, it could be very tempting to just store this as a `QuestionnaireResponse` — which would be how these fields are collected in the first place. However, this is not the "happy path" that utilizes FHIR to its fullest potential.
 
-The primary reason why this is the case is that `QuestionnaireResponse` resources contain response values, but those response values are not searchable in FHIR. In order to uphold interoperability, information in your notes should be parsed into the proper FHIR resources. 
+The primary reason why this is the case is that `QuestionnaireResponse` resources contain response values, but those response values are not searchable in FHIR. In order to uphold interoperability, information in your notes should be parsed into the proper FHIR resources.
+
+## Workflow Design Considerations
+
+How notes are actually captured and processed varies significantly by practice type. The examples below illustrate common patterns:
+
+### Questionnaire-Driven Capture (e.g., Primary Care)
+
+Many practices collect notes through a `Questionnaire` that always includes a standard set of fields — for example, a primary care practice might require blood pressure and weight at every visit. The `QuestionnaireResponse` holds the raw form submission, but those answers should be parsed into structured `Observation` resources so the data is searchable and interoperable. See [Structured Data Capture](/docs/questionnaires/structured-data-capture) for how to use the `$extract` operation to automate this, and [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) for a custom parsing approach using Bots.
+
+### Template-Driven Plan Section (e.g., Specialty Protocols)
+
+Some practices maintain a library of pre-built [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) resources for common treatment protocols. Instead of a freeform Plan section, the clinician selects a template and the application instantiates the corresponding `ServiceRequest`, `MedicationRequest`, or `CarePlan` resources automatically via the [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply).
+
+### Pre-Filled Notes from Patient Intake (e.g., Dermatology)
+
+In specialties with a bounded set of conditions — like dermatology — patients can pre-select what they want to be seen for during intake. Because those values are known in advance, developers can pre-populate the Subjective and Objective sections before the clinician opens the chart, reducing data entry to a review-and-confirm step.
 
 Enter FHIR's purpose-built resources. The FHIR spec maps the SOAP framework directly onto specific resource types:
 
@@ -29,7 +45,7 @@ Enter FHIR's purpose-built resources. The FHIR spec maps the SOAP framework dire
 | Subjective | [`Observation`](/docs/api/fhir/resources/observation)                                                     | Patient-reported symptoms and concerns        |
 | Objective  | [`Observation`](/docs/api/fhir/resources/observation)                                                     | Clinician-measured findings and vitals        |
 | Assessment | [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression)                                       | Clinical analysis, differential, and summary  |
-| Plan       | [`ServiceRequest`](/docs/api/fhir/resources/servicerequest), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`CarePlan`](/docs/api/fhir/resources/careplan) | Orders, prescriptions, and treatment strategy |
+| Plan       | [`CarePlan`](/docs/api/fhir/resources/careplan), [`ServiceRequest`](/docs/api/fhir/resources/servicerequest), [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) | Treatment strategy, orders, and prescriptions |
 
 ## How It All Fits Together
 
@@ -428,22 +444,6 @@ Once the full note is complete and reviewed, the `ClinicalImpression` status sho
 
 </details>
 
-
-## Workflow Design Considerations
-
-The FHIR resource mapping above describes the standard pattern, but how notes are actually captured and processed varies significantly by practice type. The examples below illustrate common patterns:
-
-### Questionnaire-Driven Capture (e.g., Primary Care)
-
-Many practices collect notes through a `Questionnaire` that always includes a standard set of fields — for example, a primary care practice might require blood pressure and weight at every visit. The `QuestionnaireResponse` holds the raw form submission, but those answers should be parsed into structured `Observation` resources so the data is searchable and interoperable. See [Structured Data Capture](/docs/questionnaires/structured-data-capture) for how to use the `$extract` operation to automate this, and [Bot for QuestionnaireResponse](/docs/bots/bot-for-questionnaire-response) for a custom parsing approach using Bots.
-
-### Template-Driven Plan Section (e.g., Specialty Protocols)
-
-Some practices maintain a library of pre-built [`PlanDefinition`](/docs/api/fhir/resources/plandefinition) resources for common treatment protocols. Instead of a freeform Plan section, the clinician selects a template and the application instantiates the corresponding `ServiceRequest`, `MedicationRequest`, or `CarePlan` resources automatically via the [`$apply` operation](/docs/api/fhir/operations/plandefinition-apply).
-
-### Pre-Filled Notes from Patient Intake (e.g., Dermatology)
-
-In specialties with a bounded set of conditions — like dermatology — patients can pre-select what they want to be seen for during intake. Because those values are known in advance, developers can pre-populate the Subjective and Objective sections before the clinician opens the chart, reducing data entry to a review-and-confirm step.
 
 ## Reference
 
