@@ -17,17 +17,17 @@ const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' }
 // Used in the Thread Lifecycle page to show how to find open threads
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
-  'status:not': 'completed',
+  'status:not': 'completed,entered-in-error,stopped,unknown',
 });
 // end-block filterActiveThreadsTs
 
 /*
 // start-block filterActiveThreadsCli
-medplum get 'Communication?part-of:missing=true&status:not=completed'
+medplum get 'Communication?part-of:missing=true&status:not=completed,entered-in-error,stopped,unknown'
 // end-block filterActiveThreadsCli
 
 // start-block filterActiveThreadsCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed' \
+curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed,entered-in-error,stopped,unknown' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterActiveThreadsCurl
@@ -81,18 +81,18 @@ curl 'https://api.medplum.com/fhir/R4/Communication?sender=Practitioner/{current
 // Search reference: find all thread headers, sorted by most recently active
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
-  'status:not': 'completed',
+  'status:not': 'completed,entered-in-error,stopped,unknown',
   _sort: '-_lastUpdated',
 });
 // end-block queryAllThreadsTs
 
 /*
 // start-block queryAllThreadsCli
-medplum get 'Communication?part-of:missing=true&status:not=completed&_sort=-_lastUpdated'
+medplum get 'Communication?part-of:missing=true&status:not=completed,entered-in-error,stopped,unknown&_sort=-_lastUpdated'
 // end-block queryAllThreadsCli
 
 // start-block queryAllThreadsCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed&_sort=-_lastUpdated' \
+curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:not=completed,entered-in-error,stopped,unknown&_sort=-_lastUpdated' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block queryAllThreadsCurl
@@ -163,17 +163,17 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&subject
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   recipient: getReferenceString(profile),
-  'status:not': 'completed',
+  'status:not': 'completed,entered-in-error,stopped,unknown',
 });
 // end-block filterMyThreadsTs
 
 /*
 // start-block filterMyThreadsCli
-medplum get 'Communication?part-of:missing=true&recipient=Practitioner/{id}&status:not=completed'
+medplum get 'Communication?part-of:missing=true&recipient=Practitioner/{id}&status:not=completed,entered-in-error,stopped,unknown'
 // end-block filterMyThreadsCli
 
 // start-block filterMyThreadsCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipient=Practitioner/{id}&status:not=completed' \
+curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipient=Practitioner/{id}&status:not=completed,entered-in-error,stopped,unknown' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterMyThreadsCurl
