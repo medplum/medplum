@@ -49,7 +49,7 @@ flowchart TD
 | `priority`       | Urgency level: `routine`, `urgent`, `asap`, `stat`                                                                                                                        |
 | `output`         | References the response Communication that resolved the Task                                                                                                              |
 
-## Create a Task for a thread
+## Create a Task for a Thread
 
 :::tip When to create a Task
 Does this message require a tracked response? If not, keep it as Communication only. Use `Communication.category` or a Bot to determine which messages need routing.
@@ -69,7 +69,7 @@ Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require 
 
 :::
 
-## Claim a Task from the pool
+## Claim a Task from the Pool
 
 When a team member picks up the [`Task`](/docs/api/fhir/resources/task), update `status` to `accepted` and set `owner` to the specific [`Practitioner`](/docs/api/fhir/resources/practitioner):
 
@@ -97,7 +97,7 @@ To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, qu
   </TabItem>
 </Tabs>
 
-## Reroute to a different provider
+## Reroute to a Different Provider
 
 :::tip Reroute target
 Are you reassigning to one specific provider or back to a pool? Update `owner` and `Communication.recipient` for an individual; clear `owner`, set `performerType`, and clear `recipient` for a pool.
@@ -109,7 +109,7 @@ Update `Task.owner` and `Communication.recipient` to reassign the thread:
   {ExampleCode}
 </MedplumCodeBlock>
 
-## Reroute to a provider pool
+## Reroute to a Provider Pool
 
 Clear `Task.owner`, set `Task.performerType` to the role type, and clear `Communication.recipient`. Providers whose `PractitionerRole.code` matches the `performerType` can see and claim the [`Task`](/docs/api/fhir/resources/task).
 
