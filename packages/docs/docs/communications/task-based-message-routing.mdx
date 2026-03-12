@@ -46,25 +46,9 @@ flowchart TD
 
 When a new message arrives that requires action, create a [`Task`](/docs/api/fhir/resources/task) linked to the thread via `focus`. Use `performerType` to route to a provider pool, or set `owner` directly for individual assignment.
 
-```ts
-const task = await medplum.createResource({
-  resourceType: 'Task',
-  status: 'requested',
-  intent: 'order',
-  priority: 'routine',
-  focus: { reference: `Communication/${threadHeader.id}` },
-  for: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
-  performerType: [{
-    coding: [{
-      system: 'http://snomed.info/sct',
-      code: '224535009',
-      display: 'Registered nurse',
-    }],
-  }],
-  requester: { reference: 'Practitioner/doctor-alice-smith' },
-  authoredOn: new Date().toISOString(),
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="createTaskForThreadTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 To assign directly to a specific provider instead of a pool, set `owner` to the [`Practitioner`](/docs/api/fhir/resources/practitioner) reference and omit `performerType`.
 
@@ -78,70 +62,45 @@ Only create a [`Task`](/docs/api/fhir/resources/task) for messages that require 
 
 When a team member picks up the [`Task`](/docs/api/fhir/resources/task), update `status` to `accepted` and set `owner` to the specific [`Practitioner`](/docs/api/fhir/resources/practitioner):
 
-```ts
-await medplum.patchResource('Task', task.id!, [
-  { op: 'replace', path: '/status', value: 'accepted' },
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
-  },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="claimTaskTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, query by `performerType`:
 
-```
-Task?performer=http://snomed.info/sct|224535009&status=requested
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="queryUnclaimedTasksTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="queryUnclaimedTasksCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="queryUnclaimedTasksCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 ## Reroute to a different provider
 
 Update `Task.owner` and `Communication.recipient` to reassign the thread:
 
-```ts
-await medplum.patchResource('Task', task.id!, [
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  },
-  {
-    op: 'remove',
-    path: '/performerType',
-  },
-]);
-
-await medplum.patchResource('Communication', threadHeader.id!, [
-  { op: 'replace', path: '/recipient', value: [{ reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' }] },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Reroute to a provider pool
 
 Clear `Task.owner`, set `Task.performerType` to the role type, and clear `Communication.recipient`. Providers whose `PractitionerRole.code` matches the `performerType` can see and claim the [`Task`](/docs/api/fhir/resources/task).
 
-```ts
-await medplum.patchResource('Task', task.id!, [
-  { op: 'remove', path: '/owner' },
-  { op: 'replace', path: '/status', value: 'requested' },
-  {
-    op: 'add',
-    path: '/performerType',
-    value: [{
-      coding: [{
-        system: 'http://snomed.info/sct',
-        code: '17561000',
-        display: 'Cardiologist',
-      }],
-    }],
-  },
-]);
-
-await medplum.patchResource('Communication', threadHeader.id!, [
-  { op: 'remove', path: '/recipient' },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="rerouteToPoolTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 To find Tasks routed to a pool:
 
@@ -173,50 +132,15 @@ When [`Task`](/docs/api/fhir/resources/task) resources are rerouted, you may nee
 
 **Free text reasons:** Use `Task.note` to append a human-readable reason on each reroute. Notes are an array, so each reroute adds an entry with the author and timestamp:
 
-```ts
-await medplum.patchResource('Task', task.id!, [
-  {
-    op: 'replace',
-    path: '/owner',
-    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  },
-  {
-    op: 'add',
-    path: '/note/-',
-    value: {
-      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-      time: new Date().toISOString(),
-      text: 'Rerouting to cardiology — patient has new cardiac symptoms',
-    },
-  },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="rerouteWithNoteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 **Structured reason codes:** If you need standardized, queryable reason codes, create a [`Provenance`](/docs/api/fhir/resources/provenance) resource alongside the [`Task`](/docs/api/fhir/resources/task) update. `Provenance.reason` accepts coded values:
 
-```ts
-await medplum.createResource({
-  resourceType: 'Provenance',
-  target: [{ reference: `Task/${task.id}` }],
-  recorded: new Date().toISOString(),
-  agent: [
-    {
-      who: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
-    },
-  ],
-  reason: [
-    {
-      coding: [
-        {
-          system: 'https://medplum.com/CodeSystem/reroute-reason',
-          code: 'specialty-referral',
-          display: 'Specialty referral',
-        },
-      ],
-    },
-  ],
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="rerouteProvenanceTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 You can then query `Provenance?target=Task/{id}` to get the full reroute history with structured reasons.
 
@@ -226,45 +150,15 @@ You can then query `Provenance?target=Task/{id}` to get the full reroute history
 
 **If the original owner does NOT need to see the Task after reroute:** Update `Task.owner` directly. The original owner loses access (assuming access policies are scoped to `owner`):
 
-```ts
-await medplum.patchResource('Task', task.id!, [
-  { op: 'replace', path: '/owner', value: { reference: 'Practitioner/dr-cardio' } },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="simpleRerouteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 **If the original owner DOES need to retain visibility:** Create a new [`Task`](/docs/api/fhir/resources/task) for the new owner and mark the original as rerouted. Both owners can see their respective [`Task`](/docs/api/fhir/resources/task) resources, and `Task.focus` links both to the same thread:
 
-```ts
-const newTask = await medplum.createResource({
-  resourceType: 'Task',
-  status: 'requested',
-  intent: 'order',
-  priority: task.priority,
-  focus: task.focus,
-  for: task.for,
-  owner: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
-  requester: { reference: 'Practitioner/doctor-gregory-house' },
-  authoredOn: new Date().toISOString(),
-  note: [{
-    authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-    time: new Date().toISOString(),
-    text: 'Rerouted from original Task — needs cardiology review',
-  }],
-});
-
-await medplum.patchResource('Task', task.id!, [
-  { op: 'replace', path: '/status', value: 'cancelled' },
-  {
-    op: 'add',
-    path: '/note/-',
-    value: {
-      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
-      time: new Date().toISOString(),
-      text: 'Rerouted to Dr. Cardio — see new Task',
-    },
-  },
-]);
-```
+<MedplumCodeBlock language="ts" selectBlocks="dualTaskRerouteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## See Also
 
