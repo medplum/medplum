@@ -5,11 +5,11 @@ import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString } from '@medplum/core';
 import type { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SlotInfo } from 'react-big-calendar';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
@@ -27,8 +27,32 @@ import classes from './SchedulePage.module.css';
  */
 export function SchedulePage(): JSX.Element | null {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>(undefined);
+
+  // Redirect to the current user's schedule if no id in the URL
+  useEffect(() => {
+    if (!id && profile?.id) {
+      navigate(`/Calendar/Schedule/${profile.id}`, { replace: true })?.catch(console.log);
+    }
+  }, [id, profile, navigate]);
+
+  // Load the practitioner from the URL param
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+    if (id === profile?.id) {
+      setPractitioner(profile);
+      return;
+    }
+    medplum
+      .readResource('Practitioner', id)
+      .then(setPractitioner)
+      .catch(showErrorNotification);
+  }, [id, medplum, profile]);
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
@@ -40,14 +64,16 @@ export function SchedulePage(): JSX.Element | null {
   const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
 
   useEffect(() => {
-    if (medplum.isLoading() || !profile) {
+    if (medplum.isLoading() || !practitioner) {
       return;
     }
 
-    // Search for a Schedule associated with the logged user,
+    setSchedule(undefined);
+
+    // Search for a Schedule associated with the selected practitioner,
     // create one if it doesn't exist
     medplum
-      .searchOne('Schedule', { actor: getReferenceString(profile) })
+      .searchOne('Schedule', { actor: getReferenceString(practitioner) })
       .then((foundSchedule) => {
         if (foundSchedule) {
           setSchedule(foundSchedule);
@@ -55,7 +81,7 @@ export function SchedulePage(): JSX.Element | null {
           medplum
             .createResource({
               resourceType: 'Schedule',
-              actor: [createReference(profile)],
+              actor: [createReference(practitioner)],
               active: true,
             })
             .then(setSchedule)
@@ -63,7 +89,7 @@ export function SchedulePage(): JSX.Element | null {
         }
       })
       .catch(showErrorNotification);
-  }, [medplum, profile]);
+  }, [medplum, practitioner]);
 
   // Find slots visible in the current range
   useEffect(() => {
@@ -90,7 +116,7 @@ export function SchedulePage(): JSX.Element | null {
 
   // Find appointments visible in the current range
   useEffect(() => {
-    if (!profile || !range) {
+    if (!practitioner || !range) {
       return () => {};
     }
     let active = true;
@@ -98,7 +124,7 @@ export function SchedulePage(): JSX.Element | null {
     medplum
       .searchResources('Appointment', [
         ['_count', '1000'],
-        ['actor', getReferenceString(profile as WithId<Practitioner>)],
+        ['actor', getReferenceString(practitioner as WithId<Practitioner>)],
         ['date', `ge${range.start.toISOString()}`],
         ['date', `le${range.end.toISOString()}`],
       ])
@@ -108,7 +134,7 @@ export function SchedulePage(): JSX.Element | null {
     return () => {
       active = false;
     };
-  }, [medplum, profile, range]);
+  }, [medplum, practitioner, range]);
 
   // When a date/time interval is selected, set the event object and open the
   // create appointment modal
@@ -184,26 +210,47 @@ export function SchedulePage(): JSX.Element | null {
     setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
   }, []);
 
+  const handlePractitionerNavigate = useCallback(
+    (p: Practitioner | undefined) => {
+      if (p?.id) {
+        navigate(`/Calendar/Schedule/${p.id}`)?.catch(console.error);
+      }
+    },
+    [navigate]
+  );
+
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
-      <div className={classes.container}>
-        <div className={classes.calendar}>
-          <Calendar
-            style={{ height: height - 150 }}
-            onSelectInterval={handleSelectInterval}
-            onSelectAppointment={handleSelectAppointment}
-            onSelectSlot={handleSelectSlot}
-            slots={slots ?? []}
-            appointments={appointments ?? []}
-            onRangeChange={setRange}
+      <div className={classes.wrapper}>
+        <Box mb="sm" maw={320}>
+          <ResourceInput
+            key={practitioner?.id}
+            resourceType="Practitioner"
+            name="practitioner"
+            placeholder="Switch practitioner..."
+            defaultValue={practitioner}
+            onChange={handlePractitionerNavigate}
           />
-        </div>
+        </Box>
+        <div className={classes.container}>
+          <div className={classes.calendar}>
+            <Calendar
+              style={{ height: '100%' }}
+              onSelectInterval={handleSelectInterval}
+              onSelectAppointment={handleSelectAppointment}
+              onSelectSlot={handleSelectSlot}
+              slots={slots ?? []}
+              appointments={appointments ?? []}
+              onRangeChange={setRange}
+            />
+          </div>
 
-        {Boolean(serviceTypes?.length) && schedule && range && (
-          <Stack gap="md" justify="space-between" className={classes.findPane}>
-            <FindPane key={schedule.id} schedule={schedule} range={range} onSuccess={handleBookSuccess} />
-          </Stack>
-        )}
+          {Boolean(serviceTypes?.length) && schedule && range && (
+            <Stack gap="md" justify="space-between" className={classes.findPane}>
+              <FindPane key={schedule.id} schedule={schedule} range={range} onSuccess={handleBookSuccess} />
+            </Stack>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
