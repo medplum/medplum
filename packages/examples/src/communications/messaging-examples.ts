@@ -293,9 +293,7 @@ await medplum.patchResource('Task', task.id, [
   },
 ]);
 
-await medplum.patchResource('Communication', threadHeader.id, [
-  { op: 'remove', path: '/recipient' },
-]);
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'remove', path: '/recipient' }]);
 // end-block rerouteToPoolTs
 
 // start-block rerouteWithNoteTs
