@@ -27,10 +27,12 @@ Do you need to assign work to named individuals only, to a pool by provider type
 ## Communication + Task Relationship
 
 ```mermaid
-flowchart LR
-    Task["<b>Task</b><br/>Respond to Homer Simpson's<br/>lab question"] -->|"focus"| Comm["<b>Thread Header</b><br/>Homer Simpson April 10th lab tests"]
-    Task -->|"for"| Patient["<b>Patient</b><br/>Homer Simpson"]
-    Task --- Fields["owner: Dr. Alice Smith<br/>performerType: Registered Nurse<br/>status: requested, priority: routine"]
+flowchart TD
+    Task["<b>Task</b><br/>Respond to Homer Simpson's<br/>lab question"]
+    Comm["<b>Thread Header</b><br/>Homer Simpson April 10th lab tests"]
+    Patient["<b>Patient</b><br/>Homer Simpson"]
+    Task -->|focus| Comm
+    Task -->|for| Patient
 ```
 
 ## Task Element Reference
