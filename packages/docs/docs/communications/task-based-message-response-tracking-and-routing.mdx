@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+title: Task-Based Message Response Tracking and Routing
 tags: [communications, task, routing]
 keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
 ---
@@ -9,9 +10,13 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Task-Based Routing
+# Task-Based Message Response Tracking and Routing
 
 When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR [`Task`](/docs/api/fhir/resources/task) resource alongside [`Communication`](/docs/api/fhir/resources/communication). This separates **message content** ([`Communication`](/docs/api/fhir/resources/communication)) from the **routing and assignment lifecycle** ([`Task`](/docs/api/fhir/resources/task)), allowing you to reassign work without modifying conversation data.
+
+:::tip Assignment model
+Do you need to assign work to **named individuals** only, to a **pool by provider type**, or **both**? That choice drives whether you use `owner`, `performerType`, or both.
+:::
 
 :::note Key concept
 
@@ -43,6 +48,10 @@ flowchart TD
 | `output`         | References the response Communication that resolved the Task                                                                                                              |
 
 ## Create a Task for a thread
+
+:::tip When to create a Task
+Does this message require a tracked response? If not, keep it as Communication only. Use `Communication.category` or a Bot to determine which messages need routing.
+:::
 
 When a new message arrives that requires action, create a [`Task`](/docs/api/fhir/resources/task) linked to the thread via `focus`. Use `performerType` to route to a provider pool, or set `owner` directly for individual assignment.
 
@@ -88,6 +97,10 @@ To see unclaimed [`Task`](/docs/api/fhir/resources/task) resources in a pool, qu
 
 ## Reroute to a different provider
 
+:::tip Reroute target
+Are you reassigning to **one specific provider** or **back to a pool**? Update `owner` and `Communication.recipient` for an individual; clear `owner`, set `performerType`, and clear `recipient` for a pool.
+:::
+
 Update `Task.owner` and `Communication.recipient` to reassign the thread:
 
 <MedplumCodeBlock language="ts" selectBlocks="rerouteToProviderTs">
@@ -126,6 +139,10 @@ Providers match pools via their `PractitionerRole.code`.
 
 ## Tracking Reroute History
 
+:::tip Audit trail
+Do you need an audit trail of who owned the Task and why it was rerouted? Version history gives who/when; add `Task.note` or `Provenance` for reasons.
+:::
+
 When [`Task`](/docs/api/fhir/resources/task) resources are rerouted, you may need an audit trail of who owned them previously, when they were reassigned, and why. [`Task`](/docs/api/fhir/resources/task) version history (`meta.versionId`) automatically captures every state change, so the basic audit trail is always available via `medplum.readHistory('Task', task.id!)`. The question is how to capture the **reason** for the reroute.
 
 ### Capturing reroute reasons
@@ -145,6 +162,10 @@ When [`Task`](/docs/api/fhir/resources/task) resources are rerouted, you may nee
 You can then query `Provenance?target=Task/{id}` to get the full reroute history with structured reasons.
 
 ### Reroute visibility: should the original owner still see the Task?
+
+:::tip Visibility after reroute
+After reroute, should the **previous owner** still see the Task (e.g. for reference), or only the new owner? That determines whether you update `Task.owner` in place or create a new Task for the new owner.
+:::
 
 `Task.owner` is `0..1`, so it can only reference a single [`Practitioner`](/docs/api/fhir/resources/practitioner). When rerouting, you need to decide whether the original owner retains visibility.
 
