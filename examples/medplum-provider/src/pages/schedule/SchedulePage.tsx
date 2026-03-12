@@ -41,10 +41,10 @@ export function SchedulePage(): JSX.Element | null {
 
   // Load the practitioner from the URL param
   useEffect(() => {
-    if (!id) {
+    if (!id || !profile) {
       return;
     }
-    if (id === profile?.id) {
+    if (id === profile.id) {
       setPractitioner(profile);
       return;
     }

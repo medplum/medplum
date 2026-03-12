@@ -8,7 +8,7 @@ import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@m
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SchedulePage } from './SchedulePage';
 
@@ -52,13 +52,11 @@ describe('SchedulePage', () => {
 
   const setup = (): ReturnType<typeof render> => {
     return render(
-      <MemoryRouter initialEntries={[`/Calendar/Schedule/${mockPractitioner.id}`]}>
+      <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <Routes>
-              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
-            </Routes>
+            <SchedulePage />
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
