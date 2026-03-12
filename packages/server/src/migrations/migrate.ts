@@ -238,7 +238,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildCodingSystemTable(result);
   buildConceptMappingAttributeTable(result);
   buildDatabaseMigrationTable(result);
-  buildShardSyncOutboxTable(result);
+  buildShardSyncTables(result);
 
   return result;
 }
@@ -755,7 +755,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   });
 }
 
-function buildShardSyncOutboxTable(result: SchemaDefinition): void {
+function buildShardSyncTables(result: SchemaDefinition): void {
   result.tables.push({
     name: 'shard_sync_outbox',
     columns: [
@@ -764,10 +764,28 @@ function buildShardSyncOutboxTable(result: SchemaDefinition): void {
       { name: 'resourceId', type: 'UUID', notNull: true },
       { name: 'resourceVersionId', type: 'UUID', notNull: true }, // may not be useful since we read from the resource table
     ],
-    indexes: [
-      // { columns: ['id'], indexType: 'btree' },
-      // { columns: ['resourceType', 'id'], indexType: 'btree' },
+    indexes: [],
+  });
+  result.tables.push({
+    name: 'shard_sync_outbox_attempts',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'outbox_id', type: 'BIGINT', notNull: true },
+      { name: 'attemptedAt', type: 'TIMESTAMPTZ', notNull: true },
     ],
+    indexes: [{ columns: ['outbox_id'], indexType: 'btree' }],
+  });
+  result.tables.push({
+    name: 'shard_sync_outbox_deadletter',
+    columns: [
+      { name: 'id', type: 'BIGINT', primaryKey: true, identity: 'ALWAYS' },
+      { name: 'outbox_id', type: 'BIGINT', notNull: true },
+      { name: 'resourceType', type: 'TEXT', notNull: true },
+      { name: 'resourceId', type: 'UUID', notNull: true },
+      { name: 'resourceVersionId', type: 'UUID', notNull: true },
+      { name: 'movedAt', type: 'TIMESTAMPTZ', notNull: true },
+    ],
+    indexes: [{ columns: ['outbox_id'], indexType: 'btree' }],
   });
 }
 

@@ -15,6 +15,8 @@ export async function run(client: PoolClient): Promise<void> {
   "id" BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   "resourceType" TEXT NOT NULL,
   "resourceId" UUID NOT NULL,
-  "resourceVersionId" UUID NOT NULL
+  "resourceVersionId" UUID NOT NULL,
+  "attempts" INTEGER NOT NULL DEFAULT 0,
+  "lastAttemptAt" TIMESTAMPTZ
 )`);
 }

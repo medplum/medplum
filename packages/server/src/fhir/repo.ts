@@ -105,7 +105,7 @@ import {
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
-import { getProjectAndProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
+import { getProjectAndProjectShardId, GlobalResourceTypes, SyncedResourceTypes } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
@@ -126,6 +126,7 @@ import {
 import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
+import { addShardSyncJob } from '../workers/shard-sync';
 import { addSubscriptionJobs } from '../workers/subscription';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
@@ -152,9 +153,9 @@ import {
   DeleteQuery,
   Disjunction,
   InsertQuery,
+  isRetryableTransactionError,
   normalizeDatabaseError,
   periodToRangeString,
-  PostgresError,
   SelectQuery,
   truncateTextColumn,
 } from './sql';
@@ -162,7 +163,6 @@ import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -931,6 +931,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await addBackgroundJobs(this.shardId, result, existing, { project, interaction });
     });
 
+    if (this.shardId !== GLOBAL_SHARD_ID && SyncedResourceTypes.has(result.resourceType)) {
+      await this.postCommit(async () => {
+        await addShardSyncJob(this.shardId);
+      });
+    }
+
     const output = deepClone(result);
     return this.removeHiddenFields(output);
   }
@@ -1215,6 +1221,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
+      await this.writeShardSyncOutbox(client, resource);
     });
   }
 
@@ -1844,6 +1851,71 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         content,
       },
     ]).execute(client);
+  }
+
+  /**
+   * Writes a shard sync outbox row if the resource is a SyncedResourceType on a non-global shard.
+   * The outbox row is written within the same transaction as the resource write to guarantee atomicity.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   */
+  private async writeShardSyncOutbox(client: PoolClient, resource: WithId<Resource>): Promise<void> {
+    if (this.shardId === GLOBAL_SHARD_ID || !SyncedResourceTypes.has(resource.resourceType)) {
+      return;
+    }
+    await new InsertQuery('shard_sync_outbox', [
+      {
+        resourceType: resource.resourceType,
+        resourceId: resource.id,
+        resourceVersionId: resource.meta?.versionId,
+      },
+    ]).execute(client);
+  }
+
+  /**
+   * Syncs a resource from a shard to the global shard.
+   * This is called by the shard sync worker to replicate SyncedResourceTypes.
+   * It performs the database write and cache update but deliberately does NOT
+   * trigger background jobs, binary handling, or audit event logging.
+   * @param resource - The resource to sync.
+   */
+  async syncResourceFromShard(resource: WithId<Resource>): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    // Use ensureInTransaction -> withTransaction which has built-in
+    // serialization retry (2 attempts, exponential backoff).
+    // Unlike writeToDatabase, we use ignoreOnConflict for the history table
+    // since the same version may have already been synced.
+    await this.ensureInTransaction(resource.resourceType, async (client) => {
+      await this.writeResource(client, resource);
+      await this.writeResourceVersionForSync(client, resource);
+      await this.writeLookupTables(client, resource, false);
+    });
+  }
+
+  /**
+   * Writes a version of the resource to the resource history table for sync.
+   * Unlike writeResourceVersion, this uses ignoreOnConflict since the same
+   * version may already exist on the global shard from a previous sync.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   */
+  private async writeResourceVersionForSync(client: PoolClient, resource: Resource): Promise<void> {
+    const resourceType = resource.resourceType;
+    const meta = resource.meta as Meta;
+    const content = stringify(resource);
+
+    await new InsertQuery(resourceType + '_History', [
+      {
+        id: resource.id,
+        versionId: meta.versionId,
+        lastUpdated: meta.lastUpdated,
+        content,
+      },
+    ])
+      .ignoreOnConflict()
+      .execute(client);
   }
 
   /**
@@ -2626,7 +2698,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // Ensure transaction is rolled back before attempting any retry
         await this.rollbackTransaction(operationOutcomeError);
-        if (!this.isRetryableTransactionError(operationOutcomeError)) {
+        if (this.transactionDepth || !isRetryableTransactionError(operationOutcomeError)) {
           break; // Fall through to throw statement outside of the loop
         }
       } finally {
@@ -2766,34 +2838,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         getLogger().error('Error processing post-commit callback', { err });
       }
     }
-  }
-
-  /**
-   * Checks whether an error represents a serialization conflict that can safely be retried.
-   * NOTE: Retrying a transaction must be done in full: the entire `Repository.withTransaction()` block
-   * should be re-executed, in a new transaction.
-   * @param err - The error to check.
-   * @returns True if the error indicates a retryable transaction failure.
-   */
-  private isRetryableTransactionError(err: OperationOutcomeError): boolean {
-    if (this.transactionDepth) {
-      // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
-      // the entire transaction must have been rolled back before anything can be retried:
-      // "It is important to retry the complete transaction, including all logic
-      // that decides which SQL to issue and/or which values to use"
-      // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
-      return false;
-    }
-    if (err.outcome.issue.length !== 1) {
-      // Multiple errors combined cannot be guaranteed to be retryable
-      return false;
-    }
-
-    const issue = err.outcome.issue[0];
-    return Boolean(
-      issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
-    );
   }
 
   /**
