@@ -20,7 +20,7 @@ Creating a note while charting can take many forms. One very popular method for 
 
 When capturing this data digitally, it could be very tempting to just store this as a `QuestionnaireResponse` — which would be how these fields are collected in the first place. However, this is not the "happy path" that utilizes FHIR to its fullest potential.
 
-The primary reason why this is the case is that `QuestionnaireResponse` resources aren't really searchable or easily consumed by other systems. Yes, you have these response values, but how can you uphold interoperability if your notes use an internal naming convention for the fields, but another system does it a different way?
+The primary reason why this is the case is that `QuestionnaireResponse` resources contain response values, but those response values are not searchable in FHIR. In order to uphold interoperability, information in your notes should be parsed into the proper FHIR resources. 
 
 Enter FHIR's purpose-built resources. The FHIR spec maps the SOAP framework directly onto specific resource types:
 
