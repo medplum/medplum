@@ -490,3 +490,36 @@ export const _accessPolicyMixed = {
   ],
 } as const;
 // end-block access-policy-mixed
+
+/** 
+// start-block tenanting-prompt
+Below are the descriptions of an access policy scheme that a Medplum customer wants. Can you please generate example FHIR access policies. Please remember that Medplum accesspolicy criteria don't support chained search.  Use the multitenant guide to understand which resources to use to represent tenants (might be role or permission dependent). Please generate a markdown file that explains your reasoning and gives example AccessPolicies, Patient compartments, and ProjectMemberships
+https://www.medplum.com/docs/access/access-policies__
+https://www.medplum.com/docs/access/multi-tenant-access-policy 
+https://github.com/medplum/medplum-mso-demo/blob/main/src/utils/enrollment.ts 
+
+Best Practices:
+- Prefer more complicated enrollment workflows, simpler data. 
+- Patients should be only at the compartment at the lowest level of the hierarchy that they are assigned to.
+- Like, if a practitioner gets enrolled in some higher-level intermediary organization, you should actually just iteratively assign them to all of the lowest-level organizations.
+- If a new low-level organization is added to an intermediate level, you need some workflow to untie some knots and to update project memberships for practitioners.
+
+# What is the organizational hierarchy? 
+
+# What are the set of user roles (names of roles)?
+
+# What permissions should each role have?
+- PII - what types
+- PHI - what types
+- Editing “administrative resource”
+- Geographic permission boundaries
+- Organizational permission boundaries
+- What code systems being used for clinical data
+
+# Which resources are NOT isolated by the tenant (e.g. Definitional resources)? Think about CodeSystems and ValueSets
+
+# Are patients shared between tenants? 
+# Are practitioners shared between tenants? 
+
+// end-block tenanting-prompt
+*/
