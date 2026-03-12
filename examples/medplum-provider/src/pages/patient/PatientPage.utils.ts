@@ -76,7 +76,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   {
     id: 'documentreference',
-    url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'DocumentReference',
     label: 'Documents',
   },
   {
