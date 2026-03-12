@@ -48,10 +48,7 @@ export function SchedulePage(): JSX.Element | null {
       setPractitioner(profile);
       return;
     }
-    medplum
-      .readResource('Practitioner', id)
-      .then(setPractitioner)
-      .catch(showErrorNotification);
+    medplum.readResource('Practitioner', id).then(setPractitioner).catch(showErrorNotification);
   }, [id, medplum, profile]);
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
   const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
