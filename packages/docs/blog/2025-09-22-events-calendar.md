@@ -20,23 +20,21 @@ tags: [community]
   </thead>
   <tbody>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Jan 12, 2026, 4:00 PM - 7:00 PM PT</td>
-      <td>**New Year, New Regs - In Depth on HTI-4 and HTI-5 with Brendan Keeler and Medplum**</td>
-      <td>[Medplum, SF](https://luma.com/mfpcuryu)</td>
+      <td style={{ whiteSpace: 'nowrap' }}>Sept 3, 2026</td>
+      <td>**PlumCon 2026**</td>
+      <td>San Francisco</td>
       <td align="center">
-        <img src="https://github.com/healthbjk.png" alt="Brendan Keeler" width="50" height="50" style={{borderRadius: '50%'}} />
-        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-        [Brendan Keeler](https://github.com/healthbjk), [Medplum Team](https://github.com/medplum)
+        <img src="https://github.com/medplum.png" alt="Medplum Team" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Medplum Team](https://github.com/medplum)
       </td>
     </tr>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>Jan 15, 2025, 9:00 AM - 2:00 PM PT</td>
-      <td>**Interactive Workshop FHIR+AI for Life Sciences**</td>
-      <td>[Medplum, SF](https://luma.com/a8odmqrk)</td>
+      <td style={{ whiteSpace: 'nowrap' }}>March 2026</td>
+      <td>**HIMSS Happy Hour! Hosted by Medplum & Phenoml**</td>
+      <td>[Las Vegas](https://luma.com/c1al2dv7)</td>
       <td align="center">
-        <img src="https://github.com/kerbearasaurus.png" alt="Kerry Weinberg" width="50" height="50" style={{borderRadius: '50%'}} />
-        <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} />
-        [Kerry Weinberg](https://github.com/kerbearasaurus), [Reshma Khilnani](https://github.com/reshmakh)
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Medplum](https://github.com/medplum), Phenoml
       </td>
     </tr>
   </tbody>
@@ -56,6 +54,26 @@ tags: [community]
     </tr>
   </thead>
   <tbody>
+  <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Jan 15, 2026, 9:00 AM - 2:00 PM PT</td>
+      <td>**Interactive Workshop FHIR+AI for Life Sciences**</td>
+      <td>[Medplum, SF](https://luma.com/a8odmqrk)</td>
+      <td align="center">
+        <img src="https://github.com/kerbearasaurus.png" alt="Kerry Weinberg" width="50" height="50" style={{borderRadius: '50%'}} />
+        <img src="https://github.com/reshmakh.png" alt="Reshma Khilnani" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Kerry Weinberg](https://github.com/kerbearasaurus), [Reshma Khilnani](https://github.com/reshmakh)
+      </td>
+    </tr>
+  <tr>
+      <td style={{ whiteSpace: 'nowrap' }}>Jan 12, 2026, 4:00 PM - 7:00 PM PT</td>
+      <td>**New Year, New Regs - In Depth on HTI-4 and HTI-5 with Brendan Keeler and Medplum**</td>
+      <td>[Medplum, SF](https://luma.com/mfpcuryu)</td>
+      <td align="center">
+        <img src="https://github.com/healthbjk.png" alt="Brendan Keeler" width="50" height="50" style={{borderRadius: '50%'}} />
+        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
+        [Brendan Keeler](https://github.com/healthbjk), [Medplum Team](https://github.com/medplum)
+      </td>
+    </tr>
   <tr>
       <td style={{ whiteSpace: 'nowrap' }}>Dec 4, 2025, 10:00 AM PT</td>
       <td>**Visualizing Patient Flow: A Blueprint Reference App for Healthcare IT**</td>
@@ -104,16 +122,6 @@ tags: [community]
       </td>
     </tr>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>October 2025</td>
-      <td>**Healthcare Devs Open Source Happy Hour - #SFTechWeek**</td>
-      <td>[San Francisco](https://partiful.com/e/GfA7v1EsKiRPtBJwbXbV)</td>
-      <td align="center">
-        <img src="https://github.com/medplum.png" alt="Medplum" width="50" height="50" style={{borderRadius: '50%'}} />
-        <img src="https://github.com/awell-health.png" alt="Awell Health" width="50" height="50" style={{borderRadius: '50%'}} />
-        [Medplum](https://github.com/medplum), [Awell](https://github.com/awell-health), [Villi Itchev](https://x.com/Villi)
-      </td>
-    </tr>
-    <tr>
       <td style={{ whiteSpace: 'nowrap' }}>September 2025</td>
       <td>**[FHIR + AI for Life Sciences](/blog/fhir-ai-for-life-sciences)**</td>
       <td>[Zoom](https://luma.com/eo757i34)</td>
@@ -143,9 +151,9 @@ tags: [community]
       </td>
     </tr>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>June 2025</td>
+      <td style={{ whiteSpace: 'nowrap' }}>July 2025</td>
       <td>**San Francisco Health Tech Meetup**</td>
-      <td>[San Francisco](https://luma.com/rtpbd80h)</td>
+      <td>[San Francisco](https://luma.com/kz1159r8)</td>
       <td align="center">
         <img src="https://github.com/medplum.png" alt="Medplum Team" width="50" height="50" style={{borderRadius: '50%'}} />
         <img src="https://github.com/healthtechnerds.png" alt="Health Tech Nerds" width="50" height="50" style={{borderRadius: '50%'}} />
@@ -153,9 +161,9 @@ tags: [community]
       </td>
     </tr>
     <tr>
-      <td style={{ whiteSpace: 'nowrap' }}>July 2025</td>
+      <td style={{ whiteSpace: 'nowrap' }}>June 2025</td>
       <td>**San Francisco Health Tech Meetup**</td>
-      <td>[San Francisco](https://luma.com/kz1159r8)</td>
+      <td>[San Francisco](https://luma.com/rtpbd80h)</td>
       <td align="center">
         <img src="https://github.com/medplum.png" alt="Medplum Team" width="50" height="50" style={{borderRadius: '50%'}} />
         <img src="https://github.com/healthtechnerds.png" alt="Health Tech Nerds" width="50" height="50" style={{borderRadius: '50%'}} />
