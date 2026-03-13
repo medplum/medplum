@@ -129,7 +129,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   const freshProjectMap = new Map<string, Reference<Project>>();
   for (const project of projects) {
     if (!(project instanceof Error)) {
-      freshProjectMap.set(`Project/${project.id}`, createReference(project));
+      freshProjectMap.set(getReferenceString(project), createReference(project));
     }
   }
 
