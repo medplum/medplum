@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Text, Title } from '@mantine/core';
+import { Anchor, Text, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import type { Encounter, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, SmartAppLaunchLink, useResource, useSearchResources } from '@medplum/react';
@@ -23,8 +23,8 @@ export function AppsPage(): JSX.Element | null {
       <Document>
         <Title>Apps</Title>
         <p>
-          No apps found. Contact your administrator or <a href="mailto:support@medplum.com">Medplum Support</a> to add
-          automation here.
+          No apps found. Contact your administrator or{' '}
+          <Anchor href="mailto:support@medplum.com">Medplum Support</Anchor> to add automation here.
         </p>
       </Document>
     );
