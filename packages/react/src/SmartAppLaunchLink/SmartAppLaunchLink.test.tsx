@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference, locationUtils } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import type { ClientApplication, Encounter, Patient } from '@medplum/fhirtypes';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -19,8 +19,8 @@ describe('SmartAppLaunchLink', () => {
   }
 
   test('Happy path', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -41,17 +41,18 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('My SmartAppLaunchLink'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     expect(url).toContain('https://example.com');
     expect(url).toContain('launch=');
     expect(url).toContain('iss=');
+    expect(mockOpen).toHaveBeenCalledWith(url, '_blank');
   });
 
   test('Includes patient identifier in SmartAppLaunch when launchIdentifierSystems is present', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -100,10 +101,10 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('Health Gorilla App'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
     // Verify the URL contains the expected launch parameters
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     expect(url).toContain('https://sandbox.healthgorilla.com/app/patient-chart/launch');
     expect(url).toContain('launch=');
     expect(url).toContain('iss=');
@@ -121,8 +122,8 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Does not include identifier in SmartAppLaunch when launchIdentifierSystems is absent', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -159,10 +160,10 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('App Without Launch Identifier Systems'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
     // Extract the launch ID and verify the SmartAppLaunch resource has no identifier
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     const launchId = new URL(url).searchParams.get('launch');
     expect(launchId).toBeDefined();
 
@@ -172,8 +173,8 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Does not include identifier in SmartAppLaunch when identifier not found on patient', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -216,10 +217,10 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('App With Missing Identifier'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
     // Extract the launch ID and verify the SmartAppLaunch resource has no identifier
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     const launchId = new URL(url).searchParams.get('launch');
     expect(launchId).toBeDefined();
 
@@ -229,8 +230,8 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Includes encounter identifier in SmartAppLaunch when launchIdentifierSystems includes Encounter', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -280,9 +281,9 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('App With Encounter Identifier'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     const launchId = new URL(url).searchParams.get('launch');
     expect(launchId).toBeDefined();
 
@@ -295,8 +296,8 @@ describe('SmartAppLaunchLink', () => {
   });
 
   test('Includes both patient and encounter identifiers when both are configured', async () => {
-    const mockAssign = jest.fn();
-    locationUtils.assign = mockAssign;
+    const mockOpen = jest.fn();
+    window.open = mockOpen;
 
     const medplum = new MockClient();
 
@@ -361,9 +362,9 @@ describe('SmartAppLaunchLink', () => {
       fireEvent.click(screen.getByText('App With Both Identifiers'));
     });
 
-    await waitFor(() => expect(mockAssign).toHaveBeenCalled());
+    await waitFor(() => expect(mockOpen).toHaveBeenCalled());
 
-    const url = mockAssign.mock.calls[0][0];
+    const url = mockOpen.mock.calls[0][0];
     const launchId = new URL(url).searchParams.get('launch');
     expect(launchId).toBeDefined();
 
