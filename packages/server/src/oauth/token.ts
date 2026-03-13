@@ -16,7 +16,7 @@ import {
   parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -613,6 +613,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
   const membership = await systemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
   );
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
   const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, {
     accessLifetime: client?.accessTokenLifetime,
@@ -656,7 +657,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     id_token: tokens.idToken,
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken,
-    project: membership.project,
+    project: createReference(project),
     profile: membership.profile,
     patient,
     encounter,

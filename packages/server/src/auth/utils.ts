@@ -123,9 +123,25 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
+
+  const uniqueProjectRefs = new Map<string, Reference<Project>>();
+  for (const m of memberships) {
+    const ref = m.project as Reference<Project>;
+    if (ref.reference && !uniqueProjectRefs.has(ref.reference)) {
+      uniqueProjectRefs.set(ref.reference, ref);
+    }
+  }
+  const freshProjectMap = new Map<string, Reference<Project>>();
+  await Promise.all(
+    [...uniqueProjectRefs.entries()].map(async ([refStr, ref]) => {
+      const project = await systemRepo.readReference<Project>(ref);
+      freshProjectMap.set(refStr, createReference(project));
+    })
+  );
+
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
-    project: m.project,
+    project: freshProjectMap.get(m.project?.reference as string) ?? m.project,
     profile: m.profile,
     identifier: m.identifier,
   }));
