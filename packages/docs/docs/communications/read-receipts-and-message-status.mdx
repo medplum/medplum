@@ -1,6 +1,6 @@
 ---
 sidebar_position: 6
-title: Read Receipts & Message Status
+title: Read Receipts Using Tasks
 tags: [communications, messaging, read receipts, task]
 keywords: [read receipt, Task, unread, status, focus, owner]
 ---
@@ -10,15 +10,15 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Read Receipts & Message Status
+# Read Receipts Using Tasks
 
 Read state is tracked using [`Task`](/docs/api/fhir/resources/task) resources. When a message is sent, a read-receipt Task is pre-created for each recipient with `status: "requested"`. When the recipient reads the message, the Task is updated to `status: "completed"`. Each recipient gets their own Task, so this works consistently for both 1:1 and group threads.
 
 :::note Tasks can serve multiple purposes in messaging
-The same thread may have **response-tracking Tasks** (for assignment and routing — see [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing)) and **read-receipt Tasks** (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the **`Task.code`** element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
+The same thread may have response-tracking Tasks (for assignment and routing — see [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing)) and read-receipt Tasks (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the `Task.code` element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
 :::
 
-## Read-receipt Task structure
+## Read-Receipt Task Structure
 
 ```json
 {
@@ -43,7 +43,7 @@ The same thread may have **response-tracking Tasks** (for assignment and routing
 | `status`     | `requested` = unread, `completed` = read                            |
 | `authoredOn` | When the message was sent (used for sorting)                         |
 
-## Creating read-receipt Tasks on send
+## Creating Read-Receipt Tasks on Send
 
 When a message is sent, create a read-receipt Task for each recipient. A Bot triggered by a [Subscription](/docs/api/fhir/resources/subscription) on new Communications can automate this:
 
@@ -100,16 +100,16 @@ For system-generated messages (automated alerts, appointment reminders) that don
 The guard on `threadHeader.subject` ensures the Bot only creates read-receipt Tasks when the thread has patient context. Handle threads without a subject according to your use case (e.g. skip read receipts or use a placeholder).
 :::
 
-## Read trigger strategies
+## Read Trigger Strategies
 
 There are two common strategies. Start with "on thread open" for simplicity, and move to "on viewport entry" only if your use case requires more accurate per-message read tracking.
 
 | Strategy          | Trigger                                                             | Trade-off                                                                | When to use                                                |
 | ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| On thread open    | Mark all unread Tasks when the user opens the thread                | Simple, but marks messages "read" even if the user didn't scroll to them | **Default.** Good enough for most messaging use cases.     |
+| On thread open    | Mark all unread Tasks when the user opens the thread                | Simple, but marks messages "read" even if the user didn't scroll to them | Default. Good enough for most messaging use cases.     |
 | On viewport entry | Mark each message's Task when it scrolls into view (Intersection Observer) | More accurate, but requires per-message tracking in the UI               | When read receipts are user-facing or tied to SLA tracking. |
 
-## Mark a single message as read
+## Mark a Single Message as Read
 
 When a message is viewed, find its read-receipt Task for the current user and update the status:
 
@@ -128,7 +128,7 @@ if (readReceiptTasks.length > 0) {
 }
 ```
 
-## Batch mark-as-read on thread open
+## Batch Mark-as-Read on Thread Open
 
 When a user opens a thread, find all their unread read-receipt Tasks for messages in that thread and complete them in a single Transaction Bundle:
 
@@ -160,7 +160,7 @@ await medplum.executeBatch({
 If threads can have many unread messages, consider debouncing the batch call (e.g. wait 500ms after thread open before firing) to avoid unnecessary requests if the user is quickly scanning through threads.
 :::
 
-## Group thread read tracking
+## Group Thread Read Tracking
 
 Because read state is tracked per recipient via Tasks, the same model works for both 1:1 and group threads without any additional mechanism. Each recipient has their own read-receipt Task per message, so one person reading a message doesn't affect anyone else's unread state.
 
@@ -176,9 +176,9 @@ Search for unread messages in a specific thread:
 Task?code=https://medplum.com/task-codes|read-receipt&focus:Communication.part-of=Communication/{threadId}&owner=Practitioner/{id}&status=requested
 ```
 
-## In your UI
+## In Your UI
 
-### Unread counts
+### Unread Counts
 
 Query for unread read-receipt Tasks to drive notification badges:
 
@@ -202,7 +202,7 @@ Query for unread read-receipt Tasks to drive notification badges:
 
 This query works for both 1:1 and group threads since every recipient has their own read-receipt Task.
 
-### Live unread badges
+### Live Unread Badges
 
 To update badges in real time, subscribe to new read-receipt Tasks created for the current user. The subscription criteria:
 

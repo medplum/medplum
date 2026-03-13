@@ -11,7 +11,7 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 - [Asynchronous encounters](/docs/communications/async-encounters)
 - [Threaded messages](/docs/communications/organizing-communications)
 - [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing)
-- [Read Receipts & Message Status](/docs/communications/read-receipts-and-message-status) — track read state with Task resources
+- [Read Receipts Using Tasks](/docs/communications/read-receipts-and-message-status) — track read state with Task resources
 - Omni-channel messaging
 - Real-time notifications using Websockets
 

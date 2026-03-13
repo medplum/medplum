@@ -25,7 +25,7 @@ Do you need to assign work to named individuals only, to a pool by provider type
 :::
 
 :::note Tasks can serve multiple purposes in messaging
-The same thread may also have **read-receipt Tasks** (see [Read Receipts & Message Status](/docs/communications/read-receipts-and-message-status)), which use `Task.status` to track whether a message was read (requested = unread, completed = read). Both response-tracking and read-receipt Tasks use `Task.focus` and `Task.owner`, but the **`Task.code`** element distinguishes them: use a consistent code (e.g. `message-response` or your own system) for response-tracking Tasks so they are not confused with read-receipt Tasks. A thread can have one response-tracking Task (focus = thread header) and multiple read-receipt Tasks (focus = individual messages).
+The same thread may also have **read-receipt Tasks** (see [Read Receipts Using Tasks](/docs/communications/read-receipts-and-message-status)), which use `Task.status` to track whether a message was read (requested = unread, completed = read). Both response-tracking and read-receipt Tasks use `Task.focus` and `Task.owner`, but the **`Task.code`** element distinguishes them: use a consistent code (e.g. `message-response` or your own system) for response-tracking Tasks so they are not confused with read-receipt Tasks. A thread can have one response-tracking Task (focus = thread header) and multiple read-receipt Tasks (focus = individual messages).
 :::
 
 ## Communication + Task Relationship
@@ -195,7 +195,7 @@ If the original owner does need to retain visibility, create a new [`Task`](/doc
 
 ## See Also
 
-- [Read Receipts & Message Status](/docs/communications/read-receipts-and-message-status) — using Tasks to track read state per message
+- [Read Receipts Using Tasks](/docs/communications/read-receipts-and-message-status) — using Tasks to track read state per message
 - [Organizing Communications Using Threads](/docs/communications/organizing-communications) — structuring message threads with [`Communication`](/docs/api/fhir/resources/communication) resources
 - [`Communication`](/docs/api/fhir/resources/communication) FHIR resource API
 - [`Task`](/docs/api/fhir/resources/task) FHIR resource API
