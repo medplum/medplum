@@ -1,0 +1,226 @@
+---
+sidebar_position: 6
+title: Read Receipts & Message Status
+tags: [communications, messaging, read receipts, task]
+keywords: [read receipt, Task, unread, status, focus, owner]
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Read Receipts & Message Status
+
+Read state is tracked using [`Task`](/docs/api/fhir/resources/task) resources. When a message is sent, a read-receipt Task is pre-created for each recipient with `status: "requested"`. When the recipient reads the message, the Task is updated to `status: "completed"`. Each recipient gets their own Task, so this works consistently for both 1:1 and group threads.
+
+## Read-receipt Task structure
+
+```json
+{
+  "resourceType": "Task",
+  "status": "requested",
+  "code": {
+    "coding": [{ "system": "https://medplum.com/task-codes", "code": "read-receipt", "display": "Read Receipt" }]
+  },
+  "focus": { "reference": "Communication/message-123" },
+  "for": { "reference": "Patient/homer-simpson" },
+  "owner": { "reference": "Practitioner/doctor-alice-smith" },
+  "authoredOn": "2026-03-10T14:00:00Z"
+}
+```
+
+| Element      | Purpose                                                              |
+| ------------ | -------------------------------------------------------------------- |
+| `code`       | Identifies this Task as a read receipt (use a consistent code system) |
+| `focus`      | The child [`Communication`](/docs/api/fhir/resources/communication) (the message), not the thread header — the specific message this receipt tracks |
+| `for`        | The patient context (mirrors the thread's `subject`)                 |
+| `owner`      | The recipient who needs to read the message                          |
+| `status`     | `requested` = unread, `completed` = read                            |
+| `authoredOn` | When the message was sent (used for sorting)                         |
+
+## Creating read-receipt Tasks on send
+
+When a message is sent, create a read-receipt Task for each recipient. A Bot triggered by a [Subscription](/docs/api/fhir/resources/subscription) on new Communications can automate this:
+
+```ts
+import type { BotEvent, MedplumClient } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
+
+export async function handler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const recipients = message.recipient ?? [];
+  const patient = message.partOf?.[0]?.reference;
+
+  if (!patient || recipients.length === 0) {
+    return;
+  }
+
+  const threadHeader = await medplum.readReference({ reference: message.partOf![0].reference! }) as Communication;
+  if (!threadHeader.subject) {
+    return;
+  }
+
+  await medplum.executeBatch({
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: recipients
+      .filter((r) => r.reference !== message.sender?.reference)
+      .map((recipient) => ({
+        request: { method: 'POST', url: 'Task' },
+        resource: {
+          resourceType: 'Task' as const,
+          status: 'requested' as const,
+          code: {
+            coding: [{ system: 'https://medplum.com/task-codes', code: 'read-receipt', display: 'Read Receipt' }],
+          },
+          focus: { reference: `Communication/${message.id}` },
+          for: threadHeader.subject,
+          owner: recipient,
+          authoredOn: message.sent ?? new Date().toISOString(),
+        },
+      })),
+  });
+}
+```
+
+:::tip
+The filter on `sender` prevents creating a read-receipt Task for the person who sent the message — they don't need to "read" their own message.
+:::
+
+:::tip
+For system-generated messages (automated alerts, appointment reminders) that don't require manual reading, skip creating read-receipt Tasks or create them pre-completed. This keeps unread counts accurate.
+:::
+
+:::note
+The guard on `threadHeader.subject` ensures the Bot only creates read-receipt Tasks when the thread has patient context. Handle threads without a subject according to your use case (e.g. skip read receipts or use a placeholder).
+:::
+
+## Read trigger strategies
+
+There are two common strategies. Start with "on thread open" for simplicity, and move to "on viewport entry" only if your use case requires more accurate per-message read tracking.
+
+| Strategy          | Trigger                                                             | Trade-off                                                                | When to use                                                |
+| ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| On thread open    | Mark all unread Tasks when the user opens the thread                | Simple, but marks messages "read" even if the user didn't scroll to them | **Default.** Good enough for most messaging use cases.     |
+| On viewport entry | Mark each message's Task when it scrolls into view (Intersection Observer) | More accurate, but requires per-message tracking in the UI               | When read receipts are user-facing or tied to SLA tracking. |
+
+## Mark a single message as read
+
+When a message is viewed, find its read-receipt Task for the current user and update the status:
+
+```ts
+const readReceiptTasks = await medplum.searchResources('Task', {
+  code: 'https://medplum.com/task-codes|read-receipt',
+  focus: `Communication/${message.id}`,
+  owner: `Practitioner/${currentUser.id}`,
+  status: 'requested',
+});
+
+if (readReceiptTasks.length > 0) {
+  await medplum.patchResource('Task', readReceiptTasks[0].id!, [
+    { op: 'replace', path: '/status', value: 'completed' },
+  ]);
+}
+```
+
+## Batch mark-as-read on thread open
+
+When a user opens a thread, find all their unread read-receipt Tasks for messages in that thread and complete them in a single Transaction Bundle:
+
+```ts
+const unreadTasks = await medplum.searchResources('Task', {
+  code: 'https://medplum.com/task-codes|read-receipt',
+  'focus:Communication.part-of': `Communication/${threadHeader.id}`,
+  owner: `Practitioner/${currentUser.id}`,
+  status: 'requested',
+});
+
+await medplum.executeBatch({
+  resourceType: 'Bundle',
+  type: 'transaction',
+  entry: unreadTasks.map((task) => ({
+    request: {
+      method: 'PUT',
+      url: `Task/${task.id}`,
+    },
+    resource: {
+      ...task,
+      status: 'completed' as const,
+    },
+  })),
+});
+```
+
+:::tip
+If threads can have many unread messages, consider debouncing the batch call (e.g. wait 500ms after thread open before firing) to avoid unnecessary requests if the user is quickly scanning through threads.
+:::
+
+## Group thread read tracking
+
+Because read state is tracked per recipient via Tasks, the same model works for both 1:1 and group threads without any additional mechanism. Each recipient has their own read-receipt Task per message, so one person reading a message doesn't affect anyone else's unread state.
+
+Search for a specific user's unread messages across all threads:
+
+```
+Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{id}&status=requested
+```
+
+Search for unread messages in a specific thread:
+
+```
+Task?code=https://medplum.com/task-codes|read-receipt&focus:Communication.part-of=Communication/{threadId}&owner=Practitioner/{id}&status=requested
+```
+
+## In your UI
+
+### Unread counts
+
+Query for unread read-receipt Tasks to drive notification badges:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="unreadCountTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+This query works for both 1:1 and group threads since every recipient has their own read-receipt Task.
+
+### Live unread badges
+
+To update badges in real time, subscribe to new read-receipt Tasks created for the current user. The subscription criteria:
+
+```
+Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{userId}&status=requested
+```
+
+If using `@medplum/react`, the `NotificationIcon` component combines the count query with a live subscription:
+
+```tsx
+<NotificationIcon
+  label="Unread messages"
+  resourceType="Task"
+  criteria={`code=https://medplum.com/task-codes|read-receipt&owner=${getReferenceString(profile!)}&status=requested`}
+  iconComponent={<IconMessage2Bolt />}
+  onClick={() => navigate('/messages')}
+/>
+```
+
+For non-React frameworks, use `medplum.subscribeToCriteria()` to listen for new read-receipt Tasks and re-query the count when one arrives.
+
+## See Also
+
+- [Thread Lifecycle, Participants & Access Control](/docs/communications/thread-lifecycle-participants-access-control)
+- [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API
