@@ -9,7 +9,6 @@ import crypto, { randomUUID } from 'node:crypto';
 import os from 'node:os';
 import type { RawData, WebSocket } from 'ws';
 import { getConfig } from '../config/loader';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 import type { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import type { CacheEntry } from '../fhir/repo';
 import { getFullUrl } from '../fhir/response';
@@ -111,13 +110,12 @@ async function setupSubscriptionHandler(): Promise<void> {
 
         let rewrittenBundle: Bundle;
         try {
-          const authState = await getLoginForAccessToken(undefined, subMetadata.rawToken);
-          if (!authState) {
+          const repo = (await getLoginForAccessToken(undefined, subMetadata.rawToken))?.repo;
+          if (!repo) {
             globalLogger.info('[WS] Unable to get login for the given access token', { subscriptionId });
             deadSubscriptionIds.push(subscriptionId);
             continue;
           }
-          const repo = await getRepoForLogin(authState);
           rewrittenBundle = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, bundle);
         } catch (err) {
           globalLogger.error('[WS] Error occurred while rewriting attachments', { err });
