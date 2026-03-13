@@ -27,12 +27,16 @@ describe('fhir-translator-bot', () => {
 
   test('throws when OPENAI_API_KEY secret is missing', async () => {
     const input = makeInput([{ role: 'user', content: 'Find patient John' }]);
-    await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow('OPENAI_API_KEY is required');
+    await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow(
+      'OPENAI_API_KEY is required'
+    );
   });
 
   test('throws when messages parameter is missing', async () => {
     const input: Parameters = { resourceType: 'Parameters', parameter: [] };
-    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow('messages parameter is required');
+    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+      'messages parameter is required'
+    );
   });
 
   test('returns visualize=false when AI returns no tool calls', async () => {
@@ -119,7 +123,12 @@ describe('fhir-translator-bot', () => {
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
-    await handler(medplum, { bot, input: makeInput([{ role: 'user', content: 'Hello' }], 'gpt-4o'), contentType, secrets });
+    await handler(medplum, {
+      bot,
+      input: makeInput([{ role: 'user', content: 'Hello' }], 'gpt-4o'),
+      contentType,
+      secrets,
+    });
 
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     expect(callArgs.parameter?.find((p) => p.name === 'model')?.valueString).toBe('gpt-4o');

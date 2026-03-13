@@ -116,7 +116,9 @@ describe('fhir-visualizer-bot', () => {
       {
         role: 'assistant',
         content: null,
-        tool_calls: [{ function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Observation?subject=Patient/123' } } }],
+        tool_calls: [
+          { function: { name: 'fhir_request', arguments: { method: 'GET', path: 'Observation?subject=Patient/123' } } },
+        ],
       },
     ];
     await handler(medplum, { bot, input: makeInput(messages), contentType, secrets });
