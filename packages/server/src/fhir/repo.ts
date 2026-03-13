@@ -92,7 +92,7 @@ import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
-import { syntheticR4Project, systemResourceProjectId } from '../constants';
+import { r4ProjectId, syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
@@ -931,7 +931,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await addBackgroundJobs(this.shardId, result, existing, { project, interaction });
     });
 
-    if (this.shardId !== GLOBAL_SHARD_ID && SyncedResourceTypes.has(result.resourceType)) {
+    if (this.shouldSyncResource(result)) {
       await this.postCommit(async () => {
         await addShardSyncJob(this.shardId);
       });
@@ -1438,16 +1438,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
 
+          const versionId = this.generateId();
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: this.generateId(),
+              versionId,
               lastUpdated,
               content,
             },
           ]).execute(conn);
 
           await this.deleteFromLookupTables(conn, resource);
+          if (this.shouldSyncResource(resource)) {
+            await this.writeShardSyncOutbox(conn, resource, versionId);
+            await this.postCommit(async () => {
+              await addShardSyncJob(this.shardId);
+            });
+          }
           const durationMs = Date.now() - startTime;
 
           await this.postCommit(async () => {
@@ -1837,20 +1844,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes a version of the resource to the resource history table.
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
+   * @param options - The options for the write.
+   * @param options.ignoreOnConflict - If true, then the write will ignore conflicts.
    */
-  private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
+  private async writeResourceVersion(
+    client: PoolClient,
+    resource: Resource,
+    options?: { ignoreOnConflict?: boolean }
+  ): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
 
-    await new InsertQuery(resourceType + '_History', [
+    const query = new InsertQuery(resourceType + '_History', [
       {
         id: resource.id,
         versionId: meta.versionId,
         lastUpdated: meta.lastUpdated,
         content,
       },
-    ]).execute(client);
+    ]);
+    if (options?.ignoreOnConflict) {
+      query.ignoreOnConflict();
+    }
+    await query.execute(client);
   }
 
   /**
@@ -1858,18 +1875,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * The outbox row is written within the same transaction as the resource write to guarantee atomicity.
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
+   * @param versionId - The version ID of the resource. Defaults to resource.meta.versionId
    */
-  private async writeShardSyncOutbox(client: PoolClient, resource: WithId<Resource>): Promise<void> {
-    if (this.shardId === GLOBAL_SHARD_ID || !SyncedResourceTypes.has(resource.resourceType)) {
-      return;
+  private async writeShardSyncOutbox(
+    client: PoolClient,
+    resource: WithId<Resource>,
+    versionId?: string
+  ): Promise<void> {
+    if (this.shouldSyncResource(resource)) {
+      await new InsertQuery('shard_sync_outbox', [
+        {
+          resourceType: resource.resourceType,
+          resourceId: resource.id,
+          resourceVersionId: versionId ?? resource.meta?.versionId,
+        },
+      ]).execute(client);
     }
-    await new InsertQuery('shard_sync_outbox', [
-      {
-        resourceType: resource.resourceType,
-        resourceId: resource.id,
-        resourceVersionId: resource.meta?.versionId,
-      },
-    ]).execute(client);
+  }
+
+  private shouldSyncResource(resource: WithId<Resource>): boolean {
+    return (
+      this.shardId !== GLOBAL_SHARD_ID && // only sync from shards to global
+      SyncedResourceTypes.has(resource.resourceType) && // only sync synced resource types
+      resource.meta?.project !== r4ProjectId // the R4 project cannot be synced since it has a hard-coded Project.id
+    );
   }
 
   /**
@@ -1889,33 +1918,58 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // since the same version may have already been synced.
     await this.ensureInTransaction(resource.resourceType, async (client) => {
       await this.writeResource(client, resource);
-      await this.writeResourceVersionForSync(client, resource);
+      // ignoreOnConflict since the same version may already exist on the global shard from a previous sync.
+      await this.writeResourceVersion(client, resource, { ignoreOnConflict: true });
       await this.writeLookupTables(client, resource, false);
     });
   }
 
-  /**
-   * Writes a version of the resource to the resource history table for sync.
-   * Unlike writeResourceVersion, this uses ignoreOnConflict since the same
-   * version may already exist on the global shard from a previous sync.
-   * @param client - The database client inside the transaction.
-   * @param resource - The resource.
-   */
-  private async writeResourceVersionForSync(client: PoolClient, resource: Resource): Promise<void> {
-    const resourceType = resource.resourceType;
-    const meta = resource.meta as Meta;
-    const content = stringify(resource);
+  async syncDeleteFromShard(
+    resourceType: ResourceType,
+    id: string,
+    lastUpdated: Date,
+    projectId: string,
+    compartments: string[],
+    versionId: string
+  ): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
 
-    await new InsertQuery(resourceType + '_History', [
-      {
-        id: resource.id,
-        versionId: meta.versionId,
-        lastUpdated: meta.lastUpdated,
+    // SHARDING - this code should be shared with the normal delete flow
+    await this.ensureInTransaction(resourceType, async (client) => {
+      const content = '';
+      const columns: Record<string, any> = {
+        id,
+        lastUpdated,
+        deleted: true,
+        projectId,
         content,
-      },
-    ])
-      .ignoreOnConflict()
-      .execute(client);
+        __version: -1,
+      };
+
+      if (resourceType !== 'Binary') {
+        columns['compartments'] = compartments;
+      }
+
+      for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+        this.buildColumn({ resourceType } as Resource, columns, searchParam);
+      }
+
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+      await new InsertQuery(resourceType + '_History', [
+        {
+          id,
+          versionId,
+          lastUpdated,
+          content,
+        },
+      ])
+        .ignoreOnConflict()
+        .execute(client);
+
+      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+    });
   }
 
   /**

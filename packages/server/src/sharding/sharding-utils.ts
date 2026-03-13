@@ -25,8 +25,9 @@ export const GlobalResourceTypes = new Set([
  * These are replicated from shards to global via the shard sync outbox.
  */
 export const SyncedResourceTypes = new Set([
-  // Source of truth for project shard ID
-  'Project',
+  // Source of truth for project shard ID, but special handling is already taken for creating a shell Project in the global shard
+  // That should probably be revisited so that Project is handled the same as other synced resource types
+  // 'Project',
   // Read by ID during bearer token validation
   'ClientApplication',
   // Lookup by user during login
@@ -34,6 +35,7 @@ export const SyncedResourceTypes = new Set([
   // Read by ID during login
   'SmartAppLaunch',
   // Read by email/externalId during auth
+  // Read by id from authState.membership
   'User',
   // Read by ID during user security request, e.g. password reset
   'UserSecurityRequest',

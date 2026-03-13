@@ -170,6 +170,10 @@ describe('Shard Sync Worker', () => {
 
       const { rows: remaining } = await pool.query('SELECT * FROM "shard_sync_outbox" WHERE "id" = $1', [rows[0].id]);
       expect(remaining.length).toBe(0);
+
+      const { rows: userRows } = await pool.query('SELECT "deleted" FROM "User" WHERE "id" = $1', [user.id]);
+      expect(userRows.length).toBe(1);
+      expect(userRows[0].deleted).toBe(true);
     });
   });
 
