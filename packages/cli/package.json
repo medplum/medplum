@@ -76,7 +76,7 @@
     "iconv-lite": "0.7.2",
     "node-fetch": "2.7.0",
     "semver": "7.7.4",
-    "tar": "7.5.9"
+    "tar": "7.5.11"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "5.1.3",
