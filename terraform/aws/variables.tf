@@ -77,6 +77,6 @@ variable "redis_num_cache_nodes" {
 
 variable "eks_public_access_cidrs" {
   type        = list(string)
-  description = "CIDR blocks allowed to reach the EKS public API endpoint"
+  description = "CIDR blocks allowed to reach the EKS public API endpoint. Defaults to open — restrict to your IP or VPN CIDR before production use."
   default     = ["0.0.0.0/0"]
 }
