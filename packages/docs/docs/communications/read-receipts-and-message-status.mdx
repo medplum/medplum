@@ -14,6 +14,10 @@ import TabItem from '@theme/TabItem';
 
 Read state is tracked using [`Task`](/docs/api/fhir/resources/task) resources. When a message is sent, a read-receipt Task is pre-created for each recipient with `status: "requested"`. When the recipient reads the message, the Task is updated to `status: "completed"`. Each recipient gets their own Task, so this works consistently for both 1:1 and group threads.
 
+:::note Tasks can serve multiple purposes in messaging
+The same thread may have **response-tracking Tasks** (for assignment and routing — see [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing)) and **read-receipt Tasks** (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the **`Task.code`** element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
+:::
+
 ## Read-receipt Task structure
 
 ```json
@@ -222,4 +226,5 @@ For non-React frameworks, use `medplum.subscribeToCriteria()` to listen for new 
 
 ## See Also
 
+- [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing) — using Tasks for assignment and routing
 - [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API
