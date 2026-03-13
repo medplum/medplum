@@ -15,7 +15,10 @@ describe('RatioDisplay', () => {
 
   test('Renders with precision', () => {
     render(
-      <RatioDisplay value={{ numerator: { value: 5, unit: 'mg' }, denominator: { value: 10, unit: 'ml' } }} precision={2} />
+      <RatioDisplay
+        value={{ numerator: { value: 5, unit: 'mg' }, denominator: { value: 10, unit: 'ml' } }}
+        precision={2}
+      />
     );
     expect(screen.getByText('5.00 mg / 10.00 ml')).toBeInTheDocument();
   });
