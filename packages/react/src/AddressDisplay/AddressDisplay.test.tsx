@@ -12,4 +12,16 @@ describe('AddressDisplay', () => {
   test('Renders undefined value', () => {
     render(<AddressDisplay />);
   });
+
+  test('Renders with use option', () => {
+    render(<AddressDisplay value={{ line: ['123 main st'], city: 'Happy', use: 'home' }} options={{ use: true }} />);
+    expect(screen.getByText('123 main st, Happy, [home]')).toBeInTheDocument();
+  });
+
+  test('Renders with lineSeparator option', () => {
+    render(
+      <AddressDisplay value={{ line: ['123 main st'], city: 'Happy', state: 'CA' }} options={{ lineSeparator: '\n' }} />
+    );
+    expect(screen.getByText('123 main st\nHappy, CA', { normalizer: (s) => s })).toBeInTheDocument();
+  });
 });
