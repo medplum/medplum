@@ -206,7 +206,11 @@ export async function executeToolCalls(
   return { messages, resourceRefs };
 }
 
-/** Strip display-only fields that should not be sent to the AI API */
+/**
+ * Strip display-only fields that should not be sent to the AI API
+ * @param messages - The messages to strip
+ * @returns Messages with only API-relevant fields
+ */
 function toApiMessages(messages: Message[]): Pick<Message, 'role' | 'content' | 'tool_calls' | 'tool_call_id'>[] {
   return messages.map(({ role, content, tool_calls, tool_call_id }) => ({
     role,
