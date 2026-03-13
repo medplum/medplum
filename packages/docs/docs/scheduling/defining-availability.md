@@ -89,7 +89,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 | Url                 | Type                                                        | Applies To                           | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
 | ------------------- | ----------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                        | Optional                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | Values apply as the default for all services                                           |
+| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                        | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
 | `availability`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Schedule only                        | Optional                                        | Bookings must fully fit within the recurring windows                                                                                                                                 | Time is implicitly available by default (unless blocked by Slots or other constraints) |
 | `timezone`          | Code                                                        | Schedule only                        | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference                            |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and ActivityDefinition | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
@@ -106,7 +106,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 {
   "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
   "extension": [
-    // Optional: specify service type (omit for default configuration)
+    // Required on Schedule: you must specify what type of appointment these parameters aply to
     {
       "url": "serviceType",
       "valueCodeableConcept": {
@@ -216,7 +216,7 @@ This approach avoids the need to pre-generate thousands of Slot resources for ev
 
 The [`Schedule`](/docs/api/fhir/resources/schedule) resource is the foundation for defining actor-level availability for a provider, location, or device.
 
-Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines general availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
+Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource that defines availability for a [Practitioner](/docs/api/fhir/resources/practitioner).
 
 ```tsx
 {
@@ -226,6 +226,12 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "serviceType",
+        "valueCodeableConcept": {
+          "coding": [{"code": "office-visit"}]
+        }
+      },
       {
         "url": "duration",
         "valueDuration": {
@@ -308,7 +314,7 @@ To get the [Schedule](/docs/api/fhir/resources/schedule) to use the [ActivityDef
 
 A [Practitioner](/docs/api/fhir/resources/practitioner)'s [Schedule](/docs/api/fhir/resources/schedule) can also override the default [ActivityDefinition](/docs/api/fhir/resources/activitydefinition)'s availability for a specific service type by defining a `serviceType` extension.
 
-Here is an example Schedule that defines generic availability for all services and then overrides the availability for a specific service type.
+Here is an example Schedule that overrides the availability for a specific service type.
 
 ```tsx
 {
@@ -321,30 +327,6 @@ Here is an example Schedule that defines generic availability for all services a
   ],
   "actor": [{"reference": "Practitioner/dr-chen"}],
   "extension": [
-    // Practitioner level availability
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
-          }
-        },
-        {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-              "timeOfDay": ["09:00:00"],
-              "duration": 8,
-              "durationUnit": "h"
-            }
-          }
-        }
-      ]
-    },
     // Service type level availability for this Practitioner - overrides any availability parameters specified elsewhere
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
@@ -385,7 +367,6 @@ Here is an example Schedule that defines generic availability for all services a
 
 1. Schedule where `https://medplum.com/fhir/StructureDefinition/SchedulingParameters.serviceType` extension matches `service-type` param on `$find` request.
 2. ActivityDefinition where `ActivityDefinition.code` matches `service-type` param on `$find` request. ActivityDefinition parameters are used.
-3. Use generic availability defined on the Schedule.
 
 ### Blocking Time by Service Type
 
@@ -601,29 +582,9 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
     "start": "2025-01-01T00:00:00Z",
     "end": "2025-12-31T23:59:59Z"
   },
-  "extension": [{
-    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-    "extension": [
-      {
-        "url": "duration",
-        "valueDuration": {
-          "value": 1,
-          "unit": "h"
-        }
-      },
-      {
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
-            "duration": 8,
-            "durationUnit": "h"
-          }
-        }
-      }
-    ]
-  }]
+  "extension": [
+    // No values here, everything is inherited from shared definitions
+  ]
 }
 ```
 
@@ -631,7 +592,6 @@ This Schedule shows Dr. Johnson's availability (Mon-Fri 9am-5pm) that inherits a
 
 **Result**: Dr. Johnson's schedule inherits all the default parameters from the ActivityDefinition for an office visit:
 
-- $find called with `service-type!=office-visit`: Dr. Johnson is available Mon-Fri 9am-5pm for non-office visits **[from Schedule]**
 - $find called with `service-type=office-visit`: For office visits, available to start every 15 minutes (:00, :15, :30, :45) with 5-minute buffers **[from ActivityDefinition]**
 
 ```mermaid
@@ -757,30 +717,6 @@ This Schedule shows how to configure default availability for all services (Mon-
     "end": "2025-12-31T23:59:59Z"
   },
   "extension": [
-    // Default availability for all services
-    {
-      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
-      "extension": [
-        {
-          "url": "duration",
-          "valueDuration": {
-            "value": 1,
-            "unit": "h"
-          }
-        },
-        {
-          "url": "availability",
-          "valueTiming": {
-            "repeat": {
-              "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-              "timeOfDay": ["09:00:00"],
-              "duration": 8,
-              "durationUnit": "h"
-            }
-          }
-        }
-      ]
-    },
     // New patient visits only on Tuesday and Thursday mornings
     {
       "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
@@ -951,6 +887,12 @@ This Schedule shows Dr. Martinez's availability for bariatric surgeries, limited
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
       {
+        "url": "serviceType",
+        "valueCodeableConcept": {
+          "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
+        }
+      },
+      {
         "url": "duration",
         "valueDuration": {
           "value": 1,
@@ -1037,6 +979,12 @@ This Schedule shows Dr. Kim's availability for surgical procedures, covering wee
   "extension": [{
     "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
     "extension": [
+      {
+        "url": "serviceType",
+        "valueCodeableConcept": {
+          "coding": [{"system": "http://snomed.info/sct", "code": "287809009"}]
+        }
+      },
       {
         "url": "duration",
         "valueDuration": {
