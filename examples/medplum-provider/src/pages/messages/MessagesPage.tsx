@@ -61,7 +61,8 @@ export function MessagesPage(): JSX.Element {
   const completedUri = `/Communication${formatSearchQuery(buildStatusSearch('completed'))}`;
 
   const sections = useMemo(
-    () => getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s)),
+    () =>
+      getDefaultSections().map((s) => (s.key === 'pharmacies' ? createPharmaciesSection(DoseSpotPharmacyDialog) : s)),
     []
   );
 

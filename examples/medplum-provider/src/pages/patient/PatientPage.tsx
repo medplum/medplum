@@ -4,12 +4,12 @@ import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import type { OperationOutcome } from '@medplum/fhirtypes';
 import {
+  createPharmaciesSection,
   Document,
+  getDefaultSections,
   OperationOutcomeAlert,
   PatientSummary,
   useMedplum,
-  createPharmaciesSection,
-  getDefaultSections,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';

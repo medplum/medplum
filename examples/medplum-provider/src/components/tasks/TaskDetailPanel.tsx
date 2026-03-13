@@ -4,12 +4,12 @@ import { Box, Paper, ScrollArea, SegmentedControl, Text } from '@mantine/core';
 import type { MedplumClient } from '@medplum/core';
 import type { Patient, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import {
+  createPharmaciesSection,
+  getDefaultSections,
   PatientSummary,
   ResourceTimeline,
   useMedplum,
   useResource,
-  createPharmaciesSection,
-  getDefaultSections,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { useEffect, useState } from 'react';

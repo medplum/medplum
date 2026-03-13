@@ -3,11 +3,11 @@
 import { Box, Text } from '@mantine/core';
 import type { Reference, Resource } from '@medplum/fhirtypes';
 import {
+  createPharmaciesSection,
+  getDefaultSections,
   PatientSummary,
   ResourceTable,
   useResource,
-  createPharmaciesSection,
-  getDefaultSections,
 } from '@medplum/react';
 import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
