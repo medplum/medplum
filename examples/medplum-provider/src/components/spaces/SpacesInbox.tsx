@@ -381,11 +381,21 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         AI Assistant
                       </Text>
                     </Group>
-                    <div className={classes.messageContent}>
-                      {streamingContent && (
-                        <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>
-                      )}
-                      {!streamingContent && streamingComponentCode !== undefined && (
+                    {(streamingContent || (!streamingContent && streamingComponentCode === undefined)) && (
+                      <div className={classes.messageContent}>
+                        {streamingContent && (
+                          <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>
+                        )}
+                        {!streamingContent && currentFhirRequest && (
+                          <Text size="sm" c="dimmed" fs="italic">Executing {currentFhirRequest}...</Text>
+                        )}
+                        {!streamingContent && !currentFhirRequest && (
+                          <Text size="sm" c="dimmed" fs="italic">Thinking...</Text>
+                        )}
+                      </div>
+                    )}
+                    {!streamingContent && streamingComponentCode !== undefined && (
+                      <Stack gap="xs" mt="sm" w={300}>
                         <Paper
                           withBorder
                           p="sm"
@@ -401,14 +411,8 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                             </Text>
                           </Group>
                         </Paper>
-                      )}
-                      {!streamingContent && streamingComponentCode === undefined && currentFhirRequest && (
-                        <Text size="sm" c="dimmed" fs="italic">Executing {currentFhirRequest}...</Text>
-                      )}
-                      {!streamingContent && streamingComponentCode === undefined && !currentFhirRequest && (
-                        <Text size="sm" c="dimmed" fs="italic">Thinking...</Text>
-                      )}
-                    </div>
+                      </Stack>
+                    )}
                   </div>
                 )}
               </Stack>
