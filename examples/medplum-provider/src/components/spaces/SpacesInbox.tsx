@@ -1,6 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Avatar, Box, CloseButton, Code, Group, Paper, ScrollArea, Stack, Text, ThemeIcon } from '@mantine/core';
+import {
+  ActionIcon,
+  Avatar,
+  Box,
+  CloseButton,
+  Code,
+  Group,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  ThemeIcon,
+} from '@mantine/core';
 import type { Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react';
 import {
@@ -315,7 +327,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                           onClick={() => {
                             setSelectedResource(undefined);
                             setSelectedResources(undefined);
-                            setComponentPreview({ code: message.componentCode as string, resources: message.resources });
+                            setComponentPreview({
+                              code: message.componentCode as string,
+                              resources: message.resources,
+                            });
                             setComponentPanelOpen(true);
                           }}
                         >
@@ -383,14 +398,16 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                     </Group>
                     {(streamingContent || (!streamingContent && streamingComponentCode === undefined)) && (
                       <div className={classes.messageContent}>
-                        {streamingContent && (
-                          <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>
-                        )}
+                        {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
                         {!streamingContent && currentFhirRequest && (
-                          <Text size="sm" c="dimmed" fs="italic">Executing {currentFhirRequest}...</Text>
+                          <Text size="sm" c="dimmed" fs="italic">
+                            Executing {currentFhirRequest}...
+                          </Text>
                         )}
                         {!streamingContent && !currentFhirRequest && (
-                          <Text size="sm" c="dimmed" fs="italic">Thinking...</Text>
+                          <Text size="sm" c="dimmed" fs="italic">
+                            Thinking...
+                          </Text>
                         )}
                       </div>
                     )}
@@ -400,7 +417,10 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                           withBorder
                           p="sm"
                           style={{ cursor: 'pointer' }}
-                          onClick={() => { setSelectedResource(undefined); setComponentPanelOpen(true); }}
+                          onClick={() => {
+                            setSelectedResource(undefined);
+                            setComponentPanelOpen(true);
+                          }}
                         >
                           <Group gap="sm" wrap="nowrap">
                             <ThemeIcon size="lg" variant="light" color="violet">
@@ -448,11 +468,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           <ScrollArea style={{ flex: 1 }} p="md">
             <Stack gap="xs">
               {selectedResources.map((ref, idx) => (
-                <ResourceBox
-                  key={idx}
-                  resourceReference={ref}
-                  onClick={(r) => setSelectedResource(r)}
-                />
+                <ResourceBox key={idx} resourceReference={ref} onClick={(r) => setSelectedResource(r)} />
               ))}
             </Stack>
           </ScrollArea>
@@ -483,7 +499,12 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                 Resource Details
               </Text>
             </Group>
-            <CloseButton onClick={() => { setSelectedResource(undefined); setSelectedResources(undefined); }} />
+            <CloseButton
+              onClick={() => {
+                setSelectedResource(undefined);
+                setSelectedResources(undefined);
+              }}
+            />
           </div>
           <ScrollArea style={{ flex: 1 }} p="md">
             <ResourcePanel key={selectedResource} resource={{ reference: selectedResource }} />
