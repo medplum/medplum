@@ -124,24 +124,18 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   // because we know that these are all resources that the user has access to
   const memberships = await getMembershipsForLogin(login);
 
-  const uniqueProjectRefs = new Map<string, Reference<Project>>();
-  for (const m of memberships) {
-    const ref = m.project;
-    if (ref.reference && !uniqueProjectRefs.has(ref.reference)) {
-      uniqueProjectRefs.set(ref.reference, ref);
+  const uniqueRefs = [...new Map(memberships.map((m) => [m.project.reference, m.project])).values()];
+  const projects = await systemRepo.readReferences<Project>(uniqueRefs);
+  const freshProjectMap = new Map<string, Reference<Project>>();
+  for (const project of projects) {
+    if (!(project instanceof Error)) {
+      freshProjectMap.set(`Project/${project.id}`, createReference(project));
     }
   }
-  const freshProjectMap = new Map<string, Reference<Project>>();
-  await Promise.all(
-    [...uniqueProjectRefs.entries()].map(async ([refStr, ref]) => {
-      const project = await systemRepo.readReference<Project>(ref);
-      freshProjectMap.set(refStr, createReference(project));
-    })
-  );
 
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
-    project: freshProjectMap.get(m.project?.reference as string) ?? m.project,
+    project: freshProjectMap.get(m.project.reference as string) ?? m.project,
     profile: m.profile,
     identifier: m.identifier,
   }));
