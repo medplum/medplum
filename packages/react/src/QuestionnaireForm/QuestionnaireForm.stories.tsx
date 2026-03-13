@@ -1699,6 +1699,20 @@ export const KitchenSink = (): JSX.Element => (
             text: 'Quantity',
           },
         ],
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'urn:iso-astm:E1762-95:2013',
+                  code: '1.2.840.10065.1.12.1.1',
+                  display: "Author's Signature",
+                },
+              ],
+            },
+          },
+        ],
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
