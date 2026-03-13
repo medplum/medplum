@@ -21,7 +21,7 @@ export const methodValidator = makeValidationMiddleware([
 ]);
 
 export async function methodHandler(req: Request, res: Response): Promise<void> {
-  const externalAuth = await isExternalAuth(req.body.email);
+  const externalAuth = await isExternalAuth(req.body.email, req.body.projectId);
   if (externalAuth) {
     // Return the authorization URL
     // This indicates the client should redirect to the authorization URL
@@ -37,11 +37,20 @@ export async function methodHandler(req: Request, res: Response): Promise<void> 
 /**
  * Checks if the given email address is configured for external authentication.
  * @param email - The user email address.
+ * @param projectId - Optional project ID to check for project-level domain configuration first.
  * @returns External auth url if available. Otherwise undefined.
  */
-export async function isExternalAuth(email: string): Promise<{ domain: string; authorizeUrl: string } | undefined> {
+export async function isExternalAuth(
+  email: string,
+  projectId?: string
+): Promise<{ domain: string; authorizeUrl: string } | undefined> {
   const domain = email.split('@')[1];
-  const domainConfig = await getDomainConfiguration(domain);
+
+  let domainConfig = projectId ? await getProjectDomainConfiguration(projectId, domain) : undefined;
+  if (!domainConfig) {
+    domainConfig = await getDomainConfiguration(domain);
+  }
+
   if (!domainConfig) {
     return undefined;
   }
@@ -79,6 +88,27 @@ export async function getDomainConfiguration(domain: string): Promise<DomainConf
         operator: Operator.EQUALS,
         value: domain.toLowerCase(),
       },
+    ],
+  });
+  return results.entry?.[0]?.resource;
+}
+
+/**
+ * Returns the project-scoped domain configuration for the given project and domain name.
+ * @param projectId - The project ID.
+ * @param domain - The domain name.
+ * @returns The domain configuration scoped to the project if available.
+ */
+export async function getProjectDomainConfiguration(
+  projectId: string,
+  domain: string
+): Promise<DomainConfiguration | undefined> {
+  const systemRepo = getGlobalSystemRepo();
+  const results = await systemRepo.search<DomainConfiguration>({
+    resourceType: 'DomainConfiguration',
+    filters: [
+      { code: '_project', operator: Operator.EQUALS, value: projectId },
+      { code: 'domain', operator: Operator.EQUALS, value: domain.toLowerCase() },
     ],
   });
   return results.entry?.[0]?.resource;

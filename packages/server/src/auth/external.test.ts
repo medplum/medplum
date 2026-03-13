@@ -201,6 +201,54 @@ describe('External', () => {
     expect(res.body.issue[0].details.text).toBe('Email address does not match domain');
   });
 
+  test('Project-level DomainConfiguration success', async () => {
+    // Build the external callback URL with both domain and projectId
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain, projectId: project.id }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toStrictEqual('localhost:3000');
+    expect(redirect.pathname).toStrictEqual('/signin');
+    expect(redirect.searchParams.get('login')).toBeTruthy();
+  });
+
+  test('Unknown projectId falls through to global DomainConfiguration', async () => {
+    // Build the external callback URL with a mismatched projectId but known domain
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain, projectId: randomUUID() }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Should fall through to the global DomainConfiguration lookup and succeed
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toStrictEqual('localhost:3000');
+    expect(redirect.pathname).toStrictEqual('/signin');
+    expect(redirect.searchParams.get('login')).toBeTruthy();
+  });
+
   test('DomainConfiguration success', async () => {
     // Build the external callback URL
     // There are two required parameters: code and state

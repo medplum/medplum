@@ -75,7 +75,10 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleSubmit = useCallback(
     async (formData: Record<string, string>) => {
-      const authMethod = await medplum.post('auth/method', { email: formData.email });
+      const authMethod = await medplum.post('auth/method', {
+        email: formData.email,
+        projectId: baseLoginRequest.projectId,
+      });
       if (!(await isExternalAuth(authMethod))) {
         setEmail(formData.email);
       }

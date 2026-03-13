@@ -19,7 +19,7 @@ import { getLogger, globalLogger } from '../logger';
 import { getClientRedirectUri } from '../oauth/clients';
 import type { CodeChallengeMethod } from '../oauth/utils';
 import { getClientApplication, tryLogin } from '../oauth/utils';
-import { getDomainConfiguration } from './method';
+import { getDomainConfiguration, getProjectDomainConfiguration } from './method';
 
 /*
  * External authentication callback
@@ -166,6 +166,13 @@ async function getIdentityProvider(
     client = await getClientApplication(state.clientId);
     if (client.identityProvider) {
       return { idp: client.identityProvider, client };
+    }
+  }
+
+  if (state.projectId && state.domain) {
+    const projectDomainConfig = await getProjectDomainConfiguration(state.projectId, state.domain);
+    if (projectDomainConfig?.identityProvider) {
+      return { idp: projectDomainConfig.identityProvider, client };
     }
   }
 

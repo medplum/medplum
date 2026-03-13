@@ -92,7 +92,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const claims = result.payload as GoogleCredentialClaims;
 
-  const externalAuth = await isExternalAuth(claims.email);
+  const externalAuth = await isExternalAuth(claims.email, projectId);
   if (externalAuth) {
     res.status(200).json(externalAuth);
     return;
