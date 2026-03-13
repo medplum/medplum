@@ -1,5 +1,6 @@
 ---
 sidebar_label: Defining Availability (Alpha)
+sidebar_position: 10
 ---
 
 # Defining Availability (Alpha)
@@ -113,8 +114,8 @@ All scheduling constraints are managed through a single consolidated extension: 
       }
     },
 
-    // Optional: specify timezone for availability interpretation (Schedule only)
-    // Falls back to Schedule's actor timezone if not specified
+    // Optional: specify time zone for availability interpretation (Schedule only)
+    // Falls back to Schedule's actor time zone if not specified
     {
       "url": "timezone",
       "valueCode": "America/Los_Angeles"
@@ -135,7 +136,7 @@ All scheduling constraints are managed through a single consolidated extension: 
       "valueTiming": {
         "repeat": {
           "dayOfWeek": ["mon", "wed", "fri"],
-          "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles timezone
+          "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles time zone
           "duration": 8,
           "durationUnit": "h"
         }
@@ -407,9 +408,9 @@ Here is an example of a [Slot](/docs/api/fhir/resources/slot) resource that bloc
 
 ### Timezone per Scheduling Parameters Entry
 
-The `timezone` parameter allows you to specify different timezones for different service types within the same Schedule. This is useful when a provider needs to define availability in different timezones for different services (e.g., a doctor who provides cardiac surgery where they might travel to in one timezone and call center availability in another timezone).
+The `timezone` parameter allows you to specify different timezones for different service types within the same Schedule. This is useful when a provider needs to define availability in different timezones for different services (e.g., a doctor who provides cardiac surgery where they might travel to in one time zone and call center availability in another time zone).
 
-**Fallback Logic:** If no timezone is specified in the `scheduling-parameters` extension, then the availability will be interpreted in the timezone defined on the Schedule's actor reference (Practitioner, Location, or Device). It looks for the FHIR sanctioned timezone extension:
+**Fallback Logic:** If no time zone is specified in the `scheduling-parameters` extension, then the availability will be interpreted in the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device). It looks for the FHIR sanctioned time zone extension:
 
 ```tsx
 {
@@ -426,16 +427,16 @@ The `timezone` parameter allows you to specify different timezones for different
 
 **Timezone Resolution Order:**
 
-1. If `timezone` is specified in the `scheduling-parameters` extension, use that timezone
-2. Otherwise, fall back to the timezone defined on the Schedule's actor reference (Practitioner, Location, or Device)
+1. If `timezone` is specified in the `scheduling-parameters` extension, use that time zone
+2. Otherwise, fall back to the time zone defined on the Schedule's actor reference (Practitioner, Location, or Device)
 
 **Important Notes:**
 
 - `timezone` is only available on Schedule resources, not ActivityDefinition
-- The timezone value should be an IANA timezone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
-- When `timezone` is specified, all `timeOfDay` values in the `availability` timing are interpreted in that timezone
+- The time zone value should be an IANA time zone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
+- When `timezone` is specified, all `timeOfDay` values in the `availability` timing are interpreted in that time zone
 
-Here is an example of a Schedule with multiple service types, each with its own timezone:
+Here is an example of a Schedule with multiple service types, each with its own time zone:
 
 ```tsx
 {
@@ -515,8 +516,8 @@ Here is an example of a Schedule with multiple service types, each with its own 
 
 In this example:
 
-- Cardiac surgery availability is defined in `America/Los_Angeles` timezone (Mon-Wed 11am-3pm America/Los Angeles)
-- Call Center availability is defined in `America/New_York` timezone (Mon-Wed 9am-5pm Eastern)
+- Cardiac surgery availability is defined in `America/Los_Angeles` time zone (Mon-Wed 11am-3pm America/Los Angeles)
+- Call Center availability is defined in `America/New_York` time zone (Mon-Wed 9am-5pm Eastern)
 - Each service type's availability times are interpreted independently based on their respective timezones
 
 ## Examples
