@@ -57,10 +57,16 @@ export function initWebSockets(server: http.Server): void {
     // See: https://github.com/websockets/ws/blob/master/doc/ws.md#websocketbinarytype
     socket.binaryType = 'nodebuffer';
 
-    if (!wsState?.sockets.size) {
+    if (!wsState) {
       let socketsClosedResolve!: () => void;
       const socketsClosedPromise = new Promise<void>((resolve) => {
-        socketsClosedResolve = resolve;
+        socketsClosedResolve = () => {
+          if (wsState?.sockets.size) {
+            return;
+          }
+          wsState = undefined;
+          resolve();
+        };
       });
       wsState = { sockets: new Set(), socketsClosedPromise, socketsClosedResolve };
     }
