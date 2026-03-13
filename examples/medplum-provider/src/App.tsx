@@ -92,7 +92,7 @@ export function App(): JSX.Element | null {
                     label: 'Patients',
                     href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
                   },
-                  { icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' },
+                  { icon: <IconCalendarEvent />, label: 'Schedule', href: `/Calendar/Schedule/${profile.id}` },
                   {
                     icon: <IconMail />,
                     label: 'Messages',
@@ -208,7 +208,8 @@ export function App(): JSX.Element | null {
               <Route path="/Fax/Communication" element={<FaxPage />} />
               <Route path="/Fax/Communication/:faxId" element={<FaxPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
-              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
