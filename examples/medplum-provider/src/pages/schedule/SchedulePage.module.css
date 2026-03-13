@@ -1,6 +1,11 @@
+.fullHeight {
+  height: calc(100vh - var(--app-shell-header-height, 0));
+}
+
 .container {
   display: flex;
   gap: var(--mantine-spacing-sm);
+  height: 100%;
 }
 
 .calendar {

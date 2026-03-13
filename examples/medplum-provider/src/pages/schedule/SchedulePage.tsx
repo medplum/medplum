@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Drawer, Stack, Text } from '@mantine/core';
+import { Box, Center, Drawer, Loader, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { WithId } from '@medplum/core';
 import { createReference, EMPTY, getReferenceString } from '@medplum/core';
@@ -13,9 +13,11 @@ import { useNavigate } from 'react-router';
 import { Calendar } from '../../components/Calendar';
 import { AppointmentDetails } from '../../components/schedule/AppointmentDetails';
 import { CreateVisit } from '../../components/schedule/CreateVisit';
+import { SchedulingContextProvider } from '../../contexts/SchedulingContext';
+import { useScheduling } from '../../hooks/useScheduling';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
+import { extractAvailability } from '../../utils/scheduling';
 import { mergeOverlappingSlots } from '../../utils/slots';
 import { FindPane } from './FindPane';
 import classes from './SchedulePage.module.css';
@@ -26,18 +28,9 @@ import classes from './SchedulePage.module.css';
  * @returns A React component that displays the schedule page.
  */
 export function SchedulePage(): JSX.Element | null {
-  const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
-  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
   const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
-  const [range, setRange] = useState<Range | undefined>(undefined);
-  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
-  const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
-
-  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
-  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
 
   useEffect(() => {
     if (medplum.isLoading() || !profile) {
@@ -65,9 +58,48 @@ export function SchedulePage(): JSX.Element | null {
       .catch(showErrorNotification);
   }, [medplum, profile]);
 
+  // This looks slightly silly now, but will let us merge ActivityDefinition
+  // resources that provide scheduling parameters in to a stable array in the
+  // future.
+  const schedulingResources = useMemo(() => [schedule], [schedule]);
+
+  return (
+    <SchedulingContextProvider resources={schedulingResources}>
+      <Box pos="relative" bg="white" p="md" className={classes.fullHeight}>
+        {schedule ? (
+          <SchedulePageContent schedule={schedule} />
+        ) : (
+          <Center>
+            <Loader pt="xl" />
+          </Center>
+        )}
+      </Box>
+    </SchedulingContextProvider>
+  );
+}
+
+type SchedulePageContentProps = {
+  schedule: WithId<Schedule>;
+};
+
+export function SchedulePageContent(props: SchedulePageContentProps): JSX.Element | null {
+  const { schedule } = props;
+  const navigate = useNavigate();
+  const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
+  const scheduling = useScheduling();
+  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
+  const [appointmentDetailsOpened, appointmentDetailsHandlers] = useDisclosure(false);
+  const [range, setRange] = useState<Range | undefined>(undefined);
+  const [slots, setSlots] = useState<Slot[] | undefined>(undefined);
+  const [appointments, setAppointments] = useState<Appointment[] | undefined>(undefined);
+
+  const [appointmentSlot, setAppointmentSlot] = useState<Range>();
+  const [appointmentDetails, setAppointmentDetails] = useState<Appointment | undefined>(undefined);
+
   // Find slots visible in the current range
   useEffect(() => {
-    if (!schedule || !range) {
+    if (!range) {
       return () => {};
     }
     let active = true;
@@ -176,30 +208,39 @@ export function SchedulePage(): JSX.Element | null {
     [medplum, navigate, appointmentDetailsHandlers]
   );
 
-  const height = window.innerHeight - 60;
-  const serviceTypes = useMemo(() => schedule && serviceTypesFromSchedulingParameters(schedule), [schedule]);
+  const hasScheduling = scheduling.availableSchedulingParameters.length > 0;
 
   const handleAppointmentUpdate = useCallback((updated: Appointment) => {
     setAppointments((state) => (state ?? []).map((existing) => (existing.id === updated.id ? updated : existing)));
     setAppointmentDetails((existing) => (existing?.id === updated.id ? updated : existing));
   }, []);
 
+  const availability = useMemo(() => {
+    if (!scheduling.selectedSchedulingParameters) {
+      return undefined;
+    }
+    return {
+      byDay: extractAvailability(scheduling.selectedSchedulingParameters),
+      timeZone: scheduling.timeZone,
+    };
+  }, [scheduling.selectedSchedulingParameters, scheduling.timeZone]);
+
   return (
-    <Box pos="relative" bg="white" p="md" style={{ height }}>
+    <>
       <div className={classes.container}>
         <div className={classes.calendar}>
           <Calendar
-            style={{ height: height - 150 }}
             onSelectInterval={handleSelectInterval}
             onSelectAppointment={handleSelectAppointment}
             onSelectSlot={handleSelectSlot}
             slots={slots ?? []}
             appointments={appointments ?? []}
             onRangeChange={setRange}
+            availability={availability}
           />
         </div>
 
-        {Boolean(serviceTypes?.length) && schedule && range && (
+        {hasScheduling && range && (
           <Stack gap="md" justify="space-between" className={classes.findPane}>
             <FindPane key={schedule.id} schedule={schedule} range={range} onSuccess={handleBookSuccess} />
           </Stack>
@@ -231,6 +272,6 @@ export function SchedulePage(): JSX.Element | null {
           <AppointmentDetails appointment={appointmentDetails} onUpdate={handleAppointmentUpdate} />
         )}
       </Drawer>
-    </Box>
+    </>
   );
 }
