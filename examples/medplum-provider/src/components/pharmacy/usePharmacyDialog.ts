@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import type { ComponentType } from 'react';
 import type { PharmacyDialogBaseProps } from '@medplum/react';
 import { useMedplum } from '@medplum/react';
+import type { ComponentType } from 'react';
 import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from '../utils';
 import { DoseSpotPharmacyDialog } from './DoseSpotPharmacyDialog';
 import { ScriptSurePharmacyDialog } from './ScriptSurePharmacyDialog';

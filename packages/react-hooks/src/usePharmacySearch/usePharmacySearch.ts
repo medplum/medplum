@@ -4,8 +4,8 @@
 import type { AddFavoriteParams, AddPharmacyResponse, PharmacySearchParams } from '@medplum/core';
 import { isAddPharmacyResponse, isOrganizationArray } from '@medplum/core';
 import type { Identifier, Organization } from '@medplum/fhirtypes';
-import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 import { useCallback } from 'react';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
 
 export interface UsePharmacySearchReturn {
   searchPharmacies: (params: PharmacySearchParams) => Promise<Organization[]>;

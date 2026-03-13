@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { useEPrescribingIFrame } from '@medplum/react-hooks';
 import type { EPrescribingIFrameOptions } from '@medplum/react-hooks';
+import { useEPrescribingIFrame } from '@medplum/react-hooks';
 import { DOSESPOT_IFRAME_BOT, DOSESPOT_PATIENT_SYNC_BOT } from './common';
 
 export type DoseSpotIFrameOptions = EPrescribingIFrameOptions;

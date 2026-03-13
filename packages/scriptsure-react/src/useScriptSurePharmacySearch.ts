@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import { usePharmacySearch } from '@medplum/react-hooks';
 import type { UsePharmacySearchReturn } from '@medplum/react-hooks';
+import { usePharmacySearch } from '@medplum/react-hooks';
 import { SCRIPTSURE_ADD_PATIENT_PHARMACY_BOT, SCRIPTSURE_SEARCH_PHARMACY_BOT } from './common';
 
 export type UseScriptSurePharmacySearchReturn = UsePharmacySearchReturn;
