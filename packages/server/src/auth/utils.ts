@@ -126,7 +126,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
 
   const uniqueProjectRefs = new Map<string, Reference<Project>>();
   for (const m of memberships) {
-    const ref = m.project as Reference<Project>;
+    const ref = m.project;
     if (ref.reference && !uniqueProjectRefs.has(ref.reference)) {
       uniqueProjectRefs.set(ref.reference, ref);
     }

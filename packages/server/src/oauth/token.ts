@@ -613,7 +613,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
   const membership = await systemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
   );
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const project = await systemRepo.readReference<Project>(membership.project);
 
   const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, {
     accessLifetime: client?.accessTokenLifetime,
