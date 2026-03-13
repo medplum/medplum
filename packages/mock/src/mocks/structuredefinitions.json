@@ -239,9 +239,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -451,9 +449,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Library"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Library"]
             }
           ]
         },
@@ -476,9 +472,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         },
@@ -560,9 +554,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -706,9 +698,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/SpecimenDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/SpecimenDefinition"]
             }
           ]
         },
@@ -720,9 +710,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ObservationDefinition"]
             }
           ]
         },
@@ -734,9 +722,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ObservationDefinition"]
             }
           ]
         },
@@ -748,9 +734,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureMap"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureMap"]
             }
           ]
         },
@@ -1064,9 +1048,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
             }
           ]
         },
@@ -1078,9 +1060,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -1502,9 +1482,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -1516,9 +1494,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -1530,9 +1506,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Communication"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Communication"]
             }
           ]
         },
@@ -1625,9 +1599,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -1639,9 +1611,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -1810,9 +1780,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2071,9 +2039,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -2343,9 +2309,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -2587,9 +2551,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Patient"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Patient"]
             }
           ]
         },
@@ -2940,9 +2902,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Contract"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Contract"]
             }
           ]
         }
@@ -3177,9 +3137,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -3250,9 +3208,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -3264,9 +3220,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Observation"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Observation"]
             }
           ]
         },
@@ -3278,9 +3232,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ImagingStudy"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ImagingStudy"]
             }
           ]
         },
@@ -3362,9 +3314,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Media"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Media"]
             }
           ]
         },
@@ -3796,9 +3746,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"]
             }
           ]
         },
@@ -3810,9 +3758,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -3921,9 +3867,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Appointment"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Appointment"]
             }
           ]
         },
@@ -4081,9 +4025,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Account"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Account"]
             }
           ]
         },
@@ -4320,9 +4262,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -4367,9 +4307,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -4381,9 +4319,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         }
@@ -4565,9 +4501,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -4643,9 +4577,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -5062,9 +4994,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Medication"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Medication"]
             }
           ]
         },
@@ -5091,9 +5021,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -5105,9 +5033,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -5514,9 +5440,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -5612,9 +5536,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/MedicationRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/MedicationRequest"]
             }
           ]
         },
@@ -5626,9 +5548,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/DetectedIssue"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/DetectedIssue"]
             }
           ]
         },
@@ -5640,9 +5560,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
             }
           ]
         }
@@ -5897,9 +5815,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -5911,9 +5827,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -6071,9 +5985,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -6887,9 +6799,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -6901,9 +6811,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -6915,9 +6823,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -6929,9 +6835,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         }
@@ -7164,9 +7068,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -7281,9 +7183,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Endpoint"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Endpoint"]
             }
           ]
         }
@@ -7680,9 +7580,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -7802,9 +7700,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -8147,9 +8043,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -8359,9 +8253,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Library"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Library"]
             }
           ]
         },
@@ -8757,9 +8649,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Group"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Group"]
             }
           ]
         },
@@ -9172,9 +9062,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureMap"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureMap"]
             }
           ]
         },
@@ -9598,9 +9486,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Organization"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Organization"]
             }
           ]
         },
@@ -9822,9 +9708,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Questionnaire"]
             }
           ]
         },
@@ -10234,9 +10118,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -10303,9 +10185,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ValueSet"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ValueSet"]
             }
           ]
         },
@@ -10391,9 +10271,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -10508,9 +10386,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -10714,9 +10590,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Questionnaire"]
             }
           ]
         },
@@ -10739,9 +10613,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -10753,9 +10625,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -10998,9 +10868,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -11017,6 +10885,480 @@
           "min": 0,
           "max": "*",
           "contentReference": "#QuestionnaireResponse.item"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "RiskAssessment",
+    "name": "RiskAssessment",
+    "type": "RiskAssessment",
+    "snapshot": {
+      "element": [
+        {
+          "id": "RiskAssessment",
+          "path": "RiskAssessment",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "RiskAssessment.id",
+          "path": "RiskAssessment.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.meta",
+          "path": "RiskAssessment.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.implicitRules",
+          "path": "RiskAssessment.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.language",
+          "path": "RiskAssessment.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.text",
+          "path": "RiskAssessment.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.contained",
+          "path": "RiskAssessment.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.extension",
+          "path": "RiskAssessment.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.modifierExtension",
+          "path": "RiskAssessment.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.identifier",
+          "path": "RiskAssessment.identifier",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.basedOn",
+          "path": "RiskAssessment.basedOn",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.parent",
+          "path": "RiskAssessment.parent",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.status",
+          "path": "RiskAssessment.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.method",
+          "path": "RiskAssessment.method",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.code",
+          "path": "RiskAssessment.code",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.subject",
+          "path": "RiskAssessment.subject",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.encounter",
+          "path": "RiskAssessment.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.occurrence[x]",
+          "path": "RiskAssessment.occurrence[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.condition",
+          "path": "RiskAssessment.condition",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Condition"]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.performer",
+          "path": "RiskAssessment.performer",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Device"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.reasonCode",
+          "path": "RiskAssessment.reasonCode",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.reasonReference",
+          "path": "RiskAssessment.reasonReference",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport",
+                "http://hl7.org/fhir/StructureDefinition/DocumentReference"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.basis",
+          "path": "RiskAssessment.basis",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction",
+          "path": "RiskAssessment.prediction",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.id",
+          "path": "RiskAssessment.prediction.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.extension",
+          "path": "RiskAssessment.prediction.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.modifierExtension",
+          "path": "RiskAssessment.prediction.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.outcome",
+          "path": "RiskAssessment.prediction.outcome",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.probability[x]",
+          "path": "RiskAssessment.prediction.probability[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.qualitativeRisk",
+          "path": "RiskAssessment.prediction.qualitativeRisk",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.relativeRisk",
+          "path": "RiskAssessment.prediction.relativeRisk",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.when[x]",
+          "path": "RiskAssessment.prediction.when[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.prediction.rationale",
+          "path": "RiskAssessment.prediction.rationale",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.mitigation",
+          "path": "RiskAssessment.mitigation",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "RiskAssessment.note",
+          "path": "RiskAssessment.note",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
         }
       ]
     }
@@ -11464,9 +11806,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -11600,9 +11940,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -11718,9 +12056,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -11775,9 +12111,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -11789,9 +12123,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -11836,9 +12168,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
             }
           ]
         }
@@ -12049,9 +12379,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Schedule"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Schedule"]
             }
           ]
         },
@@ -12335,9 +12663,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Specimen"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Specimen"]
             }
           ]
         },
@@ -12349,9 +12675,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ServiceRequest"]
             }
           ]
         },
@@ -12590,9 +12914,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -12735,9 +13057,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -13252,9 +13572,7 @@
             },
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Substance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Substance"]
             }
           ]
         },
@@ -13568,9 +13886,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/ActivityDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/ActivityDefinition"]
             }
           ]
         },
@@ -13593,9 +13909,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -13618,9 +13932,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Task"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Task"]
             }
           ]
         },
@@ -13709,9 +14021,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -13723,9 +14033,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -13737,9 +14045,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Encounter"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }
           ]
         },
@@ -13835,9 +14141,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Location"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Location"]
             }
           ]
         },
@@ -13860,9 +14164,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Resource"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Resource"]
             }
           ]
         },
@@ -13900,9 +14202,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/Provenance"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/Provenance"]
             }
           ]
         },
@@ -14680,9 +14980,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "https://medplum.com/fhir/StructureDefinition/User"
-              ]
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/User"]
             }
           ]
         },
@@ -14705,9 +15003,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "https://medplum.com/fhir/StructureDefinition/AccessPolicy"
-              ]
+              "targetProfile": ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
             }
           ]
         },
@@ -14870,9 +15166,7 @@
           "type": [
             {
               "code": "Reference",
-              "targetProfile": [
-                "Project"
-              ]
+              "targetProfile": ["Project"]
             }
           ]
         },
@@ -14906,9 +15200,7 @@
           "type": [
             {
               "code": "canonical",
-              "targetProfile": [
-                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
-              ]
+              "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
         },
@@ -15183,17 +15475,6 @@
         {
           "id": "Bot.publicWebhook",
           "path": "Bot.publicWebhook",
-          "min": 0,
-          "max": "1",
-          "type": [
-            {
-              "code": "boolean"
-            }
-          ]
-        },
-        {
-          "id": "Bot.streamingEnabled",
-          "path": "Bot.streamingEnabled",
           "min": 0,
           "max": "1",
           "type": [
