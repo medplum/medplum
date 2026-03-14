@@ -510,7 +510,8 @@ export default function PricingPage(): JSX.Element {
             <h3>Notes</h3>
             <ol>
               <li id="note1">
-                <strong>Free</strong>: recommended for prototyping or learning.
+                <strong>Free</strong>: recommended for prototyping or learning. See{' '}
+                <Link href="/open-source">Why Open Source</Link>.
               </li>
               <li id="note2">
                 <strong>Production</strong>: recommended for production applications, e.g. treatment of patients or
@@ -526,7 +527,8 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note5">
                 <strong>Community</strong>: refers to self-hosting the{' '}
-                <Link href="https://github.com/medplum/medplum">Medplum application</Link>.
+                <Link href="https://github.com/medplum/medplum">Medplum application</Link>. See{' '}
+                <Link href="/open-source">Why Open Source</Link>.
               </li>
               <li id="note6">
                 <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their
