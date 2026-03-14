@@ -19,7 +19,7 @@ export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatab
   const { formState, context, item, responseItem } = props;
   const isChoiceType = item.type === QuestionnaireItemType.choice || item.type === QuestionnaireItemType.openChoice;
   const showAddButton = !isChoiceType;
- 
+
   const answers = !isChoiceType && responseItem.answer && responseItem.answer.length > 0 ? responseItem.answer : [{}];
   return (
     <FormSection key={props.item.linkId} title={props.item.text} withAsterisk={props.item.required}>
