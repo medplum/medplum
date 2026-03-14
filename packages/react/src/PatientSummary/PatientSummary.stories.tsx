@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Badge, Box, Group, RingProgress, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { createReference } from '@medplum/core';
+import type { Observation, RiskAssessment } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconAlertTriangle, IconCircleCheck, IconFlame, IconShieldExclamation } from '@tabler/icons-react';
 import type { Meta } from '@storybook/react';
+import { IconAlertTriangle, IconCircleCheck, IconFlame, IconShieldExclamation } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import type { Observation, RiskAssessment } from '@medplum/fhirtypes';
 import { PatientSummary } from './PatientSummary';
 import { AllergiesSection, MedicationsSection, ProblemListSection, VitalsSection } from './sectionConfigs';
 import { summaryResourceListSection } from './SummaryResourceListSection';
@@ -44,20 +44,22 @@ export const CustomResourceListSection = (): JSX.Element => {
 
   useEffect(() => {
     if (!customResourceListSeedPromise) {
-      customResourceListSeedPromise = medplum.createResource({
-        resourceType: 'Observation',
-        status: 'final',
-        subject: patientRef,
-        effectiveDateTime: '2026-02-01',
-        code: {
-          coding: [{ system: 'http://loinc.org', code: '82810-3', display: 'Pregnancy status' }],
-          text: 'Pregnancy status',
-        },
-        valueCodeableConcept: {
-          coding: [{ system: 'http://loinc.org', code: 'LA15173-0', display: 'Pregnant' }],
-          text: 'Pregnant',
-        },
-      }).then(() => undefined);
+      customResourceListSeedPromise = medplum
+        .createResource({
+          resourceType: 'Observation',
+          status: 'final',
+          subject: patientRef,
+          effectiveDateTime: '2026-02-01',
+          code: {
+            coding: [{ system: 'http://loinc.org', code: '82810-3', display: 'Pregnancy status' }],
+            text: 'Pregnancy status',
+          },
+          valueCodeableConcept: {
+            coding: [{ system: 'http://loinc.org', code: 'LA15173-0', display: 'Pregnant' }],
+            text: 'Pregnant',
+          },
+        })
+        .then(() => undefined);
     }
     customResourceListSeedPromise.then(() => setLoaded(true)).catch(console.error);
   }, [medplum, patientRef]);
@@ -82,8 +84,12 @@ export const CustomResourceListSection = (): JSX.Element => {
             },
             getStatus: (resource) => {
               const code = (resource as Observation).valueCodeableConcept?.coding?.[0]?.code;
-              if (code === 'LA15173-0') return { label: 'Pregnant', color: 'pink' };
-              if (code === 'LA26683-5') return { label: 'Not pregnant', color: 'gray' };
+              if (code === 'LA15173-0') {
+                return { label: 'Pregnant', color: 'pink' };
+              }
+              if (code === 'LA26683-5') {
+                return { label: 'Not pregnant', color: 'gray' };
+              }
               return undefined;
             },
           }),
@@ -118,7 +124,9 @@ export const CustomRenderSection = (): JSX.Element => {
               outcome: { text: '10-year cardiovascular event' },
               probabilityDecimal: 0.72,
               qualitativeRisk: {
-                coding: [{ system: 'http://terminology.hl7.org/CodeSystem/risk-probability', code: 'high', display: 'High' }],
+                coding: [
+                  { system: 'http://terminology.hl7.org/CodeSystem/risk-probability', code: 'high', display: 'High' },
+                ],
               },
             },
           ],
@@ -126,7 +134,10 @@ export const CustomRenderSection = (): JSX.Element => {
         await medplum.createResource({
           resourceType: 'Condition',
           subject: patientRef,
-          code: { coding: [{ system: 'http://snomed.info/sct', code: '195967001', display: 'Asthma' }], text: 'Asthma' },
+          code: {
+            coding: [{ system: 'http://snomed.info/sct', code: '195967001', display: 'Asthma' }],
+            text: 'Asthma',
+          },
           clinicalStatus: {
             coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-clinical', code: 'active' }],
           },
@@ -137,7 +148,9 @@ export const CustomRenderSection = (): JSX.Element => {
           status: 'active',
           intent: 'order',
           medicationCodeableConcept: {
-            coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197361', display: 'Lisinopril 10 MG' }],
+            coding: [
+              { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '197361', display: 'Lisinopril 10 MG' },
+            ],
             text: 'Lisinopril 10 MG',
           },
         });
@@ -165,7 +178,12 @@ export const CustomRenderSection = (): JSX.Element => {
               const probability = ra?.prediction?.[0]?.probabilityDecimal;
               const riskScore = probability !== undefined ? Math.round(probability * 100) : undefined;
               const qualCode = ra?.prediction?.[0]?.qualitativeRisk?.coding?.[0]?.code;
-              const ringColor = qualCode === 'high' ? 'red' : qualCode === 'moderate' ? 'orange' : 'yellow';
+              let ringColor = 'yellow';
+              if (qualCode === 'high') {
+                ringColor = 'red';
+              } else if (qualCode === 'moderate') {
+                ringColor = 'orange';
+              }
               const badgeLabel = qualCode ? qualCode.toUpperCase() + ' RISK' : 'UNKNOWN';
               const alerts = [
                 { icon: <IconFlame size={14} />, label: 'High cardiovascular risk', color: 'red' },
@@ -183,7 +201,10 @@ export const CustomRenderSection = (): JSX.Element => {
               return (
                 <Stack gap={8} py={8}>
                   <Group gap="md" align="center" wrap="nowrap">
-                    <Tooltip label={`${firstName}'s composite risk score (${ra.method?.text ?? 'risk model'})`} position="right">
+                    <Tooltip
+                      label={`${firstName}'s composite risk score (${ra.method?.text ?? 'risk model'})`}
+                      position="right"
+                    >
                       <RingProgress
                         size={72}
                         thickness={8}
@@ -217,7 +238,11 @@ export const CustomRenderSection = (): JSX.Element => {
                         <ThemeIcon color={alert.color} variant="light" size={20} radius="xl">
                           {alert.icon}
                         </ThemeIcon>
-                        <Text fz="xs" c={alert.color === 'green' ? 'dimmed' : undefined} fw={alert.color === 'green' ? 400 : 600}>
+                        <Text
+                          fz="xs"
+                          c={alert.color === 'green' ? 'dimmed' : undefined}
+                          fw={alert.color === 'green' ? 400 : 600}
+                        >
                           {alert.label}
                         </Text>
                       </Group>
