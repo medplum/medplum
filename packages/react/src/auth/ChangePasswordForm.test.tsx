@@ -21,7 +21,9 @@ function mockFetch(url: string, options: any): Promise<any> {
       status = 400;
       result = {
         resourceType: 'OperationOutcome',
-        issue: [{ severity: 'error', code: 'invalid', expression: ['oldPassword'], details: { text: 'Incorrect password' } }],
+        issue: [
+          { severity: 'error', code: 'invalid', expression: ['oldPassword'], details: { text: 'Incorrect password' } },
+        ],
       };
     }
   }

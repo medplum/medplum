@@ -8,11 +8,5 @@ export function SetPasswordPage(): JSX.Element {
   const { id, secret } = useParams() as { id: string; secret: string };
   const navigate = useNavigate();
 
-  return (
-    <SetPasswordForm
-      id={id}
-      secret={secret}
-      onSignIn={() => navigate('/signin')?.catch(console.error)}
-    />
-  );
+  return <SetPasswordForm id={id} secret={secret} onSignIn={() => navigate('/signin')?.catch(console.error)} />;
 }
