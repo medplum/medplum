@@ -20,7 +20,10 @@ describe('AddressDisplay', () => {
 
   test('Renders with lineSeparator option', () => {
     render(
-      <AddressDisplay value={{ line: ['123 main st'], city: 'Happy', state: 'CA' }} options={{ lineSeparator: ' | ' }} />
+      <AddressDisplay
+        value={{ line: ['123 main st'], city: 'Happy', state: 'CA' }}
+        options={{ lineSeparator: ' | ' }}
+      />
     );
     expect(screen.getByText('123 main st | Happy, CA')).toBeInTheDocument();
   });
