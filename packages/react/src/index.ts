@@ -19,6 +19,7 @@ export * from './AttachmentButton/AttachmentButton';
 export * from './AttachmentDisplay/AttachmentDisplay';
 export * from './AttachmentInput/AttachmentInput';
 export * from './auth/MfaForm';
+export * from './auth/ChangePasswordForm';
 export * from './auth/RegisterForm';
 export * from './auth/ResetPasswordForm';
 export * from './auth/SetPasswordForm';
