@@ -21,6 +21,7 @@ export * from './AttachmentInput/AttachmentInput';
 export * from './auth/MfaForm';
 export * from './auth/RegisterForm';
 export * from './auth/ResetPasswordForm';
+export * from './auth/SetPasswordForm';
 export * from './auth/SignInForm';
 export * from './BackboneElementDisplay/BackboneElementDisplay';
 export * from './BackboneElementInput/BackboneElementInput';
