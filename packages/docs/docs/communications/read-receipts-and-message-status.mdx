@@ -19,7 +19,7 @@ For very simple 1:1 messaging where read receipts do not need to be as auditable
 :::
 
 :::note Tasks can serve multiple purposes in messaging
-The same thread may have response-tracking Tasks (for assignment and routing — see [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing)) and read-receipt Tasks (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the `Task.code` element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
+The same thread may have response-tracking Tasks (for assignment and routing) and read-receipt Tasks (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the `Task.code` element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
 :::
 
 ## Read-Receipt Task Structure
@@ -230,5 +230,4 @@ For non-React frameworks, use `medplum.subscribeToCriteria()` to listen for new 
 
 ## See Also
 
-- [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing) — using Tasks for assignment and routing
 - [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API
