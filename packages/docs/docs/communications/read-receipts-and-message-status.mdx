@@ -14,10 +14,6 @@ import TabItem from '@theme/TabItem';
 
 Read state is tracked using [`Task`](/docs/api/fhir/resources/task) resources. When a message is sent, a read-receipt Task is pre-created for each recipient with `status: "requested"`. When the recipient reads the message, the Task is updated to `status: "completed"`. Each recipient gets their own Task, so this works consistently for both 1:1 and group threads.
 
-:::note Alternate pattern: `Communication.status=completed`
-For very simple 1:1 messaging where read receipts do not need to be as auditable or trackable, you can use [`Communication.status`](/docs/api/fhir/resources/communication) set to `"completed"` to indicate that a message has been read. This pattern only applies to 1:1 conversations and does not support per-recipient tracking (e.g., in group threads you cannot tell which recipient read the message). It is also less auditable than using Tasks. Tasks are the recommended standard for most use cases; the rest of this document focuses on the Task-based pattern.
-:::
-
 :::note Tasks can serve multiple purposes in messaging
 The same thread may have response-tracking Tasks (for assignment and routing) and read-receipt Tasks (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the `Task.code` element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
 :::
@@ -179,6 +175,10 @@ Search for unread messages in a specific thread:
 ```
 Task?code=https://medplum.com/task-codes|read-receipt&focus:Communication.part-of=Communication/{threadId}&owner=Practitioner/{id}&status=requested
 ```
+
+:::note Simpler alternative: Communication.status
+For very simple 1:1 messaging where read receipts do not need to be as auditable or trackable, you can use [`Communication.status`](/docs/api/fhir/resources/communication) set to `"completed"` to indicate that a message has been read. This pattern only applies to 1:1 conversations and does not support per-recipient tracking (e.g., in group threads you cannot tell which recipient read the message). It is also less auditable than using Tasks. The Task-based approach above is the recommended standard for most use cases.
+:::
 
 ## In Your UI
 
