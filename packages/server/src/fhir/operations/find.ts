@@ -3,6 +3,7 @@
 import {
   allOk,
   badRequest,
+  codeableConceptMatchesToken,
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
@@ -57,7 +58,7 @@ function filterByServiceTypes(
   const results: [SchedulingParameters, CodeableConcept][] = [];
   for (const params of schedulingParameters) {
     const serviceType = params.serviceType.find((codeableConcept) =>
-      codeableConcept.coding?.some((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`))
+      serviceTypes.some((token) => codeableConceptMatchesToken(codeableConcept, token))
     );
     if (serviceType) {
       results.push([params, serviceType]);

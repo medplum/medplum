@@ -686,6 +686,38 @@ describe('Schedule/:id/$find', () => {
     });
   });
 
+  test('when serviceType has no `system` component', async () => {
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'availability', valueTiming: { repeat: twoDaySchedule } },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'office-visit' }] } },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .query({
+        start: new Date('2025-12-05T10:00:00.000-05:00').toISOString(),
+        end: new Date('2025-12-05T14:00:00.000-05:00').toISOString(),
+        'service-type': 'office-visit',
+      });
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('entry');
+    expect(response.body.entry).toHaveLength(2);
+  });
+
   test('returns appropriate slots for each serviceType passed', async () => {
     const schedule = await makeSchedule({
       'new-patient': { availability: fridayOnly, duration: 45, bufferBefore: 15 },
