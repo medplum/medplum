@@ -53,10 +53,10 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
+import * as subscriptionModule from '../workers/subscription';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { PostgresError, SelectQuery } from './sql';
-import * as subscriptionModule from '../workers/subscription';
 
 jest.mock('hibp');
 
@@ -1637,13 +1637,15 @@ describe('FHIR Repo', () => {
         {
           resourceType: 'Patient',
           id: createdPatient.id,
-          meta: expect.any(Object)
+          meta: expect.any(Object),
         },
         undefined,
-        expect.any(Object));
+        expect.any(Object)
+      );
 
-      await expect(repo.readResource('Patient', patients[0].id))
-        .rejects.toMatchObject(new OperationOutcomeError(notFound));
+      await expect(repo.readResource('Patient', patients[0].id)).rejects.toMatchObject(
+        new OperationOutcomeError(notFound)
+      );
 
       addSubscriptionJobsSpy.mockRestore();
     }));

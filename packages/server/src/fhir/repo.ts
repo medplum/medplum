@@ -3026,12 +3026,12 @@ class CallbackFrame {
     this.postCommitCallbacks.push(fn);
   }
 
-  merge (other: CallbackFrame): void {
+  merge(other: CallbackFrame): void {
     this.preCommitCallbacks.push(...other.preCommitCallbacks);
     this.postCommitCallbacks.push(...other.postCommitCallbacks);
   }
 
-  async processPreCommit (): Promise<void> {
+  async processPreCommit(): Promise<void> {
     const callbacks = this.preCommitCallbacks;
     this.preCommitCallbacks = [];
     for (const cb of callbacks) {
@@ -3040,7 +3040,7 @@ class CallbackFrame {
     }
   }
 
-  async processPostCommit (): Promise<void> {
+  async processPostCommit(): Promise<void> {
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
@@ -3060,28 +3060,28 @@ class CallbackStack {
     this.currentFrame().postCommit(fn);
   }
 
-  currentFrame (): CallbackFrame {
+  currentFrame(): CallbackFrame {
     const frame = this.stack[this.stack.length - 1];
     return this.ensureFrame(frame);
   }
 
-  pushFrame (): void {
+  pushFrame(): void {
     this.stack.push(new CallbackFrame());
   }
 
-  popFrame (): CallbackFrame {
+  popFrame(): CallbackFrame {
     const frame = this.stack.pop();
     return this.ensureFrame(frame);
   }
 
-  collapseFrame (): void {
+  collapseFrame(): void {
     const frame = this.popFrame();
     const current = this.currentFrame();
     current.merge(frame);
   }
 
-  private ensureFrame (frame?: CallbackFrame): CallbackFrame {
-     if (!frame) {
+  private ensureFrame(frame?: CallbackFrame): CallbackFrame {
+    if (!frame) {
       throw new Error('Missing transaction callback frame');
     }
     return frame;
