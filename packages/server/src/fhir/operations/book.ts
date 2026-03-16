@@ -13,9 +13,9 @@ import {
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type {
-  ActivityDefinition,
   Appointment,
   Bundle,
+  HealthcareService,
   OperationDefinition,
   Patient,
   Reference,
@@ -146,7 +146,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
   assertAllOk(actors, 'Schedule.actor load failed', 'Parameters.parameter[%i].schedule.actor');
 
   // Collect all unique service type codes across all proposed slots, then fetch
-  // matching ActivityDefinition resources in a single query.
+  // matching HealthcareService resources in a single query.
   const allServiceTypes = [
     ...new Set(
       proposedSlots
@@ -155,11 +155,11 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
         .map((coding) => `${coding.system}|${coding.code}`)
     ),
   ];
-  const activityDefinitions: ActivityDefinition[] =
+  const healthcareServices: HealthcareService[] =
     allServiceTypes.length > 0
-      ? await ctx.repo.searchResources<ActivityDefinition>({
-          resourceType: 'ActivityDefinition',
-          filters: [{ code: 'code', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
+      ? await ctx.repo.searchResources<HealthcareService>({
+          resourceType: 'HealthcareService',
+          filters: [{ code: 'service-type', operator: Operator.EQUALS, value: allServiceTypes.join(',') }],
         })
       : [];
 
@@ -188,7 +188,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
           const durationMinutes =
             (new Date(proposedSlot.end).getTime() - new Date(proposedSlot.start).getTime()) / 60000;
 
-          const parameters = chooseSchedulingParameters(schedule, activityDefinitions, slotServiceTypes)
+          const parameters = chooseSchedulingParameters(schedule, healthcareServices, slotServiceTypes)
             .map(([params]) => params)
             .filter((params) => params.duration === durationMinutes);
 

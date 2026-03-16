@@ -10,7 +10,7 @@ import {
   Operator,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { ActivityDefinition, Bundle, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Bundle, HealthcareService, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
 import { findSlotTimes } from './utils/find';
@@ -81,18 +81,18 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const activityDefinitionSearch: Promise<ActivityDefinition[]> = ctx.repo.searchResources<ActivityDefinition>({
-    resourceType: 'ActivityDefinition',
+  const healthcareServiceSearch: Promise<HealthcareService[]> = ctx.repo.searchResources<HealthcareService>({
+    resourceType: 'HealthcareService',
     filters: [
       {
-        code: 'code',
+        code: 'service-type',
         operator: Operator.EQUALS,
         value: serviceTypeTokens.join(','),
       },
     ],
   });
 
-  const [schedule, slots, activityDefinitions] = await Promise.all([
+  const [schedule, slots, healthcareServices] = await Promise.all([
     ctx.repo.readResource<Schedule>('Schedule', req.params.id),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
@@ -122,7 +122,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         },
       ],
     }),
-    activityDefinitionSearch,
+    healthcareServiceSearch,
   ]);
 
   // If we filled a full search page of slots, then there may be slots we
@@ -142,7 +142,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     );
   }
 
-  const schedulingParameters = chooseSchedulingParameters(schedule, activityDefinitions, serviceTypeTokens);
+  const schedulingParameters = chooseSchedulingParameters(schedule, healthcareServices, serviceTypeTokens);
   if (schedulingParameters.length === 0) {
     throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
   }

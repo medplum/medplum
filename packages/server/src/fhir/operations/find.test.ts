@@ -3,10 +3,10 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type {
-  ActivityDefinition,
   Bundle,
   CodeableConcept,
   Extension,
+  HealthcareService,
   Location,
   Practitioner,
   Project,
@@ -34,26 +34,26 @@ type AvailabilityOptions = {
   timezone?: string;
 };
 
-const fourDayWorkWeek: Timing['repeat'] = {
+const fourDayWorkWeek = {
   dayOfWeek: ['mon', 'tue', 'wed', 'thu'],
   timeOfDay: ['09:30:00', '13:15:00'],
   duration: 3,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
-const twoDaySchedule: Timing['repeat'] = {
+const twoDaySchedule = {
   dayOfWeek: ['thu', 'fri'],
   timeOfDay: ['12:00:00'],
   duration: 8,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
-const fridayOnly: Timing['repeat'] = {
+const fridayOnly = {
   dayOfWeek: ['fri'],
   timeOfDay: ['10:30:00'],
   duration: 8,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
 describe('Schedule/:id/$find', () => {
   let location: Location;
@@ -92,13 +92,15 @@ describe('Schedule/:id/$find', () => {
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          {
-            url: 'availability',
-            valueTiming: { repeat: availability },
-          },
-        ] as Extension[],
+        extension: [] as Extension[],
       } satisfies Extension;
+
+      if (availability) {
+        extension.extension.push({
+          url: 'availability',
+          valueTiming: { repeat: availability },
+        });
+      }
 
       if (timezone) {
         extension.extension.push({
@@ -733,19 +735,31 @@ describe('Schedule/:id/$find', () => {
     });
   });
 
-  describe('Loading schedulingParameters from ActivityDefinitions', () => {
-    test('works when scheduling parameters only exist on an ActivityDefinition', async () => {
+  describe('Loading schedulingParameters from HealthcareServices', () => {
+    test('works when scheduling parameters only exist on a HealthcareService', async () => {
       const code = 'blood-donation';
-      await systemRepo.createResource<ActivityDefinition>({
-        resourceType: 'ActivityDefinition',
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
         meta: { project: project.id },
-        status: 'active',
-        code: {
-          coding: [{ system: 'http://example.com', code }],
-        },
-        extension: makeSchedulingExtension({
-          [code]: { availability: twoDaySchedule, duration: 30 },
-        }),
+        active: true,
+        type: [
+          {
+            coding: [{ system: 'http://example.com', code }],
+          },
+        ],
+        availableTime: [
+          {
+            daysOfWeek: ['thu', 'fri'],
+            availableStartTime: '12:00:00',
+            availableEndTime: '20:00:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }],
+          },
+        ],
       });
 
       const schedule = await makeSchedule({});
@@ -789,18 +803,34 @@ describe('Schedule/:id/$find', () => {
       });
     });
 
-    test('schedule-specific parameters override those on the ActivityDefinition', async () => {
+    test('schedule-specific parameters override those on the HealthcareService', async () => {
       const code = 'yoga';
-      await systemRepo.createResource<ActivityDefinition>({
-        resourceType: 'ActivityDefinition',
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
         meta: { project: project.id },
-        status: 'active',
-        code: {
-          coding: [{ system: 'http://example.com', code }],
-        },
-        extension: makeSchedulingExtension({
-          [code]: { availability: fourDayWorkWeek, duration: 20 },
-        }),
+        type: [
+          {
+            coding: [{ system: 'http://example.com', code }],
+          },
+        ],
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '09:30:00',
+            availableEndTime: '12:30:00',
+          },
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '13:15:00',
+            availableEndTime: '16:15:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }],
+          },
+        ],
       });
 
       const schedule = await makeSchedule({

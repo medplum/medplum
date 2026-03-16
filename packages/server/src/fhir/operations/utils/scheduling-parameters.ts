@@ -1,7 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { ActivityDefinition, CodeableConcept, Duration, Schedule } from '@medplum/fhirtypes';
-import { codeableConceptMatchesToken, isDefined } from '@medplum/core';
+import { codeableConceptMatchesToken, EMPTY, isDefined } from '@medplum/core';
+import type {
+  CodeableConcept,
+  Duration,
+  HealthcareService,
+  HealthcareServiceAvailableTime,
+  Schedule,
+} from '@medplum/fhirtypes';
 
 const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters';
 
@@ -107,52 +113,62 @@ function exactlyOne<T>(arr: T[], attribute: string): T {
   return arr[0];
 }
 
+function exactlyZero(arr: unknown[], attribute: string): void {
+  if (arr.length > 0) {
+    throw new Error(`Scheduling parameter attribute '${attribute}' is not allowed in this context`);
+  }
+}
+
 /**
- * Given scheduling parameter descriptions from a Schedule and ActivityDefinitions, and an
- * array of input service types, return [SchedulingParameters, serviceType] pairs that satisfy
- * the requested service types.
+ * Given a Schedule, HealthcareServices, and an array of input service type
+ * tokens, return [SchedulingParameters, serviceType] pairs that satisfy the
+ * requested service types.
  *
  * Priority order (highest to lowest):
  *  1. Entries from the Schedule matching a requested service-type
- *  2. Entries from ActivityDefinitions matching a requested service-type
+ *  2. Entries from HealthcareService matching a requested service-type
  *
  * Each SchedulingParameters description is returned at most once. If matches are found at a given
  * priority level, lower-priority levels are not returned.
  *
  * @param schedule - The schedule resource to consider
- * @param activityDefinitions - ActivityDefinitions to consider
+ * @param healthcareServices - HealthcareServices to consider
  * @param serviceTypeTokens - Service type tokens to restrict scheduling parameters to
  * @returns pairs of [SchedulingParameters, CodeableConcept]
  */
 export function chooseSchedulingParameters(
   schedule: Schedule,
-  activityDefinitions: ActivityDefinition[],
+  healthcareServices: HealthcareService[],
   serviceTypeTokens: string[]
 ): (readonly [SchedulingParameters, CodeableConcept])[] {
   const scheduleSchedulingParameters = parseSchedulingParametersExtensions(schedule);
 
   // Top priority: entries on an individual schedule matching a service type
-  const specificMatches = scheduleSchedulingParameters.map((schedulingParameters) => {
-    const serviceType = schedulingParameters.serviceType.find((st) =>
-      serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-    );
-    return serviceType ? [schedulingParameters, serviceType] as const : undefined
-  }).filter(isDefined);
+  const specificMatches = scheduleSchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
 
   if (specificMatches.length) {
     return specificMatches;
   }
 
-  // Next: entries on ActivityDefinition matching a service type
-  const activitySchedulingParameters = activityDefinitions.flatMap((activityDefinition) =>
-    parseSchedulingParametersExtensions(activityDefinition)
+  // Next: entries on HealthcareService resources matching a service type
+  const healthcareServiceSchedulingParameters = healthcareServices.flatMap((healthcareService) =>
+    parseSchedulingParametersExtensions(healthcareService)
   );
-  const sharedMatches = activitySchedulingParameters.map((schedulingParameters) => {
-    const serviceType = schedulingParameters.serviceType.find((st) =>
-      serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
-    );
-    return serviceType ? [schedulingParameters, serviceType] as const : undefined
-  }).filter(isDefined);
+  const sharedMatches = healthcareServiceSchedulingParameters
+    .map((schedulingParameters) => {
+      const serviceType = schedulingParameters.serviceType.find((st) =>
+        serviceTypeTokens.some((token) => codeableConceptMatchesToken(st, token))
+      );
+      return serviceType ? ([schedulingParameters, serviceType] as const) : undefined;
+    })
+    .filter(isDefined);
 
   if (sharedMatches.length) {
     return sharedMatches;
@@ -161,23 +177,74 @@ export function chooseSchedulingParameters(
   return [];
 }
 
+// Convert HealthcareService.availability entries into a format matching
+// our extension.availability values
+function extractAvailability(
+  availableTime: HealthcareServiceAvailableTime
+): SchedulingParametersAvailability | undefined {
+  if (availableTime.allDay) {
+    return {
+      dayOfWeek: availableTime.daysOfWeek ?? [],
+      timeOfDay: ['00:00:00'],
+      duration: 60 * 24,
+    };
+  }
+
+  if (availableTime.availableStartTime && availableTime.availableEndTime) {
+    // Intentionally ignoring seconds, as we schedule at Minute granularity.
+    const [startHour, startMinute, _startSecond] = availableTime.availableStartTime.split(':').map(Number);
+    const [endHour, endMinute, _endSecond] = availableTime.availableEndTime.split(':').map(Number);
+    const duration = (endHour - startHour) * 60 + endMinute - startMinute;
+    return {
+      dayOfWeek: availableTime.daysOfWeek ?? [],
+      timeOfDay: [availableTime.availableStartTime as `${number}:${number}:${number}`],
+      duration,
+    };
+  }
+
+  return undefined;
+}
+
 /**
- * @param resource - A Schedule or ActivityDefinition to extract scheduling information from
+ * @param resource - A Schedule or HealthcareService to extract scheduling information from
  * @returns SchedulingParameters[] - An array of objects describing scheduling configuration
  */
-export function parseSchedulingParametersExtensions(resource: Schedule | ActivityDefinition): SchedulingParameters[] {
+export function parseSchedulingParametersExtensions(resource: Schedule | HealthcareService): SchedulingParameters[] {
   const extensions = (resource.extension ?? []).filter(
     (ext) => ext.url === SchedulingParametersURI
   ) as SchedulingParametersExtension[];
+
+  // Holds scheduling parameters extracted from attributes of the resource, to be merged into
+  // each extension on the resource
+  const resourceParameters: Partial<SchedulingParameters> = {};
+  if (resource.resourceType === 'HealthcareService') {
+    resourceParameters.serviceType = resource.type ?? [];
+    resourceParameters.availability = (resource.availableTime ?? EMPTY).map(extractAvailability).filter(isDefined);
+  }
+
   return extensions.map((extension) => {
     const duration = exactlyOne(
       extension.extension.filter((ext) => ext.url === 'duration'),
       'duration'
     );
-    const rawAvailability = atLeastOne(
-      extension.extension.filter((ext) => ext.url === 'availability'),
-      'availability'
-    );
+
+    // `availability` is required in Schedule, not allowed in HealthcareService
+    // (where we read from HealthcareService.availableTimes instead)
+    const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
+    const availabilityConstraint = resource.resourceType === 'Schedule' ? atLeastOne : exactlyZero;
+    availabilityConstraint(rawAvailability, 'availability');
+
+    const availability =
+      resourceParameters.availability ??
+      rawAvailability.map((ext) => ({
+        dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
+        timeOfDay: ext.valueTiming.repeat.timeOfDay,
+        duration: durationToMinutes({
+          value: ext.valueTiming.repeat.duration,
+          unit: ext.valueTiming.repeat.durationUnit,
+        }),
+      }));
+
     const bufferBefore = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferBefore'),
       'bufferBefore'
@@ -199,22 +266,13 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
       'timezone'
     );
 
-    // `serviceType` has cardinality 0..* - When used on `Schedule` resources
-    // we expect it to be present, when on `ActivityDefinition` it will not be
-    // (we intend to merge in `ActivityDefinition.code` as the service type later,
-    // see https://github.com/medplum/medplum/issues/8271).
-    const serviceType = extension.extension
-      .filter((ext) => ext.url === 'serviceType')
-      .map((ext) => ext.valueCodeableConcept);
-
-    const availability = rawAvailability.map((ext) => ({
-      dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
-      timeOfDay: ext.valueTiming.repeat.timeOfDay,
-      duration: durationToMinutes({
-        value: ext.valueTiming.repeat.duration,
-        unit: ext.valueTiming.repeat.durationUnit,
-      }),
-    }));
+    // `serviceType` is expected in Schedule, not allowed in HealthcareService
+    // (where we read from HealthcareService.type instead)
+    const rawServiceType = extension.extension.filter((ext) => ext.url === 'serviceType');
+    if (resource.resourceType === 'HealthcareService') {
+      exactlyZero(rawServiceType, 'serviceType');
+    }
+    const serviceType = resourceParameters.serviceType ?? rawServiceType.map((ext) => ext.valueCodeableConcept);
 
     // default alignmentInterval is "on the hour" (0)
     let alignmentInterval = rawAlignmentInterval ? durationToMinutes(rawAlignmentInterval.valueDuration) : 0;
@@ -223,13 +281,15 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
     alignmentInterval = alignmentInterval === 0 ? 60 : alignmentInterval;
 
     return {
-      availability: availability,
+      serviceType, // HealthcareService.type or `serviceType` extension parameter
+      availability, // HealthcareService.availableTime or `availability` extension parameter
+
+      // These attributes always come from the extension
       bufferBefore: bufferBefore ? durationToMinutes(bufferBefore.valueDuration) : 0,
       bufferAfter: bufferAfter ? durationToMinutes(bufferAfter.valueDuration) : 0,
       alignmentInterval,
       alignmentOffset: alignmentOffset ? durationToMinutes(alignmentOffset.valueDuration) : 0,
       duration: durationToMinutes(duration.valueDuration),
-      serviceType,
       timezone: timezone?.valueCode,
     };
   });

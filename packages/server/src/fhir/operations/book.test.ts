@@ -3,11 +3,11 @@
 import type { WithId } from '@medplum/core';
 import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
 import type {
-  ActivityDefinition,
   Appointment,
   Bundle,
   CodeableConcept,
   Extension,
+  HealthcareService,
   Patient,
   Practitioner,
   Resource,
@@ -1062,16 +1062,32 @@ describe('Appointment/$book', () => {
     ]);
   });
 
-  describe('Loading schedulingParameters from ActivityDefinitions', () => {
+  describe('Loading schedulingParameters from HealthcareService', () => {
     const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
 
-    async function makeActivityDefinition(duration: number): Promise<void> {
-      await systemRepo.createResource<ActivityDefinition>({
-        resourceType: 'ActivityDefinition',
+    async function makeHealthcareService(duration: number): Promise<void> {
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
         meta: { project: project.project.id },
-        status: 'active',
-        code: serviceType,
-        extension: [makeSchedulingExtension({ serviceType, duration })],
+        type: [serviceType],
+        availableTime: [
+          {
+            daysOfWeek: ['tue', 'wed', 'thu'],
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [
+              {
+                url: 'duration',
+                valueDuration: { value: duration, unit: 'min' },
+              },
+            ],
+          },
+        ],
       });
     }
 
@@ -1083,8 +1099,8 @@ describe('Appointment/$book', () => {
       });
     }
 
-    test('succeeds when scheduling parameters are only on an ActivityDefinition', async () => {
-      await makeActivityDefinition(60);
+    test('succeeds when scheduling parameters are only on an HealthcareService', async () => {
+      await makeHealthcareService(60);
       const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
 
       const response = await request
@@ -1111,8 +1127,8 @@ describe('Appointment/$book', () => {
       expect(response.status).toEqual(201);
     });
 
-    test('fails when booking outside ActivityDefinition availability', async () => {
-      await makeActivityDefinition(60);
+    test('fails when booking outside HealthcareService availability', async () => {
+      await makeHealthcareService(60);
       const schedule = await makeScheduleNoParams(practitioner1);
 
       // 07:00-08:00 ET is outside the 09:00-17:00 ET window
@@ -1139,31 +1155,28 @@ describe('Appointment/$book', () => {
       expect(response.status).toEqual(400);
     });
 
-    test('Schedule-specific parameters override ActivityDefinition parameters', async () => {
-      // ActivityDefinition says 30-min slots; Schedule says 60-min slots for
+    test('Schedule-specific parameters override HealthcareService parameters', async () => {
+      // HealthcareService says 30-min slots; Schedule says 60-min slots for
       // the same service type.  A 60-min slot should succeed (Schedule wins),
-      // a 30-min slot should fail (ActivityDefinition parameters are
+      // a 30-min slot should fail (HealthcareService parameters are
       // overridden).
       const serviceType = { coding: [{ system: 'http://example.com', code: 'dentistry' }] };
 
-      await systemRepo.createResource<ActivityDefinition>({
-        resourceType: 'ActivityDefinition',
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
         meta: { project: project.project.id },
-        status: 'active',
-        code: serviceType,
+        type: [serviceType],
+        availableTime: [
+          {
+            daysOfWeek: ['tue', 'wed', 'thu'],
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
+          },
+        ],
         extension: [
           {
             url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-            extension: [
-              {
-                url: 'availability',
-                valueTiming: {
-                  repeat: { dayOfWeek: ['tue', 'wed', 'thu'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
-                },
-              },
-              { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
-              { url: 'serviceType', valueCodeableConcept: serviceType },
-            ],
+            extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }],
           },
         ],
       });
@@ -1213,7 +1226,7 @@ describe('Appointment/$book', () => {
       expect(response60.body).not.toHaveProperty('issue');
       expect(response60.status).toEqual(201);
 
-      // 30-min slot fails (ActivityDefinition duration was overridden by Schedule)
+      // 30-min slot fails (HealthcareService duration was overridden by Schedule)
       const response30 = await request
         .post('/fhir/R4/Appointment/$book')
         .set('Authorization', `Bearer ${project.accessToken}`)
