@@ -92,7 +92,7 @@
     "@types/node": "22.19.15",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.0",
+    "@vitejs/plugin-react": "5.2.0",
     "@vueless/storybook-dark-mode": "10.0.7",
     "chromatic": "15.2.0",
     "dotenv": "17.3.1",
