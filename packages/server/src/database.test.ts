@@ -3,7 +3,7 @@
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
-import type { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
+import type { ClientBase, Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import pg from 'pg';
 import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
@@ -39,7 +39,9 @@ describe('Database config', () => {
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
       class MockPoolClient extends Duplex implements PoolClient {
         release(): void {}
-        async connect(): Promise<void> {}
+        async connect(): Promise<ClientBase> {
+          return this;
+        }
         async query<R extends QueryResultRow = any, I = any[]>(sql: string | QueryConfig<I>): Promise<QueryResult<R>> {
           const result: QueryResult<R> = {
             command: '',
