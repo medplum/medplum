@@ -4,6 +4,7 @@ import {
   OperationOutcomeError,
   SearchParameterType,
   append,
+  badRequest,
   conflict,
   normalizeOperationOutcome,
   serverTimeout,
@@ -619,6 +620,7 @@ export const PostgresError = {
   SerializationFailure: '40001',
   QueryCanceled: '57014',
   InFailedSqlTransaction: '25P02',
+  DatetimeFieldOverflow: '22008',
 } as const;
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
@@ -644,6 +646,9 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    case PostgresError.DatetimeFieldOverflow:
+      // Date/time value out of range (e.g. Feb 29 on a non-leap year) -> 400 Bad Request
+      return new OperationOutcomeError(badRequest(err.message), err);
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
