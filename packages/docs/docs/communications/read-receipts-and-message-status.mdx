@@ -166,15 +166,43 @@ Because read state is tracked per recipient via Tasks, the same model works for 
 
 Search for a specific user's unread messages across all threads:
 
-```
-Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{id}&status=requested
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="unreadCountTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 Search for unread messages in a specific thread:
 
-```
-Task?code=https://medplum.com/task-codes|read-receipt&focus:Communication.part-of=Communication/{threadId}&owner=Practitioner/{id}&status=requested
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="unreadInThreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadInThreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="unreadInThreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
 
 :::note Simpler alternative: Communication.status
 For very simple 1:1 messaging where read receipts do not need to be as auditable or trackable, you can use [`Communication.status`](/docs/api/fhir/resources/communication) set to `"completed"` to indicate that a message has been read. This pattern only applies to 1:1 conversations and does not support per-recipient tracking (e.g., in group threads you cannot tell which recipient read the message). It is also less auditable than using Tasks. The Task-based approach above is the recommended standard for most use cases.
