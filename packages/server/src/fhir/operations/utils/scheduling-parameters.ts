@@ -144,7 +144,10 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Activit
       'timezone'
     );
 
-    // serviceType has cardinality 0..*
+    // `serviceType` has cardinality 0..* - When used on `Schedule` resources
+    // we expect it to be present, when on `ActivityDefinition` it will not be
+    // (we intend to merge in `ActivityDefinition.code` as the service type later,
+    // see https://github.com/medplum/medplum/issues/8271).
     const serviceType = extension.extension
       .filter((ext) => ext.url === 'serviceType')
       .map((ext) => ext.valueCodeableConcept);

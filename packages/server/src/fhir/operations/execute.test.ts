@@ -842,7 +842,7 @@ describe('Execute', () => {
 
       expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
       const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
-      const authState = await getLoginForAccessToken(undefined, generatedAccessToken);
+      const authState = (await getLoginForAccessToken(undefined, generatedAccessToken))?.authState;
 
       const expectedProject = whichProject === 'own' ? project1 : project2;
       expect(authState?.project?.id).toBeDefined();

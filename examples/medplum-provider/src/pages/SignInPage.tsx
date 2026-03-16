@@ -14,6 +14,7 @@ export function SignInPage(): JSX.Element {
       googleClientId="921088377005-3j1sa10vr6hj86jgmdfh2l53v3mp7lfi.apps.googleusercontent.com"
       onSuccess={() => navigate('/')?.catch(console.error)}
       projectId={searchParams.get('project') || undefined}
+      login={searchParams.get('login') || undefined}
     >
       <Logo size={32} />
       <Title order={3} py="lg">
