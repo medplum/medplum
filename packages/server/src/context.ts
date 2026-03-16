@@ -20,7 +20,7 @@ import type { Repository, SystemRepository } from './fhir/repo';
 import { ResourceCap } from './fhir/resource-cap';
 import { getLogger, globalLogger } from './logger';
 import type { AuthState } from './oauth/middleware';
-import { authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { authenticateTokenImpl } from './oauth/middleware';
 import { getRateLimitRedis } from './redis';
 import type { IRequestContext } from './request-context-store';
 import { requestContextStore } from './request-context-store';
@@ -144,9 +144,10 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   const { requestId, traceId } = requestIds(req);
   let ctx: RequestContext | undefined;
   try {
-    const authState = await authenticateTokenImpl(req);
-    if (authState) {
-      const repo = await getRepoForLogin(authState, isExtendedMode(req));
+    const { requestId, traceId } = requestIds(req);
+    const result = await authenticateTokenImpl(req);
+    if (result) {
+      const { authState, repo } = result;
       ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
     }
   } catch (err: any) {

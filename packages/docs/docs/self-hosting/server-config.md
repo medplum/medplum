@@ -306,7 +306,7 @@ Maximum JSON size for API calls. String is parsed with the [bytes](https://www.n
 
 ### maxBatchSize
 
-Maximum batch size for API calls. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
+Maximum batch size for Async Batches. When processing Async Batches, this limit overrides `maxJsonSize`. See [Asynchronous Batch Requests](/docs/fhir-datastore/fhir-batch-requests#asynchronous-batch-requests) for more details. String is parsed with the [bytes](https://www.npmjs.com/package/bytes) library.
 
 **Default:** `50mb`
 

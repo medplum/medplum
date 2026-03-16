@@ -34,6 +34,10 @@ The quota is calculated as the sum of each user's interactions in a given minute
 | Search         | 20 points   | Searching resources                 |
 | History        | 10 points   | Retrieving resource version history |
 
+Points are counted per logical operation. A single API request can trigger multiple operations (for example, a batch request or a read that resolves many references). In that case, the cost is the sum of each operation's cost.
+
+**Example:** A single batch request that performs 5 resource reads and 1 search consumes 5 × 1 + 1 × 20 = **25 points** (5 for the reads, 20 for the search).
+
 FHIR uses [specific terminology](http://hl7.org/fhir/restful-interaction) to categorize different interactions with
 the data store, e.g. `search` and `update`. These interactions are weighted by complexity and impact to the data store,
 with the sum of each user's interactions in a given minute compared to the configured limit. There is also

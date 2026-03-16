@@ -55,8 +55,6 @@ export function FaxInboxPage(): JSX.Element {
           });
           return;
         }
-        // Re-throw if it's not a 404
-        throw efaxErr;
       }
       showNotification({
         color: 'green',

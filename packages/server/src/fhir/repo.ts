@@ -98,6 +98,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import {
+  cleanupUserSubs,
   getUserActiveWebSocketSubscriptionCount,
   removeActiveSubscriptions,
   removeUserActiveWebSocketSubscriptions,
@@ -698,7 +699,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
     await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
@@ -854,7 +855,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       const project = await this.getProjectById(projectId);
       invariant(project);
-      await checkWebSocketSubscriptionLimit(project, author);
+      try {
+        await checkWebSocketSubscriptionLimit(project, author);
+      } catch {
+        await cleanupUserSubs(author);
+        await checkWebSocketSubscriptionLimit(project, author);
+      }
     }
 
     if (this.context.checkReferencesOnWrite) {
@@ -1396,7 +1402,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addSubscriptionJobs(resource, resource, {
+      await addBackgroundJobs(resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
         interaction: 'delete',
       });

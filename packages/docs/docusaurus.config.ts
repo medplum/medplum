@@ -138,6 +138,10 @@ const config: Config = {
               to: '/docs',
             },
             {
+              label: 'Why Open Source',
+              to: '/open-source',
+            },
+            {
               label: 'Search',
               to: '/search',
             },

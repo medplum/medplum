@@ -128,17 +128,6 @@ describe('FindPane', () => {
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
       expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
     });
-
-    test('renders "Other" for undefined service types', async () => {
-      const schedule = createScheduleWithServiceTypes([serviceType1, undefined]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.getByText('Other')).toBeInTheDocument();
-    });
   });
 
   describe('Service Type Selection', () => {
@@ -323,18 +312,6 @@ describe('FindPane', () => {
       const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(callUrl).toContain('start=');
       expect(callUrl).toContain('end=');
-    });
-
-    test('fetches without service-type param when wildcard (undefined) is selected', async () => {
-      const schedule = createScheduleWithServiceTypes([undefined]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      // With single undefined service type, it auto-selects
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] || '';
-      expect(callUrl).not.toContain('service-type=');
     });
   });
 

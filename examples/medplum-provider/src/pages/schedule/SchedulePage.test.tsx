@@ -8,7 +8,7 @@ import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@m
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SchedulePage } from './SchedulePage';
 
@@ -50,13 +50,16 @@ describe('SchedulePage', () => {
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  const setup = (): ReturnType<typeof render> => {
+  const setup = (initialPath = '/Calendar/Schedule/practitioner-1'): ReturnType<typeof render> => {
     return render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <SchedulePage />
+            <Routes>
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+            </Routes>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
@@ -320,13 +323,16 @@ describe('$find/$book component integration tests', () => {
     });
   });
 
-  const setup = (): ReturnType<typeof render> => {
+  const setup = (initialPath = '/Calendar/Schedule/123'): ReturnType<typeof render> => {
     return render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <SchedulePage />
+            <Routes>
+              <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
+              <Route path="/Calendar/Schedule" element={<SchedulePage />} />
+            </Routes>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>

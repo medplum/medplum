@@ -43,20 +43,17 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
   const medplum = useMedplum();
 
-  // null: no selection made
-  // undefined: "wildcard" availability selected
-  // Coding: a specific service type was selected
-  const [serviceType, setServiceType] = useState<CodeableConcept | undefined | null>(
+  const [serviceType, setServiceType] = useState<CodeableConcept | undefined>(
     // If there is exactly one option, select it immediately instead of forcing user
     // to select it
-    serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : null
+    serviceTypes.length === 1 ? serviceTypes[0].codeableConcept : undefined
   );
 
   // Ensure that we are searching for slots in the future by at least 30 minutes.
   const earliestSchedulable = useSchedulingStartsAt({ minimumNoticeMinutes: 30 });
 
   useEffect(() => {
-    if (!schedule || serviceType === null) {
+    if (!schedule || !serviceType) {
       return () => {};
     }
 
@@ -106,13 +103,13 @@ export function FindPane(props: FindPaneProps): JSX.Element {
   }, [medplum, schedule, serviceType, range, earliestSchedulable]);
 
   const handleDismiss = useCallback(() => {
-    setServiceType(null);
+    setServiceType(undefined);
     setSlots(EMPTY);
   }, []);
 
   const handleBookSuccess = useCallback(
     (results: { appointments: Appointment[]; slots: Slot[] }) => {
-      setServiceType(null);
+      setServiceType(undefined);
       setSlots([]);
       setChosenSlot(undefined);
       onSuccess(results);
@@ -136,9 +133,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     );
   }
 
-  // tricky: `undefined` means the "wildcard" service type, so we explicitly
-  // test against `null` here.
-  if (serviceType !== null) {
+  if (serviceType) {
     return (
       <Stack gap="sm" justify="flex-start">
         <Title order={4}>
@@ -178,7 +173,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
           justify="space-between"
           onClick={() => setServiceType(st.codeableConcept)}
         >
-          {st.codeableConcept ? <CodeableConceptDisplay value={st.codeableConcept} /> : 'Other'}
+          <CodeableConceptDisplay value={st.codeableConcept} />
         </Button>
       ))}
     </Stack>

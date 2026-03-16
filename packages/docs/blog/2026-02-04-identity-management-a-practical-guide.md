@@ -77,17 +77,17 @@ Medplum manages credentials directly. Users create accounts with Medplum, which 
 
 **Best for:** Smaller deployments, patient-facing applications where you don't have existing identity infrastructure.
 
-### Option B: External IDP
+### Option B: External IDP (App-Based Routing)
 
-A third-party service (Okta, Azure AD, Auth0) manages credentials. Your platform trusts the [external IDP](https://www.medplum.com/docs/auth/external-identity-providers) to authenticate users.
+A third-party service (Okta, Azure AD, Auth0) manages credentials, and the routing is determined by the application. You configure a specific IDP for each application (Client ID).
 
-**Best for:** Enterprise deployments with existing identity infrastructure. Enables centralized user management - when an employee leaves, disabling their Okta account immediately revokes access to all connected systems.
+**Best for:** Scenarios where all users of a specific app (e.g., "Patient Portal") use the same authentication method (e.g., "Sign in with Google"), regardless of who they are.
 
-### Option C: Domain-Level Routing
+### Option C: External IDP (Domain-Based Routing)
 
-This advanced approach routes users to different identity providers based on their email domain. When `user@hospital-a.com` logs in, they're sent to Hospital A's Okta instance. When `user@hospital-b.com` logs in, they're sent to Hospital B's Azure AD.
+A third-party service manages credentials, but routing is determined by the user's email domain. When `user@hospital-a.com` logs in, they're automatically routed to Hospital A's Okta instance. Medplum supports [domain-level identity providers](https://www.medplum.com/docs/auth/domain-level-identity-providers) for this use case.
 
-**Best for:** Multi-tenant platforms serving multiple healthcare organizations, each with their own identity infrastructure. Medplum supports [domain-level identity providers](https://www.medplum.com/docs/auth/domain-level-identity-providers) for this use case.
+**Best for:** Multi-tenant platforms serving enterprise customers who want to bring their own identity provider (BYOIDP).
 
 ## Decision 3: Token Flow Architecture
 

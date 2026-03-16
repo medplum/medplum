@@ -58,7 +58,7 @@ The [`Schedule` usage documentation](/docs/api/fhir/resources/schedule?section=u
 
 :::tip Add a Timezone to a Practitioner
 
-There are times where it may be appropriate to add a timezone to a [`Practitioner`](/docs/api/fhir/resources/practitioner) resource to ensure that appointments are accurately scheduled. However, there is no standard way to do this on the [`Practitioner`](/docs/api/fhir/resources/practitioner) resource, so you will need to add an extension.
+There are times where it may be appropriate to add a time zone to a [`Practitioner`](/docs/api/fhir/resources/practitioner) resource to ensure that appointments are accurately scheduled. However, there is no standard way to do this on the [`Practitioner`](/docs/api/fhir/resources/practitioner) resource, so you will need to add an extension.
 
 ```ts
 {
