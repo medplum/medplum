@@ -249,6 +249,7 @@ export interface MedplumExternalAuthConfig {
 }
 
 export type WorkerName =
+  | 'dispatch'
   | 'subscription'
   | 'download'
   | 'cron'

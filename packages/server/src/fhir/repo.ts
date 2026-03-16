@@ -699,7 +699,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
     await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
@@ -1402,7 +1402,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addSubscriptionJobs(resource, resource, {
+      await addBackgroundJobs(resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
         interaction: 'delete',
       });
