@@ -34,20 +34,6 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource is a
 | `sent`/`received` | The time that the message was either sent or received.                                                                                                                                                                                                                                                                       |                                                                                                                | 2023-04-10T10:00:00Z                                                                                                                                                       |
 | `status`          | The status of transmission.                                                                                                                                                                                                                                                                                                  | [Event Status Codes](http://hl7.org/fhir/R4/valueset-event-status.html)                                        | in-progress                                                                                                                                                                |
 
-:::tip The `Communication` lifecycle
-
-Most messaging based workflows track messages through three stages: **sent**, **received**, and **read**.
-
-While FHIR standard doesn't offer specific guidance on representing this lifecycle, Medplum recommends the following model:
-
-| Stage    | Representation                          |
-| -------- | --------------------------------------- |
-| sent     | `Communication.sent` is populated       |
-| received | `Communication.received` is populated   |
-| read     | `Communication.status` is `"completed"` |
-
-:::
-
 :::note `category` vs. `reasonCode`
 
 The `category` and `reasonCode` elements are similar, but offer different use cases. The `category` field is used to broadly classify messages, while the `reasonCode` is used to provide more granular detail about why a message was sent. For example, a `category` may be a notification while the `reasonCode` could be an appointment reminder.
