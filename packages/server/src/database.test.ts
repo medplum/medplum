@@ -3,7 +3,16 @@
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
-import type { ClientBase, Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
+import type {
+  ClientBase,
+  Pool,
+  PoolClient,
+  PoolConfig,
+  QueryArrayResult,
+  QueryConfig,
+  QueryResult,
+  QueryResultRow,
+} from 'pg';
 import pg from 'pg';
 import { Readable, Writable } from 'stream';
 import { loadConfig, loadTestConfig } from './config/loader';
