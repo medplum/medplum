@@ -75,11 +75,7 @@ function makeMatcher(slot: Slot): Matcher {
 
 function findMatchingSchedulingParameters(extensions: SchedulingParameters[], slot: Slot): SchedulingParameters[] {
   const matcher = makeMatcher(slot);
-  let parameters = extensions.filter((ext) => matcher(ext));
-  if (parameters.length === 0) {
-    // If no service type match found, fall back to wildcard availability
-    parameters = extensions.filter((ext) => ext.serviceType.length === 0);
-  }
+  const parameters = extensions.filter((ext) => matcher(ext));
 
   const startDate = new Date(slot.start);
   const endDate = new Date(slot.end);
@@ -87,8 +83,7 @@ function findMatchingSchedulingParameters(extensions: SchedulingParameters[], sl
   const durationMs = endDate.getTime() - startDate.getTime();
   const durationMinutes = durationMs / 1000 / 60;
 
-  parameters = parameters.filter((ext) => ext.duration === durationMinutes);
-  return parameters;
+  return parameters.filter((ext) => ext.duration === durationMinutes);
 }
 
 function chooseActiveParameters(
