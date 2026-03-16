@@ -19,7 +19,7 @@ import type { JSX } from 'react';
 import { Suspense, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
-import { hasDoseSpotIdentifier } from './components/utils';
+import { hasDoseSpotIdentifier, hasScriptSureIdentifier } from './components/utils';
 import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
@@ -31,6 +31,7 @@ import { GetStartedPage } from './pages/getstarted/GetStartedPage';
 import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { DoseSpotNotificationsPage } from './pages/integrations/DoseSpotNotificationsPage';
 import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { ScriptSurePage } from './pages/integrations/ScriptSurePage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
@@ -41,6 +42,7 @@ import { LabsPage } from './pages/patient/LabsPage';
 import { MedicationsPage } from './pages/patient/MedicationsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
+import { ScriptSureTab } from './pages/patient/ScriptSureTab';
 import { TasksTab } from './pages/patient/TasksTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
@@ -73,6 +75,7 @@ export function App(): JSX.Element | null {
 
   const membership = medplum.getProjectMembership();
   const hasDoseSpot = hasDoseSpotIdentifier(membership);
+  const hasScriptSure = hasScriptSureIdentifier(membership);
 
   return (
     <AppShell
@@ -143,6 +146,15 @@ export function App(): JSX.Element | null {
                         },
                       ]
                     : []),
+                  ...(hasScriptSure
+                    ? [
+                        {
+                          icon: <IconPill />,
+                          label: 'ScriptSure',
+                          href: '/scriptsure',
+                        },
+                      ]
+                    : []),
                 ],
               },
             ]
@@ -185,6 +197,7 @@ export function App(): JSX.Element | null {
                 <Route path="Task" element={<TasksTab />} />
                 <Route path="Task/:taskId" element={<TasksTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
+                {hasScriptSure && <Route path="scriptsure" element={<ScriptSureTab />} />}
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
                 <Route path="ServiceRequest" element={<LabsPage />} />
@@ -212,6 +225,7 @@ export function App(): JSX.Element | null {
               <Route path="/Calendar/Schedule/:id" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
+              {hasScriptSure && <Route path="/scriptsure" element={<ScriptSurePage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />

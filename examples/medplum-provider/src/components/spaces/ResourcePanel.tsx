@@ -7,7 +7,7 @@ import type { JSX } from 'react';
 import { EncounterChart } from '../encounter/EncounterChart';
 import { LabOrderDetails } from '../labs/LabOrderDetails';
 import { LabResultDetails } from '../labs/LabResultDetails';
-import { DoseSpotPharmacyDialog } from '../pharmacy/DoseSpotPharmacyDialog';
+import { usePharmacyDialog } from '../pharmacy/usePharmacyDialog';
 import { TaskDetailPanel } from '../tasks/TaskDetailPanel';
 
 interface ResourcePanelProps<T extends Resource = Resource> {
@@ -17,6 +17,7 @@ interface ResourcePanelProps<T extends Resource = Resource> {
 export function ResourcePanel<T extends Resource = Resource>(props: ResourcePanelProps<T>): JSX.Element | null {
   const { resource } = props;
   const displayResource = useResource(resource);
+  const PharmacyDialogComponent = usePharmacyDialog();
 
   const renderResourceContent = (): JSX.Element => {
     if (!displayResource) {
@@ -25,7 +26,7 @@ export function ResourcePanel<T extends Resource = Resource>(props: ResourcePane
 
     switch (displayResource.resourceType) {
       case 'Patient':
-        return <PatientSummary patient={displayResource} pharmacyDialogComponent={DoseSpotPharmacyDialog} />;
+        return <PatientSummary patient={displayResource} pharmacyDialogComponent={PharmacyDialogComponent} />;
       case 'Task':
         return <TaskDetailPanel task={displayResource} />;
       case 'DiagnosticReport':
