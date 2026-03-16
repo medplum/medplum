@@ -286,8 +286,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private closed = false;
   mode: RepositoryMode;
 
-  private preCommitCallbacks: (() => Promise<void>)[] = [];
-  private postCommitCallbacks: (() => Promise<void>)[] = [];
+  private readonly callbackStack = new CallbackStack();
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -2579,6 +2578,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
+    this.callbackStack.pushFrame();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -2592,14 +2592,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertInTransaction();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
-      await this.processPreCommit();
+      const frame = this.callbackStack.currentFrame();
+      await frame.processPreCommit();
       await conn.query('COMMIT');
       this.transactionDepth--;
+      this.callbackStack.popFrame();
       this.releaseConnection();
-      await this.processPostCommit();
+      await frame.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
+      this.callbackStack.collapseFrame();
     }
   }
 
@@ -2609,10 +2612,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.transactionDepth--;
+      this.callbackStack.popFrame();
       this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
+      this.callbackStack.popFrame();
     }
   }
 
@@ -2630,35 +2635,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async preCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
-      this.preCommitCallbacks.push(fn);
+      this.callbackStack.preCommit(fn);
     } else {
       // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
     }
   }
 
-  private async processPreCommit(): Promise<void> {
-    const callbacks = this.preCommitCallbacks;
-    this.preCommitCallbacks = [];
-    for (const cb of callbacks) {
-      // rely on thrown errors bubbling up from here to halt the transaction
-      await cb();
-    }
-  }
-
   async postCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
-      this.postCommitCallbacks.push(fn);
+      this.callbackStack.postCommit(() => this.invokePostCommitCallback(fn));
     } else {
       await this.invokePostCommitCallback(fn);
-    }
-  }
-
-  private async processPostCommit(): Promise<void> {
-    const callbacks = this.postCommitCallbacks;
-    this.postCommitCallbacks = [];
-    for (const cb of callbacks) {
-      await this.invokePostCommitCallback(cb);
     }
   }
 
@@ -3022,4 +3010,80 @@ function getArrayPaddingConfig(
     }
   }
   return undefined;
+}
+
+type Callback = () => Promise<void>;
+
+class CallbackFrame {
+  private preCommitCallbacks: Callback[] = [];
+  private postCommitCallbacks: Callback[] = [];
+
+  preCommit(fn: Callback): void {
+    this.preCommitCallbacks.push(fn);
+  }
+
+  postCommit(fn: Callback): void {
+    this.postCommitCallbacks.push(fn);
+  }
+
+  merge (other: CallbackFrame): void {
+    this.preCommitCallbacks.push(...other.preCommitCallbacks);
+    this.postCommitCallbacks.push(...other.postCommitCallbacks);
+  }
+
+  async processPreCommit (): Promise<void> {
+    const callbacks = this.preCommitCallbacks;
+    this.preCommitCallbacks = [];
+    for (const cb of callbacks) {
+      // rely on thrown errors bubbling up from here to halt the transaction
+      await cb();
+    }
+  }
+
+  async processPostCommit (): Promise<void> {
+    const callbacks = this.postCommitCallbacks;
+    this.postCommitCallbacks = [];
+    for (const cb of callbacks) {
+      await cb();
+    }
+  }
+}
+
+class CallbackStack {
+  private readonly stack: CallbackFrame[] = [];
+
+  preCommit(fn: Callback): void {
+    this.currentFrame().preCommit(fn);
+  }
+
+  postCommit(fn: Callback): void {
+    this.currentFrame().postCommit(fn);
+  }
+
+  currentFrame (): CallbackFrame {
+    const frame = this.stack[this.stack.length - 1];
+    return this.ensureFrame(frame);
+  }
+
+  pushFrame (): void {
+    this.stack.push(new CallbackFrame());
+  }
+
+  popFrame (): CallbackFrame {
+    const frame = this.stack.pop();
+    return this.ensureFrame(frame);
+  }
+
+  collapseFrame (): void {
+    const frame = this.popFrame();
+    const current = this.currentFrame();
+    current.merge(frame);
+  }
+
+  private ensureFrame (frame?: CallbackFrame): CallbackFrame {
+     if (!frame) {
+      throw new Error('Missing transaction callback frame');
+    }
+    return frame;
+  }
 }

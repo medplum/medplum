@@ -55,7 +55,8 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery } from './sql';
+import { PostgresError, SelectQuery } from './sql';
+import * as subscriptionModule from '../workers/subscription';
 
 jest.mock('hibp');
 
@@ -1610,6 +1611,43 @@ describe('FHIR Repo', () => {
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
 
+  test('Retry after create should not execute post-commit hooks from rollback', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      const addSubscriptionJobsSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs');
+      const patients: WithId<Patient>[] = [];
+      let shouldError = true;
+
+      const createdPatient = await repo.withTransaction(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        patients.push(patient);
+
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+
+        return patient;
+      });
+
+      expect(patients).toHaveLength(2);
+      expect(createdPatient).toEqual(patients[1]);
+      expect(addSubscriptionJobsSpy).toHaveBeenCalledTimes(1);
+      expect(addSubscriptionJobsSpy).toHaveBeenCalledWith(
+        {
+          resourceType: 'Patient',
+          id: createdPatient.id,
+          meta: expect.any(Object)
+        },
+        undefined,
+        expect.any(Object));
+
+      await expect(repo.readResource('Patient', patients[0].id))
+        .rejects.toMatchObject(new OperationOutcomeError(notFound));
+
+      addSubscriptionJobsSpy.mockRestore();
+    }));
+
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
       const { project, repo, login, membership } = await createTestProject({
@@ -1636,6 +1674,43 @@ describe('FHIR Repo', () => {
       expect(cachedPatient.meta?.project).toStrictEqual(project.id);
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));
+
+  test('Retry executes post-commit hook once from outer transaction', async () => {
+    const repo = systemRepo;
+    const postCommit = jest.fn();
+    let shouldError = true;
+
+    await repo.withTransaction(async () => {
+      await repo.postCommit(postCommit);
+
+      await repo.withTransaction(async () => {
+        if (shouldError) {
+          shouldError = false;
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        }
+      });
+    });
+
+    expect(postCommit).toHaveBeenCalledTimes(1);
+  });
+
+  test('Retry should not execute post-commit hook from rollback', async () => {
+    const repo = systemRepo;
+    const postCommit = jest.fn();
+
+    await repo.withTransaction(async () => {
+      try {
+        await repo.withTransaction(async () => {
+          await repo.postCommit(postCommit);
+          throw Object.assign(new Error('serialization failure'), { code: PostgresError.SerializationFailure });
+        });
+      } catch {
+        // Ignore error
+      }
+    });
+
+    expect(postCommit).toHaveBeenCalledTimes(0);
+  });
 
   test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
     const repo = systemRepo;
