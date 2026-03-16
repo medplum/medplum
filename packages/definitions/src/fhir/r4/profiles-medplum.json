@@ -3800,6 +3800,19 @@
             }
           },
           {
+            "id" : "AccessPolicy.identifier",
+            "path" : "AccessPolicy.identifier",
+            "definition" : "Identifier(s) used to match this access policy to an external system such as a SCIM group. Set the value to the SCIM group externalId to enable automatic assignment.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{ "code" : "Identifier" }],
+            "base" : {
+              "path" : "AccessPolicy.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "AccessPolicy.basedOn",
             "path" : "AccessPolicy.basedOn",
             "definition" : "Other access policies used to derive this access policy.",

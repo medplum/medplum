@@ -156,3 +156,26 @@ export interface ScimPatchOperation {
   path?: string;
   value?: unknown;
 }
+
+/**
+ * SCIM provides a resource type for "Group" resources.  The core schema
+ * for "Group" is identified using the following schema URI:
+ * "urn:ietf:params:scim:schemas:core:2.0:Group".
+ *
+ * See SCIM 4.2 - Group Resource
+ * https://www.rfc-editor.org/rfc/rfc7643#section-4.2
+ */
+export interface ScimGroup {
+  schemas?: string[];
+  id?: string;
+  externalId?: string;
+  displayName?: string;
+  members?: ScimGroupMember[];
+  meta?: ScimMeta;
+}
+
+export interface ScimGroupMember {
+  value?: string; // SCIM User ID = ProjectMembership ID
+  display?: string;
+  $ref?: string;
+}
