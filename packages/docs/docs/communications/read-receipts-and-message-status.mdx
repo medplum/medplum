@@ -56,13 +56,9 @@ Limitation: Does not support group threads; one recipient per message only.
 
 ### Mark a Message as Read
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="simpleModelMarkReadTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+<MedplumCodeBlock language="ts" selectBlocks="simpleModelMarkReadTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Query Unread Messages
 
@@ -95,23 +91,15 @@ Limitation: Not searchable via API — you cannot run a query like "all threads 
 
 ### Thread Header With Read-State Extension
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="threadHeaderWithReadExtensionTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+<MedplumCodeBlock language="ts" selectBlocks="threadHeaderWithReadExtensionTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Update Last-Read When a User Views the Thread
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="patchThreadReadStateTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+<MedplumCodeBlock language="ts" selectBlocks="patchThreadReadStateTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ---
 
@@ -126,25 +114,17 @@ Con: Most complex data model; requires creating and updating Task resources (typ
 
 Typically done in a Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) create. Use `Task.code` to distinguish read-receipt Tasks from other Task types (e.g. response-routing).
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="createReadReceiptTaskTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+<MedplumCodeBlock language="ts" selectBlocks="createReadReceiptTaskTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Mark as Read
 
 When the user reads the message, complete the Task:
 
-<Tabs groupId="language">
-  <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="markReadReceiptTaskTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+<MedplumCodeBlock language="ts" selectBlocks="markReadReceiptTaskTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Find Unread in a Specific Thread
 
