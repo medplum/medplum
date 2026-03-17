@@ -40,11 +40,11 @@ width="100%" and height={number}.
 ## AVAILABLE COMPONENTS (already in scope):
 
 **Recharts:** LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie,
-Cell, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer, ReferenceLine,
+Cell, XAxis, YAxis, CartesianGrid, ChartTooltip, Legend, ResponsiveContainer, ReferenceLine,
 ComposedChart, ScatterChart, Scatter
 
-**NOTE:** Do NOT use \`<Tooltip />\` from Recharts — it conflicts with Mantine's
-Tooltip component and will cause a runtime error. Omit it from all charts.
+**NOTE:** Recharts' Tooltip is aliased as \`ChartTooltip\` to avoid conflict with Mantine's Tooltip.
+Always use \`<ChartTooltip />\` — never \`<Tooltip />\`.
 
 **Mantine:** Card, Title, Text, Group, Stack, Paper, Badge, Table, SimpleGrid,
 Box, Flex, ThemeIcon
@@ -104,6 +104,7 @@ function Chart() {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" />
           <YAxis allowDecimals={false} />
+          <ChartTooltip />
           <Legend />
           <Bar dataKey="count" name="Tasks">
             {data.map((entry, index) => (
@@ -135,6 +136,7 @@ function Chart() {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
           <YAxis domain={[60, 160]} />
+          <ChartTooltip />
           <Legend />
           <Line type="monotone" dataKey="systolic" stroke="#fa5252" strokeWidth={2} name="Systolic" />
           <Line type="monotone" dataKey="diastolic" stroke="#228be6" strokeWidth={2} name="Diastolic" />
@@ -172,6 +174,7 @@ function Chart() {
               <Cell key={index} fill={entry.fill} />
             ))}
           </Pie>
+          <ChartTooltip />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
@@ -199,6 +202,7 @@ function Chart() {
           <XAxis dataKey="date" />
           <YAxis yAxisId="left" orientation="left" stroke="#228be6" />
           <YAxis yAxisId="right" orientation="right" stroke="#40c057" />
+          <ChartTooltip />
           <Legend />
           <Line yAxisId="left" type="monotone" dataKey="height" stroke="#228be6" strokeWidth={2} name="Height (cm)" />
           <Line yAxisId="right" type="monotone" dataKey="weight" stroke="#40c057" strokeWidth={2} name="Weight (kg)" />
@@ -268,7 +272,7 @@ When you receive FHIR resources, transform them:
 4. ❌ Complex nested components - keep it simple
 5. ❌ Arrow function component - use \`function Chart()\` syntax
 6. ❌ Forgetting to aggregate categorical data into counts
-7. ❌ Using \`<Tooltip />\` - conflicts with Mantine's Tooltip, causes runtime error. Never include it.
+7. ❌ Using \`<Tooltip />\` - use \`<ChartTooltip />\` instead (Recharts Tooltip is aliased to avoid Mantine conflict)
 
 ## YOUR TASK:
 

@@ -92,7 +92,6 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
       description: project.description,
       strictMode: project.strictMode,
       superAdmin: project.superAdmin,
-      features: project.features
     },
     membership: {
       resourceType: 'ProjectMembership',
