@@ -290,3 +290,146 @@ export function findResourceInBundle<K extends ResourceType>(
   return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
     ?.resource as ExtractResource<K>;
 }
+
+/**
+ * Finds all references in a resource, including non-urn:uuid references.
+ * Calls the callback with each reference string and the key it was found under.
+ * @param resource - The resource to scan for references.
+ * @param callback - Called with (referenceString, key) for each reference found.
+ */
+export function findAllReferences(resource: any, callback: (reference: string, key: string) => void): void {
+  for (const key in resource) {
+    if (resource[key] && typeof resource[key] === 'object') {
+      const value = resource[key];
+      if (isReference(value)) {
+        callback(value.reference, key);
+      } else {
+        findAllReferences(value, callback);
+      }
+    }
+  }
+}
+
+/**
+ * Finds connected components in a bundle's reference graph, excluding references to specified resource types.
+ * This groups resources that are linked together (e.g., DiagnosticReport + Observations) so they can
+ * be kept in the same batch for reference resolution.
+ *
+ * Uses union-find for efficient component detection.
+ *
+ * @param entries - Bundle entries to analyze.
+ * @param excludeResourceTypes - Resource types whose references should not form edges (e.g., Patient, Practitioner).
+ *   References to these types are ignored when building the graph.
+ * @returns An array of connected components, where each component is an array of BundleEntry.
+ */
+export function findConnectedComponents(
+  entries: BundleEntry[],
+  excludeResourceTypes: Set<string>
+): BundleEntry[][] {
+  // Map fullUrl -> index for union-find
+  const urlToIndex = new Map<string, number>();
+  // Map "ResourceType/id" -> index for resolving typed references
+  const refToIndex = new Map<string, number>();
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (entry.fullUrl) {
+      urlToIndex.set(entry.fullUrl, i);
+    }
+    const resource = entry.resource;
+    if (resource?.resourceType && resource.id) {
+      refToIndex.set(`${resource.resourceType}/${resource.id}`, i);
+    }
+  }
+
+  // Union-Find
+  const parent = Array.from({ length: entries.length }, (_, i) => i);
+  const rank = new Array(entries.length).fill(0);
+
+  function find(x: number): number {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  }
+
+  function union(a: number, b: number): void {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra === rb) {
+      return;
+    }
+    if (rank[ra] < rank[rb]) {
+      parent[ra] = rb;
+    } else if (rank[ra] > rank[rb]) {
+      parent[rb] = ra;
+    } else {
+      parent[rb] = ra;
+      rank[ra]++;
+    }
+  }
+
+  // Build edges: for each resource, find references and union them
+  for (let i = 0; i < entries.length; i++) {
+    const resource = entries[i].resource;
+    if (!resource) {
+      continue;
+    }
+
+    findAllReferences(resource, (reference: string) => {
+      let targetIndex: number | undefined;
+
+      if (reference.startsWith('urn:uuid:')) {
+        targetIndex = urlToIndex.get(reference);
+      } else if (reference.includes('/')) {
+        const [refType] = reference.split('/');
+        if (excludeResourceTypes.has(refType)) {
+          return; // Skip references to excluded types
+        }
+        targetIndex = refToIndex.get(reference);
+      }
+
+      if (targetIndex !== undefined) {
+        union(i, targetIndex);
+      }
+    });
+  }
+
+  // Group entries by component
+  const components = new Map<number, BundleEntry[]>();
+  for (let i = 0; i < entries.length; i++) {
+    const root = find(i);
+    let component = components.get(root);
+    if (!component) {
+      component = [];
+      components.set(root, component);
+    }
+    component.push(entries[i]);
+  }
+
+  return Array.from(components.values());
+}
+
+/**
+ * Redirects references in a resource. Replaces references matching entries in the redirectMap
+ * with new reference strings (e.g., conditional references).
+ * @param resource - The resource to modify in place.
+ * @param redirectMap - A map from original reference strings (e.g., "Patient/123") to new reference strings
+ *   (e.g., "Patient?identifier=http://example.com|123").
+ */
+export function redirectReferences(resource: any, redirectMap: Map<string, string>): void {
+  for (const key in resource) {
+    if (resource[key] && typeof resource[key] === 'object') {
+      const value = resource[key];
+      if (isReference(value) && typeof value.reference === 'string') {
+        const replacement = redirectMap.get(value.reference);
+        if (replacement) {
+          value.reference = replacement;
+        }
+      } else {
+        redirectReferences(value, redirectMap);
+      }
+    }
+  }
+}

@@ -12,7 +12,10 @@ import type {
 import {
   convertContainedResourcesToBundle,
   convertToTransactionBundle,
+  findAllReferences,
+  findConnectedComponents,
   findResourceInBundle,
+  redirectReferences,
   reorderBundle,
 } from './bundle';
 import { getDataType } from './typeschema/types';
@@ -613,6 +616,141 @@ describe('Bundle tests', () => {
         resourceType: 'Patient',
         id: '123',
       });
+    });
+  });
+
+  describe('findAllReferences', () => {
+    test('Finds all reference types', () => {
+      const resource = {
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/123' },
+        performer: [{ reference: 'Practitioner/456' }],
+        basedOn: [{ reference: 'urn:uuid:abc-def' }],
+      };
+
+      const refs: string[] = [];
+      findAllReferences(resource, (ref) => refs.push(ref));
+
+      expect(refs).toContain('Patient/123');
+      expect(refs).toContain('Practitioner/456');
+      expect(refs).toContain('urn:uuid:abc-def');
+      expect(refs).toHaveLength(3);
+    });
+
+    test('Finds nested references', () => {
+      const resource = {
+        resourceType: 'DiagnosticReport',
+        result: [{ reference: 'Observation/obs-1' }, { reference: 'Observation/obs-2' }],
+      };
+
+      const refs: string[] = [];
+      findAllReferences(resource, (ref) => refs.push(ref));
+
+      expect(refs).toHaveLength(2);
+      expect(refs).toContain('Observation/obs-1');
+      expect(refs).toContain('Observation/obs-2');
+    });
+  });
+
+  describe('findConnectedComponents', () => {
+    test('Groups linked resources together', () => {
+      const entries: BundleEntry[] = [
+        {
+          fullUrl: 'urn:uuid:obs-1',
+          resource: { resourceType: 'Observation', id: 'obs-1' } as Resource,
+        },
+        {
+          fullUrl: 'urn:uuid:obs-2',
+          resource: { resourceType: 'Observation', id: 'obs-2' } as Resource,
+        },
+        {
+          fullUrl: 'urn:uuid:dr-1',
+          resource: {
+            resourceType: 'DiagnosticReport',
+            id: 'dr-1',
+            result: [{ reference: 'urn:uuid:obs-1' }, { reference: 'urn:uuid:obs-2' }],
+          } as unknown as Resource,
+        },
+        {
+          fullUrl: 'urn:uuid:cond-1',
+          resource: { resourceType: 'Condition', id: 'cond-1' } as Resource,
+        },
+      ];
+
+      const components = findConnectedComponents(entries, new Set(['Patient']));
+
+      // DR + obs-1 + obs-2 should be in one component, Condition in another
+      expect(components).toHaveLength(2);
+
+      const drComponent = components.find((c) =>
+        c.some((e) => e.resource?.resourceType === 'DiagnosticReport')
+      );
+      expect(drComponent).toBeDefined();
+      expect(drComponent).toHaveLength(3);
+
+      const condComponent = components.find((c) => c.some((e) => e.resource?.resourceType === 'Condition'));
+      expect(condComponent).toBeDefined();
+      expect(condComponent).toHaveLength(1);
+    });
+
+    test('Excludes references to excluded resource types', () => {
+      const entries: BundleEntry[] = [
+        {
+          fullUrl: 'urn:uuid:obs-1',
+          resource: {
+            resourceType: 'Observation',
+            id: 'obs-1',
+            subject: { reference: 'Patient/pat-1' },
+          } as unknown as Resource,
+        },
+        {
+          fullUrl: 'urn:uuid:obs-2',
+          resource: {
+            resourceType: 'Observation',
+            id: 'obs-2',
+            subject: { reference: 'Patient/pat-1' },
+          } as unknown as Resource,
+        },
+      ];
+
+      const components = findConnectedComponents(entries, new Set(['Patient']));
+
+      // Even though both reference the same Patient, Patient is excluded
+      // so they should be in separate components
+      expect(components).toHaveLength(2);
+    });
+  });
+
+  describe('redirectReferences', () => {
+    test('Replaces references using redirect map', () => {
+      const resource = {
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/123' },
+        performer: [{ reference: 'Practitioner/456' }],
+      };
+
+      const redirectMap = new Map([
+        ['Patient/123', 'Patient?identifier=http://example.com|MRN-001'],
+        ['Practitioner/456', 'Practitioner?identifier=http://npi.org|NPI-001'],
+      ]);
+
+      redirectReferences(resource, redirectMap);
+
+      expect(resource.subject.reference).toBe('Patient?identifier=http://example.com|MRN-001');
+      expect(resource.performer[0].reference).toBe('Practitioner?identifier=http://npi.org|NPI-001');
+    });
+
+    test('Leaves unmatched references unchanged', () => {
+      const resource = {
+        resourceType: 'Observation',
+        subject: { reference: 'Patient/999' },
+      };
+
+      const redirectMap = new Map([['Patient/123', 'Patient?identifier=http://example.com|MRN-001']]);
+
+      redirectReferences(resource, redirectMap);
+
+      expect(resource.subject.reference).toBe('Patient/999');
     });
   });
 });
