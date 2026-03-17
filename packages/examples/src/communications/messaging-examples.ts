@@ -12,6 +12,9 @@ const userId = 'example-user-id';
 const currentUser = { id: 'example-user-id' };
 const threadHeader = { id: 'example-thread-header' };
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
+const readReceiptTaskId = 'example-read-receipt-task-id';
+const latestMessageId = 'latest-message-id';
+const recipientId = 'recipient-practitioner-id';
 
 // start-block filterActiveThreadsTs
 // Used in the Thread Lifecycle page to show how to find open threads
@@ -31,6 +34,109 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterActiveThreadsCurl
+*/
+
+// start-block simpleModelMarkReadTs
+// Option A (1:1 only): Mark a message as read by setting received and status
+await medplum.patchResource('Communication', 'message-id', [
+  { op: 'add', path: '/received', value: new Date().toISOString() },
+  { op: 'replace', path: '/status', value: 'completed' },
+]);
+// end-block simpleModelMarkReadTs
+
+// start-block simpleModelQueryUnreadTs
+// Option A (1:1 only): Query messages not yet read (status not completed)
+await medplum.searchResources('Communication', {
+  recipient: getReferenceString(profile),
+  'status:not': 'completed,entered-in-error,stopped,unknown',
+  'part-of:missing': false,
+  _sort: '-sent',
+});
+// end-block simpleModelQueryUnreadTs
+
+/*
+// start-block simpleModelQueryUnreadCli
+medplum get 'Communication?recipient=Practitioner/{id}&status:not=completed,entered-in-error,stopped,unknown&part-of:missing=false&_sort=-sent'
+// end-block simpleModelQueryUnreadCli
+
+// start-block simpleModelQueryUnreadCurl
+curl 'https://api.medplum.com/fhir/R4/Communication?recipient=Practitioner%2F%7Bid%7D&status:not=completed,entered-in-error,stopped,unknown&part-of:missing=false&_sort=-sent' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block simpleModelQueryUnreadCurl
+*/
+
+// start-block threadHeaderWithReadExtensionTs
+// Option B: Thread header with extension for per-participant last-read state
+const threadWithReadState = {
+  resourceType: 'Communication' as const,
+  status: 'in-progress' as const,
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  topic: { text: 'Lab results - April 10th' },
+  extension: [
+    {
+      url: 'https://medplum.com/fhir/StructureDefinition/thread-read-state',
+      extension: [
+        { url: 'participant', valueReference: { reference: 'Practitioner/doctor-alice-smith' } },
+        { url: 'lastRead', valueReference: { reference: 'Communication/latest-message-id' } },
+      ],
+    },
+  ],
+};
+// end-block threadHeaderWithReadExtensionTs
+
+// start-block patchThreadReadStateTs
+// Option B: Update a participant's last-read when they view the thread
+await medplum.patchResource('Communication', threadHeader.id, [
+  {
+    op: 'replace',
+    path: '/extension/0/extension/1/valueReference',
+    value: { reference: `Communication/${latestMessageId}` },
+  },
+]);
+// end-block patchThreadReadStateTs
+
+// start-block createReadReceiptTaskTs
+// Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
+const readReceiptTask = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  code: { coding: [{ system: 'https://medplum.com/task-codes', code: 'read-receipt' }] },
+  focus: { reference: `Communication/${threadHeader.id}` },
+  for: { reference: 'Patient/homer-simpson' },
+  owner: { reference: `Practitioner/${recipientId}` },
+  authoredOn: new Date().toISOString(),
+});
+// end-block createReadReceiptTaskTs
+
+// start-block markReadReceiptTaskTs
+// Option C: Mark read-receipt Task completed when user reads the message
+await medplum.patchResource('Task', readReceiptTaskId, [
+  { op: 'replace', path: '/status', value: 'completed' },
+]);
+// end-block markReadReceiptTaskTs
+
+// start-block unreadInThreadTs
+// Option C: Find unread messages in a specific thread for current user
+await medplum.searchResources('Task', {
+  code: 'https://medplum.com/task-codes|read-receipt',
+  owner: getReferenceString(profile),
+  focus: `Communication/${threadHeader.id}`,
+  status: 'requested',
+});
+// end-block unreadInThreadTs
+
+/*
+// start-block unreadInThreadCli
+medplum get 'Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{id}&focus=Communication/{threadHeaderId}&status=requested'
+// end-block unreadInThreadCli
+
+// start-block unreadInThreadCurl
+curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask-codes%7Cread-receipt&owner=Practitioner%2F%7Bid%7D&focus=Communication%2F%7BthreadHeaderId%7D&status=requested' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block unreadInThreadCurl
 */
 
 // start-block unreadCountTs

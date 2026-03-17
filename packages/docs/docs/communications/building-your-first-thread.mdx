@@ -1,0 +1,225 @@
+---
+sidebar_position: 2
+title: Building Your First Thread
+tags: [communications, messaging, threads]
+keywords: [thread, message, partOf, createResource, Communication]
+---
+
+# Building Your First Thread
+
+This page walks through creating a thread by hand using the Medplum SDK, building up the data model piece by piece.
+
+## Create a thread header
+
+The thread header is a [`Communication`](/docs/api/fhir/resources/communication) with no `payload` and no `partOf`. It defines the thread's topic, participants, and patient context.
+
+```ts
+const threadHeader = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+          code: 'notification',
+          display: 'Notification',
+        },
+      ],
+    },
+  ],
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+  ],
+});
+```
+
+:::tip
+Including `sender` on the thread header makes it easy to query "threads created by me" using `sender={practitioner}`. The sender is typically the person who initiates the conversation.
+:::
+
+You can verify this worked by opening `app.medplum.com/Communication` and confirming the new resource has no `partOf` and no `payload` field.
+
+## Create the first message
+
+A message is a [`Communication`](/docs/api/fhir/resources/communication) with content in `payload` and a `partOf` reference to the thread header.
+
+```ts
+const message1 = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [
+    { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+  ],
+  payload: [
+    {
+      contentString: 'The specimen for Homer Simpson has been received. Processing now.',
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+```
+
+## Create a reply
+
+A new message in the thread uses the same `partOf` (pointing to the thread header). Messages are ordered by their `sent` timestamp — `partOf` plus chronological sorting is all you need for a standard linear conversation.
+
+```ts
+const message2 = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-gregory-house',
+    display: 'Dr. Gregory House',
+  },
+  recipient: [
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  ],
+  payload: [
+    {
+      contentString: 'Thanks — will the results be ready by end of week?',
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+```
+
+If your UI supports replying to a specific message (like Slack's threaded replies), add `inResponseTo` to link the reply to the exact message being responded to:
+
+```ts
+const replyToSpecificMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: { text: 'Lab results for Homer Simpson - April 10th' },
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' }],
+  payload: [{ contentString: 'Yes, results will be ready by Thursday.' }],
+  sent: new Date().toISOString(),
+  inResponseTo: [{ reference: `Communication/${message2.id}` }],
+});
+```
+
+:::tip When to use inResponseTo
+Only include `inResponseTo` when the user is explicitly replying to a specific message (e.g. via a "Reply" button). For standard linear chat where messages flow chronologically, `partOf` + `_sort=sent` is sufficient.
+:::
+
+Verify the thread structure by searching for messages in the thread:
+
+```
+Communication?part-of=Communication/{your-header-id}&_sort=sent
+```
+
+You should see both messages returned in chronological order.
+
+## Add category tags
+
+Update both the thread header and child messages to include consistent `category` values. This makes threads filterable.
+
+```ts
+const specialtyCategory = {
+  coding: [{ system: 'http://snomed.info/sct', code: '394596001', display: 'Chemical pathology' }],
+};
+
+await medplum.patchResource('Communication', threadHeader.id!, [
+  { op: 'add', path: '/category/-', value: specialtyCategory },
+]);
+```
+
+:::caution
+Always set `topic` on both the thread header AND every child message. If you only set it on the header, searching messages by topic will miss them entirely.
+:::
+
+### Designing a category scheme
+
+The `category` field is an array, so each Communication can carry multiple tags. There are two common approaches to structuring categories, each with tradeoffs:
+
+#### Multi-category approach
+
+Use separate `category` entries for each dimension — one for specialty, one for credential level, one for product line, etc.
+
+```ts
+{
+  category: [
+    {
+      text: 'Doctor',
+      coding: [{ system: 'http://snomed.info/sct', code: '158965000', display: 'Doctor' }],
+    },
+    {
+      text: 'Endocrinology',
+      coding: [{ system: 'http://snomed.info/sct', code: '394583002', display: 'Endocrinology' }],
+    },
+    {
+      text: 'Diabetes self-management plan',
+      coding: [{ system: 'http://snomed.info/sct', code: '735985000', display: 'Diabetes self-management plan' }],
+    },
+  ],
+}
+```
+
+| Pros | Cons |
+| --- | --- |
+| Self-documenting — each category dimension is explicit | More complex queries (searching across multiple categories) |
+| Easy to add or change individual dimensions | Larger resource payloads |
+| Better maintainability as categories evolve | |
+
+#### Single combined category approach
+
+Combine dimensions into a single `category` entry using a custom coding system that encodes specialty + credential + product line as one code.
+
+| Pros | Cons |
+| --- | --- |
+| Simpler searches — only one `category` parameter needed | Combinatorial explosion as dimensions grow |
+| Compact data model | Requires front-end logic to parse combined codes |
+| | Harder to maintain as new combinations arise |
+
+#### Common category dimensions
+
+| Dimension | Code system | Example |
+| --- | --- | --- |
+| Level of credential | [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) | Doctor, Registered nurse, Health coach |
+| Clinical specialty | [SNOMED Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) | Cardiology, Endocrinology, Primary care |
+| Product offering | SNOMED, LOINC, or custom internal coding | Diabetes management, Weight loss program |
+| Message type | [HL7 Communication Category](http://terminology.hl7.org/CodeSystem/communication-category) | `notification`, `alert`, `instruction` |
+
+When assigning categories, include them on **both** the thread header and child Communications so that searches work at both levels.
+
+## See Also
+
+- [medplum-chat-demo ThreadPage.tsx](https://github.com/medplum/medplum-chat-demo/blob/main/src/pages/ThreadPage.tsx) — complete working example
+- [Organizing Communications Using Threads](/docs/communications/organizing-communications)
+- [Read Receipts and Message Status](/docs/communications/read-receipts-and-message-status)
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API

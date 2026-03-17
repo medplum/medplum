@@ -87,7 +87,8 @@ const sidebars: SidebarsConfig = {
       items: [
         { type: 'doc', id: 'communications/async-encounters/async-encounters' },
         { type: 'doc', id: 'communications/organizing-communications' },
-        { type: 'doc', id: 'communications/task-based-message-response-tracking-and-routing' },
+        { type: 'doc', id: 'communications/read-receipts-and-message-status' },
+        { type: 'doc', id: 'communications/sending-messages-and-attachments' },
       ],
     },
     {
