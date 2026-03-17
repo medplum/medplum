@@ -84,6 +84,7 @@ const threadWithReadState = {
   ],
 };
 // end-block threadHeaderWithReadExtensionTs
+void threadWithReadState;
 
 // start-block patchThreadReadStateTs
 // Option B: Update a participant's last-read when they view the thread
@@ -109,6 +110,7 @@ const readReceiptTask = await medplum.createResource({
   authoredOn: new Date().toISOString(),
 });
 // end-block createReadReceiptTaskTs
+void readReceiptTask;
 
 // start-block markReadReceiptTaskTs
 // Option C: Mark read-receipt Task completed when user reads the message
