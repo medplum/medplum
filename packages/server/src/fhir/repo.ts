@@ -162,6 +162,11 @@ const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
+type CallbackFrame = {
+  pre: number;
+  post: number;
+};
+
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
  * In practice, there will be one Repository per HTTP request.
@@ -286,7 +291,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private closed = false;
   mode: RepositoryMode;
 
-  private readonly callbackStack = new CallbackStack();
+  private preCommitCallbacks: (() => Promise<void>)[] = [];
+  private postCommitCallbacks: (() => Promise<void>)[] = [];
+  private callbackStack: CallbackFrame[] = [];
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -2578,7 +2585,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
-    this.callbackStack.pushFrame();
+    this.pushCallbackFrame();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -2592,17 +2599,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertInTransaction();
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
-      const frame = this.callbackStack.currentFrame();
-      await frame.processPreCommit();
+      await this.processPreCommit();
       await conn.query('COMMIT');
       this.transactionDepth--;
-      this.callbackStack.popFrame();
       this.releaseConnection();
-      await frame.processPostCommit();
+      this.clearCallbackStack();
+      await this.processPostCommit();
     } else {
       await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
-      this.callbackStack.collapseFrame();
+      this.popCallbackFrame();
     }
   }
 
@@ -2612,12 +2618,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.transactionDepth--;
-      this.callbackStack.popFrame();
+      this.truncateCommitCallbacks();
       this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
       this.transactionDepth--;
-      this.callbackStack.popFrame();
+      this.truncateCommitCallbacks();
     }
   }
 
@@ -2635,18 +2641,35 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async preCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
-      this.callbackStack.preCommit(fn);
+      this.preCommitCallbacks.push(fn);
     } else {
       // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
     }
   }
 
+  private async processPreCommit(): Promise<void> {
+    const callbacks = this.preCommitCallbacks;
+    this.preCommitCallbacks = [];
+    for (const cb of callbacks) {
+      // rely on thrown errors bubbling up from here to halt the transaction
+      await cb();
+    }
+  }
+
   async postCommit(fn: () => Promise<void>): Promise<void> {
     if (this.transactionDepth) {
-      this.callbackStack.postCommit(() => this.invokePostCommitCallback(fn));
+      this.postCommitCallbacks.push(fn);
     } else {
       await this.invokePostCommitCallback(fn);
+    }
+  }
+
+  private async processPostCommit(): Promise<void> {
+    const callbacks = this.postCommitCallbacks;
+    this.postCommitCallbacks = [];
+    for (const cb of callbacks) {
+      await this.invokePostCommitCallback(cb);
     }
   }
 
@@ -2659,6 +2682,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       } else {
         getLogger().error('Error processing post-commit callback', { err });
       }
+    }
+  }
+
+  private pushCallbackFrame(): void {
+    this.callbackStack.push({
+      pre: this.preCommitCallbacks.length,
+      post: this.postCommitCallbacks.length
+    });
+  }
+
+  private popCallbackFrame(): CallbackFrame {
+    const frame = this.callbackStack.pop();
+
+    if (!frame) {
+      throw new Error('No callback frame');
+    }
+
+    return frame;
+  }
+
+  private clearCallbackStack(): void {
+    this.callbackStack = [];
+  }
+
+  private truncateCommitCallbacks(): void {
+    const frame = this.popCallbackFrame();
+    if (frame.pre !== this.preCommitCallbacks.length) {
+      this.preCommitCallbacks = this.preCommitCallbacks.slice(0, frame.pre);
+    }
+    if (frame.post !== this.postCommitCallbacks.length) {
+      this.postCommitCallbacks = this.postCommitCallbacks.slice(0, frame.post);
     }
   }
 
@@ -3010,80 +3064,4 @@ function getArrayPaddingConfig(
     }
   }
   return undefined;
-}
-
-type Callback = () => Promise<void>;
-
-class CallbackFrame {
-  private preCommitCallbacks: Callback[] = [];
-  private postCommitCallbacks: Callback[] = [];
-
-  preCommit(fn: Callback): void {
-    this.preCommitCallbacks.push(fn);
-  }
-
-  postCommit(fn: Callback): void {
-    this.postCommitCallbacks.push(fn);
-  }
-
-  merge(other: CallbackFrame): void {
-    this.preCommitCallbacks.push(...other.preCommitCallbacks);
-    this.postCommitCallbacks.push(...other.postCommitCallbacks);
-  }
-
-  async processPreCommit(): Promise<void> {
-    const callbacks = this.preCommitCallbacks;
-    this.preCommitCallbacks = [];
-    for (const cb of callbacks) {
-      // rely on thrown errors bubbling up from here to halt the transaction
-      await cb();
-    }
-  }
-
-  async processPostCommit(): Promise<void> {
-    const callbacks = this.postCommitCallbacks;
-    this.postCommitCallbacks = [];
-    for (const cb of callbacks) {
-      await cb();
-    }
-  }
-}
-
-class CallbackStack {
-  private readonly stack: CallbackFrame[] = [];
-
-  preCommit(fn: Callback): void {
-    this.currentFrame().preCommit(fn);
-  }
-
-  postCommit(fn: Callback): void {
-    this.currentFrame().postCommit(fn);
-  }
-
-  currentFrame(): CallbackFrame {
-    const frame = this.stack[this.stack.length - 1];
-    return this.ensureFrame(frame);
-  }
-
-  pushFrame(): void {
-    this.stack.push(new CallbackFrame());
-  }
-
-  popFrame(): CallbackFrame {
-    const frame = this.stack.pop();
-    return this.ensureFrame(frame);
-  }
-
-  collapseFrame(): void {
-    const frame = this.popFrame();
-    const current = this.currentFrame();
-    current.merge(frame);
-  }
-
-  private ensureFrame(frame?: CallbackFrame): CallbackFrame {
-    if (!frame) {
-      throw new Error('Missing transaction callback frame');
-    }
-    return frame;
-  }
 }
