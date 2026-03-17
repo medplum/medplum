@@ -1,0 +1,29 @@
+region              = "us-east-1"
+environment         = "dev"
+deployment_id       = "1"
+app_domain          = "medplum.example.com"
+api_domain          = "medplum-api.example.com"
+support_email       = "support@medplum.example.com"
+ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT_ID"
+alb_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/ALB_CERT_ID"
+availability_zones  = ["us-east-1a", "us-east-1b"]
+
+tags = {
+  app         = "medplum"
+  environment = "dev"
+}
+
+# Restrict EKS API server access to your IP or VPN CIDR before production use.
+# Defaults to open (0.0.0.0/0) — change this for any non-dev environment.
+# eks_public_access_cidrs = ["203.0.113.0/24"]
+
+# Production Redis requires >= 2 nodes for automatic failover.
+# redis_num_cache_nodes = 2
+
+# eks_node_instance_types = ["t3.large"]  # Minimum recommended; use m5.large or larger for production
+
+# DNS — set create_route53_records = true if your domain is hosted in Route 53 in this account.
+# route53_zone_name defaults to the root domain (e.g. "example.com").
+# Override it if your hosted zone is a subdomain (e.g. "staging.example.com").
+# create_route53_records = true
+# route53_zone_name      = "example.com"

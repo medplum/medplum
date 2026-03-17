@@ -15,9 +15,12 @@ module "eks" {
 
   enable_irsa = true
 
+  # Grant the IAM principal that runs terraform apply cluster-admin access automatically
+  enable_cluster_creator_admin_permissions = true
+
   eks_managed_node_groups = {
     default = {
-      name            = "${local.name_prefix}-node-group"
+      name            = "${local.name_prefix}-ng"
       use_name_prefix = true
       capacity_type   = "ON_DEMAND"
 
@@ -25,7 +28,7 @@ module "eks" {
       max_size     = 5
       desired_size = 2
 
-      instance_types = ["t3.medium"]
+      instance_types = var.eks_node_instance_types
 
       subnet_ids = module.vpc.private_subnets
 
