@@ -84,6 +84,8 @@ const threadWithReadState = {
   ],
 };
 // end-block threadHeaderWithReadExtensionTs
+// Satisfy TS6133 (unused variable); value only used for doc block extraction
+// eslint-disable-next-line no-void
 void threadWithReadState;
 
 // start-block patchThreadReadStateTs
@@ -110,6 +112,8 @@ const readReceiptTask = await medplum.createResource({
   authoredOn: new Date().toISOString(),
 });
 // end-block createReadReceiptTaskTs
+// Satisfy TS6133 (unused variable); value only used for doc block extraction
+// eslint-disable-next-line no-void
 void readReceiptTask;
 
 // start-block markReadReceiptTaskTs
