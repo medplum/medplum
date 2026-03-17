@@ -2,18 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 import { findAllReferences, findConnectedComponents, redirectReferences } from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Binary, Bundle, BundleEntry, Identifier, Resource } from '@medplum/fhirtypes';
+import type { Binary, Bundle, BundleEntry, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { generateId } from '@medplum/core';
 
 /**
- * Resource types that represent "humans" - these are ingested first and referenced via conditional references.
+ * Resource types ingested first, following the Medplum migration sequence:
+ * 1. Practitioner, PractitionerRole (provider demographics & credentials)
+ * 2. Organization (shared organizations)
+ * 3. Patient, RelatedPerson (patient demographics)
+ *
+ * @see https://www.medplum.com/docs/migration/migration-sequence
  */
-const HUMAN_RESOURCE_TYPES = new Set(['Patient', 'Practitioner', 'PractitionerRole', 'RelatedPerson']);
+const PRIORITY_RESOURCE_TYPES = new Set([
+  'Practitioner',
+  'PractitionerRole',
+  'Organization',
+  'Patient',
+  'RelatedPerson',
+]);
 
 /**
- * The system URI used for storing original IDs as identifiers.
+ * Ordered phases for priority resource ingestion, matching the migration sequence.
+ * Resources within the same phase are batched together.
  */
-const ORIGINAL_ID_SYSTEM = 'urn:medplum:original-id';
+const PRIORITY_PHASES: string[][] = [
+  ['Practitioner', 'PractitionerRole'],
+  ['Organization'],
+  ['Patient', 'RelatedPerson'],
+];
 
 /**
  * Maximum bundle size in bytes for async batch requests (30 MB).
@@ -31,41 +47,45 @@ const INITIAL_BACKOFF_MS = 2000;
 const MAX_RETRIES = 10;
 
 /**
- * Bot handler that ingests a large FHIR bundle (stored as a Binary resource) into Medplum
- * by splitting it into a series of async batch requests.
+ * Bot handler that ingests a large FHIR bundle into Medplum by splitting it into a series of
+ * async batch requests.
  *
- * The bundle is processed in phases:
- * 1. Ingest Patient and Practitioner resources first (with conditional create using identifiers).
- * 2. Group remaining resources into connected components to keep related resources together.
- * 3. Co-locate Binary resources with the resources that reference them.
- * 4. Split into batches respecting the 30 MB size limit.
- * 5. Submit each batch as an async batch request with exponential backoff for rate limiting.
+ * Input can be one of:
+ * - A `Bundle` resource (JSON object with resourceType "Bundle")
+ * - A `Reference` to a stored `Bundle` resource (e.g., `{ reference: "Bundle/123" }`)
+ * - A `Binary` resource or `Reference` to one containing the bundle JSON
+ *
+ * The second input parameter is the identifier system URI used for storing original IDs.
+ * Pass it via `event.secrets['IDENTIFIER_SYSTEM']` or it defaults to `urn:medplum:original-id`.
+ *
+ * The bundle is processed following the Medplum migration sequence:
+ * 1. Ingest Practitioner/PractitionerRole first (provider demographics).
+ * 2. Ingest Organization resources (shared organizations).
+ * 3. Ingest Patient/RelatedPerson resources (patient demographics).
+ * 4. Group remaining resources into connected components to keep related resources together.
+ * 5. Co-locate Binary resources with the resources that reference them.
+ * 6. Split into batches respecting the 30 MB size limit.
+ * 7. Submit each batch as an async batch request with exponential backoff for rate limiting.
  *
  * @param medplum - The MedplumClient instance.
- * @param event - The BotEvent with a Binary resource reference as input.
+ * @param event - The BotEvent. Input is a Bundle, Reference<Bundle>, Binary, or Reference<Binary>.
+ *   The identifier system is taken from `event.secrets['IDENTIFIER_SYSTEM'].value`.
  * @returns Summary of ingestion results.
  */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
-  // The input is a reference to a Binary resource containing the FHIR bundle
-  const binaryRef = event.input as Binary;
-  if (!binaryRef?.id) {
-    throw new Error('Expected a Binary resource as input');
-  }
+  const identifierSystem = event.secrets['IDENTIFIER_SYSTEM']?.value ?? 'urn:medplum:original-id';
 
-  console.log(`Downloading bundle from Binary/${binaryRef.id}...`);
-  const blob = await medplum.download(`Binary/${binaryRef.id}`);
-  const bundleText = await blob.text();
-  const bundle = JSON.parse(bundleText) as Bundle;
+  const bundle = await resolveBundle(medplum, event.input);
 
   if (!bundle.entry?.length) {
     console.log('Bundle has no entries, nothing to do.');
     return { status: 'empty', batchCount: 0, resourceCount: 0 };
   }
 
-  console.log(`Processing bundle with ${bundle.entry.length} entries...`);
+  console.log(`Processing bundle with ${bundle.entry.length} entries (identifier system: ${identifierSystem})...`);
 
-  // Phase 1: Separate human resources from the rest
-  const humanEntries: BundleEntry[] = [];
+  // Phase 1: Separate priority resources from the rest
+  const priorityEntries: Map<string, BundleEntry[]> = new Map();
   const binaryEntries: BundleEntry[] = [];
   const otherEntries: BundleEntry[] = [];
 
@@ -74,8 +94,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     if (!resource) {
       continue;
     }
-    if (HUMAN_RESOURCE_TYPES.has(resource.resourceType)) {
-      humanEntries.push(entry);
+    if (PRIORITY_RESOURCE_TYPES.has(resource.resourceType)) {
+      const existing = priorityEntries.get(resource.resourceType) ?? [];
+      existing.push(entry);
+      priorityEntries.set(resource.resourceType, existing);
     } else if (resource.resourceType === 'Binary') {
       binaryEntries.push(entry);
     } else {
@@ -83,20 +105,34 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
   }
 
+  const priorityCount = Array.from(priorityEntries.values()).reduce((sum, arr) => sum + arr.length, 0);
   console.log(
-    `Separated: ${humanEntries.length} human resources, ${binaryEntries.length} binaries, ${otherEntries.length} other resources`
+    `Separated: ${priorityCount} priority resources, ${binaryEntries.length} binaries, ${otherEntries.length} other resources`
   );
 
-  // Build a map from original references to conditional references for human resources
+  // Build a map from original references to conditional references for priority resources
   const conditionalRefMap = new Map<string, string>();
   // Also track original ID -> fullUrl for urn:uuid mapping
   const originalIdToFullUrl = new Map<string, string>();
 
-  // Prepare human resource entries for conditional create
-  const humanBatchEntries = prepareHumanEntries(humanEntries, conditionalRefMap, originalIdToFullUrl);
+  // Prepare priority resource entries for conditional create, in migration sequence order
+  const priorityBatches: BundleEntry[][] = [];
+  for (const phaseTypes of PRIORITY_PHASES) {
+    const phaseEntries: BundleEntry[] = [];
+    for (const resourceType of phaseTypes) {
+      const entries = priorityEntries.get(resourceType);
+      if (entries) {
+        phaseEntries.push(...entries);
+      }
+    }
+    if (phaseEntries.length > 0) {
+      const prepared = preparePriorityEntries(phaseEntries, conditionalRefMap, originalIdToFullUrl, identifierSystem);
+      priorityBatches.push(prepared);
+    }
+  }
 
   // Phase 2: Prepare other entries - move IDs to identifiers and assign fullUrls
-  const preparedOtherEntries = prepareResourceEntries(otherEntries, originalIdToFullUrl);
+  const preparedOtherEntries = prepareResourceEntries(otherEntries, originalIdToFullUrl, identifierSystem);
 
   // Phase 3: Co-locate binaries with the resources that reference them
   const binaryFullUrlMap = new Map<string, BundleEntry>();
@@ -109,8 +145,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const uuid = generateId();
     const fullUrl = `urn:uuid:${uuid}`;
 
-    // Move original ID to identifier if the resource supports it
-    moveIdToIdentifier(resource);
+    moveIdToIdentifier(resource, identifierSystem);
     resource.id = undefined;
 
     if (originalId) {
@@ -145,30 +180,32 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   });
 
   // Combine other entries + binary entries for component analysis
-  const allNonHumanEntries = [...preparedOtherEntries, ...preparedBinaryEntries];
+  const allNonPriorityEntries = [...preparedOtherEntries, ...preparedBinaryEntries];
 
-  // Redirect all references to human resources to use conditional references
-  // Also redirect old "Type/id" references to urn:uuid references for non-human resources
-  const fullRedirectMap = buildRedirectMap(conditionalRefMap, originalIdToFullUrl, allNonHumanEntries);
+  // Redirect all references to priority resources to use conditional references
+  // Also redirect old "Type/id" references to urn:uuid references for non-priority resources
+  const fullRedirectMap = buildRedirectMap(conditionalRefMap, originalIdToFullUrl, allNonPriorityEntries, identifierSystem);
 
-  for (const entry of allNonHumanEntries) {
+  for (const entry of allNonPriorityEntries) {
     if (entry.resource) {
       redirectReferences(entry.resource, fullRedirectMap);
     }
   }
 
-  // Phase 4: Find connected components among non-human resources
-  const components = findConnectedComponents(allNonHumanEntries, HUMAN_RESOURCE_TYPES);
+  // Phase 4: Find connected components among non-priority resources
+  const components = findConnectedComponents(allNonPriorityEntries, PRIORITY_RESOURCE_TYPES);
   console.log(`Found ${components.length} connected components`);
 
   // Phase 5: Build batches respecting size limits
   const allBatches: Bundle[] = [];
 
-  // First batch: human resources (conditional creates)
-  if (humanBatchEntries.length > 0) {
-    const humanBatches = splitIntoBatches(humanBatchEntries, MAX_BUNDLE_SIZE_BYTES);
-    allBatches.push(...humanBatches);
-    console.log(`Human resources split into ${humanBatches.length} batch(es)`);
+  // Priority batches in migration sequence order
+  for (const phaseEntries of priorityBatches) {
+    const batches = splitIntoBatches(phaseEntries, MAX_BUNDLE_SIZE_BYTES);
+    allBatches.push(...batches);
+  }
+  if (priorityBatches.length > 0) {
+    console.log(`Priority resources split into ${allBatches.length} batch(es)`);
   }
 
   // Remaining batches: connected components, packed into batches respecting size limit
@@ -185,7 +222,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const entryCount = batch.entry?.length ?? 0;
     console.log(`Submitting batch ${i + 1}/${allBatches.length} (${entryCount} entries)...`);
 
-    const result = await submitAsyncBatchWithRetry(medplum, batch);
+    const result = await submitAsyncBatchWithRetry(medplum, batch, i);
     results.push(result);
 
     console.log(`Batch ${i + 1} ${result.status}: ${result.message}`);
@@ -202,6 +239,48 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   return summary;
 }
 
+/**
+ * Resolves the bot input into a Bundle, supporting multiple input types:
+ * - Bundle JSON object directly
+ * - Reference to a stored Bundle resource
+ * - Binary resource or Reference to a Binary containing bundle JSON
+ */
+async function resolveBundle(medplum: MedplumClient, input: any): Promise<Bundle> {
+  // Case 1: Direct Bundle object
+  if (input?.resourceType === 'Bundle') {
+    console.log('Input is a Bundle resource');
+    return input as Bundle;
+  }
+
+  // Case 2: Reference object (e.g., { reference: "Bundle/123" } or { reference: "Binary/456" })
+  if (input?.reference && typeof input.reference === 'string') {
+    const ref = input.reference as string;
+    if (ref.startsWith('Bundle/')) {
+      console.log(`Input is a reference to ${ref}, reading...`);
+      return medplum.readReference(input as Reference<Bundle>);
+    }
+    if (ref.startsWith('Binary/')) {
+      console.log(`Input is a reference to ${ref}, downloading...`);
+      const blob = await medplum.download(ref);
+      const text = await blob.text();
+      return JSON.parse(text) as Bundle;
+    }
+  }
+
+  // Case 3: Binary resource object with an id
+  if (input?.resourceType === 'Binary' && input.id) {
+    console.log(`Input is a Binary resource (Binary/${input.id}), downloading...`);
+    const blob = await medplum.download(`Binary/${input.id}`);
+    const text = await blob.text();
+    return JSON.parse(text) as Bundle;
+  }
+
+  throw new Error(
+    'Unsupported input type. Expected a Bundle resource, a Reference to a Bundle, ' +
+      'a Binary resource, or a Reference to a Binary containing bundle JSON.'
+  );
+}
+
 interface BatchResult {
   batchIndex: number;
   status: 'success' | 'error';
@@ -209,13 +288,14 @@ interface BatchResult {
 }
 
 /**
- * Prepares human resource entries for conditional create.
+ * Prepares priority resource entries for conditional create.
  * Moves original IDs to identifiers, builds conditional reference map.
  */
-function prepareHumanEntries(
+function preparePriorityEntries(
   entries: BundleEntry[],
   conditionalRefMap: Map<string, string>,
-  originalIdToFullUrl: Map<string, string>
+  originalIdToFullUrl: Map<string, string>,
+  identifierSystem: string
 ): BundleEntry[] {
   const result: BundleEntry[] = [];
 
@@ -229,17 +309,17 @@ function prepareHumanEntries(
     const resourceType = resource.resourceType;
 
     // Move original ID to identifier
-    moveIdToIdentifier(resource);
+    moveIdToIdentifier(resource, identifierSystem);
 
     // Build the conditional reference using the identifier
-    const identifier = getIdentifierForConditionalRef(resource);
+    const identifier = getIdentifierForConditionalRef(resource, identifierSystem);
     const ifNoneExist = identifier
       ? `identifier=${encodeURIComponent(identifier.system + '|' + identifier.value)}`
-      : `identifier=${encodeURIComponent(ORIGINAL_ID_SYSTEM + '|' + originalId)}`;
+      : `identifier=${encodeURIComponent(identifierSystem + '|' + originalId)}`;
 
     const conditionalRef = identifier
       ? `${resourceType}?identifier=${encodeURIComponent(identifier.system + '|' + identifier.value)}`
-      : `${resourceType}?identifier=${encodeURIComponent(ORIGINAL_ID_SYSTEM + '|' + originalId)}`;
+      : `${resourceType}?identifier=${encodeURIComponent(identifierSystem + '|' + originalId)}`;
 
     // Map original references to conditional references
     if (originalId) {
@@ -264,12 +344,13 @@ function prepareHumanEntries(
 }
 
 /**
- * Prepares non-human, non-binary resource entries.
+ * Prepares non-priority, non-binary resource entries.
  * Moves IDs to identifiers, assigns urn:uuid fullUrls, sets up conditional update requests.
  */
 function prepareResourceEntries(
   entries: BundleEntry[],
-  originalIdToFullUrl: Map<string, string>
+  originalIdToFullUrl: Map<string, string>,
+  identifierSystem: string
 ): BundleEntry[] {
   const result: BundleEntry[] = [];
 
@@ -285,13 +366,13 @@ function prepareResourceEntries(
     const fullUrl = `urn:uuid:${uuid}`;
 
     // Move original ID to identifier
-    moveIdToIdentifier(resource);
+    moveIdToIdentifier(resource, identifierSystem);
 
     // Build the conditional update URL using the identifier
-    const identifier = getIdentifierForConditionalRef(resource);
+    const identifier = getIdentifierForConditionalRef(resource, identifierSystem);
     const searchString = identifier
       ? `${resourceType}?identifier=${encodeURIComponent(identifier.system + '|' + identifier.value)}`
-      : `${resourceType}?identifier=${encodeURIComponent(ORIGINAL_ID_SYSTEM + '|' + originalId)}`;
+      : `${resourceType}?identifier=${encodeURIComponent(identifierSystem + '|' + originalId)}`;
 
     if (originalId) {
       originalIdToFullUrl.set(originalId, fullUrl);
@@ -314,10 +395,10 @@ function prepareResourceEntries(
 }
 
 /**
- * Moves the resource's original ID into its identifier array using the ORIGINAL_ID_SYSTEM.
+ * Moves the resource's original ID into its identifier array using the given system URI.
  * This preserves the original ID for idempotent matching while letting Medplum assign its own IDs.
  */
-function moveIdToIdentifier(resource: Resource): void {
+function moveIdToIdentifier(resource: Resource, identifierSystem: string): void {
   if (!resource.id) {
     return;
   }
@@ -329,11 +410,11 @@ function moveIdToIdentifier(resource: Resource): void {
 
   // Don't add duplicate
   const existing = identifiable.identifier.find(
-    (id) => id.system === ORIGINAL_ID_SYSTEM && id.value === resource.id
+    (id) => id.system === identifierSystem && id.value === resource.id
   );
   if (!existing) {
     identifiable.identifier.push({
-      system: ORIGINAL_ID_SYSTEM,
+      system: identifierSystem,
       value: resource.id,
     });
   }
@@ -343,7 +424,7 @@ function moveIdToIdentifier(resource: Resource): void {
  * Gets the best identifier for a conditional reference.
  * Prefers existing identifiers with a system, falls back to the original-id identifier.
  */
-function getIdentifierForConditionalRef(resource: Resource): Identifier | undefined {
+function getIdentifierForConditionalRef(resource: Resource, identifierSystem: string): Identifier | undefined {
   const identifiable = resource as Resource & { identifier?: Identifier[] };
   if (!identifiable.identifier?.length) {
     return undefined;
@@ -351,34 +432,27 @@ function getIdentifierForConditionalRef(resource: Resource): Identifier | undefi
 
   // Prefer a non-original-id identifier with a system
   const preferred = identifiable.identifier.find(
-    (id) => id.system && id.value && id.system !== ORIGINAL_ID_SYSTEM
+    (id) => id.system && id.value && id.system !== identifierSystem
   );
   if (preferred) {
     return preferred;
   }
 
   // Fall back to original-id identifier
-  return identifiable.identifier.find((id) => id.system === ORIGINAL_ID_SYSTEM && id.value);
+  return identifiable.identifier.find((id) => id.system === identifierSystem && id.value);
 }
 
 /**
  * Builds a complete redirect map that maps old "Type/id" references to either
- * conditional references (for humans) or urn:uuid references (for non-humans in the bundle).
+ * conditional references (for priority resources) or urn:uuid references (for non-priority resources).
  */
 function buildRedirectMap(
   conditionalRefMap: Map<string, string>,
   originalIdToFullUrl: Map<string, string>,
-  entries: BundleEntry[]
+  entries: BundleEntry[],
+  identifierSystem: string
 ): Map<string, string> {
   const redirectMap = new Map<string, string>(conditionalRefMap);
-
-  // Build a map of fullUrl -> entry for lookup
-  const fullUrlSet = new Set<string>();
-  for (const entry of entries) {
-    if (entry.fullUrl) {
-      fullUrlSet.add(entry.fullUrl);
-    }
-  }
 
   // For each entry, map "Type/originalId" -> urn:uuid:xxx
   for (const entry of entries) {
@@ -389,7 +463,7 @@ function buildRedirectMap(
 
     // Find the original ID from the identifier
     const identifiable = resource as Resource & { identifier?: Identifier[] };
-    const originalIdIdentifier = identifiable.identifier?.find((id) => id.system === ORIGINAL_ID_SYSTEM);
+    const originalIdIdentifier = identifiable.identifier?.find((id) => id.system === identifierSystem);
     if (originalIdIdentifier?.value) {
       const oldRef = `${resource.resourceType}/${originalIdIdentifier.value}`;
       if (!redirectMap.has(oldRef)) {
@@ -467,8 +541,8 @@ function packComponentsIntoBatches(components: BundleEntry[][], maxSizeBytes: nu
 
     // If the component itself is too large, split it (rare edge case)
     if (componentSize + bundleOverhead > maxSizeBytes) {
-      const splitBatches = splitIntoBatches(component, maxSizeBytes);
-      batches.push(...splitBatches);
+      const splitBundles = splitIntoBatches(component, maxSizeBytes);
+      batches.push(...splitBundles);
     } else {
       currentEntries.push(...component);
       currentSize += componentSize;
@@ -489,7 +563,11 @@ function packComponentsIntoBatches(components: BundleEntry[][], maxSizeBytes: nu
 /**
  * Submits a bundle as an async batch request with exponential backoff for 429 rate limiting.
  */
-async function submitAsyncBatchWithRetry(medplum: MedplumClient, batch: Bundle): Promise<BatchResult> {
+async function submitAsyncBatchWithRetry(
+  medplum: MedplumClient,
+  batch: Bundle,
+  batchIndex: number
+): Promise<BatchResult> {
   let lastError: Error | undefined;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -501,7 +579,7 @@ async function submitAsyncBatchWithRetry(medplum: MedplumClient, batch: Bundle):
       });
 
       return {
-        batchIndex: 0,
+        batchIndex,
         status: 'success',
         message: `Submitted ${batch.entry?.length ?? 0} entries`,
       };
@@ -509,9 +587,12 @@ async function submitAsyncBatchWithRetry(medplum: MedplumClient, batch: Bundle):
       lastError = err;
 
       // Check if this is a 429 rate limit error
-      const is429 = err?.outcome?.issue?.some(
-        (issue: any) => issue.details?.text?.includes('429') || issue.diagnostics?.includes('rate')
-      ) || err?.message?.includes('429') || err?.status === 429;
+      const is429 =
+        err?.outcome?.issue?.some(
+          (issue: any) => issue.details?.text?.includes('429') || issue.diagnostics?.includes('rate')
+        ) ||
+        err?.message?.includes('429') ||
+        err?.status === 429;
 
       if (!is429 || attempt === MAX_RETRIES) {
         break;
@@ -524,7 +605,7 @@ async function submitAsyncBatchWithRetry(medplum: MedplumClient, batch: Bundle):
   }
 
   return {
-    batchIndex: 0,
+    batchIndex,
     status: 'error',
     message: lastError?.message ?? 'Unknown error',
   };

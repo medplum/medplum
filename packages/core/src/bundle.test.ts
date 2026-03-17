@@ -17,6 +17,7 @@ import {
   findResourceInBundle,
   redirectReferences,
   reorderBundle,
+  splitBundleByDependencies,
 } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
@@ -751,6 +752,95 @@ describe('Bundle tests', () => {
       redirectReferences(resource, redirectMap);
 
       expect(resource.subject.reference).toBe('Patient/999');
+    });
+  });
+
+  describe('splitBundleByDependencies', () => {
+    test('Splits unrelated resources into separate groups', () => {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:a',
+            resource: { resourceType: 'Condition', id: 'a' } as Resource,
+          },
+          {
+            fullUrl: 'urn:uuid:b',
+            resource: { resourceType: 'Condition', id: 'b' } as Resource,
+          },
+        ],
+      };
+
+      const groups = splitBundleByDependencies(bundle);
+      expect(groups).toHaveLength(2);
+    });
+
+    test('Keeps connected resources together', () => {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:obs-1',
+            resource: { resourceType: 'Observation', id: 'obs-1' } as Resource,
+          },
+          {
+            fullUrl: 'urn:uuid:dr-1',
+            resource: {
+              resourceType: 'DiagnosticReport',
+              id: 'dr-1',
+              result: [{ reference: 'urn:uuid:obs-1' }],
+            } as unknown as Resource,
+          },
+        ],
+      };
+
+      const groups = splitBundleByDependencies(bundle);
+      expect(groups).toHaveLength(1);
+      expect(groups[0]).toHaveLength(2);
+    });
+
+    test('Ignores edges based on predicate', () => {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:obs-1',
+            resource: {
+              resourceType: 'Observation',
+              id: 'obs-1',
+              subject: { reference: 'Patient/pat-1' },
+            } as unknown as Resource,
+          },
+          {
+            fullUrl: 'urn:uuid:obs-2',
+            resource: {
+              resourceType: 'Observation',
+              id: 'obs-2',
+              subject: { reference: 'Patient/pat-1' },
+            } as unknown as Resource,
+          },
+        ],
+      };
+
+      const groups = splitBundleByDependencies(bundle, {
+        ignoreReference: (ref) => ref.startsWith('Patient/'),
+      });
+      // Both reference the same Patient, but Patient edges are ignored
+      expect(groups).toHaveLength(2);
+    });
+
+    test('Returns empty array for empty bundle', () => {
+      const bundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'collection',
+        entry: [],
+      };
+
+      const groups = splitBundleByDependencies(bundle);
+      expect(groups).toHaveLength(0);
     });
   });
 });

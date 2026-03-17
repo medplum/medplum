@@ -15,32 +15,13 @@ describe('FHIR Bundle Batching Bot', () => {
     medplum = new MockClient();
   });
 
-  test('Handles empty bundle', async () => {
-    const emptyBundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'collection',
-      entry: [],
-    };
+  function makeEvent(input: any, overrideSecrets?: Record<string, any>): any {
+    return { bot, input, contentType, secrets: overrideSecrets ?? secrets };
+  }
 
-    // Create a Binary resource containing the bundle
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(emptyBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
+  // --- Input handling tests ---
 
-    const result = await handler(medplum, {
-      bot,
-      input: binary,
-      contentType,
-      secrets,
-    });
-
-    expect(result.status).toBe('empty');
-    expect(result.batchCount).toBe(0);
-  });
-
-  test('Processes bundle with Patient and Observation', async () => {
+  test('Handles direct Bundle input', async () => {
     const inputBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'collection',
@@ -49,18 +30,30 @@ describe('FHIR Bundle Batching Bot', () => {
           resource: {
             resourceType: 'Patient',
             id: 'patient-1',
-            identifier: [{ system: 'http://example.com/mrn', value: 'MRN-001' }],
-            name: [{ given: ['John'], family: 'Doe' }],
+            name: [{ given: ['Jane'], family: 'Doe' }],
           },
         },
+      ],
+    };
+
+    const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+    const result = await handler(medplum, makeEvent(inputBundle));
+
+    expect(result.status).toBe('complete');
+    expect(result.totalResources).toBe(1);
+    expect(executeBatchSpy).toHaveBeenCalled();
+  });
+
+  test('Handles Binary resource input', async () => {
+    const inputBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
         {
           resource: {
-            resourceType: 'Observation',
-            id: 'obs-1',
-            status: 'final',
-            code: { text: 'Heart Rate' },
-            subject: { reference: 'Patient/patient-1' },
-            valueQuantity: { value: 72, unit: 'bpm' },
+            resourceType: 'Patient',
+            id: 'patient-1',
+            name: [{ given: ['Jane'], family: 'Doe' }],
           },
         },
       ],
@@ -72,54 +65,154 @@ describe('FHIR Bundle Batching Bot', () => {
       filename: 'bundle.json',
     });
 
-    // Spy on executeBatch to verify the batches submitted
-    const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
-
-    const result = await handler(medplum, {
-      bot,
-      input: binary,
-      contentType,
-      secrets,
-    });
+    const result = await handler(medplum, makeEvent(binary));
 
     expect(result.status).toBe('complete');
-    expect(result.totalResources).toBe(2);
-
-    // Should have at least 2 batches: one for humans, one for other resources
-    expect(executeBatchSpy).toHaveBeenCalled();
-
-    // First batch should contain the Patient with conditional create
-    const firstBatch = executeBatchSpy.mock.calls[0][0] as Bundle;
-    const patientEntry = firstBatch.entry?.find((e) => e.resource?.resourceType === 'Patient');
-    expect(patientEntry).toBeDefined();
-    expect(patientEntry?.request?.method).toBe('POST');
-    expect(patientEntry?.request?.ifNoneExist).toBeDefined();
-
-    // Patient should have original ID in identifier
-    const patientIdentifiers = (patientEntry?.resource as any)?.identifier;
-    expect(patientIdentifiers).toBeDefined();
-    const originalIdIdentifier = patientIdentifiers?.find(
-      (id: any) => id.system === 'urn:medplum:original-id'
-    );
-    expect(originalIdIdentifier?.value).toBe('patient-1');
-
-    // Patient should not have original id field
-    expect(patientEntry?.resource?.id).toBeUndefined();
+    expect(result.totalResources).toBe(1);
   });
 
-  test('Processes bundle with DiagnosticReport and Observations kept together', async () => {
+  test('Handles Reference to Binary input', async () => {
     const inputBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'collection',
       entry: [
         {
           resource: {
+            resourceType: 'Patient',
+            id: 'patient-1',
+            name: [{ given: ['Jane'], family: 'Doe' }],
+          },
+        },
+      ],
+    };
+
+    const binary = await medplum.createBinary({
+      data: JSON.stringify(inputBundle),
+      contentType: 'application/fhir+json',
+      filename: 'bundle.json',
+    });
+
+    const result = await handler(medplum, makeEvent({ reference: `Binary/${binary.id}` }));
+
+    expect(result.status).toBe('complete');
+    expect(result.totalResources).toBe(1);
+  });
+
+  test('Handles empty bundle', async () => {
+    const emptyBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [],
+    };
+
+    const result = await handler(medplum, makeEvent(emptyBundle));
+    expect(result.status).toBe('empty');
+    expect(result.batchCount).toBe(0);
+  });
+
+  test('Throws on unsupported input type', async () => {
+    await expect(handler(medplum, makeEvent('invalid-string'))).rejects.toThrow('Unsupported input type');
+  });
+
+  // --- Identifier system tests ---
+
+  test('Uses custom identifier system from secrets', async () => {
+    const inputBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Condition',
+            id: 'cond-1',
+            code: { text: 'Hypertension' },
+          },
+        },
+      ],
+    };
+
+    const customSystem = 'https://my-ehr.example.com/fhir-ids';
+    const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+
+    await handler(
+      medplum,
+      makeEvent(inputBundle, { IDENTIFIER_SYSTEM: { value: customSystem } })
+    );
+
+    const batch = executeBatchSpy.mock.calls[0][0] as Bundle;
+    const condEntry = batch.entry?.find((e) => e.resource?.resourceType === 'Condition');
+    const identifiers = (condEntry?.resource as any)?.identifier;
+    const customIdentifier = identifiers?.find((id: any) => id.system === customSystem);
+    expect(customIdentifier).toBeDefined();
+    expect(customIdentifier.value).toBe('cond-1');
+  });
+
+  // --- Migration sequence ordering tests ---
+
+  test('Ingests resources in migration sequence order: Practitioners -> Organizations -> Patients', async () => {
+    const inputBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'patient-1',
+            name: [{ given: ['John'], family: 'Doe' }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Organization',
+            id: 'org-1',
+            name: 'Test Clinic',
+          },
+        },
+        {
+          resource: {
             resourceType: 'Practitioner',
             id: 'pract-1',
-            identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '1234567890' }],
             name: [{ given: ['Dr'], family: 'Smith' }],
           },
         },
+        {
+          resource: {
+            resourceType: 'Observation',
+            id: 'obs-1',
+            status: 'final',
+            code: { text: 'BP' },
+            subject: { reference: 'Patient/patient-1' },
+          },
+        },
+      ],
+    };
+
+    const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+    await handler(medplum, makeEvent(inputBundle));
+
+    // Should have at least 3 batches: practitioners, organizations, patients, then other resources
+    expect(executeBatchSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+    // First batch should contain Practitioner
+    const firstBatch = executeBatchSpy.mock.calls[0][0] as Bundle;
+    expect(firstBatch.entry?.some((e) => e.resource?.resourceType === 'Practitioner')).toBe(true);
+
+    // Second batch should contain Organization
+    const secondBatch = executeBatchSpy.mock.calls[1][0] as Bundle;
+    expect(secondBatch.entry?.some((e) => e.resource?.resourceType === 'Organization')).toBe(true);
+
+    // Third batch should contain Patient
+    const thirdBatch = executeBatchSpy.mock.calls[2][0] as Bundle;
+    expect(thirdBatch.entry?.some((e) => e.resource?.resourceType === 'Patient')).toBe(true);
+  });
+
+  // --- Connected component tests ---
+
+  test('Keeps DiagnosticReport and Observations in the same batch', async () => {
+    const inputBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
         {
           resource: {
             resourceType: 'Observation',
@@ -150,56 +243,30 @@ describe('FHIR Bundle Batching Bot', () => {
       ],
     };
 
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(inputBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
-
     const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
-
-    const result = await handler(medplum, {
-      bot,
-      input: binary,
-      contentType,
-      secrets,
-    });
-
-    expect(result.status).toBe('complete');
+    await handler(medplum, makeEvent(inputBundle));
 
     // Find the batch containing the DiagnosticReport
-    const nonHumanBatches = executeBatchSpy.mock.calls.slice(1);
-    const drBatch = nonHumanBatches.find(([bundle]) =>
+    const drBatch = executeBatchSpy.mock.calls.find(([bundle]) =>
       (bundle as Bundle).entry?.some((e) => e.resource?.resourceType === 'DiagnosticReport')
     );
     expect(drBatch).toBeDefined();
 
     const drBundle = drBatch?.[0] as Bundle;
-    const drEntry = drBundle.entry?.find((e) => e.resource?.resourceType === 'DiagnosticReport');
-    const obs1Entry = drBundle.entry?.find(
-      (e) =>
-        e.resource?.resourceType === 'Observation' &&
-        (e.resource as any).code?.text === 'WBC'
-    );
-    const obs2Entry = drBundle.entry?.find(
-      (e) =>
-        e.resource?.resourceType === 'Observation' &&
-        (e.resource as any).code?.text === 'RBC'
-    );
-
-    // DiagnosticReport and its Observations should be in the same batch
-    expect(drEntry).toBeDefined();
-    expect(obs1Entry).toBeDefined();
-    expect(obs2Entry).toBeDefined();
+    // All three (DR + 2 obs) should be in the same batch
+    expect(drBundle.entry?.filter((e) => e.resource?.resourceType === 'Observation')).toHaveLength(2);
+    expect(drBundle.entry?.filter((e) => e.resource?.resourceType === 'DiagnosticReport')).toHaveLength(1);
 
     // DiagnosticReport should reference observations via urn:uuid
-    const drResource = drEntry?.resource as any;
+    const drResource = drBundle.entry?.find((e) => e.resource?.resourceType === 'DiagnosticReport')?.resource as any;
     for (const ref of drResource.result) {
       expect(ref.reference).toMatch(/^urn:uuid:/);
     }
   });
 
-  test('Processes bundle with Binary resource co-located with referencing resource', async () => {
+  // --- Binary co-location tests ---
+
+  test('Co-locates Binary with referencing resource and sets securityContext', async () => {
     const inputBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'collection',
@@ -228,43 +295,60 @@ describe('FHIR Bundle Batching Bot', () => {
       ],
     };
 
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(inputBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
-
     const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+    await handler(medplum, makeEvent(inputBundle));
 
-    const result = await handler(medplum, {
-      bot,
-      input: binary,
-      contentType,
-      secrets,
-    });
-
-    expect(result.status).toBe('complete');
-
-    // The Binary and DocumentReference should be in the same batch
-    const nonHumanCalls = executeBatchSpy.mock.calls.filter(([bundle]) =>
+    // Find the batch containing DocumentReference
+    const docBatch = executeBatchSpy.mock.calls.find(([bundle]) =>
       (bundle as Bundle).entry?.some((e) => e.resource?.resourceType === 'DocumentReference')
     );
-    expect(nonHumanCalls.length).toBeGreaterThan(0);
+    expect(docBatch).toBeDefined();
 
-    const batchBundle = nonHumanCalls[0][0] as Bundle;
+    const batchBundle = docBatch?.[0] as Bundle;
     const binaryEntry = batchBundle.entry?.find((e) => e.resource?.resourceType === 'Binary');
     const docRefEntry = batchBundle.entry?.find((e) => e.resource?.resourceType === 'DocumentReference');
 
     expect(binaryEntry).toBeDefined();
     expect(docRefEntry).toBeDefined();
 
-    // Binary should have securityContext pointing to the DocumentReference
+    // Binary should have securityContext
     const binaryResource = binaryEntry?.resource as any;
     expect(binaryResource.securityContext).toBeDefined();
     expect(binaryResource.securityContext.reference).toMatch(/^urn:uuid:/);
   });
 
-  test('Uses conditional update (PUT) for non-human resources', async () => {
+  // --- Conditional operations tests ---
+
+  test('Uses conditional create (POST+ifNoneExist) for priority resources', async () => {
+    const inputBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'patient-1',
+            identifier: [{ system: 'http://example.com/mrn', value: 'MRN-001' }],
+            name: [{ given: ['John'], family: 'Doe' }],
+          },
+        },
+      ],
+    };
+
+    const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+    await handler(medplum, makeEvent(inputBundle));
+
+    const patientBatch = executeBatchSpy.mock.calls.find(([bundle]) =>
+      (bundle as Bundle).entry?.some((e) => e.resource?.resourceType === 'Patient')
+    );
+    const patientEntry = (patientBatch?.[0] as Bundle).entry?.find((e) => e.resource?.resourceType === 'Patient');
+
+    expect(patientEntry?.request?.method).toBe('POST');
+    expect(patientEntry?.request?.ifNoneExist).toBeDefined();
+    expect(patientEntry?.resource?.id).toBeUndefined();
+  });
+
+  test('Uses conditional update (PUT) for non-priority resources', async () => {
     const inputBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'collection',
@@ -280,31 +364,14 @@ describe('FHIR Bundle Batching Bot', () => {
       ],
     };
 
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(inputBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
-
     const executeBatchSpy = vi.spyOn(medplum, 'executeBatch');
+    await handler(medplum, makeEvent(inputBundle));
 
-    await handler(medplum, {
-      bot,
-      input: binary,
-      contentType,
-      secrets,
-    });
-
-    // Find the batch with the Condition
     const condBatch = executeBatchSpy.mock.calls.find(([bundle]) =>
       (bundle as Bundle).entry?.some((e) => e.resource?.resourceType === 'Condition')
     );
-    expect(condBatch).toBeDefined();
+    const condEntry = (condBatch?.[0] as Bundle).entry?.find((e) => e.resource?.resourceType === 'Condition');
 
-    const condBundle = condBatch?.[0] as Bundle;
-    const condEntry = condBundle.entry?.find((e) => e.resource?.resourceType === 'Condition');
-
-    // Should use PUT for conditional update with identifier in the URL
     expect(condEntry?.request?.method).toBe('PUT');
     expect(condEntry?.request?.url).toContain('Condition?identifier=');
     expect(condEntry?.request?.url).toContain('http%3A%2F%2Fexample.com%2Fconditions');
