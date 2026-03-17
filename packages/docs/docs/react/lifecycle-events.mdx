@@ -36,15 +36,22 @@ The `useSubscription` hook (and direct `SubscriptionManager` use) provides lifec
 Use `onSubscriptionConnect` to refresh your local state when a subscription reconnects. This ensures you catch up on any events that may have been missed during the disconnection:
 
 ```tsx
+const [communications, setCommunications] = useState<Communication[]>([]);
+
 useSubscription(
   'Communication',
   (bundle: Bundle) => {
     // Handle incoming messages
   },
   {
-    onSubscriptionConnect: useCallback(() => {
+    onSubscriptionConnect: useCallback(async () => {
       // Refresh state when subscription reconnects
-      medplum.searchResources('Communication', { _sort: '-_lastUpdated' });
+      // Use cache: 'no-cache' to ensure we get the latest resources
+      const result = await medplum.searchResources('Communication',
+        { _sort: '-_lastUpdated' },
+        { cache: 'no-cache' }
+      );
+      setCommunications(result);
     }, [medplum]),
   }
 );
