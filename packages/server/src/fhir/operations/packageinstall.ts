@@ -3,7 +3,7 @@
 import { allOk, createReference, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import type { FhirRepository, FhirRequest, FhirResponse, FhirRouter } from '@medplum/fhir-router';
 import { processBatch } from '@medplum/fhir-router';
-import type { Attachment, Binary, PackageRelease } from '@medplum/fhirtypes';
+import type { Binary, PackageRelease } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
@@ -30,7 +30,7 @@ export async function packageInstallHandler(
   const { id } = req.params;
   const packageRelease = await repo.readResource<PackageRelease>('PackageRelease', id);
   const binary = await repo.readReference<Binary>({
-    reference: (packageRelease.content as Attachment).url as string,
+    reference: packageRelease.content.url as string,
   });
   const installation = await systemRepo.createResource({
     resourceType: 'PackageInstallation',
