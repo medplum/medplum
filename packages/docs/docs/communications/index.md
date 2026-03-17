@@ -8,7 +8,7 @@ FHIR supports messaging workflows through the [Communication](/docs/api/fhir/res
 
 These [Communications](/docs/api/fhir/resources/communication) can also be structured to support a variety of use cases, including:
 
-- [Asynchronous encounters](/docs/communications/async-encounters)
+- [Asynchronous encounters](/docs/communications/async-encounters/async-encounters)
 - [Threaded messages](/docs/communications/organizing-communications)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
 - Omni-channel messaging

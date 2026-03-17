@@ -163,30 +163,6 @@ curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask
 // end-block unreadCountCurl
 */
 
-const threadId = 'example-thread-id';
-
-// start-block unreadInThreadTs
-// Search for unread read-receipt Tasks in a specific thread (focus chain on Communication.partOf)
-await medplum.searchResources('Task', {
-  code: 'https://medplum.com/task-codes|read-receipt',
-  'focus:Communication.part-of': `Communication/${threadId}`,
-  owner: `Practitioner/${userId}`,
-  status: 'requested',
-});
-// end-block unreadInThreadTs
-
-/*
-// start-block unreadInThreadCli
-medplum get 'Task?code=https://medplum.com/task-codes|read-receipt&focus:Communication.part-of=Communication/{threadId}&owner=Practitioner/{id}&status=requested'
-// end-block unreadInThreadCli
-
-// start-block unreadInThreadCurl
-curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask-codes%7Cread-receipt&focus%3ACommunication.part-of=Communication%2F{threadId}&owner=Practitioner%2F{id}&status=requested' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block unreadInThreadCurl
-*/
-
 // start-block loadDraftsTs
 // Set `sender` on draft Communications at creation time so they can be queried per user
 await medplum.searchResources('Communication', {
