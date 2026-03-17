@@ -8209,6 +8209,22 @@
             }
           },
           {
+            "id" : "PackageRelease.package",
+            "path" : "PackageRelease.package",
+            "definition" : "The Package of this release.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Package"]
+            }],
+            "base" : {
+              "path" : "PackageRelease.package",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "PackageRelease.version",
             "path" : "PackageRelease.version",
             "definition" : "The version of the PackageRelease.",
@@ -8424,6 +8440,38 @@
               "path" : "PackageInstallation.identifier",
               "min" : 0,
               "max" : "*"
+            }
+          },
+          {
+            "id" : "PackageInstallation.package",
+            "path" : "PackageInstallation.package",
+            "definition" : "The Package of this installation.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Package"]
+            }],
+            "base" : {
+              "path" : "PackageInstallation.package",
+              "min" : 1,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "PackageInstallation.packageRelease",
+            "path" : "PackageInstallation.packageRelease",
+            "definition" : "The PackageRelease of this installation.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/PackageRelease"]
+            }],
+            "base" : {
+              "path" : "PackageInstallation.packageRelease",
+              "min" : 1,
+              "max" : "1"
             }
           },
           {
