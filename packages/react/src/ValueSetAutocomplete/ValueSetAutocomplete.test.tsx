@@ -142,10 +142,7 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
     await enterSearchString(input, 'test');
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ count: 25 }),
-      expect.anything()
-    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 25 }), expect.anything());
     spy.mockRestore();
   });
 
@@ -162,10 +159,7 @@ describe('AsyncAutocomplete', () => {
     const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
     await enterSearchString(input, 'test');
 
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({ count: 10 }),
-      expect.anything()
-    );
+    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ count: 10 }), expect.anything());
     spy.mockRestore();
   });
 
