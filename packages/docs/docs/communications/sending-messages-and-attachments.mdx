@@ -1,0 +1,96 @@
+---
+sidebar_position: 4
+title: Message Attachments
+tags: [communications, messaging, attachments]
+keywords: [payload, contentString, contentAttachment, contentReference, Binary]
+---
+
+# Message Attachments
+
+[`Communication.payload`](/docs/api/fhir/resources/communication) supports three content types. You can combine multiple entries in a single message.
+
+| Content Type        | Use Case                           | Example                                             |
+| ------------------- | ---------------------------------- | --------------------------------------------------- |
+| `contentString`     | Plain text messages                | `"The specimen has been received."`                 |
+| `contentAttachment` | Files (images, PDFs, documents)    | Lab report PDF, wound photo                         |
+| `contentReference`  | References to other FHIR resources | Link to a `DiagnosticReport` or `DocumentReference` |
+
+## Upload a file
+
+Use `medplum.createBinary()` to upload a file and get back a URL you can reference.
+
+```ts
+const binary = await medplum.createBinary(file, 'lab-report.pdf', 'application/pdf');
+```
+
+## Send a message with an attachment
+
+Reference the uploaded binary in `contentAttachment`:
+
+```ts
+const messageWithAttachment = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [
+    {
+      contentAttachment: {
+        contentType: 'application/pdf',
+        url: binary.url,
+        title: 'lab-report.pdf',
+      },
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+```
+
+## Send a message with both text and an attachment
+
+Include multiple entries in the `payload` array:
+
+```ts
+const mixedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [
+    { contentString: 'Here are the lab results we discussed.' },
+    {
+      contentAttachment: {
+        contentType: 'application/pdf',
+        url: binary.url,
+        title: 'lab-report.pdf',
+      },
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+```
+
+:::caution
+`contentAttachment` stores metadata and a URL reference — not the file bytes themselves. The binary lives as a separate [`Binary`](/docs/api/fhir/resources/binary) resource. If you delete the Binary, the attachment URL will return a 404.
+:::
+
+## In your UI
+
+When rendering messages, iterate over the `payload` array and render each entry based on its type:
+
+- `contentString` — render as text
+- `contentAttachment` — render as a download link, inline image, or file preview based on `contentType`
+- `contentReference` — resolve the referenced resource and render appropriately
+
+If using `@medplum/react`, the [BaseChat component](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/BaseChat/BaseChat.tsx) handles attachment rendering. For other frameworks, check `contentType` to decide how to display each attachment.
+
+## See Also
+
+- [Organizing Communications](/docs/communications/organizing-communications) — thread structure and Communication elements
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API
