@@ -2,7 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Parameters } from '@medplum/fhirtypes';
+import type { Parameters, Reference } from '@medplum/fhirtypes';
+
+function buildProfileContext(profile: Reference): string {
+  const ref = `${profile.reference}`;
+
+  return `
+## CURRENT USER CONTEXT:
+The user making this request is:
+- Reference: ${ref}
+
+When the user says "I", "me", "my", or "who am I", they refer to this profile.
+When creating resources that need an author, owner, requester, or performer, use **${ref}** as the reference.
+
+When the user asks about themselves (e.g., "who am I", "show my profile", "show my info", "what are my details"),
+call fhir_request with GET **${ref}** to fetch their current data — do not answer from context alone.
+
+When the user asks about their own resources (e.g., "my tasks", "my appointments", "my observations"),
+query using the appropriate subject/owner/requester parameter pointing to **${ref}**.
+For example: GET Task?owner=${ref} or GET Appointment?actor=${ref}.
+`;
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -133,7 +153,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
   const userMessages: ChatMessage[] = JSON.parse(messagesParam.valueString);
   const model = modelParam?.valueString || 'gpt-4';
 
-  const messages = [SYSTEM_MESSAGE, ...userMessages];
+  let systemMessage = SYSTEM_MESSAGE;
+  if (event.requester?.reference) {
+    systemMessage = {
+          ...SYSTEM_MESSAGE,
+          content: SYSTEM_MESSAGE.content + buildProfileContext(event.requester),
+        };
+  }
+
+  const messages = [systemMessage, ...userMessages];
 
   const normalizedMessages = messages.map((msg) => {
     if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
