@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { execSync } from 'node:child_process';
-import { appendFileSync, closeSync, existsSync, openSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, openSync, unlinkSync } from 'node:fs';
 import path, { dirname } from 'node:path';
 import { agentMain } from './agent-main';
+import { SKIP_SERVICE_CLEANUP_PATH } from './app';
 import { createPidFile, registerAgentCleanup } from './pid';
 import { upgraderMain } from './upgrader';
 import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -20,6 +21,17 @@ export async function main(argv: string[]): Promise<void> {
     createPidFile('medplum-agent-upgrader');
     await upgraderMain(argv);
   } else if (argv[2] === '--remove-old-services') {
+    // Check if rollback was triggered - if so, skip service cleanup
+    if (existsSync(SKIP_SERVICE_CLEANUP_PATH)) {
+      console.log('Rollback detected (skip-service-cleanup flag present), skipping service cleanup');
+      try {
+        unlinkSync(SKIP_SERVICE_CLEANUP_PATH);
+      } catch (_err) {
+        // Ignore errors removing flag file
+      }
+      return;
+    }
+
     const logFileFd = openSync(TEMP_LOG_FILE, 'a');
 
     let allAgentServices: string[] = [];

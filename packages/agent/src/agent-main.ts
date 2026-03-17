@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
 import { RETRY_WAIT_DURATION_MS } from './constants';
 import { LoggerType, parseLoggerConfigFromArgs, WinstonWrapperLogger } from './logger';
+import { setShutdownCallback } from './pid';
 import type { AgentArgs } from './types';
 
 export async function agentMain(argv: string[]): Promise<App> {
@@ -78,13 +79,17 @@ export async function agentMain(argv: string[]): Promise<App> {
     mainLogger,
     channelLogger,
   });
-  await app.start();
 
-  process.on('SIGINT', async () => {
-    console.log('Gracefully shutting down from SIGINT (Ctrl-C)');
+  // Register shutdown callback before starting the app.
+  // This ensures graceful shutdown (including handoff signals for upgrades)
+  // even if start() fails partway through. The callback is invoked by the
+  // signal handlers in pid.ts when SIGINT/SIGTERM/SIGHUP is received.
+  setShutdownCallback(async () => {
+    mainLogger.info('Graceful shutdown initiated...');
     await app.stop();
-    process.exit();
   });
+
+  await app.start();
 
   return app;
 }
