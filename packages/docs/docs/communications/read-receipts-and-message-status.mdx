@@ -23,7 +23,7 @@ How you track sent, received, and read for messages depends on two things: wheth
 
 2. Do you need to search for unread messages via the API?
 
-- No → Use [Option B: Extension on thread header](#option-b-extension-on-thread-header). Not searchable, but works for groups; you can still show a "user up to date" dot and sort by timestamps.
+- No → Use [Option B: Extension on thread header](#option-b-extension-on-thread-header). Not searchable, but works for groups; you can still show a "user not up to date" dot and sort by timestamps.
 - Yes → Use [Option C: Task-based model](#option-c-task-based-model-groups--searchable). Most complex; supports group threads and searchable read receipts.
 
 ```mermaid
@@ -87,7 +87,7 @@ Limitation: Does not support group threads; one recipient per message only.
 Use this when you have group threads but do not need to search for unread messages via the API. Store per-participant read state in a custom [extension](https://www.hl7.org/fhir/extensibility.html) on the thread header [`Communication`](/docs/api/fhir/resources/communication) (the one with no `partOf`).
 
 Pros: Works for group threads; no extra resources beyond the thread header; simpler than the Task-based model.  
-Limitation: Not searchable via API — you cannot run a query like "all threads where Practitioner X has unread messages." You can still, for a thread you already have, read the extension and compare to the latest message to show a "user is up to date" dot and sort the thread list by last message timestamp.
+Limitation: Not searchable via API — you cannot run a query like "all threads where Practitioner X has unread messages." You can still, for a thread you already have, read the extension and compare to the latest message to show a "user is not up to date" dot and sort the thread list by last message timestamp.
 
 ### Thread Header With Read-State Extension
 
@@ -97,7 +97,9 @@ Limitation: Not searchable via API — you cannot run a query like "all threads 
 
 ### Update Last-Read When a User Views the Thread
 
-<MedplumCodeBlock language="ts" selectBlocks="patchThreadReadStateTs">
+Find the participant's read-state block by URL (e.g. with `getExtension` from `@medplum/core`), update `lastRead` and `lastReadAt`, then save with `updateResource` (PUT). Avoid patching by extension index (e.g. `/extension/0/...`), since the order of extensions can vary and other extensions may exist on the resource.
+
+<MedplumCodeBlock language="ts" selectBlocks="updateThreadReadStateTs">
   {ExampleCode}
 </MedplumCodeBlock>
 
@@ -108,15 +110,7 @@ Limitation: Not searchable via API — you cannot run a query like "all threads 
 Use this when you have group threads and need to search for unread messages via the API. Each "message needs to be read by recipient" is represented by a [`Task`](/docs/api/fhir/resources/task) with a dedicated code (e.g. `read-receipt`). Tasks are created when messages are sent and completed when the recipient reads.
 
 Pros: Supports group threads; read receipts are searchable (e.g. unread count, unread per thread).  
-Con: Most complex data model; requires creating and updating Task resources (typically via a [Bot](/docs/bots/bot-basics) on message create and when the user marks as read).
-
-### Create a Read-Receipt Task When a Message is Sent
-
-Typically done in a Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) create. Use `Task.code` to distinguish read-receipt Tasks from other Task types (e.g. response-routing).
-
-<MedplumCodeBlock language="ts" selectBlocks="createReadReceiptTaskTs">
-  {ExampleCode}
-</MedplumCodeBlock>
+Con: Most complex data model; requires creating and updating Task resources when messages are sent and when the user marks as read.
 
 ### Mark as Read
 

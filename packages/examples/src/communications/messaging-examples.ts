@@ -17,7 +17,8 @@ const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
 
 // start-block filterActiveThreadsTs
-// Used in the Thread Lifecycle page to show how to find open threads
+// Thread headers have no partOf; child messages have partOf set to the header.
+// part-of:missing=true therefore returns only thread headers, not individual messages.
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed,entered-in-error,stopped,unknown',
@@ -67,7 +68,7 @@ curl 'https://api.medplum.com/fhir/R4/Communication?recipient=Practitioner%2F%7B
 */
 
 // start-block threadHeaderWithReadExtensionTs
-// Option B: Thread header with extension for per-participant last-read state
+// Option B: Thread header with extension for per-participant last-read state (one block per participant)
 const threadWithReadState = {
   resourceType: 'Communication' as const,
   status: 'in-progress' as const,
@@ -79,6 +80,7 @@ const threadWithReadState = {
       extension: [
         { url: 'participant', valueReference: { reference: 'Practitioner/doctor-alice-smith' } },
         { url: 'lastRead', valueReference: { reference: 'Communication/latest-message-id' } },
+        { url: 'lastReadAt', valueDateTime: '2024-03-15T14:30:00.000Z' },
       ],
     },
   ],
@@ -88,16 +90,27 @@ const threadWithReadState = {
 // eslint-disable-next-line no-void
 void threadWithReadState;
 
-// start-block patchThreadReadStateTs
-// Option B: Update a participant's last-read when they view the thread
-await medplum.patchResource('Communication', threadHeader.id, [
-  {
-    op: 'replace',
-    path: '/extension/0/extension/1/valueReference',
-    value: { reference: `Communication/${latestMessageId}` },
-  },
-]);
-// end-block patchThreadReadStateTs
+// start-block updateThreadReadStateTs
+// Option B: Find this participant's read-state block by URL, update lastRead and lastReadAt, then PUT
+const threadReadStateUrl = 'https://medplum.com/fhir/StructureDefinition/thread-read-state';
+const header = await medplum.readResource('Communication', threadHeader.id);
+const currentUserRef = getReferenceString(profile);
+const readStateBlock = header.extension?.find((ext) => {
+  if (ext.url !== threadReadStateUrl || !ext.extension) return false;
+  const participantExt = ext.extension.find((e: { url?: string }) => e.url === 'participant');
+  return (participantExt as { valueReference?: { reference?: string } })?.valueReference?.reference === currentUserRef;
+});
+if (readStateBlock?.extension) {
+  const lastReadExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastRead');
+  const lastReadAtExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastReadAt');
+  if (lastReadExt) (lastReadExt as { valueReference?: { reference: string } }).valueReference = { reference: `Communication/${latestMessageId}` };
+  else readStateBlock.extension.push({ url: 'lastRead', valueReference: { reference: `Communication/${latestMessageId}` } });
+  const now = new Date().toISOString();
+  if (lastReadAtExt) (lastReadAtExt as { valueDateTime?: string }).valueDateTime = now;
+  else readStateBlock.extension.push({ url: 'lastReadAt', valueDateTime: now });
+  await medplum.updateResource(header);
+}
+// end-block updateThreadReadStateTs
 
 // start-block createReadReceiptTaskTs
 // Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
