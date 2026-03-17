@@ -13,10 +13,13 @@ import {
   OperationOutcomeError,
   Operator,
   resolveId,
+  sleep,
+  tooManyRequests,
 } from '@medplum/core';
 import type { AccessPolicy, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
+import { randomUUID } from 'node:crypto';
 import type Mail from 'nodemailer/lib/mailer';
 import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
@@ -25,10 +28,12 @@ import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
-import { getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
+import { getCacheRedis } from '../redis';
 import { makeValidationMiddleware } from '../util/validator';
 
 export const inviteValidator = makeValidationMiddleware([
@@ -70,48 +75,83 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const systemRepo = await getProjectSystemRepo(request.project);
-  const logger = getLogger();
-
   if (request.email) {
     request.email = request.email.toLowerCase();
   }
 
+  // Serialize all invites for the same email via a distributed Redis lock.
+  // This prevents race conditions between concurrent invites that could bypass
+  // the opposite-scope membership conflict check across shards.
+  if (request.email) {
+    return withInviteLock(request.email, () => inviteUserImpl(request));
+  }
+  return inviteUserImpl(request);
+}
+
+const INVITE_LOCK_TTL_SECONDS = 30;
+const INVITE_LOCK_MAX_ATTEMPTS = 10;
+const INVITE_LOCK_RETRY_MS = 500;
+
+async function withInviteLock<T>(email: string, fn: () => Promise<T>): Promise<T> {
+  const redis = getCacheRedis(GLOBAL_SHARD_ID);
+  const lockKey = `invite:lock:${email}`;
+  const lockValue = randomUUID();
+
+  let acquired = false;
+  for (let attempt = 0; attempt < INVITE_LOCK_MAX_ATTEMPTS; attempt++) {
+    const result = await redis.set(lockKey, lockValue, 'EX', INVITE_LOCK_TTL_SECONDS, 'NX');
+    if (result === 'OK') {
+      acquired = true;
+      break;
+    }
+    await sleep(INVITE_LOCK_RETRY_MS);
+  }
+
+  if (!acquired) {
+    throw new OperationOutcomeError(tooManyRequests);
+  }
+
+  try {
+    return await fn();
+  } finally {
+    // Compare-and-delete: only release if we still own the lock
+    await redis.eval(
+      `if redis.call("get",KEYS[1])==ARGV[1] then return redis.call("del",KEYS[1]) else return 0 end`,
+      1,
+      lockKey,
+      lockValue
+    );
+  }
+}
+
+async function inviteUserImpl(request: ServerInviteRequest): Promise<ServerInviteResponse> {
+  const logger = getLogger();
   const { project, email } = request;
   let existingUser = false;
   let passwordResetUrl: string | undefined;
 
-  // Upsert User resource
   const userResource = await makeUserResource(request);
+  const isProjectScoped = !!userResource.project;
+
+  const globalRepo = getGlobalSystemRepo();
+  const projectRepo = await getProjectSystemRepo(project);
+
+  // User lives on the shard matching its scope:
+  // project-scoped users on the project shard, server-scoped users on global
+  const userRepo = isProjectScoped ? projectRepo : globalRepo;
+
   let user: WithId<User>;
   if (email) {
-    const { resource: result, outcome } = await systemRepo.withTransaction(
+    // Check for an existing membership at the opposite scope for this email/project.
+    // Safe outside a transaction because the Redis lock serializes per-email.
+    // We query each shard directly to avoid sync-lag blind spots:
+    // opposite-scope User on its native shard, Membership on the project shard.
+    if (!request.forceNewMembership) {
+      await checkOppositeScopeConflict(globalRepo, projectRepo, email, project, isProjectScoped);
+    }
+
+    const { resource: result, outcome } = await userRepo.withTransaction(
       async () => {
-        // If inviting with an email address, check for existing memberships
-        // tied to this project/email combination that are at a different scope
-        // than the one we would create. This avoids confusion of someone
-        // having separate server-scoped and project-scoped user records.
-        //
-        // This check is bypassed if the caller explicitly passes `forceNewMembership: true`
-        if (!request.forceNewMembership) {
-          const projectFilter = userResource.project
-            ? { code: 'user:User.project', operator: Operator.MISSING, value: 'true' }
-            : { code: 'user:User.project', operator: Operator.EXACT, value: `Project/${project.id}` };
-
-          const existingMemberships = await systemRepo.searchResources<ProjectMembership>({
-            resourceType: 'ProjectMembership',
-            filters: [
-              { code: 'user:User.email', operator: Operator.EXACT, value: email },
-              { code: 'project', operator: Operator.EXACT, value: `Project/${project.id}` },
-              projectFilter,
-            ],
-          });
-
-          if (existingMemberships.length > 0) {
-            throw new OperationOutcomeError(conflict('User is already a member of this project'));
-          }
-        }
-
         const searchRequest: SearchRequest<User> = {
           resourceType: 'User',
           filters: [
@@ -120,38 +160,94 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
               operator: Operator.EXACT,
               value: email,
             },
-            userResource.project
+            isProjectScoped
               ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
               : { code: 'project', operator: Operator.MISSING, value: 'true' },
           ],
         };
 
-        return systemRepo.conditionalCreate(userResource, searchRequest);
+        return userRepo.conditionalCreate(userResource, searchRequest);
       },
       { serializable: true }
     );
     user = result;
     existingUser = !isCreated(outcome);
   } else {
-    user = await systemRepo.createResource(userResource);
+    user = await userRepo.createResource(userResource);
   }
 
   logger.info('User created', { id: user.id, email });
   if (!existingUser) {
-    passwordResetUrl = await resetPassword(systemRepo, user, 'invite');
+    passwordResetUrl = await resetPassword(userRepo, user, 'invite');
   }
 
-  // Upsert profile Resource (e.g. Patient or Practitioner)
-  const profile = await upsertProfileResource(systemRepo, request);
-
-  // Upsert ProjectMembership resource to connect User to profile resource in the given Project
-  const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
+  // Profile + Membership always on the project shard
+  const profile = await upsertProfileResource(projectRepo, request);
+  const membership = await upsertProjectMembership(projectRepo, request, project, user, profile);
 
   if (email && request.sendEmail !== false) {
-    await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
+    await sendInviteEmail(projectRepo, request, user, existingUser, passwordResetUrl);
   }
 
   return { user, profile, membership };
+}
+
+/**
+ * Checks for an existing membership at the opposite scope for the same email/project.
+ * Queries each shard directly to avoid sync-lag blind spots:
+ * - Opposite-scope User is looked up on its native shard (global for server-scoped, project shard for project-scoped)
+ * - Membership is always looked up on the project shard (where all project memberships live)
+ *
+ * Chained search params (e.g. user:User.email) cannot be used here because they require
+ * the User and ProjectMembership to be on the same database, which is not guaranteed across shards.
+ * @param globalRepo - The global system repository.
+ * @param projectRepo - The project system repository.
+ * @param email - The email of the user.
+ * @param project - The project of the user.
+ * @param isProjectScoped - Whether the user is project-scoped.
+ */
+async function checkOppositeScopeConflict(
+  globalRepo: SystemRepository,
+  projectRepo: SystemRepository,
+  email: string,
+  project: WithId<Project>,
+  isProjectScoped: boolean
+): Promise<void> {
+  // Find the opposite-scope user on its native shard
+  const oppositeUser = isProjectScoped
+    ? // We're creating project-scoped — look for server-scoped user (lives on global)
+      await globalRepo.searchOne<User>({
+        resourceType: 'User',
+        filters: [
+          { code: 'email', operator: Operator.EXACT, value: email },
+          { code: 'project', operator: Operator.MISSING, value: 'true' },
+        ],
+      })
+    : // We're creating server-scoped — look for project-scoped user (lives on project shard)
+      await projectRepo.searchOne<User>({
+        resourceType: 'User',
+        filters: [
+          { code: 'email', operator: Operator.EXACT, value: email },
+          { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` },
+        ],
+      });
+
+  if (!oppositeUser) {
+    return;
+  }
+
+  // Memberships always live on the project shard
+  const membership = await projectRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [
+      { code: 'user', operator: Operator.EQUALS, value: getReferenceString(oppositeUser) },
+      { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` },
+    ],
+  });
+
+  if (membership) {
+    throw new OperationOutcomeError(conflict('User is already a member of this project'));
+  }
 }
 
 async function makeUserResource(request: ServerInviteRequest): Promise<User> {

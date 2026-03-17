@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString, tooManyRequests } from '@medplum/core';
 import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -21,6 +21,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
 import type { ShardPool } from '../sharding/sharding-types';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import { getCacheRedis } from '../redis';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -1407,5 +1408,93 @@ describe('Admin Invite', () => {
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
+  });
+
+  test('Invite lock contention with retry', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Mock Redis set to fail on first attempt, then succeed
+    const redis = getCacheRedis(GLOBAL_SHARD_ID);
+    const originalSet = redis.set.bind(redis);
+    let callCount = 0;
+    const setSpy = jest.spyOn(redis, 'set').mockImplementation((...args: Parameters<typeof redis.set>) => {
+      const key = args[0] as string;
+      if (key.startsWith('invite:lock:')) {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(null) as ReturnType<typeof redis.set>;
+        }
+      }
+      return originalSet(...args);
+    });
+
+    try {
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+          sendEmail: false,
+        });
+
+      expect(res.status).toBe(200);
+      expect(callCount).toBeGreaterThanOrEqual(2);
+    } finally {
+      setSpy.mockRestore();
+    }
+  });
+
+  test('Invite lock acquisition failure returns 429', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Mock Redis set to always fail for invite locks
+    const redis = getCacheRedis(GLOBAL_SHARD_ID);
+    const originalSet = redis.set.bind(redis);
+    const setSpy = jest.spyOn(redis, 'set').mockImplementation((...args: Parameters<typeof redis.set>) => {
+      const key = args[0] as string;
+      if (key.startsWith('invite:lock:')) {
+        return Promise.resolve(null) as ReturnType<typeof redis.set>;
+      }
+      return originalSet(...args);
+    });
+
+    try {
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+          sendEmail: false,
+        });
+
+      expect(res.status).toBe(429);
+      expect(res.body.id).toBe(tooManyRequests.id);
+    } finally {
+      setSpy.mockRestore();
+    }
   });
 });
