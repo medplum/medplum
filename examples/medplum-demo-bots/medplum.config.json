@@ -122,7 +122,7 @@
     },
     {
       "name": "ai-fhir-request-tools",
-      "id": "5c1c0896-19da-419e-a598-c1632474001f",
+      "id": "",
       "source": "src/spaces-bots/fhir-translator-bot.ts",
       "dist": "dist/spaces-bots/fhir-translator-bot.js"
     },
@@ -134,7 +134,7 @@
     },
     {
       "name": "ai-component-generator-sse",
-      "id": "9f736bb7-e44f-4933-9f29-2d1392fa12d3",
+      "id": "",
       "source": "src/spaces-bots/fhir-visualizer-bot.ts",
       "dist": "dist/spaces-bots/fhir-visualizer-bot.js"
     }
