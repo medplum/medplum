@@ -463,9 +463,6 @@ Binary resources cannot use compartment-based access controls. They require expl
   "resourceType": "AccessPolicy",
   "name": "Patient Access Policy Template",
   "id": "patient-access-policy-template",
-  "compartment": {
-    "reference": "%patient"
-  },
   "resource": [
     {
       "resourceType": "Patient",
@@ -544,13 +541,6 @@ Binary resources cannot use compartment-based access controls. They require expl
     {
       "resourceType": "Slot",
       "interaction": ["create", "read", "search"],
-      "criteria": "Slot?_compartment=%patient"
-    },
-    {
-      "resourceType": "Slot",
-      "criteria": "Slot?_compartment:not=%patient",
-      "hiddenFields": ["meta", "history"],
-      "interaction": ["read", "search"]
     }
   ]
 }
