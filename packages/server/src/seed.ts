@@ -1,11 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
-import type { ClientApplication, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { bcryptHashPassword } from './auth/utils';
+import type { ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { bcryptHashPassword, createProfile, createProjectMembership } from './auth/utils';
 import type { MedplumServerConfig } from './config/types';
 import { r4ProjectId } from './constants';
 import { DatabaseMode, getDatabasePool, withPoolClient } from './database';
+import { createProjectResource } from './fhir/operations/projectinit';
 import type { SystemRepository } from './fhir/repo';
 import { getShardSystemRepo } from './fhir/repo';
 import { GLOBAL_SHARD_ID } from './fhir/sharding';
@@ -82,7 +83,7 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumSer
     passwordHash,
   });
 
-  const superAdminProject = await systemRepo.createResource<Project>({
+  const { project: superAdminProject } = await createProjectResource(systemRepo, {
     resourceType: 'Project',
     name: 'Super Admin',
     owner: createReference(superAdmin),
@@ -90,38 +91,13 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumSer
     strictMode: true,
   });
 
+  const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
+  await createProjectMembership(systemRepo, superAdmin, superAdminProject, practitioner, { admin: true });
+
   await systemRepo.updateResource<Project>({
     resourceType: 'Project',
     id: r4ProjectId,
     name: 'FHIR R4',
-  });
-
-  const practitioner = await systemRepo.createResource<Practitioner>({
-    resourceType: 'Practitioner',
-    meta: {
-      project: superAdminProject.id,
-    },
-    name: [
-      {
-        given: [firstName],
-        family: lastName,
-      },
-    ],
-    telecom: [
-      {
-        system: 'email',
-        use: 'work',
-        value: email,
-      },
-    ],
-  });
-
-  await systemRepo.createResource<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    project: createReference(superAdminProject),
-    user: createReference(superAdmin),
-    profile: createReference(practitioner),
-    admin: true,
   });
 
   if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
