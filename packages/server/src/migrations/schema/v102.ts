@@ -27,6 +27,11 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
+  "name" TEXT,
+  "status" TEXT,
+  "__category" UUID[],
+  "__categoryText" TEXT[],
+  "__categorySort" TEXT,
   "___compartmentIdentifierSort" TEXT
 )`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package_lastUpdated_idx" ON "Package" ("lastUpdated")`);
@@ -41,6 +46,10 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package___sharedTokensTextTrgm_idx" ON "Package" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package____tag_idx" ON "Package" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package____tagTextTrgm_idx" ON "Package" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package_name_idx" ON "Package" ("name")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package_status_idx" ON "Package" ("status")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package___category_idx" ON "Package" USING gin ("__category")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "Package___categoryTextTrgm_idx" ON "Package" USING gin (token_array_to_text("__categoryText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "Package_History" (
   "versionId" UUID PRIMARY KEY,
   "id" UUID NOT NULL,
@@ -72,7 +81,10 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
-  "___compartmentIdentifierSort" TEXT
+  "package" TEXT,
+  "version" TEXT,
+  "___compartmentIdentifierSort" TEXT,
+  "__packageIdentifierSort" TEXT
 )`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease_lastUpdated_idx" ON "PackageRelease" ("lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease_projectId_lastUpdated_idx" ON "PackageRelease" ("projectId", "lastUpdated")`);
@@ -86,6 +98,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease___sharedTokensTextTrgm_idx" ON "PackageRelease" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease____tag_idx" ON "PackageRelease" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease____tagTextTrgm_idx" ON "PackageRelease" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease_package_idx" ON "PackageRelease" ("package")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageRelease_version_idx" ON "PackageRelease" ("version")`);
   await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "PackageRelease_History" (
   "versionId" UUID PRIMARY KEY,
   "id" UUID NOT NULL,
@@ -117,7 +131,11 @@ export async function run(client: PoolClient): Promise<void> {
   "___tag" UUID[],
   "___tagText" TEXT[],
   "___tagSort" TEXT,
-  "___compartmentIdentifierSort" TEXT
+  "package" TEXT,
+  "status" TEXT,
+  "version" TEXT,
+  "___compartmentIdentifierSort" TEXT,
+  "__packageIdentifierSort" TEXT
 )`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation_lastUpdated_idx" ON "PackageInstallation" ("lastUpdated")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation_projectId_lastUpdated_idx" ON "PackageInstallation" ("projectId", "lastUpdated")`);
@@ -131,6 +149,9 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation___sharedTokensTextTrgm_idx" ON "PackageInstallation" USING gin (token_array_to_text("__sharedTokensText") gin_trgm_ops)`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation____tag_idx" ON "PackageInstallation" USING gin ("___tag")`);
   await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation____tagTextTrgm_idx" ON "PackageInstallation" USING gin (token_array_to_text("___tagText") gin_trgm_ops)`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation_package_idx" ON "PackageInstallation" ("package")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation_status_idx" ON "PackageInstallation" ("status")`);
+  await fns.query(client, results, `CREATE INDEX IF NOT EXISTS "PackageInstallation_version_idx" ON "PackageInstallation" ("version")`);
   await fns.query(client, results, `CREATE TABLE IF NOT EXISTS "PackageInstallation_History" (
   "versionId" UUID PRIMARY KEY,
   "id" UUID NOT NULL,
