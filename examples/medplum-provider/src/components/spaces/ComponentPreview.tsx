@@ -36,6 +36,7 @@ interface ComponentPreviewProps {
 const scope = {
   ...Recharts,
   ...Mantine,
+  ChartTooltip: Recharts.Tooltip,
 };
 
 function transformCode(code: string): string {
