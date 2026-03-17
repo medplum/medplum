@@ -118,9 +118,7 @@ void readReceiptTask;
 
 // start-block markReadReceiptTaskTs
 // Option C: Mark read-receipt Task completed when user reads the message
-await medplum.patchResource('Task', readReceiptTaskId, [
-  { op: 'replace', path: '/status', value: 'completed' },
-]);
+await medplum.patchResource('Task', readReceiptTaskId, [{ op: 'replace', path: '/status', value: 'completed' }]);
 // end-block markReadReceiptTaskTs
 
 // start-block unreadInThreadTs
