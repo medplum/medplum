@@ -66,6 +66,7 @@ module "rds" {
   vpc_security_group_ids = [aws_security_group.database.id]
   db_subnet_group_name   = aws_db_subnet_group.medplum.name
   publicly_accessible    = false
+  multi_az               = var.environment == "prod"
 
   backup_retention_period = var.environment == "prod" ? 30 : 7
   skip_final_snapshot     = var.environment != "prod"

@@ -80,6 +80,6 @@ resource "aws_kms_alias" "medplum" {
 resource "aws_secretsmanager_secret" "medplum" {
   name                    = "${local.name_prefix}/medplum"
   kms_key_id              = aws_kms_key.medplum.id
-  recovery_window_in_days = 7
+  recovery_window_in_days = 0
   tags                    = var.tags
 }

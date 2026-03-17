@@ -1,0 +1,14 @@
+global:
+  cloudProvider: aws
+  configSource:
+    # Format: aws:<region>:<ssm_config_path>
+    type: "aws:ca-central-1:/medplum-dev-1/"
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::462446642923:role/medplum-dev-1-server-role"
+
+ingress:
+  deploy: true
+  domain: "api.darren-aws.foomedical.dev"
+  acmCertificateArn: "arn:aws:acm:ca-central-1:462446642923:certificate/b326c8f3-beb8-4063-8e7b-6c06f837c1cc"
