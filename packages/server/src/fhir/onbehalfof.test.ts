@@ -42,16 +42,20 @@ describe('On Behalf Of', () => {
 
       const org1 = 'Organization/' + randomUUID();
       const testAccount1 = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        compartment: { reference: org1 },
-        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org1 }],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: org1 },
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org1 }],
+        },
       });
 
       const org2 = 'Organization/' + randomUUID();
       const testAccount2 = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        compartment: { reference: org2 },
-        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org2 }],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: org2 },
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org2 }],
+        },
       });
 
       // Create a patient on behalf of test account 1
@@ -154,16 +158,20 @@ describe('On Behalf Of', () => {
 
       const org1 = 'Organization/' + randomUUID();
       const testAccount1 = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        compartment: { reference: org1 },
-        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org1 }],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: org1 },
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org1 }],
+        },
       });
 
       const org2 = 'Organization/' + randomUUID();
       const testAccount2 = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        compartment: { reference: org2 },
-        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org2 }],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: org2 },
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + org2 }],
+        },
       });
 
       // Create a patient on behalf of test account 1
@@ -343,9 +351,11 @@ describe('On Behalf Of', () => {
       // They will be the "onBehalfOf" users for all HTTP requests
       const account = 'Organization/' + randomUUID();
       const testAccount = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        compartment: { reference: account },
-        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + account }],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: account },
+          resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + account }],
+        },
       });
 
       // Create a patient on behalf of test account 1

@@ -106,20 +106,22 @@ describe('GraphQL', () => {
 
       // Invite Bob with the access policy
       const bobRegistration = await addTestUser(aliceRegistration.project, {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Encounter',
-          },
-          {
-            resourceType: 'Patient',
-            hiddenFields: ['telecom'],
-          },
-          {
-            resourceType: 'ServiceRequest',
-            criteria: 'ServiceRequest?status=completed',
-          },
-        ],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Encounter',
+            },
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['telecom'],
+            },
+            {
+              resourceType: 'ServiceRequest',
+              criteria: 'ServiceRequest?status=completed',
+            },
+          ],
+        },
       });
       bobAccessToken = bobRegistration.accessToken;
     });
@@ -1042,25 +1044,29 @@ describe('GraphQL', () => {
       hasId(obs);
 
       const { accessToken: restrictedAccessToken } = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Patient',
-          },
-        ],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+            },
+          ],
+        },
       });
 
       const { accessToken: hiddenBodySiteAccessToken } = await addTestUser(project, {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Patient',
-          },
-          {
-            resourceType: 'Observation',
-            hiddenFields: ['bodySite'],
-          },
-        ],
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+            },
+            {
+              resourceType: 'Observation',
+              hiddenFields: ['bodySite'],
+            },
+          ],
+        },
       });
 
       // No AccessPolicy

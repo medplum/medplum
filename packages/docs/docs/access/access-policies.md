@@ -508,6 +508,10 @@ Binary resources cannot use compartment-based access controls. They require expl
       "criteria": "Subscription?type=websocket&author=%profile"
     },
     {
+      "resourceType": "HealthcareService",
+      "readonly": true
+    },
+    {
       "resourceType": "Organization",
       "readonly": true
     },

@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
-import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
+import { createReference, getReferenceString, isDefined, parseSearchRequest } from '@medplum/core';
 import type {
+  AccessPolicy,
   Appointment,
   Bundle,
   CodeableConcept,
@@ -20,7 +21,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getGlobalSystemRepo } from '../../fhir/repo';
 import type { TestProjectResult } from '../../test.setup';
-import { createTestProject } from '../../test.setup';
+import { addTestUser, createTestProject } from '../../test.setup';
 import type {
   SchedulingParametersExtension,
   SchedulingParametersExtensionExtension,
@@ -1444,5 +1445,183 @@ describe('scheduling flow integration test', () => {
 
     expect(bookResponse.body).not.toHaveProperty('issue');
     expect(bookResponse.status).toBe(201);
+  });
+
+  test('booking a slot as a patient with a minimal access policy', async () => {
+    const practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.project.id },
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/timezone',
+          valueCode: 'America/Phoenix',
+        },
+      ],
+    });
+
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'serviceType',
+              valueCodeableConcept: officeVisit,
+            },
+            {
+              url: 'availability',
+              extension: [
+                {
+                  url: 'availableTime',
+                  extension: [
+                    { url: 'daysOfWeek', valueCode: 'tue' },
+                    { url: 'daysOfWeek', valueCode: 'wed' },
+                    { url: 'daysOfWeek', valueCode: 'thu' },
+                    { url: 'availableStartTime', valueTime: '09:00:00' },
+                    { url: 'availableEndTime', valueTime: '17:00:00' },
+                  ],
+                },
+              ],
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 60, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    const minimalPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Practitioner',
+          interaction: ['read'],
+        },
+        {
+          resourceType: 'HealthcareService',
+          interaction: ['search'],
+        },
+        {
+          resourceType: 'Schedule',
+          interaction: ['read'],
+        },
+        {
+          resourceType: 'Patient',
+          criteria: 'Patient?_compartment=%patient',
+          interaction: ['read'],
+        },
+        {
+          resourceType: 'Slot',
+          interaction: ['create', 'search'],
+        },
+        {
+          resourceType: 'Appointment',
+          interaction: ['create'],
+          criteria: 'Appointment?_compartment=%patient',
+        },
+      ],
+    };
+
+    const { accessToken, profile } = await addTestUser(project.project, {
+      accessPolicy: minimalPolicy,
+      resourceType: 'Patient',
+    });
+
+    const start = '2026-01-28T16:00:00Z'; // 09:00 America/Phoenix (UTC-7)
+    const end = '2026-01-28T17:00:00Z'; // 10:00 America/Phoenix
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              start,
+              end,
+              status: 'free',
+              serviceType: [officeVisit],
+            } satisfies Slot,
+          },
+          {
+            name: 'patient-reference',
+            valueReference: createReference(profile),
+          },
+        ],
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toEqual(201);
+
+    const entries = ((response.body as Bundle).entry ?? []).map((entry) => entry.resource).filter(isDefined);
+
+    const appointments = entries.filter(isAppointment);
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0]).toHaveProperty('status', 'booked');
+    expect(appointments[0]).toHaveProperty('start', start);
+    expect(appointments[0]).toHaveProperty('end', end);
+    expect(appointments[0].participant).toContainEqual({
+      actor: createReference(profile),
+      status: 'accepted',
+    });
+
+    const slots = entries.filter(isSlot);
+    expect(slots).toHaveLength(1);
+    expect(slots[0]).toHaveProperty('status', 'busy');
+
+    // Test that another patient with the same access policy can read the Slot
+    // created, and that it has no PHI in it.
+    const otherPatient = await addTestUser(project.project, {
+      accessPolicy: minimalPolicy,
+      resourceType: 'Patient',
+    });
+
+    const otherPatientResponse = await request
+      .get('/fhir/R4/Slot')
+      .query({ schedule: getReferenceString(schedule) })
+      .set('Authorization', `Bearer ${otherPatient.accessToken}`)
+      .send();
+
+    expect(otherPatientResponse.body).not.toHaveProperty('issue');
+    expect(otherPatientResponse.status).toEqual(200);
+    expect(otherPatientResponse.body).toHaveProperty('entry');
+    expect(otherPatientResponse.body.entry).toHaveLength(1);
+    expect(otherPatientResponse.body.entry[0].resource).toEqual({
+      resourceType: 'Slot',
+      schedule: {
+        reference: `Schedule/${schedule.id}`,
+      },
+      start: '2026-01-28T16:00:00Z',
+      end: '2026-01-28T17:00:00Z',
+      status: 'busy',
+      serviceType: [
+        {
+          coding: [
+            {
+              system: 'https://example.com/fhir',
+              code: 'office-visit',
+            },
+          ],
+        },
+      ],
+      id: slots[0].id,
+      meta: {
+        versionId: slots[0].meta?.versionId,
+        lastUpdated: slots[0].meta?.lastUpdated,
+      },
+    });
+
+    // explicit check against a possible problem: creating the Slot does not
+    // set `meta.author` to the creating Patient, which could leak PHI.
+    expect(otherPatientResponse.body.entry[0].resource.meta).not.toHaveProperty('author');
   });
 });
