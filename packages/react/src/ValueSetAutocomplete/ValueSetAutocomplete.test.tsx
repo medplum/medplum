@@ -131,6 +131,7 @@ describe('AsyncAutocomplete', () => {
       <MedplumProvider medplum={medplum}>
         <ValueSetAutocomplete
           binding="x"
+          onChange={jest.fn()}
           placeholder="Test"
           maxValues={1}
           expandParams={{ count: 25 }}
@@ -154,7 +155,7 @@ describe('AsyncAutocomplete', () => {
 
     render(
       <MedplumProvider medplum={medplum}>
-        <ValueSetAutocomplete binding="x" placeholder="Test" maxValues={1} />
+        <ValueSetAutocomplete binding="x" onChange={jest.fn()} placeholder="Test" maxValues={1} />
       </MedplumProvider>
     );
 
