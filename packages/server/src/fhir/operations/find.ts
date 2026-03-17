@@ -81,7 +81,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypeTokens = params['service-type']?.split(',');
+  const serviceTypeTokens = params['service-type'].split(',');
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
