@@ -12,20 +12,21 @@ const universalAccessPolicy: AccessPolicyResource = {
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-export const protectedResourceTypes = [
-  'DomainConfiguration',
-  'JsonWebKey',
-  'Login',
-  'Package',
-  'PackageRelease',
-  'PackageInstallation',
-];
+export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login'];
 
 /**
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = ['UserSecurityRequest', 'Project', 'ProjectMembership', 'User'];
+export const projectAdminResourceTypes = [
+  'Package',
+  'PackageRelease',
+  'PackageInstallation',
+  'Project',
+  'ProjectMembership',
+  'User',
+  'UserSecurityRequest',
+];
 
 /**
  * Interactions with a resource that can be controlled via an access policy.

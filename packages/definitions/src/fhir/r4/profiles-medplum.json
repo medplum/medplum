@@ -8516,7 +8516,11 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Practitioner"]
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
+                "https://medplum.com/fhir/StructureDefinition/ClientApplication",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
             }],
             "base": {
               "path" : "PackageInstallation.installedBy",

@@ -57,6 +57,7 @@ import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
+import { packageInstallHandler } from './operations/packageinstall';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
@@ -361,6 +362,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // ClientApplication $launch
   router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+
   // Rotate client secret
   router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
@@ -372,6 +374,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Appointment $book operation
   router.add('POST', '/Appointment/$book', appointmentBookHandler);
+
+  // PackageRelease $install operation
+  router.add('POST', '/PackageRelease/:id/$install', packageInstallHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
