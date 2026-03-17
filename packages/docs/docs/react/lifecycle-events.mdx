@@ -41,8 +41,9 @@ const [communications, setCommunications] = useState<Communication[]>([]);
 useSubscription(
   'Communication',
   (bundle: Bundle) => {
-    // Extract the new communication from the incoming bundle
-    // In a subscription bundle, the resource is typically in entry[1]
+    // Subscription bundles have a specific structure:
+    // - entry[0] contains SubscriptionStatus (metadata about the event)
+    // - entry[1] contains the actual resource that triggered the subscription
     const incoming = bundle.entry?.[1]?.resource as Communication | undefined;
     if (!incoming) {
       return;
