@@ -31,7 +31,10 @@ describe('$clear-all-ws-subs', () => {
       .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
-      .send({});
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'shardId', valueString: shardId }],
+      });
 
     expect(res.status).toBe(403);
   });
@@ -45,7 +48,10 @@ describe('$clear-all-ws-subs', () => {
       .type('json')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'projectId', valueString: 'not-a-uuid' }],
+        parameter: [
+          { name: 'shardId', valueString: shardId },
+          { name: 'projectId', valueString: 'not-a-uuid' },
+        ],
       });
 
     expect(res.status).toBe(400);
@@ -96,7 +102,10 @@ describe('$clear-all-ws-subs', () => {
       .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
-      .send({});
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'shardId', valueString: shardId }],
+      });
 
     expect(res.status).toBe(200);
 
@@ -165,7 +174,10 @@ describe('$clear-all-ws-subs', () => {
         .type('json')
         .send({
           resourceType: 'Parameters',
-          parameter: [{ name: 'projectId', valueString: projectId1 }],
+          parameter: [
+            { name: 'shardId', valueString: shardId },
+            { name: 'projectId', valueString: projectId1 },
+          ],
         });
 
       expect(res.status).toBe(200);

@@ -7,8 +7,11 @@ import { requireSuperAdmin } from '../../admin/super';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import type { CacheEntry } from '../repo';
-import { TODO_SHARD_ID } from '../sharding';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import {
+  buildOutputParameters,
+  makeOperationDefinitionParameter as param,
+  parseInputParameters,
+} from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -21,6 +24,7 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
+    param('in', 'shardId', 'string', 1, '1'),
     {
       use: 'in',
       name: 'projectId',
@@ -55,11 +59,11 @@ const operation: OperationDefinition = {
 export async function clearAllWsSubsHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const { projectId } = parseInputParameters<{ projectId?: string }>(operation, req);
+  const { shardId, projectId } = parseInputParameters<{ shardId: string; projectId?: string }>(operation, req);
   if (projectId && !isUUID(projectId)) {
     return [badRequest('projectId must be a valid UUID')];
   }
-  const { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted } = await clearAllWsSubs(TODO_SHARD_ID, projectId);
+  const { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted } = await clearAllWsSubs(shardId, projectId);
 
   return [allOk, buildOutputParameters(operation, { pubSubKeysDeleted, cacheKeysDeleted, userKeysDeleted })];
 }
