@@ -86,7 +86,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
         {error && (
           <Text c="red" fz="sm">
-            Error loading patient summary
+            Error loading patient summary: {error.message}
           </Text>
         )}
         {!loading && !error && sections.length > 0 && (

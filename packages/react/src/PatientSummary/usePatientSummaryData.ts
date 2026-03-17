@@ -158,7 +158,7 @@ export function usePatientSummaryData(
         }
       }
 
-      return medplum.searchResources(search.resourceType, { ...baseQuery, ...searchMeta });
+      return medplum.searchResources(search.resourceType, { ...searchMeta, ...baseQuery });
     });
 
     setLoading(true);
