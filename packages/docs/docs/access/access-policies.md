@@ -535,7 +535,7 @@ Binary resources cannot use compartment-based access controls. They require expl
     },
     {
       "resourceType": "Appointment",
-      "interaction": ["create"],
+      "interaction": ["create", "read", "search"],
       "criteria": "Appointment?_compartment=%patient"
     },
     {
