@@ -43,7 +43,7 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
-  'service-type'?: string;
+  'service-type': string;
   _count?: number;
 };
 
@@ -82,7 +82,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypes = params['service-type']?.split(',') ?? [];
+  const serviceTypes = params['service-type'].split(',');
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
