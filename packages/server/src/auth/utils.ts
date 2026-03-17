@@ -19,9 +19,8 @@ import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { TODO_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
@@ -228,7 +227,8 @@ export function getProjectByRecaptchaSiteKey(
     });
   }
 
-  const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // not shard ready; would require searching all shards
+  // SHARDING - relies on shard project's being synced to the global shard
+  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
 }
 
