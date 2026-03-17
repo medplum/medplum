@@ -1,8 +1,8 @@
 ---
-sidebar_position: 6
-title: Read Receipts Using Tasks
-tags: [communications, messaging, read receipts, task]
-keywords: [read receipt, Task, unread, status, focus, owner]
+sidebar_position: 4
+title: Read Receipts and Message Status
+tags: [communications, messaging, read receipts, task, lifecycle]
+keywords: [read receipt, message status, sent, received, read, unread, Task, extension]
 ---
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
@@ -10,181 +10,143 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Read Receipts Using Tasks
+# Read Receipts and Message Status
 
-Read state is tracked using [`Task`](/docs/api/fhir/resources/task) resources. When a message is sent, a read-receipt Task is pre-created for each recipient with `status: "requested"`. When the recipient reads the message, the Task is updated to `status: "completed"`. Each recipient gets their own Task, so this works consistently for both 1:1 and group threads.
+How you track sent, received, and read for messages depends on two things: whether a message can have more than one recipient (group threads), and whether you need to search for unread messages via the API. Use the decision guide below to choose the right model.
 
-:::note Tasks can serve multiple purposes in messaging
-The same thread may have response-tracking Tasks (for assignment and routing) and read-receipt Tasks (this page). Both use `Task.focus` (pointing to [`Communication`](/docs/api/fhir/resources/communication) resources) and `Task.owner`, but the `Task.code` element distinguishes them: use a consistent code (e.g. `read-receipt`) for read receipts so they are not confused with response-tracking Tasks. The meaning of `status: "completed"` also differs — here it means "message was read"; in response-tracking it means "response task was finished."
-:::
+## Decision Guide
 
-## Read-Receipt Task Structure
+1. Can a message have more than one recipient (i.e. more than two total participants in the thread)?
 
-```json
-{
-  "resourceType": "Task",
-  "status": "requested",
-  "code": {
-    "coding": [{ "system": "https://medplum.com/task-codes", "code": "read-receipt", "display": "Read Receipt" }]
-  },
-  "focus": { "reference": "Communication/message-123" },
-  "for": { "reference": "Patient/homer-simpson" },
-  "owner": { "reference": "Practitioner/doctor-alice-smith" },
-  "authoredOn": "2026-03-10T14:00:00Z"
-}
+- No → Use [Option A: Simple Communication-based model](#option-a-simple-model-11-threads-only). Searchable and simple; does not support group threads.
+- Yes → Go to question 2.
+
+2. Do you need to search for unread messages via the API?
+
+- No → Use [Option B: Extension on thread header](#option-b-extension-on-thread-header). Not searchable, but works for groups; you can still show a "user up to date" dot and sort by timestamps.
+- Yes → Use [Option C: Task-based model](#option-c-task-based-model-groups--searchable). Most complex; supports group threads and searchable read receipts.
+
+```mermaid
+flowchart TD
+  Q1["Can a message have more than one recipient?"]
+  Q2["Do you need to search unread via API?"]
+  A[Option A: Simple model]
+  B[Option B: Extension on thread header]
+  C[Option C: Task-based model]
+  Q1 -->|No| A
+  Q1 -->|Yes| Q2
+  Q2 -->|No| B
+  Q2 -->|Yes| C
 ```
 
-| Element      | Purpose                                                              |
-| ------------ | -------------------------------------------------------------------- |
-| `code`       | Identifies this Task as a read receipt (use a consistent code system) |
-| `focus`      | The child [`Communication`](/docs/api/fhir/resources/communication) (the message), not the thread header — the specific message this receipt tracks |
-| `for`        | The patient context (mirrors the thread's `subject`)                 |
-| `owner`      | The recipient who needs to read the message                          |
-| `status`     | `requested` = unread, `completed` = read                            |
-| `authoredOn` | When the message was sent (used for sorting)                         |
+---
 
-## Creating Read-Receipt Tasks on Send
+## Option A: Simple Model (1:1 Threads Only)
 
-When a message is sent, create a read-receipt Task for each recipient. A Bot triggered by a [Subscription](/docs/api/fhir/resources/subscription) on new Communications can automate this:
+Use this when each message has a single sender and a single recipient (no group threads). Sent, received, and read are represented directly on the [`Communication`](/docs/api/fhir/resources/communication) resource.
 
-```ts
-import type { BotEvent, MedplumClient } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
+| Stage    | Representation                          |
+| -------- | --------------------------------------- |
+| sent     | `Communication.sent` is populated       |
+| received | `Communication.received` is populated   |
+| read     | `Communication.status` is `"completed"` |
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
-  const message = event.input;
-  const recipients = message.recipient ?? [];
-  const patient = message.partOf?.[0]?.reference;
+Pros: Searchable (e.g. `Communication?status=completed` or `status:not=completed`), simple, no extra resources.  
+Limitation: Does not support group threads; one recipient per message only.
 
-  if (!patient || recipients.length === 0) {
-    return;
-  }
-
-  const threadHeader = await medplum.readReference({ reference: message.partOf![0].reference! }) as Communication;
-  if (!threadHeader.subject) {
-    return;
-  }
-
-  await medplum.executeBatch({
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry: recipients
-      .filter((r) => r.reference !== message.sender?.reference)
-      .map((recipient) => ({
-        request: { method: 'POST', url: 'Task' },
-        resource: {
-          resourceType: 'Task' as const,
-          status: 'requested' as const,
-          code: {
-            coding: [{ system: 'https://medplum.com/task-codes', code: 'read-receipt', display: 'Read Receipt' }],
-          },
-          focus: { reference: `Communication/${message.id}` },
-          for: threadHeader.subject,
-          owner: recipient,
-          authoredOn: message.sent ?? new Date().toISOString(),
-        },
-      })),
-  });
-}
-```
-
-:::tip
-The filter on `sender` prevents creating a read-receipt Task for the person who sent the message — they don't need to "read" their own message.
-:::
-
-:::tip
-For system-generated messages (automated alerts, appointment reminders) that don't require manual reading, skip creating read-receipt Tasks or create them pre-completed. This keeps unread counts accurate.
-:::
-
-:::note
-The guard on `threadHeader.subject` ensures the Bot only creates read-receipt Tasks when the thread has patient context. Handle threads without a subject according to your use case (e.g. skip read receipts or use a placeholder).
-:::
-
-## Read Trigger Strategies
-
-There are two common strategies. Start with "on thread open" for simplicity, and move to "on viewport entry" only if your use case requires more accurate per-message read tracking.
-
-| Strategy          | Trigger                                                             | Trade-off                                                                | When to use                                                |
-| ----------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- |
-| On thread open    | Mark all unread Tasks when the user opens the thread                | Simple, but marks messages "read" even if the user didn't scroll to them | Default. Good enough for most messaging use cases.     |
-| On viewport entry | Mark each message's Task when it scrolls into view (Intersection Observer) | More accurate, but requires per-message tracking in the UI               | When read receipts are user-facing or tied to SLA tracking. |
-
-## Mark a Single Message as Read
-
-When a message is viewed, find its read-receipt Task for the current user and update the status:
-
-```ts
-const readReceiptTasks = await medplum.searchResources('Task', {
-  code: 'https://medplum.com/task-codes|read-receipt',
-  focus: `Communication/${message.id}`,
-  owner: `Practitioner/${currentUser.id}`,
-  status: 'requested',
-});
-
-if (readReceiptTasks.length > 0) {
-  await medplum.patchResource('Task', readReceiptTasks[0].id!, [
-    { op: 'replace', path: '/status', value: 'completed' },
-  ]);
-}
-```
-
-## Batch Mark-as-Read on Thread Open
-
-When a user opens a thread, find all their unread read-receipt Tasks for messages in that thread and complete them in a single Transaction Bundle:
-
-```ts
-const unreadTasks = await medplum.searchResources('Task', {
-  code: 'https://medplum.com/task-codes|read-receipt',
-  'focus:Communication.part-of': `Communication/${threadHeader.id}`,
-  owner: `Practitioner/${currentUser.id}`,
-  status: 'requested',
-});
-
-await medplum.executeBatch({
-  resourceType: 'Bundle',
-  type: 'transaction',
-  entry: unreadTasks.map((task) => ({
-    request: {
-      method: 'PUT',
-      url: `Task/${task.id}`,
-    },
-    resource: {
-      ...task,
-      status: 'completed' as const,
-    },
-  })),
-});
-```
-
-:::tip
-If threads can have many unread messages, consider debouncing the batch call (e.g. wait 500ms after thread open before firing) to avoid unnecessary requests if the user is quickly scanning through threads.
-:::
-
-## Group Thread Read Tracking
-
-Because read state is tracked per recipient via Tasks, the same model works for both 1:1 and group threads without any additional mechanism. Each recipient has their own read-receipt Task per message, so one person reading a message doesn't affect anyone else's unread state.
-
-Search for a specific user's unread messages across all threads:
+### Mark a Message as Read
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
-    <MedplumCodeBlock language="ts" selectBlocks="unreadCountTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="unreadCountCurl">
+    <MedplumCodeBlock language="ts" selectBlocks="simpleModelMarkReadTs">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
 </Tabs>
 
-Search for unread messages in a specific thread:
+### Query Unread Messages
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="simpleModelQueryUnreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="simpleModelQueryUnreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="simpleModelQueryUnreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+---
+
+## Option B: Extension on Thread Header
+
+Use this when you have group threads but do not need to search for unread messages via the API. Store per-participant read state in a custom [extension](https://www.hl7.org/fhir/extensibility.html) on the thread header [`Communication`](/docs/api/fhir/resources/communication) (the one with no `partOf`).
+
+Pros: Works for group threads; no extra resources beyond the thread header; simpler than the Task-based model.  
+Limitation: Not searchable via API — you cannot run a query like "all threads where Practitioner X has unread messages." You can still, for a thread you already have, read the extension and compare to the latest message to show a "user is up to date" dot and sort the thread list by last message timestamp.
+
+### Thread Header With Read-State Extension
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="threadHeaderWithReadExtensionTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Update Last-Read When a User Views the Thread
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="patchThreadReadStateTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+---
+
+## Option C: Task-Based Model (Groups + Searchable)
+
+Use this when you have group threads and need to search for unread messages via the API. Each "message needs to be read by recipient" is represented by a [`Task`](/docs/api/fhir/resources/task) with a dedicated code (e.g. `read-receipt`). Tasks are created when messages are sent and completed when the recipient reads.
+
+Pros: Supports group threads; read receipts are searchable (e.g. unread count, unread per thread).  
+Con: Most complex data model; requires creating and updating Task resources (typically via a [Bot](/docs/bots/bot-basics) on message create and when the user marks as read).
+
+### Create a Read-Receipt Task When a Message is Sent
+
+Typically done in a Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) create. Use `Task.code` to distinguish read-receipt Tasks from other Task types (e.g. response-routing).
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="createReadReceiptTaskTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Mark as Read
+
+When the user reads the message, complete the Task:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="markReadReceiptTaskTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### Find Unread in a Specific Thread
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -204,15 +166,7 @@ Search for unread messages in a specific thread:
   </TabItem>
 </Tabs>
 
-:::note Simpler alternative: Communication.status
-For very simple 1:1 messaging where read receipts do not need to be as auditable or trackable, you can use [`Communication.status`](/docs/api/fhir/resources/communication) set to `"completed"` to indicate that a message has been read. This pattern only applies to 1:1 conversations and does not support per-recipient tracking (e.g., in group threads you cannot tell which recipient read the message). It is also less auditable than using Tasks. The Task-based approach above is the recommended standard for most use cases.
-:::
-
-## In Your UI
-
-### Unread Counts
-
-Query for unread read-receipt Tasks to drive notification badges:
+### Count Total Unread for the Current User
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -232,30 +186,11 @@ Query for unread read-receipt Tasks to drive notification badges:
   </TabItem>
 </Tabs>
 
-This query works for both 1:1 and group threads since every recipient has their own read-receipt Task.
-
-### Live Unread Badges
-
-To update badges in real time, subscribe to new read-receipt Tasks created for the current user. The subscription criteria:
-
-```
-Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{userId}&status=requested
-```
-
-If using `@medplum/react`, the `NotificationIcon` component combines the count query with a live subscription:
-
-```tsx
-<NotificationIcon
-  label="Unread messages"
-  resourceType="Task"
-  criteria={`code=https://medplum.com/task-codes|read-receipt&owner=${getReferenceString(profile!)}&status=requested`}
-  iconComponent={<IconMessage2Bolt />}
-  onClick={() => navigate('/messages')}
-/>
-```
-
-For non-React frameworks, use `medplum.subscribeToCriteria()` to listen for new read-receipt Tasks and re-query the count when one arrives.
+---
 
 ## See Also
 
-- [Task](/docs/api/fhir/resources/task) and [Communication](/docs/api/fhir/resources/communication) FHIR resource API
+- [Organizing Communications Using Threads](/docs/communications/organizing-communications) — thread structure and Communication elements
+- [Message Response Tracking and Routing Using Tasks](/docs/communications/task-based-message-response-tracking-and-routing) — using Tasks for assignment and routing (distinct from read receipts)
+- [Building Your First Thread](/docs/communications/building-your-first-thread)
+- [Searching and Querying Threads](/docs/communications/searching-and-querying-threads)
