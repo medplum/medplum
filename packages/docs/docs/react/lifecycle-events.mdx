@@ -41,7 +41,22 @@ const [communications, setCommunications] = useState<Communication[]>([]);
 useSubscription(
   'Communication',
   (bundle: Bundle) => {
-    // Handle incoming messages
+    // Extract the new communication from the incoming bundle
+    // In a subscription bundle, the resource is typically in entry[1]
+    const incoming = bundle.entry?.[1]?.resource as Communication | undefined;
+    if (!incoming) {
+      return;
+    }
+
+    // Upsert the incoming communication into state
+    // Update if it exists by ID, otherwise add it as new
+    setCommunications((prev) => {
+      const existing = prev.find((c) => c.id === incoming.id);
+      if (existing) {
+        return prev.map((c) => (c.id === incoming.id ? incoming : c));
+      }
+      return [...prev, incoming];
+    });
   },
   {
     onSubscriptionConnect: useCallback(async () => {
