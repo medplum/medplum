@@ -23,6 +23,11 @@ output "oidc_issuer_url" {
   value       = module.eks.oidc_provider_arn
 }
 
+output "oidc_issuer_url_raw" {
+  description = "OIDC provider URL without https:// — useful for debugging IRSA trust relationships"
+  value       = module.eks.oidc_provider
+}
+
 output "db_endpoint" {
   description = "RDS endpoint"
   value       = module.rds.db_instance_endpoint
