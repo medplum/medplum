@@ -156,9 +156,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
   let systemMessage = SYSTEM_MESSAGE;
   if (event.requester?.reference) {
     systemMessage = {
-          ...SYSTEM_MESSAGE,
-          content: SYSTEM_MESSAGE.content + buildProfileContext(event.requester),
-        };
+      ...SYSTEM_MESSAGE,
+      content: SYSTEM_MESSAGE.content + buildProfileContext(event.requester),
+    };
   }
 
   const messages = [systemMessage, ...userMessages];
