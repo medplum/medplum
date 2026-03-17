@@ -3,7 +3,7 @@ sidebar_label: Defining Availability (Alpha)
 sidebar_position: 10
 ---
 
-# Defining Availability
+# Defining Availability (Alpha)
 
 This guide covers how to configure availability using the `SchedulingParameters` extension — at both the actor level (per Schedule) and the service type level (via ActivityDefinition). It covers scheduling constraints, override behavior, timezone handling, and multi-resource scheduling patterns.
 
