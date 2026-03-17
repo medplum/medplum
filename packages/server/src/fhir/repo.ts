@@ -2688,7 +2688,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private pushCallbackFrame(): void {
     this.callbackStack.push({
       pre: this.preCommitCallbacks.length,
-      post: this.postCommitCallbacks.length
+      post: this.postCommitCallbacks.length,
     });
   }
 
