@@ -144,7 +144,6 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   const { requestId, traceId } = requestIds(req);
   let ctx: RequestContext | undefined;
   try {
-    const { requestId, traceId } = requestIds(req);
     const result = await authenticateTokenImpl(req);
     if (result) {
       const { authState, repo } = result;
