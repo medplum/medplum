@@ -123,6 +123,51 @@ describe('AsyncAutocomplete', () => {
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
   });
 
+  test('expandParams.count overrides default count', async () => {
+    const medplum = new MockClient();
+    const spy = jest.spyOn(medplum, 'valueSetExpand');
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete
+          binding="x"
+          placeholder="Test"
+          maxValues={1}
+          expandParams={{ count: 25 }}
+        />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await enterSearchString(input, 'test');
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ count: 25 }),
+      expect.anything()
+    );
+    spy.mockRestore();
+  });
+
+  test('uses default count of 10 when expandParams omits count', async () => {
+    const medplum = new MockClient();
+    const spy = jest.spyOn(medplum, 'valueSetExpand');
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <ValueSetAutocomplete binding="x" placeholder="Test" maxValues={1} />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText<HTMLInputElement>('Test');
+    await enterSearchString(input, 'test');
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ count: 10 }),
+      expect.anything()
+    );
+    spy.mockRestore();
+  });
+
   test('empty search', async () => {
     const onChange = jest.fn();
     render(
