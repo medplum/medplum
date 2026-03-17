@@ -20,6 +20,7 @@
     "clean": "rimraf dist",
     "dev": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts",
     "dev:sharded": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts file:medplum-sharded.config.json",
+    "dev:sharded:workers": "tsx watch --import ./src/otel/instrumentation.ts src/index.ts file:medplum-sharded.config.json,file:medplum-workers-partial.config.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "migrate": "tsx src/migrations/migrate-main.ts",

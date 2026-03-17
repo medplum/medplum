@@ -55,6 +55,9 @@
     "password": "medplum",
     "db": 0
   },
+  "workers": {
+    "enabled": []
+  },
   "bullmq": {
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
