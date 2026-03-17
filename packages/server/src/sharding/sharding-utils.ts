@@ -7,7 +7,6 @@ import { getConfig } from '../config/loader';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { globalLogger } from '../logger';
-import type { GlobalProject } from './sharding-types';
 
 export const GlobalResourceTypes = new Set([
   'Login',
@@ -43,7 +42,7 @@ export const SyncedResourceTypes = new Set([
   'Bot',
 ]);
 
-function getActiveShardId(project: GlobalProject): string | undefined {
+export function getActiveShardId(project: Project): string | undefined {
   return project.shard?.[0]?.id;
 }
 
@@ -53,6 +52,15 @@ export async function getProjectShardId(projectOrReferenceOrId: ProjectOrReferen
 }
 
 type ProjectOrReferenceOrId = Reference<Project> | WithId<Project> | string | undefined;
+
+/**
+ * Adds the shard to the project if it is not already present.
+ * @param shardId - The shard ID to add to the project.
+ * @param project - The project to add the shard to.
+ */
+export function setProjectShard(shardId: string, project: Project): void {
+  project.shard = [{ id: shardId }];
+}
 
 export async function getProjectAndProjectShardId(
   projectOrReferenceOrId: ProjectOrReferenceOrId
@@ -70,7 +78,7 @@ export async function getProjectAndProjectShardId(
     return { project, shardId: GLOBAL_SHARD_ID };
   }
 
-  let globalProject: GlobalProject;
+  let globalProject: WithId<Project>;
   if (typeof projectOrReferenceOrId === 'string' || projectOrReferenceOrId === undefined) {
     // cast undefined to string to trigger readResource to throw not found
     globalProject = await getGlobalSystemRepo().readResource('Project', projectOrReferenceOrId as string);
@@ -84,12 +92,12 @@ export async function getProjectAndProjectShardId(
 
   if (shardId === undefined) {
     globalLogger.warn('Project shard not found', { project: getReferenceString(globalProject) });
-    return { project: globalProject as WithId<Project>, shardId: getConfig().defaultShardId ?? GLOBAL_SHARD_ID };
+    return { project: globalProject, shardId: getConfig().defaultShardId ?? GLOBAL_SHARD_ID };
   }
 
   if (shardId === GLOBAL_SHARD_ID) {
     // The project is in the global shard; done
-    return { project: globalProject as WithId<Project>, shardId };
+    return { project: globalProject, shardId };
   }
 
   const systemRepo = getShardSystemRepo(shardId);

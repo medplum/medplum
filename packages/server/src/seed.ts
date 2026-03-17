@@ -15,6 +15,7 @@ import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 import type { ShardPool } from './sharding/sharding-types';
+import { setProjectShard } from './sharding/sharding-utils';
 
 export async function seedDatabase(config: MedplumServerConfig): Promise<void> {
   // Ensure global shard is run first
@@ -44,6 +45,10 @@ export async function seedDatabaseShard(pool: ShardPool, config: MedplumServerCo
     }
 
     await systemRepo.withTransaction(async () => {
+      const r4Project = await systemRepo.readResource<Project>('Project', r4ProjectId);
+      setProjectShard(pool.shardId, r4Project);
+      await systemRepo.updateResource<Project>(r4Project);
+
       await createSuperAdmin(systemRepo, config);
 
       globalLogger.info('Building structure definitions...', { shardId: pool.shardId });
@@ -93,12 +98,6 @@ async function createSuperAdmin(systemRepo: SystemRepository, config: MedplumSer
 
   const practitioner = await createProfile(systemRepo, superAdminProject, 'Practitioner', firstName, lastName, email);
   await createProjectMembership(systemRepo, superAdmin, superAdminProject, practitioner, { admin: true });
-
-  await systemRepo.updateResource<Project>({
-    resourceType: 'Project',
-    id: r4ProjectId,
-    name: 'FHIR R4',
-  });
 
   if (config.defaultSuperAdminClientId && config.defaultSuperAdminClientSecret) {
     // Use specified client ID and secret

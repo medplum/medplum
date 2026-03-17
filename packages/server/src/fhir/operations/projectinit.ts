@@ -19,7 +19,7 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import type { GlobalProject } from '../../sharding/sharding-types';
+import { setProjectShard } from '../../sharding/sharding-utils';
 import type { SystemRepository } from '../repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
 import { GLOBAL_SHARD_ID } from '../sharding';
@@ -128,16 +128,25 @@ export async function createProjectResource(
   project: Project
 ): Promise<{ project: WithId<Project>; shardId: string }> {
   const shardId = systemRepo.shardId;
+  setProjectShard(shardId, project);
 
-  if (shardId === GLOBAL_SHARD_ID) {
-    project.shard = [{ id: shardId }];
-  } else {
+  if (shardId !== GLOBAL_SHARD_ID) {
     const globalSystemRepo = getGlobalSystemRepo();
-    const globalProject: GlobalProject = await globalSystemRepo.createResource<Project>({
+    // A minimal representation of the project for the global shard
+    const globalProject: WithId<Project> = {
       resourceType: 'Project',
-      shard: [{ id: shardId }],
+      id: globalSystemRepo.generateId(),
+      meta: {
+        lastUpdated: new Date().toISOString(),
+        versionId: globalSystemRepo.generateId(),
+      },
       strictMode: true,
-    });
+    };
+    setProjectShard(shardId, globalProject);
+    // Utilize syncResourceFromShard to bootstrap the project on the global shard.
+    // This keeps getProjectAndProjectShardId and other Repository/sharing helpers happy
+    // during project initialization since shard-syncing will not have had a chance to run yet.
+    await globalSystemRepo.syncResourceFromShard(globalProject);
     project.id = globalProject.id;
   }
 
