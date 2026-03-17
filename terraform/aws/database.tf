@@ -72,5 +72,7 @@ module "rds" {
   skip_final_snapshot     = var.environment != "prod"
   deletion_protection     = var.environment == "prod"
 
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+
   tags = var.tags
 }

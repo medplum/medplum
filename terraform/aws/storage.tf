@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "app" {
   bucket        = "${local.name_prefix}-app-storage"
-  force_destroy = true
+  force_destroy = var.environment != "prod"
   tags          = var.tags
 }
 
@@ -23,7 +23,7 @@ resource "aws_s3_bucket_public_access_block" "app" {
 
 resource "aws_s3_bucket" "static" {
   bucket        = "${local.name_prefix}-static-website"
-  force_destroy = true
+  force_destroy = var.environment != "prod"
   tags          = var.tags
 }
 

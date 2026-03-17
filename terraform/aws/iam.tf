@@ -55,6 +55,7 @@ data "aws_iam_policy_document" "server_policy" {
     resources = [
       aws_secretsmanager_secret.medplum.arn,
       aws_secretsmanager_secret.db_config.arn,
+      module.rds.db_instance_master_user_secret_arn,
     ]
   }
 
@@ -105,7 +106,7 @@ data "aws_iam_policy_document" "server_policy" {
       "lambda:InvokeFunction",
     ]
     resources = [
-      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:*",
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:medplum-bot-*",
     ]
   }
 }
