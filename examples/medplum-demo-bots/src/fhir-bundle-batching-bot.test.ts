@@ -59,11 +59,9 @@ describe('FHIR Bundle Batching Bot', () => {
       ],
     };
 
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(inputBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
+    const binaryData = JSON.stringify(inputBundle);
+    vi.spyOn(medplum, 'download').mockResolvedValueOnce(new Blob([binaryData], { type: 'application/fhir+json' }));
+    const binary = { resourceType: 'Binary' as const, id: 'fake-binary-1', contentType: 'application/fhir+json' };
 
     const result = await handler(medplum, makeEvent(binary));
 
@@ -86,13 +84,10 @@ describe('FHIR Bundle Batching Bot', () => {
       ],
     };
 
-    const binary = await medplum.createBinary({
-      data: JSON.stringify(inputBundle),
-      contentType: 'application/fhir+json',
-      filename: 'bundle.json',
-    });
+    const binaryData = JSON.stringify(inputBundle);
+    vi.spyOn(medplum, 'download').mockResolvedValueOnce(new Blob([binaryData], { type: 'application/fhir+json' }));
 
-    const result = await handler(medplum, makeEvent({ reference: `Binary/${binary.id}` }));
+    const result = await handler(medplum, makeEvent({ reference: 'Binary/fake-binary-2' }));
 
     expect(result.status).toBe('complete');
     expect(result.totalResources).toBe(1);

@@ -1,9 +1,18 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { findAllReferences, findConnectedComponents, redirectReferences } from '@medplum/core';
+import {
+  generateId,
+  getIdentifier,
+  isReference,
+  isResource,
+  redirectReferences,
+  setIdentifier,
+  sleep,
+  splitBundleByDependencies,
+  stringify,
+} from '@medplum/core';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Binary, Bundle, BundleEntry, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { generateId } from '@medplum/core';
 
 /**
  * Resource types ingested first, following the Medplum migration sequence:
@@ -156,16 +165,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
   }
 
-  // Find which resources reference binaries and co-locate them
+  // Find which resources reference binaries and co-locate them.
+  // Scan all string values (not just FHIR Reference objects) because Binary resources are also
+  // referenced via plain URL strings in fields like Attachment.url.
+  const binaryKeys = new Set(binaryFullUrlMap.keys());
   const binaryToReferencer = new Map<string, string>(); // binary ref -> referencing resource fullUrl
   for (const entry of preparedOtherEntries) {
-    if (!entry.resource) {
+    if (!entry.resource || !entry.fullUrl) {
       continue;
     }
-    findAllReferences(entry.resource, (reference: string) => {
-      if (reference.startsWith('Binary/') || binaryFullUrlMap.has(reference)) {
-        binaryToReferencer.set(reference, entry.fullUrl as string);
-      }
+    scanStringValues(entry.resource, binaryKeys, (ref: string) => {
+      binaryToReferencer.set(ref, entry.fullUrl as string);
     });
   }
 
@@ -193,7 +203,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   }
 
   // Phase 4: Find connected components among non-priority resources
-  const components = findConnectedComponents(allNonPriorityEntries, PRIORITY_RESOURCE_TYPES);
+  // References to priority types have already been rewritten to conditional refs,
+  // so splitBundleByDependencies will naturally keep only intra-group edges.
+  const components = splitBundleByDependencies({
+    resourceType: 'Bundle',
+    type: 'collection',
+    entry: allNonPriorityEntries,
+  });
   console.log(`Found ${components.length} connected components`);
 
   // Phase 5: Build batches respecting size limits
@@ -247,14 +263,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  */
 async function resolveBundle(medplum: MedplumClient, input: any): Promise<Bundle> {
   // Case 1: Direct Bundle object
-  if (input?.resourceType === 'Bundle') {
+  if (isResource(input, 'Bundle')) {
     console.log('Input is a Bundle resource');
-    return input as Bundle;
+    return input;
   }
 
   // Case 2: Reference object (e.g., { reference: "Bundle/123" } or { reference: "Binary/456" })
-  if (input?.reference && typeof input.reference === 'string') {
-    const ref = input.reference as string;
+  if (isReference(input)) {
+    const ref = input.reference;
     if (ref.startsWith('Bundle/')) {
       console.log(`Input is a reference to ${ref}, reading...`);
       return medplum.readReference(input as Reference<Bundle>);
@@ -268,7 +284,7 @@ async function resolveBundle(medplum: MedplumClient, input: any): Promise<Bundle
   }
 
   // Case 3: Binary resource object with an id
-  if (input?.resourceType === 'Binary' && input.id) {
+  if (isResource(input, 'Binary') && input.id) {
     console.log(`Input is a Binary resource (Binary/${input.id}), downloading...`);
     const blob = await medplum.download(`Binary/${input.id}`);
     const text = await blob.text();
@@ -402,22 +418,7 @@ function moveIdToIdentifier(resource: Resource, identifierSystem: string): void 
   if (!resource.id) {
     return;
   }
-
-  const identifiable = resource as Resource & { identifier?: Identifier[] };
-  if (!identifiable.identifier) {
-    identifiable.identifier = [];
-  }
-
-  // Don't add duplicate
-  const existing = identifiable.identifier.find(
-    (id) => id.system === identifierSystem && id.value === resource.id
-  );
-  if (!existing) {
-    identifiable.identifier.push({
-      system: identifierSystem,
-      value: resource.id,
-    });
-  }
+  setIdentifier(resource as Resource & { identifier?: Identifier[] }, identifierSystem, resource.id);
 }
 
 /**
@@ -462,10 +463,9 @@ function buildRedirectMap(
     }
 
     // Find the original ID from the identifier
-    const identifiable = resource as Resource & { identifier?: Identifier[] };
-    const originalIdIdentifier = identifiable.identifier?.find((id) => id.system === identifierSystem);
-    if (originalIdIdentifier?.value) {
-      const oldRef = `${resource.resourceType}/${originalIdIdentifier.value}`;
+    const originalId = getIdentifier(resource, identifierSystem);
+    if (originalId) {
+      const oldRef = `${resource.resourceType}/${originalId}`;
       if (!redirectMap.has(oldRef)) {
         redirectMap.set(oldRef, entry.fullUrl);
       }
@@ -473,6 +473,33 @@ function buildRedirectMap(
   }
 
   return redirectMap;
+}
+
+/**
+ * Recursively walks an object and calls the callback for every string value that
+ * is present in the given key set. Used to find Binary resource references that
+ * appear as plain URL strings (e.g. Attachment.url) rather than FHIR Reference objects.
+ */
+function scanStringValues(obj: any, keys: Set<string>, callback: (value: string) => void): void {
+  if (!obj || typeof obj !== 'object') {
+    return;
+  }
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      scanStringValues(item, keys, callback);
+    }
+    return;
+  }
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (typeof val === 'string') {
+      if (keys.has(val)) {
+        callback(val);
+      }
+    } else if (val && typeof val === 'object') {
+      scanStringValues(val, keys, callback);
+    }
+  }
 }
 
 /**
@@ -484,10 +511,10 @@ function splitIntoBatches(entries: BundleEntry[], maxSizeBytes: number): Bundle[
   let currentSize = 0;
 
   // Overhead for the bundle wrapper JSON
-  const bundleOverhead = JSON.stringify({ resourceType: 'Bundle', type: 'batch', entry: [] }).length;
+  const bundleOverhead = stringify({ resourceType: 'Bundle', type: 'batch', entry: [] }).length;
 
   for (const entry of entries) {
-    const entrySize = JSON.stringify(entry).length;
+    const entrySize = stringify(entry).length;
 
     if (currentEntries.length > 0 && currentSize + entrySize + bundleOverhead > maxSizeBytes) {
       batches.push({
@@ -526,7 +553,7 @@ function packComponentsIntoBatches(components: BundleEntry[][], maxSizeBytes: nu
   const bundleOverhead = JSON.stringify({ resourceType: 'Bundle', type: 'batch', entry: [] }).length;
 
   for (const component of components) {
-    const componentSize = component.reduce((sum, entry) => sum + JSON.stringify(entry).length, 0);
+    const componentSize = component.reduce((sum, entry) => sum + stringify(entry).length, 0);
 
     // If adding this component would exceed the limit, flush current batch
     if (currentEntries.length > 0 && currentSize + componentSize + bundleOverhead > maxSizeBytes) {
@@ -611,6 +638,3 @@ async function submitAsyncBatchWithRetry(
   };
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
