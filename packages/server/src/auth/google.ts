@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { badRequest, isString, isUUID, OAuthSigningAlgorithm, Operator } from '@medplum/core';
 import type { Project, ResourceType, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
@@ -9,10 +10,10 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
-import type { GlobalProject } from '../sharding/sharding-types';
 import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -110,7 +111,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getGlobalSystemRepo();
+    const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // if projectId is defined, use the project's system repo
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
@@ -144,7 +145,10 @@ function validateProjectId(inputProjectId: unknown): string | undefined {
   return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
-function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<GlobalProject[]> {
+function getProjectsByGoogleClientId(
+  googleClientId: string,
+  projectId: string | undefined
+): Promise<WithId<Project>[]> {
   const filters = [
     {
       code: 'google-client-id',

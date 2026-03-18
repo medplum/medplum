@@ -4,7 +4,6 @@ import { badRequest } from '@medplum/core';
 import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
-import assert from 'node:assert';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
@@ -40,8 +39,6 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const { membership } = await createProject(projectName, user);
-  assert(membership);
-
   const updatedLogin = await setLoginMembership(login, membership.id);
 
   res.status(200).json({

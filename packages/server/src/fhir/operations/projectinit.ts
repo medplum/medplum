@@ -129,6 +129,7 @@ export async function createProjectResource(
 ): Promise<{ project: WithId<Project>; shardId: string }> {
   const shardId = systemRepo.shardId;
   setProjectShard(shardId, project);
+  // SHARDING SYNC SYNC
 
   if (shardId !== GLOBAL_SHARD_ID) {
     const globalSystemRepo = getGlobalSystemRepo();
@@ -163,6 +164,26 @@ export async function createProjectResource(
  * @param admin - The Project admin user.
  * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
  */
+export async function createProject(
+  projectName: string,
+  admin: User
+): Promise<{
+  project: WithId<Project>;
+  shardId: string;
+  client: WithId<ClientApplication>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
+}>;
+export async function createProject(
+  projectName: string,
+  admin?: User
+): Promise<{
+  project: WithId<Project>;
+  shardId: string;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
+}>;
 export async function createProject(
   projectName: string,
   admin?: User
