@@ -105,4 +105,10 @@ export interface SmartAppLaunch {
    * encounter context.
    */
   encounter?: Reference<Encounter>;
+
+  /**
+   * Optional FHIR context indicating the resources that were included when
+   * the app was launched.
+   */
+  fhirContext?: Reference[];
 }
