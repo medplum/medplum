@@ -152,7 +152,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
       proposedSlots
         .flatMap((slot) => slot.serviceType ?? EMPTY)
         .flatMap((concept) => concept.coding ?? EMPTY)
-        .map((coding) => `${coding.system}|${coding.code}`)
+        .map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`)
     ),
   ];
   const healthcareServices: HealthcareService[] =
@@ -183,7 +183,7 @@ export async function appointmentBookHandler(req: FhirRequest): Promise<FhirResp
 
           const slotServiceTypes = (proposedSlot.serviceType ?? EMPTY)
             .flatMap((concept) => concept.coding ?? EMPTY)
-            .map((coding) => `${coding.system}|${coding.code}`);
+            .map((coding) => `${coding.system ?? ''}|${coding.code ?? ''}`);
 
           const durationMinutes =
             (new Date(proposedSlot.end).getTime() - new Date(proposedSlot.start).getTime()) / 60000;
