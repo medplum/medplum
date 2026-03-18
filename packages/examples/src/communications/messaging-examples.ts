@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedplumClient, getReferenceString } from '@medplum/core';
 import type { BotEvent } from '@medplum/core';
+import { MedplumClient, getReferenceString } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
@@ -384,7 +384,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Communicat
 
   if (senderRef && senderRef !== patientRef) {
     // Sender is not the patient — treat as a provider response and complete the Task
-    await medplum.patchResource('Task', task.id!, [
+    await medplum.patchResource('Task', task.id, [
       { op: 'replace', path: '/status', value: 'completed' },
       {
         op: 'add',
