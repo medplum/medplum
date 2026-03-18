@@ -509,6 +509,97 @@ describe('External', () => {
     expect(tokenResponse.body.profile.display).toBe('External Text');
   });
 
+  test('returnTo URL is followed when explicitly allowed by DomainConfiguration', async () => {
+    const testDomain = randomUUID() + '.example.com';
+    const testEmail = `text@${testDomain}`;
+    const allowedReturnTo = 'https://myapp.example.com';
+
+    await withTestContext(async () => {
+      // Create a new project and user for this test
+      const { project: testProject } = await registerNew({
+        firstName: 'External',
+        lastName: 'Text',
+        projectName: 'External Test Project - returnTo',
+        email: testEmail,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
+
+      const testRepo = getProjectSystemRepo(testProject);
+      await testRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain: testDomain,
+        identityProvider,
+        allowedPostLoginRedirectUrls: [allowedReturnTo],
+      });
+    });
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain: testDomain, returnTo: allowedReturnTo + '/dashboard' }),
+    });
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(testEmail),
+    }));
+
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.hostname).toStrictEqual('myapp.example.com');
+    expect(redirect.pathname).toStrictEqual('/dashboard');
+    expect(redirect.searchParams.get('login')).toBeTruthy();
+  });
+
+  test('returnTo URL is ignored when not in allowedPostLoginRedirectUrls', async () => {
+    // The domain config for `domain` has no allowedPostLoginRedirectUrls,
+    // so any returnTo should be ignored and the user falls back to /signin.
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain, returnTo: 'https://evil.example.com/steal' }),
+    });
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toStrictEqual('localhost:3000');
+    expect(redirect.pathname).toStrictEqual('/signin');
+    expect(redirect.searchParams.get('login')).toBeTruthy();
+  });
+
+  test('returnTo URL to a .medplum.com host is always allowed', async () => {
+    const medplumReturnTo = 'https://app.medplum.com/signin';
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain, returnTo: medplumReturnTo }),
+    });
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.hostname).toStrictEqual('app.medplum.com');
+    expect(redirect.searchParams.get('login')).toBeTruthy();
+  });
+
   test('Legacy User.externalId support', async () => {
     const externalId = randomUUID();
     const domain = `${randomUUID()}.example.com`;
