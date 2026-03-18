@@ -19,6 +19,7 @@ const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' }
 const readReceiptTaskId = 'example-read-receipt-task-id';
 const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
+const file = new Blob();
 
 // start-block filterActiveThreadsTs
 // Thread headers have no partOf; child messages have partOf set to the header.
