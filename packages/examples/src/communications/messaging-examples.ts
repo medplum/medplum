@@ -199,3 +199,184 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
+
+// start-block createTaskForThreadTs
+const task = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  priority: 'routine',
+  focus: { reference: `Communication/${threadHeader.id}` },
+  for: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  performerType: [
+    {
+      coding: [
+        {
+          system: 'http://snomed.info/sct',
+          code: '224535009',
+          display: 'Registered nurse',
+        },
+      ],
+    },
+  ],
+  requester: { reference: 'Practitioner/doctor-alice-smith' },
+  authoredOn: new Date().toISOString(),
+});
+// end-block createTaskForThreadTs
+
+// start-block claimTaskTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/status', value: 'accepted' },
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+  },
+]);
+// end-block claimTaskTs
+
+// start-block queryUnclaimedTasksTs
+await medplum.search('Task', {
+  performer: 'http://snomed.info/sct|224535009',
+  status: 'requested',
+});
+// end-block queryUnclaimedTasksTs
+
+/*
+// start-block queryUnclaimedTasksCli
+medplum get 'Task?performer=http://snomed.info/sct|224535009&status=requested'
+// end-block queryUnclaimedTasksCli
+
+// start-block queryUnclaimedTasksCurl
+curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2Fsct%7C224535009&status=requested' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block queryUnclaimedTasksCurl
+*/
+
+// start-block rerouteToProviderTs
+await medplum.patchResource('Task', task.id, [
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  },
+  {
+    op: 'remove',
+    path: '/performerType',
+  },
+]);
+
+await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'replace', path: '/recipient', value: [{ reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' }] },
+]);
+// end-block rerouteToProviderTs
+
+// start-block rerouteToPoolTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'remove', path: '/owner' },
+  { op: 'replace', path: '/status', value: 'requested' },
+  {
+    op: 'add',
+    path: '/performerType',
+    value: [
+      {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '17561000',
+            display: 'Cardiologist',
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'remove', path: '/recipient' }]);
+// end-block rerouteToPoolTs
+
+// start-block rerouteWithNoteTs
+await medplum.patchResource('Task', task.id, [
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  },
+  {
+    op: 'add',
+    path: '/note/-',
+    value: {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouting to cardiology — patient has new cardiac symptoms',
+    },
+  },
+]);
+// end-block rerouteWithNoteTs
+
+// start-block rerouteProvenanceTs
+await medplum.createResource({
+  resourceType: 'Provenance',
+  target: [{ reference: `Task/${task.id}` }],
+  recorded: new Date().toISOString(),
+  agent: [
+    {
+      who: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+    },
+  ],
+  reason: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/CodeSystem/reroute-reason',
+          code: 'specialty-referral',
+          display: 'Specialty referral',
+        },
+      ],
+    },
+  ],
+});
+// end-block rerouteProvenanceTs
+
+// start-block simpleRerouteTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/owner', value: { reference: 'Practitioner/dr-cardio' } },
+]);
+// end-block simpleRerouteTs
+
+// start-block dualTaskRerouteTs
+const newTask = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  priority: task.priority,
+  focus: task.focus,
+  for: task.for,
+  owner: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  requester: { reference: 'Practitioner/doctor-gregory-house' },
+  authoredOn: new Date().toISOString(),
+  note: [
+    {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouted from original Task — needs cardiology review',
+    },
+  ],
+});
+
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/status', value: 'cancelled' },
+  {
+    op: 'add',
+    path: '/note/-',
+    value: {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouted to Dr. Cardio — see new Task',
+    },
+  },
+]);
+// end-block dualTaskRerouteTs
+
+console.log(newTask);
