@@ -5,7 +5,6 @@ import { createReference } from '@medplum/core';
 import type { Login, Patient, Project, Questionnaire, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import type { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -26,14 +25,8 @@ describe('Reference checks', () => {
 
   test('Check references on write', () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
-      const systemRepo = getProjectSystemRepo(project);
+      const { membership, project } = await createTestProject({ withClient: true });
+      const systemRepo = await getProjectSystemRepo(project);
       const updatedProject = await systemRepo.updateResource({
         ...project,
         checkReferencesOnWrite: true,
@@ -90,21 +83,9 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const { membership, project } = await createTestProject({ withClient: true });
 
-      const { membership: membership2, project: project2 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const { membership: membership2, project: project2 } = await createTestProject({ withClient: true });
       const globalSystemRepo = getGlobalSystemRepo();
       const updatedProject = await globalSystemRepo.updateResource({
         ...project,
@@ -156,21 +137,13 @@ describe('Reference checks', () => {
 
   test('Project reference validation', () =>
     withTestContext(async () => {
-      const { membership, project: project1 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
+      const { membership, project: project1 } = await createTestProject({
+        withClient: true,
+        membership: { admin: true },
+        project: { owner: undefined },
       });
 
-      const { membership: _membership2, project: project2 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const { membership: _membership2, project: project2 } = await createTestProject({ withClient: true });
       project1.checkReferencesOnWrite = true;
       project1.link = [{ project: createReference(project2) }];
       await getGlobalSystemRepo().updateResource(project1);
@@ -193,13 +166,8 @@ describe('Reference checks', () => {
 
   test('ProjectMembership reference validation', () =>
     withTestContext(async () => {
-      let { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const result = await createTestProject({ withClient: true, membership: { admin: true } });
+      let { membership, project } = result;
 
       const systemRepo = getProjectSystemRepo(project);
       project = await systemRepo.updateResource({ ...project, checkReferencesOnWrite: true });

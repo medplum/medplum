@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference } from '@medplum/core';
 import type { AccessPolicy } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 // Based on: https://developer.okta.com/docs/guides/scim-provisioning-integration-prepare/main/
 
@@ -20,16 +19,15 @@ describe('Okta SCIM Tests', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    const registration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
-    accessToken = registration.accessToken;
+    const { project } = await withTestContext(() => createTestProject());
 
-    const systemRepo = getProjectSystemRepo(registration.project);
+    // Add a Practitioner member (SCIM endpoints require User login type)
+    const testUser = await withTestContext(() => addTestUser({ project, firstName: 'Alice', lastName: 'Smith' }));
+
+    const systemRepo = await getProjectSystemRepo(project);
+    // SCIM endpoints require admin access
+    await systemRepo.updateResource({ ...testUser.membership, admin: true });
+    accessToken = testUser.accessToken;
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -39,7 +37,7 @@ describe('Okta SCIM Tests', () => {
 
     // Update project with default access policy
     await systemRepo.updateResource({
-      ...registration.project,
+      ...project,
       defaultPatientAccessPolicy: createReference(accessPolicy),
     });
   });

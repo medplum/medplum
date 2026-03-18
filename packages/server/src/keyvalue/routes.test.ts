@@ -4,8 +4,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { createTestProject } from '../test.setup';
 import { MAX_ITEMS } from './store';
 
 describe('Key Value Routes', () => {
@@ -16,14 +16,7 @@ describe('Key Value Routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    // First, Alice creates a project
-    const registration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    const registration = await createTestProject({ withAccessToken: true });
     accessToken = registration.accessToken;
   });
 

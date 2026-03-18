@@ -6,11 +6,9 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
-import { Repository } from '../repo';
 import * as searchFile from '../search';
 
 const app = express();
@@ -30,23 +28,16 @@ describe('GraphQL', () => {
       await initApp(app, config);
 
       // Setup a new project
-      const aliceRegistration = await registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      });
+      const testProject = await createTestProject({ withRepo: true });
+
+      const aliceRegistration = await addTestUser(testProject.project);
       accessToken = aliceRegistration.accessToken;
       practitioner = aliceRegistration.profile as Practitioner;
 
-      const aliceRepo = new Repository({
-        author: createReference(aliceRegistration.profile),
-        projects: [aliceRegistration.project],
-      });
+      const aliceRepo = testProject.repo;
 
       // Create a profile picture
-      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
+      binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary', contentType: 'image/jpeg' } as Binary);
 
       // Creat a simple patient
       patient = await aliceRepo.createResource<Patient>({
@@ -69,7 +60,7 @@ describe('GraphQL', () => {
             value: 'alice@example.com',
           },
         ],
-        generalPractitioner: [createReference(aliceRegistration.profile as Practitioner)],
+        generalPractitioner: [createReference(practitioner)],
       });
 
       // Create a service request
@@ -105,7 +96,7 @@ describe('GraphQL', () => {
       });
 
       // Invite Bob with the access policy
-      const bobRegistration = await addTestUser(aliceRegistration.project, {
+      const bobRegistration = await addTestUser(testProject.project, {
         resourceType: 'AccessPolicy',
         resource: [
           {

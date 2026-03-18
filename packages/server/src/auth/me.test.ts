@@ -9,9 +9,8 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { getUserConfigurationMenu } from './me';
-import { registerNew } from './register';
 
 const app = express();
 
@@ -31,13 +30,12 @@ describe('Me', () => {
   });
 
   test('User configuration', async () => {
-    const { project, membership, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#',
+    const { project, accessToken: adminToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
+    );
+    const { membership, accessToken } = await withTestContext(() =>
+      addTestUser({
+        project,
         remoteAddress: '5.5.5.5',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       })
@@ -75,14 +73,14 @@ describe('Me', () => {
     // Read the project membership
     const res4 = await request(app)
       .get(`/admin/projects/${project.id}/members/${membership.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + adminToken);
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
 
     // Update the project membership
     const res5 = await request(app)
       .post(`/admin/projects/${project.id}/members/${membership.id}`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + adminToken)
       .type('json')
       .send({
         ...res4.body,
@@ -115,16 +113,11 @@ describe('Me', () => {
   });
 
   test('Set default menu', async () => {
-    const { project, membership, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#',
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      })
+    const { project, accessToken: adminToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
+    );
+    const { membership, accessToken } = await withTestContext(() =>
+      addTestUser(project)
     );
 
     // Get the user profile with default user configuration
@@ -155,14 +148,14 @@ describe('Me', () => {
     // Read the project membership
     const res4 = await request(app)
       .get(`/admin/projects/${project.id}/members/${membership.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + adminToken);
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
 
     // Update the project membership
     const res5 = await request(app)
       .post(`/admin/projects/${project.id}/members/${membership.id}`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + adminToken)
       .type('json')
       .send({
         ...res4.body,
@@ -180,13 +173,7 @@ describe('Me', () => {
 
   test('Get me as ClientApplication', async () => {
     const { client } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Client',
-        lastName: 'Test',
-        projectName: 'Client Test',
-        email: `client${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withClient: true })
     );
 
     const res = await request(app)
@@ -218,16 +205,9 @@ describe('Me', () => {
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { project, membership, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Memberships in /auth/me Part 1',
-        email,
-        password,
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      })
+    const { project } = await withTestContext(() => createTestProject());
+    const { membership, accessToken } = await withTestContext(() =>
+      addTestUser({ project, email, password })
     );
 
     // Get the user profile the initial memberships
@@ -259,18 +239,9 @@ describe('Me', () => {
     expect(res2.body).toBeDefined();
     expect(res2.body.security.memberships).toHaveLength(2);
 
-    // Register a totally separate project
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Memberships in /auth/me Part 2',
-        email,
-        password,
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      })
-    );
+    // Create a totally separate project and add the same user
+    const { project: project2 } = await withTestContext(() => createTestProject());
+    await withTestContext(() => addTestUser({ project: project2, email, password }));
 
     // Reload, should only see the 2 memberships from the original project
     const res3 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);

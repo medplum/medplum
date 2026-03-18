@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { getReferenceString, resolveId } from '@medplum/core';
 import type { BundleEntry, ClientApplication, ProjectMembership } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
@@ -24,15 +22,7 @@ describe('Client admin', () => {
 
   test('Create new client', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
 
     // Next, Alice creates a client
     const res2 = await request(app)

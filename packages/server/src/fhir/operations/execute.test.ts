@@ -24,12 +24,11 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
-import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { getBinaryStorage } from '../../storage/loader';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { createTestProject, waitForAsyncJob } from '../../test.setup';
 import { getProjectSystemRepo } from '../repo';
 
 const botCodes = [
@@ -363,15 +362,7 @@ describe('Execute', () => {
 
   test('Bots not enabled', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
 
     // Next, Alice creates a bot
     const res2 = await request(app)

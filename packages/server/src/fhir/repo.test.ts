@@ -44,14 +44,12 @@ import { readFileSync } from 'fs';
 import assert from 'node:assert';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
-import type { RegisterRequest } from '../auth/register';
-import { registerNew } from '../auth/register';
 import { getConfig, loadTestConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig, MedplumServerConfig } from '../config/types';
 import { r4ProjectId, systemResourceProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
-import { bundleContains, createTestProject, withTestContext } from '../test.setup';
+import { addTestUser, bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
@@ -634,21 +632,14 @@ describe('FHIR Repo', () => {
 
   test('Compartment permissions', () =>
     withTestContext(async () => {
-      const registration1: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result1 = await registerNew(registration1);
-      expect(result1.profile).toBeDefined();
+      const { project: project1, login: login1 } = await createTestProject({ withAccessToken: true });
+      const { profile: profile1, membership: membership1 } = await addTestUser(project1);
+      expect(profile1).toBeDefined();
 
       const repo1 = await getRepoForLogin({
-        project: result1.project,
-        membership: result1.membership,
-        login: result1.login,
+        project: project1,
+        membership: membership1,
+        login: login1,
         userConfig: {} as UserConfiguration,
       });
       const patient1 = await repo1.createResource<Patient>({
@@ -662,21 +653,14 @@ describe('FHIR Repo', () => {
       expect(patient2).toBeDefined();
       expect(patient2.id).toStrictEqual(patient1.id);
 
-      const registration2: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const result2 = await registerNew(registration2);
-      expect(result2.profile).toBeDefined();
+      const { project: project2, login: login2 } = await createTestProject({ withAccessToken: true });
+      const { profile: profile2, membership: membership2 } = await addTestUser(project2);
+      expect(profile2).toBeDefined();
 
       const repo2 = await getRepoForLogin({
-        project: result2.project,
-        membership: result2.membership,
-        login: result2.login,
+        project: project2,
+        membership: membership2,
+        login: login2,
         userConfig: {} as UserConfiguration,
       });
       try {
@@ -1552,21 +1536,9 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const { membership, project } = await createTestProject({ withAccessToken: true });
 
-      const { membership: membership2, project: project2 } = await registerNew({
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      });
+      const { membership: membership2, project: project2 } = await createTestProject({ withAccessToken: true });
       const updatedProject = await globalSystemRepo.updateResource({
         ...project,
         link: [{ project: createReference(project2) }],
@@ -1781,16 +1753,8 @@ describe('FHIR Repo', () => {
         withRepo: true,
       });
 
-      const regRequest: RegisterRequest = {
-        firstName: randomUUID(),
-        lastName: randomUUID(),
-        projectName: randomUUID(),
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
-      };
-
-      const regResult = await registerNew(regRequest);
-      let project = regResult.project;
+      const testProj = await createTestProject({ withAccessToken: true, membership: { admin: true } });
+      let project = testProj.project;
 
       // add linkedProject to `Project.link`
       project = await globalSystemRepo.updateResource({
@@ -1800,8 +1764,8 @@ describe('FHIR Repo', () => {
 
       const repo = await getRepoForLogin({
         project,
-        membership: regResult.membership,
-        login: regResult.login,
+        membership: testProj.membership,
+        login: testProj.login,
         userConfig: {} as UserConfiguration,
       });
 

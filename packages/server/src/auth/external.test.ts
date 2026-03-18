@@ -13,8 +13,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('node-fetch');
 
@@ -44,19 +43,14 @@ describe('External', () => {
       await initApp(app, config);
 
       // Create a new project
-      const registerResult = await registerNew({
-        firstName: 'External',
-        lastName: 'Text',
-        projectName: 'External Test Project',
-        email,
-        password: 'password!@#',
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      });
-      project = registerResult.project;
-      defaultClient = registerResult.client;
+      const testSetup = await createTestProject({ withClient: true });
+      project = testSetup.project;
+      defaultClient = testSetup.client;
 
       systemRepo = getProjectSystemRepo(project);
+
+      // Create a user with the test email in the project
+      await addTestUser({ project, email, firstName: 'External', lastName: 'Text' });
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -514,16 +508,7 @@ describe('External', () => {
     const domain = `${randomUUID()}.example.com`;
     const redirectUri = `https://${domain}/auth/callback`;
     const client = await withTestContext(async () => {
-      // Create a new project
-      const { project, client } = await registerNew({
-        firstName: 'External',
-        lastName: 'Text',
-        projectName: 'External Test Project',
-        email,
-        password: 'password!@#',
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      });
+      const { project, client } = await createTestProject({ withClient: true });
 
       // Update client application with external auth
       const client2 = await systemRepo.updateResource<ClientApplication>({

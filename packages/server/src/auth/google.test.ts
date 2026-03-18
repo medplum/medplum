@@ -10,8 +10,7 @@ import type { SystemRepository } from '../fhir/repo';
 import { getShardSystemRepo } from '../fhir/repo';
 import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getUserByEmail } from '../oauth/utils';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('jose', () => {
   const original = jest.requireActual('jose');
@@ -206,17 +205,11 @@ describe('Google Auth', () => {
 
   test('Require Google auth', async () => {
     const email = `google${randomUUID()}@example.com`;
-    const password = 'password!@#';
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email });
 
       // As a super admin, update the project to require Google auth
       await systemRepo.updateResource({
@@ -240,20 +233,14 @@ describe('Google Auth', () => {
 
   test('Google auth profile picture', async () => {
     const email = `google${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const state = {
       profile: undefined as Practitioner | undefined,
     };
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project, profile } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Profile Picture Test',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      const { profile } = await addTestUser({ project, email });
       state.profile = profile as Practitioner;
 
       // As a super admin, update the project to require Google auth
@@ -283,18 +270,12 @@ describe('Google Auth', () => {
 
   test('Custom Google client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
 
     await withTestContext(async () => {
       // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email });
 
       // As a super admin, set the google client ID
       await systemRepo.updateResource({
@@ -324,19 +305,14 @@ describe('Google Auth', () => {
 
   test('Multiple projects same Google client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
+    const password = randomUUID();
     const googleClientId = 'google-client-id-' + randomUUID();
 
     await withTestContext(async () => {
       for (let i = 0; i < 2; i++) {
         // Register and create a project
-        const { project } = await registerNew({
-          firstName: 'Google',
-          lastName: 'Google',
-          projectName: 'Require Google Auth',
-          email,
-          password,
-        });
+        const { project } = await createTestProject();
+        await addTestUser({ project, email, password });
 
         // As a super admin, set the google client ID
         await systemRepo.updateResource({
@@ -370,18 +346,12 @@ describe('Google Auth', () => {
 
   test('Custom Google client with project success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
 
     // Register and create a project
     const project = await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email });
 
       // As a super admin, set the google client ID
       await systemRepo.updateResource({
@@ -412,18 +382,12 @@ describe('Google Auth', () => {
 
   test('Custom Google client wrong projectId', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email });
 
       // As a super admin, set the google client ID
       await systemRepo.updateResource({
@@ -454,17 +418,12 @@ describe('Google Auth', () => {
 
   test('Custom OAuth client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
 
-    const { project, client } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      })
-    );
+    const { project, client } = await withTestContext(async () => {
+      const { project, client } = await createTestProject({ withClient: true });
+      await addTestUser({ project, email });
+      return { project, client: client };
+    });
 
     const res = await request(app)
       .post('/auth/google')
@@ -481,17 +440,12 @@ describe('Google Auth', () => {
 
   test('ClientId with incorrect projectId', async () => {
     const email = `google-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
 
-    const { client } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      })
-    );
+    const { client } = await withTestContext(async () => {
+      const { project, client } = await createTestProject({ withClient: true });
+      await addTestUser({ project, email });
+      return { client: client };
+    });
 
     const res = await request(app)
       .post('/auth/google')

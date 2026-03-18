@@ -7,8 +7,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { tryLogin } from '../oauth/utils';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { setPassword } from './setpassword';
 
 const app = express();
@@ -32,17 +31,10 @@ describe('Revoke', () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = randomUUID();
 
-    const { login, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email,
-        password,
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      })
-    );
+    const { accessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, email, password, firstName: 'Alexander', lastName: 'Hamilton' });
+    });
 
     // Get sessions 1st time
     // Should be 1 session
@@ -50,7 +42,8 @@ describe('Revoke', () => {
     expect(res1.status).toBe(200);
     expect(res1.body).toBeDefined();
     expect(res1.body.security.sessions).toHaveLength(1);
-    expect(res1.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
+    const firstLoginId = res1.body.security.sessions[0].id;
+    expect(firstLoginId).toBeTruthy();
 
     // Sign in again
     const login2 = await withTestContext(() =>
@@ -70,7 +63,7 @@ describe('Revoke', () => {
     expect(res2.status).toBe(200);
     expect(res2.body).toBeDefined();
     expect(res2.body.security.sessions).toHaveLength(2);
-    expect(res2.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
+    expect(res2.body.security.sessions.find((s: any) => s.id === firstLoginId)).toBeTruthy();
     expect(res2.body.security.sessions.find((s: any) => s.id === login2.id)).toBeTruthy();
 
     // Revoke the 2nd session
@@ -87,7 +80,7 @@ describe('Revoke', () => {
     expect(res4.status).toBe(200);
     expect(res4.body).toBeDefined();
     expect(res4.body.security.sessions).toHaveLength(1);
-    expect(res4.body.security.sessions.find((s: any) => s.id === login.id)).toBeTruthy();
+    expect(res4.body.security.sessions.find((s: any) => s.id === firstLoginId)).toBeTruthy();
     expect(res4.body.security.sessions.find((s: any) => s.id === login2.id)).toBeUndefined();
 
     // Try to revoke without a login
@@ -115,15 +108,14 @@ describe('Revoke', () => {
     const bobEmail = `bob${randomUUID()}@example.com`;
     const bobPassword = randomUUID();
 
-    const { bobLogin, accessToken } = await withTestContext(async () => {
-      const { project, accessToken } = await registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Revoke Project',
+    const { bobLogin, aliceAccessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { accessToken: aliceAccessToken } = await addTestUser({
+        project,
         email: aliceEmail,
         password: alicePassword,
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+        firstName: 'Alice',
+        lastName: 'Smith',
       });
 
       // Second, Alice invites Bob to the project
@@ -147,14 +139,14 @@ describe('Revoke', () => {
         nonce: 'nonce',
       });
       expect(bobLogin).toBeDefined();
-      return { bobLogin, accessToken };
+      return { bobLogin, aliceAccessToken };
     });
 
     // Try to revoke Bob's session as Alice
     // This should fail
     const revokeResponse = await request(app)
       .post('/auth/revoke')
-      .set('Authorization', `Bearer ${accessToken}`)
+      .set('Authorization', `Bearer ${aliceAccessToken}`)
       .type('json')
       .send({ loginId: bobLogin.id });
     expect(revokeResponse.status).toBe(404);

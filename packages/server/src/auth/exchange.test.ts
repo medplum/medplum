@@ -12,8 +12,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 jest.mock('node-fetch');
 
@@ -34,15 +33,7 @@ describe('Token Exchange', () => {
       await initApp(app, config);
 
       // Create a new project
-      const registration = await registerNew({
-        firstName: 'External',
-        lastName: 'Text',
-        projectName: 'External Test Project',
-        email,
-        password: 'password!@#',
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      });
+      const registration = await createTestProject({ withClient: true });
       project = registration.project;
       defaultClient = registration.client;
 
@@ -55,6 +46,9 @@ describe('Token Exchange', () => {
       };
 
       const systemRepo = getProjectSystemRepo(project);
+
+      // Create a user with the test email in the project
+      await addTestUser({ project, email });
 
       // Create a new client application with external auth
       externalAuthClient = await createClient(systemRepo, {

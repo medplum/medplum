@@ -1,15 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { badRequest } from '@medplum/core';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -34,15 +32,10 @@ describe('Change Password', () => {
   });
 
   test('Success', async () => {
-    const { accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'John',
-        lastName: 'Adams',
-        projectName: 'Adams Project',
-        email: `john${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { accessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, password: 'password!@#' });
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -56,15 +49,10 @@ describe('Change Password', () => {
   });
 
   test('Missing old password', async () => {
-    const { accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { accessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, password: 'password!@#' });
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -94,15 +82,10 @@ describe('Change Password', () => {
   });
 
   test('Incorrect old password', async () => {
-    const { accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { accessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, password: 'password!@#' });
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
@@ -117,15 +100,10 @@ describe('Change Password', () => {
   });
 
   test('Breached password', async () => {
-    const { accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { accessToken } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, password: 'password!@#' });
+    });
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);

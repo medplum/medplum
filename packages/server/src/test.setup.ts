@@ -46,11 +46,14 @@ export interface TestProjectOptions {
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
 type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
 
+type CreatesClient<T extends TestProjectOptions> =
+  T['withClient'] extends true ? true : T['withAccessToken'] extends true ? true : T['withRepo'] extends true | Partial<RepositoryContext> ? true : false;
+
 export type TestProjectResult<T extends TestProjectOptions> = {
   project: WithId<Project>;
   accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? WithId<AccessPolicy> : undefined;
-  client: T['withClient'] extends true ? WithId<ClientApplication> : undefined;
-  membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
+  client: CreatesClient<T> extends true ? WithId<ClientApplication> : undefined;
+  membership: CreatesClient<T> extends true ? WithId<ProjectMembership> : undefined;
   login: T['withAccessToken'] extends true ? WithId<Login> : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
   repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
@@ -181,10 +184,48 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
   return (await createTestProject({ ...options, withAccessToken: true })).accessToken;
 }
 
+export interface AddTestUserOptions {
+  project: WithId<Project>;
+  accessPolicy?: AccessPolicy;
+  email?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  remoteAddress?: string;
+  userAgent?: string;
+  scope?: string;
+}
+
 export async function addTestUser(
-  project: WithId<Project>,
+  projectOrOptions: WithId<Project> | AddTestUserOptions,
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
+  let project: WithId<Project>;
+  let email: string;
+  let password: string;
+  let firstName: string;
+  let lastName: string;
+  let remoteAddress: string | undefined;
+  let userAgent: string | undefined;
+
+  if ('resourceType' in projectOrOptions) {
+    // Legacy signature: addTestUser(project, accessPolicy?)
+    project = projectOrOptions;
+    email = randomUUID() + '@example.com';
+    password = randomUUID();
+    firstName = 'Bob';
+    lastName = 'Jones';
+  } else {
+    project = projectOrOptions.project;
+    accessPolicy = projectOrOptions.accessPolicy ?? accessPolicy;
+    email = projectOrOptions.email ?? randomUUID() + '@example.com';
+    password = projectOrOptions.password ?? randomUUID();
+    firstName = projectOrOptions.firstName ?? 'Bob';
+    lastName = projectOrOptions.lastName ?? 'Jones';
+    remoteAddress = projectOrOptions.remoteAddress;
+    userAgent = projectOrOptions.userAgent;
+  }
+
   if (accessPolicy) {
     const systemRepo = getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -193,15 +234,13 @@ export async function addTestUser(
     });
   }
 
-  const email = randomUUID() + '@example.com';
-  const password = randomUUID();
   const inviteResponse = await inviteUser({
     project,
     email,
     password,
     resourceType: 'Practitioner',
-    firstName: 'Bob',
-    lastName: 'Jones',
+    firstName,
+    lastName,
     sendEmail: false,
     membership: {
       accessPolicy: accessPolicy && createReference(accessPolicy),
@@ -210,12 +249,16 @@ export async function addTestUser(
 
   const { user, profile } = inviteResponse;
 
+  const scope = ('resourceType' in projectOrOptions ? undefined : projectOrOptions.scope) ?? 'openid';
+
   const login = await tryLogin({
     authMethod: 'password',
     email,
     password,
-    scope: 'openid',
+    scope,
     nonce: 'nonce',
+    remoteAddress,
+    userAgent,
   });
 
   const accessToken = await generateAccessToken({

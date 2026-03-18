@@ -5,10 +5,10 @@ import { createReference, OperationOutcomeError } from '@medplum/core';
 import type { AccessPolicy, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { convertScimToJsonPatch, createScimUser } from './utils';
 
 describe('convertScimToJsonPatch', () => {
@@ -137,16 +137,11 @@ describe('createScimUser', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
-    const registration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
-    user = registration.user;
-    project = registration.project;
-    systemRepo = getProjectSystemRepo(project);
+    const testProject = await withTestContext(() => createTestProject());
+    project = testProject.project;
+    const testUser = await withTestContext(() => addTestUser(project));
+    user = testUser.user;
+    systemRepo = await getProjectSystemRepo(project);
   });
   afterAll(shutdownApp);
 

@@ -9,8 +9,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
@@ -28,27 +27,27 @@ describe('Profile', () => {
       await initApp(app, config);
 
       // Create a user with multiple profiles
-      // Use the same user/email
-      const registerResult = await registerNew({
+      // Use the same user/email across two projects
+      const { project: project1 } = await createTestProject();
+      const result1 = await addTestUser({
+        project: project1,
+        email,
+        password,
         firstName: 'Multi1',
         lastName: 'Multi1',
-        projectName: 'Multi Project',
+      });
+      profile1 = result1.profile;
+      membership1 = result1.membership;
+
+      const { project: project2 } = await createTestProject();
+      const result2 = await addTestUser({
+        project: project2,
         email,
         password,
-      });
-
-      profile1 = registerResult.profile;
-      membership1 = registerResult.membership;
-
-      const registerResult2 = await registerNew({
         firstName: 'Multi12',
         lastName: 'Multi12',
-        projectName: 'Multi Project 2',
-        email,
-        password,
       });
-
-      profile2 = registerResult2.profile;
+      profile2 = result2.profile;
     });
   });
 

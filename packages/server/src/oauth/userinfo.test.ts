@@ -6,9 +6,9 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 const app = express();
 
@@ -55,12 +55,10 @@ describe('OAuth2 UserInfo', () => {
   test('Get userinfo with profile email', async () => {
     const email = `profile${randomUUID()}@example.com`;
     const password = randomUUID();
-    const { user, project } = await registerNew({
-      email,
-      password,
-      firstName: 'Profile',
-      lastName: 'User',
-      projectName: 'Userinfo Test Project',
+    const { user, project } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { user } = await addTestUser({ project, email, password, firstName: 'Profile', lastName: 'User' });
+      return { user, project };
     });
     const res = await request(app).post('/auth/login').type('json').send({
       email,

@@ -12,8 +12,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -90,15 +89,10 @@ describe('Reset Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'George',
-        lastName: 'Washington',
-        projectName: 'Washington Project',
-        email,
-        password: 'password!@#',
-      })
-    );
+    await withTestContext(async () => {
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington' });
+    });
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
@@ -118,15 +112,10 @@ describe('Reset Password', () => {
   test('Success no send email', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'George',
-        lastName: 'Washington',
-        projectName: 'Washington Project',
-        email,
-        password: 'password!@#',
-      })
-    );
+    await withTestContext(async () => {
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington' });
+    });
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
@@ -143,15 +132,10 @@ describe('Reset Password', () => {
 
     const email = `george${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'George',
-        lastName: 'Washington',
-        projectName: 'Washington Project',
-        email,
-        password: 'password!@#',
-      })
-    );
+    await withTestContext(async () => {
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington' });
+    });
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
@@ -207,14 +191,8 @@ describe('Reset Password', () => {
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     await withTestContext(async () => {
-      // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
       // As a super admin, set the recaptcha site key
       // and the default access policy
       await systemRepo.updateResource({
@@ -228,7 +206,6 @@ describe('Reset Password', () => {
           },
         ],
       });
-      return project;
     });
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
@@ -253,14 +230,8 @@ describe('Reset Password', () => {
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
 
     const project = await withTestContext(async () => {
-      // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
       // As a super admin, set the recaptcha site key
       // and the default access policy
       await systemRepo.updateResource({
@@ -294,14 +265,8 @@ describe('Reset Password', () => {
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
 
     const project = await withTestContext(async () => {
-      // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
       return project;
     });
 
@@ -323,14 +288,8 @@ describe('Reset Password', () => {
     const password = 'password!@#';
 
     const project = await withTestContext(async () => {
-      // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
       return project;
     });
 
@@ -353,14 +312,8 @@ describe('Reset Password', () => {
     const password = 'password!@#';
 
     const project = await withTestContext(async () => {
-      // Register and create a project
-      const { project, user } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      const { user } = await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
 
       // Add the project to the user
       await systemRepo.patchResource('User', resolveId(user) as string, [
@@ -400,14 +353,8 @@ describe('Reset Password', () => {
     const password = 'password!@#';
 
     const { project, user } = await withTestContext(async () => {
-      // Register and create a project
-      const { project, user } = await registerNew({
-        firstName: 'Reset',
-        lastName: 'Reset',
-        projectName: 'Reset Project',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      const { user } = await addTestUser({ project, email, password, firstName: 'Reset', lastName: 'Reset' });
 
       // Add the project to the user
       await systemRepo.patchResource('User', resolveId(user) as string, [

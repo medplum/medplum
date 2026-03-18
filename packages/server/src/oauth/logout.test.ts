@@ -1,12 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { withTestContext } from '../test.setup';
+import { createTestProject } from '../test.setup';
 
 const app = express();
 
@@ -26,20 +24,7 @@ describe('Revoke', () => {
   });
 
   test('Success', async () => {
-    const email = `alex${randomUUID()}@example.com`;
-    const password = randomUUID();
-
-    const { accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email,
-        password,
-        remoteAddress: '5.5.5.5',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
-      })
-    );
+    const { accessToken } = await createTestProject({ withAccessToken: true });
 
     // Get user info (should succeed)
     const res1 = await request(app).get('/oauth2/userinfo').set('Authorization', `Bearer ${accessToken}`);

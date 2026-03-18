@@ -10,8 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -192,20 +191,11 @@ describe('New user', () => {
   });
 
   test('Custom recaptcha client success', async () => {
-    const email = `recaptcha-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
-    const project = await withTestContext(async () => {
-      // Register and create a project
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+    const { project } = await createTestProject({ withClient: true });
+    await withTestContext(async () => {
       // As a super admin, set the recaptcha site key
       // and the default access policy
       const systemRepo = getProjectSystemRepo(project);
@@ -223,7 +213,6 @@ describe('New user', () => {
           reference: 'AccessPolicy/' + randomUUID(),
         },
       });
-      return project;
     });
 
     const res = await request(app)
@@ -245,20 +234,12 @@ describe('New user', () => {
   });
 
   test('Custom recaptcha client with incorrect project ID', async () => {
-    const email = `recaptcha-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     // Register and create a project
+    const { project } = await createTestProject({ withClient: true });
     await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
       // As a super admin, set the recaptcha site key
       // and the default access policy
       const systemRepo = getProjectSystemRepo(project);
@@ -276,7 +257,6 @@ describe('New user', () => {
           reference: 'AccessPolicy/' + randomUUID(),
         },
       });
-      return project;
     });
 
     const res = await request(app)
@@ -297,20 +277,12 @@ describe('New user', () => {
   });
 
   test('Custom recaptcha client missing access policy', async () => {
-    const email = `recaptcha-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
     const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     // Register and create a project
-    const project = await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+    const { project } = await createTestProject({ withClient: true });
+    await withTestContext(async () => {
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
       const systemRepo = getProjectSystemRepo(project);
@@ -325,7 +297,6 @@ describe('New user', () => {
           },
         ],
       });
-      return project;
     });
 
     const res = await request(app)
@@ -362,19 +333,11 @@ describe('New user', () => {
   });
 
   test('Recaptcha secret key not found', async () => {
-    const email = `recaptcha-client${randomUUID()}@example.com`;
-    const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
 
     // Register and create a project
-    const project = await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+    const { project } = await createTestProject({ withClient: true });
+    await withTestContext(async () => {
       // As a super admin, set the recaptcha site key
       const systemRepo = getProjectSystemRepo(project);
       await systemRepo.updateResource({
@@ -387,7 +350,6 @@ describe('New user', () => {
           },
         ],
       });
-      return project;
     });
 
     const res = await request(app)
@@ -413,37 +375,18 @@ describe('New user', () => {
     // Third, register as a patient in a different project
     // All 3 of these should be isolated
 
-    const email = `test${randomUUID()}@example.com`;
     const password = 'password!@#';
 
     // Project P1 is owned by the email address
-    const reg1 = await withTestContext(() =>
-      registerNew({ firstName: 'P1', lastName: 'P1', projectName: 'P1', email, password })
-    );
+    const reg1 = await createTestProject({ withClient: true });
     expect(reg1).toBeDefined();
 
     // Project P2 is owned by someone else
-    const reg2 = await withTestContext(() =>
-      registerNew({
-        firstName: 'P2',
-        lastName: 'P2',
-        projectName: 'P2',
-        email: `test${randomUUID()}@example.com`,
-        password: randomUUID(),
-      })
-    );
+    const reg2 = await createTestProject({ withClient: true });
     expect(reg2).toBeDefined();
 
     // Project P3 is owned by someone else
-    const reg3 = await withTestContext(() =>
-      registerNew({
-        firstName: 'P3',
-        lastName: 'P3',
-        projectName: 'P3',
-        email: `test${randomUUID()}@example.com`,
-        password: randomUUID(),
-      })
-    );
+    const reg3 = await createTestProject({ withClient: true });
     expect(reg3).toBeDefined();
 
     // Try to register as a patient in Project P2
@@ -558,13 +501,8 @@ describe('New user', () => {
   });
 
   test('Self-registered user has meta.project set when projectId is provided', async () => {
-    const email = `meta-project${randomUUID()}@example.com`;
-    const password = 'password!@#';
-
     // Register a project owner so we have a valid projectId
-    const { project } = await withTestContext(() =>
-      registerNew({ firstName: 'Owner', lastName: 'Owner', projectName: 'MetaProjectTest', email, password })
-    );
+    const { project } = await createTestProject({ withClient: true });
 
     // Register a new user into that project via the self-registration endpoint
     const newEmail = `patient${randomUUID()}@example.com`;

@@ -6,11 +6,10 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { addTestUser, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
   const app = express();
@@ -21,16 +20,13 @@ describe('SCIM Routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    // First, Alice creates a project
-    const registration = await registerNew({
-      firstName: 'Alice',
-      lastName: 'Smith',
-      projectName: 'Alice Project',
-      email: `alice${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
-    accessToken = registration.accessToken;
-    systemRepo = getProjectSystemRepo(registration.project);
+    // Create a project with a real User (SCIM endpoints require User login type)
+    const { project } = await withTestContext(() => createTestProject());
+    systemRepo = await getProjectSystemRepo(project);
+    const testUser = await withTestContext(() => addTestUser({ project }));
+    // SCIM endpoints require admin access
+    await systemRepo.updateResource({ ...testUser.membership, admin: true });
+    accessToken = testUser.accessToken;
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -40,7 +36,7 @@ describe('SCIM Routes', () => {
 
     // Update project with default access policy
     await systemRepo.updateResource({
-      ...registration.project,
+      ...project,
       defaultPatientAccessPolicy: createReference(accessPolicy),
     });
   });
@@ -183,30 +179,13 @@ describe('SCIM Routes', () => {
   });
 
   test('Search users as super admin', async () => {
-    // Create new project
-    const registration = await withTestContext(async () => {
-      const reg = await registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      });
-
-      // Make the project super admin
-      const systemRepo = getProjectSystemRepo(reg.project);
-      await systemRepo.updateResource({
-        ...reg.project,
-        superAdmin: true,
-      });
-      return reg;
-    });
+    const { project } = await withTestContext(() => createTestProject({ superAdmin: true }));
 
     // Add another user
     // This user is a super admin
     // This user is not a project admin
     // They should still be allowed to use SCIM
-    const { accessToken } = await addTestUser(registration.project);
+    const { accessToken } = await addTestUser(project);
 
     const res = await request(app)
       .get(`/scim/v2/Users`)

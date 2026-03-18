@@ -15,11 +15,17 @@ import { authenticator } from 'otplib';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
-import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import {
+  addTestUser,
+  createTestProject,
+  initTestAuth,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -56,13 +62,7 @@ describe('Admin Invite', () => {
   test('New user to project', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -98,33 +98,20 @@ describe('Admin Invite', () => {
 
   test('Existing user to project', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project: aliceProject, accessToken: aliceAccessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
-    // Second, Bob creates a project
+    // Second, Bob creates a project (so Bob already has an account)
     const bobEmail = `bob${randomUUID()}@example.com`;
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'Bob',
-        lastName: 'Jones',
-        projectName: 'Bob Project',
-        email: bobEmail,
-        password: 'password!@#',
-      })
-    );
+    const { project: bobProject } = await withTestContext(() => createTestProject());
+    await withTestContext(() => addTestUser({ project: bobProject, email: bobEmail }));
 
     // Third, Alice invites Bob to the project
     // Because Bob already has an account, no emails should be sent
     const res3 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .post('/admin/projects/' + aliceProject.id + '/invite')
+      .set('Authorization', 'Bearer ' + aliceAccessToken)
       .send({
         resourceType: 'Practitioner',
         firstName: 'Bob',
@@ -141,7 +128,7 @@ describe('Admin Invite', () => {
     expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe(bobEmail);
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
-    expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
+    expect(parsed.subject).toBe('Medplum: Welcome to Test Project');
 
     const rows = await new SelectQuery('User')
       .column('content')
@@ -154,13 +141,7 @@ describe('Admin Invite', () => {
   test('Existing practitioner to project', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice creates a Practitioner resource
@@ -204,13 +185,7 @@ describe('Admin Invite', () => {
   test('Specified practitioner to project', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice creates a Practitioner resource
@@ -255,24 +230,18 @@ describe('Admin Invite', () => {
 
   test('Access denied', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project: aliceProject } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to project
-    const bobRegistration = await addTestUser(aliceRegistration.project);
+    const bobRegistration = await addTestUser(aliceProject);
 
     // Third, Bob tries to invite Carol to Alice's project
     // In this example, Bob is not an admin of Alice's project
     // So access is denied
     const res3 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .post('/admin/projects/' + aliceProject.id + '/invite')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .send({
         resourceType: 'Practitioner',
@@ -289,13 +258,7 @@ describe('Admin Invite', () => {
   test('Input validation', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -320,13 +283,7 @@ describe('Admin Invite', () => {
   test('Do not send email', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -350,13 +307,7 @@ describe('Admin Invite', () => {
   test('Invite by externalId', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -390,13 +341,7 @@ describe('Admin Invite', () => {
   test('Duplicate externalId', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -433,13 +378,7 @@ describe('Admin Invite', () => {
   test('Reuse deleted externalId', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Alice invites Bob to the project
@@ -483,13 +422,7 @@ describe('Admin Invite', () => {
   test('Invite as client', async () => {
     // First, Alice creates a project
     const { project, accessToken, client } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, withClient: true, membership: { admin: true } })
     );
 
     // Get the client membership
@@ -539,13 +472,7 @@ describe('Admin Invite', () => {
   test('Invite user as admin', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -575,13 +502,7 @@ describe('Admin Invite', () => {
   test('Invite user with admin flag as false', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -606,21 +527,15 @@ describe('Admin Invite', () => {
     mockSESv2Client.rejects('error');
 
     // First, Alice creates a project
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project, accessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
     const bobEmail = `bob${randomUUID()}@example.com`;
 
     // Alice invites Bob. Under normal circumstances the email would be sent
     const res2 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Practitioner',
         firstName: 'Bob',
@@ -634,20 +549,14 @@ describe('Admin Invite', () => {
 
   test('Super admin invite to different project', async () => {
     // First, Alice creates a project
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project: aliceProject } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // As a super admin, invite Bob to Alice's project
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
     const res = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .post('/admin/projects/' + aliceProject.id + '/invite')
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
       .send({
         resourceType: 'Practitioner',
@@ -657,19 +566,13 @@ describe('Admin Invite', () => {
         sendEmail: false,
       });
     expect(res.status).toBe(200);
-    expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceRegistration.project));
+    expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceProject));
   });
 
   test('Convert capitalized email to lower case', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -699,14 +602,8 @@ describe('Admin Invite', () => {
   });
 
   test('Invite user with existing membership', async () => {
-    const { project, accessToken, profile } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project, accessToken, client } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, withClient: true, membership: { admin: true } })
     );
 
     // Invite Bob first time - should succeed
@@ -761,8 +658,11 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         email: bobEmail,
         upsert: true,
-        membership: { profile: createReference(profile) },
+        membership: { profile: createReference(client) },
       });
+    if (res5.status !== 409) {
+      console.log('invite res5 body:', JSON.stringify(res5.body));
+    }
     expect(res5.status).toBe(409);
     expect(normalizeErrorString(res5.body)).toStrictEqual(
       'User is already a member of this project with a different profile'
@@ -786,13 +686,7 @@ describe('Admin Invite', () => {
 
   test('Inviting a project-scoped user when there is already a server-scoped user who is a member with the same email address', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite Bob first time as server-scoped user - should succeed
@@ -826,13 +720,7 @@ describe('Admin Invite', () => {
 
   test('Inviting a server-scoped user when there is already a project-scoped user who is a member with the same email address', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite Bob first time as project-scoped user - should succeed
@@ -866,13 +754,7 @@ describe('Admin Invite', () => {
 
   test('Invite user with forceNewMembership in different cases', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite Bob two time as a patient
@@ -1022,13 +904,7 @@ describe('Admin Invite', () => {
 
   test('Invite project scoped user', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -1056,13 +932,7 @@ describe('Admin Invite', () => {
 
   test('Invite server scoped User, and check that the User is not accessible from the project', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -1090,13 +960,7 @@ describe('Admin Invite', () => {
   test('End-to-end invite and require MFA', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Second, Alice invites Bob to the project
@@ -1186,13 +1050,7 @@ describe('Admin Invite', () => {
 
   test('Invite with valid access policy', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Create an access policy in the project
@@ -1228,13 +1086,7 @@ describe('Admin Invite', () => {
 
   test('Invite with invalid access policy (does not exist)', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Try to invite Bob with a non-existent access policy
@@ -1260,20 +1112,14 @@ describe('Admin Invite', () => {
 
   test('Invite with access policy from different project', async () => {
     // Create first project with Alice
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { accessToken: aliceAccessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Create access policy in Alice's project
     const accessPolicyRes = await request(app)
       .post('/fhir/R4/AccessPolicy')
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .set('Authorization', 'Bearer ' + aliceAccessToken)
       .type('json')
       .send({
         resourceType: 'AccessPolicy',
@@ -1283,21 +1129,15 @@ describe('Admin Invite', () => {
     const accessPolicy = accessPolicyRes.body;
 
     // Create second project with Bob
-    const bobRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Bob',
-        lastName: 'Jones',
-        projectName: 'Bob Project',
-        email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project: bobProject, accessToken: bobAccessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Try to invite Carol to Bob's project using Alice's access policy
     const carolEmail = `carol${randomUUID()}@example.com`;
     const res = await request(app)
-      .post('/admin/projects/' + bobRegistration.project.id + '/invite')
-      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .post('/admin/projects/' + bobProject.id + '/invite')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
       .send({
         resourceType: 'Practitioner',
         firstName: 'Carol',
@@ -1315,13 +1155,7 @@ describe('Admin Invite', () => {
 
   test('Invite without access policy (backwards compatibility)', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite Bob without specifying an access policy
@@ -1344,13 +1178,7 @@ describe('Admin Invite', () => {
 
   test('Invite with access array containing invalid policy', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Create a valid access policy
@@ -1391,13 +1219,7 @@ describe('Admin Invite', () => {
 
   test('Invite with membership.access array containing invalid policy', async () => {
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Try to invite with membership.access array containing invalid policy

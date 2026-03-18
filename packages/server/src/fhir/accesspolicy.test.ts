@@ -36,7 +36,6 @@ import type {
 import { randomUUID } from 'crypto';
 import { inviteUser } from '../admin/invite';
 import { initAppServices, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
@@ -2498,12 +2497,9 @@ describe('AccessPolicy', () => {
 
   test('Empty access policy allows reading StructureDefinitions', () =>
     withTestContext(async () => {
-      const { project, login, membership } = await registerNew({
-        firstName: 'First',
-        lastName: 'Last',
-        projectName: 'Empty Access Policy Test',
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
       });
 
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -2593,12 +2589,9 @@ describe('AccessPolicy', () => {
 
   test('Project Admin cannot link Projects', async () =>
     withTestContext(async () => {
-      const { project, membership, login } = await registerNew({
-        firstName: 'Link',
-        lastName: 'Test',
-        projectName: 'Project link test',
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
+      const { project, membership, login } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
       });
       expect(project.link).toBeUndefined();
       const repo = await getRepoForLogin({ login, membership, project, userConfig: {} as UserConfiguration }, true);
@@ -2625,12 +2618,9 @@ describe('AccessPolicy', () => {
 
   test('AccessPolicy for Subscriptions with author in criteria', async () =>
     withTestContext(async () => {
-      const { project, login, membership } = await registerNew({
-        firstName: 'Project',
-        lastName: 'Admin',
-        projectName: 'Testing AccessPolicy for Subscriptions',
-        email: randomUUID() + '@example.com',
-        password: randomUUID(),
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        membership: { admin: true },
       });
       expect(project.link).toBeUndefined();
 

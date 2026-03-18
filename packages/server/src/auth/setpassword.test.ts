@@ -13,8 +13,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getProjectSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -45,16 +44,10 @@ describe('Set Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const res = await withTestContext(() =>
-      registerNew({
-        projectName: 'Set Password Project',
-        firstName: 'George',
-        lastName: 'Washington',
-        email,
-        password: 'password!@#',
-        scope: 'openid profile email',
-      })
-    );
+    const res = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      return addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington', scope: 'openid profile email' });
+    });
     expect(res).toBeDefined();
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
@@ -114,16 +107,11 @@ describe('Set Password', () => {
   test('UserSecurityRequest', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const { user, project } = await withTestContext(() =>
-      registerNew({
-        projectName: 'Set Password Project',
-        firstName: 'George',
-        lastName: 'Washington',
-        email,
-        password: 'password!@#',
-        scope: 'openid profile email',
-      })
-    );
+    const { user, project } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { user } = await addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington' });
+      return { user, project };
+    });
 
     const systemRepo = getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>
@@ -157,16 +145,11 @@ describe('Set Password', () => {
   test('UserSecurityRequest invalid type', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const { user, project } = await withTestContext(() =>
-      registerNew({
-        projectName: 'Set Password Project',
-        firstName: 'George',
-        lastName: 'Washington',
-        email,
-        password: 'password!@#',
-        scope: 'openid profile email',
-      })
-    );
+    const { user, project } = await withTestContext(async () => {
+      const { project } = await createTestProject();
+      const { user } = await addTestUser({ project, email, password: 'password!@#', firstName: 'George', lastName: 'Washington' });
+      return { user, project };
+    });
 
     const systemRepo = getProjectSystemRepo(project);
     const usr = await withTestContext(async () =>

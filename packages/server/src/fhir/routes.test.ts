@@ -7,7 +7,6 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
@@ -666,15 +665,10 @@ describe('FHIR Routes', () => {
   });
 
   test('Resend as project admin', async () => {
-    const { profile, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project, accessToken } = await withTestContext(() =>
+      createTestProject({ membership: { admin: true }, withAccessToken: true })
     );
+    const { profile } = await withTestContext(() => addTestUser(project));
 
     const res = await request(app)
       .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)

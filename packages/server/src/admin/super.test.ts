@@ -7,7 +7,6 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { minCursorBasedSearchPageSize } from '../fhir/search';
@@ -16,7 +15,7 @@ import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import type { CronJobData } from '../workers/cron';
 import { getCronQueue } from '../workers/cron';
 import type { ReindexJobData } from '../workers/reindex';
@@ -683,15 +682,8 @@ describe('Super Admin routes', () => {
   test('Set password success', async () => {
     const email = `alice${randomUUID()}@example.com`;
 
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email,
-        password: 'password!@#',
-      })
-    );
+    const { project } = await withTestContext(() => createTestProject());
+    await withTestContext(() => addTestUser({ project, email }));
 
     const res = await request(app)
       .post('/admin/super/setpassword')

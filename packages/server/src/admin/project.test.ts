@@ -8,11 +8,9 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import type { RegisterResponse } from '../auth/register';
-import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { addTestUser, createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { inviteUser } from './invite';
 
 jest.mock('hibp');
@@ -21,23 +19,21 @@ jest.mock('node-fetch');
 const app = express();
 
 // create testProjectAdmin to use for set password
-let testProjectAdmin: RegisterResponse;
+let testProjectAdmin: { project: any; accessToken: string; user: any };
 
 describe('Project Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await withTestContext(() => initApp(app, config));
 
-    // Register and create a project
-    testProjectAdmin = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    // Create a project and add an admin user
+    const { project, accessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
+    const testUser = await withTestContext(() =>
+      addTestUser(project)
+    );
+    testProjectAdmin = { project, accessToken, user: testUser.user };
   });
 
   afterAll(async () => {
@@ -52,15 +48,9 @@ describe('Project Admin routes', () => {
   });
 
   test('Get project and promote admin', async () => {
-    // Register and create a project
+    // Create a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'John',
-        lastName: 'Adams',
-        projectName: 'Adams Project',
-        email: `john${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite a new member
@@ -78,14 +68,14 @@ describe('Project Admin routes', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
-    // 3 members total (1 admin, 1 client, 1 invited)
+    // 2 members total (1 admin client, 1 invited)
     const res3 = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
     expect(res3.status).toBe(200);
     expect(res3.body.entry).toBeDefined();
-    expect(res3.body.entry.length).toStrictEqual(3);
+    expect(res3.body.entry.length).toStrictEqual(2);
 
     const members = res3.body.entry.map((e: any) => e.resource) as ProjectMembership[];
     const owner = members.find((m) => m.admin);
@@ -147,37 +137,31 @@ describe('Project Admin routes', () => {
   });
 
   test('Get project access denied', async () => {
-    const aliceRegistration = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    const { project: aliceProject, accessToken: aliceAccessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
-    const bobRegistration = await addTestUser(aliceRegistration.project, { resourceType: 'AccessPolicy' });
+    const bobRegistration = await addTestUser(aliceProject, { resourceType: 'AccessPolicy' });
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
     const res3 = await request(app)
-      .get('/admin/projects/' + aliceRegistration.project.id)
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
+      .get('/admin/projects/' + aliceProject.id)
+      .set('Authorization', 'Bearer ' + aliceAccessToken);
 
     expect(res3.status).toBe(200);
 
     // Try to access Alice's project members using Alices's access token
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
+      .set('Authorization', 'Bearer ' + aliceAccessToken);
     expect(membersRes.status).toBe(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
     // Try to access Alice's project using Bob's access token
     // Should fail
     const res4 = await request(app)
-      .get('/admin/projects/' + aliceRegistration.project.id)
+      .get('/admin/projects/' + aliceProject.id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res4.status).toBe(403);
@@ -185,7 +169,7 @@ describe('Project Admin routes', () => {
     // Try to access Alice's project members using Bob's access token
     // Should fail
     const res5 = await request(app)
-      .get('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
+      .get('/admin/projects/' + aliceProject.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res5.status).toBe(403);
@@ -193,7 +177,7 @@ describe('Project Admin routes', () => {
     // Try to edit Alice's project members using Bob's access token
     // Should fail
     const res6 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
+      .post('/admin/projects/' + aliceProject.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .type('json')
       .send({ resourceType: 'ProjectMembership' });
@@ -203,8 +187,8 @@ describe('Project Admin routes', () => {
     // Try to create a new client in Alice's project using Alices's access token
     // Should succeed
     const res9 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/client')
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .post('/admin/projects/' + aliceProject.id + '/client')
+      .set('Authorization', 'Bearer ' + aliceAccessToken)
       .type('json')
       .send({
         resourceType: 'ClientApplication',
@@ -219,7 +203,7 @@ describe('Project Admin routes', () => {
     // Should succeed
     const res7 = await request(app)
       .get('/fhir/R4/ClientApplication/' + clientId)
-      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
+      .set('Authorization', 'Bearer ' + aliceAccessToken);
 
     expect(res7.status).toBe(200);
 
@@ -234,7 +218,7 @@ describe('Project Admin routes', () => {
     // Try to create a new client in Alice's project using Bob's access token
     // Should fail
     const res10 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/client')
+      .post('/admin/projects/' + aliceProject.id + '/client')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res10.status).toBe(403);
@@ -242,7 +226,7 @@ describe('Project Admin routes', () => {
     // Try to delete Alice's project members using Bob's access token
     // Should fail
     const res11 = await request(app)
-      .delete('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
+      .delete('/admin/projects/' + aliceProject.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res11.status).toBe(403);
@@ -250,7 +234,7 @@ describe('Project Admin routes', () => {
     // Try to create a bot using Bob's access token
     // Should fail
     const res12 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/bot')
+      .post('/admin/projects/' + aliceProject.id + '/bot')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .type('json')
       .send({
@@ -263,7 +247,7 @@ describe('Project Admin routes', () => {
     // Try to update secrets using Bob's access token
     // Should fail
     const res13 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/secrets')
+      .post('/admin/projects/' + aliceProject.id + '/secrets')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .type('json')
       .send([
@@ -278,7 +262,7 @@ describe('Project Admin routes', () => {
     // Try to update sites using Bob's access token
     // Should fail
     const res14 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/sites')
+      .post('/admin/projects/' + aliceProject.id + '/sites')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .type('json')
       .send([
@@ -292,16 +276,14 @@ describe('Project Admin routes', () => {
   });
 
   test('Delete membership', async () => {
-    // Register and create a project
-    const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Delete membership project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    // Create a project
+    const { project, client, accessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, withClient: true, membership: { admin: true } })
     );
+
+    // Set the project owner to the client so owner-deletion check works
+    const systemRepo = getGlobalSystemRepo();
+    await systemRepo.updateResource({ ...project, owner: createReference(client) as any });
 
     // Invite a new member
     const res2 = await request(app)
@@ -318,36 +300,34 @@ describe('Project Admin routes', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
-    // 3 members total (1 admin, 1 client, 1 invited)
+    // 2 members total (1 admin client, 1 invited)
     const res3 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
 
-    // Try to access Alice's project members using Alices's access token
+    // Try to access project members
     const membersRes = await request(app)
       .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(membersRes.status).toBe(200);
     const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
-    const owner = members.find(
-      (m) => m.profile?.reference?.startsWith('Practitioner/') && m.admin
-    ) as ProjectMembership;
+    const owner = members.find((m) => m.admin) as ProjectMembership;
     expect(owner).toBeDefined();
     const member = members.find(
       (m) => m.profile?.reference?.startsWith('Practitioner/') && !m.admin
     ) as ProjectMembership;
     expect(member).toBeDefined();
 
-    // Get the new membership details as Alice
+    // Get the new membership details
     const res4 = await request(app)
       .get('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
 
-    // Now remove Bob as Alice
+    // Now remove the invited member
     // This should succeed
     const res5 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + member.id)
@@ -355,15 +335,14 @@ describe('Project Admin routes', () => {
     expect(res5.status).toBe(200);
 
     // Get the project details
-    // Make sure the new member is an admin
-    // 2 members total (1 admin, 1 client)
+    // 1 member total (1 admin client)
     const res6 = await request(app)
       .get('/admin/projects/' + project.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.project).toBeDefined();
 
-    // Alice try to delete her own membership
+    // Try to delete own membership (the owner)
     // This should fail
     const res7 = await request(app)
       .delete('/admin/projects/' + project.id + '/members/' + owner.id)
@@ -399,15 +378,9 @@ describe('Project Admin routes', () => {
   });
 
   test('Delete project-scoped user membership also deletes User resource', async () => {
-    // Register and create a project
+    // Create a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Delete project-scoped user project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite a project-scoped user (Patient is project-scoped by default)
@@ -450,15 +423,9 @@ describe('Project Admin routes', () => {
   });
 
   test('Delete server-scoped user membership does not delete User resource', async () => {
-    // Register and create a project
+    // Create a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Delete server-scoped user project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Invite a server-scoped user (Practitioner is server-scoped by default)
@@ -503,15 +470,9 @@ describe('Project Admin routes', () => {
   });
 
   test('Save project secrets', async () => {
-    // Register and create a project
-    const { project, profile, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'John',
-        lastName: 'Adams',
-        projectName: 'Adams Project',
-        email: `john${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+    // Create a project
+    const { project, client, accessToken } = await withTestContext(() =>
+      createTestProject({ withAccessToken: true, withClient: true, membership: { admin: true } })
     );
 
     // Add a secret
@@ -541,19 +502,13 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('X-Medplum', 'extended');
     expect(res4.status).toBe(200);
-    expect(res4.body.meta.author).toMatchObject(createReference(profile));
+    expect(res4.body.meta.author).toMatchObject(createReference(client));
   });
 
   test('Save project sites', async () => {
-    // Register and create a project
+    // Create a project
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'John',
-        lastName: 'Adams',
-        projectName: 'Adams Project',
-        email: `john${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Add a site
@@ -625,21 +580,14 @@ describe('Project Admin routes', () => {
   });
 
   test('Set password user not associated with project', async () => {
-    const testOtherProjectAdmin = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { project: otherProject } = await withTestContext(() => createTestProject());
+    const otherUser = await withTestContext(() => addTestUser(otherProject));
     const res = await request(app)
       .post('/admin/projects/setpassword')
       .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
       .type('json')
       .send({
-        email: testOtherProjectAdmin.user.email,
+        email: otherUser.user.email,
         password: 'password123',
       });
 

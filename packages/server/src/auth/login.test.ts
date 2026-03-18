@@ -15,8 +15,13 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import type { Repository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
-import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import {
+  addTestUser,
+  createTestProject,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../test.setup';
 import { setPassword } from './setpassword';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -192,19 +197,12 @@ describe('Login', () => {
   });
 
   test('Login with access policy', async () => {
-    const adminEmail = `admin${randomUUID()}@example.com`;
     const memberEmail = `member${randomUUID()}@example.com`;
     const compartment = { reference: `Organization/${randomUUID()}` };
 
-    // Register and create a project
+    // Create a project with admin access token
     const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Admin',
-        lastName: 'Admin',
-        projectName: 'Access Policy Project',
-        email: adminEmail,
-        password: 'password!@#',
-      })
+      createTestProject({ withAccessToken: true, membership: { admin: true } })
     );
 
     // Create an access policy
@@ -351,15 +349,10 @@ describe('Login', () => {
     const email = `google${randomUUID()}@example.com`;
     const password = 'password!@#';
 
-    // Register and create a project
+    // Create a project and user
     await withTestContext(async () => {
-      const { project } = await registerNew({
-        firstName: 'Google',
-        lastName: 'Google',
-        projectName: 'Require Google Auth',
-        email,
-        password,
-      });
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Google', lastName: 'Google' });
 
       // As a super admin, update the project to require Google auth
       const systemRepo = getProjectSystemRepo(project);
@@ -395,14 +388,11 @@ describe('Login', () => {
     const email = `multiple-resource-types-${randomUUID()}@example.com`;
     const password = 'password!@#';
 
-    // Register and create a project
-    const { project } = await registerNew({
-      firstName: 'Practitioner',
-      lastName: 'Practitioner',
-      projectName: 'Multiple Resource Types',
-      email,
-      password,
-    });
+    // Create a project and user
+    const { project } = await createTestProject();
+    await withTestContext(() =>
+      addTestUser({ project, email, password, firstName: 'Practitioner', lastName: 'Practitioner' })
+    );
 
     await inviteUser({
       project,
@@ -457,16 +447,11 @@ describe('Login', () => {
     const email = `Mixed-Case-${randomUUID()}@example.com`;
     const password = 'password!@#';
 
-    // Register and create a project
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'Mixed',
-        lastName: 'Case',
-        projectName: 'Mixed Case Project',
-        email,
-        password,
-      })
-    );
+    // Create a project and user
+    await withTestContext(async () => {
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Mixed', lastName: 'Case' });
+    });
 
     // Try to login with mixed case email
     // This should work

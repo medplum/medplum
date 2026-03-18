@@ -7,8 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getGlobalSystemRepo } from '../fhir/repo';
-import { withTestContext } from '../test.setup';
-import { registerNew } from './register';
+import { addTestUser, createTestProject, withTestContext } from '../test.setup';
 
 describe('Scope', () => {
   const app = express();
@@ -20,15 +19,10 @@ describe('Scope', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    await withTestContext(() =>
-      registerNew({
-        firstName: 'Scope',
-        lastName: 'Scope',
-        projectName: 'Scope Project',
-        email,
-        password,
-      })
-    );
+    await withTestContext(async () => {
+      const { project } = await createTestProject();
+      await addTestUser({ project, email, password, firstName: 'Scope', lastName: 'Scope' });
+    });
   });
 
   afterAll(async () => {

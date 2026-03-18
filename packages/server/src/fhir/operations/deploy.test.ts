@@ -3,16 +3,14 @@
 import { ContentType } from '@medplum/core';
 import type { Binary, Bot } from '@medplum/fhirtypes';
 import express from 'express';
-import { randomUUID } from 'node:crypto';
 import stream from 'node:stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { registerNew } from '../../auth/register';
 import * as awsDeploy from '../../cloud/aws/deploy';
 import { loadTestConfig } from '../../config/loader';
 import * as storage from '../../storage/loader';
 import type { BinaryStorage } from '../../storage/types';
-import { initTestAuth, withTestContext } from '../../test.setup';
+import { createTestProject, initTestAuth } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
 
 const MOCK_PRESIGNED_URL = 'https://example.com/presigned';
@@ -203,15 +201,7 @@ describe('Deploy', () => {
 
   test('Bots not enabled', async () => {
     // First, Alice creates a project
-    const { project, accessToken } = await withTestContext(() =>
-      registerNew({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-      })
-    );
+    const { project, accessToken } = await createTestProject({ withAccessToken: true, membership: { admin: true } });
 
     // Next, Alice creates a bot
     const res2 = await request(app)
