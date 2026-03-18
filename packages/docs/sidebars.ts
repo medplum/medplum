@@ -92,6 +92,7 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'communications/async-encounters/async-encounters' },
         { type: 'doc', id: 'communications/organizing-communications' },
         { type: 'doc', id: 'communications/sending-messages-and-attachments' },
+        { type: 'doc', id: 'communications/read-receipts-and-message-status' },
       ],
     },
     {
