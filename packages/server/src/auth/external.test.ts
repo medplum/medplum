@@ -600,6 +600,55 @@ describe('External', () => {
     expect(redirect.searchParams.get('login')).toBeTruthy();
   });
 
+  test('returnTo URL with confused domain is rejected', async () => {
+    const testDomain = randomUUID() + '.example.com';
+    const testEmail = `text@${testDomain}`;
+    const allowedReturnTo = 'https://myapp.example.com';
+
+    await withTestContext(async () => {
+      const { project: testProject } = await registerNew({
+        firstName: 'External',
+        lastName: 'Text',
+        projectName: 'External Test Project - confused domain',
+        email: testEmail,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      });
+
+      const testRepo = getProjectSystemRepo(testProject);
+      await testRepo.createResource<DomainConfiguration>({
+        resourceType: 'DomainConfiguration',
+        domain: testDomain,
+        identityProvider,
+        allowedPostLoginRedirectUrls: [allowedReturnTo],
+      });
+    });
+
+    // Attempt to use a confused domain that starts with the allowed URL
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({
+        domain: testDomain,
+        returnTo: 'https://myapp.example.com.evil.com/steal',
+      }),
+    });
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(testEmail),
+    }));
+
+    const res = await request(app).get(url);
+    expect(res.status).toBe(302);
+
+    // Should fall back to default signin, NOT redirect to evil.com
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toStrictEqual('localhost:3000');
+    expect(redirect.pathname).toStrictEqual('/signin');
+  });
+
   test('Legacy User.externalId support', async () => {
     const externalId = randomUUID();
     const domain = `${randomUUID()}.example.com`;

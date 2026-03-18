@@ -261,8 +261,30 @@ function validateReturnToUrl(
   if (!returnTo) {
     return false;
   }
-  return (
-    new URL(returnTo).hostname.endsWith('.medplum.com') ||
-    !!domainConfig?.allowedPostLoginRedirectUrls?.some((url) => returnTo.startsWith(url))
-  );
+
+  try {
+    const returnToUrl = new URL(returnTo);
+
+    // Always allow .medplum.com hosts
+    if (returnToUrl.hostname.endsWith('.medplum.com')) {
+      return true;
+    }
+
+    // Check against allowed URLs - compare origin and ensure path starts with allowed path
+    return !!domainConfig?.allowedPostLoginRedirectUrls?.some((allowedUrl) => {
+      try {
+        const allowed = new URL(allowedUrl);
+        return (
+          returnToUrl.protocol === allowed.protocol &&
+          returnToUrl.hostname === allowed.hostname &&
+          returnToUrl.port === allowed.port &&
+          returnToUrl.pathname.startsWith(allowed.pathname)
+        );
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
+  }
 }
