@@ -19,7 +19,6 @@ describe('SchedulePage', () => {
   let mockSchedule: Schedule;
 
   beforeEach(async () => {
-
     medplum = new MockClient();
 
     vi.clearAllMocks();
