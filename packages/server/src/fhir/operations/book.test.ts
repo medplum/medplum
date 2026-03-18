@@ -1058,9 +1058,7 @@ describe('Appointment/$book', () => {
   });
 
   describe('Loading schedulingParameters from HealthcareService', () => {
-    const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
-
-    async function makeHealthcareService(duration: number): Promise<void> {
+    async function makeHealthcareService(serviceType: CodeableConcept, duration: number): Promise<void> {
       await systemRepo.createResource<HealthcareService>({
         resourceType: 'HealthcareService',
         meta: { project: project.project.id },
@@ -1095,7 +1093,37 @@ describe('Appointment/$book', () => {
     }
 
     test('succeeds when scheduling parameters are only on an HealthcareService', async () => {
-      await makeHealthcareService(60);
+      const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
+      await makeHealthcareService(serviceType, 60);
+      const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
+
+      const response = await request
+        .post('/fhir/R4/Appointment/$book')
+        .set('Authorization', `Bearer ${project.accessToken}`)
+        .send({
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'slot',
+              resource: {
+                resourceType: 'Slot',
+                schedule: createReference(schedule),
+                serviceType: [serviceType],
+                start: '2026-01-15T14:00:00Z',
+                end: '2026-01-15T15:00:00Z',
+                status: 'free',
+              } satisfies Slot,
+            },
+          ],
+        });
+
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toEqual(201);
+    });
+
+    test('succeeds when the service-type has no system', async () => {
+      const serviceType = { coding: [{ code: 'checkup' }] };
+      await makeHealthcareService(serviceType, 60);
       const schedule = await makeSchedule({ actor: practitioner1, extension: [] });
 
       const response = await request
@@ -1123,7 +1151,8 @@ describe('Appointment/$book', () => {
     });
 
     test('fails when booking outside HealthcareService availability', async () => {
-      await makeHealthcareService(60);
+      const serviceType = { coding: [{ system: 'http://example.com', code: 'consult' }] };
+      await makeHealthcareService(serviceType, 60);
       const schedule = await makeScheduleNoParams(practitioner1);
 
       // 07:00-08:00 ET is outside the 09:00-17:00 ET window
@@ -1283,6 +1312,65 @@ describe('Appointment/$book', () => {
         },
       },
     ]);
+  });
+
+  test('when the service type has no system attribute', async () => {
+    const initialVisit: CodeableConcept = {
+      text: 'Simple initial visit',
+      coding: [{ code: 'simple-initial-visit' }],
+    };
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.project.id },
+      actor: [createReference(practitioner1)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'serviceType',
+              valueCodeableConcept: initialVisit,
+            },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed', 'thu'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+            {
+              url: 'duration',
+              valueDuration: { value: 60, unit: 'min' },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              serviceType: [initialVisit],
+              start: '2026-01-15T14:00:00Z',
+              end: '2026-01-15T15:00:00Z',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response.status).toEqual(201);
   });
 });
 
