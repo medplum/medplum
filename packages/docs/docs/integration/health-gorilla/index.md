@@ -110,6 +110,13 @@ In a lab implementation, you'll see the following abbreviations.
 | Third Party Bill | Insurance responsible            | In this case, a patient's insurance is billed                                                                                                                                                 |
 | Account Bill     | Owner of lab account responsible | This is common in clinical research and concierge care                                                                                                                                        |
 
+## Getting a Lab Account
+
+If your organization does not yet have an account with a national lab, you can sign up directly:
+
+- [Contact a Labcorp national lab account representative](https://www.labcorp.com/clinical-drug-testing/support/contact-labcorp-account-representative)
+- [Sign up for a Quest national lab account](https://questdiagnosticscommercial.my.site.com/AASU/s/)
+
 ## Related Reading
 
 - [Sample Implementation](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) via Medplum Bot - this is reference material that can be used to plan your integration
