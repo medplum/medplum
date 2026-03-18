@@ -696,3 +696,12 @@ Multi-tenant access control in Medplum enables you to securely partition healthc
 
 By following these patterns, you can create flexible access control models that support complex healthcare workflows while maintaining data isolation between tenants. Providers can work across multiple tenants and patients can be shared between tenants. For more advanced access control scenarios, see [Building Multi-Tenant MSO with Medplum](/blog/multi-tenant-mso) and the [Access Policies documentation](/docs/access/access-policies).
 
+<details>
+  <summary>Example LLM Prompt: Recommending Tenanting Resources and Access Policies</summary>
+  Answer the questions in the below prompt, and copy and paste it into an LLM. 
+
+<MedplumCodeBlock language="md" selectBlocks="tenanting-prompt">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+</details>

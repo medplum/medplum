@@ -2606,6 +2606,26 @@ describe('Client', () => {
       await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Some kind of fetch error occurred');
       expect(fetch).toHaveBeenCalledTimes(3);
     });
+
+    test('should respect client-level maxRetries option', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch, maxRetries: 0 });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('per-request maxRetries should override client-level maxRetries', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch, maxRetries: 0 });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'), { maxRetries: 1 })).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('Paginated Search ', () => {
