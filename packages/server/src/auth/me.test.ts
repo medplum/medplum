@@ -294,4 +294,37 @@ describe('Me', () => {
     expect(res4.body).toBeDefined();
     expect(res4.body.security.memberships).toHaveLength(1);
   });
+
+  test('Project features are returned in /auth/me', async () => {
+
+    const email = `alice${randomUUID()}@example.com`;
+    const password = randomUUID();
+
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Feature',
+        lastName: 'Test',
+        projectName: 'Feature Test Project',
+        email: email,
+        password: password,
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    // Set a feature on the project
+    const systemRepo = getProjectSystemRepo(project);
+    await systemRepo.updateResource({
+      ...project,
+      features: ['bots'],
+    });
+
+    const res = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.project).toMatchObject({
+      resourceType: 'Project',
+      id: project.id,
+    });
+    expect(res.body.project.features).toEqual(['bots']);
+  });
 });
