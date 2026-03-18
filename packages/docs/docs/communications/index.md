@@ -10,6 +10,7 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 
 - [Asynchronous encounters](/docs/communications/async-encounters)
 - [Threaded messages](/docs/communications/organizing-communications)
+- [Bot automation for messaging](/docs/communications/bot-automation-for-messaging)
 - Omni-channel messaging
 - Real-time notifications using Websockets
 

@@ -3,6 +3,8 @@
 
 // start-block imports
 import { MedplumClient, getReferenceString } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -199,3 +201,140 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
+
+// start-block messageTaskLifecycleTs
+// Bot: handle Task lifecycle for new messages. Creates a Task when no open Task exists, completes it when a provider responds.
+export async function handler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef || !message.subject || !message.sender) {
+    return;
+  }
+
+  const openTasks = await medplum.searchResources('Task', {
+    focus: threadRef,
+    status: 'requested,accepted',
+  });
+
+  if (openTasks.length === 0) {
+    // No open Task for this thread — create one
+    await medplum.createResource({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      priority: 'routine',
+      focus: { reference: threadRef },
+      for: message.subject,
+      performerType: [
+        {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '224535009',
+              display: 'Registered nurse',
+            },
+          ],
+        },
+      ],
+      authoredOn: new Date().toISOString(),
+    });
+    return;
+  }
+
+  // Open Task exists — check if this message is from someone other than the patient
+  const task = openTasks[0];
+  const senderRef = message.sender.reference;
+  const patientRef = task.for?.reference;
+
+  if (senderRef && senderRef !== patientRef) {
+    // Sender is not the patient — treat as a provider response and complete the Task
+    await medplum.patchResource('Task', task.id!, [
+      { op: 'replace', path: '/status', value: 'completed' },
+      {
+        op: 'add',
+        path: '/output/-',
+        value: {
+          type: { text: 'Response' },
+          valueReference: { reference: `Communication/${message.id}` },
+        },
+      },
+    ]);
+  }
+}
+// end-block messageTaskLifecycleTs
+
+// start-block subscriptionMessageTaskLifecycleTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Create or complete Tasks when messages are sent in a thread',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-message-task-lifecycle-bot-id}',
+  },
+});
+// end-block subscriptionMessageTaskLifecycleTs
+
+// start-block staleThreadRemindersTs
+// Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
+export async function staleThreadRemindersHandler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
+  const staleDays = 3;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - staleDays);
+
+  const staleThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    status: 'in-progress',
+    _lastUpdated: `lt${cutoff.toISOString()}`,
+  });
+
+  for (const thread of staleThreads) {
+    if (!thread.subject) {
+      continue;
+    }
+    const existingTasks = await medplum.searchResources('Task', {
+      focus: `Communication/${thread.id}`,
+      code: 'https://medplum.com/task-codes|respond-to-old-message',
+      status: 'requested,accepted',
+    });
+
+    if (existingTasks.length > 0) {
+      continue;
+    }
+
+    await medplum.createResource({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      priority: 'urgent',
+      code: {
+        coding: [
+          {
+            system: 'https://medplum.com/task-codes',
+            code: 'respond-to-old-message',
+            display: 'Respond to old message',
+          },
+        ],
+      },
+      focus: { reference: `Communication/${thread.id}` },
+      for: thread.subject,
+      description: `Thread "${thread.topic?.text ?? 'Untitled'}" has been open for ${staleDays}+ days without a response`,
+      authoredOn: new Date().toISOString(),
+    });
+  }
+}
+// end-block staleThreadRemindersTs
+
+// start-block subscriptionStaleReminderTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Notify provider about stale thread',
+  criteria: 'Task?code=https://medplum.com/task-codes|respond-to-old-message&status=requested',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-notification-bot-id}',
+  },
+});
+// end-block subscriptionStaleReminderTs
