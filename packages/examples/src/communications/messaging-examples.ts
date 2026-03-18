@@ -220,10 +220,7 @@ const mixedMessage = await medplum.createResource({
   subject: threadHeader.subject,
   sender: { reference: 'Practitioner/doctor-alice-smith' },
   recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
-  payload: [
-    { contentString: 'Here are the lab results we discussed.' },
-    { contentAttachment: attachment },
-  ],
+  payload: [{ contentString: 'Here are the lab results we discussed.' }, { contentAttachment: attachment }],
   sent: new Date().toISOString(),
 });
 // end-block messageWithTextAndAttachment
