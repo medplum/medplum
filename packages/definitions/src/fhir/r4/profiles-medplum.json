@@ -5179,6 +5179,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+            "path" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+            "definition" : "List of allowed post-login redirect URLs for this domain configuration.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base" : {
+              "path" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+              "min" : 0,
+              "max" : "*"
+            }
           }
         ]
       }
