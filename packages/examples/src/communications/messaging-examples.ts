@@ -234,7 +234,6 @@ const messageWithAttachment = await medplum.createResource({
   sent: new Date().toISOString(),
 });
 // end-block messageWithAttachment
-void messageWithAttachment;
 
 // start-block messageWithTextAndAttachment
 const mixedMessage = await medplum.createResource({
@@ -258,4 +257,5 @@ const mixedMessage = await medplum.createResource({
   sent: new Date().toISOString(),
 });
 // end-block messageWithTextAndAttachment
-void mixedMessage;
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[messageWithAttachment, mixedMessage];
