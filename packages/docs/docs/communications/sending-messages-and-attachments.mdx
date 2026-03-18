@@ -55,6 +55,8 @@ When rendering messages, iterate over the `payload` array and render each entry 
 - `contentAttachment` — render as a download link, inline image, or file preview based on `contentType`
 - `contentReference` — resolve the referenced resource and render appropriately
 
+For displaying or downloading attachment content (presigned URLs, media tags, and the download helper), see [Consuming a FHIR Binary in an Application](https://www.medplum.com/docs/fhir-datastore/binary-data#consuming-a-fhir-binary-in-an-application).
+
 If using `@medplum/react`, the [BaseChat component](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/BaseChat/BaseChat.tsx) handles attachment rendering. For other frameworks, check `contentType` to decide how to display each attachment.
 
 ## See Also
