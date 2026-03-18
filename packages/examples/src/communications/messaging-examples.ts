@@ -205,37 +205,13 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
 // end-block poolTasksCurl
 */
 
-// start-block createBinaryForMessage
-const binary = await medplum.createBinary({
+// start-block messageWithTextAndAttachment
+const attachment = await medplum.createAttachment({
   data: file,
   filename: 'lab-report.pdf',
   contentType: 'application/pdf',
 });
-// end-block createBinaryForMessage
 
-// start-block messageWithAttachment
-const messageWithAttachment = await medplum.createResource({
-  resourceType: 'Communication',
-  status: 'in-progress',
-  partOf: [{ reference: `Communication/${threadHeader.id}` }],
-  topic: threadHeader.topic,
-  subject: threadHeader.subject,
-  sender: { reference: 'Practitioner/doctor-alice-smith' },
-  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
-  payload: [
-    {
-      contentAttachment: {
-        contentType: 'application/pdf',
-        url: binary.url,
-        title: 'lab-report.pdf',
-      },
-    },
-  ],
-  sent: new Date().toISOString(),
-});
-// end-block messageWithAttachment
-
-// start-block messageWithTextAndAttachment
 const mixedMessage = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
@@ -246,16 +222,10 @@ const mixedMessage = await medplum.createResource({
   recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
   payload: [
     { contentString: 'Here are the lab results we discussed.' },
-    {
-      contentAttachment: {
-        contentType: 'application/pdf',
-        url: binary.url,
-        title: 'lab-report.pdf',
-      },
-    },
+    { contentAttachment: attachment },
   ],
   sent: new Date().toISOString(),
 });
 // end-block messageWithTextAndAttachment
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
-[messageWithAttachment, mixedMessage];
+[mixedMessage];
