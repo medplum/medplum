@@ -96,18 +96,25 @@ const threadReadStateUrl = 'https://medplum.com/fhir/StructureDefinition/thread-
 const header = await medplum.readResource('Communication', threadHeader.id);
 const currentUserRef = getReferenceString(profile);
 const readStateBlock = header.extension?.find((ext) => {
-  if (ext.url !== threadReadStateUrl || !ext.extension) return false;
+  if (ext.url !== threadReadStateUrl || !ext.extension) {return false;}
   const participantExt = ext.extension.find((e: { url?: string }) => e.url === 'participant');
   return (participantExt as { valueReference?: { reference?: string } })?.valueReference?.reference === currentUserRef;
 });
 if (readStateBlock?.extension) {
   const lastReadExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastRead');
   const lastReadAtExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastReadAt');
-  if (lastReadExt) (lastReadExt as { valueReference?: { reference: string } }).valueReference = { reference: `Communication/${latestMessageId}` };
-  else readStateBlock.extension.push({ url: 'lastRead', valueReference: { reference: `Communication/${latestMessageId}` } });
+  if (lastReadExt)
+    {(lastReadExt as { valueReference?: { reference: string } }).valueReference = {
+      reference: `Communication/${latestMessageId}`,
+    };}
+  else
+    {readStateBlock.extension.push({
+      url: 'lastRead',
+      valueReference: { reference: `Communication/${latestMessageId}` },
+    });}
   const now = new Date().toISOString();
-  if (lastReadAtExt) (lastReadAtExt as { valueDateTime?: string }).valueDateTime = now;
-  else readStateBlock.extension.push({ url: 'lastReadAt', valueDateTime: now });
+  if (lastReadAtExt) {(lastReadAtExt as { valueDateTime?: string }).valueDateTime = now;}
+  else {readStateBlock.extension.push({ url: 'lastReadAt', valueDateTime: now });}
   await medplum.updateResource(header);
 }
 // end-block updateThreadReadStateTs
