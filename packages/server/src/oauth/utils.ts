@@ -427,7 +427,8 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
   } catch {
     throw new OperationOutcomeError(badRequest('Profile not found'));
   }
-  if (membership.user?.reference !== login.user?.reference) {
+
+  if (!membership.user.reference || membership.user.reference !== login.user.reference) {
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
