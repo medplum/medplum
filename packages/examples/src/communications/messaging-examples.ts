@@ -10,8 +10,13 @@ const medplum = new MedplumClient();
 
 const userId = 'example-user-id';
 const currentUser = { id: 'example-user-id' };
-const threadHeader = { id: 'example-thread-header' };
+const threadHeader = {
+  id: 'example-thread-header',
+  topic: { text: 'Example thread' },
+  subject: { reference: 'Patient/example' },
+};
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
+const file = new Blob();
 
 // start-block filterActiveThreadsTs
 // Used in the Thread Lifecycle page to show how to find open threads
@@ -199,3 +204,58 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
   -H 'content-type: application/fhir+json'
 // end-block poolTasksCurl
 */
+
+// start-block createBinaryForMessage
+const binary = await medplum.createBinary({
+  data: file,
+  filename: 'lab-report.pdf',
+  contentType: 'application/pdf',
+});
+// end-block createBinaryForMessage
+
+// start-block messageWithAttachment
+const messageWithAttachment = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [
+    {
+      contentAttachment: {
+        contentType: 'application/pdf',
+        url: binary.url,
+        title: 'lab-report.pdf',
+      },
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+// end-block messageWithAttachment
+void messageWithAttachment;
+
+// start-block messageWithTextAndAttachment
+const mixedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [
+    { contentString: 'Here are the lab results we discussed.' },
+    {
+      contentAttachment: {
+        contentType: 'application/pdf',
+        url: binary.url,
+        title: 'lab-report.pdf',
+      },
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+// end-block messageWithTextAndAttachment
+void mixedMessage;
