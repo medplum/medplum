@@ -296,7 +296,6 @@ describe('Me', () => {
   });
 
   test('Project features are returned in /auth/me', async () => {
-
     const email = `alice${randomUUID()}@example.com`;
     const password = randomUUID();
 
