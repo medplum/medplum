@@ -118,26 +118,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
-// start-block loadThreadsWithMessagesTs
-// Load thread headers and all their child messages in a single request
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-});
-// end-block loadThreadsWithMessagesTs
-
-/*
-// start-block loadThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
-// end-block loadThreadsWithMessagesCli
-
-// start-block loadThreadsWithMessagesCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block loadThreadsWithMessagesCurl
-*/
-
 // start-block filterByPatientTs
 // Filter threads to a specific patient
 await medplum.searchResources('Communication', {

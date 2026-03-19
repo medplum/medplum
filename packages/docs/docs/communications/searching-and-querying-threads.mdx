@@ -7,14 +7,13 @@ import TabItem from '@theme/TabItem';
 
 ## Search Query Cheat Sheet
 
-| Goal                      | Query                                                                  | Notes                         |
-| ------------------------- | ---------------------------------------------------------------------- | ----------------------------- |
-| All threads               | `Communication?part-of:missing=true`                                   | Returns only thread headers   |
-| Messages in a thread      | `Communication?part-of=Communication/{id}&_sort=sent`                  | Sorted chronologically        |
-| Threads with all messages | `Communication?part-of:missing=true&_revinclude=Communication:part-of` | Single request, full contents |
-| Threads for a patient     | Add `&subject=Patient/{id}` to any query above                         | Filter by patient context     |
-| My threads                | Add `&recipient=Practitioner/{id}`                                     | Filter by assigned user       |
-| Active threads only       | Add `&status:not=completed,entered-in-error,stopped,unknown`            | Exclude closed threads        |
+| Goal                        | Query                                                        | Notes                                         |
+| --------------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| All threads                 | `Communication?part-of:missing=true`                         | Returns only thread headers                   |
+| Messages in a thread        | `Communication?part-of=Communication/{id}&_sort=sent`        | Sorted chronologically                        |
+| Threads for a patient       | Add `&subject=Patient/{id}` to any query above               | Filter by patient context                     |
+| Threads I participate in    | Add `&recipient=Practitioner/{id}`                           | See [note below](#filter-by-current-user)      |
+| Active threads only         | Add `&status:not=completed,entered-in-error,stopped,unknown` | Exclude closed threads                        |
 
 ## Query for All Threads
 
@@ -60,30 +59,6 @@ The `:missing` modifier finds Communication resources that have no `partOf` refe
 
 This retrieves all child messages for a given thread header, sorted chronologically by the `sent` timestamp.
 
-## Load Threads and Messages in a Single Request
-
-<Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="loadThreadsWithMessagesTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="loadThreadsWithMessagesCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="loadThreadsWithMessagesCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
-
-The `_revinclude` parameter tells the server to also return any Communication resources that reference the search results via their `partOf` field — effectively returning thread headers and their messages in a single request.
-
-> **Gotcha:** `_revinclude` returns results as a flat array, not a nested structure. You'll need to group messages by their `partOf` reference on the client side to reconstruct thread hierarchies.
-
 ## Add Filters
 
 Filter threads by patient:
@@ -106,7 +81,9 @@ Filter threads by patient:
   </TabItem>
 </Tabs>
 
-Filter for the current user's active threads:
+### Filter by Current User {#filter-by-current-user}
+
+To show threads the current user participates in, filter by `recipient`:
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -126,7 +103,11 @@ Filter for the current user's active threads:
   </TabItem>
 </Tabs>
 
-You can combine these filters with `_revinclude=Communication:part-of` to also load messages in a single request. For other items to filter on, see the [Communication Search Parameters](/docs/api/fhir/resources/communication#search-parameters).
+This works when thread headers list all participants — including the thread creator — in `recipient`. The Medplum [`ThreadInbox`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadInbox/ThreadInbox.tsx) component follows this convention: when a new thread is created, the sender is added to `recipient` alongside other participants, so a `recipient`-based query returns threads the user started _and_ threads they were added to.
+
+> **Note:** FHIR search does not support a single query for `recipient OR sender`. If your thread headers don't follow the convention above, you'll need to run two searches (`recipient=Practitioner/{id}` and `sender=Practitioner/{id}`) and merge results client-side.
+
+For other items to filter on, see the [Communication Search Parameters](/docs/api/fhir/resources/communication#search-parameters).
 
 ## In Your UI
 
@@ -144,15 +125,18 @@ To receive new messages in real time, subscribe to Communications in the current
 Communication?part-of=Communication/{threadId}
 ```
 
-When a notification arrives, append the new message to your local state. The notification `Bundle` contains two entries: a `SubscriptionStatus` at index 0, and the new `Communication` at index 1.
+When a notification arrives, append the new message to your local state. The notification `Bundle` contains a `SubscriptionStatus` entry and the new `Communication` — find it by `resourceType` rather than by position:
 
 ```ts
 const emitter = medplum.subscribeToCriteria(`Communication?part-of=Communication/${threadId}`);
 
 emitter.addEventListener('message', (event) => {
-  const newMessage = event.payload.entry?.[1]?.resource;
+  const newMessage = event.payload.entry?.find(
+    (e) => e.resource?.resourceType === 'Communication'
+  )?.resource;
   if (newMessage) {
-    appendMessageToThread(newMessage); // Your state updater: append to thread
+    // Show a toast or in-app notification for the new message
+    appendMessageToThread(newMessage);
   }
 });
 ```
@@ -163,8 +147,11 @@ If using `@medplum/react`, the [useSubscription](/docs/react/use-subscription) h
 useSubscription(
   `Communication?part-of=Communication/${id}`,
   (bundle: Bundle) => {
-    const newMessage = bundle.entry?.[1]?.resource as Communication;
+    const newMessage = bundle.entry?.find(
+      (e) => e.resource?.resourceType === 'Communication'
+    )?.resource as Communication | undefined;
     if (newMessage) {
+      // Show a toast or in-app notification for the new message
       setMessages((prev) => [...prev, newMessage]);
     }
   }
