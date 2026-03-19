@@ -102,4 +102,34 @@ describe('CommunicationPayloadPage', () => {
     const updated = await medplum.readResource('Communication', communication.id);
     expect(updated.payload?.[0].contentString).toBe('Updated');
   });
+
+  test('adds a new text payload when no payload is available', async () => {
+    const medplum = new MockClient();
+    const communication = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'completed',
+    });
+
+    await setup(`/Communication/${communication.id}/payload`, medplum);
+
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('button', { name: 'Add payload' }));
+    });
+
+    const textarea = screen.getByPlaceholderText('Enter content...');
+    expect(textarea).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: 'New message' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(await screen.findAllByText('Saved')).not.toHaveLength(0);
+
+    const updated = await medplum.readResource('Communication', communication.id);
+    expect(updated.payload?.[0].contentString).toBe('New message');
+  });
 });

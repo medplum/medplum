@@ -30,6 +30,10 @@ export function CommunicationPayloadPage(): JSX.Element | null {
     });
   }, []);
 
+  const handleAdd = useCallback((): void => {
+    setPayload((prev) => [...prev, { contentString: '' }]);
+  }, []);
+
   const handleSave = useCallback((): void => {
     if (!communication) {
       return;
@@ -59,6 +63,7 @@ export function CommunicationPayloadPage(): JSX.Element | null {
           />
         ))}
         <Group justify="flex-end">
+          <Button variant="outline" onClick={handleAdd}>Add payload</Button>
           <Button onClick={handleSave}>Save</Button>
         </Group>
       </Stack>
