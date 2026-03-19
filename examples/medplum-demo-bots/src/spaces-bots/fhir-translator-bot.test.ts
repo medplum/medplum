@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { Bot, Parameters, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { handler, SYSTEM_MESSAGE } from './fhir-translator-bot';
+import { handler } from './fhir-translator-bot';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/fhir+json';
 const secrets = { OPENAI_API_KEY: { name: 'OPENAI_API_KEY', valueString: 'test-key' } };
+
+const SYSTEM_PROMPT = 'You are a FHIR Request Translator.';
+const PROFILE_CONTEXT_TEMPLATE = '## CURRENT USER CONTEXT:\nRef: {{ref}}';
 
 function makeInput(messages: object[], model?: string): Parameters {
   return {
@@ -16,6 +19,18 @@ function makeInput(messages: object[], model?: string): Parameters {
       ...(model ? [{ name: 'model', valueString: model }] : []),
     ],
   };
+}
+
+function mockSystemPromptCommunication(medplum: MockClient, payload1?: string): void {
+  vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce({
+    resourceType: 'Communication',
+    id: 'test-communication',
+    status: 'completed',
+    payload: [
+      { contentString: SYSTEM_PROMPT },
+      ...(payload1 !== undefined ? [{ contentString: payload1 }] : []),
+    ],
+  });
 }
 
 describe('fhir-translator-bot', () => {
@@ -33,13 +48,31 @@ describe('fhir-translator-bot', () => {
   });
 
   test('throws when messages parameter is missing', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const input: Parameters = { resourceType: 'Parameters', parameter: [] };
     await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
       'messages parameter is required'
     );
   });
 
+  test('throws when system prompt Communication is missing', async () => {
+    vi.spyOn(medplum, 'searchOne').mockResolvedValueOnce(undefined);
+    const input = makeInput([{ role: 'user', content: 'Hello' }]);
+    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+      'ai-fhir-request-tools system prompt is not available'
+    );
+  });
+
+  test('throws when profile context template (payload[1]) is missing', async () => {
+    mockSystemPromptCommunication(medplum); // no payload[1]
+    const input = makeInput([{ role: 'user', content: 'Hello' }]);
+    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+      'ai-fhir-request-tools profile context template is not available'
+    );
+  });
+
   test('returns visualize=false when AI returns no tool calls', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const aiResponse: Parameters = {
       resourceType: 'Parameters',
       parameter: [{ name: 'content', valueString: 'Some response' }],
@@ -53,6 +86,7 @@ describe('fhir-translator-bot', () => {
   });
 
   test('returns visualize=false when tool call does not set visualize', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const toolCalls = [
       { function: { name: 'fhir_request', arguments: JSON.stringify({ method: 'GET', path: 'Patient?name=John' }) } },
     ];
@@ -69,6 +103,7 @@ describe('fhir-translator-bot', () => {
   });
 
   test('returns visualize=true when tool call sets visualize flag', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const toolCalls = [
       {
         function: {
@@ -90,6 +125,7 @@ describe('fhir-translator-bot', () => {
   });
 
   test('normalizes tool_calls with object arguments before sending to AI', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
@@ -110,6 +146,7 @@ describe('fhir-translator-bot', () => {
   });
 
   test('defaults to gpt-4 model', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
@@ -120,6 +157,7 @@ describe('fhir-translator-bot', () => {
   });
 
   test('uses custom model when specified', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
@@ -134,12 +172,8 @@ describe('fhir-translator-bot', () => {
     expect(callArgs.parameter?.find((p) => p.name === 'model')?.valueString).toBe('gpt-4o');
   });
 
-  test('SYSTEM_MESSAGE has role=system', () => {
-    expect(SYSTEM_MESSAGE.role).toBe('system');
-    expect(SYSTEM_MESSAGE.content).toBeTruthy();
-  });
-
   test('prepends system message to user messages', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
     const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
     const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
 
@@ -149,6 +183,27 @@ describe('fhir-translator-bot', () => {
     const callArgs = postSpy.mock.calls[0][1] as Parameters;
     const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
     expect(sentMessages[0].role).toBe('system');
+    expect(sentMessages[0].content).toContain(SYSTEM_PROMPT);
     expect(sentMessages[1].role).toBe('user');
+  });
+
+  test('appends profile context with replaced ref when requester is provided', async () => {
+    mockSystemPromptCommunication(medplum, PROFILE_CONTEXT_TEMPLATE);
+    const aiResponse: Parameters = { resourceType: 'Parameters', parameter: [] };
+    const postSpy = vi.spyOn(medplum, 'post').mockResolvedValueOnce(aiResponse);
+
+    const input = makeInput([{ role: 'user', content: 'Who am I?' }]);
+    await handler(medplum, {
+      bot,
+      input,
+      contentType,
+      secrets,
+      requester: { reference: 'Practitioner/abc' },
+    });
+
+    const callArgs = postSpy.mock.calls[0][1] as Parameters;
+    const sentMessages = JSON.parse(callArgs.parameter?.find((p) => p.name === 'messages')?.valueString ?? '[]');
+    expect(sentMessages[0].content).toContain('Practitioner/abc');
+    expect(sentMessages[0].content).not.toContain('{{ref}}');
   });
 });
