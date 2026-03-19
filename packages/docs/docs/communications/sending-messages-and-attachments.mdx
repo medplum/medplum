@@ -2,7 +2,7 @@
 sidebar_position: 4
 title: Message Attachments
 tags: [communications, messaging, attachments]
-keywords: [payload, contentString, contentAttachment, contentReference, Binary]
+keywords: [payload, contentString, contentAttachment, contentReference, Binary, DocumentReference]
 ---
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
@@ -18,6 +18,10 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 | `contentString`     | Plain text messages                | `"The specimen has been received."`                 |
 | `contentAttachment` | Files (images, PDFs, documents)    | Lab report PDF, wound photo                         |
 | `contentReference`  | References to other FHIR resources | Link to a `DiagnosticReport` or `DocumentReference` |
+
+:::note
+If you use `@medplum/react`, [`ThreadChat`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadChat/ThreadChat.tsx) uploads files with `medplum.createDocumentReference()` and adds `payload[].contentReference` pointing at that [`DocumentReference`](/docs/api/fhir/resources/documentreference). The same FHIR pattern works from any client: create a `DocumentReference`, then reference it on the payload so each file is a first-class, searchable document (query by patient, type, and other document fields). The sections below focus on `createAttachment()` + `contentAttachment`, which attaches a file on the message without creating a separate `DocumentReference` resource.
+:::
 
 ## Upload a file
 
@@ -53,7 +57,7 @@ When rendering messages, iterate over the `payload` array and render each entry 
 
 - `contentString` — render as text
 - `contentAttachment` — render as a download link, inline image, or file preview based on `contentType`
-- `contentReference` — resolve the referenced resource and render appropriately
+- `contentReference` — resolve the referenced resource and render appropriately; for a linked [`DocumentReference`](/docs/api/fhir/resources/documentreference), render from `content`
 
 For displaying or downloading attachment content (presigned URLs, media tags, and the download helper), see [Consuming a FHIR Binary in an Application](https://www.medplum.com/docs/fhir-datastore/binary-data#consuming-a-fhir-binary-in-an-application).
 
