@@ -63,7 +63,9 @@ export function CommunicationPayloadPage(): JSX.Element | null {
           />
         ))}
         <Group justify="flex-end">
-          <Button variant="outline" onClick={handleAdd}>Add payload</Button>
+          <Button variant="outline" onClick={handleAdd}>
+            Add payload
+          </Button>
           <Button onClick={handleSave}>Save</Button>
         </Group>
       </Stack>
