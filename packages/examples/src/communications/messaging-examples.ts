@@ -10,11 +10,16 @@ const medplum = new MedplumClient();
 
 const userId = 'example-user-id';
 const currentUser = { id: 'example-user-id' };
-const threadHeader = { id: 'example-thread-header' };
+const threadHeader = {
+  id: 'example-thread-header',
+  topic: { text: 'Example thread' },
+  subject: { reference: 'Patient/example' },
+};
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
 const readReceiptTaskId = 'example-read-receipt-task-id';
 const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
+const file = new Blob();
 
 // start-block filterActiveThreadsTs
 // Thread headers have no partOf; child messages have partOf set to the header.
@@ -336,6 +341,27 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
 // end-block poolTasksCurl
 */
 
+// start-block messageWithTextAndAttachment
+const attachment = await medplum.createAttachment({
+  data: file,
+  filename: 'lab-report.pdf',
+  contentType: 'application/pdf',
+});
+
+const mixedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [{ contentString: 'Here are the lab results we discussed.' }, { contentAttachment: attachment }],
+  sent: new Date().toISOString(),
+});
+// end-block messageWithTextAndAttachment
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[mixedMessage];
 // start-block createTaskForThreadTs
 const task = await medplum.createResource({
   resourceType: 'Task',
