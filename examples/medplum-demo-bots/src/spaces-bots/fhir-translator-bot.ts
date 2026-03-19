@@ -154,7 +154,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
   const model = modelParam?.valueString || 'gpt-4';
 
   let systemMessage = SYSTEM_MESSAGE;
-  if (event.requester?.reference) {
+  if (event.requester) {
     systemMessage = {
       ...SYSTEM_MESSAGE,
       content: SYSTEM_MESSAGE.content + buildProfileContext(event.requester),
