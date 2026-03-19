@@ -9,7 +9,7 @@ import type {
   SubscriptionStatus,
 } from '@medplum/fhirtypes';
 import { WS } from 'jest-websocket-mock';
-import type { SubscriptionEventMap } from '.';
+import type { CriteriaState, SubscriptionEventMap } from '.';
 import { resourceMatchesSubscriptionCriteria, SubscriptionEmitter, SubscriptionManager } from '.';
 import { MockMedplumClient } from '../client-test-utils';
 import { generateId } from '../crypto';
@@ -1442,6 +1442,158 @@ describe('SubscriptionManager', () => {
       expect(errorEvent.type).toStrictEqual('error');
       expect(errorEvent.payload).toBe(rebindError);
 
+      manager.closeWebSocket();
+    });
+
+    test('should not leak bind when removeCriteria races with in-flight subscribe, and re-subscribe should reach active', async () => {
+      await wsServer.connected;
+
+      // Defer the first createResource call so we can remove the criteria while the subscribe is in-flight.
+      // The staleness check after createResource should bail before ever calling $get-ws-binding-token.
+      let resolveFirstCreate!: (value: { id: string }) => void;
+      const createSpy = jest
+        .spyOn(medplum, 'createResource')
+        .mockImplementationOnce(() => new Promise((resolve) => {
+          resolveFirstCreate = resolve as (value: { id: string }) => void;
+        }));
+
+      // 1. addCriteria kicks off subscribeToCriteria → rebindCriteriaEntry → createResource (deferred)
+      defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      // 2. Remove while the first subscribe is still in-flight (createResource hasn't resolved)
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // 3. Re-subscribe — creates a brand-new entry whose createResource uses the real impl
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+      const emitter = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      // Let the new entry's rebindCriteriaEntry chain flush through microtasks
+      await sleep(0);
+
+      // The new entry should have sent a bind-with-token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+
+      // 4. Resolve the OLD deferred createResource — the staleness check right after
+      //    should detect state='removed' and bail before calling $get-ws-binding-token
+      const getSpy = jest.spyOn(medplum, 'get');
+      const getCallsBefore = getSpy.mock.calls.length;
+
+      resolveFirstCreate({ id: MOCK_SUBSCRIPTION_ID });
+      await sleep(0);
+
+      // No $get-ws-binding-token call was made for the stale entry
+      expect(getSpy.mock.calls.length).toStrictEqual(getCallsBefore);
+
+      // 5. Send handshake for the new subscription → state should transition to 'active'
+      const connectPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        emitter.addEventListener('connect', (event) => resolve(event));
+      });
+
+      await sleep(100);
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      const connectEvent = await connectPromise;
+      expect(connectEvent.type).toStrictEqual('connect');
+      expect(connectEvent.payload.subscriptionId).toStrictEqual(SECOND_SUBSCRIPTION_ID);
+
+      // Verify the new entry has the correct token and reached 'active'
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
+        string,
+        { state: CriteriaState; token: string }
+      >;
+      const newEntry = entriesBySubId.get(SECOND_SUBSCRIPTION_ID);
+      expect(newEntry).toBeDefined();
+      expect(newEntry?.state).toStrictEqual('active');
+      expect(newEntry?.token).toStrictEqual('token-123');
+
+      // The stale entry must NOT have been added to the lookup
+      expect(entriesBySubId.has(MOCK_SUBSCRIPTION_ID)).toStrictEqual(false);
+
+      createSpy.mockRestore();
+      getSpy.mockRestore();
+    });
+
+    test('should unbind both old and new tokens when removeCriteria races with token refresh', async () => {
+      const INITIAL_TOKEN = 'initial-token';
+      const REFRESH_TOKEN = 'refresh-token';
+
+      let tokenCallCount = 0;
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${MOCK_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        tokenCallCount++;
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'token', valueString: tokenCallCount === 1 ? INITIAL_TOKEN : REFRESH_TOKEN },
+            {
+              name: 'expiration',
+              // First call: token that will trigger refresh on next check
+              // Second call: normal long expiry
+              valueDateTime:
+                tokenCallCount === 1
+                  ? new Date(Date.now() + WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS / 2).toISOString()
+                  : new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+          ],
+        } as Parameters;
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 60_000,
+      });
+
+      await new Promise<void>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', () => resolve());
+      });
+
+      // Subscribe and wait until fully active
+      const emitter = manager.addCriteria('Communication');
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: INITIAL_TOKEN } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Intercept the refresh's $get-ws-binding-token call with a deferred promise.
+      // During a refresh, subscriptionId is already set so createResource is skipped —
+      // medplum.get is the first async gap.
+      let resolveRefreshGet!: (value: Parameters) => void;
+      const getSpy = jest
+        .spyOn(medplum, 'get')
+        .mockImplementationOnce(
+          () => new Promise((resolve) => {
+            resolveRefreshGet = resolve as (value: Parameters) => void;
+          }) as any
+        );
+
+      // Trigger the token refresh by advancing past the refresh interval
+      await sleep(300);
+
+      // removeCriteria while refresh is in-flight — should unbind the INITIAL_TOKEN (the current one on the entry)
+      manager.removeCriteria('Communication');
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: INITIAL_TOKEN } });
+
+      // Resolve the deferred $get-ws-binding-token — should detect state='removed' and unbind the REFRESH_TOKEN
+      resolveRefreshGet({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'token', valueString: REFRESH_TOKEN },
+          { name: 'expiration', valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString() },
+          { name: 'websocket-url', valueUrl: 'wss://example.com/ws/subscriptions-r4' },
+        ],
+      } as Parameters);
+      await sleep(0);
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: REFRESH_TOKEN } });
+
+      // Both tokens unbound, nothing left in the lookup
+      const entriesBySubId = (manager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
+      expect(entriesBySubId.size).toStrictEqual(0);
+
+      getSpy.mockRestore();
       manager.closeWebSocket();
     });
   });
