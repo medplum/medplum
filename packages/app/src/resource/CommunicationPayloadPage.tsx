@@ -41,7 +41,7 @@ export function CommunicationPayloadPage(): JSX.Element | null {
     medplum
       .updateResource(cleanResource({ ...communication, payload }))
       .then(() => showNotification({ color: 'green', message: 'Saved' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err)}));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, communication, payload]);
 
   if (!communication) {
