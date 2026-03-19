@@ -350,7 +350,13 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).not.toThrow();
-      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([{ availability: [], serviceType: [] }]);
+      expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
+        {
+          availability: [],
+          serviceType: [],
+          duration: 30,
+        },
+      ]);
     });
 
     test('multiple availableTime entries all contribute to availability', () => {
@@ -400,7 +406,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'availability' is not allowed in this context"
+        "Scheduling parameter attribute 'availability' is not allowed on HealthcareService"
       );
     });
 
@@ -416,7 +422,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(() => parseSchedulingParametersExtensions(hs)).toThrow(
-        "Scheduling parameter attribute 'serviceType' is not allowed in this context"
+        "Scheduling parameter attribute 'serviceType' is not allowed on HealthcareService"
       );
     });
   });
