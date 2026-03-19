@@ -89,21 +89,21 @@ function durationToMinutes(duration: Duration): number {
   }
 }
 
-function atMostOne<T>(arr: T[], attribute: string): T | undefined {
+function atMostOne<T>(arr: T[], attribute: string, _resourceType: string): T | undefined {
   if (arr.length > 1) {
     throw new Error(`Scheduling parameter attribute '${attribute}' has too many values`);
   }
   return arr[0];
 }
 
-function atLeastOne<T>(arr: T[], attribute: string): T[] {
+function atLeastOne<T>(arr: T[], attribute: string, _resourceType: string): T[] {
   if (arr.length < 1) {
     throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
   }
   return arr;
 }
 
-function exactlyOne<T>(arr: T[], attribute: string): T {
+function exactlyOne<T>(arr: T[], attribute: string, _resourceType: string): T {
   if (arr.length < 1) {
     throw new Error(`Required scheduling parameter attribute '${attribute}' is missing`);
   }
@@ -113,9 +113,9 @@ function exactlyOne<T>(arr: T[], attribute: string): T {
   return arr[0];
 }
 
-function exactlyZero(arr: unknown[], attribute: string): void {
+function exactlyZero(arr: unknown[], attribute: string, resourceType: string): void {
   if (arr.length > 0) {
-    throw new Error(`Scheduling parameter attribute '${attribute}' is not allowed in this context`);
+    throw new Error(`Scheduling parameter attribute '${attribute}' is not allowed on ${resourceType}`);
   }
 }
 
@@ -225,14 +225,15 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
   return extensions.map((extension) => {
     const duration = exactlyOne(
       extension.extension.filter((ext) => ext.url === 'duration'),
-      'duration'
+      'duration',
+      resource.resourceType
     );
 
     // `availability` is required in Schedule, not allowed in HealthcareService
     // (where we read from HealthcareService.availableTimes instead)
     const rawAvailability = extension.extension.filter((ext) => ext.url === 'availability');
     const availabilityConstraint = resource.resourceType === 'Schedule' ? atLeastOne : exactlyZero;
-    availabilityConstraint(rawAvailability, 'availability');
+    availabilityConstraint(rawAvailability, 'availability', resource.resourceType);
 
     const availability =
       resourceParameters.availability ??
@@ -247,30 +248,35 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
 
     const bufferBefore = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferBefore'),
-      'bufferBefore'
+      'bufferBefore',
+      resource.resourceType
     );
     const bufferAfter = atMostOne(
       extension.extension.filter((ext) => ext.url === 'bufferAfter'),
-      'bufferAfter'
+      'bufferAfter',
+      resource.resourceType
     );
     const alignmentOffset = atMostOne(
       extension.extension.filter((ext) => ext.url === 'alignmentOffset'),
-      'alignmentOffset'
+      'alignmentOffset',
+      resource.resourceType
     );
     const rawAlignmentInterval = atMostOne(
       extension.extension.filter((ext) => ext.url === 'alignmentInterval'),
-      'alignmentInterval'
+      'alignmentInterval',
+      resource.resourceType
     );
     const timezone = atMostOne(
       extension.extension.filter((ext) => ext.url === 'timezone'),
-      'timezone'
+      'timezone',
+      resource.resourceType
     );
 
     // `serviceType` is expected in Schedule, not allowed in HealthcareService
     // (where we read from HealthcareService.type instead)
     const rawServiceType = extension.extension.filter((ext) => ext.url === 'serviceType');
     if (resource.resourceType === 'HealthcareService') {
-      exactlyZero(rawServiceType, 'serviceType');
+      exactlyZero(rawServiceType, 'serviceType', resource.resourceType);
     }
     const serviceType = resourceParameters.serviceType ?? rawServiceType.map((ext) => ext.valueCodeableConcept);
 
