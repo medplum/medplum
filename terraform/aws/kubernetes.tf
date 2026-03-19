@@ -13,13 +13,6 @@ module "eks" {
   cluster_endpoint_private_access      = true
   cluster_endpoint_public_access_cidrs = var.eks_public_access_cidrs
 
-  lifecycle {
-    precondition {
-      condition     = var.environment != "prod" || !contains(var.eks_public_access_cidrs, "0.0.0.0/0")
-      error_message = "eks_public_access_cidrs must not include 0.0.0.0/0 in production. Restrict to your IP or VPN CIDR."
-    }
-  }
-
   enable_irsa = true
 
   # Grant the IAM principal that runs terraform apply cluster-admin access automatically
@@ -47,4 +40,11 @@ module "eks" {
   }
 
   tags = var.tags
+}
+
+check "eks_no_open_public_access_in_prod" {
+  assert {
+    condition     = var.environment != "prod" || !contains(var.eks_public_access_cidrs, "0.0.0.0/0")
+    error_message = "eks_public_access_cidrs must not include 0.0.0.0/0 in production. Restrict to your IP or VPN CIDR."
+  }
 }
