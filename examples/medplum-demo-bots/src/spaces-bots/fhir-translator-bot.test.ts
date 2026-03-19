@@ -26,10 +26,7 @@ function mockSystemPromptCommunication(medplum: MockClient, payload1?: string): 
     resourceType: 'Communication',
     id: 'test-communication',
     status: 'completed',
-    payload: [
-      { contentString: SYSTEM_PROMPT },
-      ...(payload1 !== undefined ? [{ contentString: payload1 }] : []),
-    ],
+    payload: [{ contentString: SYSTEM_PROMPT }, ...(payload1 !== undefined ? [{ contentString: payload1 }] : [])],
   });
 }
 
