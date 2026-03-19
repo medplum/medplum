@@ -1,37 +1,44 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Group, Stack, Textarea } from '@mantine/core';
+import { Button, Group, Stack, Text, Textarea } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { EMPTY, normalizeErrorString } from '@medplum/core';
 import type { Communication, CommunicationPayload, ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum, useResource } from '@medplum/react';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { cleanResource } from './utils';
+
+type KeyedPayload = { key: number; item: CommunicationPayload };
 
 export function CommunicationPayloadPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const communication = useResource<Communication>({ reference: resourceType + '/' + id });
-  const [payload, setPayload] = useState<CommunicationPayload[]>([]);
+  const keyCounter = useRef(0);
+  const [payload, setPayload] = useState<KeyedPayload[]>([]);
 
   useEffect(() => {
     if (communication) {
-      setPayload((communication.payload ?? EMPTY).filter((item) => 'contentString' in item));
+      setPayload(
+        (communication.payload ?? EMPTY)
+          .filter((item) => 'contentString' in item)
+          .map((item) => ({ key: keyCounter.current++, item }))
+      );
     }
   }, [communication]);
 
   const handleChange = useCallback((index: number, value: string): void => {
     setPayload((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], contentString: value };
+      updated[index] = { ...updated[index], item: { ...updated[index].item, contentString: value } };
       return updated;
     });
   }, []);
 
   const handleAdd = useCallback((): void => {
-    setPayload((prev) => [...prev, { contentString: '' }]);
+    setPayload((prev) => [...prev, { key: keyCounter.current++, item: { contentString: '' } }]);
   }, []);
 
   const handleSave = useCallback((): void => {
@@ -39,7 +46,7 @@ export function CommunicationPayloadPage(): JSX.Element | null {
       return;
     }
     medplum
-      .updateResource(cleanResource({ ...communication, payload }))
+      .updateResource(cleanResource({ ...communication, payload: payload.map((p) => p.item) }))
       .then(() => showNotification({ color: 'green', message: 'Saved' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, communication, payload]);
@@ -51,9 +58,9 @@ export function CommunicationPayloadPage(): JSX.Element | null {
   return (
     <Document>
       <Stack>
-        {payload.map((item, index) => (
+        {payload.map(({ key, item }, index) => (
           <Textarea
-            key={index}
+            key={key}
             autosize
             minRows={3}
             maxRows={20}
@@ -68,6 +75,9 @@ export function CommunicationPayloadPage(): JSX.Element | null {
           </Button>
           <Button onClick={handleSave}>Save</Button>
         </Group>
+        <Text size="xs" c="dimmed">
+          This tab manages string payloads only. Attachments and References can be managed in the Edit tab.
+        </Text>
       </Stack>
     </Document>
   );
