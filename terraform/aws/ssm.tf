@@ -143,3 +143,12 @@ resource "aws_ssm_parameter" "bot_lambda_layer_name" {
   value = "medplum-bot-layer"
   tags  = var.tags
 }
+
+resource "aws_ssm_parameter" "redis_purpose_secrets" {
+  for_each = var.redis_purpose_clusters
+  name     = "${local.ssm_prefix}/${local.redis_purpose_id_map[each.key]}Secrets"
+  type     = "SecureString"
+  key_id   = aws_kms_key.medplum.arn
+  value    = aws_secretsmanager_secret.redis_purpose[each.key].arn
+  tags     = var.tags
+}

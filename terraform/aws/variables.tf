@@ -255,3 +255,22 @@ variable "waf_logging_enabled" {
   description = "When true and WAF is enabled, create CloudWatch log groups and WAF logging configuration for app, storage, and API web ACLs."
   default     = false
 }
+
+variable "redis_purpose_clusters" {
+  type = map(object({
+    node_type          = optional(string, "cache.t3.micro")
+    engine_version     = optional(string, "7.1")
+    num_cache_clusters = optional(number, 1)
+  }))
+  default     = {}
+  description = <<-EOT
+    Optional purpose-specific Redis clusters keyed by purpose name.
+    Valid keys: cache, rate_limit, pub_sub, background_jobs.
+    Each key maps to a CDK-parity SSM parameter: CacheRedisSecrets, RateLimitRedisSecrets, etc.
+  EOT
+
+  validation {
+    condition     = alltrue([for k in keys(var.redis_purpose_clusters) : contains(["cache", "rate_limit", "pub_sub", "background_jobs"], k)])
+    error_message = "Valid redis_purpose_clusters keys: cache, rate_limit, pub_sub, background_jobs."
+  }
+}

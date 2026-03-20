@@ -181,3 +181,19 @@ output "cloudtrail_sns_topic_arn" {
   description = "ARN of the SNS topic for CloudTrail alarms (only set when enable_cloudtrail_alarms = true)"
   value       = var.enable_cloudtrail_alarms ? aws_sns_topic.cloudtrail_alarms[0].arn : null
 }
+
+output "redis_purpose_endpoints" {
+  description = "Primary endpoint addresses for purpose-specific Redis clusters"
+  value = {
+    for k, _ in var.redis_purpose_clusters :
+    k => aws_elasticache_replication_group.purpose[k].primary_endpoint_address
+  }
+}
+
+output "redis_purpose_secret_arns" {
+  description = "Secrets Manager ARNs for purpose-specific Redis clusters"
+  value = {
+    for k, _ in var.redis_purpose_clusters :
+    k => aws_secretsmanager_secret.redis_purpose[k].arn
+  }
+}
