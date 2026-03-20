@@ -21,7 +21,7 @@ resource "aws_security_group" "eks_nodes" {
 
 resource "aws_security_group" "database" {
   name        = "${local.name_prefix}-db-sg"
-  description = "Security group for RDS"
+  description = "Security group for Aurora cluster"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
@@ -41,38 +41,37 @@ resource "aws_security_group" "database" {
   tags = var.tags
 }
 
-module "rds" {
-  source  = "terraform-aws-modules/rds/aws"
-  version = "~> 6.0"
+module "aurora" {
+  source  = "terraform-aws-modules/rds-aurora/aws"
+  version = "~> 9.0"
 
-  identifier = "${local.name_prefix}-postgres"
-
-  engine               = "postgres"
-  engine_version       = var.postgres_version
-  family               = "postgres${var.postgres_version}"
-  major_engine_version = var.postgres_version
-  instance_class       = var.db_instance_tier
-  allocated_storage    = var.db_storage_gb
-
-  db_name  = "medplum"
-  username = "medplum"
-  port     = 5432
+  name              = "${local.name_prefix}-aurora"
+  engine            = "aurora-postgresql"
+  engine_version    = var.postgres_version
+  master_username   = "clusteradmin"
+  database_name     = "medplum"
 
   manage_master_user_password = true
 
   storage_encrypted = true
   kms_key_id        = aws_kms_key.medplum.arn
 
+  vpc_id               = module.vpc.vpc_id
+  db_subnet_group_name = aws_db_subnet_group.medplum.name
   vpc_security_group_ids = [aws_security_group.database.id]
-  db_subnet_group_name   = aws_db_subnet_group.medplum.name
-  publicly_accessible    = false
-  multi_az               = var.environment == "prod"
+
+  # Instances: 1 writer by default; add readers by increasing var.rds_instances
+  instances = { for idx in range(var.rds_instances) : tostring(idx + 1) => {
+    instance_class      = var.db_instance_tier
+    publicly_accessible = false
+  } }
 
   backup_retention_period = var.environment == "prod" ? 30 : 7
   skip_final_snapshot     = var.environment != "prod"
   deletion_protection     = var.environment == "prod"
 
-  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  cloudwatch_log_group_retention_in_days = var.environment == "prod" ? 30 : 7
+  enabled_cloudwatch_logs_exports        = ["postgresql"]
 
   tags = var.tags
 }

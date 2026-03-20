@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "server_policy" {
     resources = [
       aws_secretsmanager_secret.medplum.arn,
       aws_secretsmanager_secret.db_config.arn,
-      module.rds.db_instance_master_user_secret_arn,
+      module.aurora.cluster_master_user_secret[0].secret_arn,
     ]
   }
 
@@ -80,10 +80,10 @@ data "aws_iam_policy_document" "server_policy" {
       "s3:DeleteObject",
       "s3:ListBucket",
     ]
-    resources = [
-      aws_s3_bucket.app.arn,
-      "${aws_s3_bucket.app.arn}/*",
-    ]
+    resources = concat(
+      [aws_s3_bucket.app.arn, "${aws_s3_bucket.app.arn}/*"],
+      local.storage_cdn_enabled ? [aws_s3_bucket.storage[0].arn, "${aws_s3_bucket.storage[0].arn}/*"] : []
+    )
   }
 
   statement {
@@ -103,11 +103,49 @@ data "aws_iam_policy_document" "server_policy" {
     sid    = "Lambda"
     effect = "Allow"
     actions = [
+      "lambda:CreateFunction",
+      "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
+      "lambda:UpdateFunctionCode",
+      "lambda:UpdateFunctionConfiguration",
       "lambda:InvokeFunction",
     ]
     resources = [
       "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:function:medplum-bot-*",
     ]
+  }
+
+  statement {
+    sid    = "LambdaLayers"
+    effect = "Allow"
+    actions = [
+      "lambda:ListLayerVersions",
+    ]
+    resources = [
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:layer:medplum-bot-layer",
+    ]
+  }
+
+  statement {
+    sid    = "LambdaLayerVersions"
+    effect = "Allow"
+    actions = [
+      "lambda:GetLayerVersion",
+    ]
+    resources = [
+      "arn:aws:lambda:${var.region}:${data.aws_caller_identity.current.account_id}:layer:medplum-bot-layer:*",
+    ]
+  }
+
+  statement {
+    sid    = "IAMBotRole"
+    effect = "Allow"
+    actions = [
+      "iam:ListRoles",
+      "iam:GetRole",
+      "iam:PassRole",
+    ]
+    resources = [local.effective_bot_lambda_role_arn]
   }
 }
 

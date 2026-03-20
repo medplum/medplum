@@ -6,10 +6,67 @@ resource "aws_cloudfront_origin_access_control" "medplum" {
   signing_protocol                  = "sigv4"
 }
 
+# Security and permissions response headers policy for the app CloudFront — mirrors CDK FrontEnd construct.
+resource "aws_cloudfront_response_headers_policy" "app" {
+  name = "${local.name_prefix}-app-headers"
+
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "default-src 'none'",
+        "base-uri 'self'",
+        "child-src 'self'",
+        "connect-src 'self' ${var.api_domain} *.medplum.com *.google.com",
+        "font-src 'self' fonts.gstatic.com",
+        "form-action 'self' *.gstatic.com *.google.com",
+        "frame-ancestors 'none'",
+        "frame-src 'self' ${local.storage_cdn_enabled ? var.storage_domain : var.api_domain} *.medplum.com *.gstatic.com *.google.com",
+        "img-src 'self' data: ${local.storage_cdn_enabled ? var.storage_domain : var.api_domain} *.gstatic.com *.google.com *.googleapis.com",
+        "manifest-src 'self'",
+        "media-src 'self' ${local.storage_cdn_enabled ? var.storage_domain : var.api_domain}",
+        "script-src 'self' *.medplum.com *.gstatic.com *.google.com",
+        "style-src 'self' 'unsafe-inline' *.medplum.com *.gstatic.com *.google.com",
+        "worker-src 'self' blob: *.gstatic.com *.google.com",
+        "upgrade-insecure-requests",
+      ])
+      override = true
+    }
+    content_type_options { override = true }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+    strict_transport_security {
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+    xss_protection {
+      protection   = true
+      mode_block   = true
+      override     = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+      override = true
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "medplum" {
   enabled             = true
   default_root_object = "index.html"
-  aliases             = var.ssl_certificate_arn != null ? [var.app_domain] : []
+  aliases             = local.effective_app_cert_arn != "" ? [var.app_domain] : []
+  web_acl_id          = var.enable_waf ? aws_wafv2_web_acl.app[0].arn : null
 
   origin {
     domain_name              = aws_s3_bucket.static.bucket_regional_domain_name
@@ -22,6 +79,7 @@ resource "aws_cloudfront_distribution" "medplum" {
     cached_methods         = ["GET", "HEAD"]
     target_origin_id       = "static-s3"
     viewer_protocol_policy = "redirect-to-https"
+    compress               = true
 
     forwarded_values {
       query_string = false
@@ -30,14 +88,14 @@ resource "aws_cloudfront_distribution" "medplum" {
       }
     }
 
-    compress = true
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.app.id
   }
 
   viewer_certificate {
-    acm_certificate_arn            = var.ssl_certificate_arn
-    ssl_support_method             = var.ssl_certificate_arn != null ? "sni-only" : null
-    minimum_protocol_version       = var.ssl_certificate_arn != null ? "TLSv1.2_2021" : "TLSv1"
-    cloudfront_default_certificate = var.ssl_certificate_arn == null ? true : false
+    acm_certificate_arn            = local.effective_app_cert_arn != "" ? local.effective_app_cert_arn : null
+    ssl_support_method             = local.effective_app_cert_arn != "" ? "sni-only" : null
+    minimum_protocol_version       = local.effective_app_cert_arn != "" ? "TLSv1.2_2021" : "TLSv1"
+    cloudfront_default_certificate = local.effective_app_cert_arn == "" ? true : false
   }
 
   # SPA routing: redirect S3 403/404s to index.html so React Router handles the path
