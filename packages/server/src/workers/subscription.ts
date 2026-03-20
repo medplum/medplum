@@ -417,7 +417,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  */
 async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -669,7 +669,7 @@ async function sendRestHook(
   let fetchEndTime: number;
   let systemRepo: SystemRepository;
   if (subscription.meta?.project) {
-    systemRepo = getProjectSystemRepo(subscription.meta.project);
+    systemRepo = await getProjectSystemRepo(subscription.meta.project);
   } else {
     systemRepo = getGlobalSystemRepo(); // SHARDING is global correct if no project?
   }

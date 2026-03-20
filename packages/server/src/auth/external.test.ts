@@ -56,7 +56,7 @@ describe('External', () => {
       project = registerResult.project;
       defaultClient = registerResult.client;
 
-      systemRepo = getProjectSystemRepo(project);
+      systemRepo = await getProjectSystemRepo(project);
 
       // Create a domain configuration with external identity provider
       await systemRepo.createResource<DomainConfiguration>({
@@ -526,7 +526,7 @@ describe('External', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
 
-      const testRepo = getProjectSystemRepo(testProject);
+      const testRepo = await getProjectSystemRepo(testProject);
       await testRepo.createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain: testDomain,
@@ -594,7 +594,7 @@ describe('External', () => {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
       });
 
-      const testRepo = getProjectSystemRepo(testProject);
+      const testRepo = await getProjectSystemRepo(testProject);
       await testRepo.createResource<DomainConfiguration>({
         resourceType: 'DomainConfiguration',
         domain: testDomain,

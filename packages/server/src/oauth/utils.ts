@@ -436,7 +436,7 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
 
   // Get the project
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  const projectSystemRepo = getProjectSystemRepo(project);
+  const projectSystemRepo = await getProjectSystemRepo(project);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -953,7 +953,7 @@ export async function getLoginForAccessToken(
     return undefined;
   }
   const project = await globalSystemRepo.readReference<Project>(membership.project);
-  const systemRepo = getProjectSystemRepo(project);
+  const systemRepo = await getProjectSystemRepo(project);
   return makeAuthResult(systemRepo, req, login, project, membership, { accessToken });
 }
 

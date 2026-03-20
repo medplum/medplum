@@ -362,7 +362,7 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(project);
       await systemRepo.updateResource({
         ...project,
         features: ['google-auth-required'],
