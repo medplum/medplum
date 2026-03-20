@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedplumClient, getReferenceString } from '@medplum/core';
+import { MedplumClient, getReferenceString, SNOMED } from '@medplum/core';
+import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -522,3 +523,154 @@ await medplum.patchResource('Task', task.id, [
 // end-block dualTaskRerouteTs
 
 console.log(newTask);
+
+const communicationThread: Partial<Communication>[] = [
+  // start-block communicationGroupedThread
+  {
+    resourceType: 'Communication',
+    id: 'example-thread-header',
+    // Thread header: no partOf or payload
+    // Include the thread creator in recipient so recipient-based inbox search finds threads they started
+    sender: { reference: 'Practitioner/doctor-alice-smith' },
+    recipient: [{ reference: 'Practitioner/doctor-alice-smith' }, { reference: 'Practitioner/doctor-gregory-house' }],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+  },
+
+  // The initial message
+  {
+    resourceType: 'Communication',
+    id: 'example-message-1',
+    payload: [
+      {
+        id: 'example-message-1-payload',
+        contentString: 'The specimen for you patient, Homer Simpson, has been received.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A response directly to `example-message-1` but still referencing the parent communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-2',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Will the results be ready by the end of the week?',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-1',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A second response
+  {
+    resourceType: 'Communication',
+    id: 'example-message-3',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Yes, we will have them to you by Thursday.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-2',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+  // end-block communicationGroupedThread
+];
+
+console.log(communicationThread);
+
+const categoryExampleCommunications: Communication =
+  // start-block communicationCategories
+  {
+    resourceType: 'Communication',
+    id: 'example-communication',
+    status: 'completed',
+    category: [
+      {
+        text: 'Doctor',
+        coding: [
+          {
+            code: '158965000',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Endocrinology',
+        coding: [
+          {
+            code: '394583002',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Diabetes self-management plan',
+        coding: [
+          {
+            code: '735985000',
+            system: SNOMED,
+          },
+        ],
+      },
+    ],
+  };
+// end-block communicationCategories
+
+console.log(categoryExampleCommunications);
