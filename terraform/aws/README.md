@@ -216,7 +216,7 @@ Open `terraform.tfvars` and set these values:
 | `app_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict app CloudFront access |
 | `storage_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict storage CloudFront access |
 | `enable_cloudtrail_alarms` | `false` | Create CloudTrail trail + 10 CloudWatch alarms + SNS. Recommended for production |
-| `cloudtrail_alarm_email` | `""` | Email to subscribe to the CloudTrail alarm SNS topic |
+| `cloudtrail_alarm_email` | `""` | Email to subscribe to the CloudTrail alarm SNS topic. After `terraform apply`, AWS sends a confirmation email to this address — **the subscription must be confirmed by clicking the link** before alerts are delivered. |
 | `bot_lambda_role_arn` | `""` | Override ARN for the bot Lambda role. Leave empty to use the role created by this stack |
 
 ### Step 2 — Bootstrap remote state (one-time only)

@@ -64,7 +64,7 @@ resource "aws_route53_record" "cloudfront_alias" {
 
   alias {
     name                   = aws_cloudfront_distribution.medplum.domain_name
-    zone_id                = "Z2FDTNDATAQYW2"
+    zone_id                = "Z2FDTNDATAQYW2" # AWS global CloudFront hosted zone ID — constant across all accounts/regions
     evaluate_target_health = false
   }
 }
@@ -79,7 +79,7 @@ resource "aws_route53_record" "storage_alias" {
 
   alias {
     name                   = aws_cloudfront_distribution.storage[0].domain_name
-    zone_id                = "Z2FDTNDATAQYW2"
+    zone_id                = "Z2FDTNDATAQYW2" # AWS global CloudFront hosted zone ID — constant across all accounts/regions
     evaluate_target_health = false
   }
 }
