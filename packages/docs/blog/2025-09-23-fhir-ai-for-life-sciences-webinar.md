@@ -19,7 +19,7 @@ Below are a number of the resources which we shared during the webinar for you t
 
 Medplum:
 
-- [docs](/docs), also [book demo](https://cal.com/medplum/30min) if you'd like a walk through
+- [docs](/docs), also [book demo](https://cal.com/team/medplum/30min) if you'd like a walk through
 - [mcp server](/docs/ai/mcp)
   - [mcp backstory from Medplum CTO](/blog/unlocking-healthcare-ai-medplum-support-mcp)
   - [mcp demo on YouTube](https://youtu.be/y3gD7TQ-SM8)
