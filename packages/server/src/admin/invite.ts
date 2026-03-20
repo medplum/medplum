@@ -120,7 +120,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
               operator: Operator.EXACT,
               value: email,
             },
-            request.resourceType === 'Patient' || request.scope === 'project'
+            userResource.project
               ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
               : { code: 'project', operator: Operator.MISSING, value: 'true' },
           ],

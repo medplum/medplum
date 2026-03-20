@@ -101,4 +101,10 @@ export interface DomainConfiguration {
    * Optional external Identity Provider (IdP) for the domain name.
    */
   identityProvider?: IdentityProvider;
+
+  /**
+   * List of allowed post-login redirect URLs for this domain
+   * configuration.
+   */
+  allowedPostLoginRedirectUrls?: string[];
 }
