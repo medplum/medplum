@@ -93,10 +93,10 @@ resource "aws_cloudfront_response_headers_policy" "storage" {
   cors_config {
     access_control_allow_credentials = false
     access_control_allow_origins {
-      items = compact([
-        "https://${var.app_domain}",
-        "https://ccda.medplum.com",
-      ])
+      items = compact(concat(
+        ["https://${var.app_domain}"],
+        var.storage_cdn_cors_extra_origins,
+      ))
     }
     access_control_allow_headers { items = ["*"] }
     access_control_allow_methods { items = ["GET", "HEAD", "OPTIONS"] }

@@ -33,6 +33,38 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "app" {
   }
 }
 
+resource "aws_s3_bucket_lifecycle_configuration" "app" {
+  bucket = aws_s3_bucket.app.id
+
+  rule {
+    id     = "intelligent-tiering"
+    status = "Enabled"
+
+    transition {
+      days          = 30
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+
+  rule {
+    id     = "noncurrent-version-expiration"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = var.environment == "prod" ? 90 : 30
+    }
+  }
+
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
 resource "aws_s3_bucket" "static" {
   bucket        = "${local.name_prefix}-static-website"
   force_destroy = var.environment != "prod"
@@ -57,6 +89,29 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "static" {
       kms_master_key_id = aws_kms_key.medplum.arn
     }
     bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "static" {
+  bucket = aws_s3_bucket.static.id
+
+  rule {
+    id     = "intelligent-tiering"
+    status = "Enabled"
+
+    transition {
+      days          = 30
+      storage_class = "INTELLIGENT_TIERING"
+    }
+  }
+
+  rule {
+    id     = "abort-incomplete-multipart-uploads"
+    status = "Enabled"
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
 }
 
