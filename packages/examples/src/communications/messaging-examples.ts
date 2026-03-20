@@ -261,26 +261,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
-// start-block loadThreadsWithMessagesTs
-// Load thread headers and all their child messages in a single request
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-});
-// end-block loadThreadsWithMessagesTs
-
-/*
-// start-block loadThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
-// end-block loadThreadsWithMessagesCli
-
-// start-block loadThreadsWithMessagesCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block loadThreadsWithMessagesCurl
-*/
-
 // start-block filterByPatientTs
 // Filter threads to a specific patient
 await medplum.searchResources('Communication', {
@@ -683,3 +663,155 @@ export async function staleThreadRemindersHandler(medplum: MedplumClient, _event
   }
 }
 // end-block staleThreadRemindersTs
+console.log(newTask);
+
+const communicationThread: Partial<Communication>[] = [
+  // start-block communicationGroupedThread
+  {
+    resourceType: 'Communication',
+    id: 'example-thread-header',
+    // Thread header: no partOf or payload
+    // Include the thread creator in recipient so recipient-based inbox search finds threads they started
+    sender: { reference: 'Practitioner/doctor-alice-smith' },
+    recipient: [{ reference: 'Practitioner/doctor-alice-smith' }, { reference: 'Practitioner/doctor-gregory-house' }],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+  },
+
+  // The initial message
+  {
+    resourceType: 'Communication',
+    id: 'example-message-1',
+    payload: [
+      {
+        id: 'example-message-1-payload',
+        contentString: 'The specimen for you patient, Homer Simpson, has been received.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A response directly to `example-message-1` but still referencing the parent communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-2',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Will the results be ready by the end of the week?',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-1',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A second response
+  {
+    resourceType: 'Communication',
+    id: 'example-message-3',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Yes, we will have them to you by Thursday.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-2',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+  // end-block communicationGroupedThread
+];
+
+console.log(communicationThread);
+
+const categoryExampleCommunications: Communication =
+  // start-block communicationCategories
+  {
+    resourceType: 'Communication',
+    id: 'example-communication',
+    status: 'completed',
+    category: [
+      {
+        text: 'Doctor',
+        coding: [
+          {
+            code: '158965000',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Endocrinology',
+        coding: [
+          {
+            code: '394583002',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Diabetes self-management plan',
+        coding: [
+          {
+            code: '735985000',
+            system: SNOMED,
+          },
+        ],
+      },
+    ],
+  };
+// end-block communicationCategories
+
+console.log(categoryExampleCommunications);
