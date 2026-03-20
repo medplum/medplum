@@ -53,15 +53,18 @@ resource "aws_wafv2_web_acl" "app" {
   rule {
     name     = "AWSManagedRulesAmazonIpReputationList"
     priority = 2
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-app-ip-reputation"
@@ -72,15 +75,18 @@ resource "aws_wafv2_web_acl" "app" {
   rule {
     name     = "AWSManagedRulesSQLiRuleSet"
     priority = 3
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-app-sqli"
@@ -91,15 +97,18 @@ resource "aws_wafv2_web_acl" "app" {
   rule {
     name     = "AWSManagedRulesLinuxRuleSet"
     priority = 4
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-app-linux"
@@ -191,15 +200,18 @@ resource "aws_wafv2_web_acl" "storage" {
   rule {
     name     = "AWSManagedRulesAmazonIpReputationList"
     priority = 2
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-storage-ip-reputation"
@@ -210,15 +222,18 @@ resource "aws_wafv2_web_acl" "storage" {
   rule {
     name     = "AWSManagedRulesSQLiRuleSet"
     priority = 3
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-storage-sqli"
@@ -229,15 +244,18 @@ resource "aws_wafv2_web_acl" "storage" {
   rule {
     name     = "AWSManagedRulesLinuxRuleSet"
     priority = 4
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-storage-linux"
@@ -327,15 +345,18 @@ resource "aws_wafv2_web_acl" "api" {
   rule {
     name     = "AWSManagedRulesAmazonIpReputationList"
     priority = 2
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-api-ip-reputation"
@@ -346,15 +367,18 @@ resource "aws_wafv2_web_acl" "api" {
   rule {
     name     = "AWSManagedRulesSQLiRuleSet"
     priority = 3
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-api-sqli"
@@ -365,15 +389,18 @@ resource "aws_wafv2_web_acl" "api" {
   rule {
     name     = "AWSManagedRulesLinuxRuleSet"
     priority = 4
+
     override_action {
       count {}
     }
+
     statement {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
       }
     }
+
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "${local.name_prefix}-api-linux"
