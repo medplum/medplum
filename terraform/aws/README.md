@@ -424,6 +424,28 @@ aws route53 change-resource-record-sets \
   }"
 ```
 
+**3. Empty the CloudTrail S3 bucket (if `enable_cloudtrail_alarms = true`)** — CloudTrail continuously writes log objects to its S3 bucket. The `force_destroy = true` flag on app and static S3 buckets handles those, but the CloudTrail bucket accumulates versioned objects that must be deleted before Terraform can remove it. If this step is skipped, `terraform destroy` will fail with `BucketNotEmpty`:
+
+```bash
+CLOUDTRAIL_BUCKET=$(terraform output -raw cloudtrail_bucket_name 2>/dev/null || echo "")
+if [ -n "$CLOUDTRAIL_BUCKET" ]; then
+  # Delete all versioned objects and delete markers
+  aws s3api delete-objects \
+    --bucket "$CLOUDTRAIL_BUCKET" \
+    --delete "$(aws s3api list-object-versions \
+      --bucket "$CLOUDTRAIL_BUCKET" \
+      --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' \
+      --output json)" || true
+  # Repeat for delete markers
+  aws s3api delete-objects \
+    --bucket "$CLOUDTRAIL_BUCKET" \
+    --delete "$(aws s3api list-object-versions \
+      --bucket "$CLOUDTRAIL_BUCKET" \
+      --query '{Objects: DeleteMarkers[].{Key:Key,VersionId:VersionId}}' \
+      --output json)" || true
+fi
+```
+
 ### Destroy
 
 ```bash

@@ -131,6 +131,20 @@ variable "rds_instances" {
   }
 }
 
+variable "rds_ssl_reject_unauthorized" {
+  type    = bool
+  default = false
+  description = <<-EOT
+    Controls TLS certificate validation for the Medplum server's RDS connection.
+
+    WARNING: The default (false) disables certificate verification, leaving the
+    connection susceptible to MITM attacks. Set to true in production and configure
+    the server with the RDS CA bundle (rds-ca-rsa2048-g1 or rds-ca-rsa4096-g1) so
+    that Node.js can verify the RDS certificate chain:
+      https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
+  EOT
+}
+
 variable "enable_waf" {
   type        = bool
   description = "Create WAFv2 Web ACLs and associate them with CloudFront distributions. The regional ALB WAF association requires waf_alb_arn to be set after the load balancer is provisioned."
@@ -220,5 +234,12 @@ check "eks_public_access_prod" {
   assert {
     condition     = var.environment != "prod" || !contains(var.eks_public_access_cidrs, "0.0.0.0/0")
     error_message = "eks_public_access_cidrs must not include 0.0.0.0/0 in production. Restrict to your VPN or office CIDR (e.g. [\"203.0.113.0/32\"])."
+  }
+}
+
+check "rds_multi_az_prod" {
+  assert {
+    condition     = var.environment != "prod" || var.rds_instances >= 2
+    error_message = "Production Aurora requires at least 2 instances (writer + reader) for high availability."
   }
 }

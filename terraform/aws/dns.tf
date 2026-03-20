@@ -21,6 +21,11 @@
 
 locals {
   dns_zone_name = var.route53_zone_name != "" ? var.route53_zone_name : local.ses_domain
+
+  # AWS's fixed global hosted zone ID for all CloudFront distributions.
+  # This value is a well-known constant documented by AWS and does not change.
+  # https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html
+  cloudfront_hosted_zone_id = "Z2FDTNDATAQYW2"
 }
 
 # ── Mode 1: TF-managed zone ───────────────────────────────────────────────────
@@ -64,7 +69,7 @@ resource "aws_route53_record" "cloudfront_alias" {
 
   alias {
     name                   = aws_cloudfront_distribution.medplum.domain_name
-    zone_id                = "Z2FDTNDATAQYW2" # AWS global CloudFront hosted zone ID — constant across all accounts/regions
+    zone_id                = local.cloudfront_hosted_zone_id
     evaluate_target_health = false
   }
 }
@@ -79,7 +84,7 @@ resource "aws_route53_record" "storage_alias" {
 
   alias {
     name                   = aws_cloudfront_distribution.storage[0].domain_name
-    zone_id                = "Z2FDTNDATAQYW2" # AWS global CloudFront hosted zone ID — constant across all accounts/regions
+    zone_id                = local.cloudfront_hosted_zone_id
     evaluate_target_health = false
   }
 }
