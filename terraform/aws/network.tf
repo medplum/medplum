@@ -117,6 +117,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "vpc_flow_logs" {
   rule {
     id     = "archive-and-expire"
     status = "Enabled"
+    filter {}
 
     transition {
       days          = 90
@@ -175,7 +176,7 @@ resource "aws_security_group" "eks_nodes" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
-    description = "Allow all outbound — see comment above for production hardening guidance"
+    description = "Allow all outbound - see comment above for production hardening guidance"
   }
 
   tags = var.tags

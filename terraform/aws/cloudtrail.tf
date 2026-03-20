@@ -106,6 +106,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail_logs" {
   rule {
     id     = "archive-and-expire"
     status = "Enabled"
+    filter {}
 
     transition {
       days          = 90
