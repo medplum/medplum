@@ -46,11 +46,12 @@ All scheduling constraints are managed through a single consolidated extension: 
 
 #### Extension Fields Reference
 
-| Url                 | Type                                                        | Applies To                           | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
-| ------------------- | ----------------------------------------------------------- | ------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                        | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
-| `availability`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Schedule only                        | Optional                                        | Bookings must fully fit within the recurring windows                                                                                                                                 | Time is implicitly available by default (unless blocked by Slots or other constraints) |
-| `timezone`          | Code                                                        | Schedule only                        | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting the `availability` timing. Falls back to the Schedule's actor timezone if not specified | Uses the timezone defined on the Schedule's actor reference                            |
+| Url                 | Type                                                        | Applies To                          | Required                                        | Behavior when defined                                                                                                                                                                | Behavior when not defined                                                              |
+| ------------------- | ----------------------------------------------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `serviceType`       | [CodeableConcept](/docs/api/fhir/datatypes/codeableconcept) | Schedule only                       | Required                                        | Applies configuration only to the specified service type, overriding defaults for that service                                                                                       | N/A - must be specified                                                                |
+| `availability`      | [Timing](/docs/api/fhir/datatypes/timing)                   | Schedule only                       | Optional                                        | Bookings must fully fit within the recurring windows (day-of-week + start time + duration)                                                                                           | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `availability.r4`   | Nested extension                                            | Schedule only                       | Optional                                        | Like `availability`, but uses FHIR R5-style start/end time pairs. See [below](#availabilityr4-extension) for details.                                                                | Time is implicitly available by default (unless blocked by Slots or other constraints) |
+| `timezone`          | Code                                                        | Schedule only                       | Optional                                        | Specifies the timezone (IANA timezone identifier, e.g., `America/New_York`) for interpreting availability times. Falls back to the Schedule's actor timezone if not specified        | Uses the timezone defined on the Schedule's actor reference                            |
 | `duration`          | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Required                                        | Determines how long the time increments for a Slot are                                                                                                                               | N/A - must be specified                                                                |
 | `bufferBefore`      | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires prep time before start to also be free                                                                                                                                      | No prep time required                                                                  |
 | `bufferAfter`       | [Duration](/docs/api/fhir/datatypes/duration)               | Both Schedule and HealthcareService | Optional                                        | Requires cleanup time after end to also be free                                                                                                                                      | No cleanup time required                                                               |
@@ -65,7 +66,7 @@ All scheduling constraints are managed through a single consolidated extension: 
 {
   "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
   "extension": [
-    // Required on Schedule: you must specify what type of appointment these parameters aply to
+    // Required on Schedule: you must specify what type of appointment these parameters apply to
     {
       "url": "serviceType",
       "valueCodeableConcept": {
@@ -91,16 +92,33 @@ All scheduling constraints are managed through a single consolidated extension: 
 
     // Recurring availability (Schedule only)
     {
-      "url": "availability",
-      "valueTiming": {
-        "repeat": {
-          "dayOfWeek": ["mon", "wed", "fri"],
-          "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles time zone
-          "duration": 8,
-          "durationUnit": "h"
+      "url": "availability.r4",
+      "extension": [
+        {
+          "url": "availableTime",
+          "extension": [
+            { "url": "daysOfWeek", "valueCode": "mon" },
+            { "url": "daysOfWeek", "valueCode": "wed" },
+            { "url": "daysOfWeek", "valueCode": "fri" },
+            { "url": "availableStartTime", "valueTime": "09:00:00" },
+            { "url": "availableEndTime", "valueTime": "17:00:00" }
+          ]
         }
-      }
+      ]
     },
+
+    // Deprecated recurring availability format from early alpha scheduling design (Schedule only)
+    // {
+    //   "url": "availability",
+    //   "valueTiming": {
+    //     "repeat": {
+    //       "dayOfWeek": ["mon", "wed", "fri"],
+    //       "timeOfDay": ["09:00:00"],  // Interpreted in America/Los_Angeles time zone
+    //       "duration": 8,
+    //       "durationUnit": "h"
+    //     }
+    //   }
+    // },
 
     // Buffer time before appointment
     {
@@ -199,19 +217,84 @@ Here is an example of a [Schedule](/docs/api/fhir/resources/schedule) resource t
         }
       },
       {
-        "url": "availability",
-        "valueTiming": {
-          "repeat": {
-            "dayOfWeek": ["mon", "tue", "wed", "thu", "fri"],
-            "timeOfDay": ["09:00:00"],
-            "duration": 8,
-            "durationUnit": "h"
+        "url": "availability.r4",
+        "extension": [
+          {
+            "url": "availableTime",
+            "extension": [
+              { "url": "availableStartTime", "valueTime": "09:00:00" },
+              { "url": "availableEndTime", "valueTime": "17:00:00" },
+              { "url": "daysOfWeek", "valueCode": "mon" },
+              { "url": "daysOfWeek", "valueCode": "tue" },
+              { "url": "daysOfWeek", "valueCode": "wed" },
+              { "url": "daysOfWeek", "valueCode": "thu" },
+              { "url": "daysOfWeek", "valueCode": "fri" },
+            ]
           }
-        }
+        ]
       }
     ]
   }]
   //...
+}
+```
+
+### `availability.r4` Extension
+
+`availability.r4` is mirrors the FHIR R5 [`Availability`](https://hl7.org/fhir/R5/metadatatypes.html#Availability) datatype shape.
+
+The original alpha design used a `Timing` with a duration window, but this extension uses explicit start/end time pairs — identical to `HealthcareService.availableTime` — making it easier to match HealthcareService descriptions and to migrate to FHIR R5/R6 in the future.
+
+Both formats are currently accepted on the same `SchedulingParameters` extension and their windows are combined.
+
+The extension is encoded using nested R4 extensions (since R4 has no native `Availability` type):
+
+| Sub-extension         | Type          | Description                                    |
+| --------------------- | ------------- | ---------------------------------------------- |
+| `availableTime`       | (nested)      | One entry per availability window (repeatable) |
+| ↳ `daysOfWeek`        | `valueCode`   | One entry per day (`mon`–`sun`); repeatable    |
+| ↳ `allDay`            | `valueBoolean`| If `true`, window spans the full day           |
+| ↳ `availableStartTime`| `valueTime`   | Opening time (ignored when `allDay` is `true`) |
+| ↳ `availableEndTime`  | `valueTime`   | Closing time (ignored when `allDay` is `true`) |
+| `notAvailableTime`    | (nested)      | Typed for future use; not yet processed        |
+
+```tsx
+{
+  "resourceType": "Schedule",
+  "id": "dr-smith-schedule",
+  "actor": [{"reference": "Practitioner/dr-smith"}],
+  "extension": [{
+    "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
+    "extension": [
+      {
+        "url": "serviceType",
+        "valueCodeableConcept": {
+          "coding": [{"code": "office-visit"}]
+        }
+      },
+      {
+        "url": "duration",
+        "valueDuration": {"value": 1, "unit": "h"}
+      },
+      {
+        "url": "availability.r4",
+        "extension": [
+          {
+            "url": "availableTime",
+            "extension": [
+              { "url": "daysOfWeek", "valueCode": "mon" },
+              { "url": "daysOfWeek", "valueCode": "tue" },
+              { "url": "daysOfWeek", "valueCode": "wed" },
+              { "url": "daysOfWeek", "valueCode": "thu" },
+              { "url": "daysOfWeek", "valueCode": "fri" },
+              { "url": "availableStartTime", "valueTime": "09:00:00" },
+              { "url": "availableEndTime",   "valueTime": "17:00:00" }
+            ]
+          }
+        ]
+      }
+    ]
+  }]
 }
 ```
 
@@ -389,7 +472,7 @@ There is no native timezone field on [`Practitioner`](/docs/api/fhir/resources/p
 
 - `timezone` is only available on Schedule resources, not HealthcareService
 - The time zone value should be an IANA time zone identifier (e.g., `America/New_York`, `America/Los_Angeles`, `America/Miami`)
-- When `timezone` is specified, all `timeOfDay` values in the `availability` timing are interpreted in that time zone
+- When `timezone` is specified, all time values in both `availability` and `availability.r4` entries are interpreted in that time zone
 
 Here is an example of a Schedule with multiple service types, each with its own time zone:
 
