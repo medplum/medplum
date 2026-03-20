@@ -1,3 +1,7 @@
+# terraform.tfvars.example — copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is excluded from version control (.gitignore) to prevent accidental
+# commit of real credentials. Never commit your actual terraform.tfvars.
+
 region             = "us-east-1"
 environment        = "dev"
 deployment_id      = "1"

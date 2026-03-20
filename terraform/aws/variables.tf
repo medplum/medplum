@@ -243,3 +243,9 @@ check "rds_multi_az_prod" {
     error_message = "Production Aurora requires at least 2 instances (writer + reader) for high availability."
   }
 }
+
+variable "storage_cdn_cors_extra_origins" {
+  type        = list(string)
+  description = "Additional CORS allowed origins for the storage CDN CloudFront distribution, alongside the app domain. Useful for integrating external tools that access stored binaries (e.g. CCDA viewers)."
+  default     = ["https://ccda.medplum.com"]
+}

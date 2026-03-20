@@ -430,12 +430,14 @@ aws route53 change-resource-record-sets \
   }"
 ```
 
-**3. Empty the CloudTrail S3 bucket (if `enable_cloudtrail_alarms = true`)** — CloudTrail continuously writes log objects to its S3 bucket. The `force_destroy = true` flag on app and static S3 buckets handles those, but the CloudTrail bucket accumulates versioned objects that must be deleted before Terraform can remove it. If this step is skipped, `terraform destroy` will fail with `BucketNotEmpty`:
+**3. Empty the CloudTrail S3 bucket (if `enable_cloudtrail_alarms = true`)** — CloudTrail continuously writes log objects to its S3 bucket. The `force_destroy = true` flag on app and static S3 buckets handles those, but the CloudTrail bucket accumulates versioned objects that must be deleted before Terraform can remove it. If this step is skipped, `terraform destroy` will fail with `BucketNotEmpty`.
+
+> **Note on GLACIER objects:** The CloudTrail bucket lifecycle policy transitions objects to GLACIER after 90 days. You can delete GLACIER-archived objects directly via the API without restoring them first — the commands below handle all storage classes. However, if the bucket is very large, deletions may take several minutes to complete.
 
 ```bash
 CLOUDTRAIL_BUCKET=$(terraform output -raw cloudtrail_bucket_name 2>/dev/null || echo "")
 if [ -n "$CLOUDTRAIL_BUCKET" ]; then
-  # Delete all versioned objects and delete markers
+  # Delete all versioned objects and delete markers (works for all storage classes including GLACIER)
   aws s3api delete-objects \
     --bucket "$CLOUDTRAIL_BUCKET" \
     --delete "$(aws s3api list-object-versions \
