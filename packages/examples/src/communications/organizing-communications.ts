@@ -94,10 +94,7 @@ const communicationThread: Partial<Communication>[] = [
     // Thread header: no partOf or payload
     // Include the thread creator in recipient so recipient-based inbox search finds threads they started
     sender: { reference: 'Practitioner/doctor-alice-smith' },
-    recipient: [
-      { reference: 'Practitioner/doctor-alice-smith' },
-      { reference: 'Practitioner/doctor-gregory-house' },
-    ],
+    recipient: [{ reference: 'Practitioner/doctor-alice-smith' }, { reference: 'Practitioner/doctor-gregory-house' }],
     topic: {
       text: 'Homer Simpson April 10th lab tests',
     },
