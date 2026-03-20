@@ -36,7 +36,7 @@ export default function EnterprisePage(): JSX.Element {
               Medplum is a platform with powerful primitives and pre-built integrations that scales to meet the needs of
               your organization.
             </p>
-            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/team/medplum/30min" className={styles.getStartedButton}>
               <div>Book a demo</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
             </Link>
@@ -237,7 +237,7 @@ export default function EnterprisePage(): JSX.Element {
               Medplum Enterprise includes a two week workshop with team training, integrations planning, documentation
               and setup. The materials are customized to the specific needs of your implementation.
             </p>
-            <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+            <Link href="https://cal.com/team/medplum/30min" className={styles.getStartedButton}>
               <div>Book Now</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
             </Link>
