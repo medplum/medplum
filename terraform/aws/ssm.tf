@@ -102,10 +102,13 @@ resource "aws_secretsmanager_secret_version" "db_config" {
   # ignore_changes preserves externally rotated passwords (e.g. via Secrets Manager rotation)
   # without Terraform overwriting them on the next apply.
   #
-  # NOTE: HCL does not support ignoring a sub-field of secret_string, so the entire JSON blob is
-  # ignored. This means Terraform will NOT detect if host, port, or dbname change (e.g. if the
-  # Aurora cluster endpoint is replaced). If you change any Aurora connection details, manually
-  # update this secret in the AWS Console or via `aws secretsmanager put-secret-value`.
+  # IMPORTANT: HCL does not support ignoring a sub-field of secret_string, so the entire JSON blob
+  # is ignored. Terraform will NOT detect if host, port, or dbname change (e.g. blue/green
+  # deployment, Aurora failover, region migration). If you modify Aurora connection details you
+  # MUST manually update this secret:
+  #   aws secretsmanager put-secret-value \
+  #     --secret-id $(terraform output -raw db_config_secret_arn) \
+  #     --secret-string '{"host":"<new-endpoint>","port":5432,"dbname":"medplum",...}'
   lifecycle {
     ignore_changes = [secret_string]
   }
