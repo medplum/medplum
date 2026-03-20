@@ -1455,11 +1455,12 @@ describe('SubscriptionManager', () => {
 
       // Defer the first createResource call so we can remove the criteria while the subscribe is in-flight.
       let resolveFirstCreate!: (value: { id: string }) => void;
-      const createSpy = jest
-        .spyOn(medplum, 'createResource')
-        .mockImplementationOnce(() => new Promise((resolve) => {
-          resolveFirstCreate = resolve as (value: { id: string }) => void;
-        }));
+      const createSpy = jest.spyOn(medplum, 'createResource').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirstCreate = resolve as (value: { id: string }) => void;
+          })
+      );
 
       // 1. addCriteria kicks off subscribeToCriteria → rebindCriteriaEntry → createResource (deferred)
       const emitter1 = defaultManager.addCriteria('Communication');
@@ -1553,13 +1554,12 @@ describe('SubscriptionManager', () => {
       // During a refresh, subscriptionId is already set so createResource is skipped —
       // medplum.get is the first async gap.
       let resolveRefreshGet!: (value: Parameters) => void;
-      const getSpy = jest
-        .spyOn(medplum, 'get')
-        .mockImplementationOnce(
-          () => new Promise((resolve) => {
+      const getSpy = jest.spyOn(medplum, 'get').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
             resolveRefreshGet = resolve as (value: Parameters) => void;
           }) as any
-        );
+      );
 
       // Trigger the token refresh by advancing past the refresh interval
       await sleep(300);
