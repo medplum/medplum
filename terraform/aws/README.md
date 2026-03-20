@@ -231,6 +231,12 @@ terraform apply
 
 Note the S3 bucket name in the output (it will be `medplum-tf-state-<YOUR_ACCOUNT_ID>`).
 
+> **Security note:** Terraform state contains sensitive values in plaintext, including the Redis auth
+> token and RDS password. The bootstrap module creates the S3 bucket with versioning, KMS encryption,
+> and public access blocks. Ensure that only the IAM principals that run `terraform apply` have
+> `s3:GetObject` access to the state bucket, and restrict `dynamodb:GetItem` on the lock table
+> accordingly. Never commit `terraform.tfstate` files to version control.
+
 Then open `terraform/aws/backend.tf`:
 1. Replace `<YOUR_ACCOUNT_ID>` with your actual AWS account ID
 2. Uncomment the `terraform { backend "s3" { ... } }` block
