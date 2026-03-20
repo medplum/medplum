@@ -95,7 +95,7 @@ resource "aws_secretsmanager_secret_version" "db_config" {
     dbname   = module.aurora.cluster_database_name
     username = module.aurora.cluster_master_username
     password = jsondecode(data.aws_secretsmanager_secret_version.rds_master.secret_string).password
-    ssl      = { require = true, rejectUnauthorized = false }
+    ssl      = { require = true, rejectUnauthorized = var.rds_ssl_reject_unauthorized }
   })
   # ignore_changes preserves externally rotated passwords without Terraform overwriting them
   lifecycle {

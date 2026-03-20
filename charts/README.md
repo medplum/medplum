@@ -82,9 +82,13 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 
 Create `values-aws.yaml`, substituting each `<PLACEHOLDER>` with the corresponding value from the table above:
 
-> **Warning:** The trailing `/` at the end of `configSource.type` is required. Without it the server
-> misparses SSM parameter names (leaving a leading `/` on every key) and fails to start with
+> **⚠️ CRITICAL — trailing slash required:**
+> `configSource.type` **must** end with a `/`. Without it the server misparses SSM parameter
+> names (leaving a leading `/` on every key) and fails to start with
 > `Missing required config setting: baseUrl`.
+>
+> - Correct: `aws:region:/path/` ✓
+> - Broken: `aws:region:/path` ✗ (server fails to start)
 
 ```yaml
 global:

@@ -84,6 +84,10 @@ override.tf.json
 # Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
 # example: *tfplan*
 
+# Terraform variable files with real deployment values — copy terraform.tfvars.example
+terraform/aws/terraform.tfvars
+terraform/aws/bootstrap/terraform.tfvars
+
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc

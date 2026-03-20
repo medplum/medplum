@@ -26,11 +26,12 @@ tags = {
 # redis_num_cache_nodes = 1                 # must be >= 2 when environment = "prod"
 
 # ── DNS (Route 53) ────────────────────────────────────────────────────────────
-# Choose one of three modes:
+# Choose ONE of three modes. Setting both create_route53_zone and
+# create_route53_records to true is unsupported and will cause unexpected behavior.
 #
 #   A) Create the zone (fresh deployment, zone doesn't exist yet):
 #        create_route53_zone    = true
-#        create_route53_records = false
+#        create_route53_records = false   ← must be false in mode A
 #        route53_zone_name      = "example-aws.example.com"
 #      If the parent zone (example.com) is also in Route 53 in this account,
 #      add its zone ID and Terraform adds the NS delegation record automatically:
@@ -40,15 +41,23 @@ tags = {
 #
 #   B) Zone already exists in this account:
 #        create_route53_records = true
-#        create_route53_zone    = false
+#        create_route53_zone    = false   ← must be false in mode B
 #        route53_zone_name      = "example-aws.example.com"
 #
 #   C) DNS managed externally — omit all of the above and supply cert ARNs manually (see below).
 #
+# Uncomment ONE block below:
+#
+# Mode A — create new hosted zone:
 # create_route53_zone    = true
 # create_route53_records = false
 # route53_zone_name      = "example-aws.example.com"
 # parent_route53_zone_id = ""
+#
+# Mode B — use existing hosted zone:
+# create_route53_records = true
+# create_route53_zone    = false
+# route53_zone_name      = "example-aws.example.com"
 
 # ACM certificates — leave empty to let Terraform request and validate them automatically
 # via Route 53 DNS (requires one of modes A or B above). Populate these only when reusing
