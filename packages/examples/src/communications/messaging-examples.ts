@@ -662,13 +662,13 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
 
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const result = (await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
+  const result: Parameters = await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
     resourceType: 'Parameters',
     parameter: [
       { name: 'start', valueDateTime: now.toISOString() },
       { name: 'end', valueDateTime: oneHourLater.toISOString() },
     ],
-  })) as Parameters;
+  });
 
   const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
   const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
