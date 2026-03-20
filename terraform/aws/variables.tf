@@ -133,14 +133,14 @@ variable "rds_instances" {
 
 variable "rds_ssl_reject_unauthorized" {
   type    = bool
-  default = false
+  default = true
   description = <<-EOT
     Controls TLS certificate validation for the Medplum server's RDS connection.
 
-    WARNING: The default (false) disables certificate verification, leaving the
-    connection susceptible to MITM attacks. Set to true in production and configure
-    the server with the RDS CA bundle (rds-ca-rsa2048-g1 or rds-ca-rsa4096-g1) so
-    that Node.js can verify the RDS certificate chain:
+    Defaults to true (secure). Set to false only in isolated dev/test environments
+    where you cannot provide a valid RDS CA bundle. Configure the server with the
+    RDS CA bundle (rds-ca-rsa2048-g1 or rds-ca-rsa4096-g1) so that Node.js can
+    verify the RDS certificate chain:
       https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html
   EOT
 }

@@ -302,7 +302,7 @@ Terraform creates the S3 bucket for the static frontend, but you must build and 
    MEDPLUM_BASE_URL=https://$(terraform output -raw api_domain)/
    MEDPLUM_CLIENT_ID=
    GOOGLE_CLIENT_ID=
-   RECAPTCHA_SITE_KEY=6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq
+   RECAPTCHA_SITE_KEY=your_recaptcha_site_key_here
    MEDPLUM_REGISTER_ENABLED=true
    EOF
 
