@@ -249,3 +249,9 @@ variable "storage_cdn_cors_extra_origins" {
   description = "Additional CORS allowed origins for the storage CDN CloudFront distribution, alongside the app domain. Useful for integrating external tools that access stored binaries (e.g. CCDA viewers)."
   default     = ["https://ccda.medplum.com"]
 }
+
+variable "waf_logging_enabled" {
+  type        = bool
+  description = "When true and WAF is enabled, create CloudWatch log groups and WAF logging configuration for app, storage, and API web ACLs."
+  default     = false
+}
