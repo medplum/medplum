@@ -545,80 +545,6 @@ await medplum.patchResource('Task', task.id, [
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
 [newTask];
 
-// start-block messageTaskLifecycleTs
-// Bot: handle Task lifecycle for new messages. Creates a Task when no open Task exists, completes it when a provider responds.
-export async function handler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
-  const message = event.input;
-  const threadRef = message.partOf?.[0]?.reference;
-  if (!threadRef || !message.subject || !message.sender) {
-    return;
-  }
-
-  const openTasks = await medplum.searchResources('Task', {
-    focus: threadRef,
-    status: 'requested,accepted',
-  });
-
-  if (openTasks.length === 0) {
-    // No open Task for this thread — create one
-    await medplum.createResource({
-      resourceType: 'Task',
-      status: 'requested',
-      intent: 'order',
-      priority: 'routine',
-      focus: { reference: threadRef },
-      for: message.subject,
-      performerType: [
-        {
-          coding: [
-            {
-              system: 'http://snomed.info/sct',
-              code: '224535009',
-              display: 'Registered nurse',
-            },
-          ],
-        },
-      ],
-      authoredOn: new Date().toISOString(),
-    });
-    return;
-  }
-
-  // Open Task exists — check if this message is from someone other than the patient
-  const openTask = openTasks[0];
-  const senderRef = message.sender.reference;
-  const patientRef = openTask.for?.reference;
-
-  if (senderRef && senderRef !== patientRef) {
-    // Sender is not the patient — treat as a provider response and complete the Task
-    await medplum.patchResource('Task', openTask.id, [
-      { op: 'replace', path: '/status', value: 'completed' },
-      {
-        op: 'add',
-        path: '/output/-',
-        value: {
-          type: { text: 'Response' },
-          valueReference: { reference: `Communication/${message.id}` },
-        },
-      },
-    ]);
-  }
-}
-// end-block messageTaskLifecycleTs
-
-// start-block subscriptionMessageTaskLifecycleTs
-await medplum.createResource({
-  resourceType: 'Subscription',
-  status: 'active',
-  reason: 'Create or complete Tasks when messages are sent in a thread',
-  criteria: 'Communication?part-of:missing=false&status=in-progress',
-  channel: {
-    type: 'rest-hook',
-    endpoint: 'Bot/{your-message-task-lifecycle-bot-id}',
-  },
-});
-// end-block subscriptionMessageTaskLifecycleTs
-
 // start-block oooRerouteTs
 // Bot: reroute Tasks to the pool when the assigned provider is out of office.
 // Uses Schedule $find to check availability at message receive time.
@@ -695,6 +621,19 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
 }
 // end-block oooRerouteTs
 
+// start-block subscriptionOooRerouteTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Reroute Tasks when assigned provider is out of office',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-ooo-reroute-bot-id}',
+  },
+});
+// end-block subscriptionOooRerouteTs
+
 // start-block staleThreadRemindersTs
 // Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
 export async function staleThreadRemindersHandler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
@@ -744,16 +683,3 @@ export async function staleThreadRemindersHandler(medplum: MedplumClient, _event
   }
 }
 // end-block staleThreadRemindersTs
-
-// start-block subscriptionStaleReminderTs
-await medplum.createResource({
-  resourceType: 'Subscription',
-  status: 'active',
-  reason: 'Notify provider about stale thread',
-  criteria: 'Task?code=https://medplum.com/task-codes|respond-to-old-message&status=requested',
-  channel: {
-    type: 'rest-hook',
-    endpoint: 'Bot/{your-notification-bot-id}',
-  },
-});
-// end-block subscriptionStaleReminderTs

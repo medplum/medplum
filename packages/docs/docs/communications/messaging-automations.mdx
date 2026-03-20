@@ -2,7 +2,7 @@
 sidebar_position: 9
 title: Messaging Automations
 tags: [communications, messaging, bots, subscriptions]
-keywords: [bot, subscription, task, auto-complete, reminder, cron, task-creation, ooo, reroute, schedule]
+keywords: [bot, subscription, task, auto-complete, reminder, cron, ooo, reroute, schedule]
 ---
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
@@ -10,60 +10,34 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Messaging Automations
 
+:::note Prerequisites
+
+The patterns on this page use **Medplum Bots** — an [advanced feature](/docs/bots/bot-basics) that is disabled by default on many projects — and **FHIR Subscriptions**. Recurring automations also use **cron-scheduled Bots** ([Cron Jobs for Bots](/docs/bots/bot-cron-job)). Confirm Bots are enabled for your project and that you can create Bots and Subscriptions (typically as a Project administrator).
+
+:::
+
 Medplum [Bots](/docs/bots/bot-basics) and [FHIR Subscriptions](/docs/subscriptions) let you automate messaging workflows without manual intervention, while still giving you full control over your business logic. There are two main design patterns:
 
-- **Real-time automations** — A Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) creation. The Bot runs immediately when a message is sent, making it ideal for actions that depend on the current state of the system (e.g., creating Tasks, checking provider availability).
+- **Real-time automations** — A Bot triggered by a [Subscription](/docs/subscriptions) on [`Communication`](/docs/api/fhir/resources/communication) when a message is sent. This page walks through **out-of-office rerouting**: checking provider availability at message time and returning work to a pool when the assignee is unavailable. Other common real-time patterns include creating or completing [Tasks](/docs/api/fhir/resources/task) when messages arrive; you can apply the same Subscription shape and tailor the Bot logic.
 - **Recurring automations** — A Bot running on a [cron schedule](/docs/bots/bot-cron-job). The Bot periodically scans existing resources to find conditions that need action (e.g., threads with no response for N days).
 
 Both patterns let you encode your own rules — who gets a Task, what SLA thresholds to enforce, when to escalate — while keeping the automation infrastructure out of your application code.
 
 ## Real-Time Automations
 
-A real-time automation uses a [Subscription](/docs/subscriptions) on `Communication` to trigger a [Bot](/docs/bots/bot-basics) whenever a message is sent in a thread. Because the Bot fires at message creation time, it has access to the current state of the system: who sent the message, whether a Task already exists, and whether the assigned provider is available.
+A real-time automation uses a [Subscription](/docs/subscriptions) on `Communication` to trigger a [Bot](/docs/bots/bot-basics) whenever a message is sent in a thread. Because the Bot runs at message creation time, it can inspect the current state of the system: who sent the message, which [Task](/docs/api/fhir/resources/task) (if any) is focused on the thread, and whether the assigned provider is available.
 
-### Example: Message Task Lifecycle
-
-A single Bot can manage the full [Task](/docs/api/fhir/resources/task) lifecycle for a thread: creating a Task when a message needs a response, and completing it when a provider replies.
-
-The Bot checks whether an open Task already exists for the thread:
-
-- If no open Task exists, it creates one (routed to a provider pool via `performerType`).
-- If an open Task exists and the sender is not the patient (`sender !== task.for`), it treats the message as a provider response and completes the Task with `output` pointing to the response Communication.
-- If an open Task exists but the sender is the patient (e.g. a follow-up message), it does nothing — the Task stays open.
-
-#### Bot Code
-
-<MedplumCodeBlock language="ts" selectBlocks="messageTaskLifecycleTs">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-:::tip
-Customize the "should I create a Task?" logic for your workflow. For example, check `Communication.category` or the sender's resource type to decide which messages need a response Task. The `performerType` value determines which provider pool the Task is routed to — change the SNOMED code to match your team structure.
-:::
-
-#### Deploy and Subscribe
-
-1. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
-2. Create a [Subscription](/docs/api/fhir/resources/subscription) that triggers the Bot for new child messages:
-
-<MedplumCodeBlock language="ts" selectBlocks="subscriptionMessageTaskLifecycleTs">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-The criteria `part-of:missing=false` ensures the Subscription only fires for child messages (which have `partOf`), not thread headers. Adding `status=in-progress` prevents the Subscription from firing when messages are retracted (`entered-in-error`) or when drafts (`preparation`) are saved — it only triggers for newly sent messages.
-
-#### Verify
-
-1. Create a thread and send a message as a patient — a Task should be created with `status: "requested"` and `focus` pointing to the thread header
-2. Send a follow-up message as the same patient — no new Task should be created, the existing one stays open
-3. Send a response as a provider — the Task should now have `status: "completed"` and an `output` entry referencing the response Communication
-4. Query `Task?focus=Communication/{thread-id}` to confirm
-
-### Example: OOO Rerouting
+### Example: OOO rerouting
 
 When a message arrives for a provider who is currently out of office, a Bot can automatically reroute the [Task](/docs/api/fhir/resources/task) back to the provider pool so another team member can pick it up.
 
 The Bot uses the Medplum [scheduling model](/docs/scheduling) to determine availability. It looks up the assigned provider's [Schedule](/docs/api/fhir/resources/schedule) and calls [`$find`](/docs/scheduling/schedule-find) for the current time window. If no free slots are returned — whether because of explicit time blocks (vacation, holidays) or because the provider has no [availability](/docs/scheduling/defining-availability) defined for the current day — the Task is rerouted to the pool.
+
+```mermaid
+flowchart LR
+    Sub["Subscription<br/>(new message)"] --> Bot["Bot:<br/>$find on Schedule"]
+    Bot --> Reroute["Reroute Task<br/>if no free slots"]
+```
 
 #### Bot Code
 
@@ -77,7 +51,20 @@ This example reroutes to the `performerType` pool. You could instead reroute to 
 
 #### Deploy and Subscribe
 
-This Bot uses the same Subscription criteria as the lifecycle example — it triggers on new child messages (`Communication?part-of:missing=false&status=in-progress`). You can run both automations from a single Bot, or deploy them as separate Bots with separate Subscriptions depending on your preference.
+1. Create a Bot resource in the Medplum App (Project Admin → Bots → New). See [Deploying Bots](/docs/bots/bot-basics#deploying-a-bot) for full steps.
+2. Create a [Subscription](/docs/api/fhir/resources/subscription) that triggers the Bot for new child messages:
+
+<MedplumCodeBlock language="ts" selectBlocks="subscriptionOooRerouteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+The criteria `part-of:missing=false` limits the Subscription to child messages (which have `partOf`), not thread headers. `status=in-progress` avoids firing on retracted messages (`entered-in-error`) or drafts (`preparation`) — it targets newly sent messages.
+
+#### Verify
+
+1. Configure a provider Schedule with no free slots for the current window (or an explicit OOO block).
+2. Ensure an open Task for the thread is owned by that provider, then send a new child message in the thread so the Subscription runs.
+3. Confirm the Task has `owner` removed, `status` back to `requested`, and an auto-reroute note; optionally confirm thread `recipient` was cleared as in the example.
 
 ## Recurring Automations
 
@@ -85,15 +72,12 @@ A recurring automation uses a [cron-triggered Bot](/docs/bots/bot-cron-job) to p
 
 ### Example: Stale Thread Reminders
 
-A cron-triggered Bot can periodically scan for threads without timely responses and create reminder Tasks, which can in turn trigger notifications.
+A cron-triggered Bot can periodically scan for threads without timely responses and create reminder Tasks for your queue or follow-up workflows.
 
 ```mermaid
 flowchart LR
-    Cron["Cron Schedule<br/>(daily at 9am)"] --> Bot1["Bot 1:<br/>Find threads with no<br/>reply in 48 hours"]
-    Bot1 --> CreateTask["Create Task<br/>'Respond to Homer Simpson's<br/>unanswered question'"]
-    CreateTask --> Sub["Subscription<br/>(on Task create)"]
-    Sub --> Bot2["Bot 2:<br/>Notify Dr. Alice Smith"]
-    Bot2 --> Email["Email reminder:<br/>'Homer Simpson is<br/>awaiting a reply'"]
+    Cron["Cron schedule<br/>(e.g. daily)"] --> Bot["Bot:<br/>Find stale threads"]
+    Bot --> CreateTask["Create reminder Task<br/>per eligible thread"]
 ```
 
 #### Bot Code
@@ -106,14 +90,7 @@ The 3-day threshold is configurable — adjust based on your response time expec
 
 #### Deploy
 
-1. Deploy the Bot and configure it to run on a cron schedule (e.g., once per hour, once per day). See [Cron Jobs for Bots](/docs/bots/bot-cron-job).
-2. Create a Subscription to trigger notifications when reminder Tasks are created:
-
-<MedplumCodeBlock language="ts" selectBlocks="subscriptionStaleReminderTs">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-The notification Bot receives the Task, looks up the thread and intended owner, and sends an email, SMS, or push notification.
+Deploy the Bot and configure it to run on a cron schedule (e.g., once per hour, once per day). See [Cron Jobs for Bots](/docs/bots/bot-cron-job).
 
 ## Analytics and SLA Tracking
 
