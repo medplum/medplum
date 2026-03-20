@@ -59,7 +59,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
  * @param lastName - The patient's last name.
  * @returns The new project membership.
  */
-export async function createPatient(
+async function createPatient(
   login: Login,
   projectId: string,
   firstName: string,
