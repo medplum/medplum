@@ -96,6 +96,7 @@ const sidebars: SidebarsConfig = {
       label: 'Messaging & Communications',
       link: { type: 'doc', id: 'communications/index' },
       items: [
+        { type: 'doc', id: 'communications/messaging-data-model' },
         { type: 'doc', id: 'communications/async-encounters/async-encounters' },
         { type: 'doc', id: 'communications/organizing-communications' },
         { type: 'doc', id: 'communications/sending-messages-and-attachments' },
