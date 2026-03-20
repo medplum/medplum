@@ -29,7 +29,7 @@ describe('Okta SCIM Tests', () => {
     });
     accessToken = registration.accessToken;
 
-    const systemRepo = getProjectSystemRepo(registration.project);
+    const systemRepo = await getProjectSystemRepo(registration.project);
 
     // Create default access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({

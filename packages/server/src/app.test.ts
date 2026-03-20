@@ -215,7 +215,7 @@ describe('App', () => {
       const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
 
       // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
-      await getProjectSystemRepo(project).deleteResource(membership.resourceType, membership.id);
+      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
 
       const res1 = await request(app)
         .get(`/fhir/R4/Patient`)
