@@ -76,6 +76,14 @@ In these threads, the thread header needs to be distinguished from the children.
 
 Additionally, to help organize threads, it is useful to use add a `topic` element to give the thread a subject. Similar to the subject line of an email, the `topic` should be given a high level of specificity to help distinguish the thread. The `topic` should be assigned to both the thread header and child [`Communication`](/docs/api/fhir/resources/communication) resources in any thread.
 
+:::tip Thread header: `sender` and `recipient`
+
+On the thread header, set `sender` to whoever created or opened the thread (when that applies). **Also include that same actor in `recipient`,** together with every other participant. Treat `recipient` on the header as the full participant list for routing and UI—not only “others” who received a message.
+
+FHIR search cannot express `recipient OR sender` in a single query. Inbox-style filters (for example `recipient=Practitioner/{id}`) only match headers where that practitioner appears in `recipient`, so omitting the thread creator breaks “threads I started.” See [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) for query patterns that rely on this convention.
+
+:::
+
 <details>
   <summary>Example of a thread grouped using a Communication resource</summary>
   <MedplumCodeBlock language="ts" selectBlocks="communicationGroupedThread">
@@ -115,6 +123,8 @@ Alternatively, you can have threads that have just one `category` that combines 
 :::
 
 ## Searching for and Sorting `Communication` Resources
+
+For a concise cheat sheet (active threads, per-patient filters, current-user inbox queries, subscriptions), see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads). The sections below walk through the same ideas with tabbed examples.
 
 ### Searching for All Threads in a System
 

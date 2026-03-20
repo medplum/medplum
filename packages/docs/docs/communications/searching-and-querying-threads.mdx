@@ -5,6 +5,8 @@ import TabItem from '@theme/TabItem';
 
 # Searching and Querying Threads
 
+How you populate `sender` and `recipient` on the **thread header** affects these queries—for recommended modeling (including listing the thread creator in `recipient`), see [Organizing Communications — Building and Structuring Threads](/docs/communications/organizing-communications#building-and-structuring-threads).
+
 ## Search Query Cheat Sheet
 
 | Goal                        | Query                                                        | Notes                                         |
@@ -12,7 +14,7 @@ import TabItem from '@theme/TabItem';
 | All threads                 | `Communication?part-of:missing=true`                         | Returns only thread headers                   |
 | Messages in a thread        | `Communication?part-of=Communication/{id}&_sort=sent`        | Sorted chronologically                        |
 | Threads for a patient       | Add `&subject=Patient/{id}` to any query above               | Filter by patient context                     |
-| Threads I participate in    | Add `&recipient=Practitioner/{id}`                           | See [note below](#filter-by-current-user)      |
+| Threads I participate in    | Add `&recipient=Practitioner/{id}`                           | Header must list the creator in `recipient`; see [note below](#filter-by-current-user) and [modeling tip](/docs/communications/organizing-communications#building-and-structuring-threads) |
 | Active threads only         | Add `&status:not=completed,entered-in-error,stopped,unknown` | Exclude closed threads                        |
 
 ## Query for All Threads
@@ -106,6 +108,8 @@ To show threads the current user participates in, filter by `recipient`:
 This works when thread headers list all participants — including the thread creator — in `recipient`. The Medplum [`ThreadInbox`](https://github.com/medplum/medplum/blob/main/packages/react/src/chat/ThreadInbox/ThreadInbox.tsx) component follows this convention: when a new thread is created, the sender is added to `recipient` alongside other participants, so a `recipient`-based query returns threads the user started _and_ threads they were added to.
 
 > **Note:** FHIR search does not support a single query for `recipient OR sender`. If your thread headers don't follow the convention above, you'll need to run two searches (`recipient=Practitioner/{id}` and `sender=Practitioner/{id}`) and merge results client-side.
+
+For how to model thread headers so this works, see the [thread header `sender` / `recipient` recommendation](/docs/communications/organizing-communications#building-and-structuring-threads) in Organizing Communications.
 
 For other items to filter on, see the [Communication Search Parameters](/docs/api/fhir/resources/communication#search-parameters).
 
