@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedplumClient, getReferenceString, SNOMED } from '@medplum/core';
+import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
 import type { Communication } from '@medplum/fhirtypes';
 
 // end-block imports
