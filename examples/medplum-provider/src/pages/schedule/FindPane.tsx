@@ -4,7 +4,7 @@ import { Button, Group, Stack, Title } from '@mantine/core';
 import type { WithId } from '@medplum/core';
 import { EMPTY, formatDateTime, isDefined } from '@medplum/core';
 import type { Appointment, Bundle, Schedule, Slot } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
+import { CodeableConceptDisplay, useMedplum, useSearchResources } from '@medplum/react';
 import { IconChevronRight, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -13,7 +13,11 @@ import { BookAppointmentForm } from '../../components/schedule/BookAppointmentFo
 import { useSchedulingStartsAt } from '../../hooks/useSchedulingStartsAt';
 import type { Range } from '../../types/scheduling';
 import { showErrorNotification } from '../../utils/notifications';
-import { SchedulingTransientIdentifier, serviceTypesFromSchedulingParameters } from '../../utils/scheduling';
+import {
+  hasSchedulingParameters,
+  SchedulingTransientIdentifier,
+  serviceTypesFromSchedulingParameters,
+} from '../../utils/scheduling';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -33,7 +37,13 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
   const { schedule, range, onSuccess } = props;
-  const serviceTypes = useMemo(
+
+  const [healthcareServices] = useSearchResources<'HealthcareService'>(
+    'HealthcareService',
+    'service-type:missing=false'
+  );
+
+  const scheduleServiceTypes = useMemo(
     () =>
       serviceTypesFromSchedulingParameters(schedule).map((codeableConcept) => ({
         codeableConcept,
@@ -41,6 +51,33 @@ export function FindPane(props: FindPaneProps): JSX.Element | null {
       })),
     [schedule]
   );
+
+  const healthcareServiceServiceTypes = useMemo(
+    () =>
+      (healthcareServices ?? [])
+        .filter(hasSchedulingParameters)
+        .flatMap((service) => service.type ?? [])
+        .map((codeableConcept) => ({
+          codeableConcept,
+          id: uuidv4(),
+        })),
+    [healthcareServices]
+  );
+
+  const serviceTypes = useMemo(() => {
+    const seen = new Set<string>();
+    healthcareServiceServiceTypes.forEach(({ codeableConcept }) => {
+      codeableConcept.coding?.forEach((coding) => {
+        seen.add(`${coding.system ?? ''}|${coding.code ?? ''}`);
+      });
+    });
+
+    const scheduleSpecificTypes = scheduleServiceTypes.filter(({ codeableConcept }) =>
+      codeableConcept.coding?.some((coding) => !seen.has(`${coding.system ?? ''}|${coding.code ?? ''}`))
+    );
+
+    return [...healthcareServiceServiceTypes, ...scheduleSpecificTypes];
+  }, [scheduleServiceTypes, healthcareServiceServiceTypes]);
 
   const medplum = useMedplum();
 
