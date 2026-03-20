@@ -89,7 +89,7 @@
     "pdfmake": "0.2.21",
     "pg": "8.20.0",
     "qrcode": "1.5.4",
-    "rate-limiter-flexible": "9.1.1",
+    "rate-limiter-flexible": "10.0.1",
     "rfc6902": "5.2.0",
     "semver": "7.7.4",
     "temporal-polyfill": "0.3.2",
