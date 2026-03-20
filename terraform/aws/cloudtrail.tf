@@ -1,7 +1,7 @@
 # CloudTrail + CloudWatch metric alarms — mirrors CDK's CloudTrailAlarms construct.
 # Enabled via var.enable_cloudtrail_alarms (default: false to keep non-prod costs low).
 #
-# The 10 alarm definitions below exactly match CDK's cloudtrail.ts alarm list.
+# The 15 alarm definitions below exactly match CDK's cloudtrail.ts alarm list.
 
 resource "aws_cloudwatch_log_group" "cloudtrail" {
   count             = var.enable_cloudtrail_alarms ? 1 : 0
@@ -165,7 +165,7 @@ resource "aws_sns_topic_subscription" "cloudtrail_alarms_email" {
   endpoint  = var.cloudtrail_alarm_email
 }
 
-# ─── Metric filters + alarms (10 CDK-parity patterns) ────────────────────────
+# ─── Metric filters + alarms (15 CDK-parity patterns) ────────────────────────
 
 locals {
   cloudtrail_alarms = var.enable_cloudtrail_alarms ? {
@@ -208,6 +208,26 @@ locals {
     SecurityGroupChanges = {
       pattern     = "{ ($.eventName = AuthorizeSecurityGroupIngress) || ($.eventName = AuthorizeSecurityGroupEgress) || ($.eventName = RevokeSecurityGroupIngress) || ($.eventName = RevokeSecurityGroupEgress) || ($.eventName = CreateSecurityGroup) || ($.eventName = DeleteSecurityGroup) }"
       description = "Security group changes detected"
+    }
+    NetworkAclChanges = {
+      pattern     = "{ ($.eventName = CreateNetworkAcl) || ($.eventName = CreateNetworkAclEntry) || ($.eventName = DeleteNetworkAcl) || ($.eventName = DeleteNetworkAclEntry) || ($.eventName = ReplaceNetworkAclEntry) || ($.eventName = ReplaceNetworkAclAssociation) }"
+      description = "Network ACL changes detected"
+    }
+    NetworkGatewayChanges = {
+      pattern     = "{ ($.eventName = CreateCustomerGateway) || ($.eventName = DeleteCustomerGateway) || ($.eventName = AttachInternetGateway) || ($.eventName = CreateInternetGateway) || ($.eventName = DeleteInternetGateway) || ($.eventName = DetachInternetGateway) }"
+      description = "Internet/customer gateway changes detected"
+    }
+    RouteTableChanges = {
+      pattern     = "{ ($.eventName = CreateRoute) || ($.eventName = CreateRouteTable) || ($.eventName = ReplaceRoute) || ($.eventName = ReplaceRouteTableAssociation) || ($.eventName = DeleteRouteTable) || ($.eventName = DeleteRoute) || ($.eventName = DisassociateRouteTable) }"
+      description = "Route table changes detected"
+    }
+    VpcChanges = {
+      pattern     = "{ ($.eventName = CreateVpc) || ($.eventName = DeleteVpc) || ($.eventName = ModifyVpcAttribute) || ($.eventName = AcceptVpcPeeringConnection) || ($.eventName = CreateVpcPeeringConnection) || ($.eventName = DeleteVpcPeeringConnection) || ($.eventName = RejectVpcPeeringConnection) || ($.eventName = AttachClassicLinkVpc) || ($.eventName = DetachClassicLinkVpc) || ($.eventName = DisableVpcClassicLink) || ($.eventName = EnableVpcClassicLink) }"
+      description = "VPC configuration changes detected"
+    }
+    OrganizationsChanges = {
+      pattern     = "{ ($.eventSource = organizations.amazonaws.com) && (($.eventName = AcceptHandshake) || ($.eventName = AttachPolicy) || ($.eventName = CreateAccount) || ($.eventName = CreateOrganizationalUnit) || ($.eventName = CreatePolicy) || ($.eventName = DeclineHandshake) || ($.eventName = DeleteOrganization) || ($.eventName = DeleteOrganizationalUnit) || ($.eventName = DeletePolicy) || ($.eventName = DetachPolicy) || ($.eventName = DisablePolicyType) || ($.eventName = EnablePolicyType) || ($.eventName = InviteAccountToOrganization) || ($.eventName = LeaveOrganization) || ($.eventName = MoveAccount) || ($.eventName = RemoveAccountFromOrganization) || ($.eventName = UpdatePolicy) || ($.eventName = UpdateOrganizationalUnit)) }"
+      description = "AWS Organizations changes detected"
     }
   } : {}
 }
