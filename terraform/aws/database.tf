@@ -9,11 +9,17 @@ resource "aws_security_group" "eks_nodes" {
   description = "Security group for EKS node groups"
   vpc_id      = module.vpc.vpc_id
 
+  # Allow all egress. EKS nodes need broad outbound access: ECR image pulls, AWS API calls
+  # (CloudWatch, SSM, STS), external package registries, and NAT Gateway traffic. In
+  # production consider tightening this by adding VPC endpoints for ECR, CloudWatch, and STS
+  # and then scoping egress to the VPC CIDR + HTTPS to known prefixes. See:
+  # https://docs.aws.amazon.com/eks/latest/userguide/private-cluster.html
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Allow all outbound — see comment above for production hardening guidance"
   }
 
   tags = var.tags

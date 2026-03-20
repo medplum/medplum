@@ -47,7 +47,10 @@ resource "aws_wafv2_web_acl" "app" {
   dynamic "rule" {
     for_each = var.app_waf_ip_set_arn != "" ? [1] : []
     content {
-      name     = "IPAllowList"
+      name = "IPAllowList"
+      # Priority 0 means allowlisted IPs are evaluated before AWSManagedRulesCommonRuleSet (priority 1)
+      # and will bypass it entirely on an Allow match. This is intentional: trusted IPs (e.g. your
+      # CI/CD runner or office egress) skip the managed rules to avoid false positives.
       priority = 0
 
       action {
@@ -116,7 +119,8 @@ resource "aws_wafv2_web_acl" "storage" {
   dynamic "rule" {
     for_each = var.storage_waf_ip_set_arn != "" ? [1] : []
     content {
-      name     = "IPAllowList"
+      name = "IPAllowList"
+      # Priority 0: allowlisted IPs bypass AWSManagedRulesCommonRuleSet (priority 1). See app WAF comment.
       priority = 0
 
       action {
@@ -184,7 +188,8 @@ resource "aws_wafv2_web_acl" "api" {
   dynamic "rule" {
     for_each = var.api_waf_ip_set_arn != "" ? [1] : []
     content {
-      name     = "IPAllowList"
+      name = "IPAllowList"
+      # Priority 0: allowlisted IPs bypass AWSManagedRulesCommonRuleSet (priority 1). See app WAF comment.
       priority = 0
 
       action {

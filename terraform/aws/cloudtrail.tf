@@ -87,6 +87,37 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail_logs" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail_logs" {
+  count  = var.enable_cloudtrail_alarms ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail_logs[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.medplum.arn
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail_logs" {
+  count  = var.enable_cloudtrail_alarms ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail_logs[0].id
+
+  rule {
+    id     = "archive-and-expire"
+    status = "Enabled"
+
+    transition {
+      days          = 90
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = var.environment == "prod" ? 2555 : 365
+    }
+  }
+}
+
 resource "aws_s3_bucket_policy" "cloudtrail_logs" {
   count  = var.enable_cloudtrail_alarms ? 1 : 0
   bucket = aws_s3_bucket.cloudtrail_logs[0].id

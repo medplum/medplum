@@ -1,5 +1,7 @@
 resource "aws_secretsmanager_secret_version" "redis" {
   secret_id = aws_secretsmanager_secret.medplum.id
+  # The Medplum server reads this secret and constructs: rediss://:password@host:port
+  # Fields: host (primary endpoint), port (6379), password (AUTH token), tls (always true for TLS mode)
   secret_string = jsonencode({
     host     = aws_elasticache_replication_group.medplum.primary_endpoint_address
     port     = aws_elasticache_replication_group.medplum.port
@@ -97,7 +99,13 @@ resource "aws_secretsmanager_secret_version" "db_config" {
     password = jsondecode(data.aws_secretsmanager_secret_version.rds_master.secret_string).password
     ssl      = { require = true, rejectUnauthorized = var.rds_ssl_reject_unauthorized }
   })
-  # ignore_changes preserves externally rotated passwords without Terraform overwriting them
+  # ignore_changes preserves externally rotated passwords (e.g. via Secrets Manager rotation)
+  # without Terraform overwriting them on the next apply.
+  #
+  # NOTE: HCL does not support ignoring a sub-field of secret_string, so the entire JSON blob is
+  # ignored. This means Terraform will NOT detect if host, port, or dbname change (e.g. if the
+  # Aurora cluster endpoint is replaced). If you change any Aurora connection details, manually
+  # update this secret in the AWS Console or via `aws secretsmanager put-secret-value`.
   lifecycle {
     ignore_changes = [secret_string]
   }

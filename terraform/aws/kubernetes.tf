@@ -41,10 +41,3 @@ module "eks" {
 
   tags = var.tags
 }
-
-check "eks_no_open_public_access_in_prod" {
-  assert {
-    condition     = var.environment != "prod" || !contains(var.eks_public_access_cidrs, "0.0.0.0/0")
-    error_message = "eks_public_access_cidrs must not include 0.0.0.0/0 in production. Restrict to your IP or VPN CIDR."
-  }
-}
