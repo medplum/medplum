@@ -3,6 +3,7 @@
 import type { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { MedplumClient } from '../client';
+import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
@@ -17,13 +18,14 @@ import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../webs
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 import {
   DEFAULT_PING_INTERVAL_MS,
+  PENDING_UNBIND_DELAY_MS,
   WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
   WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
 } from './constants';
 
 const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
 
-export type CriteriaState = 'idle' | 'connecting' | 'active' | 'refreshing' | 'removed';
+export type CriteriaState = 'idle' | 'connecting' | 'active' | 'refreshing' | 'removing' | 'removed';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -76,6 +78,7 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
 }
 
 class CriteriaEntry {
+  readonly entryId: string;
   readonly criteria: string;
   readonly emitter: SubscriptionEmitter;
   refCount: number;
@@ -87,6 +90,7 @@ class CriteriaEntry {
   generation = 0;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
+    this.entryId = generateId();
     this.criteria = criteria;
     this.emitter = new SubscriptionEmitter(criteria);
     this.refCount = 1;
@@ -100,14 +104,6 @@ class CriteriaEntry {
   nextGeneration(): number {
     return ++this.generation;
   }
-
-  clearAttachedSubscription(): void {
-    this.subscriptionId = undefined;
-    this.token = undefined;
-    this.tokenExpiry = undefined;
-    this.state = 'idle';
-    this.generation++;
-  }
 }
 
 type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
@@ -119,12 +115,16 @@ export interface SubManagerOptions {
   debugLogger?: (...args: any[]) => void;
 }
 
+export const GETTING_REMOVED_STATES = ['removing', 'removed'] as const;
+
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private readonly ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private readonly criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private readonly criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
+  private readonly pendingUnbind: Map<string, number>; // Map<entryId, UTC ms timestamp of intent to remove>
+  private readonly criteriaEntriesByEntryId: Map<string, CriteriaEntry>; // Map<entryId, CriteriaEntry>
   private wsClosed: boolean;
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
   private tokenRefreshTimer: ReturnType<typeof setInterval> | undefined = undefined;
@@ -151,6 +151,8 @@ export class SubscriptionManager {
     this.masterSubEmitter = new SubscriptionEmitter();
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
+    this.criteriaEntriesByEntryId = new Map<string, CriteriaEntry>();
+    this.pendingUnbind = new Map<string, number>();
     this.wsClosed = false;
     this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
     this.currentProfile = medplum.getProfile();
@@ -248,8 +250,12 @@ export class SubscriptionManager {
       if (this.wsClosed) {
         this.criteriaEntries.clear();
         this.criteriaEntriesBySubscriptionId.clear();
+        this.criteriaEntriesByEntryId.clear();
         this.masterSubEmitter?.removeAllListeners();
       }
+
+      // We always want to clear pending unbind since once the WebSocket closes we've already unbound all bound subscriptions implicitly
+      this.pendingUnbind.clear();
     });
 
     ws.addEventListener('open', () => {
@@ -263,21 +269,20 @@ export class SubscriptionManager {
       // So we refresh all current subscriptions
       this.refreshAllSubscriptions().catch(console.error);
 
-      if (!this.pingTimer) {
-        this.pingTimer = setInterval(() => {
-          if (this.waitingForPong) {
-            this.waitingForPong = false;
-            ws.reconnect();
-            return;
-          }
+      this.pingTimer ??= setInterval(() => {
+        if (this.waitingForPong) {
+          this.waitingForPong = false;
+          ws.reconnect();
+        } else {
           ws.send(JSON.stringify({ type: 'ping' }));
           this.waitingForPong = true;
-        }, this.pingIntervalMs);
-      }
+        }
+
+        this.cleanupSubsPendingUnbind();
+      }, this.pingIntervalMs);
 
       this.tokenRefreshTimer ??= setInterval(() => {
         this.checkTokenExpirations();
-        this.gcOrphanedEntries();
       }, WS_SUB_TOKEN_REFRESH_INTERVAL_MS);
     });
 
@@ -325,7 +330,7 @@ export class SubscriptionManager {
   }
 
   private isStale(criteriaEntry: CriteriaEntry, expectedGen: number): boolean {
-    return criteriaEntry.state === 'removed' || criteriaEntry.generation !== expectedGen;
+    return this.isEntryGettingRemoved(criteriaEntry) || criteriaEntry.generation !== expectedGen;
   }
 
   private maybeGetCriteriaEntry(
@@ -350,11 +355,13 @@ export class SubscriptionManager {
   private getAllCriteriaEmitters(): SubscriptionEmitter[] {
     const emitters = [];
     for (const mapEntry of this.criteriaEntries.values()) {
-      if (mapEntry.bareCriteria) {
+      if (mapEntry.bareCriteria && !this.pendingUnbind.has(mapEntry.bareCriteria.entryId)) {
         emitters.push(mapEntry.bareCriteria.emitter);
       }
       for (const entry of mapEntry.criteriaWithProps) {
-        emitters.push(entry.emitter);
+        if (!this.pendingUnbind.has(entry.entryId)) {
+          emitters.push(entry.emitter);
+        }
       }
     }
     return emitters;
@@ -377,12 +384,40 @@ export class SubscriptionManager {
     } else {
       mapEntry.criteriaWithProps.push(criteriaEntry);
     }
+    this.criteriaEntriesByEntryId.set(criteriaEntry.entryId, criteriaEntry);
+  }
+
+  private markEntryForRemoval(criteriaEntry: CriteriaEntry): void {
+    // Guard against double-scheduling
+    if (this.pendingUnbind.has(criteriaEntry.entryId)) {
+      return;
+    }
+
+    criteriaEntry.state = 'removing';
+    criteriaEntry.generation++;
+
+    // Schedule delayed unbind — re-subscribing the same criteria + props within
+    // the delay window will cancel this and restore the entry (see addCriteria).
+    // Actual cleanup happens in cleanupSubsPendingUnbind() on the ping timer.
+    this.pendingUnbind.set(criteriaEntry.entryId, Date.now());
+  }
+
+  private unmarkEntryForRemoval(criteriaEntry: CriteriaEntry): void {
+    if (!this.pendingUnbind.has(criteriaEntry.entryId)) {
+      return;
+    }
+
+    criteriaEntry.state = 'active';
+    criteriaEntry.generation++;
+
+    this.pendingUnbind.delete(criteriaEntry.entryId);
   }
 
   private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
     criteriaEntry.state = 'removed';
     criteriaEntry.generation++;
     const { criteria, subscriptionProps, subscriptionId, token } = criteriaEntry;
+
     if (!this.criteriaEntries.has(criteria)) {
       return;
     }
@@ -426,13 +461,22 @@ export class SubscriptionManager {
   }
 
   private async refreshAllSubscriptions(): Promise<void> {
+    // Finalize any entries pending unbind before refreshing — they won't be re-subscribed
+    const pendingEntryIds = [...this.pendingUnbind.keys()];
+    for (const entryId of pendingEntryIds) {
+      const entry = this.criteriaEntriesByEntryId.get(entryId);
+      if (entry) {
+        this.removeCriteriaEntry(entry);
+      }
+    }
+    this.pendingUnbind.clear();
+
     this.criteriaEntriesBySubscriptionId.clear();
     for (const mapEntry of this.criteriaEntries.values()) {
       for (const criteriaEntry of [
         ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
         ...mapEntry.criteriaWithProps,
       ]) {
-        criteriaEntry.clearAttachedSubscription();
         await this.subscribeToCriteria(criteriaEntry);
       }
     }
@@ -451,11 +495,12 @@ export class SubscriptionManager {
           channel: { type: 'websocket' },
           criteria: criteriaEntry.criteria,
         });
+        // Persist immediately so retries reuse the same Subscription resource
+        criteriaEntry.subscriptionId ??= subscription.id;
+
         if (this.isStale(criteriaEntry, expectedGen)) {
           return;
         }
-        // Persist immediately so retries reuse the same Subscription resource
-        criteriaEntry.subscriptionId = subscription.id;
       }
 
       // Step 2: Get a binding token
@@ -479,6 +524,7 @@ export class SubscriptionManager {
 
       // Step 3: Verify the operation is still valid after all async work
       if (this.isStale(criteriaEntry, expectedGen)) {
+        // We immediately unbind here since a mismatch in generate
         this.sendUnbind(token);
         return;
       }
@@ -489,7 +535,7 @@ export class SubscriptionManager {
     } catch (err: unknown) {
       console.error(normalizeErrorString(err));
       // Revert to a retryable state so the entry isn't permanently stuck
-      if (criteriaEntry.generation === expectedGen && criteriaEntry.state !== 'removed') {
+      if (criteriaEntry.generation === expectedGen && !this.isEntryGettingRemoved(criteriaEntry)) {
         criteriaEntry.state = criteriaEntry.state === 'refreshing' ? 'active' : 'idle';
       }
       this.emitError(criteriaEntry, err as Error);
@@ -503,6 +549,10 @@ export class SubscriptionManager {
         ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
         ...mapEntry.criteriaWithProps,
       ]) {
+        if (this.pendingUnbind.has(criteriaEntry.entryId)) {
+          this.removeCriteriaEntry(criteriaEntry);
+          continue;
+        }
         if (!criteriaEntry.tokenExpiry) {
           continue;
         }
@@ -527,6 +577,8 @@ export class SubscriptionManager {
 
     const criteriaEntry = this.maybeGetCriteriaEntry(criteria, subscriptionProps);
     if (criteriaEntry) {
+      // Cancel pending unbind if this entry was scheduled for removal
+      this.unmarkEntryForRemoval(criteriaEntry);
       criteriaEntry.refCount += 1;
       return criteriaEntry.emitter;
     }
@@ -551,27 +603,36 @@ export class SubscriptionManager {
       return;
     }
 
-    // If actually removing (refcount === 0)
-    this.maybeEmitDisconnect(criteriaEntry);
-    this.removeCriteriaEntry(criteriaEntry);
+    this.markEntryForRemoval(criteriaEntry);
   }
 
   /**
-   * Removes any entries from the subscription-ID lookup that are no longer tracked
-   * in the primary criteria map. For each orphan found, an `unbind-from-token` message
-   * is sent so the server can release the binding.
+   * Finalizes any entries in the `pendingUnbind` map whose delay has expired.
+   * For each expired entry, emits a disconnect event and performs the full removal
+   * (unbind-from-token, map cleanup).
    *
-   * Called automatically on the token-refresh timer. Can also be called manually.
+   * Called automatically on the ping timer.
    */
-  gcOrphanedEntries(): void {
-    for (const [subscriptionId, entry] of this.criteriaEntriesBySubscriptionId) {
-      if (entry.state === 'removed' || !this.maybeGetCriteriaEntry(entry.criteria, entry.subscriptionProps)) {
-        this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
-        if (entry.token) {
-          this.sendUnbind(entry.token);
-        }
+  private cleanupSubsPendingUnbind(): void {
+    const now = Date.now();
+    for (const [entryId, timestamp] of this.pendingUnbind) {
+      if (now - timestamp < PENDING_UNBIND_DELAY_MS) {
+        continue;
+      }
+      const entry = this.criteriaEntriesByEntryId.get(entryId);
+      if (entry) {
+        this.maybeEmitDisconnect(entry);
+        this.removeCriteriaEntry(entry);
+      } else {
+        this.pendingUnbind.delete(entryId);
       }
     }
+  }
+
+  private isEntryGettingRemoved(
+    criteriaEntry: CriteriaEntry
+  ): criteriaEntry is CriteriaEntry & { state: 'removing' | 'removed' } {
+    return (GETTING_REMOVED_STATES as readonly CriteriaState[]).includes(criteriaEntry.state);
   }
 
   getWebSocket(): IReconnectingWebSocket {

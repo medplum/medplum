@@ -23,6 +23,7 @@ import { sendHandshakeBundle, sendSubscriptionMessage } from './test-utils';
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
   WS_SUB_TOKEN_REFRESH_INTERVAL_MS: 150,
+  PENDING_UNBIND_DELAY_MS: 50,
 }));
 
 const ONE_HOUR = 60 * 60 * 1000;
@@ -466,7 +467,9 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      // Wait for pending unbind timers to fire and finalize entries
+      await sleep(100);
+
       console.warn = originalWarn;
       medplum.addNextResourceId(MOCK_SUBSCRIPTION_ID);
     });
@@ -649,7 +652,9 @@ describe('SubscriptionManager', () => {
       });
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      // Wait for pending unbind timers to fire and finalize entries
+      await sleep(100);
+
       console.warn = originalWarn;
     });
   });
@@ -1445,11 +1450,10 @@ describe('SubscriptionManager', () => {
       manager.closeWebSocket();
     });
 
-    test('should not leak bind when removeCriteria races with in-flight subscribe, and re-subscribe should reach active', async () => {
+    test('should restore pending entry when re-subscribing during in-flight subscribe', async () => {
       await wsServer.connected;
 
       // Defer the first createResource call so we can remove the criteria while the subscribe is in-flight.
-      // The staleness check after createResource should bail before ever calling $get-ws-binding-token.
       let resolveFirstCreate!: (value: { id: string }) => void;
       const createSpy = jest
         .spyOn(medplum, 'createResource')
@@ -1458,62 +1462,49 @@ describe('SubscriptionManager', () => {
         }));
 
       // 1. addCriteria kicks off subscribeToCriteria → rebindCriteriaEntry → createResource (deferred)
-      defaultManager.addCriteria('Communication');
+      const emitter1 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
 
-      // 2. Remove while the first subscribe is still in-flight (createResource hasn't resolved)
+      // 2. Remove while the first subscribe is still in-flight — entry goes to pendingUnbind
       defaultManager.removeCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
 
-      // 3. Re-subscribe — creates a brand-new entry whose createResource uses the real impl
-      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
-      const emitter = defaultManager.addCriteria('Communication');
+      // 3. Re-subscribe — restores the pending entry (same emitter, same in-flight subscribe)
+      const emitter2 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+      expect(emitter2).toBe(emitter1);
 
-      // Let the new entry's rebindCriteriaEntry chain flush through microtasks
-      await sleep(0);
-
-      // The new entry should have sent a bind-with-token
-      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
-
-      // 4. Resolve the OLD deferred createResource — the staleness check right after
-      //    should detect state='removed' and bail before calling $get-ws-binding-token
-      const getSpy = jest.spyOn(medplum, 'get');
-      const getCallsBefore = getSpy.mock.calls.length;
-
+      // 4. Resolve the deferred createResource — entry is NOT stale (was restored),
+      //    so the subscribe chain continues normally
       resolveFirstCreate({ id: MOCK_SUBSCRIPTION_ID });
       await sleep(0);
 
-      // No $get-ws-binding-token call was made for the stale entry
-      expect(getSpy.mock.calls.length).toStrictEqual(getCallsBefore);
+      // The restored entry's subscribe chain completes → sends bind-with-token
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
 
-      // 5. Send handshake for the new subscription → state should transition to 'active'
+      // 5. Send handshake → state transitions to 'active'
       const connectPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
-        emitter.addEventListener('connect', (event) => resolve(event));
+        emitter2.addEventListener('connect', (event) => resolve(event));
       });
 
       await sleep(100);
-      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const connectEvent = await connectPromise;
       expect(connectEvent.type).toStrictEqual('connect');
-      expect(connectEvent.payload.subscriptionId).toStrictEqual(SECOND_SUBSCRIPTION_ID);
+      expect(connectEvent.payload.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
-      // Verify the new entry has the correct token and reached 'active'
+      // Verify the entry reached 'active' with the correct subscription
       const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
         string,
         { state: CriteriaState; token: string }
       >;
-      const newEntry = entriesBySubId.get(SECOND_SUBSCRIPTION_ID);
-      expect(newEntry).toBeDefined();
-      expect(newEntry?.state).toStrictEqual('active');
-      expect(newEntry?.token).toStrictEqual('token-123');
-
-      // The stale entry must NOT have been added to the lookup
-      expect(entriesBySubId.has(MOCK_SUBSCRIPTION_ID)).toStrictEqual(false);
+      const entry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(entry).toBeDefined();
+      expect(entry?.state).toStrictEqual('active');
+      expect(entry?.token).toStrictEqual('token-123');
 
       createSpy.mockRestore();
-      getSpy.mockRestore();
     });
 
     test('should unbind both old and new tokens when removeCriteria races with token refresh', async () => {
@@ -1595,6 +1586,104 @@ describe('SubscriptionManager', () => {
 
       getSpy.mockRestore();
       manager.closeWebSocket();
+    });
+
+    test('should delay unbind and allow re-subscription to cancel pending unbind', async () => {
+      await wsServer.connected;
+
+      const emitter = defaultManager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Remove criteria — entry goes to pendingUnbind, no immediate unbind
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Verify the pendingUnbind map has the entry
+      const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
+      expect(pendingUnbind.size).toStrictEqual(1);
+
+      // Verify the entryLookupByEntryId map still has the entry
+      const entryLookup = (defaultManager as any).entryLookupByEntryId as Map<string, unknown>;
+      expect(entryLookup.size).toStrictEqual(1);
+
+      // Re-subscribe within the delay window — should cancel pending unbind and restore entry
+      const restoredEmitter = defaultManager.addCriteria('Communication');
+      expect(restoredEmitter).toBe(emitter);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+      expect(pendingUnbind.size).toStrictEqual(0);
+
+      // Wait past the delay — no unbind should be sent since the pending was cancelled
+      await sleep(100);
+
+      // Entry should still be active, no unbind sent
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<
+        string,
+        { state: CriteriaState; token: string }
+      >;
+      const entry = entriesBySubId.get(MOCK_SUBSCRIPTION_ID);
+      expect(entry).toBeDefined();
+      expect(entry?.state).toStrictEqual('active');
+    });
+
+    test('should finalize pending entry after delay expires', async () => {
+      await wsServer.connected;
+
+      const emitter = defaultManager.addCriteria('Communication');
+
+      const connectPromise = new Promise<void>((resolve) => {
+        emitter.addEventListener('connect', () => resolve());
+      });
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+      await connectPromise;
+
+      // Remove criteria — entry goes to pendingUnbind
+      defaultManager.removeCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      // Wait for the pending unbind delay to expire (mocked to 50ms)
+      await sleep(100);
+
+      // Entry should now be fully removed — unbind sent
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
+
+      const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
+      expect(pendingUnbind.size).toStrictEqual(0);
+
+      const entryLookup = (defaultManager as any).entryLookupByEntryId as Map<string, unknown>;
+      expect(entryLookup.size).toStrictEqual(0);
+
+      const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
+      expect(entriesBySubId.has(MOCK_SUBSCRIPTION_ID)).toStrictEqual(false);
+    });
+
+    test('should return same emitter with subscriptionProps when restoring pending entry', async () => {
+      await wsServer.connected;
+
+      const props: Partial<Subscription> = {
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+            valueCode: 'create',
+          },
+        ],
+      };
+
+      const emitter = defaultManager.addCriteria('Communication', props);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
+
+      defaultManager.removeCriteria('Communication', props);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(0);
+
+      const restoredEmitter = defaultManager.addCriteria('Communication', props);
+      expect(restoredEmitter).toBe(emitter);
+      expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
     });
   });
 });
