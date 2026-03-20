@@ -74,19 +74,12 @@ resource "aws_elasticache_replication_group" "medplum" {
 
 # ─── Purpose-specific Redis clusters (optional, CDK parity) ──────────────────
 
-locals {
-  redis_purpose_id_map = {
-    cache           = "CacheRedis"
-    rate_limit      = "RateLimitRedis"
-    pub_sub         = "PubSubRedis"
-    background_jobs = "BackgroundJobsRedis"
-  }
-}
-
 resource "random_password" "redis_purpose" {
   for_each = var.redis_purpose_clusters
   length   = 32
   special  = false
+  # The plaintext value is stored in Terraform state. See random_password.redis_auth comment
+  # for mitigation guidance (S3 bucket policy, KMS state encryption, .gitignore).
 }
 
 resource "aws_elasticache_parameter_group" "purpose" {
@@ -138,6 +131,13 @@ resource "aws_elasticache_replication_group" "purpose" {
   kms_key_id                 = aws_kms_key.medplum.arn
   transit_encryption_enabled = true
   auth_token                 = random_password.redis_purpose[each.key].result
+
+  lifecycle {
+    precondition {
+      condition     = var.environment != "prod" || each.value.num_cache_clusters >= 2
+      error_message = "Production Redis purpose clusters (${each.key}) require num_cache_clusters >= 2 for automatic failover."
+    }
+  }
 
   tags = var.tags
 }

@@ -34,4 +34,12 @@ locals {
   # ── Storage CDN ────────────────────────────────────────────────────────────
   # Enabled when storage_domain is set; cert is either provided or TF-managed.
   storage_cdn_enabled = var.storage_domain != ""
+
+  # Purpose-specific Redis cluster id → Secrets Manager / naming suffix (CDK parity).
+  redis_purpose_id_map = {
+    cache           = "CacheRedis"
+    rate_limit      = "RateLimitRedis"
+    pub_sub         = "PubSubRedis"
+    background_jobs = "BackgroundJobsRedis"
+  }
 }
