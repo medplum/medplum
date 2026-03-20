@@ -11,7 +11,7 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 - [Asynchronous encounters](/docs/communications/async-encounters)
 - [Threaded messages](/docs/communications/organizing-communications)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
-- [Bot automation for messaging](/docs/communications/bot-automation-for-messaging)
+- [Messaging automations](/docs/communications/messaging-automations)
 - Omni-channel messaging
 - Real-time notifications using Websockets
 

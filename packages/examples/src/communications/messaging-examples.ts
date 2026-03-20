@@ -4,7 +4,7 @@
 // start-block imports
 import type { BotEvent } from '@medplum/core';
 import { MedplumClient, getReferenceString } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -411,6 +411,74 @@ await medplum.createResource({
   },
 });
 // end-block subscriptionMessageTaskLifecycleTs
+
+// start-block oooRerouteTs
+// Bot: reroute Tasks to the pool when the assigned provider is out of office.
+// Uses Schedule $find to check availability at message receive time.
+export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const openTasks = await medplum.searchResources('Task', {
+    focus: threadRef,
+    status: 'requested,accepted',
+  });
+
+  if (openTasks.length === 0) {
+    return;
+  }
+
+  const task = openTasks[0];
+  const ownerRef = task.owner?.reference;
+  if (!ownerRef) {
+    return;
+  }
+
+  const schedules = await medplum.searchResources('Schedule', {
+    actor: ownerRef,
+  });
+
+  if (schedules.length === 0) {
+    return;
+  }
+
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const result = (await medplum.post(medplum.fhirUrl('Schedule', schedules[0].id!, '$find'), {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'start', valueDateTime: now.toISOString() },
+      { name: 'end', valueDateTime: oneHourLater.toISOString() },
+    ],
+  })) as Parameters;
+
+  const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
+  const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
+
+  if (freeSlots.length > 0) {
+    return;
+  }
+
+  // Provider is unavailable — reroute Task back to the pool
+  const threadHeaderId = threadRef.split('/')[1];
+  await medplum.patchResource('Task', task.id!, [
+    { op: 'remove', path: '/owner' },
+    { op: 'replace', path: '/status', value: 'requested' },
+    {
+      op: 'add',
+      path: '/note/-',
+      value: {
+        text: `Auto-rerouted: ${task.owner?.display ?? ownerRef} is currently unavailable`,
+        time: now.toISOString(),
+      },
+    },
+  ]);
+  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
+}
+// end-block oooRerouteTs
 
 // start-block staleThreadRemindersTs
 // Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
