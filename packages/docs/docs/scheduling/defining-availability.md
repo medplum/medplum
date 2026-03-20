@@ -747,64 +747,6 @@ graph TD
 A bariatric surgery requiring surgeon, OR room, and anesthesiologist coordination.
 
 <details>
-<summary>ActivityDefinition: Bariatric Surgery</summary>
-
-This ActivityDefinition defines a 120-minute surgical procedure requiring coordination of surgeon, anesthesiologist, and OR room.
-
-This can be used to select the appropriate schedule references to use in `$find` queries, but will not be directly consumed by Medplum scheduling tools.
-
-```tsx
-{
-  "resourceType": "ActivityDefinition",
-  "id": "bariatric-surgery",
-  "status": "active",
-  "kind": "Appointment",
-  "code": {
-    "coding": [{
-      "system": "http://snomed.info/sct",
-      "code": "287809009",
-      "display": "Bariatric Surgery"
-    }]
-  },
-  "timingDuration": {"value": 120, "unit": "min"},
-  "participant": [
-    {
-      "type": "practitioner",
-      "role": {
-        "coding": [{
-          "system": "http://snomed.info/sct",
-          "code": "304292004",
-          "display": "Surgeon"
-        }]
-      }
-    },
-    {
-      "type": "practitioner",
-      "role": {
-        "coding": [{
-          "system": "http://snomed.info/sct",
-          "code": "88189002",
-          "display": "Anesthesiologist"
-        }]
-      }
-    },
-    {
-      "type": "location",
-      "role": {
-        "coding": [{
-          "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
-          "code": "OR",
-          "display": "Operating Room"
-        }]
-      }
-    }
-  ]
-}
-```
-
-</details>
-
-<details>
 <summary>HealthcareService: Bariatric Surgery</summary>
 
 This HealthcareService defines scheduling for a 120-minute surgical procedure with 45/30-minute buffers and multiple booking limits (2 per day, 8 per week).
