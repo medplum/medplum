@@ -16,6 +16,20 @@ resource "aws_security_group" "database" {
     security_groups = [aws_security_group.eks_nodes.id]
   }
 
+  # When RDS Proxy is enabled, allow the proxy SG to reach Aurora via an inline dynamic ingress
+  # block only — standalone aws_security_group_rule on this SG would mix with inline rules and
+  # cause perpetual Terraform drift.
+  dynamic "ingress" {
+    for_each = var.rds_proxy_enabled ? [1] : []
+    content {
+      from_port         = 5432
+      to_port           = 5432
+      protocol          = "tcp"
+      security_groups   = [aws_security_group.rds_proxy[0].id]
+      description       = "Allow RDS Proxy to connect to Aurora"
+    }
+  }
+
   # Aurora only needs outbound HTTPS to call AWS APIs (KMS, Secrets Manager) within the VPC.
   # All replication traffic stays within the cluster and does not require broad egress.
   egress {
@@ -130,20 +144,6 @@ resource "aws_security_group" "rds_proxy" {
   }
 
   tags = var.tags
-}
-
-# Allow the proxy's SG to reach the Aurora cluster's SG.
-# Uses aws_security_group_rule (not inline ingress) to avoid conflicts with
-# the existing inline ingress block on aws_security_group.database.
-resource "aws_security_group_rule" "database_from_proxy" {
-  count                    = var.rds_proxy_enabled ? 1 : 0
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.rds_proxy[0].id
-  security_group_id        = aws_security_group.database.id
-  description              = "Allow RDS Proxy to connect to Aurora"
 }
 
 resource "aws_db_proxy" "medplum" {
