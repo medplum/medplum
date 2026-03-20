@@ -197,3 +197,8 @@ output "redis_purpose_secret_arns" {
     k => aws_secretsmanager_secret.redis_purpose[k].arn
   }
 }
+
+output "rds_proxy_endpoint" {
+  description = "RDS Proxy endpoint (null when rds_proxy_enabled = false)"
+  value       = var.rds_proxy_enabled ? aws_db_proxy.medplum[0].endpoint : null
+}

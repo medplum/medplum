@@ -152,3 +152,11 @@ resource "aws_ssm_parameter" "redis_purpose_secrets" {
   value    = aws_secretsmanager_secret.redis_purpose[each.key].arn
   tags     = var.tags
 }
+
+resource "aws_ssm_parameter" "database_proxy_endpoint" {
+  count = var.rds_proxy_enabled ? 1 : 0
+  name  = "${local.ssm_prefix}/databaseProxyEndpoint"
+  type  = "String"
+  value = aws_db_proxy.medplum[0].endpoint
+  tags  = var.tags
+}

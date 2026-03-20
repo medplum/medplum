@@ -274,3 +274,9 @@ variable "redis_purpose_clusters" {
     error_message = "Valid redis_purpose_clusters keys: cache, rate_limit, pub_sub, background_jobs."
   }
 }
+
+variable "rds_proxy_enabled" {
+  type        = bool
+  default     = false
+  description = "Create an RDS Proxy in front of the Aurora cluster for connection pooling."
+}
