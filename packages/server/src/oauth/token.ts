@@ -620,6 +620,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
   });
   let patient = undefined;
   let encounter = undefined;
+  let fhirContext = undefined;
 
   if (login.launch) {
     const launch = await systemRepo.readReference(login.launch);
@@ -627,6 +628,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     // otherwise fall back to the FHIR resource ID
     patient = launch.patient?.identifier?.value ?? resolveId(launch.patient);
     encounter = launch.encounter?.identifier?.value ?? resolveId(launch.encounter);
+    fhirContext = launch.fhirContext;
   }
 
   if (membership.profile?.reference?.startsWith('Patient/')) {
@@ -660,6 +662,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     profile: membership.profile,
     patient,
     encounter,
+    fhirContext,
     smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
     need_patient_banner: !!patient,
     ...fhircastProps, // Spreads no props when FHIRcast scopes not present

@@ -12,6 +12,7 @@ export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;
   readonly patient?: Reference<Patient>;
   readonly encounter?: Reference<Encounter>;
+  readonly fhirContext?: Reference[];
   readonly children?: ReactNode;
 }
 
@@ -62,6 +63,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
         resourceType: 'SmartAppLaunch',
         patient: patientRef,
         encounter: encounterRef,
+        fhirContext: props.fhirContext,
       })
       .then((result) => {
         const url = new URL(client.launchUri as string);
