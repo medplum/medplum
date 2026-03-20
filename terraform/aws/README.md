@@ -6,18 +6,20 @@ Deploys a production-ready Medplum FHIR server on AWS using EKS (Kubernetes), RD
 
 | Resource | Details |
 |---|---|
-| VPC | Multi-AZ with public, private, database, and cache subnets |
+| VPC | Multi-AZ with public, private, database, and cache subnets; VPC flow logs → CloudWatch |
 | EKS cluster | Managed node group, IRSA enabled, Kubernetes 1.31 |
-| RDS PostgreSQL | Encrypted, Secrets Manager rotation, multi-AZ in prod |
+| Aurora PostgreSQL | Encrypted Aurora cluster, Secrets Manager rotation, multi-AZ in prod |
 | ElastiCache Redis | Encrypted at rest (KMS) and in transit (TLS), auth token |
-| S3 | App binary storage bucket (versioned) + static frontend bucket (CloudFront OAC) |
-| CloudFront | CDN for the static frontend with custom domain + ACM TLS |
-| KMS | Single CMK for RDS, Redis, Secrets Manager, SSM |
-| Secrets Manager | Redis credentials secret |
+| S3 | App binary storage bucket (versioned) + static frontend bucket (CloudFront OAC) + optional dedicated storage bucket |
+| CloudFront | CDN for the static frontend (CSP/HSTS security headers, WAF); optional dedicated storage CDN with signed URL enforcement |
+| WAFv2 | Regional WAF for ALB + CloudFront WAFs for app and storage distributions |
+| KMS | Single CMK for Aurora, Redis, Secrets Manager, SSM |
+| Secrets Manager | Redis credentials secret, DB connection secret |
 | SSM Parameter Store | All Medplum server config parameters, auto-populated |
-| IAM | IRSA role for the server pod (SSM, S3, SES, Lambda) |
+| IAM | IRSA role for the server pod (SSM, S3, SES, Lambda); bot Lambda execution role; LB controller role |
 | SES | Domain identity + DKIM for outbound email |
-| Route 53 (optional) | DNS records for CloudFront and SES — opt-in via `create_route53_records` |
+| Route 53 (optional) | Hosted zone creation (opt-in), DNS records for CloudFront, storage CDN, and SES, and ACM cert DNS validation — opt-in via `create_route53_zone` or `create_route53_records` |
+| CloudTrail (optional) | Trail + 10 CloudWatch metric filters + alarms + SNS — opt-in via `enable_cloudtrail_alarms` |
 
 ---
 
@@ -75,34 +77,37 @@ Confirm the right account is active:
 aws sts get-caller-identity
 ```
 
-### 3. Request ACM certificates
+### 3. ACM certificates
 
-You will need two ACM certificates:
+**If your DNS is in Route 53 in this account (recommended):** skip this step entirely. Terraform requests, validates, and waits for all three ACM certificates automatically — app, ALB, and storage — using DNS validation records written to your hosted zone. No console interaction required.
 
-**CloudFront certificate (required):**
-- Must be in **us-east-1** (CloudFront requirement), regardless of your deployment region
-- Must cover your app domain (e.g. `medplum.yourcompany.com`)
+**If your DNS is managed externally** (Cloudflare, GoDaddy, another Route 53 account, etc.): you must request the certificates manually and supply the resulting ARNs as `ssl_certificate_arn`, `alb_certificate_arn`, and optionally `storage_ssl_certificate_arn` in `terraform.tfvars`. The requirements are:
 
-**ALB certificate (required):**
-- Must be in the same region as your deployment (e.g. `us-east-1`, `us-west-2`, etc.)
-- Must cover your API domain (e.g. `medplum-api.yourcompany.com` or `api.medplum.yourcompany.com`)
-- If deploying to us-east-1, a single certificate with both the app and API domains as SANs can be used for both purposes
+| Certificate | Region | Covers | Variable |
+|---|---|---|---|
+| App (CloudFront) | **us-east-1** (CloudFront requirement) | `app_domain` | `ssl_certificate_arn` |
+| ALB | Your deployment region | `api_domain` | `alb_certificate_arn` |
+| Storage (optional) | **us-east-1** | `storage_domain` | `storage_ssl_certificate_arn` |
 
-**To request the CloudFront certificate:**
+To request manually: open [AWS Certificate Manager](https://console.aws.amazon.com/acm/home), request a public certificate for the relevant domain with **DNS validation**, add the CNAME validation record at your DNS provider, and copy the ARN once the status shows **Issued**.
 
-1. Open the [AWS Certificate Manager console](https://console.aws.amazon.com/acm/home?region=us-east-1) — ensure the region selector shows **US East (N. Virginia)**
-2. Click **Request** → **Request a public certificate**
-3. Enter your domain name (e.g. `medplum.yourcompany.com`). If deploying to us-east-1 and want a single cert for both, also add `medplum-api.yourcompany.com`
-4. Choose **DNS validation** (recommended) and follow the prompts
-5. Wait for the status to show **Issued**, then copy the **Certificate ARN** — use it as `ssl_certificate_arn` in your tfvars
+### 3a. Generate a CloudFront signing key (required when `storage_domain` is set)
 
-**To request the ALB certificate (if deploying to a region other than us-east-1):**
+The dedicated storage CloudFront uses **trusted key groups** to enforce signed URLs on binary content. You must generate an RSA key pair and upload the public key to CloudFront before `terraform apply`.
 
-1. Open the [AWS Certificate Manager console](https://console.aws.amazon.com/acm/home) — switch to your deployment region
-2. Click **Request** → **Request a public certificate**
-3. Enter your API domain (e.g. `medplum-api.yourcompany.com`)
-4. Choose **DNS validation** and follow the prompts
-5. Once issued, copy the **Certificate ARN** — use it as `alb_certificate_arn` in your tfvars
+```bash
+# Generate a 2048-bit RSA key pair
+openssl genrsa -out cf_signing_key.pem 2048
+openssl rsa -pubout -in cf_signing_key.pem -out cf_signing_key_pub.pem
+
+# Upload the public key to CloudFront (in us-east-1)
+aws cloudfront create-public-key \
+  --public-key-config "CallerReference=$(uuidgen),Name=medplum-storage-signing-key,EncodedKey=$(cat cf_signing_key_pub.pem)" \
+  --region us-east-1 \
+  --query 'PublicKey.Id' --output text
+```
+
+Copy the output key ID and set it as `signing_key_id` in `terraform.tfvars`. Store the private key and passphrase securely — you will need them to configure Medplum server's `signingKey` and `signingKeyPassphrase` settings.
 
 ### 4. Verify your sending domain in SES (if not already done)
 
@@ -127,15 +132,39 @@ Release any unassociated EIPs to free up capacity, or [request a quota increase]
 
 > **Tip:** Regions you haven't heavily used (e.g. `ca-central-1`) typically have all 5 EIPs available. `us-east-1` is commonly exhausted on shared/dev accounts.
 
-### 6. Decide on your DNS setup
+### 6. Decide on your DNS and Route 53 setup
 
-There are two options:
+There are three modes — pick one and set the corresponding variables in `terraform.tfvars`:
 
-**Option A — DNS is hosted in Route 53 in this same AWS account**
-Set `create_route53_records = true` in your `terraform.tfvars`. Terraform will create all DNS records automatically.
+**Mode A — create the hosted zone (fresh deployment, zone doesn't exist yet)**
 
-**Option B — DNS is managed elsewhere (Cloudflare, GoDaddy, external Route 53 account, etc.)**
-Leave `create_route53_records = false` (the default). After `terraform apply`, Terraform outputs the exact records you need to add manually.
+```hcl
+create_route53_zone    = true
+create_route53_records = false
+route53_zone_name      = "example-aws.yourcompany.com"
+```
+
+Terraform creates the zone, writes all DNS and cert validation records into it, and waits for cert issuance. If the parent zone (`yourcompany.com`) is also in Route 53 in this account, also set `parent_route53_zone_id` to that zone's ID and Terraform adds the NS delegation record automatically:
+
+```hcl
+parent_route53_zone_id = "Z0123456789EXAMPLE"
+```
+
+If the parent is managed externally, leave `parent_route53_zone_id` empty. After apply, run `terraform output route53_nameservers` and add the four NS records at your registrar or parent DNS provider.
+
+**Mode B — hosted zone already exists in this account**
+
+```hcl
+create_route53_records = true
+create_route53_zone    = false
+route53_zone_name      = "example-aws.yourcompany.com"
+```
+
+Terraform looks up the existing zone by name and creates all DNS records in it (including cert validation). No manual DNS steps required.
+
+**Mode C — DNS managed externally (Cloudflare, GoDaddy, another Route 53 account, etc.)**
+
+Leave both `create_route53_zone` and `create_route53_records` as `false` (the default). Supply `ssl_certificate_arn` and `alb_certificate_arn` manually (see §3 above). After apply, Terraform outputs the exact DNS records you need to add at your provider.
 
 ---
 
@@ -157,26 +186,38 @@ Open `terraform.tfvars` and set these values:
 | `app_domain` | Full domain for the Medplum app (frontend, served by CloudFront) | `medplum.yourcompany.com` |
 | `api_domain` | Domain for the Medplum API server (served by ALB) | `medplum-api.yourcompany.com` |
 | `support_email` | Email address Medplum sends from | `support@yourcompany.com` |
-| `ssl_certificate_arn` | ACM certificate ARN for CloudFront (must be in us-east-1) from Step 3 | `arn:aws:acm:us-east-1:123456789012:certificate/abc-def` |
-| `alb_certificate_arn` | ACM certificate ARN for the ALB (must be in deployment region) from Step 3 | `arn:aws:acm:us-east-1:123456789012:certificate/alb-def` |
 
 #### Optional — review before deploying
 
 | Variable | Default | Notes |
 |---|---|---|
-| `region` | `us-east-1` | Change if deploying to another region; CloudFront cert must stay in `us-east-1` but ALB cert must be in this region |
-| `environment` | `dev` | Use `prod` for production — enables deletion protection, longer backup retention, multi-AZ RDS, multi-AZ NAT |
+| `region` | `us-east-1` | Change if deploying to another region |
+| `environment` | `dev` | Use `prod` for production — enables deletion protection, longer backup retention, multi-AZ Aurora, multi-AZ NAT |
 | `availability_zones` | `["us-east-1a", "us-east-1b"]` | Update if you change `region` |
-| `deployment_id` | `"1"` | Use to deploy multiple independent stacks in the same account (affects resource naming) |
+| `deployment_id` | `"1"` | Use to deploy multiple independent stacks in the same account |
 | `eks_node_instance_types` | `["t3.large"]` | Use `["m5.large"]` or larger for production workloads |
-| `eks_public_access_cidrs` | `["0.0.0.0/0"]` | **Restrict to your IP/VPN CIDR** — e.g. `["203.0.113.0/32"]` — for any non-throwaway environment |
+| `eks_public_access_cidrs` | `["0.0.0.0/0"]` | **Restrict to your IP/VPN CIDR** for any non-throwaway environment |
 | `db_instance_tier` | `db.t3.medium` | Use `db.r6g.large` or higher for production |
-| `db_storage_gb` | `32` | Increase for production |
+| `rds_instances` | `1` | Number of Aurora cluster instances. Use `2` for writer + reader in production |
 | `redis_node_type` | `cache.t3.micro` | Use `cache.r6g.large` or higher for production |
-| `redis_num_cache_nodes` | `1` | Must be `>= 2` when `environment = "prod"` (required for automatic failover) |
-| `create_route53_records` | `false` | Set `true` if DNS is in Route 53 in this account |
-| `route53_zone_name` | `""` | Hosted zone name for DNS records. Defaults to root domain (e.g. `yourcompany.com`). **Override this if your hosted zone is a subdomain** (e.g. `staging.yourcompany.com`) — using the wrong zone causes SES records to be created with malformed names |
-| `bot_lambda_role_arn` | `""` | Leave empty on first deploy; fill in after you configure Medplum bots |
+| `redis_num_cache_nodes` | `1` | Must be `>= 2` when `environment = "prod"` |
+| `create_route53_zone` | `false` | Create the Route 53 hosted zone. Use for fresh deployments. See §6 |
+| `create_route53_records` | `false` | Look up an existing zone and create DNS records in it. See §6 |
+| `route53_zone_name` | `""` | Hosted zone name. Defaults to the root domain (e.g. `yourcompany.com`). **Override if your zone is a subdomain** (e.g. `staging.yourcompany.com`) |
+| `parent_route53_zone_id` | `""` | Zone ID of the parent Route 53 zone to add the NS delegation record. Only used when `create_route53_zone = true` |
+| `ssl_certificate_arn` | `""` | ACM cert for app CloudFront (must be in us-east-1). Leave empty to auto-create via Route 53 |
+| `alb_certificate_arn` | `""` | ACM cert for the ALB (must be in deployment region). Leave empty to auto-create via Route 53 |
+| `storage_domain` | `""` | Domain for the dedicated binary storage CDN. Leave empty to disable |
+| `storage_ssl_certificate_arn` | `""` | ACM cert for the storage CloudFront (us-east-1). Leave empty to auto-create via Route 53 |
+| `signing_key_id` | `""` | CloudFront public key ID for signed storage URLs. See §3a |
+| `enable_waf` | `true` | Create WAFv2 Web ACLs for app CloudFront, storage CloudFront, and ALB |
+| `waf_alb_arn` | `""` | ALB ARN for the API WAF association. Leave empty on first apply; set once EKS Ingress provisions the LB |
+| `api_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict API access |
+| `app_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict app CloudFront access |
+| `storage_waf_ip_set_arn` | `""` | Optional existing WAFv2 IP set ARN to restrict storage CloudFront access |
+| `enable_cloudtrail_alarms` | `false` | Create CloudTrail trail + 10 CloudWatch alarms + SNS. Recommended for production |
+| `cloudtrail_alarm_email` | `""` | Email to subscribe to the CloudTrail alarm SNS topic |
+| `bot_lambda_role_arn` | `""` | Override ARN for the bot Lambda role. Leave empty to use the role created by this stack |
 
 ### Step 2 — Bootstrap remote state (one-time only)
 
@@ -243,6 +284,8 @@ Key values you will need:
 | `static_storage_name` | S3 bucket for the frontend static build (sync `dist/` here) |
 | `cdn_hostname` | CloudFront custom domain — add as CNAME in DNS for app domain |
 | `cdn_endpoint` | CloudFront distribution domain (e.g. `d1234.cloudfront.net`) |
+| `route53_zone_id` | Zone ID of the managed or looked-up Route 53 zone |
+| `route53_nameservers` | Four NS values to add at your registrar (only set when `create_route53_zone = true`) |
 | `ses_domain_verification_token` | DNS TXT record for SES domain verification |
 | `ses_dkim_tokens` | Three DNS CNAME records for DKIM |
 
@@ -292,9 +335,9 @@ aws eks update-kubeconfig \
 kubectl get nodes   # should show 2 Ready nodes after 1–2 minutes
 ```
 
-### Add DNS records (if `create_route53_records = false`)
+### Add DNS records (if `create_route53_zone = false` and `create_route53_records = false`)
 
-Add these records at your DNS provider:
+If you are managing DNS externally (Mode C from §6), add these records at your DNS provider:
 
 | Type | Name | Value |
 |---|---|---|
@@ -303,6 +346,13 @@ Add these records at your DNS provider:
 | `CNAME` | `<token1>._domainkey.<domain>` | `<token1>.dkim.amazonses.com` |
 | `CNAME` | `<token2>._domainkey.<domain>` | `<token2>.dkim.amazonses.com` |
 | `CNAME` | `<token3>._domainkey.<domain>` | `<token3>.dkim.amazonses.com` |
+
+If you created the zone via `create_route53_zone = true` but left `parent_route53_zone_id` empty, you also need to add the NS delegation records at the parent zone or registrar:
+
+```bash
+terraform output route53_nameservers
+# Add each of the four values as NS records for <route53_zone_name> at the parent
+```
 
 After deploying the API server (see Helm deployment below), get the ALB hostname and add the API record:
 
@@ -388,21 +438,26 @@ The S3 buckets are emptied automatically (`force_destroy = true`). Secrets Manag
 
 | File | Purpose |
 |---|---|
-| `versions.tf` | Terraform and provider version constraints |
-| `locals.tf` | Computed local values (`name_prefix`, `ssm_prefix`, `ses_domain`) |
+| `versions.tf` | Terraform and provider version constraints; `aws.us_east_1` provider alias for CloudFront WAFs |
+| `locals.tf` | Computed local values (`name_prefix`, `ssm_prefix`, `ses_domain`, `storage_cdn_enabled`, `effective_zone_id`, cert management locals) |
 | `variables.tf` | All input variable declarations |
-| `network.tf` | VPC, subnets, NAT gateway |
+| `network.tf` | VPC, subnets, NAT gateway, VPC flow logs |
 | `kubernetes.tf` | EKS cluster and managed node group |
-| `database.tf` | RDS PostgreSQL, subnet group, security group, EKS node security group |
+| `database.tf` | Aurora PostgreSQL cluster, subnet group, security group, EKS node security group |
 | `cache.tf` | ElastiCache Redis replication group |
 | `storage.tf` | S3 buckets (app storage + static frontend) |
-| `cdn.tf` | CloudFront distribution with OAC |
+| `storage_cdn.tf` | Dedicated binary storage S3 + CloudFront + OAC + key group (opt-in) |
+| `cdn.tf` | CloudFront distribution for app with security response headers policy |
+| `certs.tf` | ACM certificate requests, Route 53 DNS validation records, and certificate validation waits |
 | `security.tf` | KMS key, Secrets Manager secret |
 | `iam.tf` | IRSA roles and policies for server pod and LB controller |
 | `lb_controller.tf` | AWS Load Balancer Controller IAM role and policy |
-| `ssm.tf` | SSM Parameter Store config + Redis secret version |
+| `bot.tf` | Medplum bot Lambda execution role |
+| `waf.tf` | WAFv2 Web ACLs for ALB (regional) and CloudFront distributions (us-east-1) |
+| `cloudtrail.tf` | CloudTrail trail, CloudWatch log group, metric filters, alarms, SNS (opt-in) |
+| `ssm.tf` | SSM Parameter Store config + Redis/DB secret versions |
 | `ses.tf` | SES domain and email identity |
-| `dns.tf` | Route 53 records (opt-in) |
+| `dns.tf` | Route 53 zone creation (opt-in), NS delegation (opt-in), and DNS records for CloudFront, storage, and SES |
 | `backend.tf` | S3 remote state backend (uncomment after bootstrap) |
 | `outputs.tf` | All Terraform output values |
 | `terraform.tfvars.example` | Copy to `terraform.tfvars` and fill in |

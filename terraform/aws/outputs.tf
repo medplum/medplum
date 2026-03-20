@@ -29,29 +29,29 @@ output "oidc_issuer_url_raw" {
 }
 
 output "db_endpoint" {
-  description = "RDS endpoint"
-  value       = module.rds.db_instance_endpoint
+  description = "Aurora cluster writer endpoint"
+  value       = module.aurora.cluster_endpoint
 }
 
 output "db_port" {
-  description = "RDS port"
-  value       = 5432
+  description = "Aurora cluster port"
+  value       = module.aurora.cluster_port
 }
 
 output "db_name" {
-  description = "RDS database name"
-  value       = module.rds.db_instance_name
+  description = "Aurora database name"
+  value       = module.aurora.cluster_database_name
 }
 
 output "db_username" {
-  description = "RDS admin username"
-  value       = module.rds.db_instance_username
+  description = "Aurora master username"
+  value       = module.aurora.cluster_master_username
   sensitive   = true
 }
 
 output "db_password" {
-  description = "RDS master user secret ARN (managed by AWS Secrets Manager)"
-  value       = module.rds.db_instance_master_user_secret_arn
+  description = "Aurora master user secret ARN (managed by AWS Secrets Manager)"
+  value       = module.aurora.cluster_master_user_secret[0].secret_arn
   sensitive   = true
 }
 
@@ -123,11 +123,61 @@ output "ses_dkim_tokens" {
 }
 
 output "alb_certificate_arn" {
-  description = "ACM certificate ARN for the ALB"
-  value       = var.alb_certificate_arn
+  description = "ACM certificate ARN for the ALB (provided override or TF-created)"
+  value       = local.effective_alb_cert_arn
+}
+
+output "route53_zone_id" {
+  description = "Route 53 hosted zone ID (set when create_route53_zone or create_route53_records is true)"
+  value       = local.effective_zone_id
+}
+
+output "route53_nameservers" {
+  description = "NS records for the managed zone — add these at your registrar or parent DNS provider when create_route53_zone = true and parent_route53_zone_id is not set"
+  value       = var.create_route53_zone ? aws_route53_zone.managed[0].name_servers : null
 }
 
 output "lb_controller_iam_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller (annotate the kube-system ServiceAccount)"
   value       = aws_iam_role.lb_controller.arn
+}
+
+output "bot_lambda_role_arn" {
+  description = "IAM role ARN for Medplum bot Lambda functions"
+  value       = aws_iam_role.bot_lambda.arn
+}
+
+output "storage_bucket_name" {
+  description = "S3 binary storage bucket name (only set when storage CDN is enabled)"
+  value       = local.storage_cdn_enabled ? aws_s3_bucket.storage[0].id : null
+}
+
+output "storage_cdn_endpoint" {
+  description = "Storage CloudFront distribution domain (only set when storage CDN is enabled)"
+  value       = local.storage_cdn_enabled ? aws_cloudfront_distribution.storage[0].domain_name : null
+}
+
+output "storage_cdn_hostname" {
+  description = "Storage CloudFront custom domain (only set when storage CDN is enabled)"
+  value       = local.storage_cdn_enabled ? var.storage_domain : null
+}
+
+output "app_waf_arn" {
+  description = "ARN of the CloudFront WAF Web ACL for the app distribution (us-east-1)"
+  value       = var.enable_waf ? aws_wafv2_web_acl.app[0].arn : null
+}
+
+output "api_waf_arn" {
+  description = "ARN of the regional WAF Web ACL for the API ALB"
+  value       = var.enable_waf ? aws_wafv2_web_acl.api[0].arn : null
+}
+
+output "storage_waf_arn" {
+  description = "ARN of the CloudFront WAF Web ACL for the storage distribution (us-east-1; only set when storage CDN is enabled)"
+  value       = var.enable_waf && local.storage_cdn_enabled ? aws_wafv2_web_acl.storage[0].arn : null
+}
+
+output "cloudtrail_sns_topic_arn" {
+  description = "ARN of the SNS topic for CloudTrail alarms (only set when enable_cloudtrail_alarms = true)"
+  value       = var.enable_cloudtrail_alarms ? aws_sns_topic.cloudtrail_alarms[0].arn : null
 }

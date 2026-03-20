@@ -25,7 +25,25 @@ resource "aws_ssm_parameter" "app_base_url" {
 resource "aws_ssm_parameter" "storage_base_url" {
   name  = "${local.ssm_prefix}/storageBaseUrl"
   type  = "String"
-  value = "https://${var.api_domain}/storage/"
+  # When the dedicated storage CDN is enabled, binaries are served from storage_domain/binary/
+  # (matching CDK config). Otherwise fall back to routing through the API server.
+  value = local.storage_cdn_enabled ? "https://${var.storage_domain}/binary/" : "https://${var.api_domain}/storage/"
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "signing_key_id" {
+  count = var.signing_key_id != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/signingKeyId"
+  type  = "String"
+  value = var.signing_key_id
+  tags  = var.tags
+}
+
+resource "aws_ssm_parameter" "binary_storage" {
+  name  = "${local.ssm_prefix}/binaryStorage"
+  type  = "String"
+  # When storage CDN is enabled, the server writes binaries to the dedicated storage bucket
+  value = local.storage_cdn_enabled ? "s3:${aws_s3_bucket.storage[0].id}" : "s3:${aws_s3_bucket.app.id}"
   tags  = var.tags
 }
 
@@ -33,13 +51,6 @@ resource "aws_ssm_parameter" "support_email" {
   name  = "${local.ssm_prefix}/supportEmail"
   type  = "String"
   value = var.support_email
-  tags  = var.tags
-}
-
-resource "aws_ssm_parameter" "binary_storage" {
-  name  = "${local.ssm_prefix}/binaryStorage"
-  type  = "String"
-  value = "s3:${aws_s3_bucket.app.id}"
   tags  = var.tags
 }
 
@@ -71,18 +82,18 @@ resource "aws_secretsmanager_secret" "db_config" {
   tags                    = var.tags
 }
 
-# Read the RDS-managed master user secret so the password can be included in db_config
+# Read the Aurora-managed master user secret so the password can be included in db_config
 data "aws_secretsmanager_secret_version" "rds_master" {
-  secret_id = module.rds.db_instance_master_user_secret_arn
+  secret_id = module.aurora.cluster_master_user_secret[0].secret_arn
 }
 
 resource "aws_secretsmanager_secret_version" "db_config" {
   secret_id = aws_secretsmanager_secret.db_config.id
   secret_string = jsonencode({
-    host     = module.rds.db_instance_address
-    port     = module.rds.db_instance_port
-    dbname   = module.rds.db_instance_name
-    username = module.rds.db_instance_username
+    host     = module.aurora.cluster_endpoint
+    port     = module.aurora.cluster_port
+    dbname   = module.aurora.cluster_database_name
+    username = module.aurora.cluster_master_username
     password = jsondecode(data.aws_secretsmanager_secret_version.rds_master.secret_string).password
     ssl      = { require = true, rejectUnauthorized = false }
   })
@@ -109,10 +120,9 @@ resource "aws_ssm_parameter" "redis_secrets" {
 }
 
 resource "aws_ssm_parameter" "bot_lambda_role_arn" {
-  count = var.bot_lambda_role_arn != "" ? 1 : 0
   name  = "${local.ssm_prefix}/botLambdaRoleArn"
   type  = "String"
-  value = var.bot_lambda_role_arn
+  value = local.effective_bot_lambda_role_arn
   tags  = var.tags
 }
 

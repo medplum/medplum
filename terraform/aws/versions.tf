@@ -19,3 +19,13 @@ provider "aws" {
     tags = var.tags
   }
 }
+
+# CloudFront WAF Web ACLs must be created in us-east-1 regardless of the deployment region.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = var.tags
+  }
+}

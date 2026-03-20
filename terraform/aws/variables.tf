@@ -22,12 +22,14 @@ variable "api_domain" {
 
 variable "ssl_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for CloudFront (must be in us-east-1)"
+  description = "ACM certificate ARN for the app CloudFront distribution (must be in us-east-1). Leave empty to let Terraform request and validate the certificate automatically when Route 53 is available."
+  default     = ""
 }
 
 variable "alb_certificate_arn" {
   type        = string
-  description = "ACM certificate ARN for the ALB (must be in the deployment region and cover api_domain). If deploying to us-east-1 and the CloudFront cert covers both domains, you can reuse ssl_certificate_arn."
+  description = "ACM certificate ARN for the ALB (must be in the deployment region). Leave empty to let Terraform request and validate the certificate automatically when Route 53 is available."
+  default     = ""
 }
 
 variable "environment" {
@@ -56,20 +58,14 @@ variable "cidr_block" {
 
 variable "postgres_version" {
   type        = string
-  description = "PostgreSQL version"
-  default     = "15"
+  description = "Aurora PostgreSQL engine version. Must be a full semver string supported by Aurora (e.g. '15.4', '16.1')."
+  default     = "15.4"
 }
 
 variable "db_instance_tier" {
   type        = string
-  description = "RDS instance type (e.g., db.t3.medium)"
+  description = "Aurora instance class (e.g., db.t3.medium for dev, db.r6g.large for production)."
   default     = "db.t3.medium"
-}
-
-variable "db_storage_gb" {
-  type        = number
-  description = "RDS allocated storage in GB"
-  default     = 32
 }
 
 variable "redis_node_type" {
@@ -102,7 +98,78 @@ variable "support_email" {
 
 variable "bot_lambda_role_arn" {
   type        = string
-  description = "IAM role ARN for the Medplum bot Lambda function. Leave empty to skip; set after the bot Lambda is deployed."
+  description = "Override IAM role ARN for the Medplum bot Lambda function. Leave empty (default) to use the role created by this stack."
+  default     = ""
+}
+
+variable "storage_domain" {
+  type        = string
+  description = "Domain for the Medplum storage CDN (e.g., storage.example.com). Leave empty to disable the dedicated storage CloudFront distribution."
+  default     = ""
+}
+
+variable "storage_ssl_certificate_arn" {
+  type        = string
+  description = "ACM certificate ARN for the storage CloudFront distribution (must be in us-east-1, covering storage_domain). Required when storage_domain is set."
+  default     = ""
+}
+
+variable "signing_key_id" {
+  type        = string
+  description = "CloudFront public key ID for signed storage URLs. Generate the RSA key pair externally (see README), upload the public key to CloudFront, and supply the resulting key ID here. Required when storage_domain is set."
+  default     = ""
+}
+
+variable "rds_instances" {
+  type        = number
+  description = "Number of Aurora cluster instances (writer + additional readers). Use 1 for dev, 2 for production."
+  default     = 1
+
+  validation {
+    condition     = var.rds_instances >= 1
+    error_message = "rds_instances must be at least 1."
+  }
+}
+
+variable "enable_waf" {
+  type        = bool
+  description = "Create WAFv2 Web ACLs and associate them with CloudFront distributions. The regional ALB WAF association requires waf_alb_arn to be set after the load balancer is provisioned."
+  default     = true
+}
+
+variable "api_waf_ip_set_arn" {
+  type        = string
+  description = "ARN of an existing WAFv2 IP set to use for API origin allow-listing (REGIONAL scope). Leave empty to use default managed rules only."
+  default     = ""
+}
+
+variable "app_waf_ip_set_arn" {
+  type        = string
+  description = "ARN of an existing WAFv2 IP set to use for app CloudFront allow-listing (CLOUDFRONT scope, must be in us-east-1). Leave empty to use default managed rules only."
+  default     = ""
+}
+
+variable "storage_waf_ip_set_arn" {
+  type        = string
+  description = "ARN of an existing WAFv2 IP set to use for storage CloudFront allow-listing (CLOUDFRONT scope, must be in us-east-1). Leave empty to use default managed rules only."
+  default     = ""
+}
+
+variable "waf_alb_arn" {
+  type        = string
+  description = "ARN of the Application Load Balancer to associate with the API regional WAF. Leave empty on first apply (before the LB exists); set once the LB is provisioned by EKS Ingress."
+  default     = ""
+}
+
+variable "enable_cloudtrail_alarms" {
+  type        = bool
+  description = "Create CloudTrail trail, CloudWatch metric filters, alarms, and SNS notifications. Recommended for production compliance."
+  default     = false
+}
+
+variable "cloudtrail_alarm_email" {
+  type        = string
+  description = "Email address to subscribe to the CloudTrail alarms SNS topic. Leave empty to skip email subscription."
   default     = ""
 }
 
@@ -114,16 +181,28 @@ variable "eks_public_access_cidrs" {
 
 variable "create_route53_records" {
   type        = bool
-  description = "Set to true if your domain is hosted in Route 53 in this AWS account. Creates DNS records for CloudFront and SES verification."
+  description = "Set to true if the hosted zone for route53_zone_name already exists in Route 53 in this account. Terraform will look it up by name and create DNS records in it."
   default     = false
 }
 
 variable "route53_zone_name" {
   type        = string
   description = <<-EOT
-    Name of the Route 53 hosted zone to create DNS records in (only used when create_route53_records = true).
+    Name of the Route 53 hosted zone to use for DNS records and cert validation.
     Defaults to the root domain derived from app_domain (last two segments, e.g. "example.com").
-    Override this when your hosted zone is a subdomain, e.g. "example-aws.foomedical.dev".
+    Override when your hosted zone is a subdomain, e.g. "staging.example.com".
   EOT
+  default     = ""
+}
+
+variable "create_route53_zone" {
+  type        = bool
+  description = "Create the Route 53 hosted zone for route53_zone_name. Use this for new deployments where the zone does not yet exist. Set parent_route53_zone_id to auto-add the NS delegation record."
+  default     = false
+}
+
+variable "parent_route53_zone_id" {
+  type        = string
+  description = "Zone ID of the parent Route 53 hosted zone to add the NS delegation record in (only used when create_route53_zone = true). Leave empty to skip automatic NS delegation and add the records manually."
   default     = ""
 }

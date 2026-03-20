@@ -1,29 +1,86 @@
-region              = "us-east-1"
-environment         = "dev"
-deployment_id       = "1"
-app_domain          = "medplum.example.com"
-api_domain          = "medplum-api.example.com"
-support_email       = "support@medplum.example.com"
-ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/CERT_ID"
-alb_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/ALB_CERT_ID"
-availability_zones  = ["us-east-1a", "us-east-1b"]
+region             = "us-east-1"
+environment        = "dev"
+deployment_id      = "1"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+app_domain    = "medplum.example.com"
+api_domain    = "api.example.com"
+support_email = "support@example.com"
 
 tags = {
   app         = "medplum"
   environment = "dev"
 }
 
-# Restrict EKS API server access to your IP or VPN CIDR before production use.
-# Defaults to open (0.0.0.0/0) — change this for any non-dev environment.
-# eks_public_access_cidrs = ["203.0.113.0/24"]
+# ── Compute ───────────────────────────────────────────────────────────────────
+# eks_node_instance_types = ["t3.large"]  # minimum recommended; use m5.large+ for prod
+# eks_public_access_cidrs = ["203.0.113.0/32"]  # restrict before production — default is 0.0.0.0/0
 
-# Production Redis requires >= 2 nodes for automatic failover.
-# redis_num_cache_nodes = 2
+# ── Database (Aurora PostgreSQL) ──────────────────────────────────────────────
+# db_instance_tier = "db.t3.medium"   # use db.r6g.large or larger for production
+# rds_instances    = 1                # set to 2 for a writer + reader in production
+# postgres_version = "15.4"
 
-# eks_node_instance_types = ["t3.large"]  # Minimum recommended; use m5.large or larger for production
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# redis_node_type       = "cache.t3.micro"  # use cache.r6g.large+ for production
+# redis_num_cache_nodes = 1                 # must be >= 2 when environment = "prod"
 
-# DNS — set create_route53_records = true if your domain is hosted in Route 53 in this account.
-# route53_zone_name defaults to the root domain (e.g. "example.com").
-# Override it if your hosted zone is a subdomain (e.g. "staging.example.com").
-# create_route53_records = true
-# route53_zone_name      = "example.com"
+# ── DNS (Route 53) ────────────────────────────────────────────────────────────
+# Choose one of three modes:
+#
+#   A) Create the zone (fresh deployment, zone doesn't exist yet):
+#        create_route53_zone    = true
+#        create_route53_records = false
+#        route53_zone_name      = "example-aws.example.com"
+#      If the parent zone (example.com) is also in Route 53 in this account,
+#      add its zone ID and Terraform adds the NS delegation record automatically:
+#        parent_route53_zone_id = "Z0123456789EXAMPLE"
+#      Otherwise, run `terraform output route53_nameservers` after apply and add
+#      the four NS records at your registrar or parent DNS provider.
+#
+#   B) Zone already exists in this account:
+#        create_route53_records = true
+#        create_route53_zone    = false
+#        route53_zone_name      = "example-aws.example.com"
+#
+#   C) DNS managed externally — omit all of the above and supply cert ARNs manually (see below).
+#
+# create_route53_zone    = true
+# create_route53_records = false
+# route53_zone_name      = "example-aws.example.com"
+# parent_route53_zone_id = ""
+
+# ACM certificates — leave empty to let Terraform request and validate them automatically
+# via Route 53 DNS (requires one of modes A or B above). Populate these only when reusing
+# existing certificates or when Route 53 is not available (mode C).
+# ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/APP_CERT_ID"
+# alb_certificate_arn = "arn:aws:acm:REGION:ACCOUNT:certificate/ALB_CERT_ID"
+
+# ── Storage CDN (dedicated CloudFront for binary uploads) ─────────────────────
+# Requires a pre-created CloudFront signing key. See README §3a for key generation.
+# The ACM cert for storage_domain is created and validated automatically when
+# Route 53 is available — no need to supply storage_ssl_certificate_arn.
+# storage_domain = "storage.example-aws.example.com"
+# signing_key_id = "APKA..."
+# Override only to reuse an existing cert:
+# storage_ssl_certificate_arn = "arn:aws:acm:us-east-1:ACCOUNT:certificate/STORAGE_CERT_ID"
+
+# ── WAF ───────────────────────────────────────────────────────────────────────
+# enable_waf = true  # default true; set to false to skip WAF (not recommended for production)
+# Supply waf_alb_arn on a second apply after the EKS Ingress ALB is provisioned:
+# waf_alb_arn = "arn:aws:elasticloadbalancing:REGION:ACCOUNT:loadbalancer/app/..."
+# Optional IP allowlists (CLOUDFRONT-scoped sets must be in us-east-1):
+# api_waf_ip_set_arn     = ""
+# app_waf_ip_set_arn     = ""
+# storage_waf_ip_set_arn = ""
+
+# ── CloudTrail + Alarms ───────────────────────────────────────────────────────
+# Recommended for production compliance. Creates a CloudTrail trail, CloudWatch
+# metric filters, 10 security alarms, and an SNS topic.
+# enable_cloudtrail_alarms = true
+# cloudtrail_alarm_email   = "oncall@example.com"
+
+# ── Bot Lambda ────────────────────────────────────────────────────────────────
+# Leave empty to use the role created by this stack (default).
+# Override only if you need to reuse a pre-existing bot Lambda execution role.
+# bot_lambda_role_arn = ""
