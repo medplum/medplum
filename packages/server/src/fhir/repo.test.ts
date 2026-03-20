@@ -632,6 +632,20 @@ describe('FHIR Repo', () => {
       ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
     }));
 
+  test('Patch resource with implicit array creation', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, [
+        { op: 'add', path: '/identifier/-', value: { system: 'https://example.com', value: '123' } },
+      ]);
+      expect(patched.identifier?.at(0)?.system).toStrictEqual('https://example.com');
+      expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
+    }));
+
   test('Compartment permissions', () =>
     withTestContext(async () => {
       const registration1: RegisterRequest = {
