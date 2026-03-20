@@ -206,3 +206,19 @@ variable "parent_route53_zone_id" {
   description = "Zone ID of the parent Route 53 hosted zone to add the NS delegation record in (only used when create_route53_zone = true). Leave empty to skip automatic NS delegation and add the records manually."
   default     = ""
 }
+
+# ── Deployment invariant checks ───────────────────────────────────────────────
+
+check "storage_cdn_signing_key" {
+  assert {
+    condition     = var.storage_domain == "" || var.signing_key_id != ""
+    error_message = "signing_key_id is required when storage_domain is set. Generate an RSA key pair, upload the public key to CloudFront, and supply the resulting key ID."
+  }
+}
+
+check "eks_public_access_prod" {
+  assert {
+    condition     = var.environment != "prod" || !contains(var.eks_public_access_cidrs, "0.0.0.0/0")
+    error_message = "eks_public_access_cidrs must not include 0.0.0.0/0 in production. Restrict to your VPN or office CIDR (e.g. [\"203.0.113.0/32\"])."
+  }
+}

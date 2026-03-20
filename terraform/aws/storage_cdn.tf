@@ -183,4 +183,6 @@ resource "aws_cloudfront_distribution" "storage" {
   }
 
   tags = var.tags
+
+  depends_on = [aws_acm_certificate_validation.storage]
 }
