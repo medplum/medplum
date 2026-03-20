@@ -34,6 +34,11 @@ resource "aws_kms_key" "medplum" {
           "kms:RevokeGrant"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "rds.${var.region}.amazonaws.com"
+          }
+        }
       },
       {
         Sid    = "Allow Secrets Manager to use this key"
@@ -49,6 +54,11 @@ resource "aws_kms_key" "medplum" {
           "kms:DescribeKey"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "secretsmanager.${var.region}.amazonaws.com"
+          }
+        }
       },
       {
         Sid    = "Allow ElastiCache to use this key"
@@ -65,6 +75,11 @@ resource "aws_kms_key" "medplum" {
           "kms:CreateGrant"
         ]
         Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "elasticache.${var.region}.amazonaws.com"
+          }
+        }
       }
     ]
   })

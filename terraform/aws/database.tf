@@ -37,11 +37,14 @@ resource "aws_security_group" "database" {
     security_groups = [aws_security_group.eks_nodes.id]
   }
 
+  # Aurora only needs outbound HTTPS to call AWS APIs (KMS, Secrets Manager) within the VPC.
+  # All replication traffic stays within the cluster and does not require broad egress.
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.cidr_block]
+    description = "HTTPS to VPC for AWS API calls (KMS, Secrets Manager)"
   }
 
   tags = var.tags

@@ -151,3 +151,46 @@ resource "aws_vpc_endpoint" "s3" {
 
   tags = merge(var.tags, { Name = "${local.name_prefix}-s3-endpoint" })
 }
+
+# ─── Interface VPC endpoints for AWS services ────────────────────────────────
+# These keep ECR pulls, CloudWatch writes, STS calls, and SSM lookups inside
+# the AWS network. Required to restrict EKS node egress in production.
+
+resource "aws_security_group" "vpc_endpoints" {
+  name        = "${local.name_prefix}-vpc-endpoints-sg"
+  description = "Allow HTTPS from EKS nodes to interface VPC endpoints"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.eks_nodes.id]
+    description     = "HTTPS from EKS nodes"
+  }
+
+  tags = var.tags
+}
+
+locals {
+  interface_endpoints = {
+    ecr_api    = "com.amazonaws.${var.region}.ecr.api"
+    ecr_dkr    = "com.amazonaws.${var.region}.ecr.dkr"
+    logs       = "com.amazonaws.${var.region}.logs"
+    sts        = "com.amazonaws.${var.region}.sts"
+    ssm        = "com.amazonaws.${var.region}.ssm"
+  }
+}
+
+resource "aws_vpc_endpoint" "interface" {
+  for_each = local.interface_endpoints
+
+  vpc_id              = module.vpc.vpc_id
+  service_name        = each.value
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = module.vpc.private_subnets
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, { Name = "${local.name_prefix}-${each.key}-endpoint" })
+}
