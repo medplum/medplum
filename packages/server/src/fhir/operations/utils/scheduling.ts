@@ -119,15 +119,17 @@ export function resolveAvailability(
     const dayOfWeek = dayNames[dayStart.dayOfWeek];
     return schedulingParameters.availability
       .filter((availability) => availability.dayOfWeek.includes(dayOfWeek))
-      .flatMap((availability) =>
-        availability.timeOfDay.map((timeOfDay) => {
-          const [hour, minute, second] = timeOfDay.split(':').map(Number);
-          const start = dayStart.withPlainTime({ hour, minute, second });
-          const end = start.add({ minutes: availability.duration });
-          const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
-          return intersectIntervals(availableInterval, interval);
-        })
-      )
+      .map((availability) => {
+        const [sH, sM, sS] = availability.availableStartTime.split(':').map(Number);
+        const [eH, eM, eS] = availability.availableEndTime.split(':').map(Number);
+        const start = dayStart.withPlainTime({ hour: sH, minute: sM, second: sS });
+        let end = dayStart.withPlainTime({ hour: eH, minute: eM, second: eS });
+        if (end.epochMilliseconds <= start.epochMilliseconds) {
+          end = end.add({ days: 1 });
+        }
+        const availableInterval = { start: new Date(start.epochMilliseconds), end: new Date(end.epochMilliseconds) };
+        return intersectIntervals(availableInterval, interval);
+      })
       .filter(isDefined);
   });
 }

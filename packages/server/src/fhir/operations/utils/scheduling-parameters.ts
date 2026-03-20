@@ -26,6 +26,10 @@ type HardDuration = {
   unit: DurationUnit;
 };
 
+// Similar to a Temporal.PlainTime; represents a time without a date or time
+// zone, as seen in the FHIR `time` type. Segments may be zero padded.
+type WallClockTime = `${number}:${number}:${number}`;
+
 // Nested extension types for `availability.r4`, encoding the R5 `Availability` datatype
 // in valid R4 extension form. Note: `daysOfWeek` repeats once per day value.
 type AvailabilityR4AvailableTime = {
@@ -33,8 +37,8 @@ type AvailabilityR4AvailableTime = {
   extension: (
     | { url: 'daysOfWeek'; valueCode: DayOfWeek }
     | { url: 'allDay'; valueBoolean: boolean }
-    | { url: 'availableStartTime'; valueTime: `${number}:${number}:${number}` }
-    | { url: 'availableEndTime'; valueTime: `${number}:${number}:${number}` }
+    | { url: 'availableStartTime'; valueTime: WallClockTime }
+    | { url: 'availableEndTime'; valueTime: WallClockTime }
   )[];
 };
 
@@ -58,7 +62,7 @@ export type SchedulingParametersExtensionExtension =
       valueTiming: {
         repeat: {
           dayOfWeek: DayOfWeek[];
-          timeOfDay: `${number}:${number}:${number}`[];
+          timeOfDay: WallClockTime[];
           duration: number;
           durationUnit: 'h' | 'min' | 'd' | 'wk';
         };
@@ -78,8 +82,8 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 type SchedulingParametersAvailability = {
   dayOfWeek: DayOfWeek[];
-  timeOfDay: `${number}:${number}:${number}`[];
-  duration: number; // minutes
+  availableStartTime: WallClockTime;
+  availableEndTime: WallClockTime;
 };
 
 export type SchedulingParameters = {
@@ -110,6 +114,14 @@ function durationToMinutes(duration: Duration): number {
     default:
       throw new Error(`Got unhandled unit "${unit}"`);
   }
+}
+
+function addMinutesToTime(time: WallClockTime, minutes: number): WallClockTime {
+  const [h, m, s] = time.split(':').map(Number);
+  const totalMinutes = h * 60 + m + minutes;
+  const endH = Math.floor(totalMinutes / 60) % 24;
+  const endM = totalMinutes % 60;
+  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:${String(s).padStart(2, '0')}` as WallClockTime;
 }
 
 function atMostOne<T>(arr: T[], attribute: string, _resourceType: string): T | undefined {
@@ -215,13 +227,10 @@ function extractAvailabilityR4(ext: {
       const end = availTime.extension.find((e) => e.url === 'availableEndTime')?.valueTime;
 
       if (allDay) {
-        return { dayOfWeek, timeOfDay: ['00:00:00' as const], duration: 60 * 24 };
+        return { dayOfWeek, availableStartTime: '00:00:00' as const, availableEndTime: '00:00:00' as const };
       }
       if (start && end) {
-        const [startHour, startMinute] = start.split(':').map(Number);
-        const [endHour, endMinute] = end.split(':').map(Number);
-        const duration = (endHour - startHour) * 60 + endMinute - startMinute;
-        return { dayOfWeek, timeOfDay: [start], duration };
+        return { dayOfWeek, availableStartTime: start, availableEndTime: end };
       }
       return undefined;
     })
@@ -236,20 +245,16 @@ function extractAvailability(
   if (availableTime.allDay) {
     return {
       dayOfWeek: availableTime.daysOfWeek ?? [],
-      timeOfDay: ['00:00:00'],
-      duration: 60 * 24,
+      availableStartTime: '00:00:00',
+      availableEndTime: '00:00:00',
     };
   }
 
   if (availableTime.availableStartTime && availableTime.availableEndTime) {
-    // Intentionally ignoring seconds, as we schedule at Minute granularity.
-    const [startHour, startMinute, _startSecond] = availableTime.availableStartTime.split(':').map(Number);
-    const [endHour, endMinute, _endSecond] = availableTime.availableEndTime.split(':').map(Number);
-    const duration = (endHour - startHour) * 60 + endMinute - startMinute;
     return {
       dayOfWeek: availableTime.daysOfWeek ?? [],
-      timeOfDay: [availableTime.availableStartTime as `${number}:${number}:${number}`],
-      duration,
+      availableStartTime: availableTime.availableStartTime as WallClockTime,
+      availableEndTime: availableTime.availableEndTime as WallClockTime,
     };
   }
 
@@ -292,14 +297,17 @@ export function parseSchedulingParametersExtensions(resource: Schedule | Healthc
     }
 
     const availability = resourceParameters.availability ?? [
-      ...rawAvailability.map((ext) => ({
-        dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
-        timeOfDay: ext.valueTiming.repeat.timeOfDay,
-        duration: durationToMinutes({
+      ...rawAvailability.flatMap((ext) => {
+        const durationMins = durationToMinutes({
           value: ext.valueTiming.repeat.duration,
           unit: ext.valueTiming.repeat.durationUnit,
-        }),
-      })),
+        });
+        return ext.valueTiming.repeat.timeOfDay.map((startTime) => ({
+          dayOfWeek: ext.valueTiming.repeat.dayOfWeek,
+          availableStartTime: startTime,
+          availableEndTime: addMinutesToTime(startTime, durationMins),
+        }));
+      }),
       ...rawAvailabilityR4.flatMap(extractAvailabilityR4),
     ];
 

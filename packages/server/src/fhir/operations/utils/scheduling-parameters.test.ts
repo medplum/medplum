@@ -50,8 +50,8 @@ describe('parseSchedulingParametersExtensions', () => {
         availability: [
           {
             dayOfWeek: ['mon'],
-            timeOfDay: ['09:00:00'],
-            duration: 480,
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
           },
         ],
         bufferBefore: 0,
@@ -120,13 +120,13 @@ describe('parseSchedulingParametersExtensions', () => {
         availability: [
           {
             dayOfWeek: ['mon'],
-            timeOfDay: ['09:00:00'],
-            duration: 480,
+            availableStartTime: '09:00:00',
+            availableEndTime: '17:00:00',
           },
           {
             dayOfWeek: ['tue', 'thu'],
-            timeOfDay: ['12:00:00'],
-            duration: 90,
+            availableStartTime: '12:00:00',
+            availableEndTime: '13:30:00',
           },
         ],
         bufferBefore: 10,
@@ -175,7 +175,7 @@ describe('parseSchedulingParametersExtensions', () => {
 
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
         {
-          availability: [{ dayOfWeek: ['mon', 'wed'], timeOfDay: ['09:00:00'], duration: 480 }],
+          availability: [{ dayOfWeek: ['mon', 'wed'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
           duration: 60,
         },
       ]);
@@ -214,7 +214,13 @@ describe('parseSchedulingParametersExtensions', () => {
 
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
         {
-          availability: [{ dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timeOfDay: ['00:00:00'], duration: 1440 }],
+          availability: [
+            {
+              dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+              availableStartTime: '00:00:00',
+              availableEndTime: '00:00:00',
+            },
+          ],
         },
       ]);
     });
@@ -256,7 +262,7 @@ describe('parseSchedulingParametersExtensions', () => {
 
       expect(() => parseSchedulingParametersExtensions(schedule)).not.toThrow();
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
-        { availability: [{ dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 480 }] },
+        { availability: [{ dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }] },
       ]);
     });
 
@@ -326,8 +332,8 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(schedule)).toMatchObject([
         {
           availability: [
-            { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 480 },
-            { dayOfWeek: ['fri'], timeOfDay: ['13:00:00'], duration: 240 },
+            { dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' },
+            { dayOfWeek: ['fri'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
           ],
         },
       ]);
@@ -498,7 +504,7 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
         {
           serviceType: [{ coding: [{ code: 'consult', system: 'http://example.com' }] }],
-          availability: [{ dayOfWeek: ['mon', 'tue'], timeOfDay: ['09:00:00'], duration: 480 }],
+          availability: [{ dayOfWeek: ['mon', 'tue'], availableStartTime: '09:00:00', availableEndTime: '17:00:00' }],
           duration: 30,
           bufferBefore: 0,
           bufferAfter: 0,
@@ -519,7 +525,13 @@ describe('parseSchedulingParametersExtensions', () => {
 
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
         {
-          availability: [{ dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timeOfDay: ['00:00:00'], duration: 1440 }],
+          availability: [
+            {
+              dayOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+              availableStartTime: '00:00:00',
+              availableEndTime: '00:00:00',
+            },
+          ],
         },
       ]);
     });
@@ -534,7 +546,7 @@ describe('parseSchedulingParametersExtensions', () => {
       };
 
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
-        { availability: [{ dayOfWeek: [], timeOfDay: ['00:00:00'], duration: 1440 }] },
+        { availability: [{ dayOfWeek: [], availableStartTime: '00:00:00', availableEndTime: '00:00:00' }] },
       ]);
     });
 
@@ -596,8 +608,8 @@ describe('parseSchedulingParametersExtensions', () => {
       expect(parseSchedulingParametersExtensions(hs)).toMatchObject([
         {
           availability: [
-            { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 180 },
-            { dayOfWeek: ['wed'], timeOfDay: ['13:00:00'], duration: 240 },
+            { dayOfWeek: ['mon'], availableStartTime: '09:00:00', availableEndTime: '12:00:00' },
+            { dayOfWeek: ['wed'], availableStartTime: '13:00:00', availableEndTime: '17:00:00' },
           ],
         },
       ]);
