@@ -11,7 +11,7 @@ If you have any questions or need assistance, please email [support@medplum.com]
 
 ## Sales Inquiries
 
-For questions about pricing, please email [hello@medplum.com](mailto:hello@medplum.com) or [schedule a demo](https://cal.com/medplum/15).
+For questions about pricing, please email [hello@medplum.com](mailto:hello@medplum.com) or [schedule a demo](https://cal.com/team/medplum/30min).
 
 ## Discord Community
 

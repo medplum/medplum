@@ -117,7 +117,7 @@ const config: Config = {
           className: 'button button--outline button--primary navbar-btn navbar-btn-outlined',
         },
         {
-          to: 'https://cal.com/medplum/demo',
+          to: 'https://cal.com/team/medplum/30min',
           label: 'Book a Demo',
           position: 'right',
           className: 'button button--primary navbar-btn navbar-btn-filled',
