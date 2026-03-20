@@ -100,8 +100,8 @@ resource "aws_cloudfront_response_headers_policy" "storage" {
     }
     access_control_allow_headers { items = ["*"] }
     access_control_allow_methods { items = ["GET", "HEAD", "OPTIONS"] }
-    access_control_max_age_sec     = 600
-    origin_override                = false
+    access_control_max_age_sec = 600
+    origin_override            = false
   }
 
   security_headers_config {
@@ -125,9 +125,9 @@ resource "aws_cloudfront_response_headers_policy" "storage" {
       override                   = true
     }
     xss_protection {
-      protection   = true
-      mode_block   = true
-      override     = true
+      protection = true
+      mode_block = true
+      override   = true
     }
   }
 

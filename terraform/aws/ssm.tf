@@ -25,8 +25,8 @@ resource "aws_ssm_parameter" "app_base_url" {
 }
 
 resource "aws_ssm_parameter" "storage_base_url" {
-  name  = "${local.ssm_prefix}/storageBaseUrl"
-  type  = "String"
+  name = "${local.ssm_prefix}/storageBaseUrl"
+  type = "String"
   # When the dedicated storage CDN is enabled, binaries are served from storage_domain/binary/
   # (matching CDK config). Otherwise fall back to routing through the API server.
   value = local.storage_cdn_enabled ? "https://${var.storage_domain}/binary/" : "https://${var.api_domain}/storage/"
@@ -42,8 +42,8 @@ resource "aws_ssm_parameter" "signing_key_id" {
 }
 
 resource "aws_ssm_parameter" "binary_storage" {
-  name  = "${local.ssm_prefix}/binaryStorage"
-  type  = "String"
+  name = "${local.ssm_prefix}/binaryStorage"
+  type = "String"
   # When storage CDN is enabled, the server writes binaries to the dedicated storage bucket
   value = local.storage_cdn_enabled ? "s3:${aws_s3_bucket.storage[0].id}" : "s3:${aws_s3_bucket.app.id}"
   tags  = var.tags

@@ -132,8 +132,8 @@ variable "rds_instances" {
 }
 
 variable "rds_ssl_reject_unauthorized" {
-  type    = bool
-  default = true
+  type        = bool
+  default     = true
   description = <<-EOT
     Controls TLS certificate validation for the Medplum server's RDS connection.
 

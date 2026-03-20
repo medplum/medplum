@@ -22,11 +22,11 @@ resource "aws_security_group" "database" {
   dynamic "ingress" {
     for_each = var.rds_proxy_enabled ? [1] : []
     content {
-      from_port         = 5432
-      to_port           = 5432
-      protocol          = "tcp"
-      security_groups   = [aws_security_group.rds_proxy[0].id]
-      description       = "Allow RDS Proxy to connect to Aurora"
+      from_port       = 5432
+      to_port         = 5432
+      protocol        = "tcp"
+      security_groups = [aws_security_group.rds_proxy[0].id]
+      description     = "Allow RDS Proxy to connect to Aurora"
     }
   }
 
@@ -47,19 +47,19 @@ module "aurora" {
   source  = "terraform-aws-modules/rds-aurora/aws"
   version = "~> 9.0"
 
-  name              = "${local.name_prefix}-aurora"
-  engine            = "aurora-postgresql"
-  engine_version    = var.postgres_version
-  master_username   = "clusteradmin"
-  database_name     = "medplum"
+  name            = "${local.name_prefix}-aurora"
+  engine          = "aurora-postgresql"
+  engine_version  = var.postgres_version
+  master_username = "clusteradmin"
+  database_name   = "medplum"
 
   manage_master_user_password = true
 
   storage_encrypted = true
   kms_key_id        = aws_kms_key.medplum.arn
 
-  vpc_id               = module.vpc.vpc_id
-  db_subnet_group_name = aws_db_subnet_group.medplum.name
+  vpc_id                 = module.vpc.vpc_id
+  db_subnet_group_name   = aws_db_subnet_group.medplum.name
   vpc_security_group_ids = [aws_security_group.database.id]
 
   # Instances: 1 writer by default; add readers by increasing var.rds_instances

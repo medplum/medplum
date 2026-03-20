@@ -200,11 +200,11 @@ resource "aws_security_group" "vpc_endpoints" {
 
 locals {
   interface_endpoints = {
-    ecr_api    = "com.amazonaws.${var.region}.ecr.api"
-    ecr_dkr    = "com.amazonaws.${var.region}.ecr.dkr"
-    logs       = "com.amazonaws.${var.region}.logs"
-    sts        = "com.amazonaws.${var.region}.sts"
-    ssm        = "com.amazonaws.${var.region}.ssm"
+    ecr_api = "com.amazonaws.${var.region}.ecr.api"
+    ecr_dkr = "com.amazonaws.${var.region}.ecr.dkr"
+    logs    = "com.amazonaws.${var.region}.logs"
+    sts     = "com.amazonaws.${var.region}.sts"
+    ssm     = "com.amazonaws.${var.region}.ssm"
   }
 }
 
