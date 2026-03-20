@@ -63,6 +63,24 @@ describe('PackageRelease $install', () => {
     jest.restoreAllMocks();
   });
 
+  test('Require semver version string', async () => {
+    const systemRepo = getGlobalSystemRepo();
+    await expect(async () =>
+      withTestContext(() =>
+        systemRepo.createResource<PackageRelease>({
+          resourceType: 'PackageRelease',
+          meta: { project: project.id },
+          package: { reference: 'Package/' + randomUUID() },
+          version: 'not-a-semver',
+          content: {
+            contentType: ContentType.FHIR_JSON,
+            url: `Binary/${randomUUID()}`,
+          },
+        })
+      )
+    ).rejects.toThrow(/Version must be in semantic versioning format/);
+  });
+
   test('Forbidden for non-admin user', async () => {
     const systemRepo = getGlobalSystemRepo();
     const packageRelease = await withTestContext(() =>

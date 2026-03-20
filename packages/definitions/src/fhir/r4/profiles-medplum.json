@@ -8237,7 +8237,13 @@
               "path" : "PackageRelease.version",
               "min" : 1,
               "max" : "1"
-            }
+            },
+            "constraint" : [{
+              "key": "package-release-version-semver",
+              "severity": "error",
+              "human": "Version must be in semantic versioning format (x.y.z)",
+              "expression": "matches('^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(-[0-9A-Za-z-]+(\\\\.[0-9A-Za-z-]+)*)?(\\\\+[0-9A-Za-z-]+(\\\\.[0-9A-Za-z-]+)*)?$')"
+            }]
           },
           {
             "id" : "PackageRelease.description",
@@ -8487,7 +8493,13 @@
               "path" : "PackageInstallation.version",
               "min" : 1,
               "max" : "1"
-            }
+            },
+            "constraint" : [{
+              "key": "package-installation-version-semver",
+              "severity": "error",
+              "human": "Version must be in semantic versioning format (x.y.z)",
+              "expression": "matches('^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(-[0-9A-Za-z-]+(\\\\.[0-9A-Za-z-]+)*)?(\\\\+[0-9A-Za-z-]+(\\\\.[0-9A-Za-z-]+)*)?$')"
+            }]
           },
           {
             "id" : "PackageInstallation.status",
