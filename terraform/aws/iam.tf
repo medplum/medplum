@@ -147,6 +147,38 @@ data "aws_iam_policy_document" "server_policy" {
     ]
     resources = [local.effective_bot_lambda_role_arn]
   }
+
+  statement {
+    sid    = "XRay"
+    effect = "Allow"
+    actions = [
+      "xray:PutTraceSegments",
+      "xray:PutTelemetryRecords",
+      "xray:GetSamplingRules",
+      "xray:GetSamplingTargets",
+      "xray:GetSamplingStatisticSummaries",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ComprehendTextract"
+    effect = "Allow"
+    actions = [
+      "comprehend:DetectEntities",
+      "comprehend:DetectKeyPhrases",
+      "comprehend:DetectDominantLanguage",
+      "comprehend:DetectSentiment",
+      "comprehend:DetectTargetedSentiment",
+      "comprehend:DetectSyntax",
+      "comprehendmedical:DetectEntitiesV2",
+      "textract:DetectDocumentText",
+      "textract:AnalyzeDocument",
+      "textract:StartDocumentTextDetection",
+      "textract:GetDocumentTextDetection",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_policy" "server" {
