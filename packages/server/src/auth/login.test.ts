@@ -353,7 +353,7 @@ describe('Login', () => {
 
     // Register and create a project
     await withTestContext(async () => {
-      const { project } = await registerNew({
+      const { project: newProject } = await registerNew({
         firstName: 'Google',
         lastName: 'Google',
         projectName: 'Require Google Auth',
@@ -362,9 +362,9 @@ describe('Login', () => {
       });
 
       // As a super admin, update the project to require Google auth
-      const systemRepo = await getProjectSystemRepo(project);
+      const systemRepo = await getProjectSystemRepo(newProject);
       await systemRepo.updateResource({
-        ...project,
+        ...newProject,
         features: ['google-auth-required'],
       });
     });
