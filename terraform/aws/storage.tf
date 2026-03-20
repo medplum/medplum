@@ -39,6 +39,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "app" {
   rule {
     id     = "intelligent-tiering"
     status = "Enabled"
+    filter {}
 
     transition {
       days          = 30
@@ -49,6 +50,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "app" {
   rule {
     id     = "noncurrent-version-expiration"
     status = "Enabled"
+    filter {}
 
     noncurrent_version_expiration {
       noncurrent_days = var.environment == "prod" ? 90 : 30
@@ -58,6 +60,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "app" {
   rule {
     id     = "abort-incomplete-multipart-uploads"
     status = "Enabled"
+    filter {}
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
@@ -98,6 +101,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "static" {
   rule {
     id     = "intelligent-tiering"
     status = "Enabled"
+    filter {}
 
     transition {
       days          = 30
@@ -108,6 +112,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "static" {
   rule {
     id     = "abort-incomplete-multipart-uploads"
     status = "Enabled"
+    filter {}
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
