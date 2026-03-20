@@ -17,6 +17,7 @@ export const SearchStrategies = {
   COLUMN: 'column',
   LOOKUP_TABLE: 'lookup-table',
   TOKEN_COLUMN: 'token-column',
+  RANGE_COLUMN: 'range-column',
 } as const;
 
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
@@ -40,10 +41,17 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly textSearch: boolean;
 }
 
+export interface RangeColumnSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: typeof SearchStrategies.RANGE_COLUMN;
+  readonly rangeColumnName: string;
+  readonly sortColumnName: string;
+}
+
 export type SearchParameterImplementation =
   | ColumnSearchParameterImplementation
   | LookupTableSearchParameterImplementation
-  | TokenColumnSearchParameterImplementation;
+  | TokenColumnSearchParameterImplementation
+  | RangeColumnSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;

@@ -364,6 +364,12 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
+const dateRangeTypes: readonly SearchParameterType[] = [
+  SearchParameterType.DATE,
+  SearchParameterType.DATETIME,
+  SearchParameterType.PERIOD,
+];
+const numericRangeTypes: readonly SearchParameterType[] = [SearchParameterType.NUMBER, SearchParameterType.QUANTITY];
 function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -379,6 +385,20 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
 
       return columns;
     }
+    case 'range-column':
+      if (dateRangeTypes.includes(impl.type)) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'TSTZMULTIRANGE' : 'TSTZRANGE' },
+          { name: impl.sortColumnName, type: 'TIMESTAMPTZ' },
+        ];
+      } else if (numericRangeTypes.includes(impl.type)) {
+        return [
+          { name: impl.rangeColumnName, type: impl.array ? 'NUMMULTIRANGE' : 'NUMRANGE' },
+          { name: impl.sortColumnName, type: 'NUMERIC' },
+        ];
+      } else {
+        throw new Error('Unsupported range column type: ' + impl.type);
+      }
     case 'column':
       return [getColumnDefinition(impl)];
     case 'lookup-table': {
@@ -397,8 +417,8 @@ function getSearchParameterIndexes(
   impl: SearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
-    case 'token-column': {
-      const indexes: IndexDefinition[] = [
+    case 'token-column':
+      return [
         { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
@@ -410,9 +430,8 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
-
-      return indexes;
-    }
+    case 'range-column':
+      return [{ columns: [impl.rangeColumnName, impl.sortColumnName], indexType: 'gist' }];
     case 'column': {
       const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
       if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
@@ -420,12 +439,8 @@ function getSearchParameterIndexes(
       }
       return indexes;
     }
-    case 'lookup-table': {
-      if (impl.sortColumnName) {
-        return [{ columns: [impl.sortColumnName], indexType: 'btree' }];
-      }
-      return [];
-    }
+    case 'lookup-table':
+      return impl.sortColumnName ? [{ columns: [impl.sortColumnName], indexType: 'btree' }] : [];
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
