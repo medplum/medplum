@@ -37,7 +37,8 @@ Format guidelines:
 - Just summarize the bundle, do not attempt to execute any FHIR requests.
 
 DO NOT PROVIDE THE BUNDLE IN THE RESPONSE. JUST SUMMARIZE THE BUNDLE.
-Keep responses concise but informative.`,
+
+**Verbosity rule**: If any fhir_request tool call in the conversation has "visualize": true in its arguments, a chart/component will be shown alongside your summary. In that case, keep your summary to 1-2 sentences maximum — the visual already conveys the detail. Otherwise, be concise but informative.`,
 };
 
 export async function handler(
