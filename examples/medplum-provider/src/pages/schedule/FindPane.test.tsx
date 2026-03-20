@@ -103,12 +103,26 @@ describe('FindPane', () => {
         <MedplumProvider medplum={medplum}>
           <MantineProvider>
             <Notifications />
-            <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+            <div data-testid="FindPaneTestWrapper">
+              <FindPane schedule={schedule} range={range} onSuccess={onSuccess} />
+            </div>
           </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
   };
+
+  test('it renders null when there are no schedulable service types', async () => {
+    const schedule = {
+      resourceType: 'Schedule',
+      id: 'schedule-123',
+      actor: [{ reference: 'Practitioner/practitioner-123' }],
+      active: true,
+    } satisfies Schedule;
+
+    await act(async () => setup({ schedule }));
+    expect(screen.getByTestId('FindPaneTestWrapper')).toBeEmptyDOMElement();
+  });
 
   describe('Initial Rendering', () => {
     test('renders "Schedule..." title when no service type is selected', async () => {

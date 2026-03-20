@@ -21,6 +21,7 @@ type FindPaneProps = {
   schedule: WithId<Schedule>;
   range: Range;
   onSuccess: (results: { appointments: Appointment[]; slots: Slot[] }) => void;
+  className?: string;
 };
 
 // Allows selection of a ServiceType found in the schedule's
@@ -28,7 +29,7 @@ type FindPaneProps = {
 // upcoming slots that can be used to book an Appointment of that type.
 //
 // See https://www.medplum.com/docs/scheduling/defining-availability for details.
-export function FindPane(props: FindPaneProps): JSX.Element {
+export function FindPane(props: FindPaneProps): JSX.Element | null {
   const [slots, setSlots] = useState<readonly Slot[] | undefined>(undefined);
   const [chosenSlot, setChosenSlot] = useState<Slot | undefined>(undefined);
   const { schedule, range, onSuccess } = props;
@@ -117,9 +118,13 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     [onSuccess]
   );
 
+  if (serviceTypes.length === 0) {
+    return null;
+  }
+
   if (chosenSlot) {
     return (
-      <Stack gap="sm" justify="flex-start">
+      <Stack gap="sm" justify="flex-start" className={props.className}>
         <Title order={4}>
           <Group justify="space-between">
             <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
@@ -135,7 +140,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
 
   if (serviceType) {
     return (
-      <Stack gap="sm" justify="flex-start">
+      <Stack gap="sm" justify="flex-start" className={props.className}>
         <Title order={4}>
           <Group justify="space-between">
             <span>{serviceType ? <CodeableConceptDisplay value={serviceType} /> : 'Event'}</span>
@@ -162,7 +167,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
   }
 
   return (
-    <Stack gap="sm" justify="flex-start">
+    <Stack gap="sm" justify="flex-start" className={props.className}>
       <Title order={4}>Schedule&hellip;</Title>
       {serviceTypes.map((st) => (
         <Button
