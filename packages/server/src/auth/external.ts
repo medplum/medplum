@@ -145,7 +145,7 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
   }
 
   let signInPage: string;
-  if (validateReturnToUrl(body.returnTo, domainConfig)) {
+  if (isValidReturnToUrl(body.returnTo, domainConfig)) {
     // This is the case for external auth with a returnTo URL specified in the state.
     signInPage = body.returnTo;
   } else {
@@ -254,7 +254,7 @@ async function verifyExternalCode(
  * @param domainConfig - The domain configuration for the external auth request.
  * @returns True if the returnTo URL is valid, false otherwise.
  */
-function validateReturnToUrl(
+function isValidReturnToUrl(
   returnTo: string | undefined,
   domainConfig: DomainConfiguration | undefined
 ): returnTo is string {
@@ -264,13 +264,6 @@ function validateReturnToUrl(
 
   try {
     const returnToUrl = new URL(returnTo);
-
-    // Always allow .medplum.com hosts
-    if (returnToUrl.hostname.endsWith('.medplum.com')) {
-      return true;
-    }
-
-    // Check against allowed URLs - compare origin and ensure path starts with allowed path
     return !!domainConfig?.allowedPostLoginRedirectUrls?.some((allowedUrl) => {
       try {
         const allowed = new URL(allowedUrl);

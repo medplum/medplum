@@ -578,28 +578,6 @@ describe('External', () => {
     expect(redirect.searchParams.get('login')).toBeTruthy();
   });
 
-  test('returnTo URL to a .medplum.com host is always allowed', async () => {
-    const medplumReturnTo = 'https://app.medplum.com/signin';
-
-    const url = appendQueryParams('/auth/external', {
-      code: randomUUID(),
-      state: JSON.stringify({ domain, returnTo: medplumReturnTo }),
-    });
-
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
-      ok: true,
-      status: 200,
-      json: () => buildTokens(email),
-    }));
-
-    const res = await request(app).get(url);
-    expect(res.status).toBe(302);
-
-    const redirect = new URL(res.header.location);
-    expect(redirect.hostname).toStrictEqual('app.medplum.com');
-    expect(redirect.searchParams.get('login')).toBeTruthy();
-  });
-
   test('returnTo URL with confused domain is rejected', async () => {
     const testDomain = randomUUID() + '.example.com';
     const testEmail = `text@${testDomain}`;
