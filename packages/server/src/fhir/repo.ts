@@ -150,9 +150,9 @@ import {
   DeleteQuery,
   Disjunction,
   InsertQuery,
+  isRetryableTransactionError,
   normalizeDatabaseError,
   periodToRangeString,
-  PostgresError,
   SelectQuery,
   truncateTextColumn,
 } from './sql';
@@ -160,7 +160,6 @@ import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -2539,7 +2538,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // Ensure transaction is rolled back before attempting any retry
         await this.rollbackTransaction(operationOutcomeError);
-        if (!this.isRetryableTransactionError(operationOutcomeError)) {
+        if (this.transactionDepth || !isRetryableTransactionError(operationOutcomeError)) {
           break; // Fall through to throw statement outside of the loop
         }
       } finally {
@@ -2676,34 +2675,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         getLogger().error('Error processing post-commit callback', { err });
       }
     }
-  }
-
-  /**
-   * Checks whether an error represents a serialization conflict that can safely be retried.
-   * NOTE: Retrying a transaction must be done in full: the entire `Repository.withTransaction()` block
-   * should be re-executed, in a new transaction.
-   * @param err - The error to check.
-   * @returns True if the error indicates a retryable transaction failure.
-   */
-  private isRetryableTransactionError(err: OperationOutcomeError): boolean {
-    if (this.transactionDepth) {
-      // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
-      // the entire transaction must have been rolled back before anything can be retried:
-      // "It is important to retry the complete transaction, including all logic
-      // that decides which SQL to issue and/or which values to use"
-      // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
-      return false;
-    }
-    if (err.outcome.issue.length !== 1) {
-      // Multiple errors combined cannot be guaranteed to be retryable
-      return false;
-    }
-
-    const issue = err.outcome.issue[0];
-    return Boolean(
-      issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
-    );
   }
 
   /**

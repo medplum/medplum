@@ -215,7 +215,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   }
 
   if (memberships.length === 1 || request.forceUseFirstMembership) {
-    return setLoginMembership(login, memberships[0].id);
+    return setLoginMembership(login, memberships[0]);
   } else {
     return login;
   }
@@ -402,10 +402,13 @@ export function getClientApplicationMembership(
  * Most users will only have one membership, so this happens immediately after login.
  * Some users have multiple memberships, so this happens after choosing a profile.
  * @param login - The login before the membership is set.
- * @param membershipId - The membership to set.
+ * @param membership - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: WithId<Login>, membershipId: string): Promise<WithId<Login>> {
+export async function setLoginMembership(
+  login: WithId<Login>,
+  membership: WithId<ProjectMembership>
+): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -418,14 +421,6 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
     throw new OperationOutcomeError(badRequest('Login profile already set'));
   }
 
-  // Find the membership for the user
-  const globalSystemRepo = getGlobalSystemRepo();
-  let membership = undefined;
-  try {
-    membership = await globalSystemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch {
-    throw new OperationOutcomeError(badRequest('Profile not found'));
-  }
   if (membership.user?.reference !== login.user?.reference) {
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
@@ -435,6 +430,7 @@ export async function setLoginMembership(login: WithId<Login>, membershipId: str
   }
 
   // Get the project
+  const globalSystemRepo = getGlobalSystemRepo();
   const project = await globalSystemRepo.readReference<Project>(membership.project);
   const projectSystemRepo = await getProjectSystemRepo(project);
 

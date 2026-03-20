@@ -18,7 +18,7 @@ import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import type { Repository, SystemRepository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { TODO_SHARD_ID } from '../fhir/sharding';
@@ -58,7 +58,7 @@ export async function createProfile(
 }
 
 export async function createProjectMembership(
-  repo: Repository,
+  systemRepo: SystemRepository,
   user: User,
   project: Project,
   profile: ProfileResource,
@@ -67,7 +67,7 @@ export async function createProjectMembership(
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  const result = await repo.createResource<ProjectMembership>({
+  const result = await systemRepo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),
