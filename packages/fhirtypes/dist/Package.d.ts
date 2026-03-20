@@ -16,7 +16,9 @@ import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
- * Package account for automated actions.
+ * Definition of a marketplace package, which represents a set of
+ * automated actions that can be taken by a system, such as a
+ * subscription or a workflow.
  */
 export interface Package {
 
@@ -97,7 +99,7 @@ export interface Package {
   modifierExtension?: Extension[];
 
   /**
-   * An identifier for this bot.
+   * An identifier for this package.
    */
   identifier?: Identifier[];
 

@@ -175,7 +175,7 @@ describe('PackageRelease $install', () => {
       ],
     };
 
-    // Create Binary with malformed bundle
+    // Create Binary that will point to the malformed bundle
     const binary = await withTestContext(() =>
       systemRepo.createResource<Binary>({
         resourceType: 'Binary',

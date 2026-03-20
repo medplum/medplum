@@ -61,8 +61,8 @@ export async function packageInstallHandler(
       version: packageRelease.version,
     });
     const result = await processBatch(req, repo, router, bundle);
-    await systemRepo.updateResource({ ...installation, status: 'installed' });
     validateBatchResponse(result);
+    await systemRepo.updateResource({ ...installation, status: 'installed' });
     return [allOk, result];
   } catch (err) {
     getLogger().error('Package install failed', { err });

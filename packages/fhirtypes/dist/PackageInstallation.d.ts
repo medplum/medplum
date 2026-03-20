@@ -20,7 +20,8 @@ import type { RelatedPerson } from './RelatedPerson.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
- * PackageInstallation account for automated actions.
+ * Definition of a marketplace package installation, which represents the
+ * installation of a specific package release in a system.
  */
 export interface PackageInstallation {
 
@@ -101,7 +102,7 @@ export interface PackageInstallation {
   modifierExtension?: Extension[];
 
   /**
-   * An identifier for this bot.
+   * An identifier for this package installation.
    */
   identifier?: Identifier[];
 

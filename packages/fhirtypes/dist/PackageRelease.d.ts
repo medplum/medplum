@@ -15,7 +15,9 @@ import type { Reference } from './Reference.d.ts';
 import type { Resource } from './Resource.d.ts';
 
 /**
- * PackageRelease account for automated actions.
+ * Definition of a marketplace package release, which represents a
+ * specific release of a package that can be installed and used by a
+ * system.
  */
 export interface PackageRelease {
 
@@ -96,7 +98,7 @@ export interface PackageRelease {
   modifierExtension?: Extension[];
 
   /**
-   * An identifier for this bot.
+   * An identifier for this package release.
    */
   identifier?: Identifier[];
 

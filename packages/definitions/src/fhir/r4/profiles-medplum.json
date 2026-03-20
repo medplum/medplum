@@ -7794,14 +7794,14 @@
       "abstract" : false,
       "type" : "Package",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "Package account for automated actions.",
+      "description" : "Definition of a marketplace package, which represents a set of automated actions that can be taken by a system, such as a subscription or a workflow.",
       "snapshot" : {
         "element" : [
           {
             "id" : "Package",
             "path" : "Package",
-            "short" : "Package account for automated actions.",
-            "definition" : "Package account for automated actions.",
+            "short" : "Definition of a marketplace package.",
+            "definition" : "Definition of a marketplace package, which represents a set of automated actions that can be taken by a system, such as a subscription or a workflow.",
             "min" : 0,
             "max" : "*",
             "base" : {
@@ -7938,8 +7938,8 @@
           {
             "id" : "Package.identifier",
             "path" : "Package.identifier",
-            "short" : "An identifier for this bot",
-            "definition" : "An identifier for this bot.",
+            "short" : "An identifier for this package",
+            "definition" : "An identifier for this package.",
             "min" : 0,
             "max" : "*",
             "type" : [{
@@ -8051,14 +8051,14 @@
       "abstract" : false,
       "type" : "PackageRelease",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "PackageRelease account for automated actions.",
+      "description" : "Definition of a marketplace package release, which represents a specific release of a package that can be installed and used by a system.",
       "snapshot" : {
         "element" : [
           {
             "id" : "PackageRelease",
             "path" : "PackageRelease",
-            "short" : "PackageRelease account for automated actions.",
-            "definition" : "PackageRelease account for automated actions.",
+            "short" : "Definition of a marketplace package release.",
+            "definition" : "Definition of a marketplace package release, which represents a specific release of a package that can be installed and used by a system.",
             "min" : 0,
             "max" : "*",
             "base" : {
@@ -8195,8 +8195,8 @@
           {
             "id" : "PackageRelease.identifier",
             "path" : "PackageRelease.identifier",
-            "short" : "An identifier for this bot",
-            "definition" : "An identifier for this bot.",
+            "short" : "An identifier for this package release",
+            "definition" : "An identifier for this package release.",
             "min" : 0,
             "max" : "*",
             "type" : [{
@@ -8261,7 +8261,7 @@
             "min" : 1,
             "max" : "1",
             "base" : {
-              "path" : "Bot.content",
+              "path" : "PackageRelease.content",
               "min" : 1,
               "max" : "1"
             },
@@ -8285,14 +8285,14 @@
       "abstract" : false,
       "type" : "PackageInstallation",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "PackageInstallation account for automated actions.",
+      "description" : "Definition of a marketplace package installation, which represents the installation of a specific package release in a system.",
       "snapshot" : {
         "element" : [
           {
             "id" : "PackageInstallation",
             "path" : "PackageInstallation",
-            "short" : "PackageInstallation account for automated actions.",
-            "definition" : "PackageInstallation account for automated actions.",
+            "short" : "Definition of a marketplace package installation.",
+            "definition" : "Definition of a marketplace package installation, which represents the installation of a specific package release in a system.",
             "min" : 0,
             "max" : "*",
             "base" : {
@@ -8429,8 +8429,8 @@
           {
             "id" : "PackageInstallation.identifier",
             "path" : "PackageInstallation.identifier",
-            "short" : "An identifier for this bot",
-            "definition" : "An identifier for this bot.",
+            "short" : "An identifier for this package installation",
+            "definition" : "An identifier for this package installation.",
             "min" : 0,
             "max" : "*",
             "type" : [{
