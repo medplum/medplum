@@ -310,6 +310,18 @@ function applyProjectAdminAccessPolicy(
         resourceType: 'User',
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      },
+      {
+        resourceType: 'Package',
+        readonly: true,
+      },
+      {
+        resourceType: 'PackageRelease',
+        readonly: true,
+      },
+      {
+        resourceType: 'PackageInstallation',
+        readonly: true,
       }
     );
   } else {
