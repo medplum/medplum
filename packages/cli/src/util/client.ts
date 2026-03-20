@@ -22,6 +22,12 @@ export async function createMedplumClient(
     storage
   );
   const fetchApi = options.fetch ?? fetch;
+
+  // Validate base URL if non-default is specified
+  if (options.baseUrl && options.baseUrl !== 'https://api.medplum.com/') {
+    await validateBaseUrl(options.baseUrl, fetchApi);
+  }
+
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
     baseUrl,
@@ -66,6 +72,27 @@ function getClientValues(options: MedplumClientOptions, storage: FileSystemStora
   const clientSecret = options.clientSecret ?? storageOptions?.clientSecret ?? process.env['MEDPLUM_CLIENT_SECRET'];
 
   return { baseUrl, fhirUrlPath, accessToken, tokenUrl, authorizeUrl, clientId, clientSecret };
+}
+
+async function validateBaseUrl(
+  baseUrl: string,
+  fetchApi: (input: string, init?: RequestInit) => Promise<Response>
+): Promise<void> {
+  try {
+    const url = new URL('healthcheck', baseUrl).toString();
+    const response = await fetchApi(url);
+    if (!response.ok) {
+      throw new Error(`Healthcheck returned status ${response.status}`);
+    }
+    const data = (await response.json()) as { ok?: unknown };
+    if (data.ok === true) {
+      return;
+    }
+    throw new Error('Healthcheck response does not have "ok": true');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new Error(`Failed to validate base URL "${baseUrl}": ${message}`);
+  }
 }
 
 export function onUnauthenticated(): void {

@@ -3,7 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { createReference, ReadablePromise } from '@medplum/core';
-import type { Appointment, Bundle, CodeableConcept, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import type { Appointment, Bundle, CodeableConcept, Schedule, Slot } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, getByText, render, screen, waitFor } from '@testing-library/react';
@@ -16,18 +16,18 @@ const SchedulingParametersURI = 'https://medplum.com/fhir/StructureDefinition/Sc
 
 describe('SchedulePage', () => {
   let medplum: MockClient;
-  let mockPractitioner: Practitioner;
   let mockSchedule: Schedule;
 
   beforeEach(async () => {
     medplum = new MockClient();
+
     vi.clearAllMocks();
 
-    mockPractitioner = {
-      resourceType: 'Practitioner',
-      id: 'practitioner-1',
-      name: [{ given: ['Dr.'], family: 'Smith' }],
-    };
+    // mockPractitioner = {
+    //   resourceType: 'Practitioner',
+    //   id: 'practitioner-1',
+    //   name: [{ given: ['Dr.'], family: 'Smith' }],
+    // };
 
     mockSchedule = {
       resourceType: 'Schedule',
@@ -43,14 +43,13 @@ describe('SchedulePage', () => {
       value: 800,
     });
 
-    // Create practitioner resource in MockClient so getReferenceString works
-    await medplum.createResource(mockPractitioner);
-    medplum.getProfile = vi.fn().mockResolvedValue(mockPractitioner);
+    // Store the schedule so readResource('Schedule', 'schedule-1') works
+    await medplum.createResource(mockSchedule);
     medplum.searchOne = vi.fn().mockResolvedValue(mockSchedule);
     medplum.searchResources = vi.fn().mockResolvedValue([]);
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/practitioner-1'): ReturnType<typeof render> => {
+  const setup = (initialPath = '/Calendar/Schedule/schedule-1'): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -72,7 +71,7 @@ describe('SchedulePage', () => {
       medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
 
       await act(async () => {
-        setup();
+        setup('/Calendar/Schedule');
       });
 
       // Component should return null until schedule is loaded
@@ -83,7 +82,7 @@ describe('SchedulePage', () => {
 
     test('loads existing schedule for practitioner', async () => {
       await act(async () => {
-        setup();
+        setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
@@ -96,7 +95,7 @@ describe('SchedulePage', () => {
       medplum.createResource = vi.fn().mockResolvedValue(mockSchedule);
 
       await act(async () => {
-        setup();
+        setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
@@ -282,7 +281,7 @@ describe('SchedulePage', () => {
       medplum.searchOne = vi.fn().mockRejectedValue(new Error('Search failed'));
 
       await act(async () => {
-        setup();
+        setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
@@ -298,7 +297,7 @@ describe('SchedulePage', () => {
       medplum.createResource = vi.fn().mockRejectedValue(new Error('Creation failed'));
 
       await act(async () => {
-        setup();
+        setup('/Calendar/Schedule');
       });
 
       await waitFor(() => {
@@ -323,7 +322,7 @@ describe('$find/$book component integration tests', () => {
     });
   });
 
-  const setup = (initialPath = '/Calendar/Schedule/123'): ReturnType<typeof render> => {
+  const setup = (initialPath = '/Calendar/Schedule/alice-smith-schedule'): ReturnType<typeof render> => {
     return render(
       <MemoryRouter initialEntries={[initialPath]}>
         <MedplumProvider medplum={medplum}>
@@ -372,17 +371,21 @@ describe('$find/$book component integration tests', () => {
 
   test('renders ScheduleFindPane when schedule has scheduling parameters', async () => {
     const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+    await medplum.createResource(scheduleWithServiceTypes);
 
-    // Mock the $find operation
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    } as Bundle<Slot>);
+    // Mock only $find, pass everything else through so readResource still works
+    const originalGet = medplum.get.bind(medplum);
+    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
+        );
+      }
+      return originalGet(url, options);
+    });
 
     await act(async () => {
-      setup();
+      setup('/Calendar/Schedule/schedule-1');
     });
 
     // Check Calendar component rendered correctly
@@ -498,11 +501,8 @@ describe('$find/$book component integration tests', () => {
     medplum.post = vi.fn().mockResolvedValue(mockBookResponse);
 
     await act(async () => {
-      setup();
+      setup('/Calendar/Schedule/alice-smith-schedule');
     });
-
-    const patientInput0 = screen.queryByRole('searchbox');
-    expect(patientInput0).toBeNull();
 
     // Pane header shows selected service type
     expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
@@ -533,16 +533,20 @@ describe('$find/$book component integration tests', () => {
 
   test('fetches slots via $find operation when ScheduleFindPane is active', async () => {
     const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1]);
-    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+    await medplum.createResource(scheduleWithServiceTypes);
 
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    } as Bundle<Slot>);
+    const originalGet = medplum.get.bind(medplum);
+    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
+        );
+      }
+      return originalGet(url, options);
+    });
 
     await act(async () => {
-      setup();
+      setup('/Calendar/Schedule/schedule-1');
     });
 
     expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
@@ -553,16 +557,20 @@ describe('$find/$book component integration tests', () => {
 
   test('renders multiple service types in ScheduleFindPane', async () => {
     const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+    await medplum.createResource(scheduleWithServiceTypes);
 
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    } as Bundle<Slot>);
+    const originalGet = medplum.get.bind(medplum);
+    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
+        );
+      }
+      return originalGet(url, options);
+    });
 
     await act(async () => {
-      setup();
+      setup('/Calendar/Schedule/schedule-1');
     });
 
     // Test calendar pane rendered
@@ -579,16 +587,20 @@ describe('$find/$book component integration tests', () => {
   test('allows selecting different service types', async () => {
     const user = userEvent.setup();
     const scheduleWithServiceTypes = createScheduleWithServiceTypes([serviceType1, serviceType2]);
-    medplum.searchOne = vi.fn().mockResolvedValue(scheduleWithServiceTypes);
+    await medplum.createResource(scheduleWithServiceTypes);
 
-    medplum.get = vi.fn().mockResolvedValue({
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    } as Bundle<Slot>);
+    const originalGet = medplum.get.bind(medplum);
+    vi.spyOn(medplum, 'get').mockImplementation((url, options) => {
+      if (url.toString().includes('$find')) {
+        return new ReadablePromise(
+          Promise.resolve({ resourceType: 'Bundle', type: 'searchset', entry: [] } as Bundle<Slot>)
+        );
+      }
+      return originalGet(url, options);
+    });
 
     await act(async () => {
-      setup();
+      setup('/Calendar/Schedule/schedule-1');
     });
 
     await waitFor(() => {

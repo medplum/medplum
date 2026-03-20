@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
+  concatUrls,
   ContentType,
   encodeBase64,
   OAuthGrantType,
@@ -9,7 +10,7 @@ import {
   OperationOutcomeError,
   parseJWTPayload,
 } from '@medplum/core';
-import type { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
+import type { ClientApplication, DomainConfiguration, IdentityProvider } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
@@ -36,6 +37,7 @@ export interface ExternalAuthState {
   codeChallenge?: string;
   codeChallengeMethod?: CodeChallengeMethod;
   redirectUri?: string;
+  returnTo?: string;
 }
 
 export async function externalCallbackHandler(req: Request, res: Response): Promise<void> {
@@ -59,7 +61,12 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const { idp, client } = await getIdentityProvider(body);
+  let domainConfig: DomainConfiguration | undefined;
+  if (body.domain) {
+    domainConfig = await getDomainConfiguration(body.domain);
+  }
+
+  const { idp, client } = await getIdentityProvider(body, domainConfig);
   if (!idp) {
     sendOutcome(res, badRequest('Identity provider not found'));
     return;
@@ -137,7 +144,15 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
     return;
   }
 
-  const signInPage = login.launch ? 'oauth' : 'signin';
+  let signInPage: string;
+  if (isValidReturnToUrl(body.returnTo, domainConfig)) {
+    // This is the case for external auth with a returnTo URL specified in the state.
+    signInPage = body.returnTo;
+  } else {
+    // This is the fallback case for external auth without a client application or redirect URI.
+    signInPage = concatUrls(getConfig().appBaseUrl, login.launch ? 'oauth' : 'signin');
+  }
+
   const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
   redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
@@ -154,10 +169,12 @@ export async function externalCallbackHandler(req: Request, res: Response): Prom
 /**
  * Tries to find the identity provider configuration.
  * @param state - The external auth state.
+ * @param domainConfig - The domain configuration.
  * @returns External identity provider definition if found.
  */
 async function getIdentityProvider(
-  state: ExternalAuthState
+  state: ExternalAuthState,
+  domainConfig: DomainConfiguration | undefined
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   let idp: IdentityProvider | undefined;
   let client: ClientApplication | undefined;
@@ -169,11 +186,8 @@ async function getIdentityProvider(
     }
   }
 
-  if (state.domain) {
-    const domainConfig = await getDomainConfiguration(state.domain);
-    if (domainConfig?.identityProvider) {
-      idp = domainConfig.identityProvider;
-    }
+  if (domainConfig?.identityProvider) {
+    idp = domainConfig.identityProvider;
   }
 
   return { idp, client };
@@ -231,5 +245,39 @@ async function verifyExternalCode(
   } catch (err: any) {
     globalLogger.warn('Unhandled error in external auth check', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+}
+
+/**
+ * Determines if the returnTo URL is valid based on the domain configuration.
+ * @param returnTo - The returnTo URL from the external auth state.
+ * @param domainConfig - The domain configuration for the external auth request.
+ * @returns True if the returnTo URL is valid, false otherwise.
+ */
+function isValidReturnToUrl(
+  returnTo: string | undefined,
+  domainConfig: DomainConfiguration | undefined
+): returnTo is string {
+  if (!returnTo) {
+    return false;
+  }
+
+  try {
+    const returnToUrl = new URL(returnTo);
+    return !!domainConfig?.allowedPostLoginRedirectUrls?.some((allowedUrl) => {
+      try {
+        const allowed = new URL(allowedUrl);
+        return (
+          returnToUrl.protocol === allowed.protocol &&
+          returnToUrl.hostname === allowed.hostname &&
+          returnToUrl.port === allowed.port &&
+          returnToUrl.pathname.startsWith(allowed.pathname)
+        );
+      } catch {
+        return false;
+      }
+    });
+  } catch {
+    return false;
   }
 }

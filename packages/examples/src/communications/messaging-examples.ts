@@ -12,11 +12,16 @@ const medplum = new MedplumClient();
 
 const userId = 'example-user-id';
 const currentUser = { id: 'example-user-id' };
-const threadHeader = { id: 'example-thread-header' };
+const threadHeader = {
+  id: 'example-thread-header',
+  topic: { text: 'Example thread' },
+  subject: { reference: 'Patient/example' },
+};
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
 const readReceiptTaskId = 'example-read-receipt-task-id';
 const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
+const file = new Blob();
 
 // start-block filterActiveThreadsTs
 // Thread headers have no partOf; child messages have partOf set to the header.
@@ -338,6 +343,208 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
 // end-block poolTasksCurl
 */
 
+// start-block messageWithTextAndAttachment
+const attachment = await medplum.createAttachment({
+  data: file,
+  filename: 'lab-report.pdf',
+  contentType: 'application/pdf',
+});
+
+const mixedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [{ contentString: 'Here are the lab results we discussed.' }, { contentAttachment: attachment }],
+  sent: new Date().toISOString(),
+});
+// end-block messageWithTextAndAttachment
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[mixedMessage];
+// start-block createTaskForThreadTs
+const task = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  priority: 'routine',
+  focus: { reference: `Communication/${threadHeader.id}` },
+  for: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  performerType: [
+    {
+      coding: [
+        {
+          system: 'http://snomed.info/sct',
+          code: '224535009',
+          display: 'Registered nurse',
+        },
+      ],
+    },
+  ],
+  requester: { reference: 'Practitioner/doctor-alice-smith' },
+  authoredOn: new Date().toISOString(),
+});
+// end-block createTaskForThreadTs
+
+// start-block claimTaskTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/status', value: 'accepted' },
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+  },
+]);
+// end-block claimTaskTs
+
+// start-block queryUnclaimedTasksTs
+await medplum.search('Task', {
+  performer: 'http://snomed.info/sct|224535009',
+  status: 'requested',
+});
+// end-block queryUnclaimedTasksTs
+
+/*
+// start-block queryUnclaimedTasksCli
+medplum get 'Task?performer=http://snomed.info/sct|224535009&status=requested'
+// end-block queryUnclaimedTasksCli
+
+// start-block queryUnclaimedTasksCurl
+curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2Fsct%7C224535009&status=requested' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block queryUnclaimedTasksCurl
+*/
+
+// start-block rerouteToProviderTs
+await medplum.patchResource('Task', task.id, [
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  },
+  {
+    op: 'remove',
+    path: '/performerType',
+  },
+]);
+
+await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'replace', path: '/recipient', value: [{ reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' }] },
+]);
+// end-block rerouteToProviderTs
+
+// start-block rerouteToPoolTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'remove', path: '/owner' },
+  { op: 'replace', path: '/status', value: 'requested' },
+  {
+    op: 'add',
+    path: '/performerType',
+    value: [
+      {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '17561000',
+            display: 'Cardiologist',
+          },
+        ],
+      },
+    ],
+  },
+]);
+
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'remove', path: '/recipient' }]);
+// end-block rerouteToPoolTs
+
+// start-block rerouteWithNoteTs
+await medplum.patchResource('Task', task.id, [
+  {
+    op: 'replace',
+    path: '/owner',
+    value: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  },
+  {
+    op: 'add',
+    path: '/note/-',
+    value: {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouting to cardiology — patient has new cardiac symptoms',
+    },
+  },
+]);
+// end-block rerouteWithNoteTs
+
+// start-block rerouteProvenanceTs
+await medplum.createResource({
+  resourceType: 'Provenance',
+  target: [{ reference: `Task/${task.id}` }],
+  recorded: new Date().toISOString(),
+  agent: [
+    {
+      who: { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+    },
+  ],
+  reason: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/CodeSystem/reroute-reason',
+          code: 'specialty-referral',
+          display: 'Specialty referral',
+        },
+      ],
+    },
+  ],
+});
+// end-block rerouteProvenanceTs
+
+// start-block simpleRerouteTs
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/owner', value: { reference: 'Practitioner/dr-cardio' } },
+]);
+// end-block simpleRerouteTs
+
+// start-block dualTaskRerouteTs
+const newTask = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  priority: task.priority,
+  focus: task.focus,
+  for: task.for,
+  owner: { reference: 'Practitioner/dr-cardio', display: 'Dr. Cardio' },
+  requester: { reference: 'Practitioner/doctor-gregory-house' },
+  authoredOn: new Date().toISOString(),
+  note: [
+    {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouted from original Task — needs cardiology review',
+    },
+  ],
+});
+
+await medplum.patchResource('Task', task.id, [
+  { op: 'replace', path: '/status', value: 'cancelled' },
+  {
+    op: 'add',
+    path: '/note/-',
+    value: {
+      authorReference: { reference: 'Practitioner/doctor-gregory-house' },
+      time: new Date().toISOString(),
+      text: 'Rerouted to Dr. Cardio — see new Task',
+    },
+  },
+]);
+// end-block dualTaskRerouteTs
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[newTask];
+
 // start-block messageTaskLifecycleTs
 // Bot: handle Task lifecycle for new messages. Creates a Task when no open Task exists, completes it when a provider responds.
 export async function handler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
@@ -378,13 +585,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Communicat
   }
 
   // Open Task exists — check if this message is from someone other than the patient
-  const task = openTasks[0];
+  const openTask = openTasks[0];
   const senderRef = message.sender.reference;
-  const patientRef = task.for?.reference;
+  const patientRef = openTask.for?.reference;
 
   if (senderRef && senderRef !== patientRef) {
     // Sender is not the patient — treat as a provider response and complete the Task
-    await medplum.patchResource('Task', task.id, [
+    await medplum.patchResource('Task', openTask.id, [
       { op: 'replace', path: '/status', value: 'completed' },
       {
         op: 'add',
@@ -431,8 +638,11 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
     return;
   }
 
-  const task = openTasks[0];
-  const ownerRef = task.owner?.reference;
+  const rerouteTask = openTasks[0];
+  if (!rerouteTask.id) {
+    return;
+  }
+  const ownerRef = rerouteTask.owner?.reference;
   if (!ownerRef) {
     return;
   }
@@ -445,9 +655,14 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
     return;
   }
 
+  const schedule = schedules[0];
+  if (!schedule.id) {
+    return;
+  }
+
   const now = new Date();
   const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
-  const result = (await medplum.post(medplum.fhirUrl('Schedule', schedules[0].id!, '$find'), {
+  const result = (await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
     resourceType: 'Parameters',
     parameter: [
       { name: 'start', valueDateTime: now.toISOString() },
@@ -464,14 +679,14 @@ export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<
 
   // Provider is unavailable — reroute Task back to the pool
   const threadHeaderId = threadRef.split('/')[1];
-  await medplum.patchResource('Task', task.id!, [
+  await medplum.patchResource('Task', rerouteTask.id, [
     { op: 'remove', path: '/owner' },
     { op: 'replace', path: '/status', value: 'requested' },
     {
       op: 'add',
       path: '/note/-',
       value: {
-        text: `Auto-rerouted: ${task.owner?.display ?? ownerRef} is currently unavailable`,
+        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
         time: now.toISOString(),
       },
     },

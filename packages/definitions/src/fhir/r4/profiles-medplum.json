@@ -4977,6 +4977,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "SmartAppLaunch.fhirContext",
+            "path" : "SmartAppLaunch.fhirContext",
+            "definition" : "Optional FHIR context indicating the resources that were included when the app was launched.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Reference"
+            }],
+            "base" : {
+              "path" : "SmartAppLaunch.fhirContext",
+              "min" : 0,
+              "max" : "*"
+            }
           }
         ]
       }
@@ -5163,6 +5178,21 @@
               "path" : "DomainConfiguration.identityProvider",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+            "path" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+            "definition" : "List of allowed post-login redirect URLs for this domain configuration.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base" : {
+              "path" : "DomainConfiguration.allowedPostLoginRedirectUrls",
+              "min" : 0,
+              "max" : "*"
             }
           }
         ]
