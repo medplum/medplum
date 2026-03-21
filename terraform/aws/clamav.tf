@@ -94,7 +94,7 @@ resource "aws_iam_role" "clamav_lambda" {
   name  = "${local.name_prefix}-clamav-lambda-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [{ Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" }, Action = "sts:AssumeRole" }]
   })
 
@@ -122,10 +122,10 @@ resource "aws_iam_role_policy" "clamav_lambda" {
         Resource = "${aws_s3_bucket.storage[0].arn}/*"
       },
       {
-        Sid    = "EFSAccess"
-        Effect = "Allow"
-        Action = ["elasticfilesystem:ClientMount", "elasticfilesystem:ClientWrite", "elasticfilesystem:ClientRootAccess"]
-        Resource = aws_efs_access_point.clamav[0].arn
+        Sid       = "EFSAccess"
+        Effect    = "Allow"
+        Action    = ["elasticfilesystem:ClientMount", "elasticfilesystem:ClientWrite", "elasticfilesystem:ClientRootAccess"]
+        Resource  = aws_efs_access_point.clamav[0].arn
         Condition = { StringEquals = { "elasticfilesystem:AccessPointArn" = aws_efs_access_point.clamav[0].arn } }
       },
       {
