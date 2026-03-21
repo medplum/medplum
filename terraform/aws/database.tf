@@ -43,6 +43,29 @@ resource "aws_security_group" "database" {
   tags = var.tags
 }
 
+# Cluster-level Aurora parameter group — created when rds_cluster_parameters is non-empty.
+# Pass its name to module.aurora so the cluster uses it. family must track postgres major version.
+resource "aws_rds_cluster_parameter_group" "medplum" {
+  count  = length(var.rds_cluster_parameters) > 0 ? 1 : 0
+  name   = "${local.name_prefix}-aurora-pg${local.rds_pg_major_version}-cluster-pg"
+  family = "aurora-postgresql${local.rds_pg_major_version}"
+
+  dynamic "parameter" {
+    for_each = var.rds_cluster_parameters
+    content {
+      name         = parameter.key
+      value        = parameter.value
+      apply_method = "pending-reboot"
+    }
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = var.tags
+}
+
 module "aurora" {
   source  = "terraform-aws-modules/rds-aurora/aws"
   version = "~> 9.0"
@@ -58,14 +81,23 @@ module "aurora" {
   storage_encrypted = true
   kms_key_id        = aws_kms_key.medplum.arn
 
+  storage_type = local.rds_storage_type
+
+  # Use the custom cluster parameter group when rds_cluster_parameters is non-empty.
+  # create_db_cluster_parameter_group = false tells the module not to create its own.
+  create_db_cluster_parameter_group = length(var.rds_cluster_parameters) == 0
+  db_cluster_parameter_group_name   = length(var.rds_cluster_parameters) > 0 ? aws_rds_cluster_parameter_group.medplum[0].name : null
+
   vpc_id                 = module.vpc.vpc_id
   db_subnet_group_name   = aws_db_subnet_group.medplum.name
   vpc_security_group_ids = [aws_security_group.database.id]
 
   # Instances: 1 writer by default; add readers by increasing var.rds_instances
   instances = { for idx in range(var.rds_instances) : tostring(idx + 1) => {
-    instance_class      = var.db_instance_tier
-    publicly_accessible = false
+    instance_class               = var.db_instance_tier
+    publicly_accessible          = false
+    performance_insights_enabled = var.rds_performance_insights_enabled
+    ca_cert_identifier           = var.rds_ca_cert_identifier
   } }
 
   backup_retention_period = var.environment == "prod" ? 30 : 7

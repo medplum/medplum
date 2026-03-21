@@ -42,4 +42,11 @@ locals {
     pub_sub         = "PubSubRedis"
     background_jobs = "BackgroundJobsRedis"
   }
+
+  # Major version digit extracted from postgres_version (e.g. "16" from "16.8")
+  rds_pg_major_version = split(".", var.postgres_version)[0]
+
+  # AURORA_IOPT1 for NVMe-backed instance classes (class token contains "d", e.g. r6gd, r8gd).
+  # Mirrors CDK: writerInstanceType.match(/^\w+d\w*\./i) ? AURORA_IOPT1 : AURORA
+  rds_storage_type = length(regexall("db\\.[a-z0-9]*d[a-z0-9]*\\.", var.db_instance_tier)) > 0 ? "aurora-iopt1" : "aurora"
 }

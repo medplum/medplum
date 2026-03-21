@@ -291,3 +291,28 @@ variable "workers_config" {
     Example: '{"enabled":["BulkExport","Reindex"]}'
   EOT
 }
+
+variable "rds_performance_insights_enabled" {
+  type        = bool
+  default     = false
+  description = "Enable RDS Performance Insights on all Aurora instances. Matches CDK enablePerformanceInsights = true."
+}
+
+variable "rds_ca_cert_identifier" {
+  type        = string
+  default     = "rds-ca-rsa2048-g1"
+  description = "CA certificate to use for all Aurora instances. Matches CDK CaCertificate.RDS_CA_RSA2048_G1."
+}
+
+variable "rds_cluster_parameters" {
+  type = map(string)
+  default = {
+    statement_timeout             = "60000"
+    default_transaction_isolation = "REPEATABLE READ"
+  }
+  description = <<-EOT
+    Aurora PostgreSQL cluster parameters applied to a managed parameter group.
+    Defaults match CDK's hardcoded values in backend.ts.
+    Set to {} to disable the custom parameter group entirely.
+  EOT
+}
