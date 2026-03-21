@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
+import type { BotEvent } from '@medplum/core';
 import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Communication } from '@medplum/fhirtypes';
+import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -521,8 +522,147 @@ await medplum.patchResource('Task', task.id, [
   },
 ]);
 // end-block dualTaskRerouteTs
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[newTask];
 
-console.log(newTask);
+// start-block oooRerouteTs
+// Bot: reroute Tasks to the pool when the assigned provider is out of office.
+// Uses Schedule $find to check availability at message receive time.
+export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const openTasks = await medplum.searchResources('Task', {
+    focus: threadRef,
+    status: 'requested,accepted',
+  });
+
+  if (openTasks.length === 0) {
+    return;
+  }
+
+  const rerouteTask = openTasks[0];
+  if (!rerouteTask.id) {
+    return;
+  }
+  const ownerRef = rerouteTask.owner?.reference;
+  if (!ownerRef) {
+    return;
+  }
+
+  const schedules = await medplum.searchResources('Schedule', {
+    actor: ownerRef,
+  });
+
+  if (schedules.length === 0) {
+    return;
+  }
+
+  const schedule = schedules[0];
+  if (!schedule.id) {
+    return;
+  }
+
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const result: Parameters = await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'start', valueDateTime: now.toISOString() },
+      { name: 'end', valueDateTime: oneHourLater.toISOString() },
+    ],
+  });
+
+  const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
+  const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
+
+  if (freeSlots.length > 0) {
+    return;
+  }
+
+  // Provider is unavailable — reroute Task back to the pool
+  const threadHeaderId = threadRef.split('/')[1];
+  await medplum.patchResource('Task', rerouteTask.id, [
+    { op: 'remove', path: '/owner' },
+    { op: 'replace', path: '/status', value: 'requested' },
+    {
+      op: 'add',
+      path: '/note/-',
+      value: {
+        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
+        time: now.toISOString(),
+      },
+    },
+  ]);
+  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
+}
+// end-block oooRerouteTs
+
+// start-block subscriptionOooRerouteTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Reroute Tasks when assigned provider is out of office',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-ooo-reroute-bot-id}',
+  },
+});
+// end-block subscriptionOooRerouteTs
+
+// start-block staleThreadRemindersTs
+// Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
+export async function staleThreadRemindersHandler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
+  const staleDays = 3;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - staleDays);
+
+  const staleThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    status: 'in-progress',
+    _lastUpdated: `lt${cutoff.toISOString()}`,
+  });
+
+  for (const thread of staleThreads) {
+    if (!thread.subject) {
+      continue;
+    }
+    const existingTasks = await medplum.searchResources('Task', {
+      focus: `Communication/${thread.id}`,
+      code: 'https://medplum.com/task-codes|respond-to-old-message',
+      status: 'requested,accepted',
+    });
+
+    if (existingTasks.length > 0) {
+      continue;
+    }
+
+    await medplum.createResource({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      priority: 'urgent',
+      code: {
+        coding: [
+          {
+            system: 'https://medplum.com/task-codes',
+            code: 'respond-to-old-message',
+            display: 'Respond to old message',
+          },
+        ],
+      },
+      focus: { reference: `Communication/${thread.id}` },
+      for: thread.subject,
+      description: `Thread "${thread.topic?.text ?? 'Untitled'}" has been open for ${staleDays}+ days without a response`,
+      authoredOn: new Date().toISOString(),
+    });
+  }
+}
+// end-block staleThreadRemindersTs
 
 const communicationThread: Partial<Communication>[] = [
   // start-block communicationGroupedThread
