@@ -280,3 +280,14 @@ variable "rds_proxy_enabled" {
   default     = false
   description = "Create an RDS Proxy in front of the Aurora cluster for connection pooling."
 }
+
+variable "workers_config" {
+  type        = string
+  default     = ""
+  description = <<-EOT
+    JSON-encoded Medplum background workers configuration.
+    Serialized directly to the /workers SSM parameter — matches CDK's JSON.stringify(config.workers).
+    Leave empty to omit the parameter entirely.
+    Example: '{"enabled":["BulkExport","Reindex"]}'
+  EOT
+}

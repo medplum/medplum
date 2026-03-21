@@ -160,3 +160,11 @@ resource "aws_ssm_parameter" "database_proxy_endpoint" {
   value = aws_db_proxy.medplum[0].endpoint
   tags  = var.tags
 }
+
+resource "aws_ssm_parameter" "workers" {
+  count = var.workers_config != "" ? 1 : 0
+  name  = "${local.ssm_prefix}/workers"
+  type  = "String"
+  value = var.workers_config
+  tags  = var.tags
+}
