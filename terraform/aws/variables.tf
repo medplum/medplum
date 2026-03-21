@@ -351,3 +351,33 @@ variable "storage_logging_prefix" {
   default     = ""
   description = "Key prefix for storage CloudFront access log objects."
 }
+
+variable "clamscan_enabled" {
+  type        = bool
+  default     = false
+  description = <<-EOT
+    Enable ClamAV serverless virus scanning on uploaded binaries.
+    Requires storage_domain to be set (scans aws_s3_bucket.storage).
+    Requires clamscan_lambda_image_uri to be set.
+  EOT
+}
+
+variable "clamscan_lambda_image_uri" {
+  type        = string
+  default     = ""
+  description = <<-EOT
+    Container image URI for the ClamAV scanning Lambda.
+    Required when clamscan_enabled = true.
+    The image must implement: read S3 object → scan with ClamAV → tag object with
+    scan-status=CLEAN or scan-status=INFECTED. Virus definitions are stored on the
+    EFS mount at /mnt/lambda/defs.
+    Build from: https://github.com/awslabs/cdk-serverless-clamscan (Dockerfile in that repo).
+  EOT
+}
+
+check "clamscan_image_uri_required" {
+  assert {
+    condition     = !var.clamscan_enabled || var.clamscan_lambda_image_uri != ""
+    error_message = "clamscan_lambda_image_uri is required when clamscan_enabled = true."
+  }
+}
