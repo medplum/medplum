@@ -24,6 +24,7 @@ postgres_version = "16.8"
 # ── Cache ─────────────────────────────────────────────────────────────────────
 redis_node_type       = "cache.t3.micro"
 redis_num_cache_nodes = 1
+redis_multi_az_enabled = false # single-node dev cluster; set true + num_cache_nodes >= 2 for prod
 
 # ── DNS (Route 53) ────────────────────────────────────────────────────────────
 # Zone already exists in this account — look it up, don't recreate it.
