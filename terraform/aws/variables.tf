@@ -294,7 +294,7 @@ variable "workers_config" {
 
 variable "rds_performance_insights_enabled" {
   type        = bool
-  default     = false
+  default     = true
   description = "Enable RDS Performance Insights on all Aurora instances. Matches CDK enablePerformanceInsights = true."
 }
 
@@ -380,4 +380,36 @@ check "clamscan_image_uri_required" {
     condition     = !var.clamscan_enabled || var.clamscan_lambda_image_uri != ""
     error_message = "clamscan_lambda_image_uri is required when clamscan_enabled = true."
   }
+}
+
+variable "redis_multi_az_enabled" {
+  type        = bool
+  default     = true
+  description = <<-EOT
+    Enable automatic failover (multi-AZ) on all Redis replication groups.
+    CDK always sets multiAzEnabled = true regardless of environment.
+    When true, redis_num_cache_nodes and each purpose cluster's num_cache_clusters must be >= 2.
+  EOT
+}
+
+variable "secrets_recovery_window_in_days" {
+  type        = number
+  default     = 30
+  description = <<-EOT
+    Recovery window (in days) for Secrets Manager secrets on deletion.
+    CDK uses RemovalPolicy.RETAIN (secrets are never deleted). Setting to 30
+    mirrors that protective intent — secrets enter a 30-day recovery window
+    rather than being hard-deleted immediately (recovery_window_in_days = 0).
+    Set to 0 only in non-production environments where fast re-deployment is needed.
+  EOT
+}
+
+variable "rds_auto_minor_version_upgrade" {
+  type        = bool
+  default     = true
+  description = <<-EOT
+    Enable automatic minor version upgrades for all Aurora instances.
+    Matches CDK's rdsAutoMinorVersionUpgrade config field (default true).
+    Upgrades are applied during the configured maintenance window.
+  EOT
 }

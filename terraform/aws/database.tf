@@ -98,6 +98,7 @@ module "aurora" {
     publicly_accessible          = false
     performance_insights_enabled = var.rds_performance_insights_enabled
     ca_cert_identifier           = var.rds_ca_cert_identifier
+    auto_minor_version_upgrade   = var.rds_auto_minor_version_upgrade
   } }
 
   backup_retention_period = var.environment == "prod" ? 30 : 7

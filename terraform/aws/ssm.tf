@@ -1,12 +1,12 @@
 resource "aws_secretsmanager_secret_version" "redis" {
   secret_id = aws_secretsmanager_secret.medplum.id
   # The Medplum server reads this secret and constructs: rediss://:password@host:port
-  # Fields: host (primary endpoint), port (6379), password (AUTH token), tls (always true for TLS mode)
+  # Fields: host (primary endpoint), port (6379), password (AUTH token), tls (ioredis TLS options object)
   secret_string = jsonencode({
     host     = aws_elasticache_replication_group.medplum.primary_endpoint_address
     port     = aws_elasticache_replication_group.medplum.port
     password = random_password.redis_auth.result
-    tls      = true
+    tls      = {}
   })
 }
 
@@ -80,7 +80,7 @@ resource "aws_ssm_parameter" "max_batch_size" {
 resource "aws_secretsmanager_secret" "db_config" {
   name                    = "${local.name_prefix}/db-config"
   kms_key_id              = aws_kms_key.medplum.arn
-  recovery_window_in_days = 0
+  recovery_window_in_days = var.secrets_recovery_window_in_days
   tags                    = var.tags
 }
 

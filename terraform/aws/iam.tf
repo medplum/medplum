@@ -38,6 +38,7 @@ data "aws_iam_policy_document" "server_policy" {
       "ssm:GetParametersByPath",
       "ssm:GetParameter",
       "ssm:GetParameters",
+      "ssm:DescribeParameters",
     ]
     resources = [
       "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/${local.name_prefix}",

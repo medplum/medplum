@@ -53,7 +53,7 @@ resource "aws_elasticache_replication_group" "medplum" {
   parameter_group_name = aws_elasticache_parameter_group.medplum.name
   port                 = 6379
 
-  automatic_failover_enabled = var.environment == "prod"
+  automatic_failover_enabled = var.redis_multi_az_enabled
   subnet_group_name          = aws_elasticache_subnet_group.medplum.name
   security_group_ids         = [aws_security_group.redis.id]
 
@@ -64,8 +64,8 @@ resource "aws_elasticache_replication_group" "medplum" {
 
   lifecycle {
     precondition {
-      condition     = !(var.environment == "prod") || var.redis_num_cache_nodes >= 2
-      error_message = "Production Redis requires at least 2 cache nodes (redis_num_cache_nodes >= 2) for automatic failover."
+      condition     = !var.redis_multi_az_enabled || var.redis_num_cache_nodes >= 2
+      error_message = "redis_multi_az_enabled = true requires redis_num_cache_nodes >= 2."
     }
   }
 
@@ -123,7 +123,7 @@ resource "aws_elasticache_replication_group" "purpose" {
   parameter_group_name = aws_elasticache_parameter_group.purpose[each.key].name
   port                 = 6379
 
-  automatic_failover_enabled = var.environment == "prod"
+  automatic_failover_enabled = var.redis_multi_az_enabled
   subnet_group_name          = aws_elasticache_subnet_group.medplum.name
   security_group_ids         = [aws_security_group.redis_purpose[each.key].id]
 
@@ -134,8 +134,8 @@ resource "aws_elasticache_replication_group" "purpose" {
 
   lifecycle {
     precondition {
-      condition     = var.environment != "prod" || each.value.num_cache_clusters >= 2
-      error_message = "Production Redis purpose clusters (${each.key}) require num_cache_clusters >= 2 for automatic failover."
+      condition     = !var.redis_multi_az_enabled || each.value.num_cache_clusters >= 2
+      error_message = "redis_multi_az_enabled = true requires num_cache_clusters >= 2 for cluster '${each.key}'."
     }
   }
 
@@ -146,7 +146,7 @@ resource "aws_secretsmanager_secret" "redis_purpose" {
   for_each                = var.redis_purpose_clusters
   name                    = "${local.name_prefix}/${local.redis_purpose_id_map[each.key]}"
   kms_key_id              = aws_kms_key.medplum.arn
-  recovery_window_in_days = 0
+  recovery_window_in_days = var.secrets_recovery_window_in_days
   tags                    = var.tags
 }
 
@@ -157,6 +157,6 @@ resource "aws_secretsmanager_secret_version" "redis_purpose" {
     host     = aws_elasticache_replication_group.purpose[each.key].primary_endpoint_address
     port     = aws_elasticache_replication_group.purpose[each.key].port
     password = random_password.redis_purpose[each.key].result
-    tls      = true
+    tls      = {}
   })
 }

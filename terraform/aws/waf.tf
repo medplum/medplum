@@ -4,6 +4,64 @@
 # This file uses the aws.us_east_1 provider alias defined in versions.tf for those resources.
 # The regional WAF (scope = REGIONAL) uses the default provider for the deployment region.
 
+# rule_action_override blocks within each managed_rule_group_statement put specific rules into
+# count-only mode independently of the group-level override_action. This ensures that when the
+# group override is ever changed from "count" to "none" (enforcement), these FHIR-traffic-sensitive
+# rules remain in count mode and do not block legitimate requests.
+# Source: CDK packages/cdk/src/waf.ts excludedRules lists.
+
+locals {
+  # Common rule overrides applied identically to all three WAF ACLs (app, storage, api).
+  # Mirrors CDK waf.ts AWSManagedRulesCommonRuleSet excludedRules (22 rules).
+  waf_common_rule_overrides = [
+    "NoUserAgent_HEADER",
+    "UserAgent_BadBots_HEADER",
+    "SizeRestrictions_QUERYSTRING",
+    "SizeRestrictions_Cookie_HEADER",
+    "SizeRestrictions_BODY",
+    "SizeRestrictions_URIPATH",
+    "EC2MetaDataSSRF_BODY",
+    "EC2MetaDataSSRF_COOKIE",
+    "EC2MetaDataSSRF_URIPATH",
+    "EC2MetaDataSSRF_QUERYARGUMENTS",
+    "GenericLFI_QUERYARGUMENTS",
+    "GenericLFI_URIPATH",
+    "GenericLFI_BODY",
+    "RestrictedExtensions_URIPATH",
+    "RestrictedExtensions_QUERYARGUMENTS",
+    "GenericRFI_QUERYARGUMENTS",
+    "GenericRFI_BODY",
+    "GenericRFI_URIPATH",
+    "CrossSiteScripting_COOKIE",
+    "CrossSiteScripting_QUERYARGUMENTS",
+    "CrossSiteScripting_BODY",
+    "CrossSiteScripting_URIPATH",
+  ]
+
+  # CDK waf.ts AWSManagedRulesAmazonIpReputationList excludedRules (2 rules).
+  waf_ip_rep_rule_overrides = [
+    "AWSManagedIPReputationList",
+    "AWSManagedReconnaissanceList",
+  ]
+
+  # CDK waf.ts AWSManagedRulesSQLiRuleSet excludedRules (6 rules).
+  waf_sqli_rule_overrides = [
+    "SQLi_QUERYARGUMENTS",
+    "SQLiExtendedPatterns_QUERYARGUMENTS",
+    "SQLi_BODY",
+    "SQLiExtendedPatterns_BODY",
+    "SQLi_COOKIE",
+    "SQLi_URIPATH",
+  ]
+
+  # CDK waf.ts AWSManagedRulesLinuxRuleSet excludedRules (3 rules).
+  waf_linux_rule_overrides = [
+    "LFI_URIPATH",
+    "LFI_QUERYSTRING",
+    "LFI_COOKIE",
+  ]
+}
+
 # ─── App CloudFront WAF (us-east-1) ──────────────────────────────────────────
 
 resource "aws_wafv2_web_acl" "app" {
@@ -40,6 +98,16 @@ resource "aws_wafv2_web_acl" "app" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_common_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -62,6 +130,16 @@ resource "aws_wafv2_web_acl" "app" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_ip_rep_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -84,6 +162,16 @@ resource "aws_wafv2_web_acl" "app" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_sqli_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -106,6 +194,16 @@ resource "aws_wafv2_web_acl" "app" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_linux_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -187,6 +285,16 @@ resource "aws_wafv2_web_acl" "storage" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_common_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -209,6 +317,16 @@ resource "aws_wafv2_web_acl" "storage" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_ip_rep_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -231,6 +349,16 @@ resource "aws_wafv2_web_acl" "storage" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_sqli_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -253,6 +381,16 @@ resource "aws_wafv2_web_acl" "storage" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_linux_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -332,6 +470,16 @@ resource "aws_wafv2_web_acl" "api" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_common_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -354,6 +502,16 @@ resource "aws_wafv2_web_acl" "api" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesAmazonIpReputationList"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_ip_rep_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -376,6 +534,16 @@ resource "aws_wafv2_web_acl" "api" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesSQLiRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_sqli_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
@@ -398,6 +566,16 @@ resource "aws_wafv2_web_acl" "api" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesLinuxRuleSet"
         vendor_name = "AWS"
+
+        dynamic "rule_action_override" {
+          for_each = local.waf_linux_rule_overrides
+          content {
+            name = rule_action_override.value
+            action_to_use {
+              count {}
+            }
+          }
+        }
       }
     }
 
