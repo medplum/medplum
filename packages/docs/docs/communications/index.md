@@ -13,6 +13,7 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 - [Searching and querying message threads](/docs/communications/searching-and-querying-threads)
 - [Message attachments](/docs/communications/sending-messages-and-attachments)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
+- [Messaging automations](/docs/communications/messaging-automations)
 - Omni-channel messaging
 - Real-time notifications using Websockets
 
