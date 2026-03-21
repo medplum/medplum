@@ -316,3 +316,38 @@ variable "rds_cluster_parameters" {
     Set to {} to disable the custom parameter group entirely.
   EOT
 }
+
+variable "app_api_proxy" {
+  type        = bool
+  default     = false
+  description = <<-EOT
+    Add a /api/* CloudFront behavior that proxies to api_domain.
+    Mirrors CDK appApiProxy config. Uses a custom cache policy that forwards all
+    cookies, all query strings, and a specific set of headers (Authorization,
+    Content-Type, Origin, etc.) to the origin.
+  EOT
+}
+
+variable "app_logging_bucket" {
+  type        = string
+  default     = ""
+  description = "Existing S3 bucket name for app CloudFront access logs. Leave empty to disable."
+}
+
+variable "app_logging_prefix" {
+  type        = string
+  default     = ""
+  description = "Key prefix for app CloudFront access log objects."
+}
+
+variable "storage_logging_bucket" {
+  type        = string
+  default     = ""
+  description = "Existing S3 bucket name for storage CloudFront access logs. Leave empty to disable."
+}
+
+variable "storage_logging_prefix" {
+  type        = string
+  default     = ""
+  description = "Key prefix for storage CloudFront access log objects."
+}

@@ -62,6 +62,33 @@ resource "aws_cloudfront_response_headers_policy" "app" {
   }
 }
 
+# Cache policy for the /api/* proxy behavior — mirrors CDK ApiOriginCachePolicy.
+# TTL 0 on all methods; forwards all cookies, all query strings, and specific headers.
+resource "aws_cloudfront_cache_policy" "api_proxy" {
+  count       = var.app_api_proxy ? 1 : 0
+  name        = "${local.name_prefix}-api-proxy"
+  default_ttl = 0
+  max_ttl     = 0
+  min_ttl     = 0
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "all"
+    }
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["Authorization", "Content-Encoding", "Content-Type", "If-None-Match", "Origin", "Referer", "User-Agent", "X-Medplum"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    enable_accept_encoding_gzip   = true
+    enable_accept_encoding_brotli = true
+  }
+}
+
 resource "aws_cloudfront_distribution" "medplum" {
   enabled             = true
   default_root_object = "index.html"
@@ -72,6 +99,20 @@ resource "aws_cloudfront_distribution" "medplum" {
     domain_name              = aws_s3_bucket.static.bucket_regional_domain_name
     origin_id                = "static-s3"
     origin_access_control_id = aws_cloudfront_origin_access_control.medplum.id
+  }
+
+  dynamic "origin" {
+    for_each = var.app_api_proxy ? [1] : []
+    content {
+      domain_name = var.api_domain
+      origin_id   = "api-origin"
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = "https-only"
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
   }
 
   default_cache_behavior {
@@ -89,6 +130,19 @@ resource "aws_cloudfront_distribution" "medplum" {
     }
 
     response_headers_policy_id = aws_cloudfront_response_headers_policy.app.id
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = var.app_api_proxy ? [1] : []
+    content {
+      path_pattern           = "/api/*"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      target_origin_id       = "api-origin"
+      cache_policy_id        = aws_cloudfront_cache_policy.api_proxy[0].id
+      viewer_protocol_policy = "redirect-to-https"
+      compress               = true
+    }
   }
 
   viewer_certificate {
@@ -111,6 +165,15 @@ resource "aws_cloudfront_distribution" "medplum" {
     response_code         = 200
     response_page_path    = "/index.html"
     error_caching_min_ttl = 0
+  }
+
+  dynamic "logging_config" {
+    for_each = var.app_logging_bucket != "" ? [1] : []
+    content {
+      bucket          = "${var.app_logging_bucket}.s3.amazonaws.com"
+      include_cookies = false
+      prefix          = var.app_logging_prefix
+    }
   }
 
   restrictions {

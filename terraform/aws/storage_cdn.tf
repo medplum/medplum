@@ -176,6 +176,15 @@ resource "aws_cloudfront_distribution" "storage" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
+  dynamic "logging_config" {
+    for_each = var.storage_logging_bucket != "" ? [1] : []
+    content {
+      bucket          = "${var.storage_logging_bucket}.s3.amazonaws.com"
+      include_cookies = false
+      prefix          = var.storage_logging_prefix
+    }
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
