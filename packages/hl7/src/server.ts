@@ -38,7 +38,7 @@ export class Hl7Server {
     encoding?: string,
     enhancedMode?: EnhancedMode,
     options?: Hl7ConnectionOptions
-  ): Promise<void> {
+  ): Promise<number> {
     if (encoding) {
       this.setEncoding(encoding);
     }
@@ -60,9 +60,12 @@ export class Hl7Server {
       });
     });
 
-    await new Promise<void>((resolve) => {
+    return new Promise<number>((resolve) => {
       const listenOnPort = (port: number): void => {
-        server.listen(port, resolve);
+        server.listen(port, () => {
+          const boundPort = (server.address() as { port: number }).port;
+          resolve(boundPort);
+        });
       };
 
       // Node errors have a code
