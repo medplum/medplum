@@ -245,9 +245,69 @@ class ResourceValidator implements CrawlerVisitor {
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }
+
+        // Validate sub-elements against the matched slice's schema, not the base schema.
+        // Without this, required sub-elements from other slices are incorrectly enforced.
+        // See: https://github.com/medplum/medplum/issues/8677
+        if (sliceName && element.slicing) {
+          const matchedSlice = element.slicing.slices.find((s) => s.name === sliceName);
+          if (matchedSlice && Object.keys(matchedSlice.elements).length > 0) {
+            this.validateSliceSubElements(value, matchedSlice, path);
+          }
+        }
       }
 
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
+    }
+  }
+
+  /**
+   * Validates a matched slice value's sub-elements against the slice-specific schema.
+   * This ensures that required sub-elements from other slices are not incorrectly enforced.
+   * For example, if a Patient.identifier is matched to the "nationalid" slice, only
+   * nationalid's sub-element constraints are checked, not passport's.
+   */
+  private validateSliceSubElements(
+    value: TypedValueWithPath,
+    slice: SliceDefinition,
+    parentPath: string
+  ): void {
+    if (!value.value || typeof value.value !== 'object') {
+      return;
+    }
+
+    for (const [key, sliceElement] of Object.entries(slice.elements)) {
+      const childValues = arrayify(getNestedProperty(value, key));
+      const childCount = childValues?.length ?? 0;
+
+      // Check cardinality of sub-elements per the slice definition
+      if (childCount < sliceElement.min || childCount > sliceElement.max) {
+        this.issues.push(
+          createStructureIssue(
+            `${parentPath}.${key}`,
+            `Invalid number of values: expected ${sliceElement.min}..${
+              Number.isFinite(sliceElement.max) ? sliceElement.max : '*'
+            }, but found ${childCount}`
+          )
+        );
+      }
+
+      // Validate nested slicing within the slice's sub-elements
+      if (sliceElement.slicing && childValues) {
+        const subSliceCounts: Record<string, number> = Object.fromEntries(
+          sliceElement.slicing.slices.map((s) => [s.name, 0])
+        );
+        for (const childValue of childValues) {
+          const subSliceName = checkSliceElement(
+            childValue as TypedValueWithPath,
+            sliceElement.slicing
+          );
+          if (subSliceName) {
+            subSliceCounts[subSliceName] += 1;
+          }
+        }
+        this.validateSlices(sliceElement.slicing.slices, subSliceCounts, `${parentPath}`);
+      }
     }
   }
 
