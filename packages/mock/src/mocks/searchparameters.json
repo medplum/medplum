@@ -10,6 +10,72 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "clinical-code",
+    "name": "code",
+    "code": "code",
+    "base": [
+      "AllergyIntolerance",
+      "Condition",
+      "DeviceRequest",
+      "DiagnosticReport",
+      "FamilyMemberHistory",
+      "List",
+      "Medication",
+      "MedicationAdministration",
+      "MedicationDispense",
+      "MedicationRequest",
+      "MedicationStatement",
+      "Observation",
+      "Procedure",
+      "ServiceRequest"
+    ],
+    "type": "token",
+    "expression": "AllergyIntolerance.code | AllergyIntolerance.reaction.substance | Condition.code | (DeviceRequest.code as CodeableConcept) | DiagnosticReport.code | FamilyMemberHistory.condition.code | List.code | Medication.code | (MedicationAdministration.medication as CodeableConcept) | (MedicationDispense.medication as CodeableConcept) | (MedicationRequest.medication as CodeableConcept) | (MedicationStatement.medication as CodeableConcept) | Observation.code | Procedure.code | ServiceRequest.code"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "clinical-patient",
+    "name": "patient",
+    "code": "patient",
+    "base": [
+      "AllergyIntolerance",
+      "CarePlan",
+      "CareTeam",
+      "ClinicalImpression",
+      "Composition",
+      "Condition",
+      "Consent",
+      "DetectedIssue",
+      "DeviceRequest",
+      "DeviceUseStatement",
+      "DiagnosticReport",
+      "DocumentManifest",
+      "DocumentReference",
+      "Encounter",
+      "EpisodeOfCare",
+      "FamilyMemberHistory",
+      "Flag",
+      "Goal",
+      "ImagingStudy",
+      "Immunization",
+      "List",
+      "MedicationAdministration",
+      "MedicationDispense",
+      "MedicationRequest",
+      "MedicationStatement",
+      "NutritionOrder",
+      "Observation",
+      "Procedure",
+      "RiskAssessment",
+      "ServiceRequest",
+      "SupplyDelivery",
+      "VisionPrescription"
+    ],
+    "type": "reference",
+    "expression": "AllergyIntolerance.patient | CarePlan.subject.where(resolve() is Patient) | CareTeam.subject.where(resolve() is Patient) | ClinicalImpression.subject.where(resolve() is Patient) | Composition.subject.where(resolve() is Patient) | Condition.subject.where(resolve() is Patient) | Consent.patient | DetectedIssue.patient | DeviceRequest.subject.where(resolve() is Patient) | DeviceUseStatement.subject | DiagnosticReport.subject.where(resolve() is Patient) | DocumentManifest.subject.where(resolve() is Patient) | DocumentReference.subject.where(resolve() is Patient) | Encounter.subject.where(resolve() is Patient) | EpisodeOfCare.patient | FamilyMemberHistory.patient | Flag.subject.where(resolve() is Patient) | Goal.subject.where(resolve() is Patient) | ImagingStudy.subject.where(resolve() is Patient) | Immunization.patient | List.subject.where(resolve() is Patient) | MedicationAdministration.subject.where(resolve() is Patient) | MedicationDispense.subject.where(resolve() is Patient) | MedicationRequest.subject.where(resolve() is Patient) | MedicationStatement.subject.where(resolve() is Patient) | NutritionOrder.patient | Observation.subject.where(resolve() is Patient) | Procedure.subject.where(resolve() is Patient) | RiskAssessment.subject.where(resolve() is Patient) | ServiceRequest.subject.where(resolve() is Patient) | SupplyDelivery.patient | VisionPrescription.patient"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Communication-encounter",
     "name": "encounter",
     "code": "encounter",
@@ -25,6 +91,24 @@
     "base": ["Communication"],
     "type": "reference",
     "expression": "Communication.partOf"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Condition-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["Condition"],
+    "type": "reference",
+    "expression": "Condition.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Coverage-beneficiary",
+    "name": "beneficiary",
+    "code": "beneficiary",
+    "base": ["Coverage"],
+    "type": "reference",
+    "expression": "Coverage.beneficiary"
   },
   {
     "resourceType": "SearchParameter",
@@ -52,6 +136,33 @@
     "base": ["Media"],
     "type": "reference",
     "expression": "Media.encounter"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "MedicationRequest-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["MedicationRequest"],
+    "type": "reference",
+    "expression": "MedicationRequest.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-category",
+    "name": "category",
+    "code": "category",
+    "base": ["Observation"],
+    "type": "token",
+    "expression": "Observation.category"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["Observation"],
+    "type": "reference",
+    "expression": "Observation.subject"
   },
   {
     "resourceType": "SearchParameter",
@@ -160,6 +271,15 @@
     "base": ["Questionnaire"],
     "type": "uri",
     "expression": "Questionnaire.url"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "RiskAssessment-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": ["RiskAssessment"],
+    "type": "reference",
+    "expression": "RiskAssessment.subject"
   },
   {
     "resourceType": "SearchParameter",
