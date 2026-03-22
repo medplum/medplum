@@ -20,8 +20,8 @@ describe('Hl7Client', () => {
       server.listen(0, () => {
         const { port } = server.address() as { port: number };
         server.close((err) => {
-          if (err) reject(err);
-          else resolve(port);
+          if (err) {reject(err);}
+          else {resolve(port);}
         });
       });
       server.on('error', reject);
