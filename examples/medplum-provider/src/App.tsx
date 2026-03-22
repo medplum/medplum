@@ -24,6 +24,7 @@ import './index.css';
 
 const SETUP_DISMISSED_KEY = 'medplum-provider-setup-completed';
 
+import { BrowsePage } from './marketplace/BrowsePage';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { FaxPage } from './pages/fax/FaxPage';
@@ -213,6 +214,7 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               {hasDoseSpot && <Route path="/dosespot" element={<DoseSpotNotificationsPage />} />}
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/marketplace" element={<BrowsePage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

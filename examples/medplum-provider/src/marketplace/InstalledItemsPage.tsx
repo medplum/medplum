@@ -19,22 +19,11 @@ import {
   ThemeIcon,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import type { Package } from '@medplum/fhirtypes';
 import { IconPackage, IconPlus, IconTrash } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import {
-  getListingById,
-  listingIconColor,
-  listingIconComponent,
-  typeBadgeColor,
-  typeBrowseLabels,
-  typeDisplayNames,
-  typeIconComponent,
-} from './data';
-import type { ListingType, MarketplaceListing } from './types';
-import { useMarketplace } from './useMarketplace';
-import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
 
 // ─── Tab configuration ──────────────────────────────────────────────────────
 
@@ -60,7 +49,7 @@ export function InstalledItemsPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [addModalOpened, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
   const [detailModalOpened, { open: openDetailModal, close: closeDetailModal }] = useDisclosure(false);
-  const [viewingListing, setViewingListing] = useState<MarketplaceListing | null>(null);
+  const [viewingListing, setViewingListing] = useState<Package | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [newName, setNewName] = useState('');
@@ -82,7 +71,7 @@ export function InstalledItemsPage(): JSX.Element {
         }
         return null;
       })
-      .filter(Boolean) as { item: (typeof items)[0]; listing: MarketplaceListing }[];
+      .filter(Boolean) as { item: (typeof items)[0]; listing: Package }[];
   }, [items, customListings]);
 
   // Filter by active tab
@@ -244,7 +233,7 @@ export function InstalledItemsPage(): JSX.Element {
                             onClick={() => {
                               setViewingListing(listing);
                               setEditName(listing.name);
-                              setEditDescription(listing.tagline);
+                              setEditDescription(listing.short);
                               openDetailModal();
                             }}
                           >

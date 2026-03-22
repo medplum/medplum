@@ -21,6 +21,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
+import type { Package } from '@medplum/fhirtypes';
 import {
   IconArrowUpRight,
   IconBook,
@@ -44,60 +45,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useAppsPanel } from '../components/AppsPanel';
-import {
-  getListingById,
-  listingIconColor,
-  listingIconComponent,
-  typeBadgeColor,
-  typeBrowseLabels,
-  typeDisplayNames,
-  typeIconComponent,
-} from './data';
 import { InstallModal } from './InstallModal';
-import type { ListingType, MarketplaceListing } from './types';
-import { useMarketplace } from './useMarketplace';
-import { useMarketplaceBreadcrumbs } from './useMarketplaceBreadcrumbs';
-
-const LISTINGS_WITH_SETUP_FLOW = new Set(['carebridge-dashboard', 'dosespot-eprescribing', 'telehealth-bridge']);
-
-const LISTINGS_WITH_REQUEST_ACCESS = new Set(['dosespot-provider-example']);
-
-const LISTING_TO_APP_PANEL_ID: Record<string, string> = {
-  'carebridge-dashboard': 'carebridge-dashboard',
-  'dosespot-eprescribing': 'dosespot',
-  'dosespot-provider-example': 'dosespot-provider',
-  'growth-chart-app': 'growth-chart',
-  'telehealth-bridge': 'telehealth',
-};
-
-function getDisplayDomain(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return url;
-  }
-}
-
-// Button copy by listing type (individual item detail page only)
-function getActionCopy(type: ListingType): {
-  action: string;
-  loading: string;
-  openLabel: string;
-  remove: string;
-} {
-  if (type === 'App') {
-    return { action: 'Install', loading: 'Installing...', openLabel: 'Open App', remove: 'Uninstall' };
-  }
-  if (type === 'Service Provider') {
-    return { action: 'Get In Touch', loading: 'Sending...', openLabel: 'View', remove: 'Remove' };
-  }
-  return {
-    action: 'Add to Project',
-    loading: 'Adding...',
-    openLabel: 'Open',
-    remove: 'Remove from Project',
-  };
-}
 
 // ─── Install Button ─────────────────────────────────────────────────────────
 
@@ -313,7 +261,7 @@ function UninstallButton(_props: { readonly listingId: string; readonly listingT
 
 // ─── Related Listing Card ────────────────────────────────────────────────────
 
-function ListingIcon({ listing, size }: { readonly listing: MarketplaceListing; readonly size: number }): JSX.Element {
+function ListingIcon({ listing, size }: { readonly listing: Package; readonly size: number }): JSX.Element {
   const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
   const boxRadius = size === 64 ? 12 : 10;
   if (listing.icon) {
@@ -369,7 +317,7 @@ function ListingIcon({ listing, size }: { readonly listing: MarketplaceListing; 
   );
 }
 
-function RelatedListingCard({ listing }: { readonly listing: MarketplaceListing }): JSX.Element {
+function RelatedListingCard({ listing }: { readonly listing: Package }): JSX.Element {
   const { isInstalled } = useMarketplace();
   const installed = isInstalled(listing.id);
 
@@ -520,7 +468,7 @@ export function ListingDetailPage(): JSX.Element {
 
   const relatedListings = (listing.relatedListingIds ?? [])
     .map((id) => getListingById(id))
-    .filter(Boolean) as MarketplaceListing[];
+    .filter(Boolean) as Package[];
 
   const isServiceProvider = listing.type === 'Service Provider';
   const TypeIcon = listingIconComponent[listing.id] ?? typeIconComponent[listing.type] ?? typeIconComponent['App'];
