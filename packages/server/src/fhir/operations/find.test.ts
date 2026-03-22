@@ -2,7 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
-import type { Bundle, Extension, Location, Practitioner, Project, Schedule, Slot, Timing } from '@medplum/fhirtypes';
+import type {
+  Bundle,
+  Extension,
+  HealthcareService,
+  Location,
+  Practitioner,
+  Project,
+  Schedule,
+  Slot,
+  Timing,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -23,26 +33,26 @@ type AvailabilityOptions = {
   timezone?: string;
 };
 
-const fourDayWorkWeek: Timing['repeat'] = {
+const fourDayWorkWeek = {
   dayOfWeek: ['mon', 'tue', 'wed', 'thu'],
   timeOfDay: ['09:30:00', '13:15:00'],
   duration: 3,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
-const twoDaySchedule: Timing['repeat'] = {
+const twoDaySchedule = {
   dayOfWeek: ['thu', 'fri'],
   timeOfDay: ['12:00:00'],
   duration: 8,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
-const fridayOnly: Timing['repeat'] = {
+const fridayOnly = {
   dayOfWeek: ['fri'],
   timeOfDay: ['10:30:00'],
   duration: 8,
   durationUnit: 'h',
-};
+} satisfies Timing['repeat'];
 
 describe('Schedule/:id/$find', () => {
   let location: Location;
@@ -75,22 +85,21 @@ describe('Schedule/:id/$find', () => {
     await shutdownApp();
   });
 
-  async function makeSchedule(
-    availability: Record<string, AvailabilityOptions>,
-    opts?: { actor?: Schedule['actor'] }
-  ): Promise<Schedule> {
-    const extension = Object.entries(availability).map(([serviceType, options]) => {
+  function makeSchedulingExtension(availability: Record<string, AvailabilityOptions>): Extension[] {
+    return Object.entries(availability).map(([serviceType, options]) => {
       const { availability, timezone, ...durations } = options;
 
       const extension = {
         url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-        extension: [
-          {
-            url: 'availability',
-            valueTiming: { repeat: availability },
-          },
-        ] as Extension[],
+        extension: [] as Extension[],
       } satisfies Extension;
+
+      if (availability) {
+        extension.extension.push({
+          url: 'availability',
+          valueTiming: { repeat: availability },
+        });
+      }
 
       if (timezone) {
         extension.extension.push({
@@ -112,12 +121,17 @@ describe('Schedule/:id/$find', () => {
 
       return extension;
     });
+  }
 
+  async function makeSchedule(
+    availability: Record<string, AvailabilityOptions>,
+    opts?: { actor?: Schedule['actor'] }
+  ): Promise<Schedule> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },
       actor: opts?.actor ?? [createReference(practitioner)],
-      extension,
+      extension: makeSchedulingExtension(availability),
     });
   }
 
@@ -653,6 +667,148 @@ describe('Schedule/:id/$find', () => {
           },
         },
       ],
+    });
+  });
+
+  describe('Loading schedulingParameters from HealthcareServices', () => {
+    test('works when scheduling parameters only exist on a HealthcareService', async () => {
+      const code = 'blood-donation';
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        meta: { project: project.id },
+        active: true,
+        type: [
+          {
+            coding: [{ system: 'http://example.com', code }],
+          },
+        ],
+        availableTime: [
+          {
+            daysOfWeek: ['thu', 'fri'],
+            availableStartTime: '12:00:00',
+            availableEndTime: '20:00:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 30, unit: 'min' } }],
+          },
+        ],
+      });
+
+      const schedule = await makeSchedule({});
+
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-04T10:00:00.000-05:00'),
+          end: new Date('2025-12-04T14:00:00.000-05:00'),
+          'service-type': `http://example.com|${code},http://example.com|other`,
+        });
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject<Bundle>({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T12:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T12:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [{ coding: [{ code, system: 'http://example.com' }] }],
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T13:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [{ coding: [{ code, system: 'http://example.com' }] }],
+            },
+          },
+        ],
+      });
+    });
+
+    test('schedule-specific parameters override those on the HealthcareService', async () => {
+      const code = 'yoga';
+      await systemRepo.createResource<HealthcareService>({
+        resourceType: 'HealthcareService',
+        meta: { project: project.id },
+        type: [
+          {
+            coding: [{ system: 'http://example.com', code }],
+          },
+        ],
+        availableTime: [
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '09:30:00',
+            availableEndTime: '12:30:00',
+          },
+          {
+            daysOfWeek: ['mon', 'tue', 'wed', 'thu'],
+            availableStartTime: '13:15:00',
+            availableEndTime: '16:15:00',
+          },
+        ],
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+            extension: [{ url: 'duration', valueDuration: { value: 20, unit: 'min' } }],
+          },
+        ],
+      });
+
+      const schedule = await makeSchedule({
+        [code]: { availability: twoDaySchedule, duration: 30 },
+      });
+
+      const response = await request
+        .get(`/fhir/R4/Schedule/${schedule.id}/$find`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .query({
+          start: new Date('2025-12-04T10:00:00.000-05:00'),
+          end: new Date('2025-12-04T14:00:00.000-05:00'),
+          'service-type': `http://example.com|${code},http://example.com|other`,
+        });
+      expect(response.body).not.toHaveProperty('issue');
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject<Bundle>({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T12:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T12:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [{ coding: [{ code, system: 'http://example.com' }] }],
+            },
+          },
+          {
+            resource: {
+              resourceType: 'Slot',
+              start: new Date('2025-12-04T13:00:00.000-05:00').toISOString(),
+              end: new Date('2025-12-04T13:30:00.000-05:00').toISOString(),
+              status: 'free',
+              schedule: createReference(schedule),
+              serviceType: [{ coding: [{ code, system: 'http://example.com' }] }],
+            },
+          },
+        ],
+      });
     });
   });
 
