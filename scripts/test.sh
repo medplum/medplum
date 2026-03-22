@@ -21,6 +21,9 @@ mkdir -p coverage/combined
 SHOULD_RUN_SEED_TEST=$(date) time npx turbo run test:seed --filter=./packages/server -- --coverage
 cp "packages/server/coverage/coverage-final.json" "coverage/packages/coverage-server-seed.json"
 
+# Build
+npm run build
+
 # Test
 # Run them separately because code coverage is resource intensive
 
