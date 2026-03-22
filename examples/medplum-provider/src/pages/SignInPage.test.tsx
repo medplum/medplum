@@ -72,7 +72,7 @@ describe('SignInPage', () => {
       fireEvent.click(submitButton);
     });
 
-    // After successful sign-in, the header shows the user's name
-    expect(await screen.findByText('Alice Smith')).toBeInTheDocument();
+    // After successful sign-in, user is redirected to /getstarted
+    expect(await screen.findByText('Get Started with Medplum Provider')).toBeInTheDocument();
   });
 });

@@ -47,8 +47,7 @@ export function SearchPage(): JSX.Element {
         onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
         onNew={() => {
-          const target = search.resourceType === 'Patient' ? '/onboarding' : `/${search.resourceType}/new`;
-          navigate(target)?.catch(console.error);
+          navigate(`/${search.resourceType}/new`)?.catch(console.error);
         }}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);

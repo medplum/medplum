@@ -155,6 +155,7 @@ describe('PatientPage.utils', () => {
         'documentreference',
         'careplan',
         'message',
+        'dosespot',
         'export',
       ];
       for (const tabId of tabIds) {
@@ -184,6 +185,7 @@ describe('PatientPage.utils', () => {
       expect(tabIds).toContain('documentreference');
       expect(tabIds).toContain('careplan');
       expect(tabIds).toContain('message');
+      expect(tabIds).toContain('dosespot');
       expect(tabIds).toContain('export');
     });
 
