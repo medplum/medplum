@@ -298,4 +298,57 @@ describe('update-config command', () => {
       Overwrite: true,
     });
   });
+
+  test('Complex objects are written to Parameter Store', async () => {
+    const tag = randomUUID();
+    const infraFileName = getConfigFileName(tag);
+    const serverFileName = getConfigFileName(tag, { server: true });
+
+    writeFileSync(
+      infraFileName,
+      JSON.stringify({
+        apiPort: 8103,
+        name: tag,
+        region: 'us-east-1',
+        accountNumber: 'account-123',
+        stackName: 'TestStack',
+        domainName: 'test.example.com',
+        baseUrl: 'https://api.test.example.com/',
+        apiDomainName: 'api.test.example.com',
+        appDomainName: 'app.test.example.com',
+        storageDomainName: 'storage.test.example.com',
+        storageBucketName: 'storage.test.example.com',
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
+        serverImage: 'medplum/medplum-server:2.4.17',
+      }),
+      'utf8'
+    );
+
+    writeFileSync(
+      serverFileName,
+      JSON.stringify({
+        defaultProjectSystemSetting: {
+          defaultBotRuntimeVersion: '2.4.17',
+        },
+      }),
+      'utf8'
+    );
+
+    await main(['node', 'index.js', 'aws', 'update-config', tag, '--yes']);
+    unlinkSync(infraFileName);
+    unlinkSync(serverFileName);
+
+    expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
+      Name: `/medplum/${tag}/defaultProjectSystemSetting`,
+      Value: JSON.stringify({
+        defaultBotRuntimeVersion: '2.4.17',
+      }),
+      Type: 'SecureString',
+      Overwrite: true,
+    });
+  });
 });
