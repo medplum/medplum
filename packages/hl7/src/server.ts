@@ -6,6 +6,18 @@ import type { EnhancedMode, Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
 /**
+ * Options for configuring the `Hl7Server#start` method.
+ */
+export interface Hl7ServerStartOptions {
+  /**
+   * Maximum number of times to retry binding if the port is already in use (`EADDRINUSE`).
+   * Retries use exponential backoff starting at 50ms, capped at 5000ms per attempt.
+   * Defaults to `10`.
+   */
+  maxRetries?: number;
+}
+
+/**
  * Options for configuring the `Hl7Server#stop` method.
  */
 export interface Hl7ServerStopOptions {
@@ -37,7 +49,8 @@ export class Hl7Server {
     port: number,
     encoding?: string,
     enhancedMode?: EnhancedMode,
-    options?: Hl7ConnectionOptions
+    connectionOptions?: Hl7ConnectionOptions,
+    startOptions?: Hl7ServerStartOptions
   ): Promise<number> {
     if (encoding) {
       this.setEncoding(encoding);
@@ -45,8 +58,8 @@ export class Hl7Server {
     if (enhancedMode !== undefined) {
       this.setEnhancedMode(enhancedMode);
     }
-    if (options?.messagesPerMin !== undefined) {
-      this.setMessagesPerMin(options.messagesPerMin);
+    if (connectionOptions?.messagesPerMin !== undefined) {
+      this.setMessagesPerMin(connectionOptions.messagesPerMin);
     }
 
     const server = net.createServer((socket) => {
@@ -69,7 +82,8 @@ export class Hl7Server {
       };
 
       const MAX_RETRIES = 10;
-      const maxRetries = options?.maxRetries ?? MAX_RETRIES;
+      const MAX_BACKOFF_MS = 5000;
+      const maxRetries = startOptions?.maxRetries ?? MAX_RETRIES;
       let retries = 0;
 
       const errorListener = (e: Error & { code?: string }): void => {
@@ -79,7 +93,7 @@ export class Hl7Server {
             return;
           }
           retries++;
-          const exponentialBackoffTime = 50 * 2 ** (retries - 1);
+          const exponentialBackoffTime = Math.min(50 * 2 ** (retries - 1), MAX_BACKOFF_MS);
           server.close(() => sleep(exponentialBackoffTime).then(() => listenOnPort(port)));
         } else {
           reject(e);
