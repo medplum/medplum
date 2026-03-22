@@ -6,18 +6,6 @@ import type { EnhancedMode, Hl7ConnectionOptions } from './connection';
 import { Hl7Connection } from './connection';
 
 /**
- * Options for configuring the `Hl7Server#start` method.
- */
-export interface Hl7ServerStartOptions {
-  /**
-   * Maximum number of times to retry binding if the port is already in use (`EADDRINUSE`).
-   * Retries use exponential backoff starting at 50ms, capped at 5000ms per attempt.
-   * Defaults to `10`.
-   */
-  maxRetries?: number;
-}
-
-/**
  * Options for configuring the `Hl7Server#stop` method.
  */
 export interface Hl7ServerStopOptions {
@@ -49,8 +37,7 @@ export class Hl7Server {
     port: number,
     encoding?: string,
     enhancedMode?: EnhancedMode,
-    connectionOptions?: Hl7ConnectionOptions,
-    startOptions?: Hl7ServerStartOptions
+    connectionOptions?: Hl7ConnectionOptions
   ): Promise<number> {
     if (encoding) {
       this.setEncoding(encoding);
@@ -81,20 +68,9 @@ export class Hl7Server {
         });
       };
 
-      const MAX_RETRIES = 10;
-      const MAX_BACKOFF_MS = 5000;
-      const maxRetries = startOptions?.maxRetries ?? MAX_RETRIES;
-      let retries = 0;
-
       const errorListener = (e: Error & { code?: string }): void => {
         if (e?.code === 'EADDRINUSE') {
-          if (retries >= maxRetries) {
-            reject(new Error(`Failed to bind to port ${port} after ${maxRetries} retries`));
-            return;
-          }
-          retries++;
-          const exponentialBackoffTime = Math.min(50 * 2 ** (retries - 1), MAX_BACKOFF_MS);
-          server.close(() => sleep(exponentialBackoffTime).then(() => listenOnPort(port)));
+          server.close(() => sleep(50).then(() => listenOnPort(port)));
         } else {
           reject(e);
         }
