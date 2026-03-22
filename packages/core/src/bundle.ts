@@ -66,7 +66,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
 }
 
 function referenceReplacer(key: string, value: string, idToUuid: Record<string, string>): string {
-  if (key === 'reference' && typeof value === 'string') {
+  if ((key === 'reference' || key === 'url') && typeof value === 'string') {
     let id;
     if (value.includes('/')) {
       id = value.split('/')[1];
@@ -212,6 +212,8 @@ function findReferences(resource: any, callback: (reference: string) => void): v
       } else {
         findReferences(value, callback);
       }
+    } else if (key === 'url' && typeof resource[key] === 'string' && resource[key].startsWith('urn:uuid:')) {
+      callback(resource[key]);
     }
   }
 }
