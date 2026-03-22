@@ -349,10 +349,7 @@ export class App {
                 (channel) => channel instanceof AgentHl7Channel
               );
               const channelStats = Object.fromEntries(
-                hl7Channels.map((channel) => [
-                  channel.getDefinition().name,
-                  channel.stats?.getStats() as ChannelStats,
-                ])
+                hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
               );
 
               const pools = Array.from(this.hl7Clients.values());
