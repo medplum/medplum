@@ -18,7 +18,7 @@ export function MemberDetailsPage(): JSX.Element {
     <>
       <Title>ProjectMembership Details</Title>
       <MedplumLink to={membership}>Go to ProjectMembership</MedplumLink>
-      <ResourceTable value={membership} ignoreMissingValues />
+      <ResourceTable value={membership} />
       <Title mt="md">{profile.resourceType} Details</Title>
       <MedplumLink to={profile}>Go to {profile.resourceType}</MedplumLink>
       <ResourceTable value={profile} ignoreMissingValues />
