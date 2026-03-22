@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 global:
-  cloudProvider: gcp # Supported values: gcp, azure
+  cloudProvider: aws # Supported values: gcp, azure, aws
   configSource:
     # Examples:
     # type: "env"
@@ -77,3 +77,5 @@ ingress:
   domain: ''
   # Set your TLS secret name (Azure only)
   tlsSecretName: ''
+  # AWS only: ACM certificate ARN for the ALB HTTPS listener
+  acmCertificateArn: ''
