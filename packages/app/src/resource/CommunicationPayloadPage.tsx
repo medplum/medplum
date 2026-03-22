@@ -21,20 +21,12 @@ export function CommunicationPayloadPage(): JSX.Element | null {
 
   useEffect(() => {
     if (communication) {
-      setPayload(
-        (communication.payload ?? EMPTY)
-          .filter((item) => 'contentString' in item)
-          .map((item) => ({ key: keyCounter.current++, item }))
-      );
+      setPayload((communication.payload ?? EMPTY).map((item) => ({ key: keyCounter.current++, item })));
     }
   }, [communication]);
 
-  const handleChange = useCallback((index: number, value: string): void => {
-    setPayload((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], item: { ...updated[index].item, contentString: value } };
-      return updated;
-    });
+  const handleChange = useCallback((key: number, value: string): void => {
+    setPayload((prev) => prev.map((p) => (p.key === key ? { ...p, item: { ...p.item, contentString: value } } : p)));
   }, []);
 
   const handleAdd = useCallback((): void => {
@@ -58,17 +50,19 @@ export function CommunicationPayloadPage(): JSX.Element | null {
   return (
     <Document>
       <Stack>
-        {payload.map(({ key, item }, index) => (
-          <Textarea
-            key={key}
-            autosize
-            minRows={3}
-            maxRows={20}
-            value={item.contentString ?? ''}
-            onChange={(e) => handleChange(index, e.currentTarget.value)}
-            placeholder="Enter content..."
-          />
-        ))}
+        {payload
+          .filter(({ item }) => 'contentString' in item)
+          .map(({ key, item }) => (
+            <Textarea
+              key={key}
+              autosize
+              minRows={3}
+              maxRows={20}
+              value={item.contentString ?? ''}
+              onChange={(e) => handleChange(key, e.currentTarget.value)}
+              placeholder="Enter content..."
+            />
+          ))}
         <Group justify="flex-end">
           <Button variant="outline" onClick={handleAdd}>
             Add payload
