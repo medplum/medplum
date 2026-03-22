@@ -44,9 +44,12 @@ export class MockSocket extends Duplex {
 export class MockServer extends EventEmitter {
   private closed = false;
   private sockets = new Set<MockSocket>();
-  listen = jest.fn((_port, callback) => {
+  private boundPort = 0;
+  listen = jest.fn((port, callback) => {
+    this.boundPort = port;
     callback();
   });
+  address = jest.fn(() => ({ port: this.boundPort }));
   close = jest.fn((callback: (err?: Error) => void) => {
     if (!this.closed) {
       this.closed = true;
