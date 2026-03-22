@@ -9,7 +9,7 @@ import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
 import classes from './AppShell.module.css';
 import { Header } from './Header';
-import type { NavbarApp, NavbarMenu } from './Navbar';
+import type { NavbarMenu } from './Navbar';
 import { Navbar } from './Navbar';
 
 const OPEN_WIDTH = 250;
@@ -22,7 +22,6 @@ export interface AppShellProps {
   readonly headerSearchDisabled?: boolean;
   readonly version?: string;
   readonly menus?: NavbarMenu[];
-  readonly apps?: NavbarApp[];
   readonly children: ReactNode;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
@@ -82,7 +81,6 @@ export function AppShell(props: AppShellProps): JSX.Element {
         pathname={props.pathname}
         searchParams={props.searchParams}
         menus={props.menus}
-        apps={props.apps}
         navbarToggle={toggleNavbar}
         closeNavbar={closeNavbar}
         displayAddBookmark={props.displayAddBookmark}
@@ -124,7 +122,6 @@ export function AppShell(props: AppShellProps): JSX.Element {
           pathname={props.pathname}
           searchParams={props.searchParams}
           menus={props.menus}
-          apps={props.apps}
           navbarToggle={toggleNavbar}
           closeNavbar={closeNavbar}
           displayAddBookmark={props.displayAddBookmark}
