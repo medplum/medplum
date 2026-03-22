@@ -5,6 +5,7 @@ import type {
   AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
+  AgentStatsResponse,
   AgentTransmitRequest,
   AgentTransmitResponse,
   AgentUpgradeRequest,
@@ -335,6 +336,52 @@ export class App {
             break;
           case 'agent:logs:request':
             await this.handleLogRequest(command);
+            break;
+          case 'agent:stats:request':
+            try {
+              const stats = getCurrentStats();
+              let totalHl7Clients = 0;
+              for (const pool of this.hl7Clients.values()) {
+                totalHl7Clients += pool.size();
+              }
+
+              const hl7Channels = Array.from(this.channels.values()).filter(
+                (channel) => channel instanceof AgentHl7Channel
+              );
+              const channelStats = Object.fromEntries(
+                hl7Channels.map((channel) => [channel.getDefinition().name, channel.stats?.getStats() as ChannelStats])
+              );
+
+              const pools = Array.from(this.hl7Clients.values());
+              const clientStats = Object.fromEntries(
+                pools.map((pool) => [
+                  `mllp://${pool.host}:${pool.port}?encoding=${pool.encoding ?? DEFAULT_ENCODING}`,
+                  pool.getPoolStats() as ChannelStats,
+                ])
+              );
+
+              await this.sendToWebSocket({
+                type: 'agent:stats:response',
+                statusCode: 200,
+                callback: command.callback,
+                stats: {
+                  ...stats,
+                  webSocketQueueDepth: this.webSocketQueue.length,
+                  hl7QueueDepth: this.hl7Queue.length,
+                  hl7ClientCount: totalHl7Clients,
+                  live: this.live,
+                  outstandingHeartbeats: this.outstandingHeartbeats,
+                  channelStats,
+                  clientStats,
+                },
+              } satisfies AgentStatsResponse);
+            } catch (err: unknown) {
+              await this.sendToWebSocket({
+                type: 'agent:error',
+                body: normalizeErrorString(err),
+                callback: command.callback,
+              });
+            }
             break;
           case 'agent:error':
             this.log.error(command.body);
