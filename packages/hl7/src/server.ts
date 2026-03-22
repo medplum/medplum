@@ -60,7 +60,7 @@ export class Hl7Server {
       });
     });
 
-    return new Promise<number>((resolve) => {
+    return new Promise<number>((resolve, reject) => {
       const listenOnPort = (port: number): void => {
         server.listen(port, () => {
           const boundPort = (server.address() as { port: number }).port;
@@ -68,12 +68,21 @@ export class Hl7Server {
         });
       };
 
-      // Node errors have a code
-      const errorListener = async (e: Error & { code?: string }): Promise<void> => {
+      const MAX_RETRIES = 10;
+      const maxRetries = options?.maxRetries ?? MAX_RETRIES;
+      let retries = 0;
+
+      const errorListener = (e: Error & { code?: string }): void => {
         if (e?.code === 'EADDRINUSE') {
-          await sleep(50);
-          server.close();
-          listenOnPort(port);
+          if (retries >= maxRetries) {
+            reject(new Error(`Failed to bind to port ${port} after ${maxRetries} retries`));
+            return;
+          }
+          retries++;
+          const exponentialBackoffTime = 50 * 2 ** (retries - 1);
+          server.close(() => sleep(exponentialBackoffTime).then(() => listenOnPort(port)));
+        } else {
+          reject(e);
         }
       };
 

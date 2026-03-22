@@ -30,6 +30,7 @@ export interface SendAndWaitOptions {
 
 export interface Hl7ConnectionOptions {
   messagesPerMin?: number;
+  maxRetries?: number;
 }
 
 /**
