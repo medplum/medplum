@@ -3,6 +3,7 @@
 import type { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { LRUCache } from '../cache';
 import { MedplumClient } from '../client';
+import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import type { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
@@ -17,11 +18,14 @@ import type { IReconnectingWebSocket, IReconnectingWebSocketCtor } from '../webs
 import { ReconnectingWebSocket } from '../websockets/reconnecting-websocket';
 import {
   DEFAULT_PING_INTERVAL_MS,
+  PENDING_UNBIND_DELAY_MS,
   WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS,
   WS_SUB_TOKEN_REFRESH_INTERVAL_MS,
 } from './constants';
 
 const WS_STATES_THAT_NEED_RECONNECT = [WebSocket.CLOSING, WebSocket.CLOSED] as readonly number[];
+
+export type CriteriaState = 'idle' | 'connecting' | 'active' | 'refreshing' | 'removing' | 'removed';
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -74,6 +78,7 @@ export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> 
 }
 
 class CriteriaEntry {
+  readonly entryId: string;
   readonly criteria: string;
   readonly emitter: SubscriptionEmitter;
   refCount: number;
@@ -81,9 +86,11 @@ class CriteriaEntry {
   subscriptionId?: string;
   token?: string;
   tokenExpiry?: number;
-  connecting = false;
+  state: CriteriaState = 'idle';
+  generation = 0;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
+    this.entryId = generateId();
     this.criteria = criteria;
     this.emitter = new SubscriptionEmitter(criteria);
     this.refCount = 1;
@@ -94,10 +101,8 @@ class CriteriaEntry {
       : undefined;
   }
 
-  clearAttachedSubscription(): void {
-    this.subscriptionId = undefined;
-    this.token = undefined;
-    this.tokenExpiry = undefined;
+  nextGeneration(): number {
+    return ++this.generation;
   }
 }
 
@@ -110,12 +115,16 @@ export interface SubManagerOptions {
   debugLogger?: (...args: any[]) => void;
 }
 
+export const GETTING_REMOVED_STATES = ['removing', 'removed'] as const;
+
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
   private readonly ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private readonly criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private readonly criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
+  private readonly pendingUnbind: Map<string, number>; // Map<entryId, UTC ms timestamp of intent to remove>
+  private readonly criteriaEntriesByEntryId: Map<string, CriteriaEntry>; // Map<entryId, CriteriaEntry>
   private wsClosed: boolean;
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
   private tokenRefreshTimer: ReturnType<typeof setInterval> | undefined = undefined;
@@ -142,6 +151,8 @@ export class SubscriptionManager {
     this.masterSubEmitter = new SubscriptionEmitter();
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
+    this.criteriaEntriesByEntryId = new Map<string, CriteriaEntry>();
+    this.pendingUnbind = new Map<string, number>();
     this.wsClosed = false;
     this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
     this.currentProfile = medplum.getProfile();
@@ -182,7 +193,9 @@ export class SubscriptionManager {
             console.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
             return;
           }
-          criteriaEntry.connecting = false;
+          if (criteriaEntry.state === 'connecting' || criteriaEntry.state === 'refreshing') {
+            criteriaEntry.state = 'active';
+          }
           criteriaEntry.emitter.dispatchEvent({ ...connectEvent });
           return;
         }
@@ -237,8 +250,12 @@ export class SubscriptionManager {
       if (this.wsClosed) {
         this.criteriaEntries.clear();
         this.criteriaEntriesBySubscriptionId.clear();
+        this.criteriaEntriesByEntryId.clear();
         this.masterSubEmitter?.removeAllListeners();
       }
+
+      // We always want to clear pending unbind since once the WebSocket closes we've already unbound all bound subscriptions implicitly
+      this.pendingUnbind.clear();
     });
 
     ws.addEventListener('open', () => {
@@ -252,17 +269,17 @@ export class SubscriptionManager {
       // So we refresh all current subscriptions
       this.refreshAllSubscriptions().catch(console.error);
 
-      if (!this.pingTimer) {
-        this.pingTimer = setInterval(() => {
-          if (this.waitingForPong) {
-            this.waitingForPong = false;
-            ws.reconnect();
-            return;
-          }
+      this.pingTimer ??= setInterval(() => {
+        if (this.waitingForPong) {
+          this.waitingForPong = false;
+          ws.reconnect();
+        } else {
           ws.send(JSON.stringify({ type: 'ping' }));
           this.waitingForPong = true;
-        }, this.pingIntervalMs);
-      }
+        }
+
+        this.cleanupSubsPendingUnbind();
+      }, this.pingIntervalMs);
 
       this.tokenRefreshTimer ??= setInterval(() => {
         this.checkTokenExpirations();
@@ -278,6 +295,16 @@ export class SubscriptionManager {
       }
       this.currentProfile = nextProfile;
     });
+  }
+
+  private sendBind(token: string): void {
+    this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
+  }
+
+  private sendUnbind(token: string): void {
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
+    }
   }
 
   private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
@@ -302,41 +329,8 @@ export class SubscriptionManager {
     }
   }
 
-  private async getTokenForCriteria(criteriaEntry: CriteriaEntry): Promise<[string, string, string]> {
-    let subscriptionId = criteriaEntry?.subscriptionId;
-    if (!subscriptionId) {
-      // Make a new subscription
-      const subscription = await this.medplum.createResource<Subscription>({
-        ...criteriaEntry.subscriptionProps,
-        resourceType: 'Subscription',
-        status: 'active',
-        reason: `WebSocket subscription for ${getReferenceString(this.medplum.getProfile() as ProfileResource)}`,
-        channel: { type: 'websocket' },
-        criteria: criteriaEntry.criteria,
-      });
-      subscriptionId = subscription.id;
-    }
-
-    // Get binding token
-    const { parameter } = await this.medplum.get<Parameters>(
-      `fhir/R4/Subscription/${subscriptionId}/$get-ws-binding-token`,
-      { cache: 'no-cache' }
-    );
-    const token = parameter?.find((param) => param.name === 'token')?.valueString;
-    const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
-    const expiration = parameter?.find((param) => param.name === 'expiration')?.valueDateTime;
-
-    if (!token) {
-      throw new OperationOutcomeError(validationError('Failed to get token'));
-    }
-    if (!url) {
-      throw new OperationOutcomeError(validationError('Failed to get URL from $get-ws-binding-token'));
-    }
-    if (!expiration) {
-      throw new OperationOutcomeError(validationError('Failed to get expiration from $get-ws-binding-token'));
-    }
-
-    return [subscriptionId, token, expiration];
+  private isStale(criteriaEntry: CriteriaEntry, expectedGen: number): boolean {
+    return this.isEntryGettingRemoved(criteriaEntry) || criteriaEntry.generation !== expectedGen;
   }
 
   private maybeGetCriteriaEntry(
@@ -361,11 +355,13 @@ export class SubscriptionManager {
   private getAllCriteriaEmitters(): SubscriptionEmitter[] {
     const emitters = [];
     for (const mapEntry of this.criteriaEntries.values()) {
-      if (mapEntry.bareCriteria) {
+      if (mapEntry.bareCriteria && !this.pendingUnbind.has(mapEntry.bareCriteria.entryId)) {
         emitters.push(mapEntry.bareCriteria.emitter);
       }
       for (const entry of mapEntry.criteriaWithProps) {
-        emitters.push(entry.emitter);
+        if (!this.pendingUnbind.has(entry.entryId)) {
+          emitters.push(entry.emitter);
+        }
       }
     }
     return emitters;
@@ -388,10 +384,40 @@ export class SubscriptionManager {
     } else {
       mapEntry.criteriaWithProps.push(criteriaEntry);
     }
+    this.criteriaEntriesByEntryId.set(criteriaEntry.entryId, criteriaEntry);
+  }
+
+  private markEntryForRemoval(criteriaEntry: CriteriaEntry): void {
+    // Guard against double-scheduling
+    if (this.pendingUnbind.has(criteriaEntry.entryId)) {
+      return;
+    }
+
+    criteriaEntry.state = 'removing';
+    criteriaEntry.generation++;
+
+    // Schedule delayed unbind — re-subscribing the same criteria + props within
+    // the delay window will cancel this and restore the entry (see addCriteria).
+    // Actual cleanup happens in cleanupSubsPendingUnbind() on the ping timer.
+    this.pendingUnbind.set(criteriaEntry.entryId, Date.now());
+  }
+
+  private unmarkEntryForRemoval(criteriaEntry: CriteriaEntry): void {
+    if (!this.pendingUnbind.has(criteriaEntry.entryId)) {
+      return;
+    }
+
+    criteriaEntry.state = 'active';
+    criteriaEntry.generation++;
+
+    this.pendingUnbind.delete(criteriaEntry.entryId);
   }
 
   private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
+    criteriaEntry.state = 'removed';
+    criteriaEntry.generation++;
     const { criteria, subscriptionProps, subscriptionId, token } = criteriaEntry;
+
     if (!this.criteriaEntries.has(criteria)) {
       return;
     }
@@ -411,8 +437,8 @@ export class SubscriptionManager {
     if (subscriptionId) {
       this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
     }
-    if (token && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
+    if (token) {
+      this.sendUnbind(token);
     }
   }
 
@@ -421,46 +447,97 @@ export class SubscriptionManager {
     if (this.wsClosed) {
       await this.reconnectIfNeeded();
     }
-    // We check to see if the WebSocket is reconnecting first, since if it is, we will automatically refresh this later when it reconnects
-    if (this.isReconnecting(criteriaEntry)) {
+    // If WS is not open, the entry will be refreshed via refreshAllSubscriptions on the next 'open' event
+    if (this.ws.readyState !== WebSocket.OPEN) {
       return;
     }
-    // Set connecting flag to true so other incoming subscription requests to this criteria don't try to subscribe also
-    criteriaEntry.connecting = true;
+    // Only subscribe idle entries — connecting/active/refreshing entries already have an operation in progress,
+    // and removed entries are dead
+    if (criteriaEntry.state !== 'idle') {
+      return;
+    }
+    criteriaEntry.state = 'connecting';
     await this.rebindCriteriaEntry(criteriaEntry);
   }
 
   private async refreshAllSubscriptions(): Promise<void> {
+    // Finalize any entries pending unbind before refreshing — they won't be re-subscribed
+    const pendingEntryIds = [...this.pendingUnbind.keys()];
+    for (const entryId of pendingEntryIds) {
+      const entry = this.criteriaEntriesByEntryId.get(entryId);
+      if (entry) {
+        this.removeCriteriaEntry(entry);
+      }
+    }
+    this.pendingUnbind.clear();
+
     this.criteriaEntriesBySubscriptionId.clear();
     for (const mapEntry of this.criteriaEntries.values()) {
       for (const criteriaEntry of [
         ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
         ...mapEntry.criteriaWithProps,
       ]) {
-        criteriaEntry.clearAttachedSubscription();
         await this.subscribeToCriteria(criteriaEntry);
       }
     }
   }
 
-  private isReconnecting(criteriaEntry: CriteriaEntry): boolean {
-    if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
-      return true;
-    }
-    return false;
-  }
-
   private async rebindCriteriaEntry(criteriaEntry: CriteriaEntry): Promise<void> {
+    const expectedGen = criteriaEntry.nextGeneration();
     try {
-      const [subscriptionId, token, expiration] = await this.getTokenForCriteria(criteriaEntry);
+      // Step 1: Ensure a Subscription resource exists
+      if (!criteriaEntry.subscriptionId) {
+        const subscription = await this.medplum.createResource<Subscription>({
+          ...criteriaEntry.subscriptionProps,
+          resourceType: 'Subscription',
+          status: 'active',
+          reason: `WebSocket subscription for ${getReferenceString(this.medplum.getProfile() as ProfileResource)}`,
+          channel: { type: 'websocket' },
+          criteria: criteriaEntry.criteria,
+        });
+        // Persist immediately so retries reuse the same Subscription resource
+        criteriaEntry.subscriptionId ??= subscription.id;
+
+        if (this.isStale(criteriaEntry, expectedGen)) {
+          return;
+        }
+      }
+
+      // Step 2: Get a binding token
+      const { parameter } = await this.medplum.get<Parameters>(
+        `fhir/R4/Subscription/${criteriaEntry.subscriptionId}/$get-ws-binding-token`,
+        { cache: 'no-cache' }
+      );
+      const token = parameter?.find((param) => param.name === 'token')?.valueString;
+      const url = parameter?.find((param) => param.name === 'websocket-url')?.valueUrl;
+      const expiration = parameter?.find((param) => param.name === 'expiration')?.valueDateTime;
+
+      if (!token) {
+        throw new OperationOutcomeError(validationError('Failed to get token'));
+      }
+      if (!url) {
+        throw new OperationOutcomeError(validationError('Failed to get URL from $get-ws-binding-token'));
+      }
+      if (!expiration) {
+        throw new OperationOutcomeError(validationError('Failed to get expiration from $get-ws-binding-token'));
+      }
+
+      // Step 3: Verify the operation is still valid after all async work
+      if (this.isStale(criteriaEntry, expectedGen)) {
+        // We immediately unbind here since a mismatch in generate
+        this.sendUnbind(token);
+        return;
+      }
       criteriaEntry.token = token;
       criteriaEntry.tokenExpiry = new Date(expiration).getTime();
-      criteriaEntry.subscriptionId = subscriptionId;
-      this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
-      // Bind with the new token
-      this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
+      this.criteriaEntriesBySubscriptionId.set(criteriaEntry.subscriptionId, criteriaEntry);
+      this.sendBind(token);
     } catch (err: unknown) {
       console.error(normalizeErrorString(err));
+      // Revert to a retryable state so the entry isn't permanently stuck
+      if (criteriaEntry.generation === expectedGen && !this.isEntryGettingRemoved(criteriaEntry)) {
+        criteriaEntry.state = criteriaEntry.state === 'refreshing' ? 'active' : 'idle';
+      }
       this.emitError(criteriaEntry, err as Error);
     }
   }
@@ -472,13 +549,19 @@ export class SubscriptionManager {
         ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
         ...mapEntry.criteriaWithProps,
       ]) {
+        if (this.pendingUnbind.has(criteriaEntry.entryId)) {
+          this.removeCriteriaEntry(criteriaEntry);
+          continue;
+        }
         if (!criteriaEntry.tokenExpiry) {
           continue;
         }
         if (
           criteriaEntry.tokenExpiry - now <= WS_SUB_TOKEN_EXPIRY_GRACE_PERIOD_MS &&
-          !this.isReconnecting(criteriaEntry)
+          criteriaEntry.state === 'active' &&
+          this.ws.readyState === WebSocket.OPEN
         ) {
+          criteriaEntry.state = 'refreshing';
           this.rebindCriteriaEntry(criteriaEntry).catch((err: Error) => {
             this.masterSubEmitter?.dispatchEvent({ type: 'error', payload: err });
           });
@@ -494,6 +577,8 @@ export class SubscriptionManager {
 
     const criteriaEntry = this.maybeGetCriteriaEntry(criteria, subscriptionProps);
     if (criteriaEntry) {
+      // Cancel pending unbind if this entry was scheduled for removal
+      this.unmarkEntryForRemoval(criteriaEntry);
       criteriaEntry.refCount += 1;
       return criteriaEntry.emitter;
     }
@@ -518,9 +603,36 @@ export class SubscriptionManager {
       return;
     }
 
-    // If actually removing (refcount === 0)
-    this.maybeEmitDisconnect(criteriaEntry);
-    this.removeCriteriaEntry(criteriaEntry);
+    this.markEntryForRemoval(criteriaEntry);
+  }
+
+  /**
+   * Finalizes any entries in the `pendingUnbind` map whose delay has expired.
+   * For each expired entry, emits a disconnect event and performs the full removal
+   * (unbind-from-token, map cleanup).
+   *
+   * Called automatically on the ping timer.
+   */
+  private cleanupSubsPendingUnbind(): void {
+    const now = Date.now();
+    for (const [entryId, timestamp] of this.pendingUnbind) {
+      if (now - timestamp < PENDING_UNBIND_DELAY_MS) {
+        continue;
+      }
+      const entry = this.criteriaEntriesByEntryId.get(entryId);
+      if (entry) {
+        this.maybeEmitDisconnect(entry);
+        this.removeCriteriaEntry(entry);
+      } else {
+        this.pendingUnbind.delete(entryId);
+      }
+    }
+  }
+
+  private isEntryGettingRemoved(
+    criteriaEntry: CriteriaEntry
+  ): criteriaEntry is CriteriaEntry & { state: 'removing' | 'removed' } {
+    return (GETTING_REMOVED_STATES as readonly CriteriaState[]).includes(criteriaEntry.state);
   }
 
   getWebSocket(): IReconnectingWebSocket {
