@@ -302,10 +302,17 @@ const walkthroughFirstMessage = await medplum.createResource({
   topic: {
     text: 'Lab results for Homer Simpson - April 10th',
   },
-  subject: {
-    reference: 'Patient/homer-simpson',
-    display: 'Homer Simpson',
-  },
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+          code: 'notification',
+          display: 'Notification',
+        },
+      ],
+    },
+  ],
   sender: {
     reference: 'Practitioner/doctor-alice-smith',
     display: 'Dr. Alice Smith',
@@ -327,10 +334,17 @@ const walkthroughSecondMessage = await medplum.createResource({
   topic: {
     text: 'Lab results for Homer Simpson - April 10th',
   },
-  subject: {
-    reference: 'Patient/homer-simpson',
-    display: 'Homer Simpson',
-  },
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+          code: 'notification',
+          display: 'Notification',
+        },
+      ],
+    },
+  ],
   sender: {
     reference: 'Patient/homer-simpson',
     display: 'Homer Simpson',
@@ -343,28 +357,42 @@ const walkthroughSecondMessage = await medplum.createResource({
   ],
   sent: new Date().toISOString(),
 });
-console.log(createdThreadHeader, walkthroughFirstMessage, walkthroughSecondMessage);
 // end-block createYourFirstThreadWalkthroughTs
+// eslint-disable-next-line no-void
+void createdThreadHeader;
+// eslint-disable-next-line no-void
+void walkthroughFirstMessage;
+// eslint-disable-next-line no-void
+void walkthroughSecondMessage;
 
 // start-block createYourFirstThreadReplyInResponseToTs
 // Use when the user explicitly replies to one message (not required for linear chat).
-// Set ids from the thread header and the message being replied to.
-const threadHeaderIdForReply = createdThreadHeader.id;
-const priorMessageId = walkthroughSecondMessage.id;
+// Continues createdThreadHeader and walkthroughSecondMessage from the walkthrough above.
 const walkthroughReplyInResponseTo = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
-  partOf: [{ reference: `Communication/${threadHeaderIdForReply}` }],
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
   topic: { text: 'Lab results for Homer Simpson - April 10th' },
-  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+          code: 'notification',
+          display: 'Notification',
+        },
+      ],
+    },
+  ],
   sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
   recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
   payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],
   sent: new Date().toISOString(),
-  inResponseTo: [{ reference: `Communication/${priorMessageId}` }],
+  inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
 });
-console.log(walkthroughReplyInResponseTo);
 // end-block createYourFirstThreadReplyInResponseToTs
+// eslint-disable-next-line no-void
+void walkthroughReplyInResponseTo;
 
 // start-block filterByPatientTs
 // Filter threads to a specific patient
