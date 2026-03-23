@@ -463,9 +463,11 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
   }
 
   if (!loopCompleted && content) {
-    content += '\n\n_Note: The request reached the processing limit before fully completing. Try a more specific question or break it into smaller parts._';
+    content +=
+      '\n\n_Note: The request reached the processing limit before fully completing. Try a more specific question or break it into smaller parts._';
   } else if (!loopCompleted) {
-    content = 'The request reached the processing limit before any results could be gathered. Try a more specific question or break it into smaller parts.';
+    content =
+      'The request reached the processing limit before any results could be gathered. Try a more specific question or break it into smaller parts.';
   }
 
   let componentCode: string | undefined;

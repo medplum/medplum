@@ -323,9 +323,7 @@ describe('processMessage - max iterations behavior', () => {
     // Simulate by having the bot never produce tool messages — easiest way is
     // to have the bot always respond with tool calls but mock executeBot on the
     // summary call to return empty, and fhir GET to return empty bundle.
-    const medplum = makeMockMedplum(() =>
-      Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }))
-    );
+    const medplum = makeMockMedplum(() => Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] })));
 
     // Override get so the tool call produces a tool message (so summary IS called)
     // but the summary itself returns no content
@@ -352,7 +350,6 @@ describe('processMessage - max iterations behavior', () => {
   });
 
   test('completes normally when bot returns final answer before max iterations', async () => {
-
     // First call: tool call → second call: summary → done
     // Actually: iteration 1 → tool call → executeToolCalls → iteration 2 → no tool calls → loopCompleted
     // Then: currentMessages has tool role → summary bot called
