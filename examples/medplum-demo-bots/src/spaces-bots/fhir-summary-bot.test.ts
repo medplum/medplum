@@ -26,6 +26,8 @@ describe('fhir-summary-bot', () => {
     vi.spyOn(medplum, 'searchOne').mockResolvedValue({
       resourceType: 'Communication',
       payload: [{ contentString: 'You are a helpful medical assistant.' }],
+      status: 'completed',
+      id: 'test-communication'
     });
   });
 
