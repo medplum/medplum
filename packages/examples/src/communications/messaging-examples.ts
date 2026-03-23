@@ -840,9 +840,7 @@ export async function roundTripReplyBotHandler(medplum: MedplumClient, event: Bo
     return;
   }
   const header = threadHeader as Communication;
-  const threadUsesSms = header.medium?.some((m) =>
-    m.coding?.some((c) => c.code === 'SMSWRIT')
-  );
+  const threadUsesSms = header.medium?.some((m) => m.coding?.some((c) => c.code === 'SMSWRIT'));
   if (!threadUsesSms) {
     return;
   }
