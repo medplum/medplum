@@ -445,12 +445,6 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
     setCurrentFhirRequest(undefined);
   }
 
-  if (!loopCompleted) {
-    throw new Error(
-      `The AI reached the maximum number of steps (${MAX_AGENT_ITERATIONS}) without completing your request. Please try a more specific question.`
-    );
-  }
-
   // Get summary response after tool execution (streaming if callback provided)
   if (currentMessages.some((m) => m.role === 'tool')) {
     if (onStreamChunk) {
@@ -466,6 +460,12 @@ export async function processMessage(params: ProcessMessageParams): Promise<Proc
       const summaryResponse = await sendToBot(medplum, resourceSummaryBotId, currentMessages, selectedModel);
       content = summaryResponse.content;
     }
+  }
+
+  if (!loopCompleted && content) {
+    content += '\n\n_Note: The request reached the processing limit before fully completing. Try a more specific question or break it into smaller parts._';
+  } else if (!loopCompleted) {
+    content = 'The request reached the processing limit before any results could be gathered. Try a more specific question or break it into smaller parts.';
   }
 
   let componentCode: string | undefined;
