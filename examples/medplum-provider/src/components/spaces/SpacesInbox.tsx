@@ -83,12 +83,19 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     document.body.style.userSelect = 'none';
 
     const onMouseMove = (moveEvent: MouseEvent): void => {
+<<<<<<< HEAD
       if (!isDraggingRef.current) { 
         return; 
       }
+=======
+      if (!isDraggingRef.current) {return;}
+>>>>>>> fc814bd542296b740fc8368691e25c1c43a31e3d
       const delta = dragStartXRef.current - moveEvent.clientX;
       const containerWidth = chatContainerRef.current?.parentElement?.offsetWidth ?? window.innerWidth;
-      const newWidth = Math.min(Math.max(dragStartWidthRef.current + delta, containerWidth * 0.50), containerWidth * 0.75);
+      const newWidth = Math.min(
+        Math.max(dragStartWidthRef.current + delta, containerWidth * 0.5),
+        containerWidth * 0.75
+      );
       setPanelWidth(newWidth);
     };
 
@@ -496,9 +503,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       </div>
 
       {/* Resource List Panel */}
-      {selectedResources && !selectedResource && (
-        <div className={classes.dragHandle} onMouseDown={handleDragStart} />
-      )}
+      {selectedResources && !selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
       {selectedResources && !selectedResource && (
         <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
@@ -518,9 +523,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
       )}
 
       {/* Resource Panel */}
-      {selectedResource && (
-        <div className={classes.dragHandle} onMouseDown={handleDragStart} />
-      )}
+      {selectedResource && <div className={classes.dragHandle} onMouseDown={handleDragStart} />}
       {selectedResource && (
         <div className={classes.resourcePanel} style={{ width: panelWidth, flex: 'none' }}>
           <div className={classes.resourceHeader}>
