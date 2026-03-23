@@ -302,6 +302,18 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
 // end-block filterMyThreadsCurl
 */
 
+// start-block subscribeThreadMessagesTs
+const threadId = 'example-thread-id';
+const emitter = medplum.subscribeToCriteria(`Communication?part-of=Communication/${threadId}`);
+
+emitter.addEventListener('message', (event) => {
+  const newMessage = event.payload.entry?.find((e) => e.resource?.resourceType === 'Communication')?.resource;
+  if (newMessage) {
+    console.log(newMessage);
+  }
+});
+// end-block subscribeThreadMessagesTs
+
 // start-block poolTasksTs
 // Task-based routing: find unclaimed Tasks in a pool by performer role
 await medplum.search('Task', {
@@ -685,7 +697,7 @@ const communicationThread: Partial<Communication>[] = [
     payload: [
       {
         id: 'example-message-1-payload',
-        contentString: 'The specimen for you patient, Homer Simpson, has been received.',
+        contentString: 'The specimen for your patient, Homer Simpson, has been received.',
       },
     ],
     topic: {
