@@ -1,0 +1,89 @@
+---
+sidebar_position: 2
+title: Creating Your First Thread
+tags: [communications, messaging, threads, Communication, tutorial]
+keywords: [Communication, thread, partOf, MedplumClient, tutorial]
+---
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Creating Your First Thread
+
+This walkthrough creates a thread through the FHIR API using [`MedplumClient`](/docs/sdk/core.medplumclient). That matches how a real app (or Bot) writes messages. The [Medplum App](https://app.medplum.com) is useful as an inspector: confirm resources, references, and history—not as the primary authoring experience you ship to users.
+
+Before you start, read how thread headers and messages differ in [Organizing Communications — Building and Structuring Threads](/docs/communications/organizing-communications#building-and-structuring-threads).
+
+The example below is a provider–patient conversation: the patient is `subject` and is included in `recipient` on the thread header and on messages where they should see or receive the thread, alongside the clinician.
+
+## Prerequisites
+
+- An authenticated `MedplumClient` (see [MedplumClient](/docs/sdk/core.medplumclient) and [Auth](/docs/auth)). If you still need a Medplum project, use [Register](/docs/tutorials/register).
+- Existing [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) resources in that project whose `id` values match the snippet references (or change every `reference` in the code to match your data). Create or import them in the [Medplum App](https://app.medplum.com) or another flow you use for test data. Any reference that does not resolve causes `createResource` to fail with a server error pointing at the bad reference.
+
+:::caution Creating threads in the Medplum App
+
+You can create or edit [`Communication`](/docs/api/fhir/resources/communication) resources in the [Medplum App](https://app.medplum.com) if you are still wiring up a client, exploring the thread model, or seeding a small amount of test data. The App talks to the same FHIR API; this is a temporary or internal shortcut, not the authoring experience you ship to end users.
+
+Manual entry is easy to get wrong: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. Set the same `topic` on the header and on every child message. On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work (see [Organizing Communications](/docs/communications/organizing-communications#building-and-structuring-threads)). [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
+
+:::
+
+## Create the Thread Header and Messages
+
+1. Thread header — A [`Communication`](/docs/api/fhir/resources/communication) with no `payload` and no `partOf`. It groups the conversation and carries `topic`, `subject`, participants, and optional `category`.
+2. Each message — A `Communication` with `payload` (content) and `partOf` pointing at the same thread header. Use the same `topic` text on the header and every child so searches stay consistent.
+
+The snippet below creates one header, a first message from the clinician to the patient, and a reply from the patient. The header lists both participants in `recipient`; see the modeling note in [Organizing Communications](/docs/communications/organizing-communications#building-and-structuring-threads).
+
+<MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadWalkthroughTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+### Optional: Reply to a Specific Message
+
+For linear chat, `partOf` plus sorting by `sent` is usually enough. Add [`inResponseTo`](/docs/api/fhir/resources/communication) only when the user explicitly replies to one message (for example a Reply action). The following snippet continues the variables from the walkthrough above (`createdThreadHeader`, `walkthroughSecondMessage`):
+
+<MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadReplyInResponseToTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Atomic Creates With Transaction Bundles
+
+The steps above use separate `createResource` calls so each part of the thread is obvious. In production, you may prefer a single FHIR `transaction` `Bundle` so the thread header and first message are created together (all entries succeed or none are committed). Use `fullUrl` and `urn:uuid` references so the first message’s `partOf` can point at the header inside the same bundle. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) for `transaction` bundles, the `executeBatch` helper on [`MedplumClient`](/docs/sdk/core.medplumclient), project feature flags, and current limitations.
+
+## Verification
+
+In the App, open Communication and find the new resources. The thread header should have no `partOf` and no `payload`; each message should have both.
+
+To list messages in the thread (newest last when using `_sort=sent`), run a search with the header’s id:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="queryMessagesInThreadTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCli">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="queryMessagesInThreadCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+Replace `threadHeader.id` (TypeScript) or `{threadHeaderId}` (CLI/cURL) with your thread header’s id. If nothing appears, check [access policies](/docs/access/access-policies)—your user must be allowed to read those `Communication` resources.
+
+## See Also
+
+- [Communication](/docs/api/fhir/resources/communication) FHIR resource API
+- [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) — batch and transaction `Bundle` requests, `executeBatch`
+- [Searching and Querying Threads](/docs/communications/searching-and-querying-threads) — thread lists, filters, `_revinclude`, subscriptions
+- [Sending Messages and Attachments](/docs/communications/sending-messages-and-attachments) — `payload`, files, `Binary`
+- [Contact Center Demo](https://github.com/medplum/medplum-chat-demo) — full UI reference

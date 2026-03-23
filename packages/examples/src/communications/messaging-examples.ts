@@ -261,6 +261,111 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
+// start-block createYourFirstThreadWalkthroughTs
+// Create a thread header (no payload, no partOf), then two child messages linked via partOf.
+// Provider–patient thread: replace Patient and Practitioner references with real ids from your project.
+const createdThreadHeader = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
+          code: 'notification',
+          display: 'Notification',
+        },
+      ],
+    },
+  ],
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [
+    { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  ],
+});
+
+const walkthroughFirstMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Practitioner/doctor-alice-smith',
+    display: 'Dr. Alice Smith',
+  },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [
+    {
+      contentString:
+        'Hi Homer — we received your lab specimen and processing has started. We will message you here when results are ready.',
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+
+const walkthroughSecondMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
+  topic: {
+    text: 'Lab results for Homer Simpson - April 10th',
+  },
+  subject: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  sender: {
+    reference: 'Patient/homer-simpson',
+    display: 'Homer Simpson',
+  },
+  recipient: [{ reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' }],
+  payload: [
+    {
+      contentString: 'Thanks — will the results be ready by the end of the week?',
+    },
+  ],
+  sent: new Date().toISOString(),
+});
+console.log(createdThreadHeader, walkthroughFirstMessage, walkthroughSecondMessage);
+// end-block createYourFirstThreadWalkthroughTs
+
+// start-block createYourFirstThreadReplyInResponseToTs
+// Use when the user explicitly replies to one message (not required for linear chat).
+// Set ids from the thread header and the message being replied to.
+const threadHeaderIdForReply = createdThreadHeader.id;
+const priorMessageId = walkthroughSecondMessage.id;
+const walkthroughReplyInResponseTo = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeaderIdForReply}` }],
+  topic: { text: 'Lab results for Homer Simpson - April 10th' },
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
+  payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],
+  sent: new Date().toISOString(),
+  inResponseTo: [{ reference: `Communication/${priorMessageId}` }],
+});
+console.log(walkthroughReplyInResponseTo);
+// end-block createYourFirstThreadReplyInResponseToTs
+
 // start-block filterByPatientTs
 // Filter threads to a specific patient
 await medplum.searchResources('Communication', {
