@@ -12,9 +12,8 @@ These [Communications](/docs/api/fhir/resources/communication) can also be struc
 - [Message attachments](/docs/communications/sending-messages-and-attachments)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
 - [Messaging automations](/docs/communications/messaging-automations)
-- [External messaging integration patterns](/docs/communications/external-messaging-integration-patterns) (SMS, email, webhooks)
+- [Omni-channel messaging](/docs/communications/external-messaging-integration-patterns) (SMS, email, webhooks)
 - [Asynchronous encounters](/docs/communications/async-encounters)
-- Omni-channel messaging
 - Real-time notifications using Websockets
 
 Check out our [Contact Center Demo](https://github.com/medplum/medplum-chat-demo) for an in-depth example of a provider messaging app.
