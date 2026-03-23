@@ -14,7 +14,7 @@ import TabItem from '@theme/TabItem';
 
 This walkthrough creates a thread through the FHIR API using [`MedplumClient`](/docs/sdk/core.medplumclient). That matches how a real app (or Bot) writes messages. The [Medplum App](https://app.medplum.com) is useful as an inspector: confirm resources, references, and history—not as the primary authoring experience you ship to users.
 
-Before you start, read how thread headers and messages differ in [Organizing Communications — Building and Structuring Threads](/docs/communications/organizing-communications#building-and-structuring-threads).
+Before you start, read how thread headers and messages differ in [Messaging Data Model — Building and Structuring Threads](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
 The example below is a provider–patient conversation: the patient is `subject` and is included in `recipient` on the thread header and on messages where they should see or receive the thread, alongside the clinician.
 
@@ -27,7 +27,7 @@ The example below is a provider–patient conversation: the patient is `subject`
 
 You can create or edit [`Communication`](/docs/api/fhir/resources/communication) resources in the [Medplum App](https://app.medplum.com) if you are still wiring up a client, exploring the thread model, or seeding a small amount of test data. The App talks to the same FHIR API; this is a temporary or internal shortcut, not the authoring experience you ship to end users.
 
-Manual entry is easy to get wrong: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. Set the same `topic` on the header and on every child message. On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work (see [Organizing Communications](/docs/communications/organizing-communications#building-and-structuring-threads)). [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
+Manual entry is easy to get wrong: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. Set the same `topic` on the header and on every child message. On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work (see [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads)). [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
 
 :::
 
@@ -36,7 +36,7 @@ Manual entry is easy to get wrong: the thread header must have no `payload` and 
 1. Thread header — A [`Communication`](/docs/api/fhir/resources/communication) with no `payload` and no `partOf`. It groups the conversation and carries `topic`, `subject`, participants, and optional `category`.
 2. Each message — A `Communication` with `payload` (content) and `partOf` pointing at the same thread header. Use the same `topic` text on the header and every child, and repeat the same `category` values on each message so category-based searches match. This walkthrough sets `subject` only on the thread header; add `subject` on child messages too if your searches or profiles require it.
 
-The snippet below creates one header, a first message from the clinician to the patient, and a reply from the patient. The header lists both participants in `recipient`; see the modeling note in [Organizing Communications](/docs/communications/organizing-communications#building-and-structuring-threads).
+The snippet below creates one header, a first message from the clinician to the patient, and a reply from the patient. The header lists both participants in `recipient`; see the modeling note in [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
 <MedplumCodeBlock language="ts" selectBlocks="createYourFirstThreadWalkthroughTs">
   {ExampleCode}
