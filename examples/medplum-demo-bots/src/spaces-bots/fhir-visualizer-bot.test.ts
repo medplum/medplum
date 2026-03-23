@@ -24,6 +24,10 @@ describe('fhir-visualizer-bot', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue({
+      resourceType: 'Communication',
+      payload: [{ contentString: 'You are a helpful FHIR visualization assistant.' }],
+    });
   });
 
   test('returns OperationOutcome when OPENAI_API_KEY is missing', async () => {
