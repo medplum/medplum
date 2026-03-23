@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { MedplumClient } from '@medplum/core';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import type { Message } from '../types/spaces';
 import { processMessage, sendToBotStreaming } from './spaceMessaging';
 
 vi.mock('./spacePersistence', () => ({
@@ -353,19 +352,6 @@ describe('processMessage - max iterations behavior', () => {
   });
 
   test('completes normally when bot returns final answer before max iterations', async () => {
-    let callCount = 0;
-    const medplum = makeMockMedplum(() => {
-      callCount++;
-      if (callCount === 1) {
-        return Promise.resolve(makeBotResponse({ toolCalls: [stubToolCall] }));
-      }
-      if (callCount === 2) {
-        // Summary bot after tool execution
-        return Promise.resolve(makeBotResponse({ content: 'Summary of results.' }));
-      }
-      // Third call: translator responds with no tool calls (final answer)
-      return Promise.resolve(makeBotResponse({ content: 'Here is the final answer.' }));
-    });
 
     // First call: tool call → second call: summary → done
     // Actually: iteration 1 → tool call → executeToolCalls → iteration 2 → no tool calls → loopCompleted
