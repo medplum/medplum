@@ -103,6 +103,38 @@ describe('CommunicationPayloadPage', () => {
     expect(updated.payload?.[0].contentString).toBe('Updated');
   });
 
+  test('preserves attachment and reference payloads when saving string edits', async () => {
+    const medplum = new MockClient();
+    const communication = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'completed',
+      payload: [
+        { contentString: 'Original text' },
+        { contentAttachment: { url: 'https://example.com/file.pdf', title: 'My PDF' } },
+        { contentReference: { reference: 'DocumentReference/123' } },
+      ],
+    });
+
+    await setup(`/Communication/${communication.id}/payload`, medplum);
+
+    const textarea = await screen.findByPlaceholderText('Enter content...');
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: 'Updated text' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(await screen.findAllByText('Saved')).not.toHaveLength(0);
+
+    const updated = await medplum.readResource('Communication', communication.id);
+    expect(updated.payload).toHaveLength(3);
+    expect(updated.payload?.[0].contentString).toBe('Updated text');
+    expect(updated.payload?.[1].contentAttachment).toEqual({ url: 'https://example.com/file.pdf', title: 'My PDF' });
+    expect(updated.payload?.[2].contentReference).toEqual({ reference: 'DocumentReference/123' });
+  });
+
   test('adds a new text payload when no payload is available', async () => {
     const medplum = new MockClient();
     const communication = await medplum.createResource<Communication>({
