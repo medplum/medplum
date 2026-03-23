@@ -3,8 +3,8 @@
 
 // start-block imports
 import type { BotEvent } from '@medplum/core';
-import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
-import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
+import { formatHumanName, getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
+import type { Bundle, Communication, Parameters, Patient, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -625,6 +625,243 @@ await medplum.createResource({
   },
 });
 // end-block subscriptionOooRerouteTs
+
+// start-block externalNotifyOnMessageBotTs
+// Bot: bridge a new in-app child Communication to SMS, email, push, etc. (Twilio, SendGrid, Firebase, …).
+export async function externalNotifyOnMessageHandler(
+  medplum: MedplumClient,
+  event: BotEvent<Communication>
+): Promise<void> {
+  const communication = event.input;
+  const messageText = communication.payload?.[0]?.contentString;
+  const recipientRef = communication.recipient?.[0]?.reference;
+  if (!recipientRef) {
+    return;
+  }
+
+  const recipient = await medplum.readReference({ reference: recipientRef });
+  let contact: string | undefined;
+  if (recipient.resourceType === 'Patient') {
+    const patient = recipient as Patient;
+    contact =
+      patient.telecom?.find((t) => t.system === 'phone' && t.value)?.value ??
+      patient.telecom?.find((t) => t.system === 'email' && t.value)?.value;
+  }
+  // Send via Twilio, SendGrid, etc. using `contact` and `messageText`
+  console.log(`Sending notification to ${contact ?? recipientRef}: ${messageText}`);
+}
+// end-block externalNotifyOnMessageBotTs
+
+// start-block externalNotifySubscriptionTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Send external notification on new message',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-bot-id}',
+  },
+});
+// end-block externalNotifySubscriptionTs
+
+// start-block inboundSmsConditionalSenderTs
+// Inbound webhook: resolve Patient by phone at write time; set partOf using a thread-matching strategy below.
+const inboundSmsWebhook = {
+  fromPhoneNumber: '+15551234567',
+  messageText: 'Thanks — I will review them',
+};
+
+await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  sender: {
+    reference: `Patient?phone=${inboundSmsWebhook.fromPhoneNumber}`,
+  },
+  payload: [{ contentString: inboundSmsWebhook.messageText }],
+  sent: new Date().toISOString(),
+  medium: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+          code: 'SMSWRIT',
+          display: 'SMS',
+        },
+      ],
+    },
+  ],
+  // partOf — see thread matching strategies below
+});
+// end-block inboundSmsConditionalSenderTs
+
+// start-block createThreadWithExternalIdTs
+// Strategy 1 setup: thread header with external conversation id (must match conditional partOf below).
+const exampleTwilioConversationSid = 'CHxxxxxxxx';
+const threadHeaderWithExternalId = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  identifier: [{ system: 'https://twilio.com', value: exampleTwilioConversationSid }],
+  topic: { text: 'SMS conversation' },
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  recipient: [
+    { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+  ],
+  medium: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+          code: 'SMSWRIT',
+          display: 'SMS',
+        },
+      ],
+    },
+  ],
+});
+console.log(threadHeaderWithExternalId);
+// end-block createThreadWithExternalIdTs
+
+// start-block inboundSmsWithExternalThreadIdTs
+// Strategy 1: match thread via identifier on the header (e.g. Twilio Conversation SID, email thread id).
+const inboundSmsWithConversation = {
+  fromPhoneNumber: '+15551234567',
+  messageText: 'Thanks — I will review them',
+  conversationSid: 'CHxxxxxxxx',
+};
+
+await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [
+    {
+      reference: `Communication?identifier=https://twilio.com|${inboundSmsWithConversation.conversationSid}`,
+    },
+  ],
+  sender: {
+    reference: `Patient?phone=${inboundSmsWithConversation.fromPhoneNumber}`,
+  },
+  payload: [{ contentString: inboundSmsWithConversation.messageText }],
+  sent: new Date().toISOString(),
+  medium: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+          code: 'SMSWRIT',
+          display: 'SMS',
+        },
+      ],
+    },
+  ],
+});
+// end-block inboundSmsWithExternalThreadIdTs
+
+// start-block inboundSmsActiveThreadLookupBotTs
+// Strategy 2: stateless SMS — resolve Patient, then attach to most recent open thread or create one.
+export async function inboundSmsActiveThreadLookupHandler(medplum: MedplumClient, event: BotEvent): Promise<void> {
+  const webhookData = event.input as Record<string, string>;
+
+  const patients = await medplum.searchResources('Patient', {
+    phone: webhookData.fromPhoneNumber,
+  });
+
+  if (patients.length === 0) {
+    return;
+  }
+
+  const patient = patients[0];
+  if (!patient.id) {
+    return;
+  }
+
+  const activeThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    subject: `Patient/${patient.id}`,
+    'status:not': 'completed,entered-in-error,stopped,unknown',
+    _sort: '-_lastUpdated',
+    _count: '1',
+  });
+
+  let threadId: string | undefined;
+  if (activeThreads.length > 0) {
+    threadId = activeThreads[0].id;
+  } else {
+    const newThread = await medplum.createResource({
+      resourceType: 'Communication',
+      status: 'in-progress',
+      topic: {
+        text: `SMS conversation with ${formatHumanName(patient.name?.[0]) || 'Patient'}`,
+      },
+      subject: { reference: `Patient/${patient.id}` },
+    });
+    threadId = newThread.id;
+  }
+
+  if (!threadId) {
+    return;
+  }
+
+  await medplum.createResource({
+    resourceType: 'Communication',
+    status: 'in-progress',
+    partOf: [{ reference: `Communication/${threadId}` }],
+    sender: { reference: `Patient/${patient.id}` },
+    payload: [{ contentString: webhookData.messageText }],
+    sent: new Date().toISOString(),
+    medium: [
+      {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationMode',
+            code: 'SMSWRIT',
+            display: 'SMS',
+          },
+        ],
+      },
+    ],
+  });
+}
+// end-block inboundSmsActiveThreadLookupBotTs
+
+// start-block roundTripReplyBotTs
+// Bot: when a provider sends an in-app reply, mirror it to SMS if the thread is tagged for SMS (medium on header).
+export async function roundTripReplyBotHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const threadHeader = await medplum.readReference({ reference: threadRef });
+  if (threadHeader.resourceType !== 'Communication') {
+    return;
+  }
+  const header = threadHeader as Communication;
+  const threadUsesSms = header.medium?.some((m) =>
+    m.coding?.some((c) => c.code === 'SMSWRIT')
+  );
+  if (!threadUsesSms) {
+    return;
+  }
+
+  const patientRef = header.subject?.reference;
+  if (!patientRef) {
+    return;
+  }
+  const subject = await medplum.readReference({ reference: patientRef });
+  if (subject.resourceType !== 'Patient') {
+    return;
+  }
+  const patient = subject as Patient;
+  const phone = patient.telecom?.find((t) => t.system === 'phone' && t.value)?.value;
+  const body = message.payload?.[0]?.contentString;
+  // Send via Twilio (or your SMS provider) using `phone` and `body`
+  console.log(`Round-trip SMS to ${phone ?? patientRef}: ${body}`);
+}
+// end-block roundTripReplyBotTs
 
 // start-block staleThreadRemindersTs
 // Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
