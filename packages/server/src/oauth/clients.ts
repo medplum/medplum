@@ -81,7 +81,7 @@ function isAllowedPartialRedirectUri(actualUri: string, requestedUri: string): b
     const actualUrl = new URL(actualUri);
     const requestedUrl = new URL(requestedUri);
     return actualUrl.origin === requestedUrl.origin && requestedUrl.pathname.startsWith(actualUrl.pathname);
-  } catch (_err) {
+  } catch {
     return false;
   }
 }
