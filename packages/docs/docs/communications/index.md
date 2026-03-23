@@ -4,11 +4,10 @@ sidebar_position: 0
 
 # Messaging & Communications
 
-FHIR supports messaging workflows through the [Communication](/docs/api/fhir/resources/communication) resource. This resource allows your system to manage message content and metadata in a format independent of its medium (email, SMS, chat, etc.).
+FHIR supports messaging workflows through the [Communication](/docs/api/fhir/resources/communication) resource. This resource allows your system to manage message content and metadata in a format independent of its medium (email, SMS, chat, etc.). For more information on the data model, see [Messaging Data Model](/docs/communications/messaging-data-model).
 
 These [Communications](/docs/api/fhir/resources/communication) can also be structured to support a variety of use cases, including:
 
-- [Messaging data model](/docs/communications/messaging-data-model)
 - [Searching and querying message threads](/docs/communications/searching-and-querying-threads)
 - [Message attachments](/docs/communications/sending-messages-and-attachments)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
