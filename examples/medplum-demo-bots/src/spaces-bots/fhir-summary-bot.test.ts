@@ -27,7 +27,7 @@ describe('fhir-summary-bot', () => {
       resourceType: 'Communication',
       payload: [{ contentString: 'You are a helpful medical assistant.' }],
       status: 'completed',
-      id: 'test-communication'
+      id: 'test-communication',
     });
   });
 

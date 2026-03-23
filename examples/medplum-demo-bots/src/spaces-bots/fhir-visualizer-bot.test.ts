@@ -28,7 +28,7 @@ describe('fhir-visualizer-bot', () => {
       resourceType: 'Communication',
       payload: [{ contentString: 'You are a helpful FHIR visualization assistant.' }],
       status: 'completed',
-      id: 'test-communication'
+      id: 'test-communication',
     });
   });
 
