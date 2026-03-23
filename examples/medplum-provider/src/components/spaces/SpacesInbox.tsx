@@ -83,7 +83,9 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     document.body.style.userSelect = 'none';
 
     const onMouseMove = (moveEvent: MouseEvent): void => {
-      if (!isDraggingRef.current) return;
+      if (!isDraggingRef.current) { 
+        return; 
+      }
       const delta = dragStartXRef.current - moveEvent.clientX;
       const containerWidth = chatContainerRef.current?.parentElement?.offsetWidth ?? window.innerWidth;
       const newWidth = Math.min(Math.max(dragStartWidthRef.current + delta, containerWidth * 0.50), containerWidth * 0.75);
