@@ -22,7 +22,7 @@ import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
@@ -334,6 +334,7 @@ async function upsertProjectMembership(
     accessPolicy: request.accessPolicy,
     access: request.access,
     admin: request.admin,
+    invitedBy: tryGetRequestContext()?.authState?.membership?.user,
     ...request.membership,
   };
 
