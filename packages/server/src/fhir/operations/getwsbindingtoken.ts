@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, isResourceType, normalizeErrorString, resolveId, sleep } from '@medplum/core';
+import { allOk, badRequest, isResourceType, normalizeErrorString, resolveId } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
@@ -147,8 +147,6 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
     return [badRequest('WebSocket subscriptions not enabled for current project')];
   }
 
-  await sleep(5000);
-
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
@@ -196,7 +194,7 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
         subscription_id: subscriptionId,
         membership_id: membership.id,
       } satisfies AdditionalWsBindingClaims,
-      lifetime: '1h',
+      lifetime: '5m',
     }
   );
 

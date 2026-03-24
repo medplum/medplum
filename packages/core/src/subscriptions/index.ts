@@ -563,8 +563,8 @@ export class SubscriptionManager {
 
       // Step 3: Verify the operation is still valid after all async work
       if (this.isStale(criteriaEntry, expectedGen)) {
-        // We immediately unbind here since a mismatch in generate
-        this.sendUnbind(token);
+        // We immediately exit so we avoid binding to a token which we are likely no longer intending to be bound to
+        // Or that has been mutated in another "thread"
         return;
       }
       criteriaEntry.token = token;
