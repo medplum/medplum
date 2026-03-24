@@ -144,6 +144,17 @@ describe('Repository shard routing', () => {
     }
   });
 
+  test('Throws when an operation reaches a shard with no configured database', () => {
+    const repo = getShardSystemRepo('unknown-shard');
+    try {
+      expect(() => repo.getDatabaseClient(repoAccess.sqlRead('Patient'))).toThrow(
+        'Database not set up for shard unknown-shard'
+      );
+    } finally {
+      repo[Symbol.dispose]();
+    }
+  });
+
   test('Rejects a statement that spans shards', () => {
     const repo = getShardSystemRepo(projectShardId);
     try {
