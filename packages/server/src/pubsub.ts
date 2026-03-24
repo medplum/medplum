@@ -6,8 +6,8 @@ import type { CacheEntry } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getCacheRedis, getPubSubRedis } from './redis';
 
-export function publish(channel: string, message: string | Buffer): Promise<number> {
-  return getPubSubRedis().publish(channel, message);
+export function publish(shardId: string, channel: string, message: string | Buffer): Promise<number> {
+  return getPubSubRedis(shardId).publish(channel, message);
 }
 
 // --- Active WebSocket subscription hash helpers ---
@@ -54,12 +54,13 @@ export function getSubRefsByAuthorRef(entries: ActiveSubscriptionMap): Map<strin
 }
 
 export function setActiveSubscription(
+  shardId: string,
   projectId: string,
   resourceType: ResourceType,
   subRef: string,
   entry: ActiveSubscriptionEntry
 ): Promise<number> {
-  return getPubSubRedis().hset(getActiveSubsKey(projectId, resourceType), subRef, JSON.stringify(entry));
+  return getPubSubRedis(shardId).hset(getActiveSubsKey(projectId, resourceType), subRef, JSON.stringify(entry));
 }
 
 export function readActiveSubEntries(rawValues: string[]): ActiveSubscriptionEntry[] {
@@ -70,10 +71,11 @@ export function readActiveSubEntries(rawValues: string[]): ActiveSubscriptionEnt
 }
 
 export async function getActiveSubscriptions(
+  shardId: string,
   projectId: string,
   resourceType: ResourceType
 ): Promise<Record<string, ActiveSubscriptionEntry>> {
-  const rawEntries = await getPubSubRedis().hgetall(getActiveSubsKey(projectId, resourceType));
+  const rawEntries = await getPubSubRedis(shardId).hgetall(getActiveSubsKey(projectId, resourceType));
   const refs = Object.keys(rawEntries);
   const parsedEntries = readActiveSubEntries(Object.values(rawEntries));
   const result: Record<string, ActiveSubscriptionEntry> = {};
@@ -84,24 +86,31 @@ export async function getActiveSubscriptions(
 }
 
 export async function getActiveSubscriptionEntries(
+  shardId: string,
   projectId: string,
   resourceType: ResourceType,
   refs: string[]
 ): Promise<(ActiveSubscriptionEntry | null)[]> {
-  const raw = await getPubSubRedis().hmget(getActiveSubsKey(projectId, resourceType), ...refs);
+  const raw = await getPubSubRedis(shardId).hmget(getActiveSubsKey(projectId, resourceType), ...refs);
   return raw.map((entry) => (entry ? (JSON.parse(entry) as ActiveSubscriptionEntry) : null));
 }
 
 export function removeActiveSubscriptions(
+  shardId: string,
   projectId: string,
   resourceType: ResourceType,
   refs: string[]
 ): Promise<number> {
-  return getPubSubRedis().hdel(getActiveSubsKey(projectId, resourceType), ...refs);
+  return getPubSubRedis(shardId).hdel(getActiveSubsKey(projectId, resourceType), ...refs);
 }
 
-export function isSubscriptionActive(projectId: string, resourceType: ResourceType, subRef: string): Promise<number> {
-  return getPubSubRedis().hexists(getActiveSubsKey(projectId, resourceType), subRef);
+export function isSubscriptionActive(
+  shardId: string,
+  projectId: string,
+  resourceType: ResourceType,
+  subRef: string
+): Promise<number> {
+  return getPubSubRedis(shardId).hexists(getActiveSubsKey(projectId, resourceType), subRef);
 }
 
 // --- Per-user active WebSocket subscription set helpers ---
@@ -110,28 +119,36 @@ function getUserActiveSubsKey(authorRef: string): string {
   return `medplum:subscriptions:r4:user:${authorRef}:active`;
 }
 
-export function addUserActiveWebSocketSubscription(authorRef: string, subRef: string): Promise<number> {
-  return getPubSubRedis().sadd(getUserActiveSubsKey(authorRef), subRef);
+export function addUserActiveWebSocketSubscription(
+  shardId: string,
+  authorRef: string,
+  subRef: string
+): Promise<number> {
+  return getPubSubRedis(shardId).sadd(getUserActiveSubsKey(authorRef), subRef);
 }
 
-export function removeUserActiveWebSocketSubscriptions(authorRef: string, refs: string[]): Promise<number> {
-  return getPubSubRedis().srem(getUserActiveSubsKey(authorRef), ...refs);
+export function removeUserActiveWebSocketSubscriptions(
+  shardId: string,
+  authorRef: string,
+  refs: string[]
+): Promise<number> {
+  return getPubSubRedis(shardId).srem(getUserActiveSubsKey(authorRef), ...refs);
 }
 
-export function getUserActiveWebSocketSubscriptionCount(authorRef: string): Promise<number> {
-  return getPubSubRedis().scard(getUserActiveSubsKey(authorRef));
+export function getUserActiveWebSocketSubscriptionCount(shardId: string, authorRef: string): Promise<number> {
+  return getPubSubRedis(shardId).scard(getUserActiveSubsKey(authorRef));
 }
 
-export function getUserActiveWebSocketSubscriptions(authorRef: string): Promise<string[]> {
-  return getPubSubRedis().smembers(getUserActiveSubsKey(authorRef));
+export function getUserActiveWebSocketSubscriptions(shardId: string, authorRef: string): Promise<string[]> {
+  return getPubSubRedis(shardId).smembers(getUserActiveSubsKey(authorRef));
 }
 
-export async function cleanupUserSubs(authorRef: string): Promise<void> {
-  const refs = await getUserActiveWebSocketSubscriptions(authorRef);
+export async function cleanupUserSubs(shardId: string, authorRef: string): Promise<void> {
+  const refs = await getUserActiveWebSocketSubscriptions(shardId, authorRef);
   if (!refs.length) {
     return;
   }
-  const cacheEntries = await getCacheRedis().mget(...refs);
+  const cacheEntries = await getCacheRedis(shardId).mget(...refs);
   const staleRefs: string[] = [];
   const activeCheckItems: { ref: string; projectId: string; resourceType: ResourceType }[] = [];
   for (let i = 0; i < refs.length; i++) {
@@ -148,7 +165,7 @@ export async function cleanupUserSubs(authorRef: string): Promise<void> {
     }
   }
   if (activeCheckItems.length) {
-    const pipeline = getPubSubRedis().pipeline();
+    const pipeline = getPubSubRedis(shardId).pipeline();
     for (const { projectId, resourceType, ref } of activeCheckItems) {
       pipeline.hexists(getActiveSubsKey(projectId, resourceType), ref);
     }
@@ -163,17 +180,21 @@ export async function cleanupUserSubs(authorRef: string): Promise<void> {
     }
   }
   if (staleRefs.length) {
-    await removeUserActiveWebSocketSubscriptions(authorRef, staleRefs);
+    await removeUserActiveWebSocketSubscriptions(shardId, authorRef, staleRefs);
   }
 }
 
-export async function cleanupActiveSubs(projectId: string, entryMap: ActiveSubscriptionMap): Promise<void> {
+export async function cleanupActiveSubs(
+  shardId: string,
+  projectId: string,
+  entryMap: ActiveSubscriptionMap
+): Promise<void> {
   try {
     for (const [resourceType, refs] of getSubRefsByResourceType(entryMap)) {
-      await removeActiveSubscriptions(projectId, resourceType, refs);
+      await removeActiveSubscriptions(shardId, projectId, resourceType, refs);
     }
     for (const [authorRef, refs] of getSubRefsByAuthorRef(entryMap)) {
-      await removeUserActiveWebSocketSubscriptions(authorRef, refs);
+      await removeUserActiveWebSocketSubscriptions(shardId, authorRef, refs);
     }
   } catch (err: unknown) {
     globalLogger.error('Error when attempting to remove sub entries', err as Error);

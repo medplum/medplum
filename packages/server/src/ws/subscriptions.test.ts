@@ -164,6 +164,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
@@ -201,8 +202,12 @@ describe('WebSocket Subscription', () => {
       while (subActive || inCache) {
         await sleep(0);
         subActive =
-          (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSubscription?.id}`)) ===
-          1;
+          (await isSubscriptionActive(
+            repo.shardId,
+            project.id as string,
+            'Patient',
+            `Subscription/${patientSubscription?.id}`
+          )) === 1;
         try {
           await repo.readResource<Subscription>('Subscription', patientSubscription?.id);
           inCache = true;
@@ -296,6 +301,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
@@ -327,6 +333,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'Patient',
                 `Subscription/${patientSubscription?.id}`
@@ -405,10 +412,19 @@ describe('WebSocket Subscription', () => {
           while (!patientActive || !observationActive) {
             await sleep(0);
             patientActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSub.id}`
+              )) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
-              1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Observation',
+                `Subscription/${observationSub.id}`
+              )) === 1;
           }
           expect(patientActive).toStrictEqual(true);
           expect(observationActive).toStrictEqual(true);
@@ -422,10 +438,19 @@ describe('WebSocket Subscription', () => {
           while (patientActive || observationActive) {
             await sleep(0);
             patientActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${patientSub.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${patientSub.id}`
+              )) === 1;
             observationActive =
-              (await isSubscriptionActive(project.id as string, 'Observation', `Subscription/${observationSub.id}`)) ===
-              1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Observation',
+                `Subscription/${observationSub.id}`
+              )) === 1;
           }
           expect(patientActive).toStrictEqual(false);
           expect(observationActive).toStrictEqual(false);
@@ -541,11 +566,16 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           // Publish a v1 payload (array of [resource, subscriptionId, options] tuples)
           const v1Payload = [[patient, subscription.id, { includeResource: true }]];
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v1Payload));
+          await publish(repo.shardId, WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v1Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -609,11 +639,16 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
           // Publish a v2 payload ({ resource, events: [[subscriptionId, options]] })
           const v2Payload = { resource: patient, events: [[subscription.id, { includeResource: true }]] };
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
+          await publish(repo.shardId, WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
         })
         .expectJson((msg: Bundle): boolean => {
           if (msg.entry?.[0]?.resource?.resourceType !== 'SubscriptionStatus') {
@@ -705,9 +740,19 @@ describe('WebSocket Subscription', () => {
           while (!sub1Active || !sub2Active) {
             await sleep(0);
             sub1Active =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription1.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${subscription1.id}`
+              )) === 1;
             sub2Active =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription2.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${subscription2.id}`
+              )) === 1;
           }
           // Publish a single v2 payload with both subscriptions in the events array
           const v2Payload = {
@@ -717,7 +762,7 @@ describe('WebSocket Subscription', () => {
               [subscription2.id, { includeResource: true }],
             ],
           };
-          await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
+          await publish(repo.shardId, WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify(v2Payload));
         })
         // Expect first event-notification
         .expectJson((msg: Bundle): boolean => {
@@ -838,6 +883,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
@@ -1044,6 +1090,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
@@ -1270,6 +1317,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
@@ -1362,6 +1410,7 @@ describe('WebSocket Subscription', () => {
             await sleep(0);
             subActive =
               (await isSubscriptionActive(
+                repo.shardId,
                 project.id as string,
                 'DocumentReference',
                 `Subscription/${subscription.id}`
@@ -1428,17 +1477,17 @@ describe('WebSocket Subscription', () => {
           });
         })
         .exec(async () => {
-          countAfterBind = await getUserActiveWebSocketSubscriptionCount(authorRef);
+          countAfterBind = await getUserActiveWebSocketSubscriptionCount(repo.shardId, authorRef);
           expect(countAfterBind).toBeGreaterThanOrEqual(1);
         })
         .close()
         .expectClosed()
         .exec(async () => {
           // After disconnect, user active set should be decremented
-          while ((await getUserActiveWebSocketSubscriptionCount(authorRef)) >= countAfterBind) {
+          while ((await getUserActiveWebSocketSubscriptionCount(repo.shardId, authorRef)) >= countAfterBind) {
             await sleep(0);
           }
-          expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterBind - 1);
+          expect(await getUserActiveWebSocketSubscriptionCount(repo.shardId, authorRef)).toBe(countAfterBind - 1);
         });
     }));
 
@@ -1458,13 +1507,13 @@ describe('WebSocket Subscription', () => {
 
       // Subscriptions are only added to the user active set when bound, not when created.
       // Manually add the subscription to simulate it having been bound.
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub.id}`);
-      const countAfterBind = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      await addUserActiveWebSocketSubscription(repo.shardId, authorRef, `Subscription/${sub.id}`);
+      const countAfterBind = await getUserActiveWebSocketSubscriptionCount(repo.shardId, authorRef);
       expect(countAfterBind).toBeGreaterThanOrEqual(1);
 
       await repo.deleteResource('Subscription', sub.id);
 
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countAfterBind - 1);
+      expect(await getUserActiveWebSocketSubscriptionCount(repo.shardId, authorRef)).toBe(countAfterBind - 1);
     }));
 
   test('Bind resolves membership via lookup when membership claim is absent from token', () =>
@@ -1486,7 +1535,7 @@ describe('WebSocket Subscription', () => {
       const origVerifyJwt = keysModule.verifyJwt;
       const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
         const result = await origVerifyJwt(t);
-        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        const { membership_id: _m, ...rest } = result.payload as Record<string, unknown>;
         return { ...result, payload: rest };
       });
 
@@ -1506,9 +1555,14 @@ describe('WebSocket Subscription', () => {
           while (!subActive) {
             await sleep(0);
             subActive =
-              (await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`)) === 1;
+              (await isSubscriptionActive(
+                repo.shardId,
+                project.id as string,
+                'Patient',
+                `Subscription/${subscription.id}`
+              )) === 1;
           }
-          const entries = await getActiveSubscriptions(project.id as string, 'Patient');
+          const entries = await getActiveSubscriptions(repo.shardId, project.id as string, 'Patient');
           const entry = entries[`Subscription/${subscription.id}`];
           expect(entry).toBeDefined();
           expect(entry.membershipId).toMatch(/^[\da-f-]{36}$/);
@@ -1532,28 +1586,16 @@ describe('WebSocket Subscription', () => {
         channel: { type: 'websocket' },
       });
 
-      const token = await keysModule.generateAccessToken(
-        {
-          client_id: randomUUID(),
-          login_id: randomUUID(),
-          sub: randomUUID(),
-          username: randomUUID(),
-          scope: 'mock',
-          profile: getReferenceString(repo.getAuthor()) ?? '',
-        },
-        {
-          additionalClaims: {
-            // We need subscription_id but intentionally leave off membership_id
-            subscription_id: subscription.id,
-          },
-        }
-      );
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      const token = (res.body as Parameters).parameter?.[0]?.valueString as string;
 
       // Simulate an older token that lacks the membership claim
       const origVerifyJwt = keysModule.verifyJwt;
       const verifyJwtSpy = jest.spyOn(keysModule, 'verifyJwt').mockImplementationOnce(async (t: string) => {
         const result = await origVerifyJwt(t);
-        const { membership: _m, ...rest } = result.payload as Record<string, unknown>;
+        const { membership_id: _m, ...rest } = result.payload as Record<string, unknown>;
         return { ...result, payload: rest };
       });
       // Simulate membership not found (e.g. deleted or cross-project token)
@@ -1567,11 +1609,17 @@ describe('WebSocket Subscription', () => {
         .sendJson({ type: 'bind-with-token', payload: { token } })
         .exec(async () => {
           await sleep(1000);
+          console.log(warnSpy.mock.calls);
           expect(warnSpy).toHaveBeenCalledWith(
             '[WS] Failed to retrieve project membership for profile when binding to token',
             expect.objectContaining({ subscriptionId: subscription.id })
           );
-          const active = await isSubscriptionActive(project.id as string, 'Patient', `Subscription/${subscription.id}`);
+          const active = await isSubscriptionActive(
+            repo.shardId,
+            project.id as string,
+            'Patient',
+            `Subscription/${subscription.id}`
+          );
           expect(active).toBe(0);
         })
         .close()
@@ -1614,16 +1662,16 @@ describe('WebSocket Subscription', () => {
       });
 
       const authorRef = sub1.meta?.author?.reference as string;
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub1.id}`);
-      await setActiveSubscription(limitProject.id, 'Patient', `Subscription/${sub1.id}`, {
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub1.id}`);
+      await setActiveSubscription(limitRepo.shardId, limitProject.id, 'Patient', `Subscription/${sub1.id}`, {
         criteria: 'Patient',
         expiration: Math.floor(Date.now() / 1000) + 3600,
         author: authorRef,
         loginId: randomUUID(),
         membershipId: randomUUID(),
       });
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub2.id}`);
-      await setActiveSubscription(limitProject.id, 'Observation', `Subscription/${sub2.id}`, {
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub2.id}`);
+      await setActiveSubscription(limitRepo.shardId, limitProject.id, 'Observation', `Subscription/${sub2.id}`, {
         criteria: 'Observation',
         expiration: Math.floor(Date.now() / 1000) + 3600,
         author: authorRef,
@@ -1662,13 +1710,13 @@ describe('WebSocket Subscription', () => {
 
       // Add a fake ref (no subscription in cache) to the user set
       const fakeRef = `Subscription/${randomUUID()}`;
-      await addUserActiveWebSocketSubscription(authorRef, fakeRef);
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBeGreaterThanOrEqual(1);
+      await addUserActiveWebSocketSubscription(cleanupRepo.shardId, authorRef, fakeRef);
+      expect(await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef)).toBeGreaterThanOrEqual(1);
 
-      await cleanupUserSubs(authorRef);
+      await cleanupUserSubs(cleanupRepo.shardId, authorRef);
 
       // Fake ref should be gone; count should be reduced
-      const remaining = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      const remaining = await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef);
       // The only ref we added was the fake one, so it should be removed
       expect(remaining).toBeLessThan(1 + 1); // sanity: just verify the fake was cleaned
       // More precisely: ensure the fake ref itself was removed by checking via count change
@@ -1692,12 +1740,12 @@ describe('WebSocket Subscription', () => {
       const subRef = `Subscription/${sub.id}`;
 
       // Add to user set but do NOT add to the project active hash
-      await addUserActiveWebSocketSubscription(authorRef, subRef);
-      const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      await addUserActiveWebSocketSubscription(cleanupRepo.shardId, authorRef, subRef);
+      const countBefore = await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef);
 
-      await cleanupUserSubs(authorRef);
+      await cleanupUserSubs(cleanupRepo.shardId, authorRef);
 
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countBefore - 1);
+      expect(await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef)).toBe(countBefore - 1);
     }));
 
   test('cleanupUserSubs keeps ref that is in cache and in active hash', () =>
@@ -1718,20 +1766,20 @@ describe('WebSocket Subscription', () => {
       const subRef = `Subscription/${sub.id}`;
 
       // Add to user set AND to the project active hash
-      await addUserActiveWebSocketSubscription(authorRef, subRef);
-      await setActiveSubscription(cleanupProject.id, 'Patient', subRef, {
+      await addUserActiveWebSocketSubscription(cleanupRepo.shardId, authorRef, subRef);
+      await setActiveSubscription(cleanupRepo.shardId, cleanupProject.id, 'Patient', subRef, {
         criteria: 'Patient',
         expiration: Math.floor(Date.now() / 1000) + 3600,
         author: authorRef,
         loginId: randomUUID(),
         membershipId: randomUUID(),
       });
-      const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      const countBefore = await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef);
 
-      await cleanupUserSubs(authorRef);
+      await cleanupUserSubs(cleanupRepo.shardId, authorRef);
 
       // Ref is active — should not be removed
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countBefore);
+      expect(await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef)).toBe(countBefore);
     }));
 
   test('Third subscription succeeds after stale subs are cleaned up on retry', () =>
@@ -1761,8 +1809,8 @@ describe('WebSocket Subscription', () => {
 
       const authorRef = sub1.meta?.author?.reference as string;
       // Add both to user set but NOT the active hash — they are stale
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub1.id}`);
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub2.id}`);
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub1.id}`);
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub2.id}`);
 
       // Third should succeed: first attempt fails the limit check, cleanup removes the two
       // stale refs (in cache but not in active hash), retry passes
@@ -1803,16 +1851,16 @@ describe('WebSocket Subscription', () => {
       });
 
       const authorRef = sub1.meta?.author?.reference as string;
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub1.id}`);
-      await setActiveSubscription(limitProject.id, 'Patient', `Subscription/${sub1.id}`, {
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub1.id}`);
+      await setActiveSubscription(limitRepo.shardId, limitProject.id, 'Patient', `Subscription/${sub1.id}`, {
         criteria: 'Patient',
         expiration: Math.floor(Date.now() / 1000) + 3600,
         author: authorRef,
         loginId: randomUUID(),
         membershipId: randomUUID(),
       });
-      await addUserActiveWebSocketSubscription(authorRef, `Subscription/${sub2.id}`);
-      await setActiveSubscription(limitProject.id, 'Observation', `Subscription/${sub2.id}`, {
+      await addUserActiveWebSocketSubscription(limitRepo.shardId, authorRef, `Subscription/${sub2.id}`);
+      await setActiveSubscription(limitRepo.shardId, limitProject.id, 'Observation', `Subscription/${sub2.id}`, {
         criteria: 'Observation',
         expiration: Math.floor(Date.now() / 1000) + 3600,
         author: authorRef,
@@ -1833,7 +1881,7 @@ describe('WebSocket Subscription', () => {
         ).rejects.toThrow(OperationOutcomeError);
 
         expect(cleanupSpy).toHaveBeenCalledTimes(1);
-        expect(cleanupSpy).toHaveBeenCalledWith(authorRef);
+        expect(cleanupSpy).toHaveBeenCalledWith(limitRepo.shardId, authorRef);
       } finally {
         cleanupSpy.mockRestore();
       }
@@ -1860,14 +1908,14 @@ describe('WebSocket Subscription', () => {
       // A fake ref with no cache entry at all
       const fakeRef = `Subscription/${randomUUID()}`;
 
-      await addUserActiveWebSocketSubscription(authorRef, subRef);
-      await addUserActiveWebSocketSubscription(authorRef, fakeRef);
-      const countBefore = await getUserActiveWebSocketSubscriptionCount(authorRef);
+      await addUserActiveWebSocketSubscription(cleanupRepo.shardId, authorRef, subRef);
+      await addUserActiveWebSocketSubscription(cleanupRepo.shardId, authorRef, fakeRef);
+      const countBefore = await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef);
 
-      await cleanupUserSubs(authorRef);
+      await cleanupUserSubs(cleanupRepo.shardId, authorRef);
 
       // Both the null-cache ref and the not-in-active-hash ref should be removed
-      expect(await getUserActiveWebSocketSubscriptionCount(authorRef)).toBe(countBefore - 2);
+      expect(await getUserActiveWebSocketSubscriptionCount(cleanupRepo.shardId, authorRef)).toBe(countBefore - 2);
     }));
 });
 
@@ -1897,6 +1945,7 @@ describe('Subscription Heartbeat', () => {
     accessToken = result.accessToken;
 
     repo = new Repository({
+      shardId: result.shardId,
       extendedMode: true,
       projects: [project],
       author: {
