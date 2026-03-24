@@ -23,6 +23,12 @@ describe('fhir-summary-bot', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
+    vi.spyOn(medplum, 'searchOne').mockResolvedValue({
+      resourceType: 'Communication',
+      payload: [{ contentString: 'You are a helpful medical assistant.' }],
+      status: 'completed',
+      id: 'test-communication',
+    });
   });
 
   test('returns OperationOutcome when OPENAI_API_KEY is missing', async () => {

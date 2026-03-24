@@ -5,6 +5,8 @@ import { Readable } from 'stream';
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 
+const SYSTEM_PROMPT_IDENTIFIER = 'http://medplum.com/ai-spaces|ai-resource-summary-sse';
+
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system' | 'tool';
   content: string | null;
@@ -12,34 +14,18 @@ interface ChatMessage {
   tool_call_id?: string;
 }
 
-const SUMMARY_SYSTEM_MESSAGE: ChatMessage = {
-  role: 'system',
-  content: `You are a helpful healthcare assistant that summarizes FHIR data responses.
-CRITICAL INSTRUCTIONS (ABSOLUTELY NO EXCEPTIONS):
-1. **YOUR ONLY OUTPUT** must be a description of the FHIR response.
-3. **NEVER** attempt to execute the FHIR request yourself or provide a mock response.
+async function fetchSystemPrompt(medplum: MedplumClient): Promise<string> {
+  const communication = await medplum.searchOne('Communication', {
+    identifier: SYSTEM_PROMPT_IDENTIFIER,
+  });
 
-Your role is to:
-1. Analyze the FHIR response data from the Medplum server
-2. Present the information in a clear, human-readable format
-3. Highlight key information relevant to the user's original question
-4. Use plain language while maintaining medical accuracy
-5. If there are multiple resources, organize them logically
-6. If the response is an error, explain it clearly and suggest next steps
+  const systemPrompt = communication?.payload?.[0]?.contentString;
+  if (!systemPrompt) {
+    throw new Error('ai-resource-summary-sse system prompt is not available');
+  }
 
-Format guidelines:
-- Use natural language, not technical jargon unless necessary
-- For patient data: present demographics, identifiers, and key attributes
-- For observations: highlight values, dates, and significance
-- For searches: summarize the count and key details of results
-- For errors: explain what went wrong and possible solutions
-- If bundle is empty, provide a message that the request was successful but there are no results.
-- Just summarize the bundle, do not attempt to execute any FHIR requests.
-
-DO NOT PROVIDE THE BUNDLE IN THE RESPONSE. JUST SUMMARIZE THE BUNDLE.
-
-**Verbosity rule**: If any fhir_request tool call in the conversation has "visualize": true in its arguments, a chart/component will be shown alongside your summary. In that case, keep your summary to 1-2 sentences maximum — the visual already conveys the detail. Otherwise, be concise but informative.`,
-};
+  return systemPrompt;
+}
 
 export async function handler(
   medplum: MedplumClient,
@@ -67,7 +53,9 @@ export async function handler(
 
   const userMessages: ChatMessage[] = JSON.parse(messagesParam.valueString);
   const model = modelParam?.valueString || 'gpt-4';
-  const messages = [SUMMARY_SYSTEM_MESSAGE, ...userMessages];
+  const systemPrompt = await fetchSystemPrompt(medplum);
+  const systemMessage: ChatMessage = { role: 'system', content: systemPrompt };
+  const messages = [systemMessage, ...userMessages];
 
   const normalizedMessages = messages.map((msg) => {
     if (msg.tool_calls && Array.isArray(msg.tool_calls)) {
