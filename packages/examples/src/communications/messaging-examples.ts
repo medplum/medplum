@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // start-block imports
-import { MedplumClient, getReferenceString } from '@medplum/core';
+import type { BotEvent } from '@medplum/core';
+import { getReferenceString, MedplumClient, SNOMED } from '@medplum/core';
+import type { Bundle, Communication, Parameters, Slot } from '@medplum/fhirtypes';
 
 // end-block imports
 
@@ -10,11 +12,20 @@ const medplum = new MedplumClient();
 
 const userId = 'example-user-id';
 const currentUser = { id: 'example-user-id' };
-const threadHeader = { id: 'example-thread-header' };
+const threadHeader = {
+  id: 'example-thread-header',
+  topic: { text: 'Example thread' },
+  subject: { reference: 'Patient/example' },
+};
 const profile = { resourceType: 'Practitioner' as const, id: 'example-user-id' };
+const readReceiptTaskId = 'example-read-receipt-task-id';
+const latestMessageId = 'latest-message-id';
+const recipientId = 'recipient-practitioner-id';
+const file = new Blob();
 
 // start-block filterActiveThreadsTs
-// Used in the Thread Lifecycle page to show how to find open threads
+// Thread headers have no partOf; child messages have partOf set to the header.
+// part-of:missing=true therefore returns only thread headers, not individual messages.
 await medplum.searchResources('Communication', {
   'part-of:missing': true,
   'status:not': 'completed,entered-in-error,stopped,unknown',
@@ -31,6 +42,138 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&status:
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json'
 // end-block filterActiveThreadsCurl
+*/
+
+// start-block simpleModelMarkReadTs
+// Option A (1:1 only): Mark a message as read by setting received and status
+await medplum.patchResource('Communication', 'message-id', [
+  { op: 'add', path: '/received', value: new Date().toISOString() },
+  { op: 'replace', path: '/status', value: 'completed' },
+]);
+// end-block simpleModelMarkReadTs
+
+// start-block simpleModelQueryUnreadTs
+// Option A (1:1 only): Query messages not yet read (status not completed)
+await medplum.searchResources('Communication', {
+  recipient: getReferenceString(profile),
+  'status:not': 'completed,entered-in-error,stopped,unknown',
+  'part-of:missing': false,
+  _sort: '-sent',
+});
+// end-block simpleModelQueryUnreadTs
+
+/*
+// start-block simpleModelQueryUnreadCli
+medplum get 'Communication?recipient=Practitioner/{id}&status:not=completed,entered-in-error,stopped,unknown&part-of:missing=false&_sort=-sent'
+// end-block simpleModelQueryUnreadCli
+
+// start-block simpleModelQueryUnreadCurl
+curl 'https://api.medplum.com/fhir/R4/Communication?recipient=Practitioner%2F%7Bid%7D&status:not=completed,entered-in-error,stopped,unknown&part-of:missing=false&_sort=-sent' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block simpleModelQueryUnreadCurl
+*/
+
+// start-block threadHeaderWithReadExtensionTs
+// Option B: Thread header with extension for per-participant last-read state (one block per participant)
+const threadWithReadState = {
+  resourceType: 'Communication' as const,
+  status: 'in-progress' as const,
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  topic: { text: 'Lab results - April 10th' },
+  extension: [
+    {
+      url: 'https://medplum.com/fhir/StructureDefinition/thread-read-state',
+      extension: [
+        { url: 'participant', valueReference: { reference: 'Practitioner/doctor-alice-smith' } },
+        { url: 'lastRead', valueReference: { reference: 'Communication/latest-message-id' } },
+        { url: 'lastReadAt', valueDateTime: '2024-03-15T14:30:00.000Z' },
+      ],
+    },
+  ],
+};
+// end-block threadHeaderWithReadExtensionTs
+// Satisfy TS6133 (unused variable); value only used for doc block extraction
+// eslint-disable-next-line no-void
+void threadWithReadState;
+
+// start-block updateThreadReadStateTs
+// Option B: Find this participant's read-state block by URL, update lastRead and lastReadAt, then PUT
+const threadReadStateUrl = 'https://medplum.com/fhir/StructureDefinition/thread-read-state';
+const header = await medplum.readResource('Communication', threadHeader.id);
+const currentUserRef = getReferenceString(profile);
+const readStateBlock = header.extension?.find((ext) => {
+  if (ext.url !== threadReadStateUrl || !ext.extension) {
+    return false;
+  }
+  const participantExt = ext.extension.find((e: { url?: string }) => e.url === 'participant');
+  return (participantExt as { valueReference?: { reference?: string } })?.valueReference?.reference === currentUserRef;
+});
+if (readStateBlock?.extension) {
+  const lastReadExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastRead');
+  const lastReadAtExt = readStateBlock.extension.find((e: { url?: string }) => e.url === 'lastReadAt');
+  if (lastReadExt) {
+    (lastReadExt as { valueReference?: { reference: string } }).valueReference = {
+      reference: `Communication/${latestMessageId}`,
+    };
+  } else {
+    readStateBlock.extension.push({
+      url: 'lastRead',
+      valueReference: { reference: `Communication/${latestMessageId}` },
+    });
+  }
+  const now = new Date().toISOString();
+  if (lastReadAtExt) {
+    (lastReadAtExt as { valueDateTime?: string }).valueDateTime = now;
+  } else {
+    readStateBlock.extension.push({ url: 'lastReadAt', valueDateTime: now });
+  }
+  await medplum.updateResource(header);
+}
+// end-block updateThreadReadStateTs
+
+// start-block createReadReceiptTaskTs
+// Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
+const readReceiptTask = await medplum.createResource({
+  resourceType: 'Task',
+  status: 'requested',
+  intent: 'order',
+  code: { coding: [{ system: 'https://medplum.com/task-codes', code: 'read-receipt' }] },
+  focus: { reference: `Communication/${threadHeader.id}` },
+  for: { reference: 'Patient/homer-simpson' },
+  owner: { reference: `Practitioner/${recipientId}` },
+  authoredOn: new Date().toISOString(),
+});
+// end-block createReadReceiptTaskTs
+// Satisfy TS6133 (unused variable); value only used for doc block extraction
+// eslint-disable-next-line no-void
+void readReceiptTask;
+
+// start-block markReadReceiptTaskTs
+// Option C: Mark read-receipt Task completed when user reads the message
+await medplum.patchResource('Task', readReceiptTaskId, [{ op: 'replace', path: '/status', value: 'completed' }]);
+// end-block markReadReceiptTaskTs
+
+// start-block unreadInThreadTs
+// Option C: Find unread messages in a specific thread for current user
+await medplum.searchResources('Task', {
+  code: 'https://medplum.com/task-codes|read-receipt',
+  owner: getReferenceString(profile),
+  focus: `Communication/${threadHeader.id}`,
+  status: 'requested',
+});
+// end-block unreadInThreadTs
+
+/*
+// start-block unreadInThreadCli
+medplum get 'Task?code=https://medplum.com/task-codes|read-receipt&owner=Practitioner/{id}&focus=Communication/{threadHeaderId}&status=requested'
+// end-block unreadInThreadCli
+
+// start-block unreadInThreadCurl
+curl 'https://api.medplum.com/fhir/R4/Task?code=https%3A%2F%2Fmedplum.com%2Ftask-codes%7Cread-receipt&owner=Practitioner%2F%7Bid%7D&focus=Communication%2F%7BthreadHeaderId%7D&status=requested' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json'
+// end-block unreadInThreadCurl
 */
 
 // start-block unreadCountTs
@@ -118,26 +261,6 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
-// start-block loadThreadsWithMessagesTs
-// Load thread headers and all their child messages in a single request
-await medplum.searchResources('Communication', {
-  'part-of:missing': true,
-  _revinclude: 'Communication:part-of',
-});
-// end-block loadThreadsWithMessagesTs
-
-/*
-// start-block loadThreadsWithMessagesCli
-medplum get 'Communication?part-of:missing=true&_revinclude=Communication:part-of'
-// end-block loadThreadsWithMessagesCli
-
-// start-block loadThreadsWithMessagesCurl
-curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&_revinclude=Communication:part-of' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json'
-// end-block loadThreadsWithMessagesCurl
-*/
-
 // start-block filterByPatientTs
 // Filter threads to a specific patient
 await medplum.searchResources('Communication', {
@@ -179,6 +302,18 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of:missing=true&recipie
 // end-block filterMyThreadsCurl
 */
 
+// start-block subscribeThreadMessagesTs
+const threadId = 'example-thread-id';
+const emitter = medplum.subscribeToCriteria(`Communication?part-of=Communication/${threadId}`);
+
+emitter.addEventListener('message', (event) => {
+  const newMessage = event.payload.entry?.find((e) => e.resource?.resourceType === 'Communication')?.resource;
+  if (newMessage) {
+    console.log(newMessage);
+  }
+});
+// end-block subscribeThreadMessagesTs
+
 // start-block poolTasksTs
 // Task-based routing: find unclaimed Tasks in a pool by performer role
 await medplum.search('Task', {
@@ -200,6 +335,27 @@ curl 'https://api.medplum.com/fhir/R4/Task?performer=http%3A%2F%2Fsnomed.info%2F
 // end-block poolTasksCurl
 */
 
+// start-block messageWithTextAndAttachment
+const attachment = await medplum.createAttachment({
+  data: file,
+  filename: 'lab-report.pdf',
+  contentType: 'application/pdf',
+});
+
+const mixedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  sender: { reference: 'Practitioner/doctor-alice-smith' },
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house' }],
+  payload: [{ contentString: 'Here are the lab results we discussed.' }, { contentAttachment: attachment }],
+  sent: new Date().toISOString(),
+});
+// end-block messageWithTextAndAttachment
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[mixedMessage];
 // start-block createTaskForThreadTs
 const task = await medplum.createResource({
   resourceType: 'Task',
@@ -378,5 +534,295 @@ await medplum.patchResource('Task', task.id, [
   },
 ]);
 // end-block dualTaskRerouteTs
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- retain for doc block extraction; satisfies noUnusedLocals
+[newTask];
 
-console.log(newTask);
+// start-block oooRerouteTs
+// Bot: reroute Tasks to the pool when the assigned provider is out of office.
+// Uses Schedule $find to check availability at message receive time.
+export async function oooRerouteHandler(medplum: MedplumClient, event: BotEvent<Communication>): Promise<void> {
+  const message = event.input;
+  const threadRef = message.partOf?.[0]?.reference;
+  if (!threadRef) {
+    return;
+  }
+
+  const openTasks = await medplum.searchResources('Task', {
+    focus: threadRef,
+    status: 'requested,accepted',
+  });
+
+  if (openTasks.length === 0) {
+    return;
+  }
+
+  const rerouteTask = openTasks[0];
+  if (!rerouteTask.id) {
+    return;
+  }
+  const ownerRef = rerouteTask.owner?.reference;
+  if (!ownerRef) {
+    return;
+  }
+
+  const schedules = await medplum.searchResources('Schedule', {
+    actor: ownerRef,
+  });
+
+  if (schedules.length === 0) {
+    return;
+  }
+
+  const schedule = schedules[0];
+  if (!schedule.id) {
+    return;
+  }
+
+  const now = new Date();
+  const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+  const result: Parameters = await medplum.post(medplum.fhirUrl('Schedule', schedule.id, '$find'), {
+    resourceType: 'Parameters',
+    parameter: [
+      { name: 'start', valueDateTime: now.toISOString() },
+      { name: 'end', valueDateTime: oneHourLater.toISOString() },
+    ],
+  });
+
+  const bundle = result.parameter?.[0]?.resource as Bundle<Slot>;
+  const freeSlots = bundle?.entry?.filter((e) => e.resource?.status === 'free') ?? [];
+
+  if (freeSlots.length > 0) {
+    return;
+  }
+
+  // Provider is unavailable — reroute Task back to the pool
+  const threadHeaderId = threadRef.split('/')[1];
+  await medplum.patchResource('Task', rerouteTask.id, [
+    { op: 'remove', path: '/owner' },
+    { op: 'replace', path: '/status', value: 'requested' },
+    {
+      op: 'add',
+      path: '/note/-',
+      value: {
+        text: `Auto-rerouted: ${rerouteTask.owner?.display ?? ownerRef} is currently unavailable`,
+        time: now.toISOString(),
+      },
+    },
+  ]);
+  await medplum.patchResource('Communication', threadHeaderId, [{ op: 'remove', path: '/recipient' }]);
+}
+// end-block oooRerouteTs
+
+// start-block subscriptionOooRerouteTs
+await medplum.createResource({
+  resourceType: 'Subscription',
+  status: 'active',
+  reason: 'Reroute Tasks when assigned provider is out of office',
+  criteria: 'Communication?part-of:missing=false&status=in-progress',
+  channel: {
+    type: 'rest-hook',
+    endpoint: 'Bot/{your-ooo-reroute-bot-id}',
+  },
+});
+// end-block subscriptionOooRerouteTs
+
+// start-block staleThreadRemindersTs
+// Bot (cron-triggered): find threads with no activity for N days, create a reminder Task per thread if none exists. Export as 'handler' when deploying.
+export async function staleThreadRemindersHandler(medplum: MedplumClient, _event: BotEvent): Promise<void> {
+  const staleDays = 3;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - staleDays);
+
+  const staleThreads = await medplum.searchResources('Communication', {
+    'part-of:missing': true,
+    status: 'in-progress',
+    _lastUpdated: `lt${cutoff.toISOString()}`,
+  });
+
+  for (const thread of staleThreads) {
+    if (!thread.subject) {
+      continue;
+    }
+    const existingTasks = await medplum.searchResources('Task', {
+      focus: `Communication/${thread.id}`,
+      code: 'https://medplum.com/task-codes|respond-to-old-message',
+      status: 'requested,accepted',
+    });
+
+    if (existingTasks.length > 0) {
+      continue;
+    }
+
+    await medplum.createResource({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      priority: 'urgent',
+      code: {
+        coding: [
+          {
+            system: 'https://medplum.com/task-codes',
+            code: 'respond-to-old-message',
+            display: 'Respond to old message',
+          },
+        ],
+      },
+      focus: { reference: `Communication/${thread.id}` },
+      for: thread.subject,
+      description: `Thread "${thread.topic?.text ?? 'Untitled'}" has been open for ${staleDays}+ days without a response`,
+      authoredOn: new Date().toISOString(),
+    });
+  }
+}
+// end-block staleThreadRemindersTs
+
+const communicationThread: Partial<Communication>[] = [
+  // start-block communicationGroupedThread
+  {
+    resourceType: 'Communication',
+    id: 'example-thread-header',
+    // Thread header: no partOf or payload
+    // Include the thread creator in recipient so recipient-based inbox search finds threads they started
+    sender: { reference: 'Practitioner/doctor-alice-smith' },
+    recipient: [{ reference: 'Practitioner/doctor-alice-smith' }, { reference: 'Practitioner/doctor-gregory-house' }],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+  },
+
+  // The initial message
+  {
+    resourceType: 'Communication',
+    id: 'example-message-1',
+    payload: [
+      {
+        id: 'example-message-1-payload',
+        contentString: 'The specimen for your patient, Homer Simpson, has been received.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A response directly to `example-message-1` but still referencing the parent communication
+  {
+    resourceType: 'Communication',
+    id: 'example-message-2',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Will the results be ready by the end of the week?',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-1',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+
+  // A second response
+  {
+    resourceType: 'Communication',
+    id: 'example-message-3',
+    payload: [
+      {
+        id: 'example-message-2-payload',
+        contentString: 'Yes, we will have them to you by Thursday.',
+      },
+    ],
+    topic: {
+      text: 'Homer Simpson April 10th lab tests',
+    },
+    // ...
+    partOf: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-thread-header',
+          status: 'completed',
+        },
+      },
+    ],
+    inResponseTo: [
+      {
+        resource: {
+          resourceType: 'Communication',
+          id: 'example-message-2',
+          status: 'completed',
+        },
+      },
+    ],
+  },
+  // end-block communicationGroupedThread
+];
+
+console.log(communicationThread);
+
+const categoryExampleCommunications: Communication =
+  // start-block communicationCategories
+  {
+    resourceType: 'Communication',
+    id: 'example-communication',
+    status: 'completed',
+    category: [
+      {
+        text: 'Doctor',
+        coding: [
+          {
+            code: '158965000',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Endocrinology',
+        coding: [
+          {
+            code: '394583002',
+            system: SNOMED,
+          },
+        ],
+      },
+      {
+        text: 'Diabetes self-management plan',
+        coding: [
+          {
+            code: '735985000',
+            system: SNOMED,
+          },
+        ],
+      },
+    ],
+  };
+// end-block communicationCategories
+
+console.log(categoryExampleCommunications);

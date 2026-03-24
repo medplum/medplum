@@ -81,7 +81,7 @@ describe('OAuth2 UserInfo', () => {
     const accessToken = res2.body.access_token;
 
     // Clear out `email` field
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     await systemRepo.updateResource({
       ...user,
       email: undefined,

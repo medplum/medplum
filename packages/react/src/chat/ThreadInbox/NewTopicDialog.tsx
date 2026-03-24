@@ -25,7 +25,7 @@ import { ResourceInput } from '../../ResourceInput/ResourceInput';
  * @param onSubmit - Callback fired with the created Communication resource after successful submission.
  * @param allowPatientSelection - When true, the patient field is an editable search input. When false (default), the field is pre-filled from `subject` and disabled. Use true for provider-facing contexts, false for patient-facing apps.
  */
-interface NewTopicDialogProps {
+export interface NewTopicDialogProps {
   subject: Reference<Patient> | Patient | undefined;
   opened: boolean;
   onClose: () => void;

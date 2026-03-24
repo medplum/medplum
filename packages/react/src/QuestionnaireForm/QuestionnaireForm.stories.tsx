@@ -1067,19 +1067,6 @@ export const Choices = (): JSX.Element => (
                   coding: [
                     {
                       system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
                       code: 'multi-select',
                       display: 'Multi select',
                     },

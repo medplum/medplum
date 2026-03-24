@@ -10,7 +10,7 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
-import { createEncounter } from '../../utils/encounter';
+import { createAppointment, createEncounter } from '../../utils/encounter';
 import classes from './EncounterModal.module.css';
 
 export const EncounterModal = (): JSX.Element => {
@@ -39,7 +39,8 @@ export const EncounterModal = (): JSX.Element => {
     setIsLoading(true);
 
     try {
-      const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
+      const appointment = await createAppointment(medplum, start, end, patient);
+      const encounter = await createEncounter(medplum, encounterClass, patient, planDefinitionData, appointment);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {

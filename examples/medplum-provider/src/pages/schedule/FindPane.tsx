@@ -69,7 +69,7 @@ export function FindPane(props: FindPaneProps): JSX.Element {
     const params = new URLSearchParams({ start, end });
     if (serviceType) {
       serviceType.coding?.forEach((coding) => {
-        params.append('service-type', `${coding.system}|${coding.code}`);
+        params.append('service-type', `${coding.system ?? ''}|${coding.code ?? ''}`);
       });
     }
     medplum

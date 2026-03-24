@@ -14,8 +14,8 @@ export default function PricingPage(): JSX.Element {
             Plans for startups, enterprises, and everyone in between.
           </p>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            For questions about pricing or to <Link href="https://cal.com/medplum/15">schedule a demo</Link> please
-            reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
+            For questions about pricing or to <Link href="https://cal.com/team/medplum/30min">schedule a demo</Link>{' '}
+            please reach out to us at <Link href="mailto:hello@medplum.com">hello@medplum.com</Link>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
             <colgroup>

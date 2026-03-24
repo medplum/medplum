@@ -186,7 +186,7 @@ export async function addTestUser(
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   if (accessPolicy) {
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     accessPolicy = await systemRepo.createResource<AccessPolicy>({
       ...accessPolicy,
       meta: { project: project.id },

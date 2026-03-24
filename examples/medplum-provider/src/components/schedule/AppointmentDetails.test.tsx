@@ -2,17 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import type { Appointment } from '@medplum/fhirtypes';
+import type { Appointment, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { createEncounter } from '../../utils/encounter';
 import { showErrorNotification } from '../../utils/notifications';
 import { AppointmentDetails } from './AppointmentDetails';
 
 vi.mock('../../utils/notifications');
+vi.mock('../../utils/encounter', () => ({
+  createEncounter: vi.fn(),
+}));
 
 describe('AppointmentDetails', () => {
   let medplum: MockClient;
@@ -286,6 +290,157 @@ describe('AppointmentDetails', () => {
       expect(onUpdate).not.toHaveBeenCalled();
 
       expect(showErrorNotification).toHaveBeenCalledWith(updateError);
+    });
+  });
+
+  describe('Set Up Encounter', () => {
+    let patient: Patient;
+
+    beforeEach(async () => {
+      patient = await medplum.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Jane'], family: 'Doe' }],
+      });
+    });
+
+    const createAppointmentWithPatient = (patientId: string): Appointment => ({
+      resourceType: 'Appointment',
+      id: 'appointment-with-patient',
+      status: 'booked',
+      start: '2024-01-15T10:00:00Z',
+      end: '2024-01-15T10:30:00Z',
+      participant: [
+        {
+          actor: { reference: `Patient/${patientId}` },
+          status: 'accepted',
+        },
+      ],
+    });
+
+    test('renders Set Up Encounter section when patient participant is loaded', async () => {
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
+        expect(screen.getByLabelText(/Encounter Class/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Care template/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+      });
+    });
+
+    test('does not render Set Up Encounter section when there is no patient participant', async () => {
+      const appointment = createAppointment(); // no Patient participant
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Set Up Encounter')).not.toBeInTheDocument();
+      });
+    });
+
+    test('Apply button is disabled when class and care template are not selected', async () => {
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Apply' })).toBeDisabled();
+      });
+    });
+
+    test('shows warning notification when form submitted without required fields filled', async () => {
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
+      });
+
+      // Bypass the disabled button by submitting the form directly
+      const form = screen.getByText('Set Up Encounter').closest('div')?.querySelector('form');
+      expect(form).toBeTruthy();
+      await act(async () => {
+        fireEvent.submit(form as HTMLFormElement);
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Please fill out required fields.')).toBeInTheDocument();
+      });
+    });
+
+    test('does not call createEncounter when required fields are not filled', async () => {
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
+      });
+
+      // Submit the form without filling either field
+      const form = screen.getByText('Set Up Encounter').closest('div')?.querySelector('form');
+      expect(form).toBeTruthy();
+      await act(async () => {
+        fireEvent.submit(form as HTMLFormElement);
+      });
+
+      // createEncounter must not have been called
+      expect(createEncounter).not.toHaveBeenCalled();
+    });
+
+    test('createEncounter failure shows an error message', async () => {
+      const user = userEvent.setup();
+
+      // Create a PlanDefinition so ResourceInput can find it (searched by `name`)
+      await medplum.createResource({
+        resourceType: 'PlanDefinition',
+        name: 'Test Plan',
+        title: 'Test Plan',
+        status: 'active',
+      });
+
+      const encounterError = new Error('Failed to create encounter');
+      vi.mocked(createEncounter).mockRejectedValue(encounterError);
+
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Set Up Encounter')).toBeInTheDocument();
+      });
+
+      // Fill in Encounter Class — MockClient's ValueSet expansion returns 'Test Display'
+      const classInput = screen.getByLabelText(/Encounter Class/i);
+      await user.type(classInput, 'Test');
+      await waitFor(() => {
+        expect(screen.getByText('Test Display')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Test Display'));
+
+      // Fill in Care template
+      const templateInput = screen.getByLabelText(/Care template/i);
+      await user.type(templateInput, 'Test Plan');
+      await waitFor(() => {
+        expect(screen.getByText('Test Plan')).toBeInTheDocument();
+      });
+      await user.click(screen.getByText('Test Plan'));
+
+      // Wait for the Apply button to become enabled, then submit
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: 'Apply' })).not.toBeDisabled();
+      });
+      await user.click(screen.getByRole('button', { name: 'Apply' }));
+
+      await waitFor(() => {
+        expect(showErrorNotification).toHaveBeenCalledWith(encounterError);
+      });
+    });
+
+    test('renders patient name when patient participant is loaded', async () => {
+      const appointment = createAppointmentWithPatient(patient.id as string);
+      await setup({ appointment });
+
+      await waitFor(() => {
+        expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+      });
     });
   });
 });

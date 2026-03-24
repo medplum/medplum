@@ -1,6 +1,6 @@
 ---
 sidebar_position: 3
-title: Message Response Tracking and Routing Using Tasks
+title: Message Response Tracking and Routing
 tags: [communications, task, routing]
 keywords: [task, routing, assignment, communication, thread, pool, reroute, claim]
 ---
@@ -10,7 +10,7 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Message Response Tracking and Routing Using Tasks
+# Message Response Tracking and Routing
 
 When messages need responses — and those responses need to be tracked, assigned, and rerouted — use the FHIR [`Task`](/docs/api/fhir/resources/task) resource alongside [`Communication`](/docs/api/fhir/resources/communication). This separates message content ([`Communication`](/docs/api/fhir/resources/communication)) from the routing and assignment lifecycle ([`Task`](/docs/api/fhir/resources/task)), allowing you to reassign work without modifying conversation data.
 
@@ -191,7 +191,7 @@ If the original owner does need to retain visibility, create a new [`Task`](/doc
 
 ## See Also
 
-- [Organizing Communications Using Threads](/docs/communications/organizing-communications) — structuring message threads with [`Communication`](/docs/api/fhir/resources/communication) resources
+- [Messaging Data Model](/docs/communications/messaging-data-model) — thread headers, messages, and [`Communication`](/docs/api/fhir/resources/communication) structure
 - [`Communication`](/docs/api/fhir/resources/communication) FHIR resource API
 - [`Task`](/docs/api/fhir/resources/task) FHIR resource API
 - [Contact Center Demo](https://github.com/medplum/medplum-chat-demo) — an in-depth example of a provider messaging application
