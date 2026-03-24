@@ -1244,7 +1244,7 @@ describe('GraphQL', () => {
       } satisfies Patient);
     expect(patRes.status).toBe(201);
 
-    const redis = getCacheRedis();
+    const redis = getCacheRedis(shardId);
     const mgetSpy = jest.spyOn(redis, 'mget');
 
     const res = await request(app)

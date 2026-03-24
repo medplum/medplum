@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import { loadTestConfig } from './config/loader';
 import type { MedplumServerConfig } from './config/types';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import {
   closeRedis,
   getAllRedisInstances,
@@ -19,6 +20,7 @@ import { deleteRedisKeys } from './test.setup';
 
 describe('Redis', () => {
   let config: MedplumServerConfig;
+  const shardId = GLOBAL_SHARD_ID;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -26,14 +28,14 @@ describe('Redis', () => {
 
   test('Get redis', async () => {
     initRedis(config);
-    expect(getCacheRedis()).toBeDefined();
+    expect(getCacheRedis(shardId)).toBeDefined();
     await closeRedis();
   });
 
   test('Not initialized', async () => {
-    expect(() => getCacheRedis()).toThrow();
-    expect(() => getRateLimitRedis()).toThrow();
-    expect(() => getPubSubRedis()).toThrow();
+    expect(() => getCacheRedis(shardId)).toThrow();
+    expect(() => getRateLimitRedis(shardId)).toThrow();
+    expect(() => getPubSubRedis(shardId)).toThrow();
     await expect(closeRedis()).resolves.toBeUndefined();
   });
 
@@ -41,10 +43,10 @@ describe('Redis', () => {
     initRedis(config);
     // closeRedis sets closing=true synchronously before the first await
     const closePromise = closeRedis();
-    expect(() => getCacheRedis()).toThrow('Redis is closing');
-    expect(() => getRateLimitRedis()).toThrow('Redis is closing');
-    expect(() => getPubSubRedis()).toThrow('Redis is closing');
-    expect(() => getPubSubRedisSubscriber()).toThrow('Redis is closing');
+    expect(() => getCacheRedis(shardId)).toThrow('Redis is closing');
+    expect(() => getRateLimitRedis(shardId)).toThrow('Redis is closing');
+    expect(() => getPubSubRedis(shardId)).toThrow('Redis is closing');
+    expect(() => getPubSubRedisSubscriber(shardId)).toThrow('Redis is closing');
     await closePromise;
   });
 
@@ -73,9 +75,9 @@ describe('Redis', () => {
       };
       initRedis(separateConfig);
 
-      const cache = getCacheRedis();
-      const rateLimit = getRateLimitRedis();
-      const pubSub = getPubSubRedis();
+      const cache = getCacheRedis(shardId);
+      const rateLimit = getRateLimitRedis(shardId);
+      const pubSub = getPubSubRedis(shardId);
 
       expect(cache).toBeDefined();
       expect(rateLimit).toBeDefined();
@@ -99,9 +101,9 @@ describe('Redis', () => {
       initRedis(defaultOnlyConfig);
 
       // All should fall back to the default instance
-      const cache = getCacheRedis();
-      const rateLimit = getRateLimitRedis();
-      const pubSub = getPubSubRedis();
+      const cache = getCacheRedis(shardId);
+      const rateLimit = getRateLimitRedis(shardId);
+      const pubSub = getPubSubRedis(shardId);
 
       expect(cache).toBe(rateLimit);
       expect(cache).toBe(pubSub);
@@ -116,9 +118,9 @@ describe('Redis', () => {
       };
       initRedis(separateConfig);
 
-      const subscriber = getPubSubRedisSubscriber();
+      const subscriber = getPubSubRedisSubscriber(shardId);
       expect(subscriber).toBeInstanceOf(Redis);
-      expect(getPubSubRedisSubscriberCount()).toStrictEqual(1);
+      expect(getPubSubRedisSubscriberCount(shardId)).toStrictEqual(1);
 
       await closeRedis();
     });
@@ -135,7 +137,7 @@ describe('Redis', () => {
       };
       initRedis(defaultOnlyConfig);
 
-      const instances = getAllRedisInstances();
+      const instances = getAllRedisInstances(shardId);
       expect(instances).toHaveLength(1);
       expect(instances[0].label).toStrictEqual('default');
 
@@ -152,7 +154,7 @@ describe('Redis', () => {
       };
       initRedis(separateConfig);
 
-      const instances = getAllRedisInstances();
+      const instances = getAllRedisInstances(shardId);
       expect(instances).toHaveLength(5);
       const labels = instances.map((i) => i.label);
       expect(labels).toContain('default');
@@ -165,7 +167,7 @@ describe('Redis', () => {
     });
 
     test('Returns empty when not initialized', async () => {
-      const instances = getAllRedisInstances();
+      const instances = getAllRedisInstances(shardId);
       expect(instances).toHaveLength(0);
     });
   });
@@ -173,19 +175,19 @@ describe('Redis', () => {
   describe('getRedisSubscriber', () => {
     test('Not initialized', async () => {
       await closeRedis();
-      expect(() => getPubSubRedisSubscriber()).toThrow();
+      expect(() => getPubSubRedisSubscriber(shardId)).toThrow();
     });
 
     test('Getting a subscriber', async () => {
       initRedis(config);
-      const subscriber = getPubSubRedisSubscriber();
+      const subscriber = getPubSubRedisSubscriber(shardId);
       expect(subscriber).toBeInstanceOf(Redis);
       await closeRedis();
     });
 
     test('Hanging subscriber still disconnects on closeRedis', async () => {
       initRedis(config);
-      const subscriber = getPubSubRedisSubscriber();
+      const subscriber = getPubSubRedisSubscriber(shardId);
 
       let reject: (err: Error) => void;
       const closePromise = new Promise<void>((resolve, _reject) => {
@@ -208,9 +210,9 @@ describe('Redis', () => {
 
     test('Disconnecting a subscriber removes it from the list', async () => {
       initRedis(config);
-      expect(getPubSubRedisSubscriberCount()).toStrictEqual(0);
-      const subscriber = getPubSubRedisSubscriber();
-      expect(getPubSubRedisSubscriberCount()).toStrictEqual(1);
+      expect(getPubSubRedisSubscriberCount(shardId)).toStrictEqual(0);
+      const subscriber = getPubSubRedisSubscriber(shardId);
+      expect(getPubSubRedisSubscriberCount(shardId)).toStrictEqual(1);
       subscriber.disconnect();
 
       let reject: (err: Error) => void;
@@ -229,7 +231,7 @@ describe('Redis', () => {
       }, 3500);
 
       await expect(closePromise).resolves.toBeUndefined();
-      expect(getPubSubRedisSubscriberCount()).toStrictEqual(0);
+      expect(getPubSubRedisSubscriberCount(shardId)).toStrictEqual(0);
       clearTimeout(timer);
 
       await closeRedis();
