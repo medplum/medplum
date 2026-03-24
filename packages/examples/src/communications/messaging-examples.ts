@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+//
+// Many identifiers below exist only for documentation extraction (MedplumCodeBlock selectBlocks).
+// They are marked with `void` so TypeScript noUnusedLocals stays satisfied.
 
 // start-block imports
 import type { BotEvent } from '@medplum/core';
@@ -261,9 +264,15 @@ curl 'https://api.medplum.com/fhir/R4/Communication?part-of=Communication/{threa
 // end-block queryMessagesInThreadCurl
 */
 
+// start-block verifyWalkthroughReferencesTs
+await medplum.readResource('Patient', 'homer-simpson');
+await medplum.readResource('Practitioner', 'doctor-alice-smith');
+// end-block verifyWalkthroughReferencesTs
+
 // start-block createYourFirstThreadWalkthroughTs
 // Create a thread header (no payload, no partOf), then two child messages linked via partOf.
 // Provider–patient thread: replace Patient and Practitioner references with real ids from your project.
+// Fixed `sent` values match the April 10th topic and sort predictably in examples; use real timestamps in production.
 const createdThreadHeader = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
@@ -289,10 +298,13 @@ const createdThreadHeader = await medplum.createResource({
     reference: 'Practitioner/doctor-alice-smith',
     display: 'Dr. Alice Smith',
   },
+  // Thread header lists every participant in recipient (including the sender) so inbox-style queries work; see Messaging Data Model.
   recipient: [
     { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
     { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
   ],
+  // Optional in FHIR; included here so the header aligns with message times when demonstrating _sort=sent.
+  sent: '2024-04-10T09:00:00.000Z',
 });
 
 const walkthroughFirstMessage = await medplum.createResource({
@@ -324,7 +336,7 @@ const walkthroughFirstMessage = await medplum.createResource({
         'Hi Homer — we received your lab specimen and processing has started. We will message you here when results are ready.',
     },
   ],
-  sent: new Date().toISOString(),
+  sent: '2024-04-10T10:00:00.000Z',
 });
 
 const walkthroughSecondMessage = await medplum.createResource({
@@ -355,7 +367,7 @@ const walkthroughSecondMessage = await medplum.createResource({
       contentString: 'Thanks — will the results be ready by the end of the week?',
     },
   ],
-  sent: new Date().toISOString(),
+  sent: '2024-04-10T10:05:00.000Z',
 });
 // end-block createYourFirstThreadWalkthroughTs
 // eslint-disable-next-line no-void
@@ -387,7 +399,7 @@ const walkthroughReplyInResponseTo = await medplum.createResource({
   sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
   recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
   payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],
-  sent: new Date().toISOString(),
+  sent: '2024-04-10T10:15:00.000Z',
   inResponseTo: [{ reference: `Communication/${walkthroughSecondMessage.id}` }],
 });
 // end-block createYourFirstThreadReplyInResponseToTs

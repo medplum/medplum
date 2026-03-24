@@ -5,7 +5,7 @@ tags: [communications, messaging, threads, Communication, tutorial]
 keywords: [Communication, thread, partOf, MedplumClient, tutorial]
 ---
 
-import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
+import ExampleCode from '!!raw-loader!@site/../examples/src/communications/messaging-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -21,13 +21,13 @@ The example below is a provider–patient conversation: the patient is `subject`
 ## Prerequisites
 
 - An authenticated `MedplumClient` (see [MedplumClient](/docs/sdk/core.medplumclient) and [Auth](/docs/auth)). If you still need a Medplum project, use [Register](/docs/tutorials/register).
-- Existing [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) resources in that project whose `id` values match the snippet references (or change every `reference` in the code to match your data). Create or import them in the [Medplum App](https://app.medplum.com) or another flow you use for test data. Any reference that does not resolve causes `createResource` to fail with a server error pointing at the bad reference.
+- Existing [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) resources in that project whose `id` values match the snippet references (or change every `reference` in the code to match your data). Create or import them in the [Medplum App](https://app.medplum.com) or another flow you use for test data. Any reference that does not resolve causes `createResource` to fail with a server error pointing at the bad reference. If that happens, confirm the targets exist using the checks in [Verification](#verification) below.
 
 :::caution Creating threads in the Medplum App
 
 You can create or edit [`Communication`](/docs/api/fhir/resources/communication) resources in the [Medplum App](https://app.medplum.com) if you are still wiring up a client, exploring the thread model, or seeding a small amount of test data. The App talks to the same FHIR API; this is a temporary or internal shortcut, not the authoring experience you ship to end users.
 
-Manual entry is easy to get wrong: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. Set the same `topic` on the header and on every child message. On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work (see [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads)). [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
+Manual entry requires careful attention to structure: the thread header must have no `payload` and no `partOf`, while every message must include both `payload` and `partOf` pointing at the header. Set the same `topic` on the header and on every child message. On the header, list everyone who should see the thread in `recipient` (for this tutorial, the patient and the clinician who started the thread) so inbox-style queries work (see [Messaging Data Model](/docs/communications/messaging-data-model#building-and-structuring-threads)). [Access policies](/docs/access/access-policies) still control what each login can read or write. Prefer the API walkthrough below for anything beyond quick experiments.
 
 :::
 
@@ -52,11 +52,17 @@ For linear chat, `partOf` plus sorting by `sent` is usually enough. Add [`inResp
 
 ## Atomic Creates With Transaction Bundles
 
-The steps above use separate `createResource` calls so each part of the thread is obvious. In production, you may prefer a single FHIR `transaction` `Bundle` so the thread header and first message are created together (all entries succeed or none are committed). Use `fullUrl` and `urn:uuid` references so the first message’s `partOf` can point at the header inside the same bundle. See [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests) for `transaction` bundles, the `executeBatch` helper on [`MedplumClient`](/docs/sdk/core.medplumclient), project feature flags, and current limitations.
+The steps above use separate `createResource` calls so each part of the thread is obvious. In production, you may prefer a single FHIR `transaction` `Bundle` so the thread header and first message are created together (all entries succeed or none are committed). Use `fullUrl` and `urn:uuid` references so the first message’s `partOf` can point at the header inside the same bundle. This tutorial does not include a full bundle example on purpose: step-by-step `transaction` patterns, the `executeBatch` helper on [`MedplumClient`](/docs/sdk/core.medplumclient), project feature flags, and current limitations are covered in [FHIR Batch Requests](/docs/fhir-datastore/fhir-batch-requests).
 
 ## Verification
 
-In the App, open Communication and find the new resources. The thread header should have no `partOf` and no `payload`; each message should have both.
+In the [Medplum App](https://app.medplum.com), open Communication and find the new resources. The thread header should have no `partOf` and no `payload`; each message should have both.
+
+If `createResource` failed with a reference error, confirm the `Patient` and `Practitioner` from the snippet exist (for example open `Patient/homer-simpson` in the App), or read them with the client:
+
+<MedplumCodeBlock language="ts" selectBlocks="verifyWalkthroughReferencesTs">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 To list messages in the thread (newest last when using `_sort=sent`), run a search with the header’s id:
 
