@@ -208,6 +208,95 @@ await medplum.searchResources('Communication', {
 });
 // end-block loadDraftsTs
 
+// start-block retractMessageTs
+await medplum.patchResource('Communication', 'original-message-id', [
+  { op: 'replace', path: '/status', value: 'entered-in-error' },
+]);
+// end-block retractMessageTs
+
+// start-block createCorrectedMessageTs
+const originalSender = { reference: 'Practitioner/example-sender', display: 'Example Sender' };
+const correctedMessage = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  topic: threadHeader.topic,
+  subject: threadHeader.subject,
+  recipient: [{ reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' }],
+  inResponseTo: [{ reference: 'Communication/original-message-id' }],
+  sender: originalSender,
+  payload: [{ contentString: 'Updated: The appointment is at 3 PM, not 2 PM.' }],
+  sent: new Date().toISOString(),
+  category: [
+    {
+      coding: [
+        {
+          system: 'https://medplum.com/CodeSystem/communication-category',
+          code: 'correction',
+          display: 'Correction',
+        },
+      ],
+    },
+  ],
+});
+console.log(correctedMessage);
+// end-block createCorrectedMessageTs
+
+// start-block localStorageDraftTs
+const draftStorageKey = `draft-${threadHeader.id}`;
+const composedText = 'User composed text';
+localStorage.setItem(draftStorageKey, composedText);
+const restoredDraft = localStorage.getItem(draftStorageKey);
+if (restoredDraft) {
+  console.log(restoredDraft);
+}
+localStorage.removeItem(draftStorageKey);
+// end-block localStorageDraftTs
+
+// start-block createServerDraftTs
+const draftBody = 'Draft body';
+const serverDraft = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'preparation',
+  partOf: [{ reference: `Communication/${threadHeader.id}` }],
+  sender: { reference: `Practitioner/${currentUser.id}` },
+  payload: [{ contentString: draftBody }],
+});
+console.log(serverDraft);
+// end-block createServerDraftTs
+
+// start-block patchServerDraftTs
+const draftResourceId = 'example-draft-communication-id';
+const revisedDraftText = 'Revised draft body';
+await medplum.patchResource('Communication', draftResourceId, [
+  { op: 'replace', path: '/payload', value: [{ contentString: revisedDraftText }] },
+]);
+// end-block patchServerDraftTs
+
+// start-block promoteDraftTs
+// Also patch in topic, subject, and recipient if they were not set when the draft was created
+await medplum.patchResource('Communication', 'example-draft-communication-id', [
+  { op: 'replace', path: '/status', value: 'in-progress' },
+  { op: 'add', path: '/sent', value: new Date().toISOString() },
+  { op: 'add', path: '/topic', value: threadHeader.topic },
+  { op: 'add', path: '/subject', value: threadHeader.subject },
+  { op: 'add', path: '/recipient', value: [{ reference: 'Practitioner/doctor-gregory-house' }] },
+]);
+// end-block promoteDraftTs
+
+// start-block staleDraftCleanupTs
+const staleDraftCutoff = new Date();
+staleDraftCutoff.setDate(staleDraftCutoff.getDate() - 30);
+const staleDrafts = await medplum.searchResources('Communication', {
+  status: 'preparation',
+  _lastUpdated: `lt${staleDraftCutoff.toISOString()}`,
+});
+for (const stale of staleDrafts) {
+  await medplum.deleteResource('Communication', stale.id!);
+}
+console.log(staleDrafts.length);
+// end-block staleDraftCleanupTs
+
 /*
 // start-block loadDraftsCli
 medplum get 'Communication?sender=Practitioner/{currentUserId}&status=preparation'
