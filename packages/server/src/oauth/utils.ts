@@ -45,11 +45,13 @@ import { getConfig } from '../config/loader';
 import type { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import type { Repository, SystemRepository } from '../fhir/repo';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import type { SmartScope } from '../fhir/smart';
 import { parseSmartScopes } from '../fhir/smart';
 import { getLogger } from '../logger';
 import { getCacheRedis } from '../redis';
+import { getProjectAndProjectShardId, getProjectShardId } from '../sharding/sharding-utils';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -134,13 +136,18 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @param clientId - The client ID.
  * @returns The client application.
  */
-export async function getClientApplication(clientId: string): Promise<ClientApplication> {
+export async function getClientApplication(clientId: string): Promise<WithId<ClientApplication>> {
   const standardClient = getStandardClientById(clientId);
   if (standardClient) {
     return standardClient;
   }
-  const systemRepo = getGlobalSystemRepo();
-  return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  // SHARDING - if we rely on syncing to global, this can just be returned
+  const globalClientApp = await getGlobalSystemRepo().readResource<ClientApplication>('ClientApplication', clientId);
+  const projectShardId = await getProjectShardId(globalClientApp.meta?.project);
+  if (projectShardId === GLOBAL_SHARD_ID) {
+    return globalClientApp;
+  }
+  return getShardSystemRepo(projectShardId).readResource<ClientApplication>('ClientApplication', clientId);
 }
 
 export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
@@ -384,6 +391,7 @@ export function getClientApplicationMembership(
   systemRepo: SystemRepository,
   client: WithId<ClientApplication>
 ): Promise<WithId<ProjectMembership> | undefined> {
+  // SHARDING - this relies on global syncing
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -421,7 +429,7 @@ export async function setLoginMembership(
     throw new OperationOutcomeError(badRequest('Login profile already set'));
   }
 
-  if (membership.user?.reference !== login.user?.reference) {
+  if (!membership.user.reference || membership.user.reference !== login.user.reference) {
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
@@ -430,9 +438,8 @@ export async function setLoginMembership(
   }
 
   // Get the project
-  const globalSystemRepo = getGlobalSystemRepo();
-  const project = await globalSystemRepo.readReference<Project>(membership.project);
-  const projectSystemRepo = await getProjectSystemRepo(project);
+  const { project, shardId } = await getProjectAndProjectShardId(membership.project);
+  const projectSystemRepo = getShardSystemRepo(shardId);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
@@ -463,7 +470,13 @@ export async function setLoginMembership(
   const userConfig = await getUserConfiguration(projectSystemRepo, project, membership);
 
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
+  const accessPolicy = await getAccessPolicyForLogin({
+    project,
+    shardId,
+    login,
+    membership,
+    userConfig,
+  });
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
@@ -489,7 +502,7 @@ export async function setLoginMembership(
     updatedLogin.refreshSecret = undefined;
   }
 
-  return globalSystemRepo.updateResource<Login>(updatedLogin);
+  return getGlobalSystemRepo().updateResource<Login>(updatedLogin);
 }
 
 /**
@@ -592,8 +605,8 @@ export async function getAuthTokens(
   }
 
   if (!login.granted) {
-    const systemRepo = getGlobalSystemRepo();
-    await systemRepo.updateResource<Login>({
+    const globalSystemRepo = getGlobalSystemRepo();
+    await globalSystemRepo.updateResource<Login>({
       ...login,
       granted: true,
     });
@@ -948,9 +961,9 @@ export async function getLoginForAccessToken(
   if (membership.active === false) {
     return undefined;
   }
-  const project = await globalSystemRepo.readReference<Project>(membership.project);
+  const { project, shardId } = await getProjectAndProjectShardId(membership.project);
   const systemRepo = await getProjectSystemRepo(project);
-  return makeAuthResult(systemRepo, req, login, project, membership, { accessToken });
+  return makeAuthResult(systemRepo, req, login, project, shardId, membership, { accessToken });
 }
 
 /**
@@ -970,14 +983,14 @@ export async function getLoginForBasicAuth(
     return undefined;
   }
 
-  const systemRepo = getGlobalSystemRepo();
   let client: WithId<ClientApplication>;
   try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
+    client = await getClientApplication(username);
   } catch {
     return undefined;
   }
 
+  const systemRepo = getGlobalSystemRepo();
   if (!timingSafeEqualStr(client.secret, password)) {
     return undefined;
   }
@@ -987,7 +1000,7 @@ export async function getLoginForBasicAuth(
     return undefined;
   }
 
-  const project = await systemRepo.readReference<Project>(membership.project);
+  const { project, shardId } = await getProjectAndProjectShardId(membership.project);
   const login: Login = {
     resourceType: 'Login',
     user: createReference(client),
@@ -995,7 +1008,7 @@ export async function getLoginForBasicAuth(
     authTime: new Date().toISOString(),
   };
 
-  return makeAuthResult(systemRepo, req, login, project, membership, { profile: client });
+  return makeAuthResult(systemRepo, req, login, project, shardId, membership, { profile: client });
 }
 
 async function makeAuthResult(
@@ -1003,6 +1016,7 @@ async function makeAuthResult(
   req: Request | IncomingMessage | undefined,
   login: Login,
   project: WithId<Project>,
+  shardId: string,
   membership: WithId<ProjectMembership>,
   opts?: {
     profile?: WithId<ProfileResource | Bot | ClientApplication>;
@@ -1014,6 +1028,7 @@ async function makeAuthResult(
   const authState: AuthState = {
     login,
     project,
+    shardId,
     membership,
     userConfig,
     accessToken: opts?.accessToken,
@@ -1105,30 +1120,31 @@ async function tryExternalAuth(
     return undefined;
   }
 
-  const redis = getCacheRedis();
+  const redis = getCacheRedis(systemRepo.shardId);
   const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
   let login: Login;
   let project: WithId<Project> | undefined;
+  let shardId: string;
   let membership: WithId<ProjectMembership> | undefined;
 
   if (cachedValue) {
     // Use cached login if available
     login = JSON.parse(cachedValue) as Login;
     membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
-    project = await systemRepo.readReference<Project>(membership.project);
+    ({ project, shardId } = await getProjectAndProjectShardId(membership.project));
   } else {
     // If not cached, try to authenticate the user with the external auth provider
     const externalAuthState = await tryExternalAuthLogin(systemRepo, req, accessToken, claims, externalAuthConfig);
     if (!externalAuthState) {
       return undefined;
     }
-    ({ login, project, membership } = externalAuthState);
+    ({ login, project, shardId, membership } = externalAuthState);
     await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
   }
 
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  return { login, project, membership, userConfig };
+  return { login, project, shardId, membership, userConfig };
 }
 
 async function tryExternalAuthLogin(
@@ -1137,7 +1153,7 @@ async function tryExternalAuthLogin(
   accessToken: string,
   claims: JWTPayload,
   externalAuthConfig: MedplumExternalAuthConfig
-): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership' | 'shardId'> | undefined> {
   // To ensure broad compatibility, we check for the FHIR user profile in two places:
   // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
   // that automatically place custom claims in an `ext` block.
@@ -1233,7 +1249,7 @@ async function tryExternalAuthLogin(
     userAgent: req?.get('User-Agent'),
   });
 
-  const project = await systemRepo.readReference<Project>(membership.project);
+  const { project, shardId } = await getProjectAndProjectShardId(membership.project);
 
   logAuditEvent(
     createAuditEvent(
@@ -1246,7 +1262,7 @@ async function tryExternalAuthLogin(
     )
   );
 
-  return { login, project, membership };
+  return { login, project, shardId, membership };
 }
 
 /**

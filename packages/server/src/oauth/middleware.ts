@@ -13,6 +13,7 @@ import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
 export type AuthState = {
   login: Login;
   project: WithId<Project>;
+  shardId: string;
   membership: WithId<ProjectMembership>;
   profile?: WithId<ProfileResource | Bot | ClientApplication>;
   userConfig: UserConfiguration;
