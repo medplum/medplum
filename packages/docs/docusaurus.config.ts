@@ -41,6 +41,10 @@ const config: Config = {
             from: '/docs/communications/organizing-communications',
             to: '/docs/communications/messaging-data-model',
           },
+          {
+            from: '/docs/communications/task-based-message-response-tracking-and-routing',
+            to: '/docs/communications/message-response-tracking-and-routing',
+          },
         ],
       },
     ],

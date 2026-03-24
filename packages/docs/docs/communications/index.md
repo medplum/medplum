@@ -9,6 +9,7 @@ FHIR supports messaging workflows through the [Communication](/docs/api/fhir/res
 These [Communications](/docs/api/fhir/resources/communication) can also be structured to support a variety of use cases, including:
 
 - [Searching and querying message threads](/docs/communications/searching-and-querying-threads)
+- [Message Response Tracking and Routing](/docs/communications/message-response-tracking-and-routing)
 - [Message attachments](/docs/communications/sending-messages-and-attachments)
 - [Read receipts and message status](/docs/communications/read-receipts-and-message-status)
 - [Messaging automations](/docs/communications/messaging-automations)
