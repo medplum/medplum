@@ -94,7 +94,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   console.log(`Processing bundle with ${bundle.entry.length} entries (identifier system: ${identifierSystem})...`);
 
   // Phase 1: Separate priority resources from the rest
-  const priorityEntries: Map<string, BundleEntry[]> = new Map();
+  const priorityEntries = new Map<string, BundleEntry[]>();
   const binaryEntries: BundleEntry[] = [];
   const otherEntries: BundleEntry[] = [];
 
@@ -260,6 +260,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  * - Bundle JSON object directly
  * - Reference to a stored Bundle resource
  * - Binary resource or Reference to a Binary containing bundle JSON
+ * @param medplum - The MedplumClient instance for reading/downloading resources.
+ * @param input - The bot input (Bundle, Reference, or Binary).
+ * @returns The resolved FHIR Bundle.
  */
 async function resolveBundle(medplum: MedplumClient, input: any): Promise<Bundle> {
   // Case 1: Direct Bundle object
@@ -306,6 +309,11 @@ interface BatchResult {
 /**
  * Prepares priority resource entries for conditional create.
  * Moves original IDs to identifiers, builds conditional reference map.
+ * @param entries - The priority bundle entries to prepare.
+ * @param conditionalRefMap - Map to populate with original ref to conditional ref mappings.
+ * @param originalIdToFullUrl - Map to populate with original ID to fullUrl mappings.
+ * @param identifierSystem - The identifier system URI for original IDs.
+ * @returns Prepared bundle entries with conditional create request metadata.
  */
 function preparePriorityEntries(
   entries: BundleEntry[],
@@ -362,6 +370,10 @@ function preparePriorityEntries(
 /**
  * Prepares non-priority, non-binary resource entries.
  * Moves IDs to identifiers, assigns urn:uuid fullUrls, sets up conditional update requests.
+ * @param entries - The non-priority bundle entries to prepare.
+ * @param originalIdToFullUrl - Map to populate with original ID to urn:uuid mappings.
+ * @param identifierSystem - The identifier system URI for original IDs.
+ * @returns Prepared bundle entries with conditional update request metadata.
  */
 function prepareResourceEntries(
   entries: BundleEntry[],
@@ -413,6 +425,8 @@ function prepareResourceEntries(
 /**
  * Moves the resource's original ID into its identifier array using the given system URI.
  * This preserves the original ID for idempotent matching while letting Medplum assign its own IDs.
+ * @param resource - The FHIR resource whose ID should be moved.
+ * @param identifierSystem - The identifier system URI for the original ID.
  */
 function moveIdToIdentifier(resource: Resource, identifierSystem: string): void {
   if (!resource.id) {
@@ -424,6 +438,9 @@ function moveIdToIdentifier(resource: Resource, identifierSystem: string): void 
 /**
  * Gets the best identifier for a conditional reference.
  * Prefers existing identifiers with a system, falls back to the original-id identifier.
+ * @param resource - The FHIR resource to inspect.
+ * @param identifierSystem - The identifier system URI used for original IDs.
+ * @returns The best identifier for building a conditional reference, or undefined.
  */
 function getIdentifierForConditionalRef(resource: Resource, identifierSystem: string): Identifier | undefined {
   const identifiable = resource as Resource & { identifier?: Identifier[] };
@@ -446,6 +463,11 @@ function getIdentifierForConditionalRef(resource: Resource, identifierSystem: st
 /**
  * Builds a complete redirect map that maps old "Type/id" references to either
  * conditional references (for priority resources) or urn:uuid references (for non-priority resources).
+ * @param conditionalRefMap - Map of priority resource original refs to conditional refs.
+ * @param originalIdToFullUrl - Map of original IDs to fullUrl/conditional ref strings.
+ * @param entries - The non-priority bundle entries whose references need mapping.
+ * @param identifierSystem - The identifier system URI for original IDs.
+ * @returns A map from old reference strings to new reference strings.
  */
 function buildRedirectMap(
   conditionalRefMap: Map<string, string>,
@@ -479,6 +501,9 @@ function buildRedirectMap(
  * Recursively walks an object and calls the callback for every string value that
  * is present in the given key set. Used to find Binary resource references that
  * appear as plain URL strings (e.g. Attachment.url) rather than FHIR Reference objects.
+ * @param obj - The object to scan recursively.
+ * @param keys - The set of string values to match against.
+ * @param callback - Called with each matched string value.
  */
 function scanStringValues(obj: any, keys: Set<string>, callback: (value: string) => void): void {
   if (!obj || typeof obj !== 'object') {
@@ -504,6 +529,9 @@ function scanStringValues(obj: any, keys: Set<string>, callback: (value: string)
 
 /**
  * Splits a list of bundle entries into batches that each fit within the size limit.
+ * @param entries - The bundle entries to split.
+ * @param maxSizeBytes - Maximum batch size in bytes.
+ * @returns An array of batch bundles.
  */
 function splitIntoBatches(entries: BundleEntry[], maxSizeBytes: number): Bundle[] {
   const batches: Bundle[] = [];
@@ -544,13 +572,16 @@ function splitIntoBatches(entries: BundleEntry[], maxSizeBytes: number): Bundle[
 /**
  * Packs connected components into batches, trying to keep entire components together.
  * If a single component exceeds the size limit, it is split across multiple batches.
+ * @param components - The connected components to pack.
+ * @param maxSizeBytes - Maximum batch size in bytes.
+ * @returns An array of batch bundles.
  */
 function packComponentsIntoBatches(components: BundleEntry[][], maxSizeBytes: number): Bundle[] {
   const batches: Bundle[] = [];
   let currentEntries: BundleEntry[] = [];
   let currentSize = 0;
 
-  const bundleOverhead = JSON.stringify({ resourceType: 'Bundle', type: 'batch', entry: [] }).length;
+  const bundleOverhead = stringify({ resourceType: 'Bundle', type: 'batch', entry: [] }).length;
 
   for (const component of components) {
     const componentSize = component.reduce((sum, entry) => sum + stringify(entry).length, 0);
@@ -589,6 +620,10 @@ function packComponentsIntoBatches(components: BundleEntry[][], maxSizeBytes: nu
 
 /**
  * Submits a bundle as an async batch request with exponential backoff for 429 rate limiting.
+ * @param medplum - The MedplumClient instance.
+ * @param batch - The batch bundle to submit.
+ * @param batchIndex - The zero-based index of this batch (for result tracking).
+ * @returns The result of the batch submission.
  */
 async function submitAsyncBatchWithRetry(
   medplum: MedplumClient,

@@ -5,6 +5,7 @@ export * from './agent';
 export * from './base-schema-utils';
 export * from './base64';
 export * from './bundle';
+export * from './bundle-utils';
 export * from './cache';
 export * from './cds';
 export * from './client';

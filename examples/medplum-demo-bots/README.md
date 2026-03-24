@@ -18,6 +18,44 @@ To deploy:
 npx medplum bot deploy send-appointment-reminders
 ```
 
+### FHIR Bundle Batching Bot
+
+Located in `examples/medplum-demo-bots/src/fhir-bundle-batching-bot.ts`, this bot ingests large FHIR bundles into Medplum by splitting them into a series of async batch requests.
+
+**Problem:** FHIR bundles from external systems often exceed Medplum's max request size and contain thousands of resources that need to be ingested in the correct order with proper reference resolution.
+
+**How it works:**
+
+1. **Accepts multiple input types:** Direct `Bundle` JSON, `Reference<Bundle>`, `Binary` resource, or `Reference<Binary>` containing bundle JSON.
+2. **Follows the [Medplum migration sequence](https://www.medplum.com/docs/migration/migration-sequence):** Ingests identity resources first (Practitioner/PractitionerRole, then Organization, then Patient/RelatedPerson) so they exist before clinical data references them.
+3. **Preserves original IDs as identifiers:** Moves each resource's original `id` into its `identifier` array (configurable system URI via `IDENTIFIER_SYSTEM` bot secret) so Medplum can assign its own IDs while maintaining traceability.
+4. **Uses conditional operations for idempotency:**
+   - Priority resources use **conditional create** (`POST` + `ifNoneExist`) so re-running the bot won't create duplicates.
+   - Other resources use **conditional update** (`PUT` with identifier search URL).
+5. **Rewrites cross-batch references:** Priority resource references become conditional references (e.g., `Patient?identifier=system|value`). Intra-batch references use `urn:uuid:` for co-located resources.
+6. **Groups related resources using connected component analysis:** Resources that reference each other are kept in the same batch to ensure `urn:uuid:` references resolve correctly.
+7. **Co-locates Binary resources:** Binary resources are placed in the same batch as the resource that references them (e.g., a `DocumentReference` with `attachment.url`), and a `securityContext` is set on the Binary.
+8. **Respects the 30 MB async batch size limit:** Packs connected components into batches without exceeding the limit.
+9. **Handles rate limiting:** Retries with exponential backoff on 429 responses (up to 10 retries).
+
+**Configuration:**
+
+| Bot Secret | Description | Default |
+|---|---|---|
+| `IDENTIFIER_SYSTEM` | URI used as the identifier system for original resource IDs | `urn:medplum:original-id` |
+
+**Example usage:**
+
+```typescript
+// Trigger the bot with a Binary containing a large FHIR bundle
+await medplum.executeBot(botId, { reference: `Binary/${binaryId}` }, 'application/fhir+json');
+```
+
+To deploy:
+```bash
+npx medplum bot deploy fhir-bundle-batching-bot
+```
+
 ## Setup
 
 To set up your bot deployment you will need to do the following:
