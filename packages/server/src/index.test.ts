@@ -43,6 +43,7 @@ jest.mock('pg', () => {
       if (sql === mockQueries.GetDataVersionSql) {
         return { rows: [{ dataVersion: mockLatestVersion }] };
       }
+      // The query that determines if the database is seeded
       if (sql.startsWith('SELECT "User"."id"')) {
         return { rows: [{ id: '1', content: '{}' }] };
       }

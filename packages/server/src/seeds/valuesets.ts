@@ -5,13 +5,13 @@ import { EMPTY, Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import type { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
-import type { Repository } from '../fhir/repo';
+import type { SystemRepository } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
  * @param systemRepo - The system repository to use
  */
-export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
+export async function rebuildR4ValueSets(systemRepo: SystemRepository): Promise<void> {
   const files = [
     'v2-tables.json',
     'v3-codesystems.json',
@@ -38,7 +38,7 @@ export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> 
 }
 
 async function deleteExisting(
-  systemRepo: Repository,
+  systemRepo: SystemRepository,
   resource: CodeSystem | ValueSet,
   projectId: string
 ): Promise<void> {

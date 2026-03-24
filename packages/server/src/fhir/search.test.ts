@@ -78,8 +78,9 @@ describe('project-scoped Repository', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initAppServices(config);
-    const { project } = await createTestProject();
+    const { project, shardId } = await createTestProject();
     repo = new Repository({
+      shardId,
       strictMode: true,
       projects: [project],
       currentProject: project,

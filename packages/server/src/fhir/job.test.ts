@@ -31,6 +31,7 @@ describe('Job status', () => {
     accessToken = testProject.accessToken;
     asyncJobManager = new AsyncJobExecutor(
       new Repository({
+        shardId: testProject.shardId,
         projects: [testProject.project],
         author: { reference: 'User/' + randomUUID() },
       })

@@ -15,12 +15,15 @@ import {
 } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { seedDatabase } from './seed';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { withTestContext } from './test.setup';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: SystemRepository): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();
 
-  const pendingMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+  const pendingMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, systemRepo.shardId)
+  );
   if (pendingMigration === MigrationVersion.UNKNOWN) {
     throw new Error('Post-deploy migration version is unknown');
   }
@@ -41,7 +44,7 @@ async function synchronouslyRunAllPendingPostDeployMigrations(systemRepo: System
 async function synchronouslyRunPostDeployMigration(systemRepo: SystemRepository, version: number): Promise<void> {
   const migration = getPostDeployMigration(version);
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
-  const jobData = migration.prepareJobData(asyncJob);
+  const jobData = migration.prepareJobData({ asyncJob, shardId: systemRepo.shardId });
   console.log(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
   const result = await migration.run(systemRepo, undefined, jobData);
   console.log(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
@@ -82,7 +85,7 @@ describe('Seed', () => {
       await seedDatabase(config);
 
       // Make sure all database migrations have run
-      const pool = getDatabasePool(DatabaseMode.WRITER);
+      const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
 
       const preDeployVersion = await getPreDeployVersion(pool);
       expect(preDeployVersion).toBeGreaterThanOrEqual(67);

@@ -1476,7 +1476,7 @@ describe('Batch and Transaction processing', () => {
     const queue = getBatchQueue() as any;
     queue.add.mockClear();
 
-    const { accessToken, login, membership, project } = await createTestProject({
+    const { accessToken, login, membership, project, shardId } = await createTestProject({
       withAccessToken: true,
       withClient: true,
       project: {
@@ -1551,7 +1551,7 @@ describe('Batch and Transaction processing', () => {
     });
 
     const jobResult = runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      { login, membership, project, shardId, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
       { async: true },
