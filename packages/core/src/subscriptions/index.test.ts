@@ -1026,6 +1026,8 @@ describe('SubscriptionManager', () => {
         });
       });
 
+      // Old token should be unbound before new bind
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
       // Make sure we establish the subscription
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
       // Give some time to add subscription to list on client
@@ -1298,9 +1300,8 @@ describe('SubscriptionManager', () => {
 
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
 
-      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
-
-      // Set profile to a new profile
+      // Set profile to a new profile — triggers reconnect, which reuses the existing
+      // Subscription resource (subscriptionId is preserved across reconnects)
       medplum.setProfile({ resourceType: 'Practitioner', id: generateId() });
 
       const receivedEvent5 = await receivedEvent5Promise;
@@ -1315,9 +1316,11 @@ describe('SubscriptionManager', () => {
       const emitter2 = defaultManager.addCriteria('Communication');
       expect(defaultManager.getCriteriaCount()).toStrictEqual(1);
 
+      // Old token unbound before new bind on reconnect
+      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: 'token-123' } });
       await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
       await sleep(100);
-      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
       const receivedEvent6 = await receivedEvent6Promise;
       expect(receivedEvent6.type).toStrictEqual('connect');
@@ -1328,7 +1331,7 @@ describe('SubscriptionManager', () => {
         });
       });
 
-      await sendSubscriptionMessage(wsServer, medplum, SECOND_SUBSCRIPTION_ID, 'Hello, Medplum!');
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
 
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toStrictEqual('message');
@@ -1608,8 +1611,8 @@ describe('SubscriptionManager', () => {
       const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
       expect(pendingUnbind.size).toStrictEqual(1);
 
-      // Verify the entryLookupByEntryId map still has the entry
-      const entryLookup = (defaultManager as any).entryLookupByEntryId as Map<string, unknown>;
+      // Verify the criteriaEntriesByEntryId map still has the entry
+      const entryLookup = (defaultManager as any).criteriaEntriesByEntryId as Map<string, unknown>;
       expect(entryLookup.size).toStrictEqual(1);
 
       // Re-subscribe within the delay window — should cancel pending unbind and restore entry
@@ -1656,7 +1659,7 @@ describe('SubscriptionManager', () => {
       const pendingUnbind = (defaultManager as any).pendingUnbind as Map<string, number>;
       expect(pendingUnbind.size).toStrictEqual(0);
 
-      const entryLookup = (defaultManager as any).entryLookupByEntryId as Map<string, unknown>;
+      const entryLookup = (defaultManager as any).criteriaEntriesByEntryId as Map<string, unknown>;
       expect(entryLookup.size).toStrictEqual(0);
 
       const entriesBySubId = (defaultManager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
