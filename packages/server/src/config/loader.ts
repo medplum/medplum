@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
+import { isReservedShardId } from '../fhir/sharding';
 import type { MedplumServerConfig } from './types';
 import type { ServerConfig } from './utils';
 import { addDefaults, isArrayConfig, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
@@ -45,7 +46,7 @@ export function getConfig(): ServerConfig {
  * @param configName - The medplum config identifier (comma-separated for multiple sources).
  * @returns The loaded configuration.
  */
-export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
+export async function loadConfig(configName: string): Promise<ServerConfig> {
   const segments = configName.split(',').filter((s) => s.length > 0);
   if (segments.length === 0) {
     throw new Error('Empty config name');
@@ -66,8 +67,19 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
 
   const withDefaults = addDefaults(config);
   warnInvalidDataWarehouseConfig(withDefaults);
+  validateShardingConfig(withDefaults);
   cachedConfig = withDefaults;
   return cachedConfig;
+}
+
+function validateShardingConfig(config: ServerConfig): void {
+  if (config.shards) {
+    for (const [shardId] of Object.entries(config.shards)) {
+      if (isReservedShardId(shardId)) {
+        throw new Error(`Cannot use reserved shard ID ${shardId}`);
+      }
+    }
+  }
 }
 
 /**
@@ -122,10 +134,11 @@ function deepMerge(base: Record<string, unknown>, overlay: Record<string, unknow
 
 /**
  * Loads the configuration setting for unit and integration tests.
+ * @param sharded - Whether to load the sharded configuration.
  * @returns The configuration for tests.
  */
-export async function loadTestConfig(): Promise<MedplumServerConfig> {
-  const config = await loadConfig('file:medplum.config.json');
+export async function loadTestConfig(sharded?: boolean): Promise<MedplumServerConfig> {
+  const config = await loadConfig(sharded ? 'file:medplum-sharded.config.json' : 'file:medplum.config.json');
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
@@ -161,6 +174,26 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.defaultSuperAdminClientSecret = randomUUID();
   config.mtlsCertHeader = 'x-mtls-cert';
   warnInvalidDataWarehouseConfig(config);
+
+  if (sharded) {
+    if (!config.shards) {
+      throw new Error('Sharded configuration requires shards');
+    }
+
+    for (const shardConfig of Object.values(config.shards)) {
+      shardConfig.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
+      shardConfig.database.port = process.env['POSTGRES_PORT']
+        ? Number.parseInt(process.env['POSTGRES_PORT'], 10)
+        : 5432;
+      shardConfig.database.runMigrations = false;
+      shardConfig.database.disableRunPostDeployMigrations = true;
+      shardConfig.readonlyDatabase = {
+        ...shardConfig.database,
+        username: 'medplum_test_readonly',
+        password: 'medplum_test_readonly',
+      };
+    }
+  }
   return config;
 }
 

@@ -27,6 +27,10 @@ export const PLACEHOLDER_SHARD_ID = 'placeholder';
  */
 export const TODO_SHARD_ID = 'todo';
 
+export function isReservedShardId(shardId: string): boolean {
+  return shardId === GLOBAL_SHARD_ID || shardId === PLACEHOLDER_SHARD_ID || shardId === TODO_SHARD_ID;
+}
+
 export type ShardRouting = { kind: 'global-only' } | { kind: 'project-shard'; shardId: string };
 
 let strictShardingEnforcement = process.env.NODE_ENV === 'test';
