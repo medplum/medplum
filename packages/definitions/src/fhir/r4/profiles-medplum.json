@@ -1633,7 +1633,9 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
+                "https://medplum.com/fhir/StructureDefinition/ClientApplication",
+                "https://medplum.com/fhir/StructureDefinition/User"]
             }],
             "base": {
               "path" : "ProjectMembership.invitedBy",
