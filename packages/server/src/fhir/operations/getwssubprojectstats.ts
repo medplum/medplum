@@ -5,6 +5,7 @@ import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getPubSubRedis } from '../../redis';
+import { getProjectSystemRepo } from '../repo';
 import type { WsSubCriteriaStats, WsSubProjectDetailStats, WsSubResourceTypeDetailStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -45,7 +46,8 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
     return [badRequest('projectId parameter is required')];
   }
 
-  const redis = getPubSubRedis();
+  const repo = await getProjectSystemRepo(projectId);
+  const redis = getPubSubRedis(repo.shardId);
   const pattern = `medplum:subscriptions:r4:project:${projectId}:active:*`;
   const resourceTypeMap = new Map<string, Map<string, number>>();
 

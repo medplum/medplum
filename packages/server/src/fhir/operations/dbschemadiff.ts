@@ -6,7 +6,7 @@ import type { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { generateMigrationActions, writePreDeployActionsToBuilder } from '../../migrations/migrate';
-import { buildOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -20,6 +20,13 @@ const operation: OperationDefinition = {
   instance: false,
   parameter: [
     {
+      use: 'in',
+      name: 'shardId',
+      type: 'string',
+      min: 1,
+      max: '1',
+    },
+    {
       use: 'out',
       name: 'migrationString',
       type: 'string',
@@ -29,10 +36,12 @@ const operation: OperationDefinition = {
   ],
 };
 
-export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirResponse> {
+export async function dbSchemaDiffHandler(req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const dbClient = getDatabasePool(DatabaseMode.READER);
+  const params = parseInputParameters<{ shardId: string }>(operation, req);
+
+  const dbClient = getDatabasePool(DatabaseMode.READER, params.shardId);
   const b = new FileBuilder('  ', false);
   b.append('// The schema migration needed to match the expected schema');
   b.append('');

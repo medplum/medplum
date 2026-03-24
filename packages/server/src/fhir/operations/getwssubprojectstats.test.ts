@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { getPubSubRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth } from '../../test.setup';
 import type { WsSubProjectDetailStats } from './getwssubstats';
 
 describe('$get-ws-sub-project-stats', () => {
@@ -41,113 +41,115 @@ describe('$get-ws-sub-project-stats', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Returns empty resource types for unknown project', async () => {
+  test('Returns 404 for unknown project', async () => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res = await request(app)
       .get('/fhir/R4/$get-ws-sub-project-stats')
       .query({ projectId: randomUUID() })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-
-    const params = res.body as Parameters;
-    const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
-    expect(statsStr).toBeDefined();
-    const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
-    expect(Array.isArray(stats.resourceTypes)).toBe(true);
-    expect(stats.resourceTypes).toHaveLength(0);
+    expect(res.status).toBe(404);
   });
 
-  test('Returns resource types with criteria for a project', async () => {
-    const redis = getPubSubRedis();
-    const projectId = randomUUID();
+  describe('for a known project', () => {
+    let projectId: string;
+    let shardId: string;
 
-    await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
-      'Subscription/sub1',
-      'Observation?code=85354-9',
-      'Subscription/sub2',
-      'Observation?code=85354-9',
-      'Subscription/sub3',
-      'Observation?status=final'
-    );
-    await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Patient`,
-      'Subscription/sub4',
-      'Patient?name=Alice'
-    );
+    beforeAll(async () => {
+      const result = await createTestProject();
+      projectId = result.project.id;
+      shardId = result.shardId;
+    });
 
-    try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+    test('Returns resource types with criteria for a project', async () => {
+      const redis = getPubSubRedis(shardId);
 
-      const res = await request(app)
-        .get('/fhir/R4/$get-ws-sub-project-stats')
-        .query({ projectId })
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
-
-      const params = res.body as Parameters;
-      const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
-      expect(statsStr).toBeDefined();
-      const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
-
-      expect(stats.projectId).toBe(projectId);
-      // Resource types sorted descending by count
-      expect(stats.resourceTypes[0].resourceType).toBe('Observation');
-
-      const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
-      expect(obType).toBeDefined();
-      expect(obType?.count).toBe(3);
-      expect(obType?.criteria).toHaveLength(2);
-      // Criteria sorted descending by count
-      expect(obType?.criteria[0]).toEqual({ criteria: 'Observation?code=85354-9', count: 2 });
-      expect(obType?.criteria[1]).toEqual({ criteria: 'Observation?status=final', count: 1 });
-
-      const patientType = stats.resourceTypes.find((rt) => rt.resourceType === 'Patient');
-      expect(patientType).toBeDefined();
-      expect(patientType?.count).toBe(1);
-      expect(patientType?.criteria).toEqual([{ criteria: 'Patient?name=Alice', count: 1 }]);
-    } finally {
-      await redis.del(
+      await redis.hset(
         `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
-        `medplum:subscriptions:r4:project:${projectId}:active:Patient`
+        'Subscription/sub1',
+        'Observation?code=85354-9',
+        'Subscription/sub2',
+        'Observation?code=85354-9',
+        'Subscription/sub3',
+        'Observation?status=final'
       );
-    }
-  });
+      await redis.hset(
+        `medplum:subscriptions:r4:project:${projectId}:active:Patient`,
+        'Subscription/sub4',
+        'Patient?name=Alice'
+      );
 
-  test('Ignores legacy v2 keys in project stats', async () => {
-    const redis = getPubSubRedis();
-    const projectId = randomUUID();
+      try {
+        const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
-    await redis.hset(
-      `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
-      'Subscription/sub1',
-      'Observation?code=85354-9'
-    );
-    // Legacy key that should not appear in stats
-    await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub2', 'Observation');
+        const res = await request(app)
+          .get('/fhir/R4/$get-ws-sub-project-stats')
+          .query({ projectId })
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res.status).toBe(200);
 
-    try {
-      const accessToken = await initTestAuth({ project: { superAdmin: true } });
+        const params = res.body as Parameters;
+        const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
+        expect(statsStr).toBeDefined();
+        const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
 
-      const res = await request(app)
-        .get('/fhir/R4/$get-ws-sub-project-stats')
-        .query({ projectId })
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+        expect(stats.projectId).toBe(projectId);
+        // Resource types sorted descending by count
+        expect(stats.resourceTypes[0].resourceType).toBe('Observation');
 
-      const params = res.body as Parameters;
-      const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
-      const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
+        const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
+        expect(obType).toBeDefined();
+        expect(obType?.count).toBe(3);
+        expect(obType?.criteria).toHaveLength(2);
+        // Criteria sorted descending by count
+        expect(obType?.criteria[0]).toEqual({ criteria: 'Observation?code=85354-9', count: 2 });
+        expect(obType?.criteria[1]).toEqual({ criteria: 'Observation?status=final', count: 1 });
 
-      expect(stats.resourceTypes.every((rt) => rt.resourceType !== 'v2')).toBe(true);
-      const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
-      expect(obType?.count).toBe(1);
-    } finally {
-      await redis.del(
+        const patientType = stats.resourceTypes.find((rt) => rt.resourceType === 'Patient');
+        expect(patientType).toBeDefined();
+        expect(patientType?.count).toBe(1);
+        expect(patientType?.criteria).toEqual([{ criteria: 'Patient?name=Alice', count: 1 }]);
+      } finally {
+        await redis.del(
+          `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+          `medplum:subscriptions:r4:project:${projectId}:active:Patient`
+        );
+      }
+    });
+
+    test('Ignores legacy v2 keys in project stats', async () => {
+      const redis = getPubSubRedis(shardId);
+
+      await redis.hset(
         `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
-        `medplum:subscriptions:r4:project:${projectId}:active:v2`
+        'Subscription/sub1',
+        'Observation?code=85354-9'
       );
-    }
+      // Legacy key that should not appear in stats
+      await redis.hset(`medplum:subscriptions:r4:project:${projectId}:active:v2`, 'Subscription/sub2', 'Observation');
+
+      try {
+        const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+        const res = await request(app)
+          .get('/fhir/R4/$get-ws-sub-project-stats')
+          .query({ projectId })
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res.status).toBe(200);
+
+        const params = res.body as Parameters;
+        const statsStr = params.parameter?.find((p) => p.name === 'stats')?.valueString;
+        const stats = JSON.parse(statsStr as string) as WsSubProjectDetailStats;
+
+        expect(stats.resourceTypes.every((rt) => rt.resourceType !== 'v2')).toBe(true);
+        const obType = stats.resourceTypes.find((rt) => rt.resourceType === 'Observation');
+        expect(obType?.count).toBe(1);
+      } finally {
+        await redis.del(
+          `medplum:subscriptions:r4:project:${projectId}:active:Observation`,
+          `medplum:subscriptions:r4:project:${projectId}:active:v2`
+        );
+      }
+    });
   });
 });

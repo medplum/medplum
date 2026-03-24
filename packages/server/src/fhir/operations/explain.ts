@@ -68,7 +68,11 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const result = await withLongRunningDatabaseClient((client) => selectQuery.execute(client), DatabaseMode.READER);
+  const result = await withLongRunningDatabaseClient(
+    (client) => selectQuery.execute(client),
+    repo.shardId,
+    DatabaseMode.READER
+  );
 
   let explain: string;
   if (params.format === 'json') {
@@ -80,10 +84,14 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
 
   let countResult: CountResult | undefined;
   if (params.count) {
-    countResult = await withLongRunningDatabaseClient((client) => {
-      const countRepo = repo.clone(client);
-      return getCount(countRepo, searchReq, { forceAccurate: true });
-    }, DatabaseMode.READER);
+    countResult = await withLongRunningDatabaseClient(
+      (client) => {
+        const countRepo = repo.clone(client);
+        return getCount(countRepo, searchReq, { forceAccurate: true });
+      },
+      repo.shardId,
+      DatabaseMode.READER
+    );
   }
 
   const output = buildOutputParameters(operation, {
