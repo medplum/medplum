@@ -344,7 +344,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(conn?: PoolClient): SystemRepository {
-    return createSystemRepository(this.shardId, conn);
+    return createSystemRepository(this.shardId, conn ?? this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
@@ -2143,7 +2143,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         accounts.add(account.reference as string);
       }
     } else {
-      const systemRepo = this.getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = this.getSystemRepo();
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
