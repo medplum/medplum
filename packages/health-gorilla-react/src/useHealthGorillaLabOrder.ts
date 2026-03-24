@@ -209,7 +209,7 @@ function aoeError(prev: TestsReducerState, action: AoeErrorAction): TestsReducer
   let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
   for (const test of action.tests) {
     const prevMetadata = prev.testMetadata[test.code];
-    if (!prevMetadata || prevMetadata.aoeStatus !== 'loading') {
+    if (prevMetadata?.aoeStatus !== 'loading') {
       continue;
     }
 

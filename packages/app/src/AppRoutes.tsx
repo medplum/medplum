@@ -36,6 +36,7 @@ import { BlamePage } from './resource/BlamePage';
 import { BotEditor } from './resource/BotEditor';
 import { BuilderPage } from './resource/BuilderPage';
 import { ChecklistPage } from './resource/ChecklistPage';
+import { CommunicationPayloadPage } from './resource/CommunicationPayloadPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
 import { EditPage } from './resource/EditPage';
@@ -136,6 +137,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
+          <Route path="payload" element={<CommunicationPayloadPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
           <Route path="export" element={<ExportPage />} />
         </Route>

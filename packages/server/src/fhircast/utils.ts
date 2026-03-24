@@ -71,7 +71,13 @@ export async function getTopicForUser(userId: string): Promise<string> {
   // Per the spec, the lease time of a subscription should not exceed the token expiry time
   // Source: https://fhircast.org/specification/STU2/#session-discovery:~:text=.%20If%20using%20OAuth%202.0%2C%20the%20Hub%20SHALL%20limit%20the%20subscription%20lease%20seconds%20to%20be%20less%20than%20or%20equal%20to%20the%20access%20token%27s%20expiration.
 
-  const results = await getCacheRedis().multi().set(topicKey, newTopic, 'EX', 3600, 'NX').get(topicKey).exec();
+  const results = await getCacheRedis()
+    .multi()
+    .set(topicKey, newTopic, 'NX')
+    .get(topicKey)
+    .expire(topicKey, 3600)
+    .exec();
+
   if (!results) {
     throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${topicKey} from Redis`)));
   }

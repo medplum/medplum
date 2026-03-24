@@ -8,7 +8,7 @@ const MODEL_GPT_5_MINI = 'gpt-5-mini';
 const MODEL_GPT_5_2 = 'gpt-5.2';
 const MODEL_GPT_5_4 = 'gpt-5.4';
 
-export const DEFAULT_MODEL = MODEL_GPT_5_2;
+export const DEFAULT_MODEL = MODEL_GPT_5_4;
 
 const MODELS = [
   { value: MODEL_GPT_5_MINI, label: 'GPT-5 Mini' },

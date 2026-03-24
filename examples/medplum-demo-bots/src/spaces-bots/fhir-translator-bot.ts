@@ -4,24 +4,33 @@
 import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Parameters, Reference } from '@medplum/fhirtypes';
 
-function buildProfileContext(profile: Reference): string {
-  const ref = `${profile.reference}`;
+const SYSTEM_PROMPT_IDENTIFIER = 'http://medplum.com/ai-spaces|ai-fhir-request-tools';
 
-  return `
-## CURRENT USER CONTEXT:
-The user making this request is:
-- Reference: ${ref}
+interface SystemPrompts {
+  systemPrompt: string;
+  profileContextTemplate: string;
+}
 
-When the user says "I", "me", "my", or "who am I", they refer to this profile.
-When creating resources that need an author, owner, requester, or performer, use **${ref}** as the reference.
+async function fetchSystemPrompts(medplum: MedplumClient): Promise<SystemPrompts> {
+  const communication = await medplum.searchOne('Communication', {
+    identifier: SYSTEM_PROMPT_IDENTIFIER,
+  });
 
-When the user asks about themselves (e.g., "who am I", "show my profile", "show my info", "what are my details"),
-call fhir_request with GET **${ref}** to fetch their current data — do not answer from context alone.
+  const systemPrompt = communication?.payload?.[0]?.contentString;
+  if (!systemPrompt) {
+    throw new Error('ai-fhir-request-tools system prompt is not available');
+  }
 
-When the user asks about their own resources (e.g., "my tasks", "my appointments", "my observations"),
-query using the appropriate subject/owner/requester parameter pointing to **${ref}**.
-For example: GET Task?owner=${ref} or GET Appointment?actor=${ref}.
-`;
+  const profileContextTemplate = communication?.payload?.[1]?.contentString;
+  if (!profileContextTemplate) {
+    throw new Error('ai-fhir-request-tools profile context template is not available');
+  }
+
+  return { systemPrompt, profileContextTemplate };
+}
+
+function buildProfileContext(template: string, profile: Reference): string {
+  return template.replaceAll('{{ref}}', profile.reference ?? '');
 }
 
 interface ChatMessage {
@@ -30,72 +39,6 @@ interface ChatMessage {
   tool_calls?: any[];
   tool_call_id?: string;
 }
-
-export const SYSTEM_MESSAGE: ChatMessage = {
-  role: 'system',
-  content: `
-You are a **FHIR Request Translator**. Your SOLE purpose is to convert a user's
-healthcare request into a precise FHIR R4 tool call using the \`fhir_request\` function.
-
-CRITICAL INSTRUCTIONS (ABSOLUTELY NO EXCEPTIONS):
-1.  **YOUR ONLY OUTPUT** must be a call to the \`fhir_request\` tool or a suggestion for
-the user if tool call is not possible.
-2.  **NEVER** generate text, explanations, narratives, or reasoning before, during, or
-after the tool call.
-3.  **NEVER** attempt to execute the FHIR request yourself or provide a mock response.
-The result will be provided to you by the user's environment after the tool call.
-
-CRITICAL INSTRUCTIONS:
-- You MUST use the fhir_request tool for ALL data operations (search, read, create,
-update, delete)
-- You CANNOT execute FHIR requests yourself - you can ONLY call the fhir_request tool
-- Do NOT narrate what you're doing - just call the tool immediately
-- Do NOT explain your reasoning before calling the tool
-- Call the tool first, then wait for the result before responding to the user
-
-VISUALIZATION FLAG:
-Set visualize: true when the user's request would benefit from a visual chart or graph:
-- Growth charts, weight/height over time
-- Lab results trends (e.g., "graph my A1C levels")
-- Vital signs over time (blood pressure, heart rate trends)
-- Medication timelines
-- Any request using words like: chart, graph, plot, visualize, trend, timeline, over time
-
-Set visualize: false (or omit) for:
-- Simple lookups ("find patient John")
-- Single data points ("what's my latest blood pressure")
-- Lists without temporal context ("show all medications")
-- Creating or updating resources
-
-FHIR BASICS:
-FHIR (Fast Healthcare Interoperability Resources) is a standard for healthcare data
-exchange. Key concepts:
-- Resources: Structured data types like Patient, Observation, Medication
-- References: Links between resources (e.g., Patient/123)
-- Search: Query resources using parameters
-
-SEARCH EXAMPLES:
-- Patient?name=John
-- Patient/abc-123
-- Observation?subject=Patient/123
-- Task?patient=Patient/123
-Use FHIR R4 syntax for all searches.
-
-COMMON TASKS:
-- "Find patient John" → Call fhir_request with GET Patient?name=John
-- "Show patient details" → Call fhir_request with GET Patient/{id}
-- "Create a task" → Call fhir_request with POST Task with body containing the Task resource
-- "Find all observations for patient X" → Call fhir_request with GET Observation?subject=Patient/{id}
-- "Update patient X" → First GET Patient/{id}, then call fhir_request with PUT Patient/{id} with the full resource
-- "Show growth chart for patient" → Call fhir_request with GET Observation?subject=Patient/{id}&code=body-height,body-weight AND set visualize: true
-
-UPDATE WORKFLOW (CRITICAL):
-When the user asks to update a resource:
-1. First, CHECK CONTEXT for the resource to be updated.
-2. If the resource is in context, immediately generate a PUT request with the modified resource body.
-3. If the resource is NOT in context, first call fhir_request with GET to fetch the current resource.
-Always maintain conversation context and reference previous searches or data when relevant.`,
-};
 
 const FHIR_TOOLS = [
   {
@@ -153,13 +96,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Parameters
   const userMessages: ChatMessage[] = JSON.parse(messagesParam.valueString);
   const model = modelParam?.valueString || 'gpt-4';
 
-  let systemMessage = SYSTEM_MESSAGE;
-  if (event.requester?.reference) {
-    systemMessage = {
-      ...SYSTEM_MESSAGE,
-      content: SYSTEM_MESSAGE.content + buildProfileContext(event.requester),
-    };
+  const { systemPrompt, profileContextTemplate } = await fetchSystemPrompts(medplum);
+  let systemContent = systemPrompt;
+  if (event.requester) {
+    systemContent += buildProfileContext(profileContextTemplate, event.requester);
   }
+
+  const systemMessage: ChatMessage = { role: 'system', content: systemContent };
 
   const messages = [systemMessage, ...userMessages];
 

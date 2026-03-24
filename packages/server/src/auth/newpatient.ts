@@ -43,7 +43,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   const membership = await createPatient(login, projectId, firstName, lastName);
 
   // Update the login
-  const updated = await setLoginMembership(login, membership.id);
+  const updated = await setLoginMembership(login, membership);
 
   res.status(200).json({
     login: updated.id,
@@ -59,13 +59,13 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
  * @param lastName - The patient's last name.
  * @returns The new project membership.
  */
-export async function createPatient(
+async function createPatient(
   login: Login,
   projectId: string,
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
-  const systemRepo = getProjectSystemRepo(projectId);
+  const systemRepo = await getProjectSystemRepo(projectId);
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 

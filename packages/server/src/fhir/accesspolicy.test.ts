@@ -53,7 +53,7 @@ describe('AccessPolicy', () => {
 
   beforeEach(async () => {
     testProject = (await createTestProject()).project;
-    systemRepo = getProjectSystemRepo(testProject);
+    systemRepo = await getProjectSystemRepo(testProject);
   });
 
   afterAll(async () => {

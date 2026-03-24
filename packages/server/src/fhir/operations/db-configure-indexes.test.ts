@@ -9,7 +9,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 
-describe('dbgetginindexes', () => {
+describe('db-configure-indexes', () => {
   const app = express();
 
   let accessToken: string;

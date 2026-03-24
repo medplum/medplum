@@ -68,6 +68,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef(false);
   const loadVersionRef = useRef(0);
+  const componentStreamOpenedRef = useRef(false);
 
   // Load conversation when topic changes
   useEffect(() => {
@@ -183,6 +184,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
     setLoading(true);
     isSendingRef.current = true;
     loadVersionRef.current++;
+    componentStreamOpenedRef.current = false;
 
     try {
       const result = await processMessage({
@@ -202,8 +204,11 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
           setCurrentFhirRequest(undefined);
         },
         onComponentStreamChunk: (chunk) => {
-          setSelectedResource(undefined);
-          setComponentPanelOpen(true);
+          if (!componentStreamOpenedRef.current) {
+            setSelectedResource(undefined);
+            setComponentPanelOpen(true);
+            componentStreamOpenedRef.current = true;
+          }
           setStreamingComponentCode((prev) => (prev ?? '') + chunk);
           setCurrentFhirRequest(undefined);
         },
@@ -313,7 +318,7 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         {message.role === 'user' ? 'You' : 'AI Assistant'}
                       </Text>
                     </Group>
-                    {!message.componentCode && (
+                    {message.content && (
                       <div className={classes.messageContent}>
                         <Text style={{ whiteSpace: 'pre-wrap' }}>{message.content}</Text>
                       </div>
@@ -396,22 +401,20 @@ export function SpacesInbox(props: SpaceInboxProps): JSX.Element {
                         AI Assistant
                       </Text>
                     </Group>
-                    {(streamingContent || (!streamingContent && streamingComponentCode === undefined)) && (
-                      <div className={classes.messageContent}>
-                        {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
-                        {!streamingContent && currentFhirRequest && (
-                          <Text size="sm" c="dimmed" fs="italic">
-                            Executing {currentFhirRequest}...
-                          </Text>
-                        )}
-                        {!streamingContent && !currentFhirRequest && (
-                          <Text size="sm" c="dimmed" fs="italic">
-                            Thinking...
-                          </Text>
-                        )}
-                      </div>
-                    )}
-                    {!streamingContent && streamingComponentCode !== undefined && (
+                    <div className={classes.messageContent}>
+                      {streamingContent && <Text style={{ whiteSpace: 'pre-wrap' }}>{streamingContent}</Text>}
+                      {!streamingContent && currentFhirRequest && (
+                        <Text size="sm" c="dimmed" fs="italic">
+                          Executing {currentFhirRequest}...
+                        </Text>
+                      )}
+                      {!streamingContent && !currentFhirRequest && streamingComponentCode === undefined && (
+                        <Text size="sm" c="dimmed" fs="italic">
+                          Thinking...
+                        </Text>
+                      )}
+                    </div>
+                    {streamingComponentCode !== undefined && (
                       <Stack gap="xs" mt="sm" w={300}>
                         <Paper
                           withBorder

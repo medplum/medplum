@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { WithId } from '@medplum/core';
 import { MEDPLUM_CLI_CLIENT_ID } from '@medplum/core';
 import type { ClientApplication } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
@@ -33,8 +34,8 @@ function getStandardClients(): ClientApplication[] {
   return standardClients;
 }
 
-export function getStandardClientById(clientId: string): ClientApplication | undefined {
-  return getStandardClients().find((client) => client.id === clientId);
+export function getStandardClientById(clientId: string): WithId<ClientApplication> | undefined {
+  return getStandardClients().find((client) => client.id === clientId) as WithId<ClientApplication> | undefined;
 }
 
 export function getStandardClientByRedirectUri(redirectUri: string): ClientApplication | undefined {
