@@ -292,7 +292,7 @@ const staleDrafts = await medplum.searchResources('Communication', {
   _lastUpdated: `lt${staleDraftCutoff.toISOString()}`,
 });
 for (const stale of staleDrafts) {
-  await medplum.deleteResource('Communication', stale.id!);
+  await medplum.deleteResource('Communication', stale.id);
 }
 console.log(staleDrafts.length);
 // end-block staleDraftCleanupTs
