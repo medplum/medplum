@@ -22,8 +22,8 @@ import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck, IconMinus, IconPlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
+import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 
 export interface PatientTenantsFormProps {
   readonly patient: Patient;
@@ -43,10 +43,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   const medplum = useMedplum();
   const isAdmin = medplum.isProjectAdmin() || medplum.isSuperAdmin();
 
-  const originalAccounts = useMemo<Reference[]>(
-    () => extractAccountReferences(patient.meta) ?? [],
-    [patient.meta]
-  );
+  const originalAccounts = useMemo<Reference[]>(() => extractAccountReferences(patient.meta) ?? [], [patient.meta]);
 
   const [pendingAccounts, setPendingAccounts] = useState<Reference[]>(originalAccounts);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -131,9 +128,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
         id: NOTIFICATION_ID,
         title: NOTIFICATION_TITLE,
         color: 'green',
-        message: propagate
-          ? 'Tenant changes saved. Compartment updates are being applied.'
-          : 'Tenant changes saved.',
+        message: propagate ? 'Tenant changes saved. Compartment updates are being applied.' : 'Tenant changes saved.',
         icon: <IconCheck size="1rem" />,
         loading: false,
         autoClose: true,
@@ -255,7 +250,11 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
       >
         <Stack>
           <Text>
-            The following changes will be applied to Patient <strong>{patient.name?.[0]?.given?.join(' ')}{' '}{patient.name?.[0]?.family}</strong>:
+            The following changes will be applied to Patient{' '}
+            <strong>
+              {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
+            </strong>
+            :
           </Text>
 
           {changes.filter((c) => c.type === 'addition').length > 0 && (
