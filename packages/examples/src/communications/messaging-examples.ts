@@ -843,6 +843,7 @@ const messagingGroupThread = await medplum.createResource({
   status: 'in-progress',
   topic: { text: 'Care coordination - Homer Simpson' },
   subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
   recipient: [
     { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
     { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
@@ -880,8 +881,11 @@ await medplum.patchResource('Communication', messagingGroupThreadId, [
   "resource": [
     {
       "resourceType": "Communication",
-      "criteria": "Communication?recipient=%profile.reference&sender=%profile.reference",
-      "readonly": false
+      "criteria": "Communication?recipient=%profile"
+    },
+    {
+      "resourceType": "Communication",
+      "criteria": "Communication?sender=%profile"
     }
   ]
 }

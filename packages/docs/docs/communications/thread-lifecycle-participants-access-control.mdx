@@ -7,8 +7,6 @@ keywords: [Communication, recipient, sender, status, AccessPolicy, participants,
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/communications/messaging-examples.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 # Thread Lifecycle, Participants, and Access Control
 
@@ -32,31 +30,15 @@ flowchart LR
 | Thread header | Is the conversation open or closed? | `in-progress` (active), `completed` (closed), `entered-in-error` |
 | Individual message | Message lifecycle | `preparation` (draft), `in-progress` (sent), `entered-in-error` (retracted or similar) |
 
+For the full lifecycle including read tracking, see [Communication Lifecycle](/docs/communications/messaging-data-model#communication-lifecycle).
+
 ### Close a Thread
 
 <MedplumCodeBlock language="ts" selectBlocks="threadLifecycleCloseHeaderTs">
   {ExampleCode}
 </MedplumCodeBlock>
 
-### Filter for Active Threads Only
-
-<Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="filterActiveThreadsTs">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="cli" label="CLI">
-    <MedplumCodeBlock language="bash" selectBlocks="filterActiveThreadsCli">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="filterActiveThreadsCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+To filter for only active threads when querying, see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads).
 
 ### Reopen a Closed Thread
 
@@ -76,7 +58,7 @@ Threads support multiple participants through the `recipient` array on the threa
 
 ### Create a Group Thread
 
-Set multiple entries in `recipient` when creating the thread header:
+Set `sender` to the thread creator and list all participants (including the creator) in `recipient`. For why this convention matters, see the [thread header `sender` / `recipient` recommendation](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
 <MedplumCodeBlock language="ts" selectBlocks="threadLifecycleGroupThreadTs">
   {ExampleCode}
@@ -100,13 +82,15 @@ Replace the `recipient` array without the removed person. Read the current heade
 
 :::caution
 
-Adding or removing recipients on the thread header does not retroactively change recipients on existing child messages. When sending new messages in the thread, use the thread header’s current recipient list so the conversation stays consistent.
+Adding or removing recipients on the thread header does not retroactively change recipients on existing child messages. When sending new messages in the thread, use the thread header's current recipient list so the conversation stays consistent.
+
+If your access policies scope visibility to `Communication?recipient=%profile`, a removed participant may lose access to the thread header but can still read child messages where they were originally listed as a `recipient`. If full revocation is required, update child messages too or use a different access control approach (for example compartment-based policies).
 
 :::
 
 :::tip
 
-The read-then-replace pattern for removing participants can race if several users edit the list at once. For production, use the resource’s `meta.versionId` with an `If-Match` header to detect conflicts, or use `medplum.updateResource()` for version-aware updates.
+The read-then-replace pattern for removing participants can race if several users edit the list at once. For production, use the resource's `meta.versionId` with an `If-Match` header to detect conflicts, or use `medplum.updateResource()` for version-aware updates.
 
 :::
 
@@ -118,7 +102,7 @@ The read-then-replace pattern for removing participants can race if several user
 
 For typical messaging, restrict Communication reads so users only see threads where they appear as a `recipient` or `sender`. Configure that with an access policy on the project, not only in application code.
 
-Example policy sketch for a practitioner who should only see Communications where they participate:
+The example below uses two `resource` entries for Communication — one scoped to `recipient` and one to `sender`. Medplum ORs multiple entries of the same resource type, so the user sees Communications where they are a recipient or a sender:
 
 <MedplumCodeBlock language="json" selectBlocks="messagingParticipantScopedAccessPolicyJson">
   {ExampleCode}
@@ -126,7 +110,7 @@ Example policy sketch for a practitioner who should only see Communications wher
 
 :::note
 
-`AccessPolicy` `criteria` uses Medplum’s search subset. See [Access Policies](/docs/access/access-policies) for supported modifiers and limitations before relying on a criteria string in production.
+`AccessPolicy` `criteria` uses Medplum's search subset (only `:not` and `:missing` modifiers; no chained searches). Multiple `resource` entries of the same type are ORed. See [Access Policies](/docs/access/access-policies) for the full set of supported patterns before relying on criteria in production.
 
 :::
 
@@ -152,9 +136,11 @@ Test access policies early with two test users in different roles. Sign in as ea
 
 ## In Your UI
 
-Show thread status in the thread list (for example labels or icons for active `in-progress` versus closed `completed`). Render participants from the header’s `recipient` array and refresh when participants change.
+Show thread status visually in the thread list — for example labels or icons to distinguish active (`in-progress`) from closed (`completed`) threads. When a thread is closed, consider disabling the compose area so users don't accidentally send into a resolved conversation.
 
-When you add a participant, confirm they can query the thread: an updated `recipient` alone does not grant access if your policies do not allow that user to read the Communication. Otherwise the thread may not appear in their searches.
+Render the participant list from the header's `recipient` array. Update it dynamically when participants are added or removed. Show the sender/creator so users know who started the conversation.
+
+When you add a participant, verify they can actually query the thread: an updated `recipient` alone does not grant access if the new user's access policies don't cover the Communication. The thread will not appear in their searches until the policy matches. Testing this with two user accounts in different roles (see the tip above) is the most reliable way to catch policy gaps.
 
 ## See Also
 
