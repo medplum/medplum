@@ -1,0 +1,13 @@
+\c postgres
+
+DROP DATABASE IF EXISTS medplum;
+CREATE DATABASE medplum;
+GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
+
+DROP DATABASE IF EXISTS medplum_shard_1;
+CREATE DATABASE medplum_shard_1;
+GRANT ALL PRIVILEGES ON DATABASE medplum_shard_1 TO medplum;
+
+DROP DATABASE IF EXISTS medplum_shard_2;
+CREATE DATABASE medplum_shard_2;
+GRANT ALL PRIVILEGES ON DATABASE medplum_shard_2 TO medplum;
