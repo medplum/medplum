@@ -834,7 +834,9 @@ await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', 
 // end-block threadLifecycleCloseHeaderTs
 
 // start-block threadLifecycleReopenHeaderTs
-await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'in-progress' }]);
+await medplum.patchResource('Communication', threadHeader.id, [
+  { op: 'replace', path: '/status', value: 'in-progress' },
+]);
 // end-block threadLifecycleReopenHeaderTs
 
 // start-block threadLifecycleGroupThreadTs
