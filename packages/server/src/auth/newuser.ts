@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { NewUserRequest, WithId } from '@medplum/core';
-import { badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { badRequest, normalizeOperationOutcome, Operator } from '@medplum/core';
 import type { ClientApplication, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -9,7 +9,7 @@ import { pwnedPassword } from 'hibp';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -43,9 +43,8 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
   // If the user specifies a client ID, then make sure it is compatible with the project
   const clientId = req.body.clientId;
-  let client: ClientApplication | undefined = undefined;
   if (clientId) {
-    client = await getGlobalSystemRepo().readResource<ClientApplication>('ClientApplication', clientId);
+    const client = await getGlobalSystemRepo().readResource<ClientApplication>('ClientApplication', clientId);
     if (projectId) {
       if (client.meta?.project !== projectId) {
         sendOutcome(res, badRequest('Client and project do not match'));
@@ -60,8 +59,21 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   // If the user is a patient, then projectId must be set
   const email = req.body.email.toLowerCase();
   let existingUser = undefined;
-  if (req.body.projectId && req.body.projectId !== 'new') {
-    existingUser = await getUserByEmailInProject(email, req.body.projectId);
+  if (projectId && projectId !== 'new') {
+    // Check global (where synced copies live) and the project shard directly
+    // to avoid a sync-lag blind spot where a recently-created project-scoped
+    // user hasn't been replicated to global yet.
+    existingUser = await getUserByEmailInProject(email, projectId);
+    if (!existingUser) {
+      const projectRepo = await getProjectSystemRepo(projectId);
+      existingUser = await projectRepo.searchOne<User>({
+        resourceType: 'User',
+        filters: [
+          { code: 'email', operator: Operator.EXACT, value: email },
+          { code: 'project', operator: Operator.EQUALS, value: `Project/${projectId}` },
+        ],
+      });
+    }
   } else {
     existingUser = await getUserByEmailWithoutProject(email);
   }
@@ -105,7 +117,8 @@ export async function createUser(request: Omit<NewUserRequest, 'recaptchaToken'>
   globalLogger.info('User creation request received', { email });
   const passwordHash = await bcryptHashPassword(password);
 
-  const systemRepo = getGlobalSystemRepo();
+  const isProjectScoped = !!projectId && projectId !== 'new';
+  const systemRepo = isProjectScoped ? await getProjectSystemRepo(projectId) : getGlobalSystemRepo();
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     meta: projectId && projectId !== 'new' ? { project: projectId } : undefined,

@@ -19,8 +19,10 @@ import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
-import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
+import { setProjectShard } from '../../sharding/sharding-utils';
+import type { SystemRepository } from '../repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../repo';
+import { GLOBAL_SHARD_ID } from '../sharding';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const projectInitOperation: OperationDefinition = {
@@ -115,7 +117,35 @@ export async function projectInitHandler(req: FhirRequest): Promise<FhirResponse
 }
 
 /**
- * Creates a new project.
+ * Creates a Project resource with shard-aware logic.
+ * Handles creating a global stub for non-global shards.
+ * @param systemRepo - The system repository determining which shard to write to.
+ * @param project - The project properties to create.
+ * @returns The created project and its shard ID.
+ */
+export async function createProjectResource(
+  systemRepo: SystemRepository,
+  project: Project
+): Promise<{ project: WithId<Project>; shardId: string }> {
+  const shardId = systemRepo.shardId;
+  setProjectShard(shardId, project);
+
+  const created = await systemRepo.withTransaction(async () => {
+    const shardProject = await systemRepo.createResource<Project>(project);
+    if (shardId !== GLOBAL_SHARD_ID) {
+      // Utilize syncResourceFromShard to bootstrap the project on the global shard.
+      // This keeps getProjectAndProjectShardId and other Repository/sharing helpers happy
+      // during project initialization since shard-syncing will not have had a chance to run yet.
+      await getGlobalSystemRepo().syncResourceFromShard(shardProject);
+    }
+    return shardProject;
+  });
+
+  return { project: created, shardId };
+}
+
+/**
+ * Creates a new project with a default client, and optionally an admin profile and membership.
  * @param projectName - The new project name.
  * @param admin - The Project admin user.
  * @returns The new project, and associated data.  Profile and membership are returned if and only if an admin user is specified.
@@ -125,6 +155,7 @@ export async function createProject(
   admin: User
 ): Promise<{
   project: WithId<Project>;
+  shardId: string;
   client: WithId<ClientApplication>;
   profile: WithId<ProfileResource>;
   membership: WithId<ProjectMembership>;
@@ -134,6 +165,7 @@ export async function createProject(
   admin?: User
 ): Promise<{
   project: WithId<Project>;
+  shardId: string;
   client: WithId<ClientApplication>;
   profile?: WithId<ProfileResource>;
   membership?: WithId<ProjectMembership>;
@@ -143,16 +175,18 @@ export async function createProject(
   admin?: User
 ): Promise<{
   project: WithId<Project>;
+  shardId: string;
   client: WithId<ClientApplication>;
   profile?: WithId<ProfileResource>;
   membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be a parameter of this function
   const config = getConfig();
+  const shardSystemRepo = getShardSystemRepo(config.defaultShardId ?? GLOBAL_SHARD_ID);
 
-  log.info('Project creation request received', { name: projectName });
-  const project = await systemRepo.createResource<Project>({
+  log.info('Project creation request received', { shardId: shardSystemRepo.shardId, name: projectName });
+
+  const { project, shardId } = await createProjectResource(shardSystemRepo, {
     resourceType: 'Project',
     name: projectName,
     owner: admin ? createReference(admin) : undefined,
@@ -164,8 +198,9 @@ export async function createProject(
   log.info('Project created', {
     id: project.id,
     name: projectName,
+    shardId,
   });
-  const client = await createClient(systemRepo, {
+  const client = await createClient(shardSystemRepo, {
     project,
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,
@@ -173,15 +208,15 @@ export async function createProject(
 
   if (admin) {
     const profile = await createProfile(
-      systemRepo,
+      shardSystemRepo,
       project,
       'Practitioner',
       admin.firstName,
       admin.lastName,
       admin.email as string
     );
-    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
-    return { project, profile, membership, client };
+    const membership = await createProjectMembership(shardSystemRepo, admin, project, profile, { admin: true });
+    return { project, shardId, profile, membership, client };
   }
-  return { project, client };
+  return { project, shardId, client };
 }

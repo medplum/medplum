@@ -10,7 +10,8 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
+import { TODO_SHARD_ID } from '../fhir/sharding';
 import type { GoogleCredentialClaims } from '../oauth/utils';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -110,7 +111,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('Registration is disabled'));
       return;
     }
-    const systemRepo = getGlobalSystemRepo();
+    const systemRepo = getShardSystemRepo(TODO_SHARD_ID); // if projectId is defined, use the project's system repo
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,

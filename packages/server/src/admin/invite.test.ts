@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString, tooManyRequests } from '@medplum/core';
 import type { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import type { AwsClientStub } from 'aws-sdk-client-mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -19,6 +19,9 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { SelectQuery } from '../fhir/sql';
+import type { ShardPool } from '../sharding/sharding-types';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
+import { getCacheRedis } from '../redis';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
@@ -27,12 +30,14 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('Admin Invite', () => {
+  let dbPool: ShardPool;
   let mockSESv2Client: AwsClientStub<SESv2Client>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     config.emailProvider = 'awsses';
     await withTestContext(() => initApp(app, config));
+    dbPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
   });
 
   afterAll(async () => {
@@ -93,10 +98,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
     expect(parsed.subject).toBe('Welcome to Medplum');
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -148,10 +150,7 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -198,10 +197,7 @@ describe('Admin Invite', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -250,10 +246,7 @@ describe('Admin Invite', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
-    const rows = await new SelectQuery('User')
-      .column('content')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('content').where('email', '=', bobEmail).execute(dbPool);
     const user = JSON.parse(rows[0].content) as User;
     expect(user.meta?.project).toStrictEqual(undefined);
   });
@@ -385,10 +378,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(dbPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -570,10 +560,7 @@ describe('Admin Invite', () => {
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
 
-    const rows = await new SelectQuery('User')
-      .column('projectId')
-      .where('email', '=', bobEmail)
-      .execute(getDatabasePool(DatabaseMode.READER));
+    const rows = await new SelectQuery('User').column('projectId').where('email', '=', bobEmail).execute(dbPool);
     expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
@@ -1427,5 +1414,93 @@ describe('Admin Invite', () => {
     expect(res.body.issue).toBeDefined();
     expect(normalizeErrorString(res.body)).toContain('Access policy');
     expect(normalizeErrorString(res.body)).toContain('does not exist');
+  });
+
+  test('Invite lock contention with retry', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Mock Redis set to fail on first attempt, then succeed
+    const redis = getCacheRedis(GLOBAL_SHARD_ID);
+    const originalSet = redis.set.bind(redis);
+    let callCount = 0;
+    const setSpy = jest.spyOn(redis, 'set').mockImplementation((...args: Parameters<typeof redis.set>) => {
+      const key = args[0] as string;
+      if (key.startsWith('invite:lock:')) {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve(null) as ReturnType<typeof redis.set>;
+        }
+      }
+      return originalSet(...args);
+    });
+
+    try {
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+          sendEmail: false,
+        });
+
+      expect(res.status).toBe(200);
+      expect(callCount).toBeGreaterThanOrEqual(2);
+    } finally {
+      setSpy.mockRestore();
+    }
+  });
+
+  test('Invite lock acquisition failure returns 429', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Mock Redis set to always fail for invite locks
+    const redis = getCacheRedis(GLOBAL_SHARD_ID);
+    const originalSet = redis.set.bind(redis);
+    const setSpy = jest.spyOn(redis, 'set').mockImplementation((...args: Parameters<typeof redis.set>) => {
+      const key = args[0] as string;
+      if (key.startsWith('invite:lock:')) {
+        return Promise.resolve(null) as ReturnType<typeof redis.set>;
+      }
+      return originalSet(...args);
+    });
+
+    try {
+      const bobEmail = `bob${randomUUID()}@example.com`;
+      const res = await request(app)
+        .post('/admin/projects/' + project.id + '/invite')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Practitioner',
+          firstName: 'Bob',
+          lastName: 'Jones',
+          email: bobEmail,
+          sendEmail: false,
+        });
+
+      expect(res.status).toBe(429);
+      expect(res.body.id).toBe(tooManyRequests.id);
+    } finally {
+      setSpy.mockRestore();
+    }
   });
 });
