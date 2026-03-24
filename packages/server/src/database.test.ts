@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { sleep } from '@medplum/core';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import {
   acquireAdvisoryLock,
@@ -12,7 +12,9 @@ import {
   prepareDatabasePoolsForShutdown,
   releaseAdvisoryLock,
 } from './database';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
+import type { ShardPool } from './sharding/sharding-types';
 
 describe('Advisory locks', () => {
   let clientA: PoolClient;
@@ -21,7 +23,7 @@ describe('Advisory locks', () => {
   beforeEach(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
-    const pool = getDatabasePool(DatabaseMode.READER);
+    const pool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     clientA = await pool.connect();
     clientB = await pool.connect();
     await clientA.query(`SET statement_timeout TO 100`);
@@ -73,7 +75,7 @@ describe('prepareDatabasePoolsForShutdown', () => {
   });
 
   test('Closes all idle connections regardless of the configured minimum', async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const clients = await Promise.all([pool.connect(), pool.connect()]);
     clients.forEach((client) => client.release());
     expect(pool.options.min).toBe(2);
@@ -92,10 +94,10 @@ describe('prepareDatabasePoolsForShutdown', () => {
   });
 
   test('Handles errors thrown while preparing pools', async () => {
-    type PoolWithRemove = Pool & { _remove: (client: PoolClient) => void };
+    type PoolWithRemove = ShardPool & { _remove: (client: PoolClient) => void };
 
-    const writerPool = getDatabasePool(DatabaseMode.WRITER);
-    const readerPool = getDatabasePool(DatabaseMode.READER);
+    const writerPool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
+    const readerPool = getDatabasePool(DatabaseMode.READER, GLOBAL_SHARD_ID);
     const clients = await Promise.all([writerPool.connect(), readerPool.connect()]);
     clients.forEach((client) => client.release());
 
@@ -125,7 +127,7 @@ describe('prepareDatabasePoolsForShutdown', () => {
   });
 
   test('Closes connections released during graceful shutdown', async () => {
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+    const pool = getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID);
     const idleClient = await pool.connect();
     const activeClient = await pool.connect();
     idleClient.release();

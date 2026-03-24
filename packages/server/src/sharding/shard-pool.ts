@@ -24,9 +24,6 @@ export class DefaultShardPool extends Pool implements ShardPool {
       return;
     }
 
-    // const conn = (await super.connect()) as ShardPoolClient;
-    // conn.shardId = this.shardId;
-    // return conn;
     // eslint-disable-next-line consistent-return
     return super.connect().then((conn) => {
       (conn as ShardPoolClient).shardId = this.shardId;
