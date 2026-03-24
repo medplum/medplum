@@ -53,6 +53,10 @@ export interface MedplumServerConfig {
    * Separating background job queues from other purposes can improve performance under high load by isolating job queue operations.
    */
   backgroundJobsRedis?: MedplumRedisConfig;
+  enableSharding?: boolean;
+  /** The default shard ID to place new projects and related resources */
+  defaultShardId?: string;
+  shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
@@ -164,6 +168,20 @@ export interface MedplumServerConfig {
     [searchParamCode: string]:
       | { resourceType?: string[]; config: ArrayColumnPaddingConfig }
       | { resourceType?: string[]; config: ArrayColumnPaddingConfig }[];
+  };
+
+  /** Configuration for shard sync outbox processing */
+  shardSync?: {
+    /** Number of outbox rows to claim per batch (default: 100) */
+    batchSize?: number;
+    /** Maximum number of batch iterations per job invocation (default: 1000) */
+    maxIterations?: number;
+    /** Delay in ms between batch iterations (default: 10) */
+    delayBetweenBatchesMs?: number;
+    /** Number of consecutive global write errors before aborting the job (default: 3) */
+    globalErrorThreshold?: number;
+    /** Number of failed attempts before a row is excluded from processing (default: 10) */
+    maxAttempts?: number;
   };
 
   /** TOTP authenticator window for MFA token validation (default: 1) */
@@ -286,7 +304,8 @@ export type WorkerName =
   | 'reindex'
   | 'batch'
   | 'post-deploy-migration'
-  | 'set-accounts';
+  | 'set-accounts'
+  | 'shard-sync';
 
 export interface MedplumWorkersConfig {
   /**
@@ -309,4 +328,15 @@ export interface MedplumFissionConfig {
   readonly environmentName: string;
   readonly routerHost: string;
   readonly routerPort: number;
+}
+
+export interface MedplumShardConfig {
+  id: string;
+  database: MedplumDatabaseConfig;
+  readonlyDatabase?: MedplumDatabaseConfig;
+  redis: MedplumRedisConfig;
+  cacheRedis?: MedplumRedisConfig;
+  rateLimitRedis?: MedplumRedisConfig;
+  pubSubRedis?: MedplumRedisConfig;
+  backgroundJobsRedis?: MedplumRedisConfig;
 }

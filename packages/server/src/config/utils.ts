@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { concatUrls } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
@@ -74,6 +75,27 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
     config.signingKeyPassphrase = passphrase;
   }
 
+  config.defaultShardId ||= GLOBAL_SHARD_ID;
+  config.shards ??= {};
+  if (config.shards.GLOBAL_SHARD_ID) {
+    throw new Error('Reserved shard ID', { cause: GLOBAL_SHARD_ID });
+  }
+  // SHARDING - do NOT duplicate global shard here; need a single source of truth which is the top-level config
+  config.shards[GLOBAL_SHARD_ID] = {
+    id: GLOBAL_SHARD_ID,
+    database: config.database,
+    readonlyDatabase: config.readonlyDatabase,
+    redis: config.redis,
+    cacheRedis: config.cacheRedis,
+    rateLimitRedis: config.rateLimitRedis,
+    pubSubRedis: config.pubSubRedis,
+    backgroundJobsRedis: config.backgroundJobsRedis,
+  };
+  for (const [shardId, shardConfig] of Object.entries(config.shards)) {
+    shardConfig.id = shardId;
+  }
+  // SHARDING - need better management of this flag.
+  config.enableSharding = Object.keys(config.shards ?? {}).length > 1;
   return config as ServerConfig;
 }
 
@@ -102,7 +124,9 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirQuota';
+  | 'defaultFhirQuota'
+  | 'shards'
+  | 'defaultShardId';
 
 const integerKeys = new Set([
   'accurateCountThreshold',
