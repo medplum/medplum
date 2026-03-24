@@ -105,7 +105,7 @@ import {
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
 import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
-import { getProjectAndProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
+import { getProjectAndProjectShardId, GlobalResourceTypes, SyncedResourceTypes } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
@@ -126,6 +126,7 @@ import {
 import { invariant } from '../util/invariant';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
+import { addShardSyncJob } from '../workers/shard-sync';
 import { addSubscriptionJobs } from '../workers/subscription';
 import type { FhirRateLimiter } from './fhirquota';
 import { validateResourceWithJsonSchema } from './jsonschema';
@@ -930,6 +931,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await addBackgroundJobs(this.shardId, result, existing, { project, interaction });
     });
 
+    if (this.shouldSyncResource(result)) {
+      await this.postCommit(async () => {
+        await addShardSyncJob(this.shardId);
+      });
+    }
+
     const output = deepClone(result);
     return this.removeHiddenFields(output);
   }
@@ -1214,6 +1221,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
+      await this.writeShardSyncOutbox(client, resource);
     });
   }
 
@@ -1442,6 +1450,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           ]).execute(conn);
 
           await this.deleteFromLookupTables(conn, resource);
+          if (this.shouldSyncResource(resource)) {
+            await this.writeShardSyncOutbox(conn, resource, versionId);
+            await this.postCommit(async () => {
+              await addShardSyncJob(this.shardId);
+            });
+          }
           const durationMs = Date.now() - startTime;
 
           await this.postCommit(async () => {
@@ -1857,6 +1871,107 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await query.execute(client);
   }
 
+  /**
+   * Writes a shard sync outbox row if the resource is a SyncedResourceType on a non-global shard.
+   * The outbox row is written within the same transaction as the resource write to guarantee atomicity.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   * @param versionId - The version ID of the resource. Defaults to resource.meta.versionId
+   */
+  private async writeShardSyncOutbox(
+    client: PoolClient,
+    resource: WithId<Resource>,
+    versionId?: string
+  ): Promise<void> {
+    if (this.shouldSyncResource(resource)) {
+      await new InsertQuery('shard_sync_outbox', [
+        {
+          resourceType: resource.resourceType,
+          resourceId: resource.id,
+          resourceVersionId: versionId ?? resource.meta?.versionId,
+        },
+      ]).execute(client);
+    }
+  }
+
+  private shouldSyncResource(resource: WithId<Resource>): boolean {
+    return (
+      this.shardId !== GLOBAL_SHARD_ID && // only sync from shards to global
+      SyncedResourceTypes.has(resource.resourceType) && // only sync synced resource types
+      resource.meta?.project !== r4ProjectId // the R4 project cannot be synced since it has a hard-coded Project.id
+    );
+  }
+
+  /**
+   * Syncs a resource from a shard to the global shard.
+   * This is called by the shard sync worker to replicate SyncedResourceTypes.
+   * It performs the database write and cache update but deliberately does NOT
+   * trigger background jobs, binary handling, or audit event logging.
+   * @param resource - The resource to sync.
+   */
+  async syncResourceFromShard(resource: WithId<Resource>): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    // Use ensureInTransaction -> withTransaction which has built-in
+    // serialization retry (2 attempts, exponential backoff).
+    // Unlike writeToDatabase, we use ignoreOnConflict for the history table
+    // since the same version may have already been synced.
+    await this.ensureInTransaction(resource.resourceType, async (client) => {
+      await this.writeResource(client, resource);
+      // ignoreOnConflict since the same version may already exist on the global shard from a previous sync.
+      await this.writeResourceVersion(client, resource, { ignoreOnConflict: true });
+      await this.writeLookupTables(client, resource, false);
+    });
+  }
+
+  async syncDeleteFromShard(
+    resourceType: ResourceType,
+    id: string,
+    lastUpdated: Date,
+    projectId: string,
+    compartments: string[],
+    versionId: string
+  ): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
+    // SHARDING - this code should be shared with the normal delete flow
+    await this.ensureInTransaction(resourceType, async (client) => {
+      const content = '';
+      const columns: Record<string, any> = {
+        id,
+        lastUpdated,
+        deleted: true,
+        projectId,
+        content,
+        __version: -1,
+      };
+
+      if (resourceType !== 'Binary') {
+        columns['compartments'] = compartments;
+      }
+
+      for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+        this.buildColumn({ resourceType } as Resource, columns, searchParam);
+      }
+
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+      await new InsertQuery(resourceType + '_History', [
+        {
+          id,
+          versionId,
+          lastUpdated,
+          content,
+        },
+      ])
+        .ignoreOnConflict()
+        .execute(client);
+
+      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+    });
+  }
 
   /**
    * Builds a list of compartments for the resource for writing.
