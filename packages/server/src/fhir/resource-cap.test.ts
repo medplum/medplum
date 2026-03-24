@@ -11,6 +11,7 @@ import { getRateLimitRedis } from '../redis';
 import type { TestRedisConfig } from '../test.setup';
 import { createTestProject, deleteRedisKeys } from '../test.setup';
 import { getProjectSystemRepo } from './repo';
+import { TODO_SHARD_ID } from './sharding';
 
 describe('FHIR Resource Limits', () => {
   let app: Express;
@@ -31,7 +32,7 @@ describe('FHIR Resource Limits', () => {
   });
 
   afterEach(async () => {
-    await deleteRedisKeys(getRateLimitRedis(), redisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(TODO_SHARD_ID), redisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

@@ -86,11 +86,13 @@ export function getDispatchQueue(): Queue<DispatchJobData> {
 /**
  * Adds all dispatch jobs for a given resource.
  *
+ * @param shardId - The shard ID.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available
  * @param context - The background job context.
  */
 export async function addDispatchJobs(
+  shardId: string,
   resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
