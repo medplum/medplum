@@ -45,6 +45,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
+  // SHARDING - need to verify that user.meta.project is the same as securityRequest.meta.project
   await setPassword({ ...user, emailVerified: true }, req.body.password);
   await systemRepo.updateResource<typeof securityRequest>({ ...securityRequest, used: true });
   sendOutcome(res, allOk);
@@ -53,5 +54,6 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 export async function setPassword(user: User, password: string): Promise<void> {
   const passwordHash = await bcryptHashPassword(password);
   const systemRepo = getGlobalSystemRepo();
+  // SHARDING - update needs to be on the project shard
   await systemRepo.updateResource<User>({ ...user, passwordHash });
 }

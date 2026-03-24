@@ -12,7 +12,13 @@ import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
 import { loadTestConfig } from '../../config/loader';
 import type { MedplumServerConfig } from '../../config/types';
-import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
+import {
+  createTestProject,
+  initTestAuth,
+  setupPwnedPasswordMock,
+  setupRecaptchaMock,
+  withTestContext,
+} from '../../test.setup';
 import { getGlobalSystemRepo } from '../repo';
 
 jest.mock('hibp');
@@ -134,7 +140,7 @@ describe('Project $init', () => {
   });
 
   test('Requires server User', async () => {
-    const accessToken = await initTestAuth();
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
 
     const projectName = 'Test Init Project ' + randomUUID();
     const owner = await createUser({
@@ -142,7 +148,7 @@ describe('Project $init', () => {
       password: 'iaudhbrglkjhabdfligubhaedrg',
       firstName: 'Other Project',
       lastName: 'Member',
-      projectId: randomUUID(),
+      projectId: project.id,
     });
 
     const res = await request(app)

@@ -37,6 +37,8 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 
   const user = await systemRepo.readReference(securityRequest.user);
 
+  // SHARDING - update needs to be on the project shard
+  // SHARDING - need to verify that user.meta.project is the same as securityRequest.meta.project
   await systemRepo.withTransaction(async () => {
     await systemRepo.updateResource<User>({ ...user, emailVerified: true });
     await systemRepo.updateResource<UserSecurityRequest>({ ...securityRequest, used: true });
@@ -55,6 +57,7 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
 export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
   // Create the password change request
   const systemRepo = getGlobalSystemRepo();
+  // SHARDING - create needs to be on user.project shard
   return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },

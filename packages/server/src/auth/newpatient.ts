@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
-import type { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import type { Login, Patient, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { sendOutcome } from '../fhir/outcomes';
-import { getGlobalSystemRepo, getProjectSystemRepo } from '../fhir/repo';
+import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { createProfile, createProjectMembership } from './utils';
 
@@ -65,9 +66,10 @@ async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<WithId<ProjectMembership>> {
-  const systemRepo = await getProjectSystemRepo(projectId);
+  const { project, shardId } = await getProjectAndProjectShardId(projectId);
+  const systemRepo = getShardSystemRepo(shardId);
+
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  const project = await systemRepo.readResource<Project>('Project', projectId);
 
   if (!project.defaultPatientAccessPolicy) {
     throw new OperationOutcomeError(badRequest('Project does not allow open registration'));

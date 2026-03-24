@@ -16,6 +16,7 @@ import type { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import type { SystemRepository } from '../fhir/repo';
+import { getGlobalSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {
@@ -44,8 +45,12 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
-    user = await systemRepo.readReference<User>(membership.user as Reference<User>);
-    const sessions = await getSessions(systemRepo, user);
+    // membership.user can be either server or project scoped, so read the synced User from the global shard
+    const globalSystemRepo = getGlobalSystemRepo();
+    user = await globalSystemRepo.readReference<User>(membership.user as Reference<User>);
+    const sessions = await getSessions(globalSystemRepo, user);
+
+    // ProjectMembership are always project scoped, so read the ProjectMembership from the project shard
     const memberships = await systemRepo.searchResources<ProjectMembership>({
       resourceType: 'ProjectMembership',
       filters: [
