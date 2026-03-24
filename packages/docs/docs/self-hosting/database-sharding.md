@@ -273,6 +273,19 @@ Authentication and unauthenticated endpoints must resolve a resource's project b
 
 The trade-off is **eventual consistency**: there is a brief window after a synced resource is written to its Project's shard but before the sync worker replicates it to the global shard. For some critical, infrequent flows like new project creation, the sync occurs synchronously to ensure consistency.
 
+### Why not intelligently write Synced Resources to global and avoid the need for syncing?
+
+Routing writes for a Project's resource types to different databases means reads must also be similarly routed. In the simple case, correctly routing isn't particularly difficult; searches for resources types A, B, C go to this shard while searches for D, E, and F go to that shard. To achieve this,
+a `Repository` needs to be able to connect to both the Project's shard database and the global shard database based on the resource type being queried.
+
+It gets complicated in access patterns that span resource types:
+
+- **Chained search** across shard boundaries does not work since chained searches produce a single SQL query against a single database. Attempting to do so would either return incomplete results or more likely would need to throw errors; potentially breaking existing workflows.
+- **Transaction bundles** including operations across shard boundaries would either be disallowed or become more complex by involving two-phase commits (2PC) to maintain transactional guarantees. This would break existing workflows and further complicate the rules of using Medplum.
+- **Transactional FHIR operations** face similar challenges of needing to coordinate transactions across databases or lose certain transactional guarantees.
+
+Co-locating all of a project's resources on the same shard avoids these classes of issues and does not further complicate nor add restrictions on the types of FHIR interactions users can perform.
+
 ### Why an Outbox Table Instead of Change Data Capture?
 
 The outbox pattern was chosen over CDC (e.g., PostgreSQL logical replication) because:
