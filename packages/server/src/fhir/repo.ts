@@ -340,11 +340,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Use this when you need elevated privileges within request handling.
-   * @param conn - Optional database client.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(conn?: PoolClient): SystemRepository {
-    return createSystemRepository(this.shardId, conn ?? this.conn);
+  getSystemRepo(): SystemRepository {
+    return createSystemRepository(this.shardId, this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
