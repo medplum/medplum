@@ -17,16 +17,17 @@ import {
   resolveId,
 } from '@medplum/core';
 import type { ClientApplication, Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import type { Request, RequestHandler, Response } from 'express';
 import type { JWTVerifyOptions } from 'jose';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getGlobalSystemRepo } from '../fhir/repo';
 import { getTopicForUser } from '../fhircast/utils';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import { validateClientCert } from './cert';
 import type { MedplumRefreshTokenClaims } from './keys';
 import { generateSecret, verifyJwt } from './keys';
@@ -111,10 +112,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const systemRepo = getGlobalSystemRepo();
   let client: WithId<ClientApplication>;
   try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    client = await getClientApplication(clientId);
   } catch {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
@@ -129,13 +129,14 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getGlobalSystemRepo();
   const membership = await getClientApplicationMembership(systemRepo, client);
   if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
 
-  const project = await systemRepo.readReference(membership.project);
+  const { project, shardId } = await getProjectAndProjectShardId(membership.project);
   const scope = (req.body.scope || 'openid') as string;
 
   const login = await systemRepo.createResource<Login>({
@@ -155,7 +156,13 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
 
   try {
     const userConfig = await getUserConfiguration(systemRepo, project, membership);
-    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
+    const accessPolicy = await getAccessPolicyForLogin({
+      project,
+      shardId,
+      login,
+      membership,
+      userConfig,
+    });
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
     sendTokenError(res, 'invalid_request', normalizeErrorString(err));
@@ -398,6 +405,7 @@ export async function exchangeExternalAuthToken(
 
   const systemRepo = getGlobalSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
+  // SHARDING - okay to rely on global here?
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
   if (!idp) {
@@ -686,7 +694,7 @@ async function sendTokenResponse(res: Response, login: WithId<Login>, client?: C
     const userId = resolveId(login.user) as string;
     let topic: string;
     try {
-      topic = await getTopicForUser(userId);
+      topic = await getTopicForUser(systemRepo.shardId, userId);
     } catch (err: unknown) {
       sendTokenError(res, normalizeErrorString(err));
       return;

@@ -545,7 +545,7 @@ describe('OAuth utils', () => {
       await withTestContext(async () => {
         // Create a User with email
         const userEmail = `test-${randomUUID()}@example.com`;
-        const user = await systemRepo.createResource<User>({
+        const user = await repo.createResource<User>({
           resourceType: 'User',
           email: userEmail,
           firstName: 'Test',

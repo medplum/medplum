@@ -26,8 +26,9 @@ import type {
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
+import { getProjectAndProjectShardId } from '../sharding/sharding-utils';
 import type { SystemRepository } from './repo';
-import { getGlobalSystemRepo, getProjectSystemRepo, Repository } from './repo';
+import { getShardSystemRepo, Repository } from './repo';
 import { applySmartScopes } from './smart';
 
 export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
@@ -42,25 +43,29 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const { login, membership: realMembership, shardId: realShardId, onBehalfOfMembership } = authState;
   const membership = onBehalfOfMembership ?? realMembership;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  const globalSystemRepo = getGlobalSystemRepo();
+  let project = authState.project;
+  let shardId = realShardId;
+  // SHARDING - What the implications of onBehalfOfMembership being in a different project?
+  if (membership.project.reference !== realMembership.project.reference) {
+    const result = await getProjectAndProjectShardId(membership.project);
+    project = result.project;
+    shardId = result.shardId;
+  }
+
+  const systemRepo = getShardSystemRepo(shardId);
   let profile: WithId<ProfileResource | Bot | ClientApplication> | undefined = authState.profile;
   if (!profile) {
     try {
-      profile = await globalSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(realMembership.profile);
+      profile = await systemRepo.readReference<ProfileResource | Bot | ClientApplication>(realMembership.profile);
     } catch (err: unknown) {
       if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
         throw err;
       }
     }
-  }
-
-  let project = authState.project;
-  if (membership.project.reference !== realMembership.project.reference) {
-    project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
   const allowedProjects: WithId<Project>[] = [project];
@@ -72,7 +77,6 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
-    const systemRepo = await getProjectSystemRepo(project);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -99,6 +103,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     checkReferencesOnWrite: project.checkReferencesOnWrite,
     validateTerminology: project.features?.includes('validate-terminology'),
     onBehalfOf: authState.onBehalfOf ? createReference(authState.onBehalfOf) : undefined,
+    shardId,
   });
 }
 
@@ -108,10 +113,11 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
  * @returns The finalized access policy.
  */
 export async function getAccessPolicyForLogin(authState: AuthState): Promise<AccessPolicy | undefined> {
+  // SHARDING check this function to be sure it is correct for sharding
   const { project, login } = authState;
   const membership = authState.onBehalfOfMembership ?? authState.membership;
 
-  let accessPolicy = await buildAccessPolicy(membership);
+  let accessPolicy = await buildAccessPolicy(getShardSystemRepo(authState.shardId), membership);
 
   if (login.scope) {
     // If the login specifies SMART scopes,
@@ -129,10 +135,14 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
 
 /**
  * Builds a parameterized compound access policy.
+ * @param systemRepo - The system repository
  * @param membership - The user project membership.
  * @returns The parameterized compound access policy.
  */
-export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
+export async function buildAccessPolicy(
+  systemRepo: SystemRepository,
+  membership: ProjectMembership
+): Promise<PopulatedAccessPolicy> {
   const access: ProjectMembershipAccess[] = [];
   if (membership.accessPolicy) {
     access.push({ policy: membership.accessPolicy });
@@ -141,7 +151,6 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     access.push(...membership.access);
   }
 
-  const systemRepo = await getProjectSystemRepo(membership.project);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
@@ -283,7 +292,7 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
-      readonlyFields: ['features', 'link', 'systemSetting'],
+      readonlyFields: ['features', 'link', 'systemSetting', 'shard'],
       hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
       interaction: ['read', 'vread', 'update', 'history', 'create', 'search'], // Everything except delete
     });
