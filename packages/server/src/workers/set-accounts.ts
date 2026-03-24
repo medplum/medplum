@@ -10,7 +10,6 @@ import { getRepoForLogin } from '../fhir/accesspolicy';
 import { setResourceAccounts } from '../fhir/operations/set-accounts';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
 import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry } from './utils';
@@ -26,6 +25,7 @@ export interface SetAccountsJobData {
   readonly id: string;
   readonly accounts: Reference[];
   readonly authState: Readonly<AuthState>;
+  readonly shardId: string;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -86,13 +86,12 @@ export async function addSetAccountsJobData(job: SetAccountsJobData): Promise<Jo
 
 export async function execSetAccountsJob(job: Job<SetAccountsJobData>): Promise<void> {
   const { resourceType, id, accounts } = job.data;
-  const { login, project, membership } = job.data.authState;
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
+  const { login, project, membership, shardId } = job.data.authState;
+  const systemRepo = getShardSystemRepo(job.data.shardId);
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
-
+  const repo = await getRepoForLogin({ login, project, shardId, membership, userConfig }, true);
   const exec = new AsyncJobExecutor(repo, job.data.asyncJob);
   await exec.startAsync(async () => {
     return setResourceAccounts(repo, resourceType, id, { accounts, propagate: true });

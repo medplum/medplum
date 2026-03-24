@@ -81,11 +81,13 @@ export async function getSubscriptionAutoDisableTriggers(
  * Records a subscription failure and checks all auto-disable triggers.
  * Uses a single Redis sorted set with timestamps as scores.
  * Each trigger is checked independently via ZCOUNT over its time window.
+ * @param shardId - The shard ID.
  * @param subscriptionId - The subscription ID.
  * @param triggers - Optional auto-disable triggers to evaluate for this subscription.
  * @returns The trigger that fired, or undefined if none did.
  */
 export async function recordSubscriptionFailure(
+  shardId: string,
   subscriptionId: string,
   triggers = getServerConfigTriggers()
 ): Promise<{ trigger: SubscriptionAutoDisableTrigger; failureCount: number } | undefined> {
@@ -93,7 +95,7 @@ export async function recordSubscriptionFailure(
     return undefined;
   }
 
-  const redis = getCacheRedis();
+  const redis = getCacheRedis(shardId);
   const key = getRedisKey(subscriptionId);
   const now = Date.now();
 
@@ -129,9 +131,10 @@ export async function recordSubscriptionFailure(
 
 /**
  * Clears the failure tracking for a subscription (called on success or after auto-disable).
+ * @param shardId - The shard ID.
  * @param subscriptionId - The subscription ID.
  */
-export async function clearSubscriptionFailures(subscriptionId: string): Promise<void> {
-  const redis = getCacheRedis();
+export async function clearSubscriptionFailures(shardId: string, subscriptionId: string): Promise<void> {
+  const redis = getCacheRedis(shardId);
   await redis.unlink(getRedisKey(subscriptionId));
 }

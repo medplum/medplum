@@ -6,7 +6,6 @@ import type { Job, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import { addCronJobs } from './cron';
 import { addDownloadJobs } from './download';
@@ -24,6 +23,7 @@ import { getBullmqRedisConnectionOptions, getWorkerBullmqConfig, queueRegistry }
  */
 
 export interface DispatchJobData {
+  readonly shardId: string;
   readonly interaction: BackgroundJobInteraction;
   readonly resourceType: ResourceType;
   readonly id: string;
@@ -99,6 +99,7 @@ export async function addDispatchJobs(
 ): Promise<void> {
   const ctx = tryGetRequestContext();
   await addDispatchJobData({
+    shardId,
     resourceType: resource.resourceType,
     id: resource.id,
     versionId: resource.meta?.versionId as string,
@@ -122,8 +123,8 @@ async function addDispatchJobData(job: DispatchJobData): Promise<void> {
  * @param job - The dispatch job details.
  */
 export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> {
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be part of job.data in future
-  const { resourceType, id, versionId, previousVersionId } = job.data;
+  const { shardId, resourceType, id, versionId, previousVersionId } = job.data;
+  const systemRepo = getShardSystemRepo(shardId);
   const resource = await systemRepo.readVersion(resourceType, id, versionId);
   const previousVersion = previousVersionId
     ? await systemRepo.readVersion(resourceType, id, previousVersionId)
@@ -134,7 +135,7 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
   const context = { interaction, project, systemRepo } as BackgroundJobContext;
 
   try {
-    await addSubscriptionJobs(resource, previousVersion, context);
+    await addSubscriptionJobs(shardId, resource, previousVersion, context);
   } catch (err) {
     getLogger().error('Error adding subscription jobs', {
       resourceType: resource.resourceType,
@@ -155,7 +156,7 @@ export async function execDispatchJob(job: Job<DispatchJobData>): Promise<void> 
     }
 
     try {
-      await addCronJobs(resource, previousVersion, context);
+      await addCronJobs(shardId, resource, previousVersion, context);
     } catch (err) {
       getLogger().error('Error adding cron jobs', {
         resourceType: resource.resourceType,

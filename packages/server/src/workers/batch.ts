@@ -20,7 +20,6 @@ import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getShardSystemRepo } from '../fhir/repo';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import type { WorkerInitializer, WorkerInitializerOptions } from './utils';
@@ -105,13 +104,13 @@ export async function queueBatchProcessing(bundle: Bundle, asyncJob: WithId<Asyn
  */
 export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const bundle = job.data.bundle;
-  const { login, project, membership } = job.data.authState;
+  const { login, project, membership, shardId } = job.data.authState;
   const logger = getLogger();
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be available in job.data.authState in the future
+  const systemRepo = getShardSystemRepo(shardId);
 
   // Prepare the original submitting user's repo
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const repo = await getRepoForLogin({ login, project, membership, userConfig }, true);
+  const repo = await getRepoForLogin({ login, project, shardId, membership, userConfig }, true);
   const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',

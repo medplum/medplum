@@ -48,7 +48,6 @@ import { isPreCommitSubscription } from '../fhir/precommit';
 import type { ResendSubscriptionsOptions, SystemRepository } from '../fhir/repo';
 import { getGlobalSystemRepo, getProjectSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
-import { PLACEHOLDER_SHARD_ID } from '../fhir/sharding';
 import { getLogger, globalLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -115,6 +114,7 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
+  readonly shardId: string;
   readonly requestId?: string;
   readonly traceId?: string;
   readonly authState?: AuthState;
@@ -212,12 +212,14 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  *
  * TODO: Actually prevent notifications for `Subscriptions` where the `AccessPolicy` is not satisfied (for rest-hook subscriptions)
  *
+ * @param systemRepo - The system repository
  * @param resource - The resource to evaluate against the `AccessPolicy`.
  * @param project - The project containing the resource.
  * @param subscription - The `Subscription` to get the `AccessPolicy` for.
  * @returns True if access policy is satisfied for this Subscription notification, otherwise returns false
  */
 async function satisfiesAccessPolicy(
+  systemRepo: SystemRepository,
   resource: Resource,
   project: WithId<Project>,
   subscription: Subscription
@@ -227,9 +229,9 @@ async function satisfiesAccessPolicy(
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
     // The current Repository author, which must exist for Repository to successfully construct
     const subAuthor = subscription.meta?.author as Reference;
-    const membership = await findProjectMembership(project.id, subAuthor);
+    const membership = await findProjectMembership(systemRepo, project.id, subAuthor);
     if (membership) {
-      const accessPolicy = await buildAccessPolicy(membership);
+      const accessPolicy = await buildAccessPolicy(systemRepo, membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
       if (!satisfied && subscription.channel.type !== 'websocket') {
         const resourceReference = getReferenceString(resource);
@@ -276,12 +278,14 @@ async function satisfiesAccessPolicy(
  * at that moment in time.  For each matching subscription, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
+ * @param shardId - The shard ID.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource.
  * @param context - The background job context.
  * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
+  shardId: string,
   resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext,
@@ -309,8 +313,9 @@ export async function addSubscriptionJobs(
     return;
   }
 
+  const systemRepo = getShardSystemRepo(shardId);
   const requestTime = new Date().toISOString();
-  const subscriptions = await getSubscriptions(resource, project);
+  const subscriptions = await getSubscriptions(systemRepo, resource, project);
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsSubEvents = [] as [string, SubEventsOptions][];
@@ -351,7 +356,7 @@ export async function addSubscriptionJobs(
       const cacheKey = `${authorRef}:${subscription.channel.type}`;
       let satisfied = accessPolicyCache.get(cacheKey);
       if (satisfied === undefined) {
-        satisfied = await satisfiesAccessPolicy(resource, project, subscription);
+        satisfied = await satisfiesAccessPolicy(systemRepo, resource, project, subscription);
         accessPolicyCache.set(cacheKey, satisfied);
       }
       if (!satisfied) {
@@ -370,6 +375,7 @@ export async function addSubscriptionJobs(
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
+        shardId,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
         authState: ctx?.authState,
@@ -379,7 +385,7 @@ export async function addSubscriptionJobs(
   }
 
   if (wsSubEvents.length) {
-    await publish(WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
+    await publish(shardId, WEBSOCKET_SUB_PUBLISH_CHANNEL, JSON.stringify({ resource, events: wsSubEvents }));
   }
 }
 
@@ -421,13 +427,17 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
 
 /**
  * Loads the list of all subscriptions in this repository.
+ * @param systemRepo - The system repository
  * @param resource - The resource that was created or updated.
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+async function getSubscriptions(
+  systemRepo: SystemRepository,
+  resource: Resource,
+  project: WithId<Project>
+): Promise<WithId<Subscription>[]> {
   const projectId = project.id;
-  const systemRepo = await getProjectSystemRepo(projectId);
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -447,8 +457,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 
   const redisOnlySubRefStrs: string[] = [];
   const expiredSubEntries: { [ref: string]: ActiveSubscriptionEntry } = {};
-  const entries = await getActiveSubscriptions(projectId, resource.resourceType);
-
+  const entries = await getActiveSubscriptions(systemRepo.shardId, projectId, resource.resourceType);
   if (Object.keys(entries).length) {
     const cachedCriteriaEvalMap = new Map<string, boolean>();
     const wsEvalStartTime = Date.now();
@@ -490,11 +499,11 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
 
   // We should clean up all expired sub entries ASAP
   if (Object.keys(expiredSubEntries).length) {
-    await cleanupActiveSubs(projectId, expiredSubEntries);
+    await cleanupActiveSubs(systemRepo.shardId, projectId, expiredSubEntries);
   }
 
   if (redisOnlySubRefStrs.length) {
-    const cacheRedis = getCacheRedis();
+    const cacheRedis = getCacheRedis(systemRepo.shardId);
     const redisOnlySubStrs = await cacheRedis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
@@ -516,7 +525,7 @@ async function getSubscriptions(resource: Resource, project: WithId<Project>): P
             inactiveSubs.push(redisOnlySubRefStrs[i]);
           }
         }
-        await removeActiveSubscriptions(projectId, resource.resourceType, inactiveSubs);
+        await removeActiveSubscriptions(systemRepo.shardId, projectId, resource.resourceType, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
@@ -542,8 +551,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   let rewrittenResource: Resource;
 
   try {
-    const { subscriptionId, resourceType, id, versionId, verbose } = job.data;
-    systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // job.data will eventually include shardId
+    const { subscriptionId, resourceType, id, versionId, verbose, shardId } = job.data;
+    systemRepo = getShardSystemRepo(shardId);
     const logger = getLogger();
     const logFn = verbose ? logger.info : logger.debug;
 
@@ -604,7 +613,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       await sendRestHook(job, subscription, rewrittenResource, job.data.interaction, job.data.requestTime);
     }
     // Success - reset the failure counter
-    await clearSubscriptionFailures(subscription.id);
+    await clearSubscriptionFailures(systemRepo.shardId, subscription.id);
   } catch (err) {
     await catchJobError(systemRepo, subscription, job, err);
   }
@@ -817,9 +826,9 @@ async function execBot(
   >;
   let runAs: WithId<ProjectMembership> | undefined;
   if (bot.runAsUser) {
-    runAs = await findProjectMembership(project, requester);
+    runAs = await findProjectMembership(systemRepo, project, requester);
   } else {
-    runAs = await findProjectMembership(project, createReference(bot));
+    runAs = await findProjectMembership(systemRepo, project, createReference(bot));
   }
 
   if (!runAs) {
@@ -867,7 +876,7 @@ async function catchJobError(
   // All retries exhausted - record as a final failure for auto-disable tracking
   globalLogger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   const triggers = await getSubscriptionAutoDisableTriggers(systemRepo, subscription.meta?.project);
-  const result = await recordSubscriptionFailure(subscription.id, triggers);
+  const result = await recordSubscriptionFailure(systemRepo.shardId, subscription.id, triggers);
   if (result) {
     await autoDisableSubscription(systemRepo, result.trigger, subscription, result.failureCount);
   }
@@ -905,7 +914,7 @@ async function autoDisableSubscription(
       );
     });
 
-    await clearSubscriptionFailures(subscription.id);
+    await clearSubscriptionFailures(systemRepo.shardId, subscription.id);
 
     globalLogger.warn('Subscription auto-disabled due to repeated failures', {
       subscription: subscription.id,
