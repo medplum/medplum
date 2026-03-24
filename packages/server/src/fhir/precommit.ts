@@ -113,7 +113,7 @@ export async function preCommitValidation<T extends Resource>(
     }
 
     const bot = await systemRepo.readReference<Bot>({ reference: url });
-    const runAs = await findProjectMembership(project.id, createReference(bot));
+    const runAs = await findProjectMembership(systemRepo, project.id, createReference(bot));
     if (!runAs) {
       // Skip if the Bot is not in the project
       continue;
@@ -174,7 +174,7 @@ function getTargetResourceTypes(element: InternalSchemaElement | undefined): Res
  * @throws {OperationOutcomeError} When the resource cannot be deleted because of a critical reference.
  */
 async function checkReferencesForDelete(repo: Repository, resource: WithId<Resource>): Promise<void> {
-  const db = repo.getDatabaseClient(DatabaseMode.WRITER);
+  const db = repo.getDatabaseClient(DatabaseMode.WRITER, 'ProjectMembership');
   const checkForCriticalRefs = new SelectQuery('ProjectMembership_References')
     .column('resourceId')
     .where('targetId', '=', resource.id)

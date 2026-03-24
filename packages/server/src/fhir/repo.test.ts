@@ -54,17 +54,25 @@ import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
 import { getRepoForLogin } from './accesspolicy';
-import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import type { SystemRepository } from './repo';
+import {
+  getGlobalSystemRepo,
+  getProjectSystemRepo,
+  getShardSystemRepo,
+  Repository,
+  setTypedPropertyValue,
+} from './repo';
+import { TODO_SHARD_ID } from './sharding';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
+  const testProjectShardId: string = TODO_SHARD_ID;
   const globalSystemRepo = getGlobalSystemRepo();
   let testProject: WithId<Project>;
-
   let testProjectRepo: Repository;
-  let systemRepo: Repository;
+  let systemRepo: SystemRepository;
 
   const usCorePatientProfile = JSON.parse(
     readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
@@ -80,6 +88,7 @@ describe('FHIR Repo', () => {
     });
     systemRepo = await getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
+      shardId: testProjectShardId,
       projects: [testProject],
       extendedMode: true,
       author: {
@@ -102,6 +111,7 @@ describe('FHIR Repo', () => {
           profile: { display: 'Fake profile' },
         } as WithId<ProjectMembership>,
         project: testProject,
+        shardId: testProjectShardId,
         userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid reference');
@@ -445,6 +455,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        shardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -465,6 +476,7 @@ describe('FHIR Repo', () => {
       const fakeAuthor = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        shardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -514,6 +526,7 @@ describe('FHIR Repo', () => {
       const author = 'Practitioner/' + randomUUID();
 
       const repo = new Repository({
+        shardId: testProjectShardId,
         extendedMode: true,
         author: {
           reference: author,
@@ -661,6 +674,7 @@ describe('FHIR Repo', () => {
 
       const repo1 = await getRepoForLogin({
         project: result1.project,
+        shardId: result1.shardId,
         membership: result1.membership,
         login: result1.login,
         userConfig: {} as UserConfiguration,
@@ -689,6 +703,7 @@ describe('FHIR Repo', () => {
 
       const repo2 = await getRepoForLogin({
         project: result2.project,
+        shardId: result2.shardId,
         membership: result2.membership,
         login: result2.login,
         userConfig: {} as UserConfiguration,
@@ -1338,7 +1353,7 @@ describe('FHIR Repo', () => {
           code: { coding: [{ system: 'http://loinc.org', code: '72166-2', display: 'Test Observation' }] },
         });
 
-        const db = getDatabasePool(DatabaseMode.READER);
+        const db = getDatabasePool(DatabaseMode.READER, systemRepo.shardId);
         const results = await db.query('SELECT "__identifier" FROM "Observation" WHERE "id" = $1', [res.id]);
         if (shouldPad) {
           expect(results.rows).toStrictEqual([{ __identifier: ['00000000-0000-0000-0000-000000000000'] }]);
@@ -1566,7 +1581,7 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
-      const { membership, project } = await registerNew({
+      const { membership, project, shardId } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
@@ -1574,14 +1589,18 @@ describe('FHIR Repo', () => {
         password: randomUUID(),
       });
 
-      const { membership: membership2, project: project2 } = await registerNew({
+      const {
+        membership: membership2,
+        project: project2,
+        shardId: projectShardId2,
+      } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
         projectName: randomUUID(),
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      const updatedProject = await globalSystemRepo.updateResource({
+      const updatedProject = await getShardSystemRepo(shardId).updateResource({
         ...project,
         link: [{ project: createReference(project2) }],
       });
@@ -1590,6 +1609,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership: membership2,
         project: project2,
+        shardId: projectShardId2,
         userConfig: {} as UserConfiguration,
       });
       const profile = await repo2.createResource({ ...usCorePatientProfile, url: 'urn:uuid:' + randomUUID() });
@@ -1606,6 +1626,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project: updatedProject,
+        shardId,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
@@ -1619,6 +1640,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project: unlinkedProject,
+        shardId,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
@@ -1626,13 +1648,13 @@ describe('FHIR Repo', () => {
 
   test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
-      const { project, repo, login, membership } = await createTestProject({
+      const { project, shardId, repo, login, membership } = await createTestProject({
         withRepo: { extendedMode: false },
         withAccessToken: true,
         withClient: true,
       });
       const extendedRepo = await getRepoForLogin(
-        { login, project, membership, userConfig: {} as UserConfiguration },
+        { login, project, shardId, membership, userConfig: {} as UserConfiguration },
         true
       );
 
@@ -1807,13 +1829,14 @@ describe('FHIR Repo', () => {
       let project = regResult.project;
 
       // add linkedProject to `Project.link`
-      project = await globalSystemRepo.updateResource({
+      project = await getShardSystemRepo(regResult.shardId).updateResource({
         ...project,
         link: [{ project: createReference(linkedProject) }],
       });
 
       const repo = await getRepoForLogin({
         project,
+        shardId: regResult.shardId,
         membership: regResult.membership,
         login: regResult.login,
         userConfig: {} as UserConfiguration,
@@ -1898,7 +1921,7 @@ describe('FHIR Repo', () => {
       expect(clonedRepo1.getDatabaseClient(DatabaseMode.READER)).toBe(repo.getDatabaseClient(DatabaseMode.READER));
 
       // Clone with explicit connection argument
-      const pool = getDatabasePool(DatabaseMode.READER);
+      const pool = getDatabasePool(DatabaseMode.READER, repo.shardId);
       const client = await pool.connect();
       try {
         const clonedRepo2 = repo.clone(client);

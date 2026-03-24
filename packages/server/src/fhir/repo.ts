@@ -92,7 +92,7 @@ import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import type { ArrayColumnPaddingConfig } from '../config/types';
-import { syntheticR4Project, systemResourceProjectId } from '../constants';
+import { r4ProjectId, syntheticR4Project, systemResourceProjectId } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
@@ -104,6 +104,8 @@ import {
   removeUserActiveWebSocketSubscriptions,
 } from '../pubsub';
 import { getCacheRedis } from '../redis';
+import type { ShardPool, ShardPoolClient } from '../sharding/sharding-types';
+import { getProjectAndProjectShardId, GlobalResourceTypes } from '../sharding/sharding-utils';
 import { getBinaryStorage } from '../storage/loader';
 import { checkWebSocketSubscriptionLimit } from '../subscriptions/websockets';
 import type { AuditEventSubtype } from '../util/auditevent';
@@ -172,7 +174,7 @@ export interface RepositoryContext {
    * The shard ID for this repository. Currently ignored.
    * Defaults to GLOBAL_SHARD_ID if not specified.
    */
-  shardId?: string;
+  shardId: string;
 
   /**
    * The current author reference.
@@ -279,7 +281,7 @@ export interface ProcessAllResourcesOptions {
  */
 export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
-  private conn?: PoolClient;
+  private conn?: ShardPoolClient;
   private readonly disposable: boolean = true;
   private transactionDepth = 0;
   private closed = false;
@@ -311,7 +313,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   static readonly VERSION: number = 13;
 
-  constructor(context: RepositoryContext, conn?: PoolClient) {
+  constructor(context: RepositoryContext, conn?: ShardPoolClient) {
     super();
     this.context = context;
     this.context.projects?.push(syntheticR4Project);
@@ -330,7 +332,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = RepositoryMode.WRITER;
   }
 
-  clone(conn?: PoolClient): Repository {
+  clone(conn?: ShardPoolClient): Repository {
     return new Repository(this.context, conn ?? this.conn);
   }
 
@@ -343,7 +345,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param conn - Optional database client.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(conn?: PoolClient): SystemRepository {
+  getSystemRepo(conn?: ShardPoolClient): SystemRepository {
     return createSystemRepository(this.shardId, conn);
   }
 
@@ -368,6 +370,44 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.accessPolicy;
   }
 
+  private _originResourceType: ResourceType[] | undefined;
+  setOriginResourceType(originType: ResourceType | ResourceType[]): void {
+    // if (this._originResourceType !== undefined) {
+    //   throw new Error('Origin resource type is already set');
+    // }
+    this._originResourceType = Array.isArray(originType) ? originType : [originType];
+  }
+
+  clearOriginResourceType(): void {
+    // if (this._originResourceType === undefined) {
+    //   throw new Error('Origin resource type is not set');
+    // }
+    this._originResourceType = undefined;
+  }
+
+  typesOfInterest: ResourceType[] = ['User', 'Login', 'ClientApplication', 'SmartAppLaunch', 'ProjectMembership'];
+  onResourceTypeQuery(targetType: string, relation: string, payload?: object): void {
+    let shouldLog = false;
+    shouldLog ||= this._originResourceType?.some((type) => this.typesOfInterest.includes(type)) ?? false;
+    shouldLog ||= this.typesOfInterest.includes(targetType as ResourceType);
+
+    if (shouldLog) {
+      console.debug(
+        'onResourceTypeQuery',
+        JSON.stringify(
+          {
+            originType: this._originResourceType?.length === 1 ? this._originResourceType[0] : this._originResourceType,
+            targetType,
+            relation,
+            payload,
+          },
+          null,
+          2
+        )
+      );
+    }
+  }
+
   /**
    * Returns a project by ID.
    * This handles the common case where the project ID is the same as the current project ID,
@@ -382,7 +422,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId === this.context.currentProject?.id) {
       return this.context.currentProject;
     }
-    return this.getSystemRepo().readResource<Project>('Project', projectId);
+    const { project } = await getProjectAndProjectShardId(projectId);
+    return project;
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
@@ -859,10 +900,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const project = await this.getProjectById(projectId);
       invariant(project);
       try {
-        await checkWebSocketSubscriptionLimit(project, author);
+        await checkWebSocketSubscriptionLimit(this.shardId, project, author);
       } catch {
-        await cleanupUserSubs(author);
-        await checkWebSocketSubscriptionLimit(project, author);
+        await cleanupUserSubs(this.shardId, author);
+        await checkWebSocketSubscriptionLimit(this.shardId, project, author);
       }
     }
 
@@ -886,7 +927,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
       const project = await this.getProjectById(projectId);
-      await addBackgroundJobs(result, existing, { project, interaction });
+      await addBackgroundJobs(this.shardId, result, existing, { project, interaction });
     });
 
     const output = deepClone(result);
@@ -970,7 +1011,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (resource.resourceType === 'StructureDefinition') {
-      await removeCachedProfile(resource);
+      await removeCachedProfile(this.getResourceTypeShardId(resource.resourceType), resource);
     }
   }
 
@@ -1126,7 +1167,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.context.projects?.length) {
       // Try loading from cache, using all available Project IDs
       const cacheKeys = this.context.projects.map((p) => getProfileCacheKey(p.id, url));
-      const results = await getCacheRedis().mget(...cacheKeys);
+      const results = await getCacheRedis(this.getResourceTypeShardId('StructureDefinition')).mget(...cacheKeys);
       const cachedProfile = results.find(Boolean) as string | undefined;
       if (cachedProfile) {
         return (JSON.parse(cachedProfile) as CacheEntry<StructureDefinition>).resource;
@@ -1169,7 +1210,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
-    await this.ensureInTransaction(async (client) => {
+    await this.ensureInTransaction(resource.resourceType, async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
@@ -1307,6 +1348,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     return addSubscriptionJobs(
+      this.shardId,
       resource,
       previousVersion,
       {
@@ -1348,14 +1390,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const criteriaResourceType = resource.criteria?.split('?')[0];
         const cleanupPromises: Promise<number>[] = [];
         if (author) {
-          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(author, [`Subscription/${id}`]));
+          cleanupPromises.push(removeUserActiveWebSocketSubscriptions(this.shardId, author, [`Subscription/${id}`]));
         }
         if (projectId && criteriaResourceType && isResourceType(criteriaResourceType)) {
-          cleanupPromises.push(removeActiveSubscriptions(projectId, criteriaResourceType, [`Subscription/${id}`]));
+          cleanupPromises.push(
+            removeActiveSubscriptions(this.shardId, projectId, criteriaResourceType, [`Subscription/${id}`])
+          );
         }
         await Promise.all(cleanupPromises);
         if (author) {
-          const userSubCount = await getUserActiveWebSocketSubscriptionCount(author);
+          const userSubCount = await getUserActiveWebSocketSubscriptionCount(this.shardId, author);
           getLogger().info('[WS] Subscription deleted', {
             subscriptionId: resource.id,
             user: author,
@@ -1365,7 +1409,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       if (!this.isCacheOnly(resource)) {
-        await this.ensureInTransaction(async (conn) => {
+        await this.ensureInTransaction(resourceType, async (conn) => {
           const lastUpdated = new Date();
           const content = '';
           const columns: Record<string, any> = {
@@ -1387,10 +1431,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
           await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
 
+          const versionId = this.generateId();
           await new InsertQuery(resourceType + '_History', [
             {
               id,
-              versionId: this.generateId(),
+              versionId,
               lastUpdated,
               content,
             },
@@ -1405,7 +1450,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addBackgroundJobs(resource, resource, {
+      await addBackgroundJobs(this.shardId, resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
         interaction: 'delete',
       });
@@ -1429,7 +1474,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const startTime = Date.now();
     try {
-      return await this.ensureInTransaction(async () => {
+      return await this.ensureInTransaction(resourceType, async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
         if (resource.resourceType !== resourceType) {
@@ -1786,21 +1831,32 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes a version of the resource to the resource history table.
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
+   * @param options - The options for the write.
+   * @param options.ignoreOnConflict - If true, then the write will ignore conflicts.
    */
-  private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
+  private async writeResourceVersion(
+    client: PoolClient,
+    resource: Resource,
+    options?: { ignoreOnConflict?: boolean }
+  ): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
 
-    await new InsertQuery(resourceType + '_History', [
+    const query = new InsertQuery(resourceType + '_History', [
       {
         id: resource.id,
         versionId: meta.versionId,
         lastUpdated: meta.lastUpdated,
         content,
       },
-    ]).execute(client);
+    ]);
+    if (options?.ignoreOnConflict) {
+      query.ignoreOnConflict();
+    }
+    await query.execute(client);
   }
+
 
   /**
    * Builds a list of compartments for the resource for writing.
@@ -2469,11 +2525,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * If in a transaction, then returns the transaction client (PoolClient).
    * Otherwise, returns the pool (Pool).
    * @param mode - The database mode.
+   * @param resourceType - The resource type to be accessed.
    * @returns The database client.
    */
-  getDatabaseClient(mode: DatabaseMode): Pool | PoolClient {
+  getDatabaseClient(mode: DatabaseMode, resourceType?: ResourceType): ShardPool | ShardPoolClient {
     this.assertNotClosed();
     if (this.conn) {
+      this.assertShardAccess(resourceType);
       // If in a transaction, then use the transaction client.
       return this.conn;
     }
@@ -2481,19 +2539,58 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // If we ever use a writer, then all subsequent operations must use a writer.
       this.mode = RepositoryMode.WRITER;
     }
-    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode);
+
+    const shardId = this.getResourceTypeShardId(resourceType);
+    return getDatabasePool(this.mode === RepositoryMode.WRITER ? DatabaseMode.WRITER : mode, shardId);
   }
 
   /**
    * Returns a proper database connection.
    * Unlike getDatabaseClient(), this method always returns a PoolClient.
    * @param mode - The database mode.
+   * @param resourceType - The resource type to be accessed.
    * @returns Database connection.
    */
-  private async getConnection(mode: DatabaseMode): Promise<PoolClient> {
+  private async getConnection(mode: DatabaseMode, resourceType?: ResourceType): Promise<PoolClient> {
     this.assertNotClosed();
-    this.conn ??= await getDatabasePool(mode).connect();
+    if (!this.conn) {
+      const shardId = this.getResourceTypeShardId(resourceType);
+      this.conn = await getDatabasePool(mode, shardId).connect();
+    }
     return this.conn;
+  }
+
+  public getResourceTypeShardId(resourceType: string | undefined): string {
+    if (resourceType && GlobalResourceTypes.has(resourceType) && this.shardId !== GLOBAL_SHARD_ID) {
+      throw new Error(`Resource type ${resourceType} is not allowed in shard ${this.shardId}`);
+    }
+
+    return this.shardId;
+  }
+
+  private assertShardAccess(resourceType?: ResourceType): void {
+    if (!resourceType) {
+      return;
+    }
+    if (!this.shardId) {
+      return;
+    }
+    if (!this.conn?.shardId) {
+      return;
+    }
+
+    const resourceTypeShardId = this.getResourceTypeShardId(resourceType);
+    if (resourceTypeShardId !== this.conn.shardId) {
+      // throw new Error(
+      // 'Shard access not allowed for resource type' +
+      // JSON.stringify({
+      // resourceType,
+      // resourceTypeShardId: this.getResourceTypeShardId(resourceType),
+      // projectShardId: this.shardId,
+      // connShardId: this.conn.shardId,
+      // })
+      // );
+    }
   }
 
   /**
@@ -2511,7 +2608,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async withTransaction<TResult>(
     callback: (client: PoolClient) => Promise<TResult>,
-    options?: { serializable: boolean }
+    options?: { serializable?: boolean; resourceType?: ResourceType }
   ): Promise<TResult> {
     const config = getConfig();
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
@@ -2519,7 +2616,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       const attemptStartTime = Date.now();
       try {
-        const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
+        const client = await this.beginTransaction(
+          options?.serializable ? 'SERIALIZABLE' : undefined,
+          options?.resourceType
+        );
         const result = await callback(client);
         await this.commitTransaction();
         if (attempt > 0) {
@@ -2579,10 +2679,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     throw error;
   }
 
-  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
+  private async beginTransaction(
+    isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ',
+    resourceType: ResourceType | undefined = undefined
+  ): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
-    const conn = await this.getConnection(DatabaseMode.WRITER);
+    const conn = await this.getConnection(DatabaseMode.WRITER, resourceType);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
@@ -2691,7 +2794,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return undefined;
     }
-    const cachedValue = await getCacheRedis().get(getCacheKey(resourceType, id));
+    const cachedValue = await getCacheRedis(this.getResourceTypeShardId(resourceType)).get(
+      getCacheKey(resourceType, id)
+    );
     return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
   }
 
@@ -2725,7 +2830,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return new Array(references.length);
     }
 
-    const cachedValues = await getCacheRedis().mget(referenceKeys);
+    // Only read from cache if all resource types are in the same shard
+    // SHARDING It may be preferable to fan out to various shards and combine
+    // results, but keeping it simple for now
+    const shardId = this.getResourceTypeShardId(referenceKeys[0].split('/')[0]);
+    for (let i = 1; i < referenceKeys.length; i++) {
+      const nextShardId = this.getResourceTypeShardId(referenceKeys[i].split('/')[0]);
+      if (nextShardId !== shardId) {
+        return new Array(references.length);
+      }
+    }
+
+    const cachedValues = await getCacheRedis(shardId).mget(referenceKeys);
 
     const result = new Array<CacheEntry | undefined>(references.length);
     for (let i = 0; i < references.length; i++) {
@@ -2754,7 +2870,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const projectId = resource.meta?.project;
-    await getCacheRedis().set(
+    await getCacheRedis(this.getResourceTypeShardId(resource.resourceType)).set(
       getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
@@ -2774,7 +2890,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    await getCacheRedis().del(getCacheKey(resourceType, id));
+    await getCacheRedis(this.getResourceTypeShardId(resourceType)).del(getCacheKey(resourceType, id));
   }
 
   /**
@@ -2793,15 +2909,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return getCacheKey(resourceType, id);
     });
 
-    await getCacheRedis().del(cacheKeys);
+    await getCacheRedis(this.getResourceTypeShardId(resourceType)).del(cacheKeys);
   }
 
-  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+  async ensureInTransaction<TResult>(
+    resourceType: ResourceType,
+    callback: (client: PoolClient) => Promise<TResult>
+  ): Promise<TResult> {
     if (this.transactionDepth) {
-      const client = await this.getConnection(DatabaseMode.WRITER);
+      const client = await this.getConnection(DatabaseMode.WRITER, resourceType);
       return callback(client);
     } else {
-      return this.withTransaction(callback);
+      return this.withTransaction(callback, { resourceType });
     }
   }
 
@@ -2851,10 +2970,11 @@ async function cacheProfile(systemRepo: SystemRepository, profile: StructureDefi
   if (!profile.url || !profile.meta?.project) {
     return;
   }
+  const projectId = profile.meta.project;
   profile = await systemRepo.readReference(createReference(profile));
-  await getCacheRedis().set(
-    getProfileCacheKey(profile.meta?.project as string, profile.url),
-    JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
+  await getCacheRedis(systemRepo.getResourceTypeShardId('StructureDefinition')).set(
+    getProfileCacheKey(projectId, profile.url),
+    JSON.stringify({ resource: profile, projectId }),
     'EX',
     PROFILE_CACHE_EX_SECONDS
   );
@@ -2862,13 +2982,14 @@ async function cacheProfile(systemRepo: SystemRepository, profile: StructureDefi
 
 /**
  * Writes a FHIR profile cache entry to Redis.
+ * @param shardId - The shard ID.
  * @param profile - The profile structure definition.
  */
-async function removeCachedProfile(profile: StructureDefinition): Promise<void> {
+async function removeCachedProfile(shardId: string, profile: StructureDefinition): Promise<void> {
   if (!profile.url || !profile.meta?.project) {
     return;
   }
-  await getCacheRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
+  await getCacheRedis(shardId).del(getProfileCacheKey(profile.meta.project, profile.url));
 }
 
 /**
@@ -2886,23 +3007,27 @@ export class SystemRepository extends Repository {}
 /**
  * Creates a SystemRepository for the specified shard.
  * @param shardId - The shard ID.
- * @param conn - Optional database connection for transaction support.
+ * @param client - Optional database client for transaction support.
  * @returns A SystemRepository instance.
  */
-function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepository {
-  return new SystemRepository(
-    {
-      shardId,
-      superAdmin: true,
-      strictMode: true,
-      extendedMode: true,
-      author: {
-        reference: 'system',
-      },
-      // System repo does not have an associated Project; it can write to any
+function createSystemRepository(shardId: string, client?: ShardPoolClient): SystemRepository {
+  if (client && client.shardId !== shardId) {
+    throw new Error('Cannot provide a database client to a shard different from `shardId`');
+  }
+  const repoConfig = {
+    shardId,
+    superAdmin: true,
+    strictMode: true,
+    extendedMode: true,
+    author: {
+      reference: 'system',
     },
-    conn
-  );
+    // System repo does not have an associated Project since it can write to any,
+    // but it still needs to be associated with a shard
+    projects: undefined,
+  };
+
+  return new SystemRepository(repoConfig, client);
 }
 
 /*
@@ -2930,7 +3055,7 @@ mostly intended for system-level, super-admin triggered operations against a par
  * @param client - Option database client connection to use in new Repository.
  * @returns A SystemRepository for the global shard.
  */
-export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
+export function getGlobalSystemRepo(client?: ShardPoolClient): SystemRepository {
   return createSystemRepository(GLOBAL_SHARD_ID, client);
 }
 
@@ -2942,7 +3067,7 @@ export function getGlobalSystemRepo(client?: PoolClient): SystemRepository {
  * @param client - Option database client connection to use in new Repository.
  * @returns A SystemRepository for the specified shard.
  */
-export function getShardSystemRepo(shardId: string, client?: PoolClient): SystemRepository {
+export function getShardSystemRepo(shardId: string, client?: ShardPoolClient): SystemRepository {
   return createSystemRepository(shardId, client);
 }
 
@@ -2952,16 +3077,14 @@ export function getShardSystemRepo(shardId: string, client?: PoolClient): System
  * Note: This is a passthrough to `getGlobalSystemRepo` to facilitate
  * future sharding support.
  *
- * @param _projectId - The project's ID, reference, or resource.
+ * @param projectId - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
  */
 export async function getProjectSystemRepo(
-  _projectId: string | Reference<Project> | WithId<Project>
+  projectId: string | Reference<Project> | WithId<Project>
 ): Promise<SystemRepository> {
-  // Eventually, this will resolve the project's shard and return
-  // a SystemRepository for that shard.
-  // But for now, all projects are on the global shard.
-  return getGlobalSystemRepo();
+  const { shardId } = await getProjectAndProjectShardId(projectId);
+  return getShardSystemRepo(shardId);
 }
 
 function lowercaseFirstLetter(str: string): string {
