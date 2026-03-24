@@ -7,17 +7,16 @@ import type { ConnectionOptions, Job, Queue, Worker } from 'bullmq';
 import { DelayedError } from 'bullmq';
 import * as semver from 'semver';
 import type { MedplumBullmqConfig, MedplumServerConfig, WorkerName } from '../config/types';
-import type { Repository } from '../fhir/repo';
-import { getGlobalSystemRepo } from '../fhir/repo';
+import type { Repository, SystemRepository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { reconnectOnError } from '../redis';
 import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(
+  systemRepo: SystemRepository,
   projectId: string,
   profile: Reference
 ): Promise<WithId<ProjectMembership> | undefined> {
-  const systemRepo = getGlobalSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [

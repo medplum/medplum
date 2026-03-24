@@ -11,6 +11,7 @@ import { initDownloadWorker } from './download';
 import { initPostDeployMigrationWorker } from './post-deploy-migration';
 import { initReindexWorker } from './reindex';
 import { initSetAccountsWorker } from './set-accounts';
+import { initShardSyncWorker } from './shard-sync';
 import { initSubscriptionWorker } from './subscription';
 import type { WorkerInitializer } from './utils';
 import { queueRegistry } from './utils';
@@ -24,6 +25,7 @@ const workerDefs: { name: WorkerName; init: WorkerInitializer }[] = [
   { name: 'batch', init: initBatchWorker },
   { name: 'post-deploy-migration', init: initPostDeployMigrationWorker },
   { name: 'set-accounts', init: initSetAccountsWorker },
+  { name: 'shard-sync', init: initShardSyncWorker },
 ];
 
 /**
@@ -52,17 +54,19 @@ export async function closeWorkers(): Promise<void> {
 
 /**
  * Adds all background jobs for a given resource.
+ * @param shardId - The shard ID.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
 export async function addBackgroundJobs(
+  shardId: string,
   resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
 ): Promise<void> {
   try {
-    await addDispatchJobs(resource, previousVersion, context);
+    await addDispatchJobs(shardId, resource, previousVersion, context);
   } catch (err) {
     getLogger().error('Error adding dispatch jobs', {
       resourceType: resource.resourceType,
