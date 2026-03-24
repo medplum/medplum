@@ -196,6 +196,11 @@ describe('Appointment/$book', () => {
     expect(appointments[0]).toHaveProperty('status', 'booked');
     expect(appointments[0]).toHaveProperty('start', start);
     expect(appointments[0]).toHaveProperty('end', end);
+
+    const slots = entries.filter(isSlot).filter((s) => s.status === 'busy');
+    expect(slots).toHaveLength(1);
+    expect(appointments[0].slot).toHaveLength(1);
+    expect(appointments[0].slot?.[0]?.reference).toEqual(`Slot/${slots[0].id}`);
   });
 
   test('creates slots with status: "busy"', async () => {
