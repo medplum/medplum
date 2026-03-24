@@ -74,7 +74,7 @@ If your session only involves providing care for a single patient, then you can 
 
 If you need encounters for billing, quality programs, or compliance, create a session [`Encounter`](/docs/api/fhir/resources/encounter), then link your existing thread header with a JSON Patch on [`Communication.encounter`](/docs/api/fhir/resources/communication). This assumes you already have a thread header [`Communication`](/docs/api/fhir/resources/communication). For how thread headers and messages are structured, see [Building and Structuring Threads](/docs/communications/messaging-data-model#building-and-structuring-threads).
 
-### Create the session Encounter
+### Create the Session Encounter
 
 The snippet uses virtual class `VR` and example [`Patient`](/docs/api/fhir/resources/patient) and [`Practitioner`](/docs/api/fhir/resources/practitioner) references. Replace them with ids that exist in your project.
 
@@ -82,7 +82,7 @@ The snippet uses virtual class `VR` and example [`Patient`](/docs/api/fhir/resou
   {ExampleCode}
 </MedplumCodeBlock>
 
-### Link the thread header to the Encounter
+### Link the Thread Header to the Encounter
 
 Patch only the thread header. The snippet uses the session Encounter id from the previous step and an existing thread header [`Communication`](/docs/api/fhir/resources/communication) (no `payload`, no `partOf`).
 
