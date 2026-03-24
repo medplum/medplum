@@ -9,11 +9,13 @@ import { loadTestConfig } from '../../config/loader';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { TEST_SHARD_ID } from '../sharding';
 import type { WsSubStats } from './getwssubstats';
 import { parseActiveSubKey } from './getwssubstats';
 
 describe('$get-ws-sub-stats', () => {
   const app = express();
+  const shardId = TEST_SHARD_ID;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -49,7 +51,7 @@ describe('$get-ws-sub-stats', () => {
   });
 
   test('Returns stats with subscriptions (no criteria)', async () => {
-    const redis = getPubSubRedis();
+    const redis = getPubSubRedis(shardId);
     const projectId = randomUUID();
 
     await redis.hset(
@@ -114,7 +116,7 @@ describe('$get-ws-sub-stats', () => {
   });
 
   test('Ignores legacy keys without v2 segment in stats', async () => {
-    const redis = getPubSubRedis();
+    const redis = getPubSubRedis(shardId);
     const projectId = randomUUID();
 
     await redis.hset(getActiveSubsKey(projectId, 'Observation'), 'Subscription/sub1', 'Observation?code=85354-9');

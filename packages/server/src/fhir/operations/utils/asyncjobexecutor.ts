@@ -8,10 +8,9 @@ import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
-import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
+import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import type { Repository } from '../../repo';
 
@@ -116,14 +115,17 @@ export class AsyncJobExecutor {
       // This probably needs more validation that its a system-owned AsyncJob.
       const completedDataVersion = updatedJob.dataVersion;
       getLogger().info('Marking post-deploy migration complete', {
+        shardId: this.repo.shardId,
         version: `v${completedDataVersion}`,
       });
-      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), completedDataVersion);
-      updatedJob = await this.repo.getSystemRepo().updateResource(updatedJob);
-      await maybeAutoRunPendingPostDeployMigration();
+      await this.repo.withTransaction(async (client) => {
+        await markPostDeployMigrationCompleted(client, completedDataVersion);
+        updatedJob = await this.repo.updateResource(updatedJob);
+      });
+      await maybeAutoRunPendingPostDeployMigrationOnShard(this.repo.shardId);
       return updatedJob;
     } else {
-      return this.repo.getSystemRepo().updateResource(updatedJob);
+      return this.repo.updateResource(updatedJob);
     }
   }
 
@@ -160,6 +162,7 @@ export class AsyncJobExecutor {
         );
       }
     }
+    // use system repo to not count towards quota or rate limiting
     return this.repo.getSystemRepo().updateResource(failedJob);
   }
 
@@ -179,6 +182,7 @@ export async function sendAsyncResponse(
 ): Promise<void> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
+  //SHARDING - The repo used in AsyncJobExecutor should be parameterized
   const exec = new AsyncJobExecutor(ctx.repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);

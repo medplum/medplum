@@ -21,6 +21,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { runInAuthenticatedContext } from '../../context';
+import { getProjectShardId } from '../../sharding/sharding-utils';
 import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import type { SetAccountsJobData } from '../../workers/set-accounts';
 import { execSetAccountsJob, getSetAccountsQueue } from '../../workers/set-accounts';
@@ -31,6 +32,7 @@ let accessToken: string;
 let login: WithId<Login>;
 let membership: WithId<ProjectMembership>;
 let project: WithId<Project>;
+let shardId: string;
 let observation: Observation;
 let diagnosticReport: DiagnosticReport;
 let patient: Patient;
@@ -46,6 +48,7 @@ describe('Patient Set Accounts Operation', () => {
       withClient: true,
       membership: { admin: true },
     }));
+    shardId = await getProjectShardId(project);
 
     // Create organization
     const orgRes = await request(app)
@@ -422,7 +425,7 @@ describe('Patient Set Accounts Operation', () => {
     queue.add.mockClear();
 
     await runInAuthenticatedContext(
-      { login, membership, project, userConfig: {} as unknown as UserConfiguration },
+      { login, membership, project, shardId, userConfig: {} as unknown as UserConfiguration },
       undefined,
       undefined,
       { async: true },

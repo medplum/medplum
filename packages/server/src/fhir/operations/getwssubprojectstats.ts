@@ -7,6 +7,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
+import { getProjectSystemRepo } from '../repo';
 import { parseActiveSubKey } from './getwssubstats';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
@@ -70,7 +71,8 @@ export async function getWsSubProjectStatsHandler(req: FhirRequest): Promise<Fhi
     return [badRequest('projectId parameter is required')];
   }
 
-  const redis = getPubSubRedis();
+  const repo = await getProjectSystemRepo(projectId);
+  const redis = getPubSubRedis(repo.shardId);
   const pattern = getActiveSubsKey(projectId, '*');
   const resourceTypeMap = new Map<ResourceType, Map<string, WsSubEntryDetail[]>>();
 

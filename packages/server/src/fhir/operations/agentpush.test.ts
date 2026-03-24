@@ -19,7 +19,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import * as pubsub from '../../pubsub';
-import { initTestAuth, waitForAsyncJob } from '../../test.setup';
+import { createTestProject, waitForAsyncJob } from '../../test.setup';
+import type { Repository } from '../repo';
 import type { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
@@ -30,11 +31,11 @@ describe('Agent Push', () => {
   let device: WithId<Device>;
   let server: Server;
   let port: number;
+  let repo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     server = await initApp(app, config);
-    accessToken = await initTestAuth();
 
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 8514, () => {
@@ -42,7 +43,7 @@ describe('Agent Push', () => {
         resolve();
       });
     });
-    accessToken = await initTestAuth();
+    ({ accessToken, repo } = await createTestProject({ withAccessToken: true, withRepo: true }));
 
     const res1 = await request(app)
       .post(`/fhir/R4/Agent`)
@@ -315,11 +316,12 @@ describe('Agent Push', () => {
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
+      repo.shardId,
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -380,11 +382,12 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
+      repo.shardId,
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -445,11 +448,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
+      repo.shardId,
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -509,11 +513,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     }
     clearTimeout(timer);
 
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr) as AgentTransmitRequest;
 
     await pubsub.publish(
+      repo.shardId,
       transmitRequest.callback as string,
       JSON.stringify({
         ...transmitRequest,
@@ -629,7 +634,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     // Verify the returnAck was included in the transmit request
     expect(publishSpy).toHaveBeenCalled();
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
     expect(transmitRequest.returnAck).toBe('application');
@@ -655,7 +660,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     // Verify the returnAck was included in the transmit request
     expect(publishSpy).toHaveBeenCalled();
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
     expect(transmitRequest.returnAck).toBe('first');
@@ -680,7 +685,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     // Verify the returnAck was NOT included in the transmit request
     expect(publishSpy).toHaveBeenCalled();
-    const transmitRequestStr = publishSpy.mock.lastCall?.[1]?.toString();
+    const transmitRequestStr = publishSpy.mock.lastCall?.[2]?.toString();
     expect(transmitRequestStr).toBeDefined();
     const transmitRequest = JSON.parse(transmitRequestStr as string) as AgentTransmitRequest;
     expect(transmitRequest.returnAck).toBeUndefined();

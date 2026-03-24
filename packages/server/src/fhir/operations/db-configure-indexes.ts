@@ -10,7 +10,6 @@ import { getConfig } from '../../config/loader';
 import { DatabaseMode } from '../../database';
 import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getShardSystemRepo } from '../repo';
-import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { isValidTableName } from '../sql';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import {
@@ -30,6 +29,7 @@ const operation: OperationDefinition = {
   type: false,
   instance: false,
   parameter: [
+    param('in', 'shardId', 'string', 1, '1'),
     param('in', 'tableName', 'string', 1, '*'),
     param('in', 'fastUpdateAction', 'string', 0, '1'),
     param('in', 'fastUpdateValue', 'boolean', 0, '1'),
@@ -43,6 +43,7 @@ const operation: OperationDefinition = {
 };
 
 type InputParameters = {
+  shardId: string;
   tableName: string[];
   fastUpdateAction?: 'set' | 'reset';
   fastUpdateValue?: boolean;
@@ -99,22 +100,26 @@ export async function dbConfigureIndexesHandler(req: FhirRequest): Promise<FhirR
     );
   }
 
-  const systemRepo = getShardSystemRepo(PLACEHOLDER_SHARD_ID); // shardId will be an input to this handler
+  const systemRepo = getShardSystemRepo(params.shardId);
   const { baseUrl } = getConfig();
   const exec = new AsyncJobExecutor(systemRepo);
   await exec.init(concatUrls(baseUrl, 'fhir/R4' + req.url));
   exec.start(async () => {
     const action: OutputAction[] = [];
-    await withLongRunningDatabaseClient(async (client) => {
-      await configureGinIndexes(client, action, tableNames, config);
+    await withLongRunningDatabaseClient(
+      async (client) => {
+        await configureGinIndexes(client, action, tableNames, config);
 
-      // Vacuum if the fastupdate is disabled to flush GIN pending lists
-      if (config.fastUpdate === false) {
-        for (const tableName of tableNames) {
-          await vacuumTable(client, action, tableName);
+        // Vacuum if the fastupdate is disabled to flush GIN pending lists
+        if (config.fastUpdate === false) {
+          for (const tableName of tableNames) {
+            await vacuumTable(client, action, tableName);
+          }
         }
-      }
-    }, DatabaseMode.WRITER);
+      },
+      systemRepo.shardId,
+      DatabaseMode.WRITER
+    );
     return buildOutputParameters(operation, { action });
   });
   return [accepted(exec.getContentLocation(baseUrl))];

@@ -9,9 +9,11 @@ import type { ActiveSubscriptionEntry } from '../../pubsub';
 import { getActiveSubsKey } from '../../pubsub';
 import { getCacheRedis, getPubSubRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
+import { TEST_SHARD_ID } from '../sharding';
 
 describe('$clear-all-ws-subs', () => {
   const app = express();
+  const shardId = TEST_SHARD_ID;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -29,7 +31,10 @@ describe('$clear-all-ws-subs', () => {
       .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
-      .send({});
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'shardId', valueString: shardId }],
+      });
 
     expect(res.status).toBe(403);
   });
@@ -43,15 +48,18 @@ describe('$clear-all-ws-subs', () => {
       .type('json')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'projectId', valueString: 'not-a-uuid' }],
+        parameter: [
+          { name: 'shardId', valueString: shardId },
+          { name: 'projectId', valueString: 'not-a-uuid' },
+        ],
       });
 
     expect(res.status).toBe(400);
   });
 
   test('Clears all WS subscription hashes, cache entries, and user keys', async () => {
-    const pubSubRedis = getPubSubRedis();
-    const cacheRedis = getCacheRedis();
+    const pubSubRedis = getPubSubRedis(shardId);
+    const cacheRedis = getCacheRedis(shardId);
     const projectId = randomUUID();
     const sub1Id = randomUUID();
     const sub2Id = randomUUID();
@@ -94,7 +102,10 @@ describe('$clear-all-ws-subs', () => {
       .post('/fhir/R4/$clear-all-ws-subs')
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
-      .send({});
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'shardId', valueString: shardId }],
+      });
 
     expect(res.status).toBe(200);
 
@@ -106,8 +117,8 @@ describe('$clear-all-ws-subs', () => {
   });
 
   test('Clears WS subscription hashes, cache entries, and user keys for a specific project only', async () => {
-    const pubSubRedis = getPubSubRedis();
-    const cacheRedis = getCacheRedis();
+    const pubSubRedis = getPubSubRedis(shardId);
+    const cacheRedis = getCacheRedis(shardId);
     const projectId1 = randomUUID();
     const projectId2 = randomUUID();
     const sub1Id = randomUUID();
@@ -163,7 +174,10 @@ describe('$clear-all-ws-subs', () => {
         .type('json')
         .send({
           resourceType: 'Parameters',
-          parameter: [{ name: 'projectId', valueString: projectId1 }],
+          parameter: [
+            { name: 'shardId', valueString: shardId },
+            { name: 'projectId', valueString: projectId1 },
+          ],
         });
 
       expect(res.status).toBe(200);

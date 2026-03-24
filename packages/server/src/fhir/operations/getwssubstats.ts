@@ -7,6 +7,7 @@ import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
 import { getActiveSubsKey } from '../../pubsub';
 import { getPubSubRedis } from '../../redis';
+import { PLACEHOLDER_SHARD_ID } from '../sharding';
 import { buildOutputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -73,7 +74,7 @@ export function parseActiveSubKey(key: string): { projectId: string; resourceTyp
 export async function getWsSubStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
   requireSuperAdmin();
 
-  const redis = getPubSubRedis();
+  const redis = getPubSubRedis(PLACEHOLDER_SHARD_ID);
 
   // Scan for all active subscription hash keys
   const pattern = getActiveSubsKey('*', '*');
