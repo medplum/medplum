@@ -22,6 +22,8 @@ const readReceiptTaskId = 'example-read-receipt-task-id';
 const latestMessageId = 'latest-message-id';
 const recipientId = 'recipient-practitioner-id';
 const file = new Blob();
+/** Placeholder thread id for participant add/remove examples (use a real header id in your app). */
+const messagingGroupThreadId = 'example-group-thread-id';
 
 // start-block filterActiveThreadsTs
 // Thread headers have no partOf; child messages have partOf set to the header.
@@ -826,3 +828,79 @@ const categoryExampleCommunications: Communication =
 // end-block communicationCategories
 
 console.log(categoryExampleCommunications);
+
+// start-block threadLifecycleCloseHeaderTs
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'completed' }]);
+// end-block threadLifecycleCloseHeaderTs
+
+// start-block threadLifecycleReopenHeaderTs
+await medplum.patchResource('Communication', threadHeader.id, [{ op: 'replace', path: '/status', value: 'in-progress' }]);
+// end-block threadLifecycleReopenHeaderTs
+
+// start-block threadLifecycleGroupThreadTs
+const messagingGroupThread = await medplum.createResource({
+  resourceType: 'Communication',
+  status: 'in-progress',
+  topic: { text: 'Care coordination - Homer Simpson' },
+  subject: { reference: 'Patient/homer-simpson', display: 'Homer Simpson' },
+  recipient: [
+    { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
+    { reference: 'Practitioner/doctor-gregory-house', display: 'Dr. Gregory House' },
+    { reference: 'Practitioner/nurse-jackie', display: 'Nurse Jackie' },
+  ],
+});
+console.log(messagingGroupThread);
+// end-block threadLifecycleGroupThreadTs
+
+// start-block threadLifecycleAddParticipantTs
+await medplum.patchResource('Communication', messagingGroupThreadId, [
+  {
+    op: 'add',
+    path: '/recipient/-',
+    value: { reference: 'Practitioner/dr-wilson', display: 'Dr. Wilson' },
+  },
+]);
+// end-block threadLifecycleAddParticipantTs
+
+// start-block threadLifecycleRemoveParticipantTs
+const messagingThreadForParticipants = await medplum.readResource('Communication', messagingGroupThreadId);
+const messagingUpdatedRecipients = messagingThreadForParticipants.recipient?.filter(
+  (r) => r.reference !== 'Practitioner/nurse-jackie'
+);
+await medplum.patchResource('Communication', messagingGroupThreadId, [
+  { op: 'replace', path: '/recipient', value: messagingUpdatedRecipients },
+]);
+// end-block threadLifecycleRemoveParticipantTs
+
+/*
+// start-block messagingParticipantScopedAccessPolicyJson
+{
+  "resourceType": "AccessPolicy",
+  "name": "Messaging - Participant Access",
+  "resource": [
+    {
+      "resourceType": "Communication",
+      "criteria": "Communication?recipient=%profile.reference&sender=%profile.reference",
+      "readonly": false
+    }
+  ]
+}
+// end-block messagingParticipantScopedAccessPolicyJson
+
+// start-block messagingSupervisorAccessPolicyJson
+{
+  "resourceType": "AccessPolicy",
+  "name": "Messaging - Supervisor Access",
+  "resource": [
+    {
+      "resourceType": "Communication",
+      "readonly": true
+    },
+    {
+      "resourceType": "Task",
+      "readonly": true
+    }
+  ]
+}
+// end-block messagingSupervisorAccessPolicyJson
+*/
