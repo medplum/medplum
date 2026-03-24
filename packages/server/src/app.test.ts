@@ -9,6 +9,7 @@ import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { getProjectSystemRepo } from './fhir/repo';
+import { GLOBAL_SHARD_ID } from './fhir/sharding';
 import { globalLogger } from './logger';
 import { getRateLimitRedis } from './redis';
 import type { TestRedisConfig } from './test.setup';
@@ -215,7 +216,8 @@ describe('App', () => {
       const { accessToken, membership, project } = await createTestProject({ withAccessToken: true, withClient: true });
 
       // Delete ProjectMembership to cause a 410 Gone error in the authentication middleware
-      await (await getProjectSystemRepo(project)).deleteResource(membership.resourceType, membership.id);
+      const systemRepo = await getProjectSystemRepo(project);
+      await systemRepo.deleteResource(membership.resourceType, membership.id);
 
       const res1 = await request(app)
         .get(`/fhir/R4/Patient`)
@@ -273,7 +275,7 @@ describe('App', () => {
 
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER, GLOBAL_SHARD_ID).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
     expect(await shutdownApp()).toBeUndefined();
   });
@@ -316,7 +318,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
     const res2 = await request(app).get('/api/');
     expect(res2.status).toBe(429);
-    await deleteRedisKeys(getRateLimitRedis(), rateLimitRedisConfig.keyPrefix);
+    await deleteRedisKeys(getRateLimitRedis(GLOBAL_SHARD_ID), rateLimitRedisConfig.keyPrefix);
     expect(await shutdownApp()).toBeUndefined();
   });
 

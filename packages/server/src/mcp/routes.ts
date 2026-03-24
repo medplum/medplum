@@ -6,6 +6,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import type { IncomingMessage } from 'node:http';
+import { getAuthenticatedContext } from '../context';
 import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
@@ -34,7 +35,8 @@ mcpRouter.all('/stream', async (req: Request, res: Response) => {
 mcpRouter.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/mcp/sse', res);
 
-  const redisSubscriber = getPubSubRedisSubscriber();
+  const ctx = getAuthenticatedContext();
+  const redisSubscriber = getPubSubRedisSubscriber(ctx.repo.shardId);
   redisSubscriber.on('message', async (_channel: string, data: string) => {
     try {
       const dummyReq = { headers: { 'content-type': 'application/json' } } as IncomingMessage;
@@ -75,9 +77,10 @@ mcpRouter.post(
       res.status(400).send({ errors: errors.array() });
       return;
     }
+    const ctx = getAuthenticatedContext();
     const sessionId = req.query?.sessionId as string;
     const body = req.body;
-    await publish(getRedisChannelForSessionId(sessionId), JSON.stringify(body));
+    await publish(ctx.repo.shardId, getRedisChannelForSessionId(sessionId), JSON.stringify(body));
     res.status(202).end('Accepted');
   }
 );

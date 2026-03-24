@@ -1,0 +1,24 @@
+# This is the docker-compose file to run Medplum's required background services
+# It can be used to quickly run 2 services:
+#   1) The Postgres database
+#   2) The Redis cache
+# You can start all services by running "docker-compose up"
+services:
+  sharding-postgres:
+    image: postgres:18
+    restart: always
+    environment:
+      - POSTGRES_USER=medplum
+      - POSTGRES_PASSWORD=medplum
+    volumes:
+      - ./postgres/postgres.conf:/usr/local/etc/postgres/postgres.conf
+      - ./postgres/:/docker-entrypoint-initdb.d/
+    command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
+    ports:
+      - '5432:5432'
+  sharding-redis:
+    image: redis:7
+    restart: always
+    command: redis-server --requirepass medplum
+    ports:
+      - '6379:6379'

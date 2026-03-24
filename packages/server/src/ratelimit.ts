@@ -7,6 +7,7 @@ import type { RateLimiterRes } from 'rate-limiter-flexible';
 import { RateLimiterRedis } from 'rate-limiter-flexible';
 import type { MedplumServerConfig } from './config/types';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
+import { PLACEHOLDER_SHARD_ID } from './fhir/sharding';
 import { getRateLimitRedis } from './redis';
 
 // History:
@@ -68,7 +69,7 @@ function blockRequest(res: Response, result: RateLimiterRes, limiter: RateLimite
 }
 
 export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
-  const client = getRateLimitRedis();
+  const client = getRateLimitRedis(PLACEHOLDER_SHARD_ID);
   return new RateLimiterRedis({
     keyPrefix: 'medplum:rl:',
     storeClient: client,
