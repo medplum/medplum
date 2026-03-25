@@ -1191,8 +1191,11 @@ function trySpecialSearchParameter(
         filter
       );
     }
-    case '_filter':
-      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
+    case '_filter': {
+      const filterExpr = parseFilterParameter(filter.value);
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpr);
+    }
+
     default:
       return undefined;
   }
@@ -1640,7 +1643,7 @@ function buildChainedSearch(
     const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
-      operator: Operator.EQUALS,
+      operator: param.filter.operator,
       value: `${targetType}/${targetId}`,
     });
   }

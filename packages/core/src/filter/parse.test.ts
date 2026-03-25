@@ -231,4 +231,10 @@ describe('_filter Parameter parser', () => {
   test('Unsupported search operator', () => {
     expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
   });
+
+  test('Reverse chained search', () => {
+    const result = parseFilterParameter(`_has:Observation:patient:_id ne ''`);
+    expect(result).toBeInstanceOf(FhirFilterComparison);
+    expect((result as FhirFilterComparison).operator).toBe(Operator.NOT_EQUALS);
+  });
 });
