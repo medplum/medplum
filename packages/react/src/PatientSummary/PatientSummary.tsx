@@ -55,11 +55,29 @@ import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
 
+export type PatientSummarySection =
+  | 'allergies'
+  | 'problemList'
+  | 'medications'
+  | 'labs'
+  | 'sexualOrientation'
+  | 'smokingStatus'
+  | 'vitals'
+  | 'insurance'
+  | 'pharmacies'
+  | 'birthdate'
+  | 'gender'
+  | 'raceEthnicity'
+  | 'location'
+  | 'language'
+  | 'generalPractitioner';
+
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
   readonly onClickResource?: (resource: Resource) => void;
   readonly onRequestLabs?: () => void;
   readonly pharmacyDialogComponent?: ComponentType<PharmacyDialogBaseProps>;
+  readonly hideSections?: PatientSummarySection[];
 }
 
 interface PatientMedicalData {
@@ -82,57 +100,35 @@ interface PatientMedicalData {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource, onRequestLabs, pharmacyDialogComponent } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs, pharmacyDialogComponent, hideSections } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
 
   useEffect(() => {
+    const hidden = new Set(hideSections ?? []);
     const id = resolveId(propsPatient) as string;
     const ref = `Patient/${id}`;
     const searchMeta = { _count: 100, _sort: '-_lastUpdated' };
+    const empty = Promise.resolve([]) as Promise<never[]>;
+
+    const skipObservations =
+      hidden.has('sexualOrientation') && hidden.has('smokingStatus') && hidden.has('vitals');
 
     Promise.all([
-      medplum.searchResources('AllergyIntolerance', { patient: ref, ...searchMeta }),
-      medplum.searchResources('Condition', { patient: ref, ...searchMeta }),
-      medplum.searchResources('MedicationRequest', { subject: ref, ...searchMeta }),
-      medplum.searchResources('Observation', { subject: ref, ...searchMeta }),
-      medplum.searchResources('Appointment', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Encounter', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Coverage', {
-        beneficiary: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Immunization', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Procedure', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Device', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Goal', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('ServiceRequest', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('DiagnosticReport', {
-        subject: ref,
-        ...searchMeta,
-      }),
+      hidden.has('allergies') ? empty : medplum.searchResources('AllergyIntolerance', { patient: ref, ...searchMeta }),
+      hidden.has('problemList') ? empty : medplum.searchResources('Condition', { patient: ref, ...searchMeta }),
+      hidden.has('medications') ? empty : medplum.searchResources('MedicationRequest', { subject: ref, ...searchMeta }),
+      skipObservations ? empty : medplum.searchResources('Observation', { subject: ref, ...searchMeta }),
+      medplum.searchResources('Appointment', { patient: ref, ...searchMeta }),
+      medplum.searchResources('Encounter', { subject: ref, ...searchMeta }),
+      hidden.has('insurance') ? empty : medplum.searchResources('Coverage', { beneficiary: ref, ...searchMeta }),
+      medplum.searchResources('Immunization', { patient: ref, ...searchMeta }),
+      medplum.searchResources('Procedure', { subject: ref, ...searchMeta }),
+      medplum.searchResources('Device', { patient: ref, ...searchMeta }),
+      medplum.searchResources('Goal', { subject: ref, ...searchMeta }),
+      hidden.has('labs') ? empty : medplum.searchResources('ServiceRequest', { subject: ref, ...searchMeta }),
+      hidden.has('labs') ? empty : medplum.searchResources('DiagnosticReport', { subject: ref, ...searchMeta }),
     ])
       .then((results) => {
         const observations = results[3];
@@ -155,7 +151,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         });
       })
       .catch(console.error);
-  }, [medplum, propsPatient]);
+  }, [medplum, propsPatient, hideSections]);
 
   useEffect(() => {
     if (patient?.id) {
@@ -170,6 +166,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [patient?.id, medplum]);
 
+  const hidden = new Set(hideSections ?? []);
   const languageDisplay = patient ? getPreferredLanguage(patient) : undefined;
 
   if (!patient) {
@@ -212,104 +209,148 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         {medicalData && (
           <>
             <Stack gap="xs" py={8}>
-              <PatientInfoItem
-                patient={patient}
-                value={
-                  patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined
-                }
-                icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add Birthdate"
-                label="Birthdate & Age"
-                onClickResource={onClickResource}
-              />
-              <PatientInfoItem
-                patient={patient}
-                value={patient.gender ? formatPatientGenderDisplay(patient) : undefined}
-                icon={<IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add Gender & Identity"
-                label="Gender & Identity"
-                onClickResource={onClickResource}
-              />
-
-              <PatientInfoItem
-                patient={patient}
-                value={
-                  getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined
-                }
-                icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add Race & Ethnicity"
-                label="Race & Ethnicity"
-                onClickResource={onClickResource}
-              />
-
-              <PatientInfoItem
-                patient={patient}
-                value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}
-                icon={<IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add Location"
-                label="Location"
-                onClickResource={onClickResource}
-              />
-
-              <PatientInfoItem
-                patient={patient}
-                value={languageDisplay}
-                icon={<IconLanguage size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add Language"
-                label="Language"
-                onClickResource={onClickResource}
-              />
-
-              <PatientInfoItem
-                patient={patient}
-                value={getGeneralPractitioner(patient)}
-                icon={<IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
-                placeholder="Add General Practitioner"
-                label="General Practitioner"
-                onClickResource={onClickResource}
-              />
+              {!hidden.has('birthdate') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={
+                    patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined
+                  }
+                  icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add Birthdate"
+                  label="Birthdate & Age"
+                  onClickResource={onClickResource}
+                />
+              )}
+              {!hidden.has('gender') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={patient.gender ? formatPatientGenderDisplay(patient) : undefined}
+                  icon={<IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add Gender & Identity"
+                  label="Gender & Identity"
+                  onClickResource={onClickResource}
+                />
+              )}
+              {!hidden.has('raceEthnicity') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={
+                    getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined
+                  }
+                  icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add Race & Ethnicity"
+                  label="Race & Ethnicity"
+                  onClickResource={onClickResource}
+                />
+              )}
+              {!hidden.has('location') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}
+                  icon={<IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add Location"
+                  label="Location"
+                  onClickResource={onClickResource}
+                />
+              )}
+              {!hidden.has('language') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={languageDisplay}
+                  icon={<IconLanguage size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add Language"
+                  label="Language"
+                  onClickResource={onClickResource}
+                />
+              )}
+              {!hidden.has('generalPractitioner') && (
+                <PatientInfoItem
+                  patient={patient}
+                  value={getGeneralPractitioner(patient)}
+                  icon={<IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                  placeholder="Add General Practitioner"
+                  label="General Practitioner"
+                  onClickResource={onClickResource}
+                />
+              )}
             </Stack>
             <Divider />
-            <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
-            <Divider />
-            <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
-            <Divider />
-            <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />
-            <Divider />
-            <Medications
-              patient={patient}
-              medicationRequests={medicalData.medicationRequests}
-              onClickResource={onClickResource}
-            />
-            <Divider />
-            <Labs
-              patient={patient}
-              serviceRequests={medicalData.serviceRequests}
-              diagnosticReports={medicalData.diagnosticReports}
-              onClickResource={onClickResource}
-              onRequestLabs={onRequestLabs}
-            />
-            <Divider />
-            <SexualOrientation
-              patient={patient}
-              sexualOrientation={medicalData.sexualOrientation}
-              onClickResource={onClickResource}
-            />
-            <Divider />
-            <SmokingStatus
-              patient={patient}
-              smokingStatus={medicalData.smokingStatus}
-              onClickResource={onClickResource}
-            />
-            <Divider />
-            <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
-            <Divider />
-            <Pharmacies
-              patient={patient}
-              onClickResource={onClickResource}
-              pharmacyDialogComponent={pharmacyDialogComponent}
-            />
-            <Divider />
+            {!hidden.has('insurance') && (
+              <>
+                <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('allergies') && (
+              <>
+                <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('problemList') && (
+              <>
+                <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('medications') && (
+              <>
+                <Medications
+                  patient={patient}
+                  medicationRequests={medicalData.medicationRequests}
+                  onClickResource={onClickResource}
+                />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('labs') && (
+              <>
+                <Labs
+                  patient={patient}
+                  serviceRequests={medicalData.serviceRequests}
+                  diagnosticReports={medicalData.diagnosticReports}
+                  onClickResource={onClickResource}
+                  onRequestLabs={onRequestLabs}
+                />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('sexualOrientation') && (
+              <>
+                <SexualOrientation
+                  patient={patient}
+                  sexualOrientation={medicalData.sexualOrientation}
+                  onClickResource={onClickResource}
+                />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('smokingStatus') && (
+              <>
+                <SmokingStatus
+                  patient={patient}
+                  smokingStatus={medicalData.smokingStatus}
+                  onClickResource={onClickResource}
+                />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('vitals') && (
+              <>
+                <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
+                <Divider />
+              </>
+            )}
+            {!hidden.has('pharmacies') && (
+              <>
+                <Pharmacies
+                  patient={patient}
+                  onClickResource={onClickResource}
+                  pharmacyDialogComponent={pharmacyDialogComponent}
+                />
+                <Divider />
+              </>
+            )}
           </>
         )}
       </Stack>

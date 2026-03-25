@@ -16,3 +16,9 @@ export const Patient = (): JSX.Element => (
     <PatientSummary patient={HomerSimpson} />
   </Box>
 );
+
+export const HiddenSections = (): JSX.Element => (
+  <Box w={350}>
+    <PatientSummary patient={HomerSimpson} hideSections={['allergies', 'sexualOrientation']} />
+  </Box>
+);

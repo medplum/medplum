@@ -40,4 +40,13 @@ describe('PatientSummary', () => {
     });
     expect(screen.queryByText('Homer Simpson')).toBeInTheDocument();
   });
+
+  test('hideSections hides specified sections', async () => {
+    await setup({ patient: HomerSimpson, hideSections: ['allergies', 'sexualOrientation'] });
+
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('Allergies')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sexual Orientation')).not.toBeInTheDocument();
+    expect(screen.getByText('Smoking Status')).toBeInTheDocument();
+  });
 });
