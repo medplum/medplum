@@ -15,14 +15,16 @@ import type { BotEvent, MedplumClient } from '@medplum/core';
 import type { Binary, Bundle, BundleEntry, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 
 /**
- * Resource types ingested first, following the Medplum migration sequence:
- * 1. Practitioner, PractitionerRole (provider demographics & credentials)
- * 2. Organization (shared organizations)
- * 3. Patient, RelatedPerson (patient demographics)
+ * Resource types that belong to an early migration phase, following the Medplum migration sequence:
+ * - Phase 1: Practitioner, PractitionerRole (provider demographics & credentials)
+ * - Phase 2: Organization (shared organizations)
+ * - Phase 3: Patient, RelatedPerson (patient demographics)
+ *
+ * These are ingested before clinical data so that references to them can be resolved.
  *
  * @see https://www.medplum.com/docs/migration/migration-sequence
  */
-const PRIORITY_RESOURCE_TYPES = new Set([
+const PHASED_RESOURCE_TYPES = new Set([
   'Practitioner',
   'PractitionerRole',
   'Organization',
@@ -31,10 +33,10 @@ const PRIORITY_RESOURCE_TYPES = new Set([
 ]);
 
 /**
- * Ordered phases for priority resource ingestion, matching the migration sequence.
- * Resources within the same phase are batched together.
+ * Ordered migration phases. Each phase is a group of resource types that are
+ * batched and ingested together, in sequence, before the next phase begins.
  */
-const PRIORITY_PHASES: string[][] = [
+const MIGRATION_PHASES: string[][] = [
   ['Practitioner', 'PractitionerRole'],
   ['Organization'],
   ['Patient', 'RelatedPerson'],
@@ -67,14 +69,14 @@ const MAX_RETRIES = 10;
  * The second input parameter is the identifier system URI used for storing original IDs.
  * Pass it via `event.secrets['IDENTIFIER_SYSTEM']` or it defaults to `urn:medplum:original-id`.
  *
- * The bundle is processed following the Medplum migration sequence:
- * 1. Ingest Practitioner/PractitionerRole first (provider demographics).
- * 2. Ingest Organization resources (shared organizations).
- * 3. Ingest Patient/RelatedPerson resources (patient demographics).
- * 4. Group remaining resources into connected components to keep related resources together.
- * 5. Co-locate Binary resources with the resources that reference them.
- * 6. Split into batches respecting the 30 MB size limit.
- * 7. Submit each batch as an async batch request with exponential backoff for rate limiting.
+ * The bundle is processed in phases following the Medplum migration sequence:
+ * - Phase 1: Ingest Practitioner/PractitionerRole (provider demographics).
+ * - Phase 2: Ingest Organization resources (shared organizations).
+ * - Phase 3: Ingest Patient/RelatedPerson resources (patient demographics).
+ * - Phase 4: Group remaining resources into connected components to keep related resources together.
+ * - Phase 5: Co-locate Binary resources with the resources that reference them.
+ * - Phase 6: Split into batches respecting the 30 MB size limit.
+ * - Phase 7: Submit each batch as an async batch request with exponential backoff for rate limiting.
  *
  * @param medplum - The MedplumClient instance.
  * @param event - The BotEvent. Input is a Bundle, Reference<Bundle>, Binary, or Reference<Binary>.
@@ -93,8 +95,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   console.log(`Processing bundle with ${bundle.entry.length} entries (identifier system: ${identifierSystem})...`);
 
-  // Phase 1: Separate priority resources from the rest
-  const priorityEntries = new Map<string, BundleEntry[]>();
+  // Separate resources into migration phases, binaries, and remaining resources
+  const phasedEntries = new Map<string, BundleEntry[]>();
   const binaryEntries: BundleEntry[] = [];
   const otherEntries: BundleEntry[] = [];
 
@@ -103,10 +105,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     if (!resource) {
       continue;
     }
-    if (PRIORITY_RESOURCE_TYPES.has(resource.resourceType)) {
-      const existing = priorityEntries.get(resource.resourceType) ?? [];
+    if (PHASED_RESOURCE_TYPES.has(resource.resourceType)) {
+      const existing = phasedEntries.get(resource.resourceType) ?? [];
       existing.push(entry);
-      priorityEntries.set(resource.resourceType, existing);
+      phasedEntries.set(resource.resourceType, existing);
     } else if (resource.resourceType === 'Binary') {
       binaryEntries.push(entry);
     } else {
@@ -114,36 +116,36 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
   }
 
-  const priorityCount = Array.from(priorityEntries.values()).reduce((sum, arr) => sum + arr.length, 0);
+  const phasedCount = Array.from(phasedEntries.values()).reduce((sum, arr) => sum + arr.length, 0);
   console.log(
-    `Separated: ${priorityCount} priority resources, ${binaryEntries.length} binaries, ${otherEntries.length} other resources`
+    `Separated: ${phasedCount} phased resources, ${binaryEntries.length} binaries, ${otherEntries.length} other resources`
   );
 
-  // Build a map from original references to conditional references for priority resources
+  // Build a map from original references to conditional references for phased resources
   const conditionalRefMap = new Map<string, string>();
   // Also track original ID -> fullUrl for urn:uuid mapping
   const originalIdToFullUrl = new Map<string, string>();
 
-  // Prepare priority resource entries for conditional create, in migration sequence order
-  const priorityBatches: BundleEntry[][] = [];
-  for (const phaseTypes of PRIORITY_PHASES) {
+  // Prepare phased resource entries for conditional create, in migration phase order
+  const phaseBatches: BundleEntry[][] = [];
+  for (const phaseTypes of MIGRATION_PHASES) {
     const phaseEntries: BundleEntry[] = [];
     for (const resourceType of phaseTypes) {
-      const entries = priorityEntries.get(resourceType);
+      const entries = phasedEntries.get(resourceType);
       if (entries) {
         phaseEntries.push(...entries);
       }
     }
     if (phaseEntries.length > 0) {
-      const prepared = preparePriorityEntries(phaseEntries, conditionalRefMap, originalIdToFullUrl, identifierSystem);
-      priorityBatches.push(prepared);
+      const prepared = preparePhaseEntries(phaseEntries, conditionalRefMap, originalIdToFullUrl, identifierSystem);
+      phaseBatches.push(prepared);
     }
   }
 
-  // Phase 2: Prepare other entries - move IDs to identifiers and assign fullUrls
+  // Prepare remaining entries - move IDs to identifiers and assign fullUrls
   const preparedOtherEntries = prepareResourceEntries(otherEntries, originalIdToFullUrl, identifierSystem);
 
-  // Phase 3: Co-locate binaries with the resources that reference them
+  // Co-locate binaries with the resources that reference them
   const binaryFullUrlMap = new Map<string, BundleEntry>();
   for (const entry of binaryEntries) {
     const resource = entry.resource;
@@ -190,38 +192,38 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   });
 
   // Combine other entries + binary entries for component analysis
-  const allNonPriorityEntries = [...preparedOtherEntries, ...preparedBinaryEntries];
+  const remainingEntries = [...preparedOtherEntries, ...preparedBinaryEntries];
 
-  // Redirect all references to priority resources to use conditional references
-  // Also redirect old "Type/id" references to urn:uuid references for non-priority resources
-  const fullRedirectMap = buildRedirectMap(conditionalRefMap, originalIdToFullUrl, allNonPriorityEntries, identifierSystem);
+  // Redirect all references to phased resources to use conditional references
+  // Also redirect old "Type/id" references to urn:uuid references for remaining resources
+  const fullRedirectMap = buildRedirectMap(conditionalRefMap, originalIdToFullUrl, remainingEntries, identifierSystem);
 
-  for (const entry of allNonPriorityEntries) {
+  for (const entry of remainingEntries) {
     if (entry.resource) {
       redirectReferences(entry.resource, fullRedirectMap);
     }
   }
 
-  // Phase 4: Find connected components among non-priority resources
-  // References to priority types have already been rewritten to conditional refs,
+  // Find connected components among remaining resources.
+  // References to phased types have already been rewritten to conditional refs,
   // so splitBundleByDependencies will naturally keep only intra-group edges.
   const components = splitBundleByDependencies({
     resourceType: 'Bundle',
     type: 'collection',
-    entry: allNonPriorityEntries,
+    entry: remainingEntries,
   });
   console.log(`Found ${components.length} connected components`);
 
-  // Phase 5: Build batches respecting size limits
+  // Build batches respecting size limits
   const allBatches: Bundle[] = [];
 
-  // Priority batches in migration sequence order
-  for (const phaseEntries of priorityBatches) {
+  // Phase batches in migration sequence order
+  for (const phaseEntries of phaseBatches) {
     const batches = splitIntoBatches(phaseEntries, MAX_BUNDLE_SIZE_BYTES);
     allBatches.push(...batches);
   }
-  if (priorityBatches.length > 0) {
-    console.log(`Priority resources split into ${allBatches.length} batch(es)`);
+  if (phaseBatches.length > 0) {
+    console.log(`Phased resources split into ${allBatches.length} batch(es)`);
   }
 
   // Remaining batches: connected components, packed into batches respecting size limit
@@ -231,7 +233,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   console.log(`Total batches to submit: ${allBatches.length}`);
 
-  // Phase 6: Submit batches as async batch requests with retry logic
+  // Submit batches as async batch requests with retry logic
   const results: BatchResult[] = [];
   for (let i = 0; i < allBatches.length; i++) {
     const batch = allBatches[i];
@@ -307,15 +309,15 @@ interface BatchResult {
 }
 
 /**
- * Prepares priority resource entries for conditional create.
+ * Prepares phased resource entries for conditional create.
  * Moves original IDs to identifiers, builds conditional reference map.
- * @param entries - The priority bundle entries to prepare.
+ * @param entries - The phase bundle entries to prepare.
  * @param conditionalRefMap - Map to populate with original ref to conditional ref mappings.
  * @param originalIdToFullUrl - Map to populate with original ID to fullUrl mappings.
  * @param identifierSystem - The identifier system URI for original IDs.
  * @returns Prepared bundle entries with conditional create request metadata.
  */
-function preparePriorityEntries(
+function preparePhaseEntries(
   entries: BundleEntry[],
   conditionalRefMap: Map<string, string>,
   originalIdToFullUrl: Map<string, string>,
@@ -368,9 +370,9 @@ function preparePriorityEntries(
 }
 
 /**
- * Prepares non-priority, non-binary resource entries.
+ * Prepares non-phased, non-binary resource entries.
  * Moves IDs to identifiers, assigns urn:uuid fullUrls, sets up conditional update requests.
- * @param entries - The non-priority bundle entries to prepare.
+ * @param entries - The non-phased bundle entries to prepare.
  * @param originalIdToFullUrl - Map to populate with original ID to urn:uuid mappings.
  * @param identifierSystem - The identifier system URI for original IDs.
  * @returns Prepared bundle entries with conditional update request metadata.
@@ -462,10 +464,10 @@ function getIdentifierForConditionalRef(resource: Resource, identifierSystem: st
 
 /**
  * Builds a complete redirect map that maps old "Type/id" references to either
- * conditional references (for priority resources) or urn:uuid references (for non-priority resources).
- * @param conditionalRefMap - Map of priority resource original refs to conditional refs.
+ * conditional references (for phased resources) or urn:uuid references (for remaining resources).
+ * @param conditionalRefMap - Map of phased resource original refs to conditional refs.
  * @param originalIdToFullUrl - Map of original IDs to fullUrl/conditional ref strings.
- * @param entries - The non-priority bundle entries whose references need mapping.
+ * @param entries - The remaining bundle entries whose references need mapping.
  * @param identifierSystem - The identifier system URI for original IDs.
  * @returns A map from old reference strings to new reference strings.
  */
