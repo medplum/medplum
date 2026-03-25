@@ -112,8 +112,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     const searchMeta = { _count: 100, _sort: '-_lastUpdated' };
     const empty = Promise.resolve([]) as Promise<never[]>;
 
-    const skipObservations =
-      hidden.has('sexualOrientation') && hidden.has('smokingStatus') && hidden.has('vitals');
+    const skipObservations = hidden.has('sexualOrientation') && hidden.has('smokingStatus') && hidden.has('vitals');
 
     Promise.all([
       hidden.has('allergies') ? empty : medplum.searchResources('AllergyIntolerance', { patient: ref, ...searchMeta }),
