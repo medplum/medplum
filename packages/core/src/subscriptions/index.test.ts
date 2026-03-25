@@ -1567,11 +1567,14 @@ describe('SubscriptionManager', () => {
       // Trigger the token refresh by advancing past the refresh interval
       await sleep(300);
 
-      // removeCriteria while refresh is in-flight — should unbind the INITIAL_TOKEN (the current one on the entry)
+      // removeCriteria while refresh is in-flight — the INITIAL_TOKEN will be unbound
+      // when the cleanup timer finalizes the pending entry
       manager.removeCriteria('Communication');
       await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: INITIAL_TOKEN } });
 
-      // Resolve the deferred $get-ws-binding-token — should detect state='removed' and unbind the REFRESH_TOKEN
+      // Resolve the deferred $get-ws-binding-token — should detect state='removed' and
+      // bail without binding or unbinding (the token was never bound, so the server has
+      // no active entry for it — unbinding is unnecessary)
       resolveRefreshGet({
         resourceType: 'Parameters',
         parameter: [
@@ -1581,9 +1584,8 @@ describe('SubscriptionManager', () => {
         ],
       } as Parameters);
       await sleep(0);
-      await expect(wsServer).toReceiveMessage({ type: 'unbind-from-token', payload: { token: REFRESH_TOKEN } });
 
-      // Both tokens unbound, nothing left in the lookup
+      // Entry fully removed, nothing left in the lookup
       const entriesBySubId = (manager as any).criteriaEntriesBySubscriptionId as Map<string, unknown>;
       expect(entriesBySubId.size).toStrictEqual(0);
 
