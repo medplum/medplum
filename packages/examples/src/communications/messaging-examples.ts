@@ -752,7 +752,9 @@ await medplum.createResourceIfNoneExist(
   {
     resourceType: 'Communication',
     status: 'in-progress',
-    identifier: [{ system: 'http://example.com/sms-webhook-message', value: inboundSmsWithConversation.providerMessageId }],
+    identifier: [
+      { system: 'http://example.com/sms-webhook-message', value: inboundSmsWithConversation.providerMessageId },
+    ],
     partOf: [
       {
         reference: `Communication?identifier=https://twilio.com|${inboundSmsWithConversation.conversationSid}`,
