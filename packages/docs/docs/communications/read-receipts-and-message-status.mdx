@@ -112,6 +112,12 @@ Use this when you have group threads and need to search for unread messages via 
 Pros: Supports group threads; read receipts are searchable (e.g. unread count, unread per thread).  
 Con: Most complex data model; requires creating and updating Task resources when messages are sent and when the user marks as read.
 
+:::note `Task.code` and example URIs
+
+FHIR R4 requires each [`Task`](/docs/api/fhir/resources/task) to include `code`. The examples below use `system` `https://medplum.com/task-codes` and code `read-receipt` as a **stable documentation convention** so searches such as `Task?code=https://medplum.com/task-codes|read-receipt` match the snippets. That URL is **not** a hosted global CodeSystem. In production, use a namespace your organization controls, or keep the same `system|code` string project-wide for consistency with these examples.
+
+:::
+
 ### Mark as Read
 
 When the user reads the message, complete the Task:

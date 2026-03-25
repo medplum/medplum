@@ -137,6 +137,7 @@ if (readStateBlock?.extension) {
 
 // start-block createReadReceiptTaskTs
 // Option C: Create a read-receipt Task when a message is sent (e.g. in a Bot)
+// Task.code is required; https://medplum.com/task-codes is a docs convention (not a hosted CodeSystem). Use a URI you own in production, or keep this string project-wide for consistency with the examples below.
 const readReceiptTask = await medplum.createResource({
   resourceType: 'Task',
   status: 'requested',
@@ -279,17 +280,6 @@ const createdThreadHeader = await medplum.createResource({
   topic: {
     text: 'Lab results for Homer Simpson - April 10th',
   },
-  category: [
-    {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-          code: 'notification',
-          display: 'Notification',
-        },
-      ],
-    },
-  ],
   subject: {
     reference: 'Patient/homer-simpson',
     display: 'Homer Simpson',
@@ -311,20 +301,6 @@ const walkthroughFirstMessage = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
   partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
-  topic: {
-    text: 'Lab results for Homer Simpson - April 10th',
-  },
-  category: [
-    {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-          code: 'notification',
-          display: 'Notification',
-        },
-      ],
-    },
-  ],
   sender: {
     reference: 'Practitioner/doctor-alice-smith',
     display: 'Dr. Alice Smith',
@@ -343,20 +319,6 @@ const walkthroughSecondMessage = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
   partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
-  topic: {
-    text: 'Lab results for Homer Simpson - April 10th',
-  },
-  category: [
-    {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-          code: 'notification',
-          display: 'Notification',
-        },
-      ],
-    },
-  ],
   sender: {
     reference: 'Patient/homer-simpson',
     display: 'Homer Simpson',
@@ -384,18 +346,6 @@ const walkthroughReplyInResponseTo = await medplum.createResource({
   resourceType: 'Communication',
   status: 'in-progress',
   partOf: [{ reference: `Communication/${createdThreadHeader.id}` }],
-  topic: { text: 'Lab results for Homer Simpson - April 10th' },
-  category: [
-    {
-      coding: [
-        {
-          system: 'http://terminology.hl7.org/CodeSystem/communication-category',
-          code: 'notification',
-          display: 'Notification',
-        },
-      ],
-    },
-  ],
   sender: { reference: 'Practitioner/doctor-alice-smith', display: 'Dr. Alice Smith' },
   recipient: [{ reference: 'Patient/homer-simpson', display: 'Homer Simpson' }],
   payload: [{ contentString: 'Yes — we expect your results by Thursday. We will notify you here.' }],

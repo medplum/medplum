@@ -43,8 +43,8 @@ The FHIR [`Communication`](/docs/api/fhir/resources/communication) resource repr
 | `payload` | Text, attachments, or resources communicated to the recipient. On messages this is often `contentString`, `contentAttachment`, or `contentReference`. Omit on thread headers. | | You have an appointment scheduled for 2pm. |
 | `sender` | The person or team that sent the message. | | Practitioner/doctor-alice-smith |
 | `recipient` | The person or team that receives the message; can list multiple for group threads. On the thread header, include the full participant list (see [Building and Structuring Threads](#building-and-structuring-threads)). | | Practitioner/doctor-gregory-house |
-| `topic` | The main focus of the message, similar to an email subject line. Use a specific `topic` text. Set on both the thread header and every child message. | Custom internal text | In person physical with Homer Simpson on April 10th, 2023 |
-| `category` | The type of message being conveyed, like a tag applied to the thread or message. | [HL7 Communication Category](http://terminology.hl7.org/CodeSystem/communication-category), SNOMED, custom | [See below](#how-to-tag-or-group-threads) |
+| `topic` | The main focus of the conversation or message, similar to an email subject line. Put `topic` on the thread header for the thread title. Duplicating the same `topic` on every child message is **recommended** when you want message-level display, search, or subscriptions to carry the subject without reading the header; it is **not** required for a minimal valid thread. | Custom internal text | In person physical with Homer Simpson on April 10th, 2023 |
+| `category` | Optional for basic threading. Use when you want a tag on the thread or message—for example filters, routing, or analytics. See [How to Tag or Group Threads](#how-to-tag-or-group-threads) for when to duplicate on children. | [HL7 Communication Category](http://terminology.hl7.org/CodeSystem/communication-category), SNOMED, custom | [See below](#how-to-tag-or-group-threads) |
 | `reasonCode` | The specific reason the message was sent. Define a medical reason and/or a workflow reason: use the clinical findings subset of SNOMED for medical reasons and custom internal coding for workflow reasons. | [SNOMED Clinical Findings](http://hl7.org/fhir/R4/valueset-clinical-findings.html), custom internal | [301180005](https://browser.ihtsdotools.org/?perspective=full&conceptId1=301180005&edition=MAIN/2023-11-01&release=&languages=en) — Cardiovascular system normal (finding) |
 | `partOf` | On a message, reference to the thread header [`Communication`](/docs/api/fhir/resources/communication). Empty on the thread header. | | [See Building and Structuring Threads](#building-and-structuring-threads) |
 | `inResponseTo` | Optional link to a specific prior message when the user explicitly replies to that message (for example a reply action). For linear chronological chat, `partOf` plus sorting by `sent` is usually enough. | | Communication/previous-communication |
@@ -77,7 +77,7 @@ Beyond single messages, most products group messages into threads. In FHIR, use 
 
 The header represents the thread, not a specific message. It has no `payload` and no `partOf`. Child messages include `payload` and `partOf` pointing at the header.
 
-Use a specific `topic` on both the header and every child so thread lists and message-level searches stay aligned.
+A minimal thread can use `topic` on the **header only** (for example [Creating Your First Thread](/docs/communications/creating-your-first-thread)); UIs usually show that title when rendering the message list. Duplicate the same `topic` on **each child** when you need each `Communication` to carry the subject for message-level search, subscriptions, or exports without joining the header.
 
 :::tip Thread header: `sender` and `recipient`
 
@@ -98,7 +98,7 @@ FHIR search cannot express `recipient OR sender` in one parameter. Inbox-style f
 
 Tagging helps users interpret threads at a glance (for example a thread owned by nursing). Use `Communication.category` for that classification across purpose, audience, or nature.
 
-Put `category` on both the thread header and child [`Communication`](/docs/api/fhir/resources/communication) resources. `category` is an array, so each resource can carry multiple tags.
+You can omit `category` entirely if you do not need tags. **When using `category`,** put it on both the thread header and child [`Communication`](/docs/api/fhir/resources/communication) resources so message-level searches and filters stay consistent with the thread. `category` is an array, so each resource can carry multiple tags.
 
 | Type of tag | Codesystem |
 | --- | --- |
