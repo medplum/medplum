@@ -1,11 +1,10 @@
 ---
 sidebar_position: 10
 title: External Messaging Integration Patterns
-tags: [communications, messaging, bots, subscriptions, SMS, integration]
+tags: [communications, messaging, bots, SMS, integration]
 keywords:
   [
     Communication,
-    Subscription,
     Bot,
     webhook,
     Twilio,
@@ -13,6 +12,7 @@ keywords:
     omni-channel,
     createResourceIfNoneExist,
     Patient,
+    execute,
   ]
 ---
 
@@ -21,11 +21,11 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # External Messaging Integration Patterns
 
-These patterns show how to bridge Medplum messaging to external channels (SMS, email, push notifications) using [Bots](/docs/bots/bot-basics) and [Subscriptions](/docs/subscriptions). For in-platform automations (Tasks, reminders, scheduling), see [Messaging Automations](/docs/communications/messaging-automations).
+These patterns show how to bridge Medplum messaging to external channels (SMS, email, push notifications) using [Bots](/docs/bots/bot-basics) and on-demand [`$execute`](/docs/api/fhir/operations/bot-execute). For in-platform automations (Tasks, reminders, scheduling), see [Messaging Automations](/docs/communications/messaging-automations).
 
 :::note Prerequisites
 
-Bots and Subscriptions are [advanced features](/docs/bots/bot-basics) that may need to be enabled for your project.
+Bots are an [advanced feature](/docs/bots/bot-basics) that may need to be enabled for your project.
 
 :::
 
@@ -33,24 +33,23 @@ Bots and Subscriptions are [advanced features](/docs/bots/bot-basics) that may n
 
 ```mermaid
 flowchart LR
-    CreateComm["Provider sends<br/>'Your lab results are ready'"] --> Sub["FHIR Subscription<br/>(on new message)"]
-    Sub --> Bot["Medplum Bot<br/>(notification handler)"]
-    Bot --> External["SMS to patient<br/>via Twilio (example)"]
+    CreateComm["App creates child<br/>Communication"] --> Exec["Bot $execute<br/>(notification handler)"]
+    Exec --> External["SMS to patient<br/>via Twilio (example)"]
 ```
 
-Create a Bot that sends an external notification when a child `Communication` is created:
+Create a Bot that sends an external notification for a child `Communication` (same handler whether you trigger it from your app server or from another Bot). The handler reads `event.input` as the `Communication` resource.
 
 <MedplumCodeBlock language="ts" selectBlocks="externalNotifyOnMessageBotTs">
   {ExampleCode}
 </MedplumCodeBlock>
 
-Create a `Subscription` to invoke that Bot for new messages in threads:
+After you create the in-app message, invoke the Bot with [`executeBot()`](/docs/sdk/core.medplumclient) so provider API errors (invalid number, throttling, etc.) return to the caller instead of failing asynchronously behind a subscription.
 
-<MedplumCodeBlock language="ts" selectBlocks="externalNotifySubscriptionTs">
+<MedplumCodeBlock language="ts" selectBlocks="externalNotifyExecuteTs">
   {ExampleCode}
 </MedplumCodeBlock>
 
-The criteria `part-of:missing=false` limits matching resources to child messages (which have `partOf`), not thread headers. `status=in-progress` avoids firing on retracted messages (`entered-in-error`) or drafts (`preparation`).
+The example uses [`createResourceIfNoneExist()`](/docs/sdk/core.medplumclient) with a stable application message id so a retry of the same send does not insert duplicate `Communication` rows. See [Bot $execute](/docs/api/fhir/operations/bot-execute) for authentication options, content types, and async execution.
 
 :::tip Processing Notification Bundles
 
@@ -65,6 +64,8 @@ flowchart LR
     External["Patient texts<br/>'Thanks, I will review them'<br/>via Twilio"] --> Bot["Medplum Bot<br/>(receives webhook)"]
     Bot --> CreateComm["Create Communication<br/>(partOf → lab results thread)"]
 ```
+
+Wire inbound provider webhooks to a Bot using [`$execute`](/docs/api/fhir/operations/bot-execute) (see [Consuming Webhooks](/docs/bots/consuming-webhooks)). Some partners send OAuth-signed or otherwise authenticated webhooks; others require a public URL and an [unauthenticated webhook](/docs/bots/consuming-webhooks#unauthenticated-webhooks) endpoint—use the pattern that matches your vendor and lock down access (signatures, narrow AccessPolicy, and validation inside the Bot).
 
 When an inbound message arrives from an external channel, the Bot typically solves two problems: sender resolution (who sent this?) and thread matching (which conversation does it belong to?). FHIR [conditional references](https://www.hl7.org/fhir/references.html#conditional) can resolve the sender at write time when the external system provides enough context.
 
@@ -105,7 +106,7 @@ Sender resolution and thread matching are separate. The conditional reference ab
 
 If the external system has its own conversation identifier (Twilio Conversations, email `Message-ID` / `In-Reply-To`, etc.), store that id on the thread header as an `identifier` when the thread is first created. The system and value must match what you pass in the conditional `partOf` reference on inbound messages. Set `medium` on the header if you use round-trip routing (see below).
 
-Create the thread header once (no `partOf`, no `payload` on the header):
+Upsert the thread header (no `partOf`, no `payload` on the header) so setup is idempotent if the same conversation id is seen more than once. [`upsertResource()`](/docs/sdk/core.medplumclient.upsertresource) matches on the same `identifier` search you will use for conditional `partOf`:
 
 <MedplumCodeBlock language="ts" selectBlocks="createThreadWithExternalIdTs">
   {ExampleCode}
@@ -121,7 +122,7 @@ Both `sender` and `partOf` can resolve via conditional references in a single `P
 
 #### Strategy 2: Patient + Active Thread Lookup (Fallback for Stateless Channels)
 
-If the channel is stateless (basic SMS, email without thread headers), there may be no external conversation id. The Bot resolves the patient, then searches for their most recent open thread header. This example uses the same active-thread filter as other messaging docs (`status:not=completed,entered-in-error,stopped,unknown` — see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads#search-query-cheat-sheet)):
+If the channel is stateless (basic SMS, email without thread headers), there may be no external conversation id. The Bot resolves the patient, then searches for their most recent open thread header. This example uses the same active-thread filter as other messaging docs (`status:not=completed,entered-in-error,stopped,unknown` — see [Searching and Querying Threads](/docs/communications/searching-and-querying-threads#search-query-cheat-sheet)). The webhook payload must include the provider’s stable message id (`providerMessageId` in the example) for deduplication.
 
 <MedplumCodeBlock language="ts" selectBlocks="inboundSmsActiveThreadLookupBotTs">
   {ExampleCode}
@@ -157,22 +158,27 @@ Providers such as Twilio and SendGrid often retry webhook delivery. The same inb
 
 ## Round-Trip: Routing Replies Through the Original Channel
 
-When the patient reached you on SMS, provider replies composed in your app should often go back out on SMS. After you create the thread header with `medium` indicating SMS (as in Strategy 1), new child `Communication` resources from providers can trigger the same outbound Subscription as in [Outbound: Notify External Systems on New Messages](#outbound-messaging-notifications). The Bot inspects the thread header: if `medium` includes SMS, resolve the patient from `subject`, read `Patient.telecom` for a phone number, and call your SMS API.
+When the patient reached you on SMS, provider replies composed in your app should often go back out on SMS. After you upsert the thread header with `medium` indicating SMS (as in Strategy 1), persist the provider’s in-app reply as a child `Communication`, then [`$execute`](/docs/api/fhir/operations/bot-execute) the same style of outbound Bot with that resource as input. The Bot inspects the thread header: if `medium` includes SMS, resolve the patient from `subject`, read `Patient.telecom` for a phone number, and call your SMS API.
 
 ```mermaid
 flowchart LR
     PatientSms["Patient sends SMS"] --> InboundBot["Inbound Bot creates Communication"]
     InboundBot --> Thread["Thread header with SMS medium"]
-    ProviderReply["Provider sends in-app reply"] --> Sub["Subscription on new message"]
-    Sub --> OutBot["Outbound Bot reads header.medium"]
-    OutBot --> SmsOut["SMS to patient.telecom"]
+    ProviderReply["Provider creates in-app reply"] --> Exec["Bot $execute<br/>(round-trip handler)"]
+    Exec --> SmsOut["SMS to patient.telecom"]
 ```
 
 <MedplumCodeBlock language="ts" selectBlocks="roundTripReplyBotTs">
   {ExampleCode}
 </MedplumCodeBlock>
 
-Use the same Subscription criteria as the generic outbound notifier (`Communication?part-of:missing=false&status=in-progress`), or deploy a dedicated Bot that only runs the round-trip branch. Your product may also key off the last inbound message’s `medium` instead of the header if that fits your model better.
+Orchestration from your app or API layer:
+
+<MedplumCodeBlock language="ts" selectBlocks="roundTripReplyExecuteTs">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Your product may key off the last inbound message’s `medium` instead of the header if that fits your model better.
 
 ## See Also
 
@@ -181,4 +187,4 @@ Use the same Subscription criteria as the generic outbound notifier (`Communicat
 - [Searching and Querying Threads](/docs/communications/searching-and-querying-threads)
 - [Messaging Automations](/docs/communications/messaging-automations)
 - [Working with FHIR](/docs/fhir-datastore/working-with-fhir) — conditional create, `createResourceIfNoneExist()`, upsert
-- [Bots](/docs/bots/bot-basics) and [Subscriptions](/docs/subscriptions)
+- [Bots](/docs/bots/bot-basics) and [Bot $execute](/docs/api/fhir/operations/bot-execute)
