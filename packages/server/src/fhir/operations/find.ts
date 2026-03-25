@@ -7,20 +7,34 @@ import {
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
+  isDefined,
+  isResource,
   OperationOutcomeError,
   Operator,
+  resolveId,
 } from '@medplum/core';
 import type { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import type { Bundle, CodeableConcept, OperationDefinition, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  OperationDefinition,
+  Reference,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { flatMapMax } from '../../util/array';
-import { findSlotTimes } from './utils/find';
+import type { Interval } from '../../util/date';
+import { addMinutes } from '../../util/date';
+import { invariant } from '../../util/invariant';
+import { findAlignedSlotTimes } from './utils/find';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { applyExistingSlots, getTimeZone, resolveAvailability, TimezoneExtensionURI } from './utils/scheduling';
+import { applyExistingSlots, getTimeZone, overlappingIntervals, resolveAvailability } from './utils/scheduling';
 import type { SchedulingParameters } from './utils/scheduling-parameters';
 import { parseSchedulingParametersExtensions } from './utils/scheduling-parameters';
 
-const findOperation = {
+const scheduleFindOperation = {
   resourceType: 'OperationDefinition',
   name: 'find',
   status: 'active',
@@ -28,7 +42,7 @@ const findOperation = {
   code: 'find',
   resource: ['Schedule'],
   system: false,
-  type: true,
+  type: false,
   instance: true,
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
@@ -39,49 +53,134 @@ const findOperation = {
   ],
 } as const satisfies OperationDefinition;
 
-type FindParameters = {
+const slotFindOperation = {
+  resourceType: 'OperationDefinition',
+  name: 'find',
+  status: 'active',
+  kind: 'operation',
+  code: 'find',
+  resource: ['Slot'],
+  system: false,
+  type: true,
+  instance: false,
+  parameter: [
+    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '*' },
+    { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+  ],
+} as const satisfies OperationDefinition;
+
+const appointmentFindOperation = {
+  resourceType: 'OperationDefinition',
+  name: 'find',
+  status: 'active',
+  kind: 'operation',
+  code: 'find',
+  resource: ['Appointment'],
+  system: false,
+  type: true,
+  instance: false,
+  parameter: [
+    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
+    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
+    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '*' },
+    { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
+    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
+    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
+  ],
+} as const satisfies OperationDefinition;
+
+type ScheduleFindParameters = {
   start: string;
   end: string;
   'service-type': string;
   _count?: number;
 };
 
-// Given scheduling parameter descriptions, and an array of input service types, return
-// [SchedulingParameters, serviceType] pairs.
-//
-// - Each schedulingParameters description is returned at most once
-function filterByServiceTypes(
-  schedulingParameters: SchedulingParameters[],
-  serviceTypeTokens: string[]
-): [SchedulingParameters, CodeableConcept][] {
-  const results: [SchedulingParameters, CodeableConcept][] = [];
-  for (const params of schedulingParameters) {
-    const serviceType = params.serviceType.find((codeableConcept) =>
-      serviceTypeTokens.some((token) => codeableConceptMatchesToken(codeableConcept, token))
-    );
-    if (serviceType) {
-      results.push([params, serviceType]);
+type FindParameters = {
+  start: string;
+  end: string;
+  'service-type': string;
+  schedule: string | string[];
+  _count?: number;
+};
+
+type CommonSchedulingParameters = {
+  duration: number;
+  alignmentInterval: number;
+  alignmentOffset: number;
+  serviceType: CodeableConcept;
+};
+
+function allMatch(values: unknown[]): boolean {
+  const first = values[0];
+  return values.every((value) => value === first);
+}
+
+type SchedulingParameterGroup = [CommonSchedulingParameters, Map<Schedule, SchedulingParameters>];
+
+function chooseSchedulingParameters(serviceTypeTokens: string[], schedules: Schedule[]): SchedulingParameterGroup[] {
+  const allSchedulingParameters = schedules.map((schedule) => parseSchedulingParametersExtensions(schedule));
+
+  const results: SchedulingParameterGroup[] = [];
+
+  for (const token of serviceTypeTokens) {
+    const params = allSchedulingParameters.map((parametersOptions) => {
+      // question: should this use `filter` instead of `find`? That is, can you have multiple parameters with the same service-type token?
+      // probably yes, makes matching much harder though... punt for now?
+      return parametersOptions.find((parameters) =>
+        parameters.serviceType.some((concept) => codeableConceptMatchesToken(concept, token))
+      );
+    });
+
+    if (!params.every(isDefined)) {
+      continue;
     }
+    if (!allMatch(params.map((p) => p.duration))) {
+      continue;
+    }
+    if (!allMatch(params.map((p) => p.alignmentInterval))) {
+      continue;
+    }
+    if (!allMatch(params.map((p) => p.alignmentOffset))) {
+      continue;
+    }
+
+    // Find first matching service type to use as exemplar; Open question: should we do something special
+    // if the service types aren't all identical? For example, should we choose the service type that is the
+    // most/least expansive by number of codes?
+    const serviceType = params[0].serviceType.find((concept) => codeableConceptMatchesToken(concept, token));
+    invariant(serviceType);
+
+    results.push([
+      {
+        duration: params[0].duration,
+        alignmentInterval: params[0].alignmentInterval,
+        alignmentOffset: params[0].alignmentOffset,
+        serviceType,
+      },
+      new Map(schedules.map((schedule, idx) => [schedule, params[idx]])),
+    ]);
   }
+
   return results;
 }
 
-/**
- * Handles HTTP requests for the Schedule $find operation.
- *
- * Endpoints:
- *   [fhir base]/Schedule/[id]/$find
- *
- * @param req - The FHIR request.
- * @returns The FHIR response.
- */
-export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
+async function handler(params: {
+  start: string;
+  end: string;
+  'service-type': string[];
+  schedule: Reference<Schedule>[];
+  _count?: number;
+}): Promise<[{ interval: Interval; serviceType: CodeableConcept }[], Schedule[]]> {
   const ctx = getAuthenticatedContext();
-  const params = parseInputParameters<FindParameters>(findOperation, req);
   const { start, end, _count } = params;
 
-  // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypeTokens = params['service-type']?.split(',');
+  // service types are in `${system}|${code}` format
+  const serviceTypeTokens = params['service-type'];
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
@@ -103,8 +202,8 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Search range cannot exceed 31 days'));
   }
 
-  const [schedule, slots] = await Promise.all([
-    ctx.repo.readResource<Schedule>('Schedule', req.params.id),
+  const [schedules, slots] = await Promise.all([
+    ctx.repo.readReferences<Schedule>(params.schedule),
     ctx.repo.searchResources<Slot>({
       resourceType: 'Slot',
 
@@ -114,7 +213,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         {
           code: 'schedule',
           operator: Operator.EQUALS,
-          value: `Schedule/${req.params.id}`,
+          value: params.schedule.map((schedule) => schedule.reference).join(','),
         },
 
         {
@@ -141,53 +240,207 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
     throw new OperationOutcomeError(badRequest('Too many slots found in range; try searching with smaller bounds'));
   }
 
-  if (schedule.actor.length !== 1) {
+  if (!schedules.every((schedule) => isResource(schedule))) {
+    const idx = schedules.findIndex((schedule) => !isResource(schedule));
+    throw new OperationOutcomeError(badRequest('Loading schedule failed', `schedule[${idx}]`));
+  }
+
+  if (schedules.some((schedule) => schedule.actor.length !== 1)) {
     throw new OperationOutcomeError(badRequest('$find only supported on schedules with exactly one actor'));
   }
-  const actor = await ctx.repo.readReference(schedule.actor[0]);
-  const actorTimeZone = getTimeZone(actor);
-  if (!actorTimeZone) {
-    throw new OperationOutcomeError(
-      badRequest('No timezone specified', `Schedule.actor[0].extension(${TimezoneExtensionURI})`)
-    );
+
+  const actors = await ctx.repo.readReferences(schedules.map((schedule) => schedule.actor[0]));
+  if (!actors.every((actor) => isResource(actor))) {
+    const idx = actors.findIndex((actor) => !isResource(actor));
+    throw new OperationOutcomeError(badRequest('Loading schedule.actor failed', `schedule[${idx}]`));
   }
 
-  const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
-  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypeTokens);
-
-  if (matchingSchedulingParameters.length === 0) {
+  const schedulingParameterGroups = chooseSchedulingParameters(serviceTypeTokens, schedules);
+  if (schedulingParameterGroups.length === 0) {
+    // TODO: Can we improve this error message?
     throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
   }
 
-  const resultSlots: Slot[] = flatMapMax(
-    matchingSchedulingParameters,
-    ([schedulingParameters, serviceType], _idx, maxCount) => {
-      // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
-      const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
-      let availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
-      availability = applyExistingSlots({
-        availability,
-        slots,
-        range,
-        serviceType: [serviceType],
+  const results: { interval: Interval; serviceType: CodeableConcept }[] = flatMapMax(
+    schedulingParameterGroups,
+    (schedulingParameterGroup, _idx, maxCount) => {
+      const allAvailability = schedules.map((schedule, idx) => {
+        const actor = actors[idx];
+        const actorTimeZone = getTimeZone(actor);
+        const schedulingParameters = schedulingParameterGroup[1].get(schedule);
+        invariant(schedulingParameters);
+
+        const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
+        if (!activeTimeZone) {
+          // TODO: Throw error?
+          throw new Error('Timezone not established');
+        }
+
+        const scheduleSlots = slots.filter((slot) => resolveId(slot.schedule) === schedule.id);
+
+        // Get base availability from scheduling recurrence
+        const availability = resolveAvailability(schedulingParameters, range, activeTimeZone);
+
+        // Merge in Slot resources ("free" to add availability, others that reduce it)
+        const availabilityWithSlots = applyExistingSlots({
+          availability,
+          slots: scheduleSlots,
+          range,
+          serviceType: schedulingParameters.serviceType.flatMap((cc) => cc.coding).filter(isDefined),
+        });
+
+        // Trim off bufferBefore/bufferAfter from availability
+        const availabilityWithBuffers = availabilityWithSlots.map((interval) => ({
+          start: addMinutes(interval.start, schedulingParameters.bufferBefore),
+          end: addMinutes(interval.end, -1 * schedulingParameters.bufferAfter),
+        }));
+
+        // Restrict to intervals long enough for the requested duration
+        const realAvailability = availabilityWithBuffers.filter(
+          (interval) => addMinutes(interval.start, schedulingParameters.duration) <= interval.end
+        );
+
+        return [realAvailability, schedulingParameters] as const;
       });
-      return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
-        resourceType: 'Slot',
-        start: start.toISOString(),
-        end: end.toISOString(),
-        schedule: createReference(schedule),
-        status: 'free',
-        serviceType: [serviceType],
-      }));
+
+      const intersectingAvailability = allAvailability
+        .map((x) => x[0])
+        .reduce((acc, val) => overlappingIntervals(acc, val));
+      const { serviceType } = schedulingParameterGroup[0];
+
+      return flatMapMax(
+        intersectingAvailability,
+        (interval, _idx, maxCount) => {
+          return findAlignedSlotTimes(interval, {
+            alignment: schedulingParameterGroup[0].alignmentInterval,
+            offsetMinutes: schedulingParameterGroup[0].alignmentOffset,
+            durationMinutes: schedulingParameterGroup[0].duration,
+            maxCount,
+          }).map((interval) => ({ interval, serviceType }));
+        },
+        maxCount
+      );
     },
     pageSize
   );
 
+  return [results.slice(0, pageSize), schedules];
+}
+
+/**
+ * Handles HTTP requests for the Schedule $find operation.
+ *
+ * Endpoints:
+ *   [fhir base]/Schedule/[id]/$find
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function scheduleFindHandler(req: FhirRequest): Promise<FhirResponse> {
+  const params = parseInputParameters<ScheduleFindParameters>(scheduleFindOperation, req);
+  const serviceType = params['service-type'].split(',');
+  const [intervals, schedules] = await handler({
+    ...params,
+    schedule: [{ reference: `Schedule/${req.params.id}` }],
+    'service-type': serviceType,
+  });
+
+  const schedule = schedules[0];
+
   const bundle: Bundle<Slot> = {
     resourceType: 'Bundle',
     type: 'searchset',
-    entry: resultSlots.slice(0, pageSize).map((slot) => ({ resource: slot })),
+    entry: intervals.map(({ interval, serviceType }) => ({
+      resource: {
+        resourceType: 'Slot',
+        start: interval.start.toISOString(),
+        end: interval.end.toISOString(),
+        schedule: createReference(schedule),
+        status: 'free',
+        serviceType: [serviceType],
+      },
+    })),
   };
 
-  return [allOk, buildOutputParameters(findOperation, bundle)];
+  return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
+}
+
+/**
+ * Handles HTTP requests for the Slot $find operation.
+ *
+ * Endpoints:
+ *   [fhir base]/Slot/$find
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function slotFindHandler(req: FhirRequest): Promise<FhirResponse> {
+  const params = parseInputParameters<FindParameters>(slotFindOperation, req);
+
+  const serviceType = params['service-type'].split(',');
+  const scheduleRefs = typeof params.schedule === 'string' ? params.schedule.split(',') : params.schedule;
+  const [intervals, schedules] = await handler({
+    ...params,
+    schedule: scheduleRefs.map((reference) => ({ reference }) as Reference<Schedule>),
+    'service-type': serviceType,
+  });
+
+  const bundle: Bundle<Slot> = {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    entry: intervals.map(({ interval, serviceType }) => ({
+      resource: {
+        resourceType: 'Slot',
+        start: interval.start.toISOString(),
+        end: interval.end.toISOString(),
+        schedule: createReference(schedules[0]),
+        status: 'free',
+        serviceType: [serviceType],
+      },
+    })),
+  };
+
+  return [allOk, buildOutputParameters(slotFindOperation, bundle)];
+}
+
+/**
+ * Handles HTTP requests for the Appointment $find operation.
+ *
+ * Endpoints:
+ *   [fhir base]/Appointment/$find
+ *
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function appointmentFindHandler(req: FhirRequest): Promise<FhirResponse> {
+  const params = parseInputParameters<FindParameters>(appointmentFindOperation, req);
+
+  const serviceType = params['service-type'].split(',');
+  const scheduleRefs = typeof params.schedule === 'string' ? params.schedule.split(',') : params.schedule;
+  const [intervals, schedules] = await handler({
+    ...params,
+    schedule: scheduleRefs.map((reference) => ({ reference }) as Reference<Schedule>),
+    'service-type': serviceType,
+  });
+
+  const bundle: Bundle<Appointment> = {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    entry: intervals.map(({ interval, serviceType }) => ({
+      resource: {
+        resourceType: 'Appointment',
+        status: 'proposed',
+        start: interval.start.toISOString(),
+        end: interval.end.toISOString(),
+        serviceType: [serviceType],
+        participant: schedules.map((schedule) => ({
+          actor: schedule.actor[0],
+          required: 'required',
+          status: 'needs-action',
+        })),
+      },
+    })),
+  };
+
+  return [allOk, buildOutputParameters(appointmentFindOperation, bundle)];
 }

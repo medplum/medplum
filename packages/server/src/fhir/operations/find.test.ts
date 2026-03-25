@@ -3,6 +3,7 @@
 import type { WithId } from '@medplum/core';
 import { ContentType, createReference } from '@medplum/core';
 import type {
+  Appointment,
   Bundle,
   CodeableConcept,
   Extension,
@@ -878,5 +879,238 @@ describe('Schedule/:id/$find', () => {
         },
       ],
     });
+  });
+});
+
+describe('Appointment/$find', () => {
+  let location: Location;
+  let practitioner: Practitioner;
+  let project: WithId<Project>;
+  let accessToken: string;
+  let systemRepo: SystemRepository;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const projectResult = await createTestProject({ withAccessToken: true, withRepo: true });
+    project = projectResult.project;
+    accessToken = projectResult.accessToken;
+    systemRepo = projectResult.repo.getSystemRepo();
+
+    practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+    location = await systemRepo.createResource<Location>({
+      resourceType: 'Location',
+      meta: { project: project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('finds appointments that are available on all referenced schedules', async () => {
+    const initialVisit: CodeableConcept = {
+      text: 'Initial Visit',
+      coding: [{ code: 'initial-visit' }],
+    };
+
+    // Mon,Tue, 9a-5p availability
+    const practitionerSchedule = await systemRepo.createResource({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [initialVisit],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['mon', 'tue'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    // Tue,Wed, 1p-6p availability
+    const locationSchedule = await systemRepo.createResource({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(location)],
+      serviceType: [initialVisit],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['tue', 'wed'],
+                  timeOfDay: ['13:00:00'],
+                  duration: 5,
+                  durationUnit: 'h',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-05:00'),
+        end: new Date('2026-03-21T00:00:00-05:00'),
+        'service-type': '|initial-visit',
+        schedule: [`Schedule/${practitionerSchedule.id}`, `Schedule/${locationSchedule.id}`],
+      });
+    expect(response.status).toBe(200);
+
+    expect(response.body).toMatchObject({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: expect.arrayOf(expect.any(Object)),
+    });
+
+    (response.body as Bundle<Appointment>).entry?.forEach((entry) => {
+      expect(entry).toMatchObject({
+        resource: {
+          resourceType: 'Appointment',
+          status: 'proposed',
+          start: expect.any(String),
+          end: expect.any(String),
+          serviceType: [{ coding: [{ code: 'initial-visit' }] }],
+          participant: [
+            {
+              actor: { reference: `Practitioner/${practitioner.id}` },
+              required: 'required',
+              status: 'needs-action',
+            },
+            {
+              actor: { reference: `Location/${location.id}` },
+              required: 'required',
+              status: 'needs-action',
+            },
+          ],
+        },
+      });
+    });
+
+    // Overlap is Tue, 1p-5p EDT
+    expect((response.body as Bundle<Appointment>).entry?.map((entry) => entry.resource?.start)).toEqual([
+      '2026-03-17T17:00:00.000Z', // 5pm UTC, 1pm EDT
+      '2026-03-17T18:00:00.000Z', // 6pm UTC, 2pm EDT
+      '2026-03-17T19:00:00.000Z', // 7pm UTC, 3pm EDT
+      '2026-03-17T20:00:00.000Z', // 8pm UTC, 4pm EDT
+    ]);
+  });
+
+  test('works with a single schedule', async () => {
+    const initialVisit: CodeableConcept = {
+      text: 'Initial Visit',
+      coding: [{ code: 'initial-visit' }],
+    };
+
+    // Mon,Tue, 9a-5p availability
+    const practitionerSchedule = await systemRepo.createResource({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      serviceType: [initialVisit],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: {
+                  dayOfWeek: ['mon', 'tue'],
+                  timeOfDay: ['09:00:00'],
+                  duration: 8,
+                  durationUnit: 'h',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-05:00'),
+        end: new Date('2026-03-21T00:00:00-05:00'),
+        'service-type': '|initial-visit',
+        schedule: `Schedule/${practitionerSchedule.id}`,
+      });
+
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.status).toBe(200);
+
+    (response.body as Bundle<Appointment>).entry?.forEach((entry) => {
+      expect(entry).toMatchObject({
+        resource: {
+          resourceType: 'Appointment',
+          status: 'proposed',
+          start: expect.any(String),
+          end: expect.any(String),
+          serviceType: [{ coding: [{ code: 'initial-visit' }] }],
+          participant: [
+            {
+              actor: { reference: `Practitioner/${practitioner.id}` },
+              required: 'required',
+              status: 'needs-action',
+            },
+          ],
+        },
+      });
+    });
+
+    expect((response.body as Bundle<Appointment>).entry?.map((entry) => entry.resource?.start)).toEqual([
+      // Tuesday
+      '2026-03-16T13:00:00.000Z', // 1pm UTC, 9am EDT
+      '2026-03-16T14:00:00.000Z', // 2pm UTC, 10am EDT
+      '2026-03-16T15:00:00.000Z', // 3pm UTC, 11am EDT
+      '2026-03-16T16:00:00.000Z', // 4pm UTC, 12pm EDT
+      '2026-03-16T17:00:00.000Z', // 5pm UTC, 1pm EDT
+      '2026-03-16T18:00:00.000Z', // 6pm UTC, 2pm EDT
+      '2026-03-16T19:00:00.000Z', // 7pm UTC, 3pm EDT
+      '2026-03-16T20:00:00.000Z', // 8pm UTC, 4pm EDT
+
+      // Wednesday
+      '2026-03-17T13:00:00.000Z', // 1pm UTC, 9am EDT
+      '2026-03-17T14:00:00.000Z', // 2pm UTC, 10am EDT
+      '2026-03-17T15:00:00.000Z', // 3pm UTC, 11am EDT
+      '2026-03-17T16:00:00.000Z', // 4pm UTC, 12pm EDT
+      '2026-03-17T17:00:00.000Z', // 5pm UTC, 1pm EDT
+      '2026-03-17T18:00:00.000Z', // 6pm UTC, 2pm EDT
+      '2026-03-17T19:00:00.000Z', // 7pm UTC, 3pm EDT
+      '2026-03-17T20:00:00.000Z', // 8pm UTC, 4pm EDT
+    ]);
   });
 });

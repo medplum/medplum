@@ -67,6 +67,19 @@ export function getTimeZone(resource: Resource): string | undefined {
   return getExtensionValue(resource, TimezoneExtensionURI) as string | undefined;
 }
 
+export function overlappingIntervals(left: Interval[], right: Interval[]): Interval[] {
+  const result: Interval[] = [];
+  for (const [interval, overlaps] of pairWithOverlaps(left, right)) {
+    for (const overlap of overlaps) {
+      result.push({
+        start: clamp(interval.start, overlap),
+        end: clamp(interval.end, overlap),
+      });
+    }
+  }
+  return normalizeIntervals(result);
+}
+
 /**
  * Given two intervals, return the interval that overlaps both of them. Returns undefined
  * if the intervals don't overlap at all.
