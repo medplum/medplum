@@ -1,12 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type {
-  Hl7CloseEvent,
-  Hl7EnhancedAckSentEvent,
-  Hl7ErrorEvent,
-  Hl7MessageEvent,
-  Hl7WarningEvent,
-} from './events';
+import type { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
 
 export interface Hl7EventMap {
   message: Hl7MessageEvent;
