@@ -1823,9 +1823,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * This does *not* write the version to the history table.
    * @param client - The database client inside the transaction.
    * @param resource - The resource.
+   * @param options - Optional write options.
+   * @param options.onlyIfNewer - If true, only update when the incoming lastUpdated >= existing.
    */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
-    await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
+  private async writeResource(
+    client: PoolClient,
+    resource: Resource,
+    options?: { onlyIfNewer?: boolean }
+  ): Promise<void> {
+    const query = new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict();
+    if (options?.onlyIfNewer) {
+      query.mergeOnlyIfNewer();
+    }
+    await query.execute(client);
   }
 
   private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
@@ -1918,7 +1928,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // Unlike writeToDatabase, we use ignoreOnConflict for the history table
     // since the same version may have already been synced.
     await this.ensureInTransaction(resource.resourceType, async (client) => {
-      await this.writeResource(client, resource);
+      await this.writeResource(client, resource, { onlyIfNewer: true });
       // ignoreOnConflict since the same version may already exist on the global shard from a previous sync.
       await this.writeResourceVersion(client, resource, { ignoreOnConflict: true });
       await this.writeLookupTables(client, resource, false);
@@ -1957,7 +1967,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.buildColumn({ resourceType } as Resource, columns, searchParam);
       }
 
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict().mergeOnlyIfNewer().execute(client);
       await new InsertQuery(resourceType + '_History', [
         {
           id,

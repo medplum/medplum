@@ -292,6 +292,19 @@ describe('SqlBuilder', () => {
       expect(db.query).not.toHaveBeenCalled();
     });
 
+    test('Insert with mergeOnConflict and mergeOnlyIfNewer', () => {
+      const sql = new SqlBuilder();
+      new InsertQuery('Patient', [{ id: '123', lastUpdated: '2024-01-01', content: '{}' }])
+        .mergeOnConflict()
+        .mergeOnlyIfNewer()
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        'INSERT INTO "Patient" ("id", "lastUpdated", "content") VALUES  ($1, $2, $3)' +
+          ' ON CONFLICT ("id") DO UPDATE SET "lastUpdated"= EXCLUDED."lastUpdated", "content"= EXCLUDED."content"' +
+          ' WHERE "Patient"."lastUpdated" <= EXCLUDED."lastUpdated"'
+      );
+    });
+
     test.each(['simple', 'english'])('Text search with tsquery', (type) => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable')

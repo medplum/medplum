@@ -1094,6 +1094,7 @@ export class InsertQuery extends BaseQuery {
   private conflictColumns?: string[];
   private conflictCondition?: Condition;
   private ignoreConflict?: boolean;
+  private onlyIfNewerColumn?: string;
 
   constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
     super(tableName);
@@ -1114,6 +1115,18 @@ export class InsertQuery extends BaseQuery {
 
   ignoreOnConflict(): this {
     this.ignoreConflict = true;
+    return this;
+  }
+
+  /**
+   * When used with mergeOnConflict, adds a WHERE guard so the UPDATE only
+   * applies when the incoming row's column value is >= the existing row's.
+   * This prevents out-of-order sync/migration writes from regressing state.
+   * @param column - The column to compare (default: "lastUpdated").
+   * @returns This query for chaining.
+   */
+  mergeOnlyIfNewer(column?: string): this {
+    this.onlyIfNewerColumn = column ?? 'lastUpdated';
     return this;
   }
 
@@ -1217,6 +1230,15 @@ export class InsertQuery extends BaseQuery {
       sql.append('= EXCLUDED.');
       sql.appendIdentifier(columnName);
       first = false;
+    }
+
+    if (this.onlyIfNewerColumn) {
+      sql.append(' WHERE ');
+      sql.appendIdentifier(this.actualTableName);
+      sql.append('.');
+      sql.appendIdentifier(this.onlyIfNewerColumn);
+      sql.append(' <= EXCLUDED.');
+      sql.appendIdentifier(this.onlyIfNewerColumn);
     }
   }
 
