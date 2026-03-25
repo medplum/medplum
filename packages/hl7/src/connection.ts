@@ -5,7 +5,7 @@ import iconv from 'iconv-lite';
 import type net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
-import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
+import { Hl7CloseEvent, Hl7EnhancedAckSentEvent, Hl7ErrorEvent, Hl7MessageEvent, Hl7WarningEvent } from './events';
 
 // Export `ReturnAckCategory` for backwards-compat
 export { ReturnAckCategory } from '@medplum/core';
@@ -117,7 +117,7 @@ export class Hl7Connection extends Hl7Base {
       const queueItem = this.pendingMessages.get(origMsgCtrlId);
       if (!queueItem) {
         this.dispatchEvent(
-          new Hl7ErrorEvent(
+          new Hl7WarningEvent(
             new OperationOutcomeError({
               resourceType: 'OperationOutcome',
               issue: [
