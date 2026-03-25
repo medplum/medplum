@@ -12,11 +12,7 @@ export function buildRangeColumns(
   impl: RangeColumnSearchParameterImplementation,
   columns: Record<string, any>,
   resource: Resource
-): void {
-  if (searchParam.type === 'date') {
-  } else if (searchParam.type === 'number') {
-  }
-}
+): void {}
 
 /**
  * Adds "order by" clause to the select query builder.

@@ -45,6 +45,7 @@ export interface RangeColumnSearchParameterImplementation extends SearchParamete
   readonly searchStrategy: typeof SearchStrategies.RANGE_COLUMN;
   readonly rangeColumnName: string;
   readonly sortColumnName: string;
+  readonly columnName: string; // Original column name for migration; to be removed
 }
 
 export type SearchParameterImplementation =
@@ -108,6 +109,17 @@ function buildSearchParameterImplementation(
 
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
+  }
+
+  if (searchParam.type === 'date' || searchParam.type === 'number') {
+    const writeable = impl as Writeable<RangeColumnSearchParameterImplementation>;
+    writeable.searchStrategy = 'range-column';
+
+    const baseName = convertCodeToColumnName(code);
+    writeable.rangeColumnName = '__' + baseName;
+    writeable.sortColumnName = '__' + baseName + 'Sort';
+    writeable.columnName = baseName;
+    return impl;
   }
 
   const tokenIndexType = getTokenIndexType(searchParam, resourceType);

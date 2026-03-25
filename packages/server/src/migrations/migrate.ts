@@ -390,11 +390,15 @@ function getSearchParameterColumns(impl: SearchParameterImplementation): ColumnD
         return [
           { name: impl.rangeColumnName, type: impl.array ? 'TSTZMULTIRANGE' : 'TSTZRANGE' },
           { name: impl.sortColumnName, type: 'TIMESTAMPTZ' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
         ];
       } else if (numericRangeTypes.includes(impl.type)) {
         return [
           { name: impl.rangeColumnName, type: impl.array ? 'NUMMULTIRANGE' : 'NUMRANGE' },
           { name: impl.sortColumnName, type: 'NUMERIC' },
+          // Keep original column during migration
+          getColumnDefinition(impl as unknown as ColumnSearchParameterImplementation),
         ];
       } else {
         throw new Error('Unsupported range column type: ' + impl.type);
@@ -431,7 +435,9 @@ function getSearchParameterIndexes(
         },
       ];
     case 'range-column':
-      return [{ columns: [impl.rangeColumnName, impl.sortColumnName], indexType: 'gist' }];
+      return [
+        { columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }], indexType: 'gist' },
+      ];
     case 'column': {
       const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
       if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {

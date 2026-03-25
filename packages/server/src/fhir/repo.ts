@@ -135,6 +135,7 @@ import { findTerminologyResource } from './operations/utils/terminology';
 import { validateCodingInValueSet } from './operations/valuesetvalidatecode';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
+import { buildRangeColumns } from './range-column';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import type { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
@@ -1899,6 +1900,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       buildTokenColumns(searchParam, impl, columns, resource, {
         paddingConfig: getArrayPaddingConfig(searchParam, resource.resourceType),
       });
+      return;
+    }
+    if (impl.searchStrategy === 'range-column') {
+      buildRangeColumns(searchParam, impl, columns, resource);
       return;
     }
 
