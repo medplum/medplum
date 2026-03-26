@@ -268,17 +268,20 @@ export class Tokenizer {
       this.consumeWhile(() => /\d/.exec(this.curr()));
     }
 
-    if (this.curr() === '-' && this.dateTimeLiterals) {
+    const terminal = this.curr();
+    if (terminal === '-' && this.dateTimeLiterals) {
       // Rewind to one character before the start, and then treat as dateTime literal.
       this.pos.index = start - 1;
       return this.consumeDateTime();
-    }
-
-    if (this.curr() === ' ') {
+    } else if (terminal === ' ') {
       if (isUnitToken(this.peekToken())) {
         id = 'Quantity';
         this.consumeToken();
       }
+    } else if (terminal && /\w/.exec(terminal)) {
+      // This cannot be a number, fall back to parsing as string
+      this.pos.index = start - 1;
+      return this.consumeString(' ');
     }
 
     return this.buildToken(id, this.str.substring(start, this.pos.index));
