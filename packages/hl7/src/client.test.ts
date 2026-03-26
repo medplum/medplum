@@ -128,7 +128,7 @@ describe('Hl7Client', () => {
 
       // Listen for warning events
       let warningEvent: any = null;
-      hl7Client.addEventListener('error', (event) => {
+      hl7Client.addEventListener('warning', (event) => {
         if (
           event.error instanceof OperationOutcomeError &&
           isOperationOutcome(event.error.outcome) &&

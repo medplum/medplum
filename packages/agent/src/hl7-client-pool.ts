@@ -269,6 +269,12 @@ export class Hl7ClientPool {
       }
     });
 
+    client.addEventListener('warning', (event) => {
+      this.log.warn(
+        `Connection to remote 'mllp://${this.host}:${this.port}' warning: '${normalizeErrorString(event.error)}'`
+      );
+    });
+
     return client;
   }
 
