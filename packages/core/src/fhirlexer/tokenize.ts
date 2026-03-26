@@ -278,7 +278,7 @@ export class Tokenizer {
         id = 'Quantity';
         this.consumeToken();
       }
-    } else if (terminal && /\w/.exec(terminal)) {
+    } else if (terminal && /[a-zA-Z_$]/.exec(terminal)) {
       // This cannot be a number, fall back to parsing as string
       this.pos.index = start - 1;
       return this.consumeString(' ');

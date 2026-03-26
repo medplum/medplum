@@ -233,10 +233,10 @@ describe('_filter Parameter parser', () => {
   });
 
   test('parse raw token with leading digits', () => {
-    const result = parseFilterParameter('identifier eq 123abc');
+    const result = parseFilterParameter('identifier eq 123_abc');
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
-    expect(comp.value).toEqual('123abc');
+    expect(comp.value).toEqual('123_abc');
   });
 });
