@@ -42,7 +42,6 @@ graph TD
 
 Based on the availability defined in the previous step, we can now find available appointment slots. This is done via the `$find` operation.
 
-When providers hold **different licenses per service and per state**, model licensure with [PractitionerRole](/docs/api/fhir/resources/practitionerrole) (HealthcareService plus Location per jurisdiction), use that data in your app to decide **which [Schedule](/docs/api/fhir/resources/schedule) resources** are eligible, and pass only those into [`$find`](/docs/scheduling/schedule-find). Medplum scheduling operations do not enforce licensure for you. See [State-by-State Licensure](/docs/scheduling/state-by-state-licensure).
 
 | Operation | Description | Status |
 | --------- | ----------- | ------ |
