@@ -53,26 +53,6 @@ const scheduleFindOperation = {
   ],
 } as const satisfies OperationDefinition;
 
-const slotFindOperation = {
-  resourceType: 'OperationDefinition',
-  name: 'find',
-  status: 'active',
-  kind: 'operation',
-  code: 'find',
-  resource: ['Slot'],
-  system: false,
-  type: true,
-  instance: false,
-  parameter: [
-    { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '*' },
-    { use: 'in', name: 'schedule', type: 'string', min: 1, max: '*', searchType: 'reference' },
-    { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
-    { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
-  ],
-} as const satisfies OperationDefinition;
-
 const appointmentFindOperation = {
   resourceType: 'OperationDefinition',
   name: 'find',
@@ -363,44 +343,6 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   };
 
   return [allOk, buildOutputParameters(scheduleFindOperation, bundle)];
-}
-
-/**
- * Handles HTTP requests for the Slot $find operation.
- *
- * Endpoints:
- *   [fhir base]/Slot/$find
- *
- * @param req - The FHIR request.
- * @returns The FHIR response.
- */
-export async function slotFindHandler(req: FhirRequest): Promise<FhirResponse> {
-  const params = parseInputParameters<FindParameters>(slotFindOperation, req);
-
-  const serviceType = params['service-type'].split(',');
-  const scheduleRefs = typeof params.schedule === 'string' ? params.schedule.split(',') : params.schedule;
-  const [intervals, schedules] = await handler({
-    ...params,
-    schedule: scheduleRefs.map((reference) => ({ reference }) as Reference<Schedule>),
-    'service-type': serviceType,
-  });
-
-  const bundle: Bundle<Slot> = {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry: intervals.map(({ interval, serviceType }) => ({
-      resource: {
-        resourceType: 'Slot',
-        start: interval.start.toISOString(),
-        end: interval.end.toISOString(),
-        schedule: createReference(schedules[0]),
-        status: 'free',
-        serviceType: [serviceType],
-      },
-    })),
-  };
-
-  return [allOk, buildOutputParameters(slotFindOperation, bundle)];
 }
 
 /**

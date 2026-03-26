@@ -51,7 +51,7 @@ import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { extractHandler } from './operations/extract';
-import { appointmentFindHandler, scheduleFindHandler, slotFindHandler } from './operations/find';
+import { appointmentFindHandler, scheduleFindHandler } from './operations/find';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { getWsSubProjectStatsHandler } from './operations/getwssubprojectstats';
 import { getWsSubStatsHandler } from './operations/getwssubstats';
@@ -371,9 +371,6 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Schedule $find operation
   router.add('GET', '/Schedule/:id/$find', scheduleFindHandler);
-
-  // Slot $find operation
-  router.add('GET', '/Slot/$find', slotFindHandler);
 
   // Appointment $find/$book operations
   router.add('GET', '/Appointment/$find', appointmentFindHandler);
