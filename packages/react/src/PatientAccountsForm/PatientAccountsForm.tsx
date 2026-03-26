@@ -25,21 +25,21 @@ import { useCallback, useMemo, useState } from 'react';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 
-export interface PatientTenantsFormProps {
+export interface PatientAccountsFormProps {
   readonly patient: Patient;
   readonly onSaved?: () => void;
 }
 
-const NOTIFICATION_ID = 'patient-tenants';
-const NOTIFICATION_TITLE = 'Patient Tenants';
-const TENANT_TARGET_TYPES: ResourceType[] = ['Organization', 'HealthcareService', 'CareTeam'];
+const NOTIFICATION_ID = 'patient-accounts';
+const NOTIFICATION_TITLE = 'Patient Accounts';
+const ACCOUNT_TARGET_TYPES: ResourceType[] = ['Organization', 'HealthcareService', 'CareTeam'];
 
-interface TenantChange {
+interface AccountChange {
   readonly reference: Reference;
   readonly type: 'addition' | 'removal';
 }
 
-export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element {
+export function PatientAccountsForm(props: PatientAccountsFormProps): JSX.Element {
   const { patient } = props;
   const medplum = useMedplum();
   const isAdmin = medplum.isProjectAdmin() || medplum.isSuperAdmin();
@@ -51,8 +51,8 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   const [propagate, setPropagate] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const changes = useMemo<TenantChange[]>(() => {
-    const result: TenantChange[] = [];
+  const changes = useMemo<AccountChange[]>(() => {
+    const result: AccountChange[] = [];
 
     // Find additions (in pending but not in original)
     for (const account of pendingAccounts) {
@@ -73,7 +73,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
 
   const hasChanges = changes.length > 0;
 
-  const handleAddTenant = useCallback(
+  const handleAddAccount = useCallback(
     (value: Reference | undefined) => {
       if (!value?.reference) {
         return;
@@ -87,7 +87,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
     [pendingAccounts]
   );
 
-  const handleRemoveTenant = useCallback((referenceString: string) => {
+  const handleRemoveAccount = useCallback((referenceString: string) => {
     setPendingAccounts((prev) => prev.filter((a) => a.reference !== referenceString));
   }, []);
 
@@ -98,7 +98,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
         id: NOTIFICATION_ID,
         title: NOTIFICATION_TITLE,
         color: 'red',
-        message: 'Cannot update tenants: Patient resource has no ID.',
+        message: 'Cannot update accounts: Patient resource has no ID.',
         icon: <IconX size="1rem" />,
         autoClose: false,
         withCloseButton: true,
@@ -126,7 +126,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
       id: NOTIFICATION_ID,
       title: NOTIFICATION_TITLE,
       loading: true,
-      message: propagate ? 'Saving tenant changes and propagating to compartment...' : 'Saving tenant changes...',
+      message: propagate ? 'Saving account changes and propagating to compartment...' : 'Saving account changes...',
       autoClose: false,
       withCloseButton: false,
     });
@@ -145,7 +145,9 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
         id: NOTIFICATION_ID,
         title: NOTIFICATION_TITLE,
         color: 'green',
-        message: propagate ? 'Tenant changes saved. Compartment updates are being applied.' : 'Tenant changes saved.',
+        message: propagate
+          ? 'Account changes saved. Compartment updates are being applied.'
+          : 'Account changes saved.',
         icon: <IconCheck size="1rem" />,
         loading: false,
         autoClose: true,
@@ -172,7 +174,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   if (!isAdmin) {
     return (
       <Alert color="blue" title="Admin access required">
-        You need project admin access to manage patient tenant assignments.
+        You need project admin access to manage patient account assignments.
       </Alert>
     );
   }
@@ -180,15 +182,15 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   return (
     <>
       <Stack>
-        <Title order={3}>Current Tenants</Title>
+        <Title order={3}>Current Accounts</Title>
         {pendingAccounts.length === 0 ? (
-          <Text c="dimmed">No tenants assigned to this patient.</Text>
+          <Text c="dimmed">No accounts assigned to this patient.</Text>
         ) : (
           <Table>
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Type</Table.Th>
-                <Table.Th>Tenant</Table.Th>
+                <Table.Th>Account</Table.Th>
                 <Table.Th />
               </Table.Tr>
             </Table.Thead>
@@ -196,7 +198,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
               {pendingAccounts.map((account) => (
                 <Table.Tr key={account.reference}>
                   <Table.Td>
-                    <TenantTypeBadge reference={account} />
+                    <AccountTypeBadge reference={account} />
                   </Table.Td>
                   <Table.Td>
                     <ResourceBadge value={account} link />
@@ -206,7 +208,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
                       variant="subtle"
                       color="red"
                       aria-label={`Remove ${account.reference}`}
-                      onClick={() => handleRemoveTenant(account.reference as string)}
+                      onClick={() => handleRemoveAccount(account.reference as string)}
                     >
                       <IconX size={16} />
                     </ActionIcon>
@@ -219,14 +221,14 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
 
         <Divider />
 
-        <Title order={4}>Add Tenant</Title>
+        <Title order={4}>Add Account</Title>
         <ReferenceInput
-          name="newTenant"
+          name="newAccount"
           placeholder="Search for Organization, HealthcareService, or CareTeam..."
-          targetTypes={TENANT_TARGET_TYPES}
+          targetTypes={ACCOUNT_TARGET_TYPES}
           onChange={(value) => {
             if (value) {
-              handleAddTenant(value);
+              handleAddAccount(value);
             }
           }}
         />
@@ -264,7 +266,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
       <Modal
         opened={confirmModalOpen}
         onClose={() => setConfirmModalOpen(false)}
-        title="Confirm Tenant Changes"
+        title="Confirm Account Changes"
         size="md"
       >
         <Stack>
@@ -332,7 +334,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   );
 }
 
-function TenantTypeBadge({ reference }: { readonly reference: Reference }): JSX.Element {
+function AccountTypeBadge({ reference }: { readonly reference: Reference }): JSX.Element {
   const type = reference.reference?.split('/')[0] ?? 'Unknown';
   const colorMap: Record<string, string> = {
     Organization: 'blue',

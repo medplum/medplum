@@ -53,7 +53,7 @@ import { ReportPage } from './resource/ReportPage';
 import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { SubscriptionsPage } from './resource/SubscriptionsPage';
-import { TenantsPage } from './resource/TenantsPage';
+import { AccountsPage } from './resource/AccountsPage';
 import { TimelinePage } from './resource/TimelinePage';
 import { ToolsPage } from './resource/ToolsPage';
 import { SecurityPage } from './SecurityPage';
@@ -138,7 +138,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
-          <Route path="tenants" element={<TenantsPage />} />
+          <Route path="accounts" element={<AccountsPage />} />
           <Route path="export" element={<ExportPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />

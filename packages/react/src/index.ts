@@ -81,7 +81,7 @@ export * from './PatientSummary/PatientSummary';
 export * from './PatientSummary/Pharmacies';
 export * from './PatientSummary/pharmacy-utils';
 export * from './PatientSummary/PharmacyDialog';
-export * from './PatientTenantsForm/PatientTenantsForm';
+export * from './PatientAccountsForm/PatientAccountsForm';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
 export * from './QuantityDisplay/QuantityDisplay';

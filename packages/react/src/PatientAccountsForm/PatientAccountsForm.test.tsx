@@ -7,7 +7,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { PatientTenantsForm } from './PatientTenantsForm';
+import { PatientAccountsForm } from './PatientAccountsForm';
 
 const testOrg: Organization = {
   resourceType: 'Organization',
@@ -43,7 +43,7 @@ function createAdminMockClient(): MockClient {
   return medplum;
 }
 
-describe('PatientTenantsForm', () => {
+describe('PatientAccountsForm', () => {
   async function setup(patient: Patient, medplum?: MockClient): Promise<MockClient> {
     const client = medplum ?? createAdminMockClient();
     // Ensure the org resource is available for ResourceBadge to resolve
@@ -54,7 +54,7 @@ describe('PatientTenantsForm', () => {
         <MemoryRouter>
           <Notifications />
           <MedplumProvider medplum={client}>
-            <PatientTenantsForm patient={patient} />
+            <PatientAccountsForm patient={patient} />
           </MedplumProvider>
         </MemoryRouter>
       );
@@ -69,13 +69,13 @@ describe('PatientTenantsForm', () => {
     await setup(testPatientWithAccounts, medplum);
 
     expect(screen.getByText('Admin access required')).toBeInTheDocument();
-    expect(screen.queryByText('Current Tenants')).not.toBeInTheDocument();
+    expect(screen.queryByText('Current Accounts')).not.toBeInTheDocument();
   });
 
-  test('Renders current tenants', async () => {
+  test('Renders current accounts', async () => {
     await setup(testPatientWithAccounts);
 
-    expect(screen.getByText('Current Tenants')).toBeInTheDocument();
+    expect(screen.getByText('Current Accounts')).toBeInTheDocument();
     // Organization badge should be rendered
     expect(screen.getByText('Organization')).toBeInTheDocument();
   });
@@ -83,11 +83,11 @@ describe('PatientTenantsForm', () => {
   test('Renders empty state when no accounts', async () => {
     await setup(testPatientNoAccounts);
 
-    expect(screen.getByText('Current Tenants')).toBeInTheDocument();
-    expect(screen.getByText('No tenants assigned to this patient.')).toBeInTheDocument();
+    expect(screen.getByText('Current Accounts')).toBeInTheDocument();
+    expect(screen.getByText('No accounts assigned to this patient.')).toBeInTheDocument();
   });
 
-  test('Remove tenant shows pending changes', async () => {
+  test('Remove account shows pending changes', async () => {
     await setup(testPatientWithAccounts);
 
     // Click the remove button
@@ -111,7 +111,7 @@ describe('PatientTenantsForm', () => {
   test('Save button is enabled when there are changes', async () => {
     await setup(testPatientWithAccounts);
 
-    // Remove a tenant to create a change
+    // Remove an account to create a change
     const removeButton = screen.getByLabelText('Remove Organization/org-1');
     await act(async () => {
       fireEvent.click(removeButton);
@@ -124,7 +124,7 @@ describe('PatientTenantsForm', () => {
   test('Clicking Save opens confirmation modal', async () => {
     await setup(testPatientWithAccounts);
 
-    // Remove a tenant to create a change
+    // Remove an account to create a change
     const removeButton = screen.getByLabelText('Remove Organization/org-1');
     await act(async () => {
       fireEvent.click(removeButton);
@@ -137,7 +137,7 @@ describe('PatientTenantsForm', () => {
     });
 
     // Modal should appear
-    expect(screen.getByText('Confirm Tenant Changes')).toBeInTheDocument();
+    expect(screen.getByText('Confirm Account Changes')).toBeInTheDocument();
     expect(screen.getByText('Removing:')).toBeInTheDocument();
   });
 
@@ -171,7 +171,7 @@ describe('PatientTenantsForm', () => {
       fireEvent.click(saveButton);
     });
 
-    expect(screen.getByText('Confirm Tenant Changes')).toBeInTheDocument();
+    expect(screen.getByText('Confirm Account Changes')).toBeInTheDocument();
 
     const cancelButton = screen.getByText('Cancel');
     await act(async () => {
@@ -179,7 +179,7 @@ describe('PatientTenantsForm', () => {
     });
 
     // Modal should be closed
-    expect(screen.queryByText('Confirm Tenant Changes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Confirm Account Changes')).not.toBeInTheDocument();
   });
 
   test('Confirm triggers $set-accounts call', async () => {
@@ -187,7 +187,7 @@ describe('PatientTenantsForm', () => {
     const postSpy = jest.spyOn(medplum, 'post');
     await setup(testPatientWithAccounts, medplum);
 
-    // Remove a tenant
+    // Remove an account
     const removeButton = screen.getByLabelText('Remove Organization/org-1');
     await act(async () => {
       fireEvent.click(removeButton);
@@ -224,7 +224,7 @@ describe('PatientTenantsForm', () => {
     const postSpy = jest.spyOn(medplum, 'post');
     await setup(testPatientWithAccounts, medplum);
 
-    // Remove a tenant
+    // Remove an account
     const removeButton = screen.getByLabelText('Remove Organization/org-1');
     await act(async () => {
       fireEvent.click(removeButton);

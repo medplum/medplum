@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
-describe('TenantsPage', () => {
+describe('AccountsPage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
       render(
@@ -33,23 +33,23 @@ describe('TenantsPage', () => {
     await act(async () => notifications.clean());
   });
 
-  test('Patient shows tenants form', async () => {
+  test('Patient shows accounts form', async () => {
     const medplum = new MockClient();
     jest.spyOn(medplum, 'isProjectAdmin').mockReturnValue(true);
-    await setup('/Patient/123/tenants', medplum);
-    expect(await screen.findByText('Current Tenants')).toBeInTheDocument();
+    await setup('/Patient/123/accounts', medplum);
+    expect(await screen.findByText('Current Accounts')).toBeInTheDocument();
   });
 
   test('Patient non-admin shows access message', async () => {
     const medplum = new MockClient();
     jest.spyOn(medplum, 'isProjectAdmin').mockReturnValue(false);
     jest.spyOn(medplum, 'isSuperAdmin').mockReturnValue(false);
-    await setup('/Patient/123/tenants', medplum);
+    await setup('/Patient/123/accounts', medplum);
     expect(await screen.findByText('Admin access required')).toBeInTheDocument();
   });
 
   test('Unsupported resource type', async () => {
-    await setup('/Practitioner/123/tenants');
+    await setup('/Practitioner/123/accounts');
     expect(await screen.findByText('Unsupported resource type')).toBeInTheDocument();
   });
 });
