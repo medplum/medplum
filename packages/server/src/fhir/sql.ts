@@ -233,11 +233,11 @@ abstract class Executable implements Expression {
     throw new Error('Method not implemented');
   }
 
-  async execute<T = any>(conn: Pool | PoolClient): Promise<T[]> {
-    const sql = new SqlBuilder();
-    sql.appendExpression(this);
-    return (await sql.execute(conn)).rows;
-  }
+  // async execute<T = any>(conn: Pool | PoolClient): Promise<T[]> {
+  //   const sql = new SqlBuilder();
+  //   sql.appendExpression(this);
+  //   return (await sql.execute(conn)).rows;
+  // }
 }
 
 export class Column implements Expression {
@@ -435,9 +435,9 @@ export class UnionAllBuilder {
     this.queryCount++;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    return (await this.sql.execute(conn)).rows;
-  }
+  // async execute(conn: Pool | PoolClient): Promise<any[]> {
+  //   return (await this.sql.execute(conn)).rows;
+  // }
 }
 
 export class Union extends Executable implements Expression {
@@ -753,6 +753,15 @@ export abstract class BaseQuery extends Executable {
       sql.appendExpression(this.predicate);
     }
   }
+
+  /**
+   * Returns all table names referenced by this query.
+   * Subclasses override to include joins, USING clauses, etc.
+   * @returns Array of table name strings.
+   */
+  getReferencedTables(): string[] {
+    return [this.actualTableName];
+  }
 }
 
 export interface CTE {
@@ -985,6 +994,21 @@ export class SelectQuery extends BaseQuery {
       }
       first = false;
     }
+  }
+
+  override getReferencedTables(): string[] {
+    const tables = super.getReferencedTables();
+    for (const join of this.joins) {
+      if (join.joinItem instanceof SelectQuery) {
+        tables.push(...join.joinItem.getReferencedTables());
+      } else {
+        tables.push(join.joinItem);
+      }
+    }
+    if (this.innerQuery instanceof BaseQuery) {
+      tables.push(...this.innerQuery.getReferencedTables());
+    }
+    return tables;
   }
 }
 
@@ -1242,12 +1266,12 @@ export class InsertQuery extends BaseQuery {
     }
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
-    if (!this.values?.length) {
-      return [];
-    }
-    return super.execute(conn);
-  }
+  // async execute(conn: Pool | PoolClient): Promise<any[]> {
+  //   if (!this.values?.length) {
+  //     return [];
+  //   }
+  //   return super.execute(conn);
+  // }
 }
 
 export class DeleteQuery extends BaseQuery {
@@ -1277,6 +1301,14 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
+  }
+
+  override getReferencedTables(): string[] {
+    const tables = super.getReferencedTables();
+    if (this.usingTables) {
+      tables.push(...this.usingTables);
+    }
+    return tables;
   }
 }
 

@@ -87,7 +87,7 @@ import type {
   ValueSet,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import type { Pool, PoolClient } from 'pg';
+import type { PoolClient, QueryResultRow } from 'pg';
 import type { Operation } from 'rfc6902';
 import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
@@ -147,7 +147,7 @@ import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './sear
 import type { ColumnSearchParameterImplementation } from './searchparameter';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import { GLOBAL_SHARD_ID } from './sharding';
-import type { Expression, TransactionIsolationLevel } from './sql';
+import type { BaseQuery, Expression, TransactionIsolationLevel } from './sql';
 import {
   Condition,
   DeleteQuery,
@@ -157,6 +157,7 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
   SelectQuery,
+  SqlBuilder,
   truncateTextColumn,
 } from './sql';
 import { buildTokenColumns } from './token-column';
@@ -290,6 +291,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
+  private transactionTables?: Set<string>;
+  private transactionCrossBoundaryLogged = false;
 
   /**
    * The version to be set on resources when they are inserted/updated into the database.
@@ -407,6 +410,83 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         )
       );
     }
+  }
+
+  /**
+   * Returns the base resource type from a table name by stripping suffixes like `_History`, `_Token`, etc.
+   * FHIR resource types use PascalCase without underscores, so everything before the first `_` is the base type.
+   * @param tableName - The SQL table name.
+   * @returns The base resource type string.
+   */
+  private static getBaseResourceType(tableName: string): string {
+    const underscoreIndex = tableName.indexOf('_');
+    return underscoreIndex >= 0 ? tableName.substring(0, underscoreIndex) : tableName;
+  }
+
+  /**
+   * Checks if the given set of table names crosses the boundary between tables in and not in
+   * `typesOfInterest`. Used to evaluate feasibility of splitting these tables to a separate database.
+   * @param tables - Table names from a query.
+   * @param context - Description of the context (e.g. 'query' or 'transaction').
+   * @returns True if the tables cross the boundary, false otherwise.
+   */
+  private checkAndLogCrossBoundary(tables: string[] | Set<string>, context: string): boolean {
+    const tableSet = tables instanceof Set ? tables : new Set(tables);
+    const baseTypes = [...new Set(Array.from(tableSet).map((t) => Repository.getBaseResourceType(t)))];
+    const inInterest = baseTypes.filter((t) => this.typesOfInterest.includes(t as ResourceType));
+    const notInInterest = baseTypes.filter((t) => !this.typesOfInterest.includes(t as ResourceType));
+
+    if (inInterest.length > 0 && notInInterest.length > 0) {
+      getLogger().info('Cross-boundary database access', {
+        context,
+        tables,
+        typesInInterest: inInterest,
+        typesNotInInterest: notInInterest,
+      });
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Tracks tables referenced by a query for cross-boundary detection.
+   * For individual queries, logs if the query itself crosses the boundary.
+   * For queries within a transaction, accumulates tables and logs the first time
+   * the transaction crosses the boundary.
+   * @param query - The query being executed.
+   */
+  private trackQueryBoundary(query: BaseQuery): void {
+    const tables = query.getReferencedTables();
+
+    // Check individual query for cross-boundary
+    this.checkAndLogCrossBoundary(tables, 'query');
+
+    // Track transaction-level cross-boundary
+    if (this.transactionTables) {
+      for (const table of tables) {
+        this.transactionTables.add(table);
+      }
+
+      if (
+        !this.transactionCrossBoundaryLogged &&
+        this.checkAndLogCrossBoundary(this.transactionTables, 'transaction')
+      ) {
+        this.transactionCrossBoundaryLogged = true;
+      }
+    }
+  }
+
+  /**
+   * Executes a query with cross-boundary tracking.
+   * @param dbMode - The database mode.
+   * @param query - The query to execute.
+   * @returns The query result.
+   */
+  async executeQuery<R extends QueryResultRow = any>(dbMode: DatabaseMode, query: BaseQuery): Promise<R[]> {
+    this.trackQueryBoundary(query);
+    const sql = new SqlBuilder();
+    sql.appendExpression(query);
+    return (await sql.execute(this.getDatabaseClient(dbMode))).rows;
   }
 
   /**
@@ -541,7 +621,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     this.addSecurityFilters(builder, resourceType, AccessPolicyInteraction.READ);
 
-    const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
+    const rows = await this.executeQuery(DatabaseMode.READER, builder);
     if (rows.length === 0) {
       throw new OperationOutcomeError(notFound);
     }
@@ -675,7 +755,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
 
-      const rows = await new SelectQuery(resourceType + '_History')
+      const historyQuery = new SelectQuery(resourceType + '_History')
         .column('versionId')
         .column('id')
         .column('content')
@@ -683,13 +763,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
         .limit(clamp(0, options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
-        .offset(Math.max(0, options?.offset ?? 0))
-        .execute(this.getDatabaseClient(DatabaseMode.READER));
+        .offset(Math.max(0, options?.offset ?? 0));
+      const rows = await this.executeQuery(DatabaseMode.READER, historyQuery);
 
-      const countRows = await new SelectQuery(resourceType + '_History')
+      const countQuery = new SelectQuery(resourceType + '_History')
         .raw('COUNT(*)::int AS "count"')
-        .where('id', '=', id)
-        .execute(this.getDatabaseClient(DatabaseMode.READER));
+        .where('id', '=', id);
+      const countRows = await this.executeQuery(DatabaseMode.READER, countQuery);
 
       const totalCount = countRows[0].count as number;
 
@@ -764,11 +844,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
 
-      const rows = await new SelectQuery(resourceType + '_History')
+      const vreadQuery = new SelectQuery(resourceType + '_History')
         .column('content')
         .where('id', '=', id)
-        .where('versionId', '=', vid)
-        .execute(this.getDatabaseClient(DatabaseMode.READER));
+        .where('versionId', '=', vid);
+      const rows = await this.executeQuery(DatabaseMode.READER, vreadQuery);
 
       if (rows.length === 0) {
         throw new OperationOutcomeError(notFound);
@@ -1217,11 +1297,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
-    await this.ensureInTransaction(resource.resourceType, async (client) => {
-      await this.writeResource(client, resource);
-      await this.writeResourceVersion(client, resource);
-      await this.writeLookupTables(client, resource, create);
-      await this.writeShardSyncOutbox(client, resource);
+    await this.ensureInTransaction(resource.resourceType, async () => {
+      await this.writeResource(resource);
+      await this.writeResourceVersion(resource);
+      await this.writeLookupTables(resource, create);
+      await this.writeShardSyncOutbox(resource);
     });
   }
 
@@ -1290,9 +1370,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.withTransaction(async (conn) => {
+    await this.withTransaction(async () => {
       const resource = await this.readResourceImpl<T>(resourceType, id);
-      return this.reindexResources(conn, [resource]);
+      return this.reindexResources([resource]);
     });
   }
 
@@ -1300,10 +1380,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Internal implementation of reindexing a resource.
    * This accepts a resource as a parameter, rather than a resource type and ID.
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
-   * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+  async reindexResources<T extends Resource>(resources: WithId<T>[]): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -1321,8 +1400,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    await this.batchWriteLookupTables(conn, resources, false);
-    await this.batchWriteResources(conn, resources);
+    await this.batchWriteLookupTables(resources, false);
+    await this.batchWriteResources(resources);
   }
 
   /**
@@ -1417,7 +1496,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       if (!this.isCacheOnly(resource)) {
-        await this.ensureInTransaction(resourceType, async (conn) => {
+        await this.ensureInTransaction(resourceType, async () => {
           const lastUpdated = new Date();
           const content = '';
           const columns: Record<string, any> = {
@@ -1437,21 +1516,24 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             this.buildColumn({ resourceType } as Resource, columns, searchParam);
           }
 
-          await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
+          await this.executeQuery(DatabaseMode.WRITER, new InsertQuery(resourceType, [columns]).mergeOnConflict());
 
           const versionId = this.generateId();
-          await new InsertQuery(resourceType + '_History', [
-            {
-              id,
-              versionId,
-              lastUpdated,
-              content,
-            },
-          ]).execute(conn);
+          await this.executeQuery(
+            DatabaseMode.WRITER,
+            new InsertQuery(resourceType + '_History', [
+              {
+                id,
+                versionId,
+                lastUpdated,
+                content,
+              },
+            ])
+          );
 
-          await this.deleteFromLookupTables(conn, resource);
+          await this.deleteFromLookupTables(resource);
           if (this.shouldSyncResource(resource)) {
-            await this.writeShardSyncOutbox(conn, resource, versionId);
+            await this.writeShardSyncOutbox(resource, versionId);
             await this.postCommit(async () => {
               await addShardSyncJob(this.shardId);
             });
@@ -1541,14 +1623,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (ids.length === 0) {
       return;
     }
-    await this.withTransaction(async (client) => {
+    await this.withTransaction(async () => {
       for (const id of ids) {
-        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+        await this.deleteFromLookupTables({ resourceType, id } as Resource);
       }
 
-      const db = this.getDatabaseClient(DatabaseMode.WRITER);
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(db);
-      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
+      await this.executeQuery(DatabaseMode.WRITER, new DeleteQuery(resourceType).where('id', 'IN', ids));
+      await this.executeQuery(DatabaseMode.WRITER, new DeleteQuery(resourceType + '_History').where('id', 'IN', ids));
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
     incrementCounter(
@@ -1578,8 +1659,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await lookupTable.purgeValuesBefore(client, resourceType, before);
     }
 
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
-    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
+    await this.executeQuery(DatabaseMode.WRITER, new DeleteQuery(resourceType).where('lastUpdated', '<=', before));
+    await this.executeQuery(
+      DatabaseMode.WRITER,
+      new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before)
+    );
   }
 
   async search<T extends Resource>(
@@ -1821,48 +1905,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes the resource to the resource table.
    * This builds all search parameter columns.
    * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    * @param options - Optional write options.
    * @param options.onlyIfNewer - If true, only update when the incoming lastUpdated >= existing.
    */
-  private async writeResource(
-    client: PoolClient,
-    resource: Resource,
-    options?: { onlyIfNewer?: boolean }
-  ): Promise<void> {
+  private async writeResource(resource: Resource, options?: { onlyIfNewer?: boolean }): Promise<void> {
     const query = new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict();
     if (options?.onlyIfNewer) {
       query.mergeOnlyIfNewer();
     }
-    await query.execute(client);
+    await this.executeQuery(DatabaseMode.WRITER, query);
   }
 
-  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+  private async batchWriteResources(resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
 
-    await new InsertQuery(
+    const query = new InsertQuery(
       resources[0].resourceType,
       resources.map((r) => this.buildResourceRow(r))
-    )
-      .mergeOnConflict()
-      .execute(client);
+    ).mergeOnConflict();
+    await this.executeQuery(DatabaseMode.WRITER, query);
   }
 
   /**
    * Writes a version of the resource to the resource history table.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    * @param options - The options for the write.
    * @param options.ignoreOnConflict - If true, then the write will ignore conflicts.
    */
-  private async writeResourceVersion(
-    client: PoolClient,
-    resource: Resource,
-    options?: { ignoreOnConflict?: boolean }
-  ): Promise<void> {
+  private async writeResourceVersion(resource: Resource, options?: { ignoreOnConflict?: boolean }): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1878,29 +1951,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (options?.ignoreOnConflict) {
       query.ignoreOnConflict();
     }
-    await query.execute(client);
+    await this.executeQuery(DatabaseMode.WRITER, query);
   }
 
   /**
    * Writes a shard sync outbox row if the resource is a SyncedResourceType on a non-global shard.
    * The outbox row is written within the same transaction as the resource write to guarantee atomicity.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource.
    * @param versionId - The version ID of the resource. Defaults to resource.meta.versionId
    */
-  private async writeShardSyncOutbox(
-    client: PoolClient,
-    resource: WithId<Resource>,
-    versionId?: string
-  ): Promise<void> {
+  private async writeShardSyncOutbox(resource: WithId<Resource>, versionId?: string): Promise<void> {
     if (this.shouldSyncResource(resource)) {
-      await new InsertQuery('shard_sync_outbox', [
-        {
-          resourceType: resource.resourceType,
-          resourceId: resource.id,
-          resourceVersionId: versionId ?? resource.meta?.versionId,
-        },
-      ]).execute(client);
+      await this.executeQuery(
+        DatabaseMode.WRITER,
+        new InsertQuery('shard_sync_outbox', [
+          {
+            resourceType: resource.resourceType,
+            resourceId: resource.id,
+            resourceVersionId: versionId ?? resource.meta?.versionId,
+          },
+        ])
+      );
     }
   }
 
@@ -1927,11 +1998,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // serialization retry (2 attempts, exponential backoff).
     // Unlike writeToDatabase, we use ignoreOnConflict for the history table
     // since the same version may have already been synced.
-    await this.ensureInTransaction(resource.resourceType, async (client) => {
-      await this.writeResource(client, resource, { onlyIfNewer: true });
+    await this.ensureInTransaction(resource.resourceType, async () => {
+      await this.writeResource(resource, { onlyIfNewer: true });
       // ignoreOnConflict since the same version may already exist on the global shard from a previous sync.
-      await this.writeResourceVersion(client, resource, { ignoreOnConflict: true });
-      await this.writeLookupTables(client, resource, false);
+      await this.writeResourceVersion(resource, { ignoreOnConflict: true });
+      await this.writeLookupTables(resource, false);
     });
   }
 
@@ -1967,19 +2038,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.buildColumn({ resourceType } as Resource, columns, searchParam);
       }
 
-      await new InsertQuery(resourceType, [columns]).mergeOnConflict().mergeOnlyIfNewer().execute(client);
-      await new InsertQuery(resourceType + '_History', [
-        {
-          id,
-          versionId,
-          lastUpdated,
-          content,
-        },
-      ])
-        .ignoreOnConflict()
-        .execute(client);
+      await this.executeQuery(new InsertQuery(resourceType, [columns]).mergeOnConflict().mergeOnlyIfNewer(), client);
+      await this.executeQuery(
+        new InsertQuery(resourceType + '_History', [
+          {
+            id,
+            versionId,
+            lastUpdated,
+            content,
+          },
+        ]).ignoreOnConflict(),
+        client
+      );
 
-      await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
+      await this.deleteFromLookupTables({ resourceType, id } as Resource);
     });
   }
 
@@ -2176,34 +2248,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Writes resources values to the lookup tables.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+  private async writeLookupTables(resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
+      this.getDatabaseClient();
       await lookupTable.indexResource(client, resource, create);
     }
   }
 
-  private async batchWriteLookupTables<T extends Resource>(
-    client: PoolClient,
-    resources: WithId<T>[],
-    create: boolean
-  ): Promise<void> {
+  private async batchWriteLookupTables<T extends Resource>(resources: WithId<T>[], create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.batchIndexResources(client, resources, create);
+      await lookupTable.batchIndexResources(await this.getConnection(DatabaseMode.WRITER), resources, create);
     }
   }
 
   /**
    * Deletes values from lookup tables.
-   * @param client - The database client inside the transaction.
    * @param resource - The resource to delete.
    */
-  private async deleteFromLookupTables(client: Pool | PoolClient, resource: Resource): Promise<void> {
+  private async deleteFromLookupTables(resource: Resource): Promise<void> {
+    const conn = await this.getConnection(DatabaseMode.WRITER, resource.resourceType);
     for (const lookupTable of lookupTables) {
-      await lookupTable.deleteValuesForResource(client, resource);
+      await lookupTable.deleteValuesForResource(conn, resource);
     }
   }
 
@@ -2810,6 +2878,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<PoolClient> {
     this.assertNotClosed();
     this.transactionDepth++;
+    if (this.transactionDepth === 1) {
+      this.transactionTables = new Set();
+      this.transactionCrossBoundaryLogged = false;
+    }
     const conn = await this.getConnection(DatabaseMode.WRITER, resourceType);
     if (this.transactionDepth === 1) {
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
@@ -2849,6 +2921,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private endTransaction(): void {
     if (this.transactionDepth === 0) {
+      this.transactionTables = undefined;
+      this.transactionCrossBoundaryLogged = false;
       this.releaseConnection();
     }
   }

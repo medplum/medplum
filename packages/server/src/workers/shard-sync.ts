@@ -6,6 +6,7 @@ import type { Job, JobsOptions, QueueBaseOptions } from 'bullmq';
 import { Queue, Worker } from 'bullmq';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { DatabaseMode } from '../database';
 import { getGlobalSystemRepo, getShardSystemRepo } from '../fhir/repo';
 import { GLOBAL_SHARD_ID } from '../fhir/sharding';
 import { isRetryableTransactionError, SqlBuilder } from '../fhir/sql';
@@ -146,7 +147,9 @@ async function processOneBatch(
 ): Promise<number> {
   const shardRepo = getShardSystemRepo(shardId);
 
-  return shardRepo.withTransaction(async (shardClient) => {
+  return shardRepo.withTransaction(async () => {
+    const shardClient = shardRepo.getDatabaseClient(DatabaseMode.WRITER);
+
     // Claim batch with row-level locking (simple scan; poison rows moved to deadletter on failure)
     const builder = new SqlBuilder(
       'SELECT "id", "resourceType", "resourceId", "resourceVersionId" FROM "shard_sync_outbox" ORDER BY "id" ASC LIMIT $1 FOR UPDATE SKIP LOCKED',
@@ -158,7 +161,7 @@ async function processOneBatch(
       return 0;
     }
 
-    const entriesByType = new Map<string, Map<string, DeduplicatedEntry>>();
+    const entriesByType = new Map<ResourceType, Map<string, DeduplicatedEntry>>();
     for (const row of rows) {
       // Group by resource type
       let entriesById = entriesByType.get(row.resourceType);
@@ -187,8 +190,7 @@ async function processOneBatch(
     const globalRepo = getGlobalSystemRepo();
 
     for (const [resourceType, entriesMap] of entriesByType) {
-      const entries = Array.from(entriesMap.values());
-      const ids = entries.map((e) => e.resourceId);
+      const ids = entriesMap.values().map((e) => e.resourceId);
       const builder = new SqlBuilder(
         `SELECT DISTINCT ON (r.id)
           r."id", r."content", r."deleted", r."projectId", r."compartments", r."lastUpdated",
@@ -197,15 +199,16 @@ async function processOneBatch(
           WHERE r.id = ANY($1) ORDER BY r.id, h."lastUpdated" DESC`,
         [ids]
       );
-      const { rows: shardRows } = await builder.execute<ShardResourceRow>(shardClient);
+      const client = shardRepo.getDatabaseClient(DatabaseMode.WRITER, resourceType);
+      const { rows: shardRows } = await builder.execute<ShardResourceRow>(client);
 
-      const contentMap = new Map<string, ShardResourceRow>();
+      const resourceRowsById = new Map<string, ShardResourceRow>();
       for (const row of shardRows) {
-        contentMap.set(row.id, row);
+        resourceRowsById.set(row.id, row);
       }
 
-      for (const entry of entries) {
-        const shardRow = contentMap.get(entry.resourceId);
+      for (const entry of entriesMap.values()) {
+        const shardRow = resourceRowsById.get(entry.resourceId);
 
         if (!shardRow) {
           // Resource deleted or missing — delete outbox rows, nothing to sync

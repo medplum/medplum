@@ -8,6 +8,7 @@ import type { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
+import { DatabaseMode } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { maybeAutoRunPendingPostDeployMigrationOnShard } from '../../../migrations/migration-utils';
@@ -117,7 +118,8 @@ export class AsyncJobExecutor {
         shardId: this.repo.shardId,
         version: `v${completedDataVersion}`,
       });
-      await this.repo.withTransaction(async (client) => {
+      await this.repo.withTransaction(async () => {
+        const client = await this.repo.getDatabaseClient(DatabaseMode.WRITER, 'AsyncJob');
         await markPostDeployMigrationCompleted(client, completedDataVersion);
         updatedJob = await this.repo.updateResource<AsyncJob>(updatedJob);
       });
