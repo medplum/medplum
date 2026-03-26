@@ -5,7 +5,7 @@ import { ContentType, createReference } from '@medplum/core';
 import type {
   Appointment,
   Bundle,
-  CodeableConcept,
+  Coding,
   Extension,
   Location,
   Practitioner,
@@ -913,67 +913,92 @@ describe('Appointment/$find', () => {
     await shutdownApp();
   });
 
-  test('finds appointments that are available on all referenced schedules', async () => {
-    const initialVisit: CodeableConcept = {
-      text: 'Initial Visit',
-      coding: [{ code: 'initial-visit' }],
-    };
+  function tokenToCoding(token: string): Coding {
+    if (token.includes('|')) {
+      const [system, code] = token.split('|');
+      return { system, code };
+    }
+    return { code: token };
+  }
 
-    // Mon,Tue, 9a-5p availability
-    const practitionerSchedule = await systemRepo.createResource({
+  async function makeSchedule(
+    availability: Record<string, AvailabilityOptions>,
+    opts?: { actor?: Schedule['actor'][0] }
+  ): Promise<Schedule> {
+    const extension = Object.entries(availability).map(([serviceTypeToken, options]) => {
+      const { availability, timezone, ...durations } = options;
+
+      const extension = {
+        url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+        extension: [
+          {
+            url: 'availability',
+            valueTiming: { repeat: availability },
+          },
+        ] as Extension[],
+      } satisfies Extension;
+
+      if (timezone) {
+        extension.extension.push({
+          url: 'timezone',
+          valueCode: timezone,
+        });
+      }
+
+      extension.extension.push({
+        url: 'serviceType',
+        valueCodeableConcept: {
+          coding: [tokenToCoding(serviceTypeToken)],
+        },
+      });
+
+      Object.entries(durations).forEach(([key, value]) =>
+        extension.extension.push({ url: key, valueDuration: { value, unit: 'min' } })
+      );
+
+      return extension;
+    });
+
+    return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
       meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      serviceType: [initialVisit],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
-            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['mon', 'tue'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
-          ],
-        },
-      ],
+      actor: [opts?.actor ?? createReference(practitioner)],
+      extension,
     });
+  }
+
+  test('finds appointments that are available on all referenced schedules', async () => {
+    // Mon,Tue, 9a-5p availability
+    const practitionerSchedule = await makeSchedule(
+      {
+        'initial-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
 
     // Tue,Wed, 1p-6p availability
-    const locationSchedule = await systemRepo.createResource({
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(location)],
-      serviceType: [initialVisit],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
-            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['tue', 'wed'],
-                  timeOfDay: ['13:00:00'],
-                  duration: 5,
-                  durationUnit: 'h',
-                },
-              },
-            },
-          ],
+    const locationSchedule = await makeSchedule(
+      {
+        'initial-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['tue', 'wed'],
+            timeOfDay: ['13:00:00'],
+            duration: 5,
+            durationUnit: 'h',
+          },
         },
-      ],
-    });
+      },
+      { actor: createReference(location) }
+    );
 
     const response = await request
       .get('/fhir/R4/Appointment/$find')
@@ -1026,37 +1051,17 @@ describe('Appointment/$find', () => {
   });
 
   test('works with a single schedule', async () => {
-    const initialVisit: CodeableConcept = {
-      text: 'Initial Visit',
-      coding: [{ code: 'initial-visit' }],
-    };
-
     // Mon,Tue, 9a-5p availability
-    const practitionerSchedule = await systemRepo.createResource({
-      resourceType: 'Schedule',
-      meta: { project: project.id },
-      actor: [createReference(practitioner)],
-      serviceType: [initialVisit],
-      extension: [
-        {
-          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
-          extension: [
-            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
-            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
-            {
-              url: 'availability',
-              valueTiming: {
-                repeat: {
-                  dayOfWeek: ['mon', 'tue'],
-                  timeOfDay: ['09:00:00'],
-                  duration: 8,
-                  durationUnit: 'h',
-                },
-              },
-            },
-          ],
+    const practitionerSchedule = await makeSchedule({
+      'initial-visit': {
+        duration: 30,
+        availability: {
+          dayOfWeek: ['mon', 'tue'],
+          timeOfDay: ['09:00:00'],
+          duration: 8,
+          durationUnit: 'h',
         },
-      ],
+      },
     });
 
     const response = await request
@@ -1112,5 +1117,648 @@ describe('Appointment/$find', () => {
       '2026-03-17T19:00:00.000Z', // 7pm UTC, 3pm EDT
       '2026-03-17T20:00:00.000Z', // 8pm UTC, 4pm EDT
     ]);
+  });
+
+  test('no overlapping availability returns empty bundle', async () => {
+    // Schedule A: Monday only; Schedule B: Friday only — no shared days
+    const scheduleA = await makeSchedule(
+      {
+        consult: {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    const scheduleB = await makeSchedule(
+      {
+        consult: {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['fri'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|consult',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.body).toMatchObject({ resourceType: 'Bundle', type: 'searchset' });
+    expect(response.body).not.toHaveProperty('entry');
+  });
+
+  test('busy slot on second schedule removes that interval from results', async () => {
+    // Schedule A (practitioner): Mon-Tue 9am-5pm, 60min
+    const scheduleA = await makeSchedule(
+      {
+        consult: {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    // Schedule B (location): Tue-Wed 1pm-6pm, 60min — overlap is Tue 1pm-5pm
+    const scheduleB = await makeSchedule(
+      {
+        consult: {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['tue', 'wed'],
+            timeOfDay: ['13:00:00'],
+            duration: 5,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    // Mark Tue 2pm-3pm EDT busy on Schedule B
+    await systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      schedule: createReference(scheduleB),
+      status: 'busy',
+      start: new Date('2026-03-17T14:00:00-04:00').toISOString(),
+      end: new Date('2026-03-17T15:00:00-04:00').toISOString(),
+    });
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+        'service-type': '|consult',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    const starts = (response.body as Bundle<Appointment>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(starts).toContain(new Date('2026-03-17T13:00:00-04:00').toISOString()); // 1pm EDT — ok
+    expect(starts).not.toContain(new Date('2026-03-17T14:00:00-04:00').toISOString()); // 2pm EDT — blocked
+    expect(starts).toContain(new Date('2026-03-17T15:00:00-04:00').toISOString()); // 3pm EDT — ok
+    expect(starts).toContain(new Date('2026-03-17T16:00:00-04:00').toISOString()); // 4pm EDT — ok
+  });
+
+  test('errors when schedule parameter is omitted', async () => {
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|initial-visit',
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toMatch(/schedule/);
+  });
+
+  test('errors when a schedule reference cannot be resolved', async () => {
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|initial-visit',
+        schedule: 'Schedule/00000000-0000-0000-0000-000000000001',
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe('Loading schedule failed');
+  });
+
+  test('errors on a schedule with multiple actors', async () => {
+    const schedule = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner), createReference(location)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: 'initial-visit' }] } },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|initial-visit',
+        schedule: `Schedule/${schedule.id}`,
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe('$find only supported on schedules with exactly one actor');
+  });
+
+  test('errors when service type is not present on all schedules', async () => {
+    // Schedule A has 'visit-a'; Schedule B has only 'visit-b'
+    const scheduleA = await makeSchedule(
+      {
+        'visit-a': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    const scheduleB = await makeSchedule(
+      {
+        'visit-b': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|visit-a',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe(
+      'No scheduling parameters found for the requested service type(s)'
+    );
+  });
+
+  test('errors when service type duration differs across schedules', async () => {
+    // Both schedules have 'office-visit' but with different durations (30 vs 60)
+    const scheduleA = await makeSchedule(
+      {
+        'office-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    const scheduleB = await makeSchedule(
+      {
+        'office-visit': {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-21T00:00:00-04:00').toISOString(),
+        'service-type': '|office-visit',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+    expect(response.status).toBe(400);
+    expect(response.body.issue[0].details.text).toBe(
+      'No scheduling parameters found for the requested service type(s)'
+    );
+  });
+
+  test('returns results for valid service types and skips those with mismatched parameters', async () => {
+    // Both schedules have 'good-visit' (duration=30, matching) and 'bad-visit' (duration mismatch: 30 vs 60)
+    const scheduleA = await makeSchedule(
+      {
+        'good-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+        'bad-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    const scheduleB = await makeSchedule(
+      {
+        'good-visit': {
+          duration: 30,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+        'bad-visit': {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-17T00:00:00-04:00').toISOString(), // Monday only
+        'service-type': '|good-visit,|bad-visit',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty('issue');
+    expect((response.body as Bundle<Appointment>).entry?.length).toBeGreaterThan(0);
+    // All results are for good-visit only; bad-visit was silently skipped
+    for (const entry of (response.body as Bundle<Appointment>).entry ?? []) {
+      expect(entry.resource?.serviceType?.[0]?.coding?.[0]?.code).toBe('good-visit');
+    }
+  });
+
+  test('_count is respected for multi-schedule results', async () => {
+    // Overlap window is Tue 1pm-5pm EDT (4 × 60-min slots); requesting only 2
+    const scheduleA = await makeSchedule(
+      {
+        'follow-up': {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['09:00:00'],
+            duration: 8,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(practitioner) }
+    );
+
+    const scheduleB = await makeSchedule(
+      {
+        'follow-up': {
+          duration: 60,
+          availability: {
+            dayOfWeek: ['mon', 'tue'],
+            timeOfDay: ['13:00:00'],
+            duration: 5,
+            durationUnit: 'h',
+          },
+        },
+      },
+      { actor: createReference(location) }
+    );
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+        'service-type': '|follow-up',
+        _count: 2,
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.entry).toHaveLength(2);
+  });
+
+  test('output service type coding comes from first schedule', async () => {
+    // Both schedules have the same service type code but different display values
+    const scheduleA = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(practitioner)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'serviceType',
+              valueCodeableConcept: { coding: [{ code: 'checkup', display: 'Checkup (from A)' }] },
+            },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: { repeat: { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' } },
+            },
+          ],
+        },
+      ],
+    });
+    const scheduleB = await systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [createReference(location)],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            {
+              url: 'serviceType',
+              valueCodeableConcept: { coding: [{ code: 'checkup', display: 'Checkup (from B)' }] },
+            },
+            { url: 'duration', valueDuration: { value: 30, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: { repeat: { dayOfWeek: ['mon'], timeOfDay: ['09:00:00'], duration: 8, durationUnit: 'h' } },
+            },
+          ],
+        },
+      ],
+    });
+
+    const response = await request
+      .get('/fhir/R4/Appointment/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-17T00:00:00-04:00').toISOString(),
+        'service-type': '|checkup',
+        _count: 1,
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.entry).toHaveLength(1);
+    expect(response.body.entry[0].resource.serviceType[0].coding[0].display).toBe('Checkup (from A)');
+  });
+});
+
+describe('Slot/$find', () => {
+  let practitioner: Practitioner;
+  let location: Location;
+  let project: WithId<Project>;
+  let accessToken: string;
+  let systemRepo: SystemRepository;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const projectResult = await createTestProject({ withAccessToken: true, withRepo: true });
+    project = projectResult.project;
+    accessToken = projectResult.accessToken;
+    systemRepo = projectResult.repo.getSystemRepo();
+
+    practitioner = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      meta: { project: project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+    location = await systemRepo.createResource<Location>({
+      resourceType: 'Location',
+      meta: { project: project.id },
+      extension: [{ url: 'http://hl7.org/fhir/StructureDefinition/timezone', valueCode: 'America/New_York' }],
+    });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  async function makeSchedule(
+    actor: Schedule['actor'][0],
+    serviceTypeCode: string,
+    days: NonNullable<Timing['repeat']>['dayOfWeek'],
+    startTime: string,
+    hours: number,
+    durationMin: number
+  ): Promise<Schedule> {
+    return systemRepo.createResource<Schedule>({
+      resourceType: 'Schedule',
+      meta: { project: project.id },
+      actor: [actor],
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
+          extension: [
+            { url: 'serviceType', valueCodeableConcept: { coding: [{ code: serviceTypeCode }] } },
+            { url: 'duration', valueDuration: { value: durationMin, unit: 'min' } },
+            {
+              url: 'availability',
+              valueTiming: {
+                repeat: { dayOfWeek: days, timeOfDay: [startTime], duration: hours, durationUnit: 'h' },
+              },
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  async function makeSlot(params: {
+    start: Date;
+    end: Date;
+    status: 'busy' | 'free' | 'busy-unavailable';
+    schedule: Schedule;
+  }): Promise<Slot> {
+    return systemRepo.createResource<Slot>({
+      resourceType: 'Slot',
+      meta: { project: project.id },
+      start: params.start.toISOString(),
+      end: params.end.toISOString(),
+      status: params.status,
+      schedule: createReference(params.schedule),
+    });
+  }
+
+  test('basic happy path with a single schedule returns Bundle<Slot>', async () => {
+    // Mon-Tue 9am-5pm EDT, 60-min slots; query Mon 9am-12pm returns 3 slots
+    const schedule = await makeSchedule(
+      createReference(practitioner),
+      'initial-visit',
+      ['mon', 'tue'],
+      '09:00:00',
+      8,
+      60
+    );
+
+    const response = await request
+      .get('/fhir/R4/Slot/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T09:00:00-04:00').toISOString(),
+        end: new Date('2026-03-16T12:00:00-04:00').toISOString(),
+        'service-type': '|initial-visit',
+        schedule: `Schedule/${schedule.id}`,
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty('issue');
+    expect(response.body).toMatchObject<Bundle<Slot>>({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2026-03-16T09:00:00-04:00').toISOString(),
+            end: new Date('2026-03-16T10:00:00-04:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2026-03-16T10:00:00-04:00').toISOString(),
+            end: new Date('2026-03-16T11:00:00-04:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Slot',
+            start: new Date('2026-03-16T11:00:00-04:00').toISOString(),
+            end: new Date('2026-03-16T12:00:00-04:00').toISOString(),
+            status: 'free',
+            schedule: createReference(schedule),
+          },
+        },
+      ],
+    });
+  });
+
+  test('multi-schedule: returns only times available on all schedules, all slots reference first schedule', async () => {
+    // Schedule A (practitioner): Mon-Tue 9am-5pm, 60min
+    // Schedule B (location): Tue-Wed 1pm-6pm, 60min
+    // Overlap: Tue 1pm-5pm EDT → slots at 1pm, 2pm, 3pm, 4pm
+    const scheduleA = await makeSchedule(createReference(practitioner), 'consult', ['mon', 'tue'], '09:00:00', 8, 60);
+    const scheduleB = await makeSchedule(createReference(location), 'consult', ['tue', 'wed'], '13:00:00', 5, 60);
+
+    const response = await request
+      .get('/fhir/R4/Slot/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+        'service-type': '|consult',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).not.toHaveProperty('issue');
+
+    const entries = (response.body as Bundle<Slot>).entry ?? [];
+    // Exact slot times within the Tue 1pm-5pm overlap window
+    expect(entries.map((e) => e.resource?.start)).toEqual([
+      new Date('2026-03-17T13:00:00-04:00').toISOString(), // 1pm EDT
+      new Date('2026-03-17T14:00:00-04:00').toISOString(), // 2pm EDT
+      new Date('2026-03-17T15:00:00-04:00').toISOString(), // 3pm EDT
+      new Date('2026-03-17T16:00:00-04:00').toISOString(), // 4pm EDT
+    ]);
+
+    // All slots reference scheduleA (the first schedule passed)
+    for (const entry of entries) {
+      expect(entry.resource?.schedule).toEqual(createReference(scheduleA));
+    }
+  });
+
+  test('busy slot on one schedule removes that interval from results', async () => {
+    const scheduleA = await makeSchedule(createReference(practitioner), 'consult', ['mon', 'tue'], '09:00:00', 8, 60);
+    const scheduleB = await makeSchedule(createReference(location), 'consult', ['tue', 'wed'], '13:00:00', 5, 60);
+
+    // Mark Tue 2pm-3pm EDT busy on Schedule B (location)
+    await makeSlot({
+      start: new Date('2026-03-17T14:00:00-04:00'),
+      end: new Date('2026-03-17T15:00:00-04:00'),
+      status: 'busy',
+      schedule: scheduleB,
+    });
+
+    const response = await request
+      .get('/fhir/R4/Slot/$find')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .query({
+        start: new Date('2026-03-16T00:00:00-04:00').toISOString(),
+        end: new Date('2026-03-18T00:00:00-04:00').toISOString(),
+        'service-type': '|consult',
+        schedule: [`Schedule/${scheduleA.id}`, `Schedule/${scheduleB.id}`],
+      });
+
+    expect(response.status).toBe(200);
+    const starts = (response.body as Bundle<Slot>).entry?.map((e) => e.resource?.start) ?? [];
+    expect(starts).toContain(new Date('2026-03-17T13:00:00-04:00').toISOString()); // 1pm EDT — ok
+    expect(starts).not.toContain(new Date('2026-03-17T14:00:00-04:00').toISOString()); // 2pm EDT — blocked
+    expect(starts).toContain(new Date('2026-03-17T15:00:00-04:00').toISOString()); // 3pm EDT — ok
+    expect(starts).toContain(new Date('2026-03-17T16:00:00-04:00').toISOString()); // 4pm EDT — ok
   });
 });
