@@ -16,8 +16,8 @@ import {
   Title,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { extractAccountReferences, normalizeErrorString, resolveId } from '@medplum/core';
-import type { Patient, Reference } from '@medplum/fhirtypes';
+import { extractAccountReferences, normalizeErrorString } from '@medplum/core';
+import type { Patient, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck, IconMinus, IconPlus, IconX } from '@tabler/icons-react';
 import type { JSX } from 'react';
@@ -27,11 +27,12 @@ import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 
 export interface PatientTenantsFormProps {
   readonly patient: Patient;
+  readonly onSaved?: () => void;
 }
 
 const NOTIFICATION_ID = 'patient-tenants';
 const NOTIFICATION_TITLE = 'Patient Tenants';
-const TENANT_TARGET_TYPES = ['Organization', 'HealthcareService', 'CareTeam'];
+const TENANT_TARGET_TYPES: ResourceType[] = ['Organization', 'HealthcareService', 'CareTeam'];
 
 interface TenantChange {
   readonly reference: Reference;
@@ -91,10 +92,23 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
   }, []);
 
   const handleSave = useCallback(async () => {
+    const patientId = patient.id;
+    if (!patientId) {
+      notifications.show({
+        id: NOTIFICATION_ID,
+        title: NOTIFICATION_TITLE,
+        color: 'red',
+        message: 'Cannot update tenants: Patient resource has no ID.',
+        icon: <IconX size="1rem" />,
+        autoClose: false,
+        withCloseButton: true,
+      });
+      return;
+    }
+
     setSaving(true);
     setConfirmModalOpen(false);
 
-    const patientId = resolveId(patient) as string;
     const url = medplum.fhirUrl('Patient', patientId, '$set-accounts');
 
     const parameters = {
@@ -124,6 +138,9 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
       }
       await medplum.post(url, parameters, undefined, { headers });
 
+      // Invalidate the cached Patient so useResource re-fetches with updated meta.accounts
+      medplum.invalidateUrl(medplum.fhirUrl('Patient', patientId));
+
       notifications.update({
         id: NOTIFICATION_ID,
         title: NOTIFICATION_TITLE,
@@ -134,6 +151,8 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
         autoClose: true,
         withCloseButton: true,
       });
+
+      props.onSaved?.();
     } catch (err) {
       notifications.update({
         id: NOTIFICATION_ID,
@@ -148,7 +167,7 @@ export function PatientTenantsForm(props: PatientTenantsFormProps): JSX.Element 
     } finally {
       setSaving(false);
     }
-  }, [medplum, patient, pendingAccounts, propagate]);
+  }, [medplum, patient, pendingAccounts, propagate, props]);
 
   if (!isAdmin) {
     return (

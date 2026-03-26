@@ -5,11 +5,18 @@ import type { ResourceType } from '@medplum/fhirtypes';
 import { Document, PatientTenantsForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import type { JSX } from 'react';
-import { useParams } from 'react-router';
+import { useCallback } from 'react';
+import { useNavigate, useParams } from 'react-router';
 
 export function TenantsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const resource = useResource({ reference: resourceType + '/' + id });
+  const navigate = useNavigate();
+
+  const handleSaved = useCallback(() => {
+    // Navigate to the same page to force a full re-fetch of the Patient resource
+    navigate(0);
+  }, [navigate]);
 
   if (!resource) {
     return null;
@@ -18,7 +25,7 @@ export function TenantsPage(): JSX.Element | null {
   return (
     <Document maw={700}>
       {resource.resourceType === 'Patient' ? (
-        <PatientTenantsForm patient={resource} />
+        <PatientTenantsForm patient={resource} onSaved={handleSaved} />
       ) : (
         <Alert icon={<IconAlertCircle size={16} />} title="Unsupported resource type" color="red">
           Tenant management is only supported for Patient resources
