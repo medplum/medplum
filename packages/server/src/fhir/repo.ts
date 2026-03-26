@@ -340,6 +340,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Use this when you need elevated privileges within request handling.
+   * This reuses the same DB connection, if one exists, to stay within the same transaction.
    * @returns a SystemRepository for the same shard as this repository.
    */
   getSystemRepo(): SystemRepository {
