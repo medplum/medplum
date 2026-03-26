@@ -192,12 +192,6 @@ export interface ClientApplication {
    * @deprecated This field is deprecated. Use redirectUris instead.
    */
   redirectUri?: string;
-
-  /**
-   * @deprecated This feature is deprecated. Redirect URIs must match
-   * exactly for security reasons.
-   */
-  redirectUriAllowPartialMatch?: boolean;
 }
 
 /**

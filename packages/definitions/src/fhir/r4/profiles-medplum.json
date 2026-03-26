@@ -1078,21 +1078,6 @@
               "min" : 0,
               "max" : "1"
             }
-          },
-          {
-            "id" : "ClientApplication.redirectUriAllowPartialMatch",
-            "path" : "ClientApplication.redirectUriAllowPartialMatch",
-            "definition" : "@deprecated This feature is deprecated. Redirect URIs must match exactly for security reasons.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "boolean"
-            }],
-            "base": {
-              "path" : "ClientApplication.redirectUriAllowPartialMatch",
-              "min" : 0,
-              "max" : "1"
-            }
           }
         ]
       }

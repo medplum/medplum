@@ -66,7 +66,7 @@ export function getClientRedirectUri(
     if (uri === requestedUri) {
       return uri;
     }
-    if (allowPartial && client.redirectUriAllowPartialMatch && isAllowedPartialRedirectUri(uri, requestedUri)) {
+    if (allowPartial && isAllowedPartialRedirectUri(uri, requestedUri)) {
       // This should be removed once all clients are migrated.
       return requestedUri;
     }

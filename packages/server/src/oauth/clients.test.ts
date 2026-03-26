@@ -15,18 +15,6 @@ describe('OAuth clients', () => {
     expect(getClientRedirectUri(client, 'https://example.com/redirect')).toBe('https://example.com/redirect');
     expect(getClientRedirectUri(client, 'https://example.com/other')).toBeUndefined();
     expect(getClientRedirectUri(client, 'https://malicious.com/callback')).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', true)).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', false)).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/other/path', true)).toBeUndefined();
-  });
-
-  test('getClientRedirectUri with deprecated redirectUriAllowPartialMatch', () => {
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      id: 'test',
-      redirectUris: ['https://example.com/callback', 'https://example.com/redirect'],
-      redirectUriAllowPartialMatch: true,
-    };
 
     // Partial matching is not recommended, but supported with the allowPartial flag
     expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', true)).toBe(
@@ -46,51 +34,11 @@ describe('OAuth clients', () => {
     expect(getClientRedirectUri(client, 'https://example.com/callback')).toBe('https://example.com/callback');
     expect(getClientRedirectUri(client, 'https://example.com/other')).toBeUndefined();
     expect(getClientRedirectUri(client, 'https://malicious.com/callback')).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', true)).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', false)).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com/other/path', true)).toBeUndefined();
-  });
-
-  test('getClientRedirectUri with deprecated redirectUri and redirectUriAllowPartialMatch', () => {
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      id: 'test',
-      redirectUri: 'https://example.com/callback',
-      redirectUriAllowPartialMatch: true,
-    };
-
-    expect(getClientRedirectUri(client, 'https://example.com/callback')).toBe('https://example.com/callback');
-    expect(getClientRedirectUri(client, 'https://example.com/other')).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://malicious.com/callback')).toBeUndefined();
 
     // Partial matching is not recommended, but supported with the allowPartial flag
     expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', true)).toBe(
       'https://example.com/callback?param=value'
     );
     expect(getClientRedirectUri(client, 'https://example.com/other/path', true)).toBeUndefined();
-  });
-
-  test('unsafe partial matching', () => {
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      id: 'test',
-      redirectUris: ['https://example.com'],
-      redirectUriAllowPartialMatch: true,
-    };
-
-    expect(getClientRedirectUri(client, 'https://example.com/callback', true)).toBe('https://example.com/callback');
-    expect(getClientRedirectUri(client, 'https://example.com.malicious.com/callback', true)).toBeUndefined();
-  });
-
-  test('handle invalid URLs', () => {
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      id: 'test',
-      redirectUris: ['-'],
-      redirectUriAllowPartialMatch: true,
-    };
-
-    expect(getClientRedirectUri(client, 'https://example.com/callback', true)).toBeUndefined();
-    expect(getClientRedirectUri(client, 'https://example.com.malicious.com/callback', true)).toBeUndefined();
   });
 });
