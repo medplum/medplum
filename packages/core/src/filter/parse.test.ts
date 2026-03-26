@@ -231,4 +231,12 @@ describe('_filter Parameter parser', () => {
   test('Unsupported search operator', () => {
     expect(() => parseFilterParameter('name ew ali')).toThrow('Invalid operator: ew');
   });
+
+  test('parse raw token with leading digits', () => {
+    const result = parseFilterParameter('identifier eq 123_abc');
+    expect(result).toBeInstanceOf(FhirFilterComparison);
+
+    const comp = result as FhirFilterComparison;
+    expect(comp.value).toEqual('123_abc');
+  });
 });
