@@ -396,7 +396,7 @@ function parsePrefix(input: string, defaultOperator: Operator): { operator: Oper
 }
 
 function parseModifier(modifier: string): Operator {
-  return (MODIFIER_OPERATORS[modifier] ?? (modifier as Operator)) || Operator.EQUALS;
+  return MODIFIER_OPERATORS[modifier] ?? Operator.EQUALS;
 }
 
 function parseIncludeTarget(input: string): IncludeTarget {
