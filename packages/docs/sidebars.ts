@@ -97,6 +97,7 @@ const sidebars: SidebarsConfig = {
       link: { type: 'doc', id: 'communications/index' },
       items: [
         { type: 'doc', id: 'communications/messaging-data-model' },
+        { type: 'doc', id: 'communications/thread-lifecycle-participants-access-control' },
         { type: 'doc', id: 'communications/searching-and-querying-threads' },
         { type: 'doc', id: 'communications/message-response-tracking-and-routing' },
         { type: 'doc', id: 'communications/sending-messages-and-attachments' },
