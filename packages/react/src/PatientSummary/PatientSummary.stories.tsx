@@ -171,10 +171,10 @@ export const CustomRenderSection = (): JSX.Element => {
           {
             key: 'risk-score',
             title: 'Risk & Alerts',
-            searches: [{ resourceType: 'RiskAssessment', patientParam: 'subject' }],
-            render: ({ patient, results }) => {
+            searches: [{ key: 'riskAssessments', resourceType: 'RiskAssessment', patientParam: 'subject' }],
+            component: ({ patient, results }) => {
               const firstName = patient.name?.[0]?.given?.[0] ?? 'Patient';
-              const ra = (results[0] as RiskAssessment[])?.[0];
+              const ra = (results['riskAssessments'] as RiskAssessment[])?.[0];
               const probability = ra?.prediction?.[0]?.probabilityDecimal;
               const riskScore = probability !== undefined ? Math.round(probability * 100) : undefined;
               const qualCode = ra?.prediction?.[0]?.qualitativeRisk?.coding?.[0]?.code;

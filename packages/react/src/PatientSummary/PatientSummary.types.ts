@@ -1,24 +1,17 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import type { QueryTypes } from '@medplum/core';
-import type { Patient, Resource, ResourceType } from '@medplum/fhirtypes';
-import type { ReactNode } from 'react';
+import type { FhirSearchDescriptor, SectionResults } from '@medplum/react-hooks';
+import type { Patient, Resource } from '@medplum/fhirtypes';
+import type { ComponentType } from 'react';
 
-/** Descriptor for a single FHIR search that a section needs. */
-export interface FhirSearchDescriptor {
-  readonly resourceType: ResourceType;
-  /** Which search param references the patient. Defaults to 'subject'. Examples: 'patient', 'beneficiary'. */
-  readonly patientParam?: string;
-  /** Additional search params — same format as the 2nd arg to medplum.searchResources(). */
-  readonly query?: QueryTypes;
-}
+export type { FhirSearchDescriptor, SectionResults };
 
-/** Context passed to every section's render function. */
+/** Context passed to every section's component. */
 export interface SectionRenderContext {
   readonly patient: Patient;
   readonly onClickResource?: (resource: Resource) => void;
-  /** One Resource[] per search in the section's `searches` array. Empty array if no searches defined. */
-  readonly results: Resource[][];
+  /** Named results for each search in the section's `searches` array, keyed by `FhirSearchDescriptor.key`. */
+  readonly results: SectionResults;
 }
 
 /**
@@ -29,5 +22,10 @@ export interface PatientSummarySectionConfig {
   readonly key: string;
   readonly title: string;
   readonly searches?: FhirSearchDescriptor[];
-  readonly render: (context: SectionRenderContext) => ReactNode;
+  /**
+   * React component that renders this section.
+   * Using ComponentType (rather than a render-prop function) ensures React treats it as a real
+   * component, so hooks inside custom sections work correctly.
+   */
+  readonly component: ComponentType<SectionRenderContext>;
 }

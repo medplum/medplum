@@ -46,7 +46,7 @@ import { Vitals } from './Vitals';
 export const DemographicsSection: PatientSummarySectionConfig = {
   key: 'demographics',
   title: 'Demographics',
-  render: ({ patient, onClickResource }: SectionRenderContext) => {
+  component: ({ patient, onClickResource }: SectionRenderContext) => {
     const languageDisplay = getPreferredLanguage(patient);
     return (
       <Stack gap="xs" py={8}>
@@ -107,9 +107,9 @@ export const DemographicsSection: PatientSummarySectionConfig = {
 export const InsuranceSection: PatientSummarySectionConfig = {
   key: 'insurance',
   title: 'Insurance',
-  searches: [{ resourceType: 'Coverage', patientParam: 'beneficiary' }],
-  render: ({ results, onClickResource }: SectionRenderContext) => (
-    <Insurance coverages={(results[0] as Coverage[]) || []} onClickResource={onClickResource} />
+  searches: [{ key: 'coverages', resourceType: 'Coverage', patientParam: 'beneficiary' }],
+  component: ({ results, onClickResource }: SectionRenderContext) => (
+    <Insurance coverages={(results['coverages'] as Coverage[]) || []} onClickResource={onClickResource} />
   ),
 };
 
@@ -117,11 +117,11 @@ export const InsuranceSection: PatientSummarySectionConfig = {
 export const AllergiesSection: PatientSummarySectionConfig = {
   key: 'allergies',
   title: 'Allergies',
-  searches: [{ resourceType: 'AllergyIntolerance', patientParam: 'patient' }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => (
+  searches: [{ key: 'allergies', resourceType: 'AllergyIntolerance', patientParam: 'patient' }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
     <Allergies
       patient={patient}
-      allergies={(results[0] as AllergyIntolerance[]) || []}
+      allergies={(results['allergies'] as AllergyIntolerance[]) || []}
       onClickResource={onClickResource}
     />
   ),
@@ -131,9 +131,9 @@ export const AllergiesSection: PatientSummarySectionConfig = {
 export const ProblemListSection: PatientSummarySectionConfig = {
   key: 'problemList',
   title: 'Problems',
-  searches: [{ resourceType: 'Condition', patientParam: 'patient' }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => (
-    <ProblemList patient={patient} problems={(results[0] as Condition[]) || []} onClickResource={onClickResource} />
+  searches: [{ key: 'conditions', resourceType: 'Condition', patientParam: 'patient' }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
+    <ProblemList patient={patient} problems={(results['conditions'] as Condition[]) || []} onClickResource={onClickResource} />
   ),
 };
 
@@ -141,11 +141,11 @@ export const ProblemListSection: PatientSummarySectionConfig = {
 export const MedicationsSection: PatientSummarySectionConfig = {
   key: 'medications',
   title: 'Medications',
-  searches: [{ resourceType: 'MedicationRequest', patientParam: 'subject' }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => (
+  searches: [{ key: 'medications', resourceType: 'MedicationRequest', patientParam: 'subject' }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => (
     <Medications
       patient={patient}
-      medicationRequests={(results[0] as MedicationRequest[]) || []}
+      medicationRequests={(results['medications'] as MedicationRequest[]) || []}
       onClickResource={onClickResource}
     />
   ),
@@ -162,14 +162,14 @@ export function createLabsSection(onRequestLabs?: () => void): PatientSummarySec
     key: 'labs',
     title: 'Labs',
     searches: [
-      { resourceType: 'ServiceRequest', patientParam: 'subject' },
-      { resourceType: 'DiagnosticReport', patientParam: 'subject' },
+      { key: 'serviceRequests', resourceType: 'ServiceRequest', patientParam: 'subject' },
+      { key: 'diagnosticReports', resourceType: 'DiagnosticReport', patientParam: 'subject' },
     ],
-    render: ({ results, patient, onClickResource }: SectionRenderContext) => (
+    component: ({ results, patient, onClickResource }: SectionRenderContext) => (
       <Labs
         patient={patient}
-        serviceRequests={(results[0] as ServiceRequest[]) || []}
-        diagnosticReports={(results[1] as DiagnosticReport[]) || []}
+        serviceRequests={(results['serviceRequests'] as ServiceRequest[]) || []}
+        diagnosticReports={(results['diagnosticReports'] as DiagnosticReport[]) || []}
         onClickResource={onClickResource}
         onRequestLabs={onRequestLabs}
       />
@@ -184,9 +184,9 @@ export const LabsSection: PatientSummarySectionConfig = createLabsSection();
 export const SexualOrientationSection: PatientSummarySectionConfig = {
   key: 'sexualOrientation',
   title: 'Sexual Orientation',
-  searches: [{ resourceType: 'Observation', patientParam: 'subject', query: { code: '76690-7' } }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => {
-    const observations = (results[0] as Observation[]) || [];
+  searches: [{ key: 'observations', resourceType: 'Observation', patientParam: 'subject', query: { code: '76690-7' } }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => {
+    const observations = (results['observations'] as Observation[]) || [];
     return (
       <SexualOrientation patient={patient} sexualOrientation={observations[0]} onClickResource={onClickResource} />
     );
@@ -197,9 +197,9 @@ export const SexualOrientationSection: PatientSummarySectionConfig = {
 export const SmokingStatusSection: PatientSummarySectionConfig = {
   key: 'smokingStatus',
   title: 'Smoking Status',
-  searches: [{ resourceType: 'Observation', patientParam: 'subject', query: { code: '72166-2' } }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => {
-    const observations = (results[0] as Observation[]) || [];
+  searches: [{ key: 'observations', resourceType: 'Observation', patientParam: 'subject', query: { code: '72166-2' } }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => {
+    const observations = (results['observations'] as Observation[]) || [];
     return <SmokingStatus patient={patient} smokingStatus={observations[0]} onClickResource={onClickResource} />;
   },
 };
@@ -208,9 +208,9 @@ export const SmokingStatusSection: PatientSummarySectionConfig = {
 export const VitalsSection: PatientSummarySectionConfig = {
   key: 'vitals',
   title: 'Vitals',
-  searches: [{ resourceType: 'Observation', patientParam: 'subject', query: { category: 'vital-signs' } }],
-  render: ({ results, patient, onClickResource }: SectionRenderContext) => {
-    const observations = (results[0] as Observation[]) || [];
+  searches: [{ key: 'observations', resourceType: 'Observation', patientParam: 'subject', query: { category: 'vital-signs' } }],
+  component: ({ results, patient, onClickResource }: SectionRenderContext) => {
+    const observations = (results['observations'] as Observation[]) || [];
     return <Vitals patient={patient} vitals={observations} onClickResource={onClickResource} />;
   },
 };
@@ -228,7 +228,7 @@ export function createPharmaciesSection(
   return {
     key: 'pharmacies',
     title: 'Pharmacies',
-    render: ({ patient, onClickResource }: SectionRenderContext) => (
+    component: ({ patient, onClickResource }: SectionRenderContext) => (
       <Pharmacies
         patient={patient}
         onClickResource={onClickResource}

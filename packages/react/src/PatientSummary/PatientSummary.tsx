@@ -3,7 +3,7 @@
 import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { formatHumanName, resolveId } from '@medplum/core';
 import type { HumanName, Patient, Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, usePatientSummaryData, useResource } from '@medplum/react-hooks';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -11,7 +11,6 @@ import styles from './PatientSummary.module.css';
 import type { PatientSummarySectionConfig } from './PatientSummary.types';
 import { getDefaultSections } from './sectionConfigs';
 import SummaryItem from './SummaryItem';
-import { usePatientSummaryData } from './usePatientSummaryData';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -89,18 +88,21 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             Error loading patient summary: {error.message}
           </Text>
         )}
-        {!loading && !error && sections.length > 0 && (
+        {!loading && sections.length > 0 && (
           <>
-            {sections.map((section, index) => (
-              <div key={section.key}>
-                {section.render({
-                  patient,
-                  onClickResource,
-                  results: sectionData[index] ?? [],
-                })}
-                <Divider />
-              </div>
-            ))}
+            {sections.map((section, index) => {
+              const SectionComponent = section.component;
+              return (
+                <div key={section.key}>
+                  <SectionComponent
+                    patient={patient}
+                    onClickResource={onClickResource}
+                    results={sectionData[index] ?? {}}
+                  />
+                  <Divider />
+                </div>
+              );
+            })}
           </>
         )}
       </Stack>

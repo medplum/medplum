@@ -1,14 +1,31 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import type { QueryTypes } from '@medplum/core';
 import { resolveId } from '@medplum/core';
-import type { Patient, Reference, Resource } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
+import type { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useEffect, useMemo, useState } from 'react';
-import type { FhirSearchDescriptor, PatientSummarySectionConfig } from './PatientSummary.types';
+import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
+
+/** Descriptor for a single FHIR search that a section needs. */
+export interface FhirSearchDescriptor {
+  /** Unique key used to access this search's results via `SectionResults[key]`. */
+  readonly key: string;
+  readonly resourceType: ResourceType;
+  /** Which search param references the patient. Defaults to 'subject'. Examples: 'patient', 'beneficiary'. */
+  readonly patientParam?: string;
+  /**
+   * Additional search params — same format as the 2nd arg to medplum.searchResources().
+   * When using a string, do not include _count or _sort; they are appended automatically.
+   */
+  readonly query?: QueryTypes;
+}
+
+/** Named map of FHIR results for a section: `results[searchKey]` returns the Resource[] for that search. */
+export type SectionResults = Record<string, Resource[]>;
 
 export interface PatientSummaryData {
-  /** sectionData[i][j] = Resource[] for section i's search j */
-  readonly sectionData: Resource[][][];
+  /** One SectionResults map per section, indexed to match the sections array. */
+  readonly sectionData: SectionResults[];
   readonly loading: boolean;
   readonly error: Error | undefined;
 }
@@ -16,8 +33,6 @@ export interface PatientSummaryData {
 /**
  * Build a deduplication key for a search descriptor.
  * Searches with the same key are executed only once and their results shared.
- * @param search - The search descriptor to build a key for.
- * @returns A stable string key for deduplication.
  */
 function buildSearchKey(search: FhirSearchDescriptor): string {
   const param = search.patientParam ?? 'subject';
@@ -28,14 +43,12 @@ function buildSearchKey(search: FhirSearchDescriptor): string {
     if (typeof query === 'string') {
       queryStr = query;
     } else if (query instanceof URLSearchParams) {
-      // Sort entries for stable key
       const entries = Array.from(query.entries()).sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
       queryStr = JSON.stringify(entries);
     } else if (Array.isArray(query)) {
       const sorted = [...query].sort((a, b) => a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]));
       queryStr = JSON.stringify(sorted);
     } else {
-      // Record<string, string | number | boolean | undefined>
       const sorted = Object.entries(query)
         .filter(([, v]) => v !== undefined)
         .sort(([a], [b]) => a.localeCompare(b));
@@ -49,10 +62,10 @@ function buildSearchKey(search: FhirSearchDescriptor): string {
 /**
  * Build a stable fingerprint from sections' search configurations.
  * Used to avoid re-fetching when sections change by reference but not by content.
- * @param sections - The section configs to fingerprint.
- * @returns A stable string fingerprint.
  */
-function buildSectionsFingerprint(sections: PatientSummarySectionConfig[]): string {
+function buildSectionsFingerprint(
+  sections: Array<{ readonly key: string; readonly searches?: FhirSearchDescriptor[] }>
+): string {
   return sections
     .map((s) => {
       const searchKeys = s.searches ? s.searches.map(buildSearchKey).join(',') : '';
@@ -64,16 +77,18 @@ function buildSectionsFingerprint(sections: PatientSummarySectionConfig[]): stri
 /**
  * Hook that collects all FHIR searches from section configs, deduplicates them,
  * executes them in parallel, and routes results back to each section.
+ * Uses Promise.allSettled so a single failing search does not block all sections —
+ * sections whose searches fail gracefully receive empty arrays.
  * @param patient - The patient or patient reference to fetch data for.
  * @param sections - The section configs defining which searches to execute.
  * @returns Section data, loading state, and any error.
  */
 export function usePatientSummaryData(
   patient: Patient | Reference<Patient>,
-  sections: PatientSummarySectionConfig[]
+  sections: Array<{ readonly key: string; readonly searches?: FhirSearchDescriptor[] }>
 ): PatientSummaryData {
   const medplum = useMedplum();
-  const [sectionData, setSectionData] = useState<Resource[][][]>([]);
+  const [sectionData, setSectionData] = useState<SectionResults[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
 
@@ -94,25 +109,25 @@ export function usePatientSummaryData(
     const ref = `Patient/${patientId}`;
     const searchMeta = { _count: 100, _sort: '-_lastUpdated' };
 
-    // Collect unique searches and build a mapping from search key to index
+    // Collect unique searches and build a mapping from deduplication key to index
     const uniqueSearches: FhirSearchDescriptor[] = [];
     const searchKeyToIndex = new Map<string, number>();
 
-    // For each section, for each search, record the mapping
-    const sectionSearchMapping: number[][] = [];
+    // For each section, for each search, record the deduplication index and result key
+    const sectionSearchMapping: Array<Array<{ searchIdx: number; resultKey: string }>> = [];
 
     for (const section of stableSections) {
-      const mapping: number[] = [];
+      const mapping: Array<{ searchIdx: number; resultKey: string }> = [];
       if (section.searches) {
         for (const search of section.searches) {
-          const key = buildSearchKey(search);
-          let idx = searchKeyToIndex.get(key);
+          const deduplicationKey = buildSearchKey(search);
+          let idx = searchKeyToIndex.get(deduplicationKey);
           if (idx === undefined) {
             idx = uniqueSearches.length;
-            searchKeyToIndex.set(key, idx);
+            searchKeyToIndex.set(deduplicationKey, idx);
             uniqueSearches.push(search);
           }
-          mapping.push(idx);
+          mapping.push({ searchIdx: idx, resultKey: search.key });
         }
       }
       sectionSearchMapping.push(mapping);
@@ -120,7 +135,7 @@ export function usePatientSummaryData(
 
     if (uniqueSearches.length === 0) {
       // No searches needed — fill empty results
-      setSectionData(stableSections.map(() => []));
+      setSectionData(stableSections.map(() => ({})));
       setLoading(false);
       return undefined;
     }
@@ -132,7 +147,6 @@ export function usePatientSummaryData(
         [patientParam]: ref,
       };
 
-      // Merge additional query params
       if (search.query) {
         if (typeof search.query === 'string') {
           // String query — _count and _sort are appended automatically; do not include them in the query string.
@@ -149,7 +163,6 @@ export function usePatientSummaryData(
             baseQuery[key] = value;
           }
         } else {
-          // Record<string, string | number | boolean | undefined>
           for (const [key, value] of Object.entries(search.query)) {
             if (value !== undefined) {
               baseQuery[key] = value;
@@ -163,26 +176,35 @@ export function usePatientSummaryData(
 
     setLoading(true);
     setError(undefined);
-    Promise.all(promises)
-      .then((results) => {
-        if (stale) {
-          return;
+
+    // allSettled ensures a single failing search does not block the rest — each section
+    // renders with whatever data is available; failed searches produce empty arrays.
+    Promise.allSettled(promises).then((settledResults) => {
+      if (stale) {
+        return;
+      }
+
+      // Route results back to sections using named keys
+      const data: SectionResults[] = sectionSearchMapping.map((mapping) => {
+        const sectionResult: SectionResults = {};
+        for (const { searchIdx, resultKey } of mapping) {
+          const settled = settledResults[searchIdx];
+          sectionResult[resultKey] = settled.status === 'fulfilled' ? (settled.value as Resource[]) : [];
         }
-        // Route results back to sections
-        const data: Resource[][][] = sectionSearchMapping.map((mapping) =>
-          mapping.map((searchIdx) => results[searchIdx] as Resource[])
-        );
-        setSectionData(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        if (stale) {
-          return;
-        }
-        console.error(err);
-        setError(err instanceof Error ? err : new Error(String(err)));
-        setLoading(false);
+        return sectionResult;
       });
+
+      setSectionData(data);
+      setLoading(false);
+
+      // Surface the first error so the UI can indicate a partial load failure
+      const failures = settledResults.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.error('Some patient summary searches failed:', failures.map((f) => f.reason));
+        const firstError = failures[0].reason;
+        setError(firstError instanceof Error ? firstError : new Error(String(firstError)));
+      }
+    });
 
     return () => {
       stale = true;

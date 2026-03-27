@@ -50,13 +50,14 @@ export function summaryResourceListSection(options: SummaryResourceListOptions):
     title: options.title,
     searches: [
       {
+        key: options.key,
         resourceType: options.search.resourceType,
         patientParam: options.search.patientParam,
         query: options.search.query,
       },
     ],
-    render: (context: SectionRenderContext) => (
-      <ResourceListDisplay options={options} resources={context.results[0] ?? []} context={context} />
+    component: (context: SectionRenderContext) => (
+      <ResourceListDisplay options={options} resources={context.results[options.key] ?? []} context={context} />
     ),
   };
 }

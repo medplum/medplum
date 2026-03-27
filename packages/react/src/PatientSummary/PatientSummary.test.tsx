@@ -74,7 +74,7 @@ describe('PatientSummary', () => {
     const customSection: PatientSummarySectionConfig = {
       key: 'custom-test',
       title: 'Custom Section',
-      render: ({ patient }) => <div data-testid="custom-section">Custom content for {patient.id}</div>,
+      component: ({ patient }) => <div data-testid="custom-section">Custom content for {patient.id}</div>,
     };
 
     await setup({
@@ -125,9 +125,9 @@ describe('PatientSummary', () => {
     const selfContainedSection: PatientSummarySectionConfig = {
       key: 'self-contained',
       title: 'Self Contained',
-      render: ({ patient, results }) => (
+      component: ({ patient, results }) => (
         <div data-testid="self-contained">
-          Patient: {patient.id}, Results count: {results.length}
+          Patient: {patient.id}, Results count: {Object.keys(results).length}
         </div>
       ),
     };
@@ -517,12 +517,13 @@ describe('PatientSummary', () => {
       title: 'String Query Section',
       searches: [
         {
+          key: 'observations',
           resourceType: 'Observation',
           patientParam: 'subject',
           query: 'category=vital-signs',
         },
       ],
-      render: ({ results }) => <div data-testid="string-query">Results: {results.length}</div>,
+      component: ({ results }) => <div data-testid="string-query">Results: {results['observations']?.length ?? 0}</div>,
     };
 
     await setup({
@@ -542,12 +543,15 @@ describe('PatientSummary', () => {
       title: 'URLSearchParams Query Section',
       searches: [
         {
+          key: 'observations',
           resourceType: 'Observation',
           patientParam: 'subject',
           query: params,
         },
       ],
-      render: ({ results }) => <div data-testid="urlsearchparams-query">Results: {results.length}</div>,
+      component: ({ results }) => (
+        <div data-testid="urlsearchparams-query">Results: {results['observations']?.length ?? 0}</div>
+      ),
     };
 
     await setup({
@@ -564,12 +568,13 @@ describe('PatientSummary', () => {
       title: 'Array Query Section',
       searches: [
         {
+          key: 'observations',
           resourceType: 'Observation',
           patientParam: 'subject',
           query: [['category', 'vital-signs']],
         },
       ],
-      render: ({ results }) => <div data-testid="array-query">Results: {results.length}</div>,
+      component: ({ results }) => <div data-testid="array-query">Results: {results['observations']?.length ?? 0}</div>,
     };
 
     await setup({
@@ -625,12 +630,12 @@ describe('PatientSummary', () => {
       key: 'multi-search',
       title: 'Multi Search',
       searches: [
-        { resourceType: 'Condition', patientParam: 'subject' },
-        { resourceType: 'Observation', patientParam: 'subject' },
+        { key: 'conditions', resourceType: 'Condition', patientParam: 'subject' },
+        { key: 'observations', resourceType: 'Observation', patientParam: 'subject' },
       ],
-      render: ({ results }) => (
+      component: ({ results }) => (
         <div data-testid="multi-search">
-          Search 1: {results[0]?.length ?? 0}, Search 2: {results[1]?.length ?? 0}
+          Search 1: {results['conditions']?.length ?? 0}, Search 2: {results['observations']?.length ?? 0}
         </div>
       ),
     };
