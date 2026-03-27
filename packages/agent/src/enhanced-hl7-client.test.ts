@@ -3,8 +3,7 @@
 import type { ILogger } from '@medplum/core';
 import { Hl7Message, TypedEventTarget } from '@medplum/core';
 import { Hl7Server, ReturnAckCategory } from '@medplum/hl7';
-import { EnhancedHl7Client } from './enhanced-hl7-client';
-import { createMockLogger } from './test-utils';
+import { createMockLogger, createTestEnhancedHl7Client } from './test-utils';
 import type { HeartbeatEmitter } from './types';
 
 describe('EnhancedHl7Client', () => {
@@ -38,7 +37,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -68,7 +67,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -99,7 +98,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -135,7 +134,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -171,7 +170,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -214,7 +213,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -255,7 +254,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -284,7 +283,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('startTrackingStats', () => {
     test('Does not start tracking if already tracking', async () => {
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port: 9999,
         log: mockLogger,
@@ -314,7 +313,7 @@ describe('EnhancedHl7Client', () => {
 
   describe('stopTrackingStats', () => {
     test('Calls cleanup on stats tracker when stopping', async () => {
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port: 9999,
         log: mockLogger,
@@ -336,7 +335,7 @@ describe('EnhancedHl7Client', () => {
     });
 
     test('Does not error when stopping tracking when not tracking', async () => {
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port: 9999,
         log: mockLogger,
@@ -370,7 +369,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -410,7 +409,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,
@@ -447,7 +446,7 @@ describe('EnhancedHl7Client', () => {
       });
       await server.start(port);
 
-      const client = new EnhancedHl7Client({
+      const { client } = createTestEnhancedHl7Client({
         host: 'localhost',
         port,
         log: mockLogger,

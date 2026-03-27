@@ -3465,6 +3465,133 @@ describe('App', () => {
     console.log = originalConsoleLog;
   });
 
+  test('Pool persists in hl7Clients after client error — only cleared on keepAlive change', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    const state = {
+      mySocket: undefined as Client | undefined,
+      transmitResponses: [] as AgentTransmitResponse[],
+    };
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:transmit:response') {
+          state.transmitResponses.push(command);
+        }
+      });
+    });
+
+    // Create agent with keepAlive enabled
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      setting: [{ name: 'keepAlive', valueBoolean: true }],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Start an HL7 server that ACKs messages
+    const hl7Server = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server.start(57110);
+
+    const hl7MessageBody =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-';
+
+    // Send a transmit request to create a pool
+    state.mySocket.send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody,
+          remote: 'mllp://localhost:57110',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    // Wait for the response
+    while (state.transmitResponses.length < 1) {
+      await sleep(100);
+    }
+
+    // Pool should exist
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+
+    // Stop the HL7 server — this closes connections from the server side
+    await hl7Server.stop();
+
+    // Wait for the close to propagate (client removed from pool, but pool stays)
+    await sleep(200);
+
+    // Pool should STILL be in hl7Clients — it is never removed by client errors
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.has('mllp://localhost:57110')).toBe(true);
+
+    // The pool should have no clients (they were removed when the connection closed)
+    const pool = app.hl7Clients.get('mllp://localhost:57110') as Hl7ClientPool;
+    expect(pool.size()).toBe(0);
+
+    // Restart the HL7 server
+    const hl7Server2 = new Hl7Server((conn) => {
+      conn.addEventListener('message', ({ message }) => {
+        conn.send(message.buildAck());
+      });
+    });
+    await hl7Server2.start(57110);
+
+    // Send another transmit request — should succeed using the same pool
+    state.transmitResponses = [];
+    (state.mySocket as Client).send(
+      Buffer.from(
+        JSON.stringify({
+          type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
+          body: hl7MessageBody.replace('MSG00001', 'MSG00002'),
+          remote: 'mllp://localhost:57110',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentTransmitRequest)
+      )
+    );
+
+    while (state.transmitResponses.length < 1) {
+      await sleep(100);
+    }
+
+    // Pool should still be the same one — not recreated
+    expect(app.hl7Clients.size).toBe(1);
+    expect(app.hl7Clients.get('mllp://localhost:57110')).toBe(pool);
+
+    // The second transmit should have succeeded
+    expect(state.transmitResponses[0].statusCode).toBe(200);
+
+    await app.stop();
+    await hl7Server2.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    console.log = originalConsoleLog;
+  });
+
   describe('Stats tracking for HL7 clients', () => {
     test('When keepAlive is off, clients should not track stats', async () => {
       const originalConsoleLog = console.log;

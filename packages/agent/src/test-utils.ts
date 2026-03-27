@@ -1,13 +1,19 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { ILogger } from '@medplum/core';
-import { LogLevel } from '@medplum/core';
+import { LogLevel, TypedEventTarget } from '@medplum/core';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import type { ExtendedHl7ClientOptions } from './enhanced-hl7-client';
+import { EnhancedHl7Client } from './enhanced-hl7-client';
+import type { Hl7ClientPoolOptions } from './hl7-client-pool';
+import { Hl7ClientPool } from './hl7-client-pool';
+import { Hl7MessageTracker } from './hl7-message-tracker';
 import type { AgentLoggerConfig } from './logger';
 import { DEFAULT_LOGGER_CONFIG, LoggerType, WinstonWrapperLogger } from './logger';
+import type { HeartbeatEmitter } from './types';
 
 /**
  * Creates a Winston logger for testing purposes similar to how it's done in agent-main.ts
@@ -75,4 +81,24 @@ export function generateTestLogs(
 
     logMethod.call(logger, message, metadata);
   }
+}
+
+export function createTestEnhancedHl7Client(
+  options: Omit<ExtendedHl7ClientOptions, 'messageTracker'> & { messageTracker?: Hl7MessageTracker }
+): { client: EnhancedHl7Client; messageTracker: Hl7MessageTracker } {
+  const messageTracker = options.messageTracker ?? new Hl7MessageTracker();
+  const client = new EnhancedHl7Client({ ...options, messageTracker });
+  return { client, messageTracker };
+}
+
+export function createTestHl7ClientPool(
+  options: Omit<Hl7ClientPoolOptions, 'messageTracker' | 'heartbeatEmitter'> & {
+    messageTracker?: Hl7MessageTracker;
+    heartbeatEmitter?: HeartbeatEmitter;
+  }
+): { pool: Hl7ClientPool; messageTracker: Hl7MessageTracker; heartbeatEmitter: HeartbeatEmitter } {
+  const messageTracker = options.messageTracker ?? new Hl7MessageTracker();
+  const heartbeatEmitter = options.heartbeatEmitter ?? (new TypedEventTarget() as HeartbeatEmitter);
+  const pool = new Hl7ClientPool({ ...options, messageTracker, heartbeatEmitter });
+  return { pool, messageTracker, heartbeatEmitter };
 }
