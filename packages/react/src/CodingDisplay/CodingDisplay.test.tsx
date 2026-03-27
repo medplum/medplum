@@ -18,4 +18,9 @@ describe('CodingDisplay', () => {
   test('Renders undefined value', () => {
     render(<CodingDisplay />);
   });
+
+  test('Renders display with code when includeCode is true', () => {
+    render(<CodingDisplay value={{ display: 'Display Text', code: '123' }} includeCode />);
+    expect(screen.getByText('Display Text (123)')).toBeInTheDocument();
+  });
 });

@@ -150,9 +150,9 @@ import {
   DeleteQuery,
   Disjunction,
   InsertQuery,
+  isRetryableTransactionError,
   normalizeDatabaseError,
   periodToRangeString,
-  PostgresError,
   SelectQuery,
   truncateTextColumn,
 } from './sql';
@@ -160,7 +160,6 @@ import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 type CallbackFrame = {
   pre: number;
@@ -347,11 +346,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   /**
    * Use this when you need elevated privileges within request handling.
-   * @param conn - Optional database client.
+   * This reuses the same DB connection, if one exists, to stay within the same transaction.
    * @returns a SystemRepository for the same shard as this repository.
    */
-  getSystemRepo(conn?: PoolClient): SystemRepository {
-    return createSystemRepository(this.shardId, conn);
+  getSystemRepo(): SystemRepository {
+    return createSystemRepository(this.shardId, this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
@@ -369,6 +368,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   currentProject(): WithId<Project> | undefined {
     return this.context.currentProject;
+  }
+
+  effectiveAccessPolicy(): Readonly<AccessPolicy> | undefined {
+    return this.context.accessPolicy;
   }
 
   /**
@@ -705,7 +708,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+  async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<WithId<T>> {
     await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
@@ -1408,7 +1411,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      await addSubscriptionJobs(resource, resource, {
+      await addBackgroundJobs(resource, resource, {
         project: await this.getProjectById(resource.meta?.project),
         interaction: 'delete',
       });
@@ -2146,7 +2149,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         accounts.add(account.reference as string);
       }
     } else {
-      const systemRepo = this.getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const systemRepo = this.getSystemRepo();
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
@@ -2541,7 +2544,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // Ensure transaction is rolled back before attempting any retry
         await this.rollbackTransaction(operationOutcomeError);
-        if (!this.isRetryableTransactionError(operationOutcomeError)) {
+        if (this.transactionDepth || !isRetryableTransactionError(operationOutcomeError)) {
           break; // Fall through to throw statement outside of the loop
         }
       } finally {
@@ -2714,34 +2717,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (frame.post !== this.postCommitCallbacks.length) {
       this.postCommitCallbacks = this.postCommitCallbacks.slice(0, frame.post);
     }
-  }
-
-  /**
-   * Checks whether an error represents a serialization conflict that can safely be retried.
-   * NOTE: Retrying a transaction must be done in full: the entire `Repository.withTransaction()` block
-   * should be re-executed, in a new transaction.
-   * @param err - The error to check.
-   * @returns True if the error indicates a retryable transaction failure.
-   */
-  private isRetryableTransactionError(err: OperationOutcomeError): boolean {
-    if (this.transactionDepth) {
-      // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
-      // the entire transaction must have been rolled back before anything can be retried:
-      // "It is important to retry the complete transaction, including all logic
-      // that decides which SQL to issue and/or which values to use"
-      // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
-      return false;
-    }
-    if (err.outcome.issue.length !== 1) {
-      // Multiple errors combined cannot be guaranteed to be retryable
-      return false;
-    }
-
-    const issue = err.outcome.issue[0];
-    return Boolean(
-      issue.code === 'conflict' &&
-      issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
-    );
   }
 
   /**
@@ -2972,6 +2947,20 @@ function createSystemRepository(shardId: string, conn?: PoolClient): SystemRepos
   );
 }
 
+/*
+SystemRepository getters in order of preference:
+
+1. repo.getSystemRepo() - If a non-system repo is already available, elevate it to a SystemRepository
+2. AuthenticatedRequestContext.systemRepo() - If in an authenticated request handler, a shortcut for ctx.repo.getSystemRepo()
+3. getProjectSystemRepo(projectOrIdOrReference) - If a project, project ID, or Project reference is available. This should
+    typically be used in pre-authed code before an AuthenticatedRequestContext has been established.
+4. getGlobalSystemRepo() - If none of the above are applicable, the global system last resort. There should
+    be a very good reason for using it; often also in pre-auth code. Supply a comment explaining why its being used.
+
+You'll also notice getShardSystemRepo(), but there's very little reason this one should be needed right now. It's
+mostly intended for system-level, super-admin triggered operations against a particular DB.
+*/
+
 /**
  * Returns a SystemRepository for the global shard.
  *
@@ -3008,7 +2997,9 @@ export function getShardSystemRepo(shardId: string, client?: PoolClient): System
  * @param _projectId - The project's ID, reference, or resource.
  * @returns A SystemRepository for the project's shard.
  */
-export function getProjectSystemRepo(_projectId: string | Reference<Project> | WithId<Project>): SystemRepository {
+export async function getProjectSystemRepo(
+  _projectId: string | Reference<Project> | WithId<Project>
+): Promise<SystemRepository> {
   // Eventually, this will resolve the project's shard and return
   // a SystemRepository for that shard.
   // But for now, all projects are on the global shard.

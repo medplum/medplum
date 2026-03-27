@@ -22,7 +22,7 @@ import { authenticator } from 'otplib';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { sendEmail } from '../email/email';
 import type { SystemRepository } from '../fhir/repo';
 import { getProjectSystemRepo } from '../fhir/repo';
@@ -70,7 +70,7 @@ export interface ServerInviteResponse {
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
-  const systemRepo = getProjectSystemRepo(request.project);
+  const systemRepo = await getProjectSystemRepo(request.project);
   const logger = getLogger();
 
   if (request.email) {
@@ -120,7 +120,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
               operator: Operator.EXACT,
               value: email,
             },
-            request.resourceType === 'Patient' || request.scope === 'project'
+            userResource.project
               ? { code: 'project', operator: Operator.EQUALS, value: `Project/${project.id}` }
               : { code: 'project', operator: Operator.MISSING, value: 'true' },
           ],
@@ -334,6 +334,7 @@ async function upsertProjectMembership(
     accessPolicy: request.accessPolicy,
     access: request.access,
     admin: request.admin,
+    invitedBy: tryGetRequestContext()?.authState?.membership?.user,
     ...request.membership,
   };
 

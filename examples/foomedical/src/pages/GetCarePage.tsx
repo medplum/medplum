@@ -25,7 +25,11 @@ export function GetCare(): JSX.Element {
       return [];
     }
 
-    const params = new URLSearchParams({ start: period.start, end: period.end });
+    const params = new URLSearchParams({
+      start: period.start,
+      end: period.end,
+      'service-type': 'office-visit',
+    });
     const findUrl = medplum.fhirUrl('Schedule', schedule.id, '$find');
     const bundle = await medplum.get<Bundle<Slot>>(`${findUrl}?${params}`);
     return bundle.entry?.map((entry) => entry.resource).filter(isDefined) ?? [];

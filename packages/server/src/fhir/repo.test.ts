@@ -79,7 +79,7 @@ describe('FHIR Repo', () => {
       resourceType: 'Project',
       id: randomUUID(),
     });
-    systemRepo = getProjectSystemRepo(testProject);
+    systemRepo = await getProjectSystemRepo(testProject);
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
@@ -94,7 +94,7 @@ describe('FHIR Repo', () => {
   });
 
   test('getRepoForLogin', async () => {
-    await expect(() =>
+    await expect(
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
         membership: {
@@ -105,7 +105,7 @@ describe('FHIR Repo', () => {
         project: testProject,
         userConfig: {} as UserConfiguration,
       })
-    ).rejects.toThrow('Invalid author reference');
+    ).rejects.toThrow('Invalid reference');
   });
 
   test('Read resource with undefined id', async () => {
@@ -631,6 +631,20 @@ describe('FHIR Repo', () => {
           { ifMatch: 'bad-id' }
         )
       ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
+    }));
+
+  test('Patch resource with implicit array creation', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(patient.resourceType, patient.id, [
+        { op: 'add', path: '/identifier/-', value: { system: 'https://example.com', value: '123' } },
+      ]);
+      expect(patched.identifier?.at(0)?.system).toStrictEqual('https://example.com');
+      expect(patched.identifier?.at(0)?.value).toStrictEqual('123');
     }));
 
   test('Compartment permissions', () =>

@@ -1067,19 +1067,6 @@ export const Choices = (): JSX.Element => (
                   coding: [
                     {
                       system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
                       code: 'multi-select',
                       display: 'Multi select',
                     },
@@ -1697,6 +1684,20 @@ export const KitchenSink = (): JSX.Element => (
             linkId: 'quantity',
             type: 'quantity',
             text: 'Quantity',
+          },
+        ],
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'urn:iso-astm:E1762-95:2013',
+                  code: '1.2.840.10065.1.12.1.1',
+                  display: "Author's Signature",
+                },
+              ],
+            },
           },
         ],
       }}

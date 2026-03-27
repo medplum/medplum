@@ -6,6 +6,7 @@ import { isString, splitN } from '@medplum/core';
 import type { Binary } from '@medplum/fhirtypes';
 import type { IncomingMessage } from 'node:http';
 import type { Readable } from 'node:stream';
+import type { PresignedUrlOptions } from '../../storage/base';
 import { BaseBinaryStorage } from '../../storage/base';
 import type { BinarySource } from '../../storage/types';
 
@@ -66,7 +67,7 @@ export class AzureBlobStorage extends BaseBinaryStorage {
     await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
   }
 
-  async getPresignedUrl(binary: Binary): Promise<string> {
+  async getPresignedUrl(binary: Binary, opts?: PresignedUrlOptions): Promise<string> {
     const blobClient = this.containerClient.getBlobClient(this.getKey(binary));
 
     // we need to get this key to generate the SAS URL with the medplum managed identity
@@ -81,6 +82,10 @@ export class AzureBlobStorage extends BaseBinaryStorage {
 
     const permissions = new BlobSASPermissions();
     permissions.read = true;
+    if (opts?.upload) {
+      permissions.write = true;
+      permissions.create = true;
+    }
 
     const generateSasUrlOptions = {
       expiresOn: expiry,

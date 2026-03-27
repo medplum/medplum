@@ -22,6 +22,8 @@ import {
   calculateAge,
   calculateAgeString,
   capitalize,
+  codeableConceptMatchesToken,
+  codingMatchesToken,
   concatUrls,
   createReference,
   deepClone,
@@ -876,6 +878,51 @@ describe('Core Utils', () => {
     expect(findCodeBySystem(categories, 'x')).toStrictEqual('1');
     expect(findCodeBySystem(categories, 'y')).toStrictEqual('2');
     expect(findCodeBySystem(categories, 'z')).toStrictEqual(undefined);
+  });
+
+  test('codingMatchesToken', () => {
+    expect(codingMatchesToken({ code: 'hello' }, 'hello')).toStrictEqual(true);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'hello')).toStrictEqual(true);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'world')).toStrictEqual(false);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'world')).toStrictEqual(false);
+
+    expect(codingMatchesToken({ code: 'hello' }, '|hello')).toStrictEqual(true);
+    expect(codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, '|hello')).toStrictEqual(false);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'https://example.com/fhir|')).toStrictEqual(false);
+    expect(
+      codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'https://example.com/fhir|')
+    ).toStrictEqual(true);
+
+    expect(codingMatchesToken({ code: 'hello' }, 'https://example.com/fhir|hello')).toStrictEqual(false);
+    expect(
+      codingMatchesToken({ system: 'https://example.com/fhir', code: 'hello' }, 'https://example.com/fhir|hello')
+    ).toStrictEqual(true);
+  });
+
+  test('codeableConceptMatchesToken', () => {
+    // true when there is one coding that matches
+    expect(codeableConceptMatchesToken({ coding: [{ code: 'hello' }] }, 'hello')).toEqual(true);
+
+    // returns true when there are multiple codings and at least one matches
+    expect(codeableConceptMatchesToken({ coding: [{ code: 'different' }, { code: 'hello' }] }, 'hello')).toEqual(true);
+
+    // returns false when no coding matches
+    expect(
+      codeableConceptMatchesToken(
+        {
+          coding: [
+            { code: 'different' },
+            { code: 'hello' }, // not a match: no `system` component
+          ],
+        },
+        'https://example.com/fhir|hello'
+      )
+    ).toEqual(false);
+
+    // returns false when the concept has no codings
+    expect(codeableConceptMatchesToken({}, 'hello')).toEqual(false);
   });
 
   test('Capitalize', () => {

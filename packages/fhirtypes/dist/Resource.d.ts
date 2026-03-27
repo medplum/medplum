@@ -115,6 +115,9 @@ import type { OperationDefinition } from './OperationDefinition.d.ts';
 import type { OperationOutcome } from './OperationOutcome.d.ts';
 import type { Organization } from './Organization.d.ts';
 import type { OrganizationAffiliation } from './OrganizationAffiliation.d.ts';
+import type { Package } from './Package.d.ts';
+import type { PackageInstallation } from './PackageInstallation.d.ts';
+import type { PackageRelease } from './PackageRelease.d.ts';
 import type { Parameters } from './Parameters.d.ts';
 import type { Patient } from './Patient.d.ts';
 import type { PaymentNotice } from './PaymentNotice.d.ts';
@@ -278,6 +281,9 @@ export type Resource = AccessPolicy
   | OperationOutcome
   | Organization
   | OrganizationAffiliation
+  | Package
+  | PackageInstallation
+  | PackageRelease
   | Parameters
   | Patient
   | PaymentNotice

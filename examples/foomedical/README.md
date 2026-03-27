@@ -80,6 +80,48 @@ Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [
 
 When you log into Foo Medical a set of sample FHIR records is created on your behalf. The ability to run automations is part of the Medplum platform using a framework called [Bots](https://www.medplum.com/docs/bots). For reference, Bot that created the records in Foo Medical can be found [here](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts).
 
+### Scheduling
+
+The "Get Care" page is configured to search for availability with service-type "office-visit". Configure your practitioner's schedule with a Medplum scheduling extension such as this one:
+```
+{
+  "resourceType": "Schedule",
+  "active": true,
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/SchedulingParameters",
+      "extension": [
+        {
+          "url": "serviceType",
+          "valueCodeableConcept": {
+            "coding": [{"code": "office-visit"}]
+          }
+        },
+        {
+          "url": "duration",
+          "valueDuration": {
+            "value": 1,
+            "unit": "h"
+          }
+        },
+        {
+          "url": "availability",
+          "valueTiming": {
+            "repeat": {
+              "dayOfWeek": ["mon", "tue", "wed", "thu"],
+              "timeOfDay": ["09:00:00"],
+              "duration": 8,
+              "durationUnit": "h"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
+```
+
 ### Compliance
 
 Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set up requires registering on [medplum.com](https://www.medplum.com/). Feel free to ask us questions in real time on our [Discord Server](https://discord.gg/medplum).

@@ -11,23 +11,28 @@ import { Hl7Server } from './server';
 import { MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
-  const usedPorts = [] as number[];
-
-  // Helper function to get a random port number
-  // This helps avoid conflicts when running tests in parallel
-  function getRandomPort(): number {
-    let port = Math.floor(Math.random() * 10000) + 30000;
-    while (usedPorts.includes(port)) {
-      port = Math.floor(Math.random() * 10000) + 30000;
-    }
-
-    // Once we have an unused port, add it to used ports and return it
-    usedPorts.push(port);
-    return port;
+  // Used only for tests that need a free port number with *nothing* listening on it.
+  // For tests that start an Hl7Server, prefer `server.start(0)` which returns the OS-assigned
+  // port and never has a release-then-rebind window.
+  async function getFreePort(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const server = createServer();
+      server.listen(0, () => {
+        const { port } = server.address() as { port: number };
+        server.close((err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(port);
+          }
+        });
+      });
+      server.on('error', reject);
+    });
   }
 
   describe('sendAndWait', () => {
-    const port = getRandomPort();
+    let port: number;
     const defaultResponseCb = (message: Hl7Message): Hl7Message => {
       return message.buildAck();
     };
@@ -47,7 +52,7 @@ describe('Hl7Client', () => {
           }
         });
       });
-      await hl7Server.start(port);
+      port = await hl7Server.start(0);
     });
 
     beforeEach(async () => {
@@ -123,7 +128,7 @@ describe('Hl7Client', () => {
 
       // Listen for warning events
       let warningEvent: any = null;
-      hl7Client.addEventListener('error', (event) => {
+      hl7Client.addEventListener('warning', (event) => {
         if (
           event.error instanceof OperationOutcomeError &&
           isOperationOutcome(event.error.outcome) &&
@@ -345,7 +350,7 @@ describe('Hl7Client', () => {
   // Test the basic connection and timeout functionality
   test('Connection timeout when server is unreachable', async () => {
     // Use a port where no server is running
-    const unreachablePort = getRandomPort();
+    const unreachablePort = await getFreePort();
 
     // Create client with a short timeout (500ms)
     const client = new Hl7Client({
@@ -363,7 +368,7 @@ describe('Hl7Client', () => {
 
   // Test sending to a non-responsive server
   test('Connection timeout when server does not respond', async () => {
-    const port = getRandomPort();
+    const port = await getFreePort();
 
     // Create client with a short timeout
     const client = new Hl7Client({
@@ -381,8 +386,6 @@ describe('Hl7Client', () => {
 
   // Test cancelling a connection attempt
   test('Cancel connection attempt', async () => {
-    const port = getRandomPort();
-
     // Create a server that delays accepting connections
     const state = {
       pendingSocket: undefined as Socket | undefined,
@@ -392,9 +395,11 @@ describe('Hl7Client', () => {
       // We'll handle the socket manually later
     });
 
-    // Start the server
-    await new Promise<void>((resolve) => {
-      slowServer.listen(port, () => resolve());
+    // Start the server on port 0; read back the OS-assigned port
+    const port = await new Promise<number>((resolve) => {
+      slowServer.listen(0, () => {
+        resolve((slowServer.address() as { port: number }).port);
+      });
     });
 
     // Create client with a long timeout
@@ -429,8 +434,6 @@ describe('Hl7Client', () => {
 
   // Test making multiple connection attempts in succession
   test('Multiple connection attempts do not create parallel connections', async () => {
-    const port = getRandomPort();
-
     // Track connection count
     const state = {
       maxParallelConnections: 0,
@@ -447,9 +450,11 @@ describe('Hl7Client', () => {
       });
     });
 
-    // Start the server
-    await new Promise<void>((resolve) => {
-      server.listen(port, resolve);
+    // Start the server on port 0; read back the OS-assigned port
+    const port = await new Promise<number>((resolve) => {
+      server.listen(0, () => {
+        resolve((server.address() as { port: number }).port);
+      });
     });
 
     // Create client with a moderate timeout
@@ -495,7 +500,16 @@ describe('Hl7Client', () => {
 
   // Test successful connection after timeout
   test('Can connect again after a timeout', async () => {
-    const port = getRandomPort();
+    // Start the server on port 0 just to claim an OS-assigned port, then stop it.
+    // This is race-free: the port is assigned by the OS, we hold it until stop() returns,
+    // and then immediately attempt a failing connect before any other process can claim it.
+    const server = new Hl7Server((connection) => {
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
+    });
+    const port = await server.start(0);
+    await server.stop();
 
     // Create a client with a very short timeout
     const client = new Hl7Client({
@@ -504,16 +518,10 @@ describe('Hl7Client', () => {
       connectTimeout: 100,
     });
 
-    // First connection should fail (no server)
+    // First connection should fail (server was stopped)
     await expect(client.connect()).rejects.toThrow();
 
-    // Now start a server
-    const server = new Hl7Server((connection) => {
-      connection.addEventListener('message', ({ message }) => {
-        connection.send(message.buildAck());
-      });
-    });
-
+    // Restart the server on the same port
     await server.start(port);
 
     // Second connection attempt should succeed
@@ -536,8 +544,6 @@ describe('Hl7Client', () => {
 
   // Test case for reusing connection
   test('Reuses connection if already connected', async () => {
-    const port = getRandomPort();
-
     // Track connection count
     let connectionCount = 0;
 
@@ -549,7 +555,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    await server.start(port);
+    const port = await server.start(0);
 
     // Create client
     const client = new Hl7Client({
@@ -583,8 +589,6 @@ describe('Hl7Client', () => {
   });
 
   test('Creates new connection whenever connection is closed from other side and a new message is sent', async () => {
-    const port = getRandomPort();
-
     let serverSideConnection!: Hl7Connection;
 
     // Create a server that tracks connection counts
@@ -595,7 +599,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    await server.start(port);
+    const port = await server.start(0);
 
     // Create client with keepAlive = true
     const client = new Hl7Client({
@@ -613,11 +617,17 @@ describe('Hl7Client', () => {
 
     expect(ack).toBeDefined();
 
+    // Register the listener before closing so we don't miss the event
+    const clientClosedPromise = new Promise<void>((resolve) => {
+      client.addEventListener('close', () => resolve(), { once: true });
+    });
+
     await serverSideConnection.close();
 
-    // We need to wait until next tick for client-side to close their connection in response to server-side closing
-    // Otherwise when we go to send, the first tick the connection won't show as closed
-    await sleep(0);
+    // Wait for the client to actually acknowledge the close, rather than using sleep(0).
+    // sleep(0) uses setTimeout which fires in the timers phase, before the I/O poll phase where
+    // the socket close event is processed — making sleep(0) an unreliable synchronization point.
+    await clientClosedPromise;
 
     // Should succeed
     ack = await client.sendAndWait(

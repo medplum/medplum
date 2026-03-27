@@ -1,12 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { badRequest, createReference } from '@medplum/core';
-import type { Login, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { badRequest } from '@medplum/core';
+import type { Login, Reference, User } from '@medplum/fhirtypes';
 import type { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createProject } from '../fhir/operations/projectinit';
 import { sendOutcome } from '../fhir/outcomes';
 import { getGlobalSystemRepo } from '../fhir/repo';
+import { setLoginMembership } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 
 export interface NewProjectRequest {
@@ -38,12 +39,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const { membership } = await createProject(projectName, user);
-
-  // Set the membership on the login
-  const updatedLogin = await systemRepo.updateResource<Login>({
-    ...login,
-    membership: createReference(membership as ProjectMembership),
-  });
+  const updatedLogin = await setLoginMembership(login, membership);
 
   res.status(200).json({
     login: updatedLogin.id,

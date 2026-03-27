@@ -3,10 +3,10 @@
 import {
   allOk,
   badRequest,
+  codeableConceptMatchesToken,
   createReference,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
-  EMPTY,
   OperationOutcomeError,
   Operator,
 } from '@medplum/core';
@@ -33,7 +33,7 @@ const findOperation = {
   parameter: [
     { use: 'in', name: 'start', type: 'dateTime', min: 1, max: '1' },
     { use: 'in', name: 'end', type: 'dateTime', min: 1, max: '1' },
-    { use: 'in', name: 'service-type', type: 'string', min: 0, max: '*' },
+    { use: 'in', name: 'service-type', type: 'string', min: 1, max: '*' },
     { use: 'in', name: '_count', type: 'integer', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 0, max: '1' },
   ],
@@ -42,7 +42,7 @@ const findOperation = {
 type FindParameters = {
   start: string;
   end: string;
-  'service-type'?: string;
+  'service-type': string;
   _count?: number;
 };
 
@@ -50,29 +50,20 @@ type FindParameters = {
 // [SchedulingParameters, serviceType] pairs.
 //
 // - Each schedulingParameters description is returned at most once
-// - If no specific matches are found, falls back to "wildcard" matches
-//   (scheduling parameters having no associated codes match any input codes)
 function filterByServiceTypes(
   schedulingParameters: SchedulingParameters[],
-  serviceTypes: string[]
-): [SchedulingParameters, CodeableConcept | undefined][] {
-  if (serviceTypes.length) {
-    const results: [SchedulingParameters, CodeableConcept][] = [];
-    for (const params of schedulingParameters) {
-      const serviceType = params.serviceType.find((codeableConcept) =>
-        codeableConcept.coding?.some((coding) => serviceTypes.includes(`${coding.system}|${coding.code}`))
-      );
-      if (serviceType) {
-        results.push([params, serviceType]);
-      }
-    }
-    if (results.length) {
-      return results;
+  serviceTypeTokens: string[]
+): [SchedulingParameters, CodeableConcept][] {
+  const results: [SchedulingParameters, CodeableConcept][] = [];
+  for (const params of schedulingParameters) {
+    const serviceType = params.serviceType.find((codeableConcept) =>
+      serviceTypeTokens.some((token) => codeableConceptMatchesToken(codeableConcept, token))
+    );
+    if (serviceType) {
+      results.push([params, serviceType]);
     }
   }
-
-  // We didn't find any parameters matching serviceType entries, use any wildcard results instead
-  return schedulingParameters.filter((params) => params.serviceType.length === 0).map((params) => [params, undefined]);
+  return results;
 }
 
 /**
@@ -90,7 +81,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   const { start, end, _count } = params;
 
   // service types are in `${system}|${code}` format, in a comma separated list
-  const serviceTypes = params['service-type']?.split(',') ?? [];
+  const serviceTypeTokens = params['service-type']?.split(',');
 
   const pageSize = _count ?? DEFAULT_SEARCH_COUNT;
   if (pageSize < 1) {
@@ -162,9 +153,14 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
   }
 
   const allSchedulingParameters = parseSchedulingParametersExtensions(schedule);
+  const matchingSchedulingParameters = filterByServiceTypes(allSchedulingParameters, serviceTypeTokens);
+
+  if (matchingSchedulingParameters.length === 0) {
+    throw new OperationOutcomeError(badRequest('No scheduling parameters found for the requested service type(s)'));
+  }
 
   const resultSlots: Slot[] = flatMapMax(
-    filterByServiceTypes(allSchedulingParameters, serviceTypes),
+    matchingSchedulingParameters,
     ([schedulingParameters, serviceType], _idx, maxCount) => {
       // If the scheduling parameters explicitly declare a timezone, use it instead of the actor's TZ
       const activeTimeZone = schedulingParameters.timezone ?? actorTimeZone;
@@ -173,7 +169,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         availability,
         slots,
         range,
-        serviceType: serviceType ? [serviceType] : EMPTY,
+        serviceType: [serviceType],
       });
       return findSlotTimes(schedulingParameters, availability, { maxCount }).map(({ start, end }) => ({
         resourceType: 'Slot',
@@ -181,7 +177,7 @@ export async function scheduleFindHandler(req: FhirRequest): Promise<FhirRespons
         end: end.toISOString(),
         schedule: createReference(schedule),
         status: 'free',
-        ...(serviceType ? { serviceType: [serviceType] } : {}),
+        serviceType: [serviceType],
       }));
     },
     pageSize

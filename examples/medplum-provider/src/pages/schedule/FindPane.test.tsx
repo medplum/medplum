@@ -30,7 +30,6 @@ describe('FindPane', () => {
   const serviceType2: CodeableConcept = {
     coding: [
       {
-        system: 'http://example.com/service-types',
         code: 'followup',
       },
     ],
@@ -127,17 +126,6 @@ describe('FindPane', () => {
 
       expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
       expect(screen.getByText('Follow-up Visit')).toBeInTheDocument();
-    });
-
-    test('renders "Other" for undefined service types', async () => {
-      const schedule = createScheduleWithServiceTypes([serviceType1, undefined]);
-
-      await act(async () => {
-        setup({ schedule });
-      });
-
-      expect(screen.getByText('Annual Checkup')).toBeInTheDocument();
-      expect(screen.getByText('Other')).toBeInTheDocument();
     });
   });
 
@@ -325,16 +313,38 @@ describe('FindPane', () => {
       expect(callUrl).toContain('end=');
     });
 
-    test('fetches without service-type param when wildcard (undefined) is selected', async () => {
-      const schedule = createScheduleWithServiceTypes([undefined]);
+    test('uses `system|code` style for service-type parameter', async () => {
+      const user = userEvent.setup();
+      const range = {
+        start: new Date('2024-02-01T00:00:00Z'),
+        end: new Date('2024-02-07T23:59:59Z'),
+      };
 
       await act(async () => {
-        setup({ schedule });
+        setup({ range });
       });
 
-      // With single undefined service type, it auto-selects
-      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] || '';
-      expect(callUrl).not.toContain('service-type=');
+      await user.click(screen.getByText('Annual Checkup'));
+
+      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(callUrl).toContain(`service-type=${encodeURIComponent('http://example.com/service-types|checkup')}`);
+    });
+
+    test('service-type parameters with no system component use "|code" style', async () => {
+      const user = userEvent.setup();
+      const range = {
+        start: new Date('2024-02-01T00:00:00Z'),
+        end: new Date('2024-02-07T23:59:59Z'),
+      };
+
+      await act(async () => {
+        setup({ range });
+      });
+
+      await user.click(screen.getByText('Follow-up Visit'));
+
+      const callUrl = (medplum.get as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(callUrl).toContain(`service-type=${encodeURIComponent('|followup')}`);
     });
   });
 

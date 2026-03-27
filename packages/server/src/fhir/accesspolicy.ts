@@ -17,11 +17,12 @@ import type {
   AccessPolicy,
   AccessPolicyIpAccessRule,
   AccessPolicyResource,
+  Bot,
+  ClientApplication,
   Project,
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
-  Resource,
 } from '@medplum/fhirtypes';
 import { getLogger } from '../logger';
 import type { AuthState } from '../oauth/middleware';
@@ -46,18 +47,20 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
   const globalSystemRepo = getGlobalSystemRepo();
-  const refs: Reference[] = [membership.project, realMembership.profile];
-  const resolved = await globalSystemRepo.readReferences<Resource>(refs);
-
-  if (resolved[0] instanceof Error) {
-    throw resolved[0];
+  let profile: WithId<ProfileResource | Bot | ClientApplication> | undefined = authState.profile;
+  if (!profile) {
+    try {
+      profile = await globalSystemRepo.readReference<ProfileResource | Bot | ClientApplication>(realMembership.profile);
+    } catch (err: unknown) {
+      if (!(err instanceof OperationOutcomeError && isNotFound(err.outcome))) {
+        throw err;
+      }
+    }
   }
-  const project = resolved[0] as WithId<Project>;
-  let profile: WithId<ProfileResource> | undefined;
-  if (isResource(resolved[1])) {
-    profile = resolved[1] as WithId<ProfileResource>;
-  } else if (!(resolved[1] instanceof OperationOutcomeError && isNotFound(resolved[1].outcome))) {
-    throw resolved[1];
+
+  let project = authState.project;
+  if (membership.project.reference !== realMembership.project.reference) {
+    project = await globalSystemRepo.readReference<Project>(membership.project);
   }
 
   const allowedProjects: WithId<Project>[] = [project];
@@ -69,7 +72,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
       }
     }
 
-    const systemRepo = getProjectSystemRepo(project);
+    const systemRepo = await getProjectSystemRepo(project);
     const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
     for (let i = 0; i < linkedProjectsOrError.length; i++) {
       const linkedProjectOrError = linkedProjectsOrError[i];
@@ -138,7 +141,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     access.push(...membership.access);
   }
 
-  const systemRepo = getProjectSystemRepo(membership.project);
+  const systemRepo = await getProjectSystemRepo(membership.project);
   let compartment: Reference | undefined = undefined;
   const resourcePolicies: AccessPolicyResource[] = [];
   const ipAccessRules: AccessPolicyIpAccessRule[] = [];
@@ -307,6 +310,18 @@ function applyProjectAdminAccessPolicy(
         resourceType: 'User',
         hiddenFields: ['passwordHash', 'mfaSecret'],
         readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      },
+      {
+        resourceType: 'Package',
+        readonly: true,
+      },
+      {
+        resourceType: 'PackageRelease',
+        readonly: true,
+      },
+      {
+        resourceType: 'PackageInstallation',
+        readonly: true,
       }
     );
   } else {

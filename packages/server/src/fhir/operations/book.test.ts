@@ -2,7 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 import type { WithId } from '@medplum/core';
 import { createReference, isDefined, parseSearchRequest } from '@medplum/core';
-import type { Appointment, Bundle, Patient, Practitioner, Resource, Schedule, Slot } from '@medplum/fhirtypes';
+import type {
+  Appointment,
+  Bundle,
+  CodeableConcept,
+  Patient,
+  Practitioner,
+  Resource,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import supertest from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -42,6 +51,10 @@ describe('Appointment/$book', () => {
     await shutdownApp();
   });
 
+  const officeVisit: CodeableConcept = {
+    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
+  };
+
   async function makeSchedule(actor: Practitioner): Promise<WithId<Schedule>> {
     return systemRepo.createResource<Schedule>({
       resourceType: 'Schedule',
@@ -51,6 +64,10 @@ describe('Appointment/$book', () => {
         {
           url: 'https://medplum.com/fhir/StructureDefinition/SchedulingParameters',
           extension: [
+            {
+              url: 'serviceType',
+              valueCodeableConcept: officeVisit,
+            },
             {
               url: 'availability',
               valueTiming: {
@@ -107,6 +124,7 @@ describe('Appointment/$book', () => {
             resource: {
               resourceType: 'Slot',
               schedule: createReference(schedule),
+              serviceType: [officeVisit],
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
               status: 'free',
@@ -128,6 +146,7 @@ describe('Appointment/$book', () => {
             name: 'slot',
             resource: {
               resourceType: 'Slot',
+              serviceType: [officeVisit],
               schedule: { reference: 'Schedule/fake-12345' },
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
@@ -160,6 +179,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -176,6 +196,11 @@ describe('Appointment/$book', () => {
     expect(appointments[0]).toHaveProperty('status', 'booked');
     expect(appointments[0]).toHaveProperty('start', start);
     expect(appointments[0]).toHaveProperty('end', end);
+
+    const slots = entries.filter(isSlot).filter((s) => s.status === 'busy');
+    expect(slots).toHaveLength(1);
+    expect(appointments[0].slot).toHaveLength(1);
+    expect(appointments[0].slot?.[0]?.reference).toEqual(`Slot/${slots[0].id}`);
   });
 
   test('creates slots with status: "busy"', async () => {
@@ -198,6 +223,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
           {
@@ -208,6 +234,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -246,6 +273,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
           {
@@ -256,6 +284,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T08:00:00Z',
               end: '2026-01-15T09:00:00Z',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -290,6 +319,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T15:00:00Z',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
           {
@@ -300,6 +330,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T14:30:00Z',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -345,6 +376,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -362,6 +394,38 @@ describe('Appointment/$book', () => {
     // Check no additional slot was created
     const slots = await systemRepo.searchResources<Slot>(parseSearchRequest(`Slot?schedule=Schedule/${schedule.id}`));
     expect(slots).toHaveLength(1);
+  });
+
+  test('fails when trying to use a service type that does not match scheduling parameters', async () => {
+    const schedule = await makeSchedule(practitioner1);
+    const response = await request
+      .post('/fhir/R4/Appointment/$book')
+      .set('Authorization', `Bearer ${project.accessToken}`)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'slot',
+            resource: {
+              resourceType: 'Slot',
+              schedule: createReference(schedule),
+              serviceType: [
+                {
+                  coding: [{ code: 'other' }],
+                },
+              ],
+              start: '2026-01-15T14:00:00Z',
+              end: '2026-01-15T15:00:00Z',
+              status: 'free',
+            } satisfies Slot,
+          },
+        ],
+      });
+    expect(response.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [{ severity: 'error', code: 'invalid', details: { text: 'No matching scheduling parameters found' } }],
+    });
+    expect(response.status).toEqual(400);
   });
 
   test('succeeds when there is an explicit "free" slot at the same time', async () => {
@@ -393,6 +457,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -422,6 +487,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -466,6 +532,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
           {
@@ -476,6 +543,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -517,6 +585,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -568,6 +637,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -593,6 +663,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T14:00:00Z',
               end: '2026-01-15T14:30:00Z',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -643,6 +714,10 @@ describe('Appointment/$book', () => {
                 url: 'alignmentOffset',
                 valueDuration: { value: alignmentOffset, unit: 'min' },
               },
+              {
+                url: 'serviceType',
+                valueCodeableConcept: officeVisit,
+              },
             ],
           },
         ],
@@ -662,6 +737,7 @@ describe('Appointment/$book', () => {
                 start,
                 end,
                 status: 'free',
+                serviceType: [officeVisit],
               } satisfies Slot,
             },
           ],
@@ -698,6 +774,10 @@ describe('Appointment/$book', () => {
               url: 'bufferBefore',
               valueDuration: { value: 20, unit: 'min' },
             },
+            {
+              url: 'serviceType',
+              valueCodeableConcept: officeVisit,
+            },
           ],
         },
       ],
@@ -718,6 +798,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T09:00:00-05:00',
               end: '2026-01-15T10:00:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -739,6 +820,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T10:00:00-05:00',
               end: '2026-01-15T11:00:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -776,6 +858,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T11:00:00-05:00',
               end: '2026-01-15T12:00:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -815,6 +898,10 @@ describe('Appointment/$book', () => {
               url: 'alignmentInterval',
               valueDuration: { value: 15, unit: 'min' },
             },
+            {
+              url: 'serviceType',
+              valueCodeableConcept: officeVisit,
+            },
           ],
         },
       ],
@@ -835,6 +922,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T16:30:00-05:00',
               end: '2026-01-15T17:00:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -856,6 +944,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T16:00:00-05:00',
               end: '2026-01-15T16:30:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -893,6 +982,7 @@ describe('Appointment/$book', () => {
               start: '2026-01-15T15:15:00-05:00',
               end: '2026-01-15T15:45:00-05:00',
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
         ],
@@ -919,6 +1009,7 @@ describe('Appointment/$book', () => {
               start,
               end,
               status: 'free',
+              serviceType: [officeVisit],
             } satisfies Slot,
           },
           {
@@ -1006,6 +1097,10 @@ describe('scheduling flow integration test', () => {
     await shutdownApp();
   });
 
+  const officeVisit: CodeableConcept = {
+    coding: [{ system: 'https://example.com/fhir', code: 'office-visit' }],
+  };
+
   test('a slot from $find can be used as input to $book', async () => {
     const practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
@@ -1057,6 +1152,10 @@ describe('scheduling flow integration test', () => {
               url: 'bufferAfter',
               valueDuration: { value: 15, unit: 'min' },
             },
+            {
+              url: 'serviceType',
+              valueCodeableConcept: officeVisit,
+            },
           ],
         },
       ],
@@ -1068,6 +1167,7 @@ describe('scheduling flow integration test', () => {
       .query({
         start: new Date('2026-01-28T07:00:00.000-07:00'),
         end: new Date('2026-01-28T12:00:00.000-07:00'),
+        'service-type': 'https://example.com/fhir|office-visit',
       });
 
     expect(findResponse.body).not.toHaveProperty('issue');
