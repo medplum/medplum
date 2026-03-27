@@ -53,7 +53,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome, createAuditEvent, ReadInteraction, RestfulOperationType } from '../util/auditevent';
-import * as subscriptionModule from '../workers/subscription';
+import * as workersModule from '../workers';
 import { getRepoForLogin } from './accesspolicy';
 import { getGlobalSystemRepo, getProjectSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { PostgresError, SelectQuery } from './sql';
@@ -1628,7 +1628,7 @@ describe('FHIR Repo', () => {
   test('Retry after create should not execute post-commit hooks from rollback', () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
-      const addSubscriptionJobsSpy = jest.spyOn(subscriptionModule, 'addSubscriptionJobs');
+      const addBackgroundJobsSpy = jest.spyOn(workersModule, 'addBackgroundJobs');
       const patients: WithId<Patient>[] = [];
       let shouldError = true;
 
@@ -1646,8 +1646,8 @@ describe('FHIR Repo', () => {
 
       expect(patients).toHaveLength(2);
       expect(createdPatient).toEqual(patients[1]);
-      expect(addSubscriptionJobsSpy).toHaveBeenCalledTimes(1);
-      expect(addSubscriptionJobsSpy).toHaveBeenCalledWith(
+      expect(addBackgroundJobsSpy).toHaveBeenCalledTimes(1);
+      expect(addBackgroundJobsSpy).toHaveBeenCalledWith(
         {
           resourceType: 'Patient',
           id: createdPatient.id,
@@ -1661,7 +1661,7 @@ describe('FHIR Repo', () => {
         new OperationOutcomeError(notFound)
       );
 
-      addSubscriptionJobsSpy.mockRestore();
+      addBackgroundJobsSpy.mockRestore();
     }));
 
   test('Patch post-commit stores full resource in cache', async () =>
