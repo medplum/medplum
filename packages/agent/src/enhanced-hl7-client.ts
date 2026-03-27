@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import type { Hl7Message, ILogger } from '@medplum/core';
-import type { EnhancedMode, Hl7ClientOptions, Hl7ConnectionOptions, SendAndWaitOptions } from '@medplum/hl7';
-import { Hl7Client, Hl7Connection } from '@medplum/hl7';
+import type { EnhancedMode, Hl7ClientOptions, Hl7ConnectionOptions, SendAndWaitOptions , Hl7Connection } from '@medplum/hl7';
+import { Hl7Client } from '@medplum/hl7';
 import type { Socket } from 'node:net';
 import { ChannelStatsTracker } from './channel-stats-tracker';
 import type { Hl7MessageTracker } from './hl7-message-tracker';

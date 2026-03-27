@@ -3560,7 +3560,7 @@ describe('App', () => {
 
     // Send another transmit request — should succeed using the same pool
     state.transmitResponses = [];
-    (state.mySocket as Client).send(
+    (state.mySocket).send(
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
